@@ -42,6 +42,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let m = ChatModel.shared
         let deviceToken = DeviceToken(pushProvider: PushProvider(env: pushEnvironment), token: token)
         m.deviceToken = deviceToken
+        // savedToken is set in startChat, when it is started before this method is called
         if m.savedToken != nil {
             registerToken(token: deviceToken)
         }
@@ -55,7 +56,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
-        print("*** userInfo", userInfo)
         let m = ChatModel.shared
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            m.notificationMode != .off {
@@ -81,7 +81,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive && m.ntfEnablePeriodic {
+                if m.ntfEnablePeriodic && allowBackgroundRefresh() && BGManager.shared.lastRanLongAgo {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)
@@ -120,6 +120,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         BGManager.shared.receiveMessages(complete)
+    }
+
+    static func keepScreenOn(_ on: Bool) {
+        UIApplication.shared.isIdleTimerDisabled = on
     }
 }
 

@@ -25,10 +25,13 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
+import chat.simplex.common.views.remote.ConnectDesktopView
+import chat.simplex.common.views.remote.ConnectMobileView
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 
@@ -36,76 +39,39 @@ import kotlinx.coroutines.launch
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerState: DrawerState) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
-
-  if (user != null) {
-    val requireAuth = remember { chatModel.controller.appPrefs.performLA.state }
-    SettingsLayout(
-      profile = user.profile,
-      stopped,
-      chatModel.chatDbEncrypted.value == true,
-      remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
-      remember { chatModel.controller.appPrefs.notificationsMode.state },
-      user.displayName,
-      setPerformLA = setPerformLA,
-      showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
-      showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
-      showSettingsModalWithSearch = { modalView ->
-        ModalManager.start.showCustomModal { close ->
-          val search = rememberSaveable { mutableStateOf("") }
-          ModalView(
-            { close() },
-            endButtons = {
-              SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-            },
-            content = { modalView(chatModel, search) })
+  SettingsLayout(
+    profile = user?.profile,
+    stopped,
+    chatModel.chatDbEncrypted.value == true,
+    remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
+    remember { chatModel.controller.appPrefs.notificationsMode.state },
+    user?.displayName,
+    setPerformLA = setPerformLA,
+    showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
+    showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
+    showSettingsModalWithSearch = { modalView ->
+      ModalManager.start.showCustomModal { close ->
+        val search = rememberSaveable { mutableStateOf("") }
+        ModalView(
+          { close() },
+          endButtons = {
+            SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+          },
+          content = { modalView(chatModel, search) })
+      }
+    },
+    showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
+    showVersion = {
+      withApi {
+        val info = chatModel.controller.apiGetVersion()
+        if (info != null) {
+          ModalManager.start.showModal { VersionInfoView(info) }
         }
-      },
-      showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
-      showVersion = {
-        withApi {
-          val info = chatModel.controller.apiGetVersion()
-          if (info != null) {
-            ModalManager.start.showModal { VersionInfoView(info) }
-          }
-        }
-      },
-      withAuth = { title, desc, block ->
-        if (!requireAuth.value) {
-          block()
-        } else {
-          var autoShow = true
-          ModalManager.fullscreen.showModalCloseable { close ->
-            val onFinishAuth = { success: Boolean ->
-              if (success) {
-                close()
-                block()
-              }
-            }
-
-            LaunchedEffect(Unit) {
-              if (autoShow) {
-                autoShow = false
-                runAuth(title, desc, onFinishAuth)
-              }
-            }
-            Box(
-              Modifier.fillMaxSize().background(MaterialTheme.colors.background),
-              contentAlignment = Alignment.Center
-            ) {
-              SimpleButton(
-                stringResource(MR.strings.auth_unlock),
-                icon = painterResource(MR.images.ic_lock),
-                click = {
-                  runAuth(title, desc, onFinishAuth)
-                }
-              )
-            }
-          }
-        }
-      },
-      drawerState = drawerState,
-    )
-  }
+      }
+    },
+    withAuth = ::doWithAuth,
+    drawerState = drawerState,
+  )
 }
 
 val simplexTeamUri =
@@ -113,12 +79,12 @@ val simplexTeamUri =
 
 @Composable
 fun SettingsLayout(
-  profile: LocalProfile,
+  profile: LocalProfile?,
   stopped: Boolean,
   encrypted: Boolean,
   passphraseSaved: Boolean,
   notificationsMode: State<NotificationsMode>,
-  userDisplayName: String,
+  userDisplayName: String?,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -148,13 +114,27 @@ fun SettingsLayout(
       AppBarTitle(stringResource(MR.strings.your_settings))
 
       SectionView(stringResource(MR.strings.settings_section_title_you)) {
-        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(profile, stopped = stopped)
-        }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
-        SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
-        ChatPreferencesItem(showCustomModal, stopped = stopped)
+        if (profile != null) {
+          SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+            ProfilePreview(profile, stopped = stopped)
+          }
+          SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
+          SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
+          ChatPreferencesItem(showCustomModal, stopped = stopped)
+        } else if (chatModel.localUserCreated.value == false) {
+          SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.create_chat_profile), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.center.showModalCloseable { close ->
+            LaunchedEffect(Unit) {
+              closeSettings()
+            }
+            CreateProfile(chatModel, close)
+          } } }, disabled = stopped, extraPadding = true)
+        }
+        if (appPlatform.isDesktop) {
+          SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), showModal { ConnectMobileView() }, disabled = stopped, extraPadding = true)
+        } else {
+          SettingsActionItem(painterResource(MR.images.ic_desktop), stringResource(MR.strings.settings_section_title_use_from_desktop), showCustomModal{ it, close -> ConnectDesktopView(close) }, disabled = stopped, extraPadding = true)
+        }
       }
       SectionDividerSpaced()
 
@@ -169,10 +149,12 @@ fun SettingsLayout(
       SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.settings_section_title_help)) {
-        SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName ?: "") }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
+        if (!chatModel.desktopNoUserNoRemote) {
+          SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
+        }
         SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
       }
       SectionDividerSpaced()
@@ -322,6 +304,15 @@ fun ChatLockItem(
   }
 }
 
+@Composable fun TerminalAlwaysVisibleItem(pref: SharedPreference<Boolean>, onChange: (Boolean) -> Unit) {
+  SettingsActionItemWithContent(painterResource(MR.images.ic_engineering), stringResource(MR.strings.terminal_always_visible), extraPadding = false) {
+    DefaultSwitch(
+      checked = remember { pref.state }.value,
+      onCheckedChange = onChange,
+    )
+  }
+}
+
 @Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
   SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
@@ -355,7 +346,7 @@ fun AppVersionItem(showVersion: () -> Unit) {
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
-    if (profileOf.fullName.isNotEmpty()) {
+    if (profileOf.fullName.isNotEmpty() && profileOf.fullName != profileOf.displayName) {
       Text(
         profileOf.fullName,
         Modifier.padding(vertical = 5.dp),
@@ -450,6 +441,42 @@ fun PreferenceToggleWithIcon(
         onChange(it)
       },
     )
+  }
+}
+
+fun doWithAuth(title: String, desc: String, block: () -> Unit) {
+  val requireAuth = chatModel.controller.appPrefs.performLA.get()
+  if (!requireAuth) {
+    block()
+  } else {
+    var autoShow = true
+    ModalManager.fullscreen.showModalCloseable { close ->
+      val onFinishAuth = { success: Boolean ->
+        if (success) {
+          close()
+          block()
+        }
+      }
+
+      LaunchedEffect(Unit) {
+        if (autoShow) {
+          autoShow = false
+          runAuth(title, desc, onFinishAuth)
+        }
+      }
+      Box(
+        Modifier.fillMaxSize().background(MaterialTheme.colors.background),
+        contentAlignment = Alignment.Center
+      ) {
+        SimpleButton(
+          stringResource(MR.strings.auth_unlock),
+          icon = painterResource(MR.images.ic_lock),
+          click = {
+            runAuth(title, desc, onFinishAuth)
+          }
+        )
+      }
+    }
   }
 }
 

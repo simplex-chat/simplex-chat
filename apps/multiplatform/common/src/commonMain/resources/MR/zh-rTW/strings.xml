@@ -11,7 +11,7 @@
     <string name="about_simplex_chat">關於 SimpleX Chat</string>
     <string name="accept_connection_request__question">接受連接請求？</string>
     <string name="callstatus_accepted">已接受通話</string>
-    <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟用代理伺服器。</string>
+    <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎 %d？在啟用這個選項之前，必須先啟用代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後，選按：</string>
     <string name="smp_servers_preset_add">新增預設伺服器</string>
@@ -72,7 +72,6 @@
     <string name="display_name_cannot_contain_whitespace">顯示的名稱中不能有空白。</string>
     <string name="save_preferences_question">儲存設定？</string>
     <string name="display_name">顯示名稱</string>
-    <string name="full_name_optional__prompt">全名（可選擇的）</string>
     <string name="callstatus_error">通話出錯</string>
     <string name="callstatus_calling">正在撥打…</string>
     <string name="callstatus_in_progress">通話中</string>
@@ -1085,7 +1084,6 @@
     <string name="alert_title_msg_bad_id">錯誤的訊息 ID</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">當你或你的連結在用舊的數據庫備份時會發生。</string>
     <string name="alert_text_msg_bad_hash">上一則訊息的雜奏則是不同的。</string>
-    <string name="no_spaces">沒有空位！</string>
     <string name="v5_0_app_passcode">應用程式密碼</string>
     <string name="v5_0_large_files_support_descr">迅速以及不用等待發送者在線！</string>
     <string name="v5_0_polish_interface">波蘭文界面</string>
@@ -1180,8 +1178,6 @@
     <string name="all_app_data_will_be_cleared">已刪除所有的應用程式數據。</string>
     <string name="set_passcode">設定密碼</string>
     <string name="you_can_share_this_address_with_your_contacts">你可以與聯絡人分享此地址，讓他們使用 %s 進行連接。</string>
-    <string name="your_contacts_will_see_it">在 SimpleX ，你的聯絡人會看到此。
-\n你可以在設定中修改。</string>
     <string name="you_can_create_it_later">你可以在稍後建立它</string>
     <string name="scan_qr_to_connect_to_contact">為了連接，你的聯絡人可以掃描二維碼或使用此應用程式的連結。</string>
     <string name="if_you_cant_meet_in_person">如果你不能面對面接觸此聯絡人，可於視訊通話中出示你的二維碼，或者分享連結。</string>

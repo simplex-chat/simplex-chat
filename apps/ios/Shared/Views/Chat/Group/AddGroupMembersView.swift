@@ -144,7 +144,7 @@ struct AddGroupMembersViewCommon: View {
             do {
                 for contactId in selectedContacts {
                     let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
-                    await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
+                    await MainActor.run { _ = chatModel.upsertGroupMember(groupInfo, member) }
                 }
                 addedMembersCb(selectedContacts)
             } catch {
@@ -157,7 +157,7 @@ struct AddGroupMembersViewCommon: View {
     private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
-                if role <= groupInfo.membership.memberRole {
+                if role <= groupInfo.membership.memberRole && role != .author {
                     Text(role.text)
                 }
             }

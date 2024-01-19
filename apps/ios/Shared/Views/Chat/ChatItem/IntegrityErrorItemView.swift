@@ -10,11 +10,12 @@ import SwiftUI
 import SimpleXChat
 
 struct IntegrityErrorItemView: View {
+    @ObservedObject var chat: Chat
     var msgError: MsgErrorType
     var chatItem: ChatItem
 
     var body: some View {
-        CIMsgError(chatItem: chatItem) {
+        CIMsgError(chat: chat, chatItem: chatItem) {
             switch msgError {
             case .msgSkipped:
                 AlertManager.shared.showAlertMsg(
@@ -52,6 +53,7 @@ struct IntegrityErrorItemView: View {
 }
 
 struct CIMsgError: View {
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var onTap: () -> Void
 
@@ -60,7 +62,7 @@ struct CIMsgError: View {
             Text(chatItem.content.text)
                 .foregroundColor(.red)
                 .italic()
-            CIMetaView(chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem)
                 .padding(.horizontal, 12)
         }
         .padding(.leading, 12)
@@ -74,6 +76,6 @@ struct CIMsgError: View {
 
 struct IntegrityErrorItemView_Previews: PreviewProvider {
     static var previews: some View {
-        IntegrityErrorItemView(msgError: .msgBadHash, chatItem: ChatItem.getIntegrityErrorSample())
+        IntegrityErrorItemView(chat: Chat.sampleData, msgError: .msgBadHash, chatItem: ChatItem.getIntegrityErrorSample())
     }
 }

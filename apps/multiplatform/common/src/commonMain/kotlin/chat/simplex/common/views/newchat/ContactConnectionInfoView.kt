@@ -30,6 +30,7 @@ import chat.simplex.res.MR
 @Composable
 fun ContactConnectionInfoView(
   chatModel: ChatModel,
+  rhId: Long?,
   connReqInvitation: String?,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
@@ -55,8 +56,9 @@ fun ContactConnectionInfoView(
     connReq = connReqInvitation,
     contactConnection = contactConnection,
     focusAlias = focusAlias,
-    deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
-    onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
+    rhId = rhId,
+    deleteConnection = { deleteContactConnectionAlert(rhId, contactConnection, chatModel, close) },
+    onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
     share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
       ModalManager.center.showModal {
@@ -79,6 +81,7 @@ private fun ContactConnectionInfoLayout(
   connReq: String?,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
+  rhId: Long?,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
   share: () -> Unit,
@@ -113,7 +116,8 @@ private fun ContactConnectionInfoLayout(
       stringResource(
         if (contactConnection.initiated) MR.strings.you_invited_a_contact
         else MR.strings.you_accepted_connection
-      )
+      ),
+      hostDevice(rhId)
     )
     Text(
       stringResource(
@@ -131,13 +135,13 @@ private fun ContactConnectionInfoLayout(
 
     SectionView {
       if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
-        QRCode(
+        SimpleXLinkQRCode(
           connReq, Modifier
             .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
             .aspectRatio(1f)
         )
         incognitoEnabled()
-        ShareLinkButton(share)
+        ShareLinkButton(connReq)
         OneTimeLinkLearnMoreButton(learnMore)
       } else {
         incognitoEnabled()
@@ -165,9 +169,9 @@ fun DeleteButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
-  chatModel.controller.apiSetConnectionAlias(contactConnection.pccConnId, localAlias)?.let {
-    chatModel.updateContactConnection(it)
+private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
+  chatModel.controller.apiSetConnectionAlias(rhId, contactConnection.pccConnId, localAlias)?.let {
+    chatModel.updateContactConnection(rhId, it)
   }
 }
 
@@ -184,6 +188,7 @@ private fun PreviewContactConnectionInfoView() {
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
       contactConnection = PendingContactConnection.getSampleData(),
       focusAlias = false,
+      rhId = null,
       deleteConnection = {},
       onLocalAliasChanged = {},
       share = {},

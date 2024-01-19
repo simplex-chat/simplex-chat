@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import SectionItemView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -9,25 +8,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
-import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
@@ -54,13 +50,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
   }
-  LaunchedEffect(chatModel.appOpenUrl.value) {
-    val url = chatModel.appOpenUrl.value
-    if (url != null) {
-      chatModel.appOpenUrl.value = null
-      connectIfOpenedViaUri(url, chatModel)
-    }
-  }
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
       if (chatModel.chatId.value != null) {
@@ -73,14 +62,18 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scope = rememberCoroutineScope()
-  val (userPickerState, scaffoldState, switchingUsers ) = settingsState
+  val (userPickerState, scaffoldState ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
-    drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
+    drawerContent = {
+      tryOrShowError("Settings", error = { ErrorSettingsView() }) {
+        SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
+      }
+    },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (searchInList.isEmpty()) {
+      if (searchInList.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
@@ -109,7 +102,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
-        } else if (!switchingUsers.value) {
+        } else if (!chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
@@ -121,19 +114,18 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   }
   if (searchInList.isEmpty()) {
-    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
-  }
-  if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, switchingUsers) {
-      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+    DesktopActiveCallOverlayLayout(newChatSheetState)
+    // TODO disable this button and sheet for the duration of the switch
+    tryOrShowError("NewChatSheet", error = {}) {
+      NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
     }
   }
-  if (switchingUsers.value) {
-    Box(
-      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
-      contentAlignment = Alignment.Center
-    ) {
-      ProgressIndicator()
+  if (appPlatform.isAndroid) {
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState) {
+        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+        userPickerState.value = AnimatedViewState.GONE
+      }
     }
   }
 }
@@ -141,11 +133,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
 @Composable
 private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
-    val uriHandler = LocalUriHandler.current
-    ConnectButton(generalGetString(MR.strings.chat_with_developers)) {
-      uriHandler.openVerifiedSimplexUri(simplexTeamUri)
-    }
-    Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
     val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
@@ -216,7 +203,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     navigationButton = {
       if (showSearch) {
         NavigationButtonBack(hideSearchOnBack)
-      } else if (chatModel.users.isEmpty()) {
+      } else if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
       } else {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
@@ -224,7 +211,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          if (users.size == 1) {
+          if (users.size == 1 && chatModel.remoteHosts.isEmpty()) {
             scope.launch { drawerState.open() }
           } else {
             userPickerState.value = AnimatedViewState.VISIBLE
@@ -254,14 +241,25 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
 
 @Composable
 fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
-  IconButton(onClick = onButtonClicked) {
-    Box {
-      ProfileImage(
-        image = image,
-        size = 37.dp
-      )
-      if (!allRead) {
-        unreadBadge()
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    IconButton(onClick = onButtonClicked) {
+      Box {
+        ProfileImage(
+          image = image,
+          size = 37.dp
+        )
+        if (!allRead) {
+          unreadBadge()
+        }
+      }
+    }
+    if (appPlatform.isDesktop) {
+      val h by remember { chatModel.currentRemoteHost }
+      if (h != null) {
+        Spacer(Modifier.width(12.dp))
+        HostDisconnectButton {
+          stopRemoteHostAndReloadHosts(h!!, true)
+        }
       }
     }
   }
@@ -301,62 +299,23 @@ private fun ToggleFilterButton() {
 }
 
 @Composable
-private fun ProgressIndicator() {
-  CircularProgressIndicator(
-    Modifier
-      .padding(horizontal = 2.dp)
-      .size(30.dp),
-    color = MaterialTheme.colors.secondary,
-    strokeWidth = 2.5.dp
-  )
-}
+expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
 
-fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
+fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
-    chatModel.appOpenUrl.value = uri
+    chatModel.appOpenUrl.value = rhId to uri
   } else {
-    withUriAction(uri) { linkType ->
-      val title = when (linkType) {
-        ConnectionLinkType.CONTACT -> generalGetString(MR.strings.connect_via_contact_link)
-        ConnectionLinkType.INVITATION -> generalGetString(MR.strings.connect_via_invitation_link)
-        ConnectionLinkType.GROUP -> generalGetString(MR.strings.connect_via_group_link)
-      }
-      AlertManager.shared.showAlertDialogButtonsColumn(
-        title = title,
-        text = if (linkType == ConnectionLinkType.GROUP)
-          AnnotatedString(generalGetString(MR.strings.you_will_join_group))
-        else
-          AnnotatedString(generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link)),
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              withApi {
-                Log.d(TAG, "connectIfOpenedViaUri: connecting")
-                connectViaUri(chatModel, linkType, uri, incognito = false)
-              }
-            }) {
-              Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              withApi {
-                Log.d(TAG, "connectIfOpenedViaUri: connecting incognito")
-                connectViaUri(chatModel, linkType, uri, incognito = true)
-              }
-            }) {
-              Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-            }) {
-              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-          }
-        }
-      )
+    withApi {
+      planAndConnect(chatModel, rhId, uri, incognito = null, close = null)
     }
+  }
+}
+
+@Composable
+private fun ErrorSettingsView() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(generalGetString(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
 }
 

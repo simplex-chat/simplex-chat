@@ -97,7 +97,9 @@ kotlin {
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.6")
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.7")
-        implementation("uk.co.caprica:vlcj:4.7.0")
+        implementation("uk.co.caprica:vlcj:4.7.3")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
       }
     }
     val desktopTest by getting
@@ -105,10 +107,10 @@ kotlin {
 }
 
 android {
-  compileSdkVersion(33)
+  compileSdkVersion(34)
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
-    minSdkVersion(26)
+    minSdkVersion(28)
     targetSdkVersion(33)
   }
   compileOptions {
@@ -136,6 +138,7 @@ buildConfig {
     buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
+    buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
   }
 }
 
@@ -152,6 +155,34 @@ afterEvaluate {
       val endTagRegex = Regex("</")
       val anyHtmlRegex = Regex("[^>]*>.*(<|>).*</string>|[^>]*>.*(&lt;|&gt;).*</string>")
       val correctHtmlRegex = Regex("[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>")
+      val possibleFormat = listOf("s", "d", "1\$s", "1\$d", "2s", "f")
+
+      fun String.id(): String = replace("<string name=\"", "").trim().substringBefore("\"")
+
+      fun String.formatting(filepath: String): List<String> {
+        if (!contains("%")) return emptyList()
+        val value = substringAfter("\">").substringBeforeLast("</string>")
+
+        val formats = ArrayList<String>()
+        var substring = value.substringAfter("%")
+        while (true) {
+          var foundFormat = false
+          for (format in possibleFormat) {
+            if (substring.startsWith(format)) {
+              formats.add(format)
+              foundFormat = true
+              break
+            }
+          }
+          if (!foundFormat) {
+            throw Exception("Unknown formatting in string. Add it to 'possibleFormat' in common/build.gradle.kts if needed: $this \nin $filepath")
+          }
+          val was = substring
+          substring = substring.substringAfter("%")
+          if (was.length == substring.length) break
+        }
+        return formats
+      }
 
       fun String.removeCDATA(): String =
         if (contains("<![CDATA")) {
@@ -192,20 +223,44 @@ afterEvaluate {
         return this
       }
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
-      kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath) }.asFileTree.forEach { file ->
+      val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
+      val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val treeList = ArrayList(tree.toList())
+      treeList.remove(baseStringsFile)
+      treeList.add(0, baseStringsFile)
+      val baseFormatting = mutableMapOf<String, List<String>>()
+      treeList.forEachIndexed { index, file ->
+        val isBase = index == 0
         val initialLines = ArrayList<String>()
         val finalLines = ArrayList<String>()
+        val errors = ArrayList<String>()
+
         file.useLines { lines ->
           val multiline = ArrayList<String>()
           lines.forEach { line ->
             initialLines.add(line)
             if (stringRegex.matches(line)) {
-              finalLines.add(line.removeCDATA().addCDATA(file.absolutePath))
+              val fixedLine = line.removeCDATA().addCDATA(file.absolutePath)
+              val lineId = fixedLine.id()
+              if (isBase) {
+                baseFormatting[lineId] = fixedLine.formatting(file.absolutePath)
+              } else if (baseFormatting[lineId] != fixedLine.formatting(file.absolutePath)) {
+                errors.add("Incorrect formatting in string: $fixedLine \nin ${file.absolutePath}")
+              }
+              finalLines.add(fixedLine)
             } else if (multiline.isEmpty() && startStringRegex.containsMatchIn(line)) {
               multiline.add(line)
             } else if (multiline.isNotEmpty() && endStringRegex.containsMatchIn(line)) {
               multiline.add(line)
-              finalLines.addAll(multiline.joinToString("\n").removeCDATA().addCDATA(file.absolutePath).split("\n"))
+              val fixedLines = multiline.joinToString("\n").removeCDATA().addCDATA(file.absolutePath).split("\n")
+              val fixedLinesJoined = fixedLines.joinToString("")
+              val lineId = fixedLinesJoined.id()
+              if (isBase) {
+                baseFormatting[lineId] = fixedLinesJoined.formatting(file.absolutePath)
+              } else if (baseFormatting[lineId] != fixedLinesJoined.formatting(file.absolutePath)) {
+                errors.add("Incorrect formatting in string: $fixedLinesJoined \nin ${file.absolutePath}")
+              }
+              finalLines.addAll(fixedLines)
               multiline.clear()
             } else if (multiline.isNotEmpty()) {
               multiline.add(line)
@@ -214,8 +269,12 @@ afterEvaluate {
             }
           }
           if (multiline.isNotEmpty()) {
-            throw Exception("Unclosed string tag: ${multiline.joinToString("\n")} \nin ${file.absolutePath}")
+            errors.add("Unclosed string tag: ${multiline.joinToString("\n")} \nin ${file.absolutePath}")
           }
+        }
+
+        if (errors.isNotEmpty()) {
+          throw Exception("Found errors: \n\n${errors.joinToString("\n\n")}")
         }
 
         if (!debug && finalLines != initialLines) {

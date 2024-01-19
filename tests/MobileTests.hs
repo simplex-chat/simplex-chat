@@ -1,16 +1,18 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module MobileTests where
 
 import ChatTests.Utils
+import Control.Concurrent.STM
 import Control.Monad.Except
-import Crypto.Random (getRandomBytes)
-import Data.Aeson (FromJSON (..))
+import Data.Aeson (FromJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
@@ -20,8 +22,10 @@ import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
+import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -61,72 +65,137 @@ mobileTests = do
       it "utf8 name 1" $ testFileEncryptionCApi "тест"
       it "utf8 name 2" $ testFileEncryptionCApi "👍"
       it "no exception on missing file" testMissingFileEncryptionCApi
+    describe "validate name" $ do
+      it "should convert invalid name to a valid name" testValidNameCApi
 
 noActiveUser :: LB.ByteString
+noActiveUser =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-noActiveUser = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"error\":{\"errorType\":{\"noActiveUser\":{}}}}}}}"
+  noActiveUserSwift
 #else
-noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"noActiveUser\"}}}}"
+  noActiveUserTagged
 #endif
+
+noActiveUserSwift :: LB.ByteString
+noActiveUserSwift = "{\"resp\":{\"_owsf\":true,\"chatCmdError\":{\"chatError\":{\"_owsf\":true,\"error\":{\"errorType\":{\"_owsf\":true,\"noActiveUser\":{}}}}}}}"
+
+noActiveUserTagged :: LB.ByteString
+noActiveUserTagged = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"noActiveUser\"}}}}"
 
 activeUserExists :: LB.ByteString
+activeUserExists =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"error\":{\"errorType\":{\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
+  activeUserExistsSwift
 #else
-activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
+  activeUserExistsTagged
 #endif
+
+activeUserExistsSwift :: LB.ByteString
+activeUserExistsSwift = "{\"resp\":{\"_owsf\":true,\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"_owsf\":true,\"error\":{\"errorType\":{\"_owsf\":true,\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
+
+activeUserExistsTagged :: LB.ByteString
+activeUserExistsTagged = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
 
 activeUser :: LB.ByteString
+activeUser =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}}"
+  activeUserSwift
 #else
-activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}"
+  activeUserTagged
 #endif
+
+activeUserSwift :: LB.ByteString
+activeUserSwift = "{\"resp\":{\"_owsf\":true,\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}}"
+
+activeUserTagged :: LB.ByteString
+activeUserTagged = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}"
 
 chatStarted :: LB.ByteString
+chatStarted =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-chatStarted = "{\"resp\":{\"chatStarted\":{}}}"
+  chatStartedSwift
 #else
-chatStarted = "{\"resp\":{\"type\":\"chatStarted\"}}"
+  chatStartedTagged
 #endif
 
-contactSubSummary :: LB.ByteString
+chatStartedSwift :: LB.ByteString
+chatStartedSwift = "{\"resp\":{\"_owsf\":true,\"chatStarted\":{}}}"
+
+chatStartedTagged :: LB.ByteString
+chatStartedTagged = "{\"resp\":{\"type\":\"chatStarted\"}}"
+
+networkStatuses :: LB.ByteString
+networkStatuses =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-contactSubSummary = "{\"resp\":{\"contactSubSummary\":{" <> userJSON <> ",\"contactSubscriptions\":[]}}}"
+  networkStatusesSwift
 #else
-contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\"," <> userJSON <> ",\"contactSubscriptions\":[]}}"
+  networkStatusesTagged
 #endif
+
+networkStatusesSwift :: LB.ByteString
+networkStatusesSwift = "{\"resp\":{\"_owsf\":true,\"networkStatuses\":{\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}}"
+
+networkStatusesTagged :: LB.ByteString
+networkStatusesTagged = "{\"resp\":{\"type\":\"networkStatuses\",\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}"
 
 memberSubSummary :: LB.ByteString
+memberSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-memberSubSummary = "{\"resp\":{\"memberSubSummary\":{" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
+  memberSubSummarySwift
 #else
-memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\"," <> userJSON <> ",\"memberSubscriptions\":[]}}"
+  memberSubSummaryTagged
 #endif
+
+memberSubSummarySwift :: LB.ByteString
+memberSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"memberSubSummary\":{\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
+
+memberSubSummaryTagged :: LB.ByteString
+memberSubSummaryTagged = "{\"resp\":{\"type\":\"memberSubSummary\",\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}"
 
 userContactSubSummary :: LB.ByteString
+userContactSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-userContactSubSummary = "{\"resp\":{\"userContactSubSummary\":{" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
+  userContactSubSummarySwift
 #else
-userContactSubSummary = "{\"resp\":{\"type\":\"userContactSubSummary\"," <> userJSON <> ",\"userContactSubscriptions\":[]}}"
+  userContactSubSummaryTagged
 #endif
+
+userContactSubSummarySwift :: LB.ByteString
+userContactSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"userContactSubSummary\":{\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
+
+userContactSubSummaryTagged :: LB.ByteString
+userContactSubSummaryTagged = "{\"resp\":{\"type\":\"userContactSubSummary\",\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}"
 
 pendingSubSummary :: LB.ByteString
+pendingSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
+  pendingSubSummarySwift
 #else
-pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\"," <> userJSON <> ",\"pendingSubscriptions\":[]}}"
+  pendingSubSummaryTagged
 #endif
+
+pendingSubSummarySwift :: LB.ByteString
+pendingSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"pendingSubSummary\":{\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
+
+pendingSubSummaryTagged :: LB.ByteString
+pendingSubSummaryTagged = "{\"resp\":{\"type\":\"pendingSubSummary\",\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}"
 
 userJSON :: LB.ByteString
-userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
+userJSON = "{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
 
 parsedMarkdown :: LB.ByteString
+parsedMarkdown =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello\"}]}"
+  parsedMarkdownSwift
 #else
-parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
+  parsedMarkdownTagged
 #endif
+
+parsedMarkdownSwift :: LB.ByteString
+parsedMarkdownSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"bold\":{}},\"text\":\"hello\"}]}"
+
+parsedMarkdownTagged :: LB.ByteString
+parsedMarkdownTagged = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 
 testChatApiNoUser :: FilePath -> IO ()
 testChatApiNoUser tmp = do
@@ -142,7 +211,7 @@ testChatApi :: FilePath -> IO ()
 testChatApi tmp = do
   let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
-  Right st <- createChatStore f "myKey" MCYesUp
+  Right st <- createChatStore f "myKey" False MCYesUp
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
@@ -150,7 +219,7 @@ testChatApi tmp = do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsg cc `shouldReturn` memberSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
@@ -159,25 +228,29 @@ testChatApi tmp = do
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
 
 testMediaApi :: HasCallStack => FilePath -> IO ()
-testMediaApi _ = do
-  key :: ByteString <- getRandomBytes 32
-  frame <- getRandomBytes 100
+testMediaApi tmp = do
+  Right c@ChatController {random = g} <- chatMigrateInit (tmp </> "1") "" "yesUp"
+  cc <- newStablePtr c
+  key <- atomically $ C.randomBytes 32 g
+  frame <- atomically $ C.randomBytes 100 g
   let keyStr = strEncode key
       reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
       frame' = frame <> reserved
-  Right encrypted <- runExceptT $ chatEncryptMedia keyStr frame'
+  Right encrypted <- runExceptT $ chatEncryptMedia cc keyStr frame'
   encrypted `shouldNotBe` frame'
   B.length encrypted `shouldBe` B.length frame'
   runExceptT (chatDecryptMedia keyStr encrypted) `shouldReturn` Right frame'
 
 testMediaCApi :: HasCallStack => FilePath -> IO ()
-testMediaCApi _ = do
-  key :: ByteString <- getRandomBytes 32
-  frame <- getRandomBytes 100
+testMediaCApi tmp = do
+  Right c@ChatController {random = g} <- chatMigrateInit (tmp </> "1") "" "yesUp"
+  cc <- newStablePtr c
+  key <- atomically $ C.randomBytes 32 g
+  frame <- atomically $ C.randomBytes 100 g
   let keyStr = strEncode key
       reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
       frame' = frame <> reserved
-  encrypted <- test cChatEncryptMedia keyStr frame'
+  encrypted <- test (cChatEncryptMedia cc) keyStr frame'
   encrypted `shouldNotBe` frame'
   test cChatDecryptMedia keyStr encrypted `shouldReturn` frame'
   where
@@ -191,12 +264,15 @@ testMediaCApi _ = do
       (f cKeyStr ptr cLen >>= peekCAString) `shouldReturn` ""
       getByteString ptr cLen
 
-instance FromJSON WriteFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "WF"
+instance FromJSON WriteFileResult where
+  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "WF") ''WriteFileResult)
 
-instance FromJSON ReadFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RF"
+instance FromJSON ReadFileResult where
+  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "RF") ''ReadFileResult)
 
 testFileCApi :: FilePath -> FilePath -> IO ()
 testFileCApi fileName tmp = do
+  cc <- mkCCPtr tmp
   src <- B.readFile "./tests/fixtures/test.pdf"
   let path = tmp </> (fileName <> ".pdf")
   cPath <- newCString path
@@ -204,7 +280,7 @@ testFileCApi fileName tmp = do
       cLen = fromIntegral len
   ptr <- mallocBytes $ B.length src
   putByteString ptr src
-  r <- peekCAString =<< cChatWriteFile cPath ptr cLen
+  r <- peekCAString =<< cChatWriteFile cc cPath ptr cLen
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
   let encryptedFile = CryptoFile path $ Just cfArgs
   CF.getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
@@ -223,7 +299,7 @@ testMissingFileCApi :: FilePath -> IO ()
 testMissingFileCApi tmp = do
   let path = tmp </> "missing_file"
   cPath <- newCString path
-  CFArgs key nonce <- CF.randomArgs
+  CFArgs key nonce <- atomically . CF.randomArgs =<< C.newRandom
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   ptr <- cChatReadFile cPath cKey cNonce
@@ -233,13 +309,14 @@ testMissingFileCApi tmp = do
 
 testFileEncryptionCApi :: FilePath -> FilePath -> IO ()
 testFileEncryptionCApi fileName tmp = do
+  cc <- mkCCPtr tmp
   let fromPath = tmp </> (fileName <> ".source.pdf")
   copyFile "./tests/fixtures/test.pdf" fromPath
   src <- B.readFile fromPath
   cFromPath <- newCString fromPath
   let toPath = tmp </> (fileName <> ".encrypted.pdf")
   cToPath <- newCString toPath
-  r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
+  r <- peekCAString =<< cChatEncryptFile cc cFromPath cToPath
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
   CF.getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
@@ -251,20 +328,32 @@ testFileEncryptionCApi fileName tmp = do
 
 testMissingFileEncryptionCApi :: FilePath -> IO ()
 testMissingFileEncryptionCApi tmp = do
+  cc <- mkCCPtr tmp
   let fromPath = tmp </> "missing_file.source.pdf"
       toPath = tmp </> "missing_file.encrypted.pdf"
   cFromPath <- newCString fromPath
   cToPath <- newCString toPath
-  r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
+  r <- peekCAString =<< cChatEncryptFile cc cFromPath cToPath
   Just (WFError err) <- jDecode r
   err `shouldContain` fromPath
-  CFArgs key nonce <- CF.randomArgs
+  CFArgs key nonce <- atomically . CF.randomArgs =<< C.newRandom
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   let toPath' = tmp </> "missing_file.decrypted.pdf"
   cToPath' <- newCString toPath'
   err' <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   err' `shouldContain` toPath
+
+mkCCPtr :: FilePath -> IO (StablePtr ChatController)
+mkCCPtr tmp = either (error . show) newStablePtr =<< chatMigrateInit (tmp </> "1") "" "yesUp"
+
+testValidNameCApi :: FilePath -> IO ()
+testValidNameCApi _ = do
+  let goodName = "Джон Доу 👍"
+  cName1 <- cChatValidName =<< newCString goodName
+  peekCString cName1 `shouldReturn` goodName
+  cName2 <- cChatValidName =<< newCString " @'Джон'  Доу   👍 "
+  peekCString cName2 `shouldReturn` goodName
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

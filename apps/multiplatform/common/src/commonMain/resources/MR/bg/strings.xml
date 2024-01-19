@@ -581,7 +581,6 @@
     <string name="v4_4_disappearing_messages">Изчезващи съобщения</string>
     <string name="enter_welcome_message_optional">Въведи съобщение при посрещане…(незадължително)</string>
     <string name="button_welcome_message">Съобщение при посрещане</string>
-    <string name="full_name_optional__prompt">Пълно име (незадължително)</string>
     <string name="icon_descr_server_status_error">Грешка при свързване със сървъра</string>
     <string name="v4_2_auto_accept_contact_requests_desc">С незадължително съобщение при посрещане.</string>
     <string name="error_deleting_database">Грешка при изтриване на чат базата данни</string>
@@ -815,7 +814,6 @@
     <string name="network_use_onion_hosts_no_desc">Няма се използват Onion хостове.</string>
     <string name="email_invite_subject">Нека да поговорим в SimpleX Chat</string>
     <string name="password_to_show">Парола за показване</string>
-    <string name="no_spaces">Без интервали!</string>
     <string name="read_more_in_github_with_link"><![CDATA[Прочетете повече в нашето <font color=#0088ff>GitHub хранилище</font>.]]></string>
     <string name="onboarding_notifications_mode_off">Когато приложението работи</string>
     <string name="onboarding_notifications_mode_periodic">Периодично</string>
@@ -1238,8 +1236,6 @@
     <string name="network_disable_socks">Използване на директна интернет връзка\?</string>
     <string name="network_use_onion_hosts">Използвай .onion хостове</string>
     <string name="network_use_onion_hosts_prefer">Когато са налични</string>
-    <string name="your_contacts_will_see_it">Вашите контакти в SimpleX ще го видят.
-\nМожете да го промените в Настройки.</string>
     <string name="your_profile_is_stored_on_your_device">Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Можете да използвате markdown за форматиране на съобщенията:</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Вие контролирате през кой сървър(и) <b>да получавате</b> съобщенията, вашите контакти – сървърите, които използвате, за да им изпращате съобщения.]]></string>
@@ -1400,4 +1396,9 @@
     <string name="v5_3_discover_join_groups_descr">- свържете се с директория за услуги (БЕТА)!
 \n- потвърждениe за доставка (до 20 члена).
 \n- по-бързо и по-стабилно.</string>
+    <string name="rcv_group_event_open_chat">Отвори</string>
+    <string name="error_creating_member_contact">Грешка при създаване на контакт с член</string>
+    <string name="compose_send_direct_message_to_connect">Изпрати лично съобщение за свързване</string>
+    <string name="member_contact_send_direct_message">изпрати лично съобщение</string>
+    <string name="rcv_group_event_member_created_contact">свързан директно</string>
 </resources>

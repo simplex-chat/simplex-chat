@@ -21,7 +21,7 @@ actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 
 actual val databaseExportDir: File = tmpDir
 
-val vlcDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex-vlc").also { it.deleteOnExit() }
+actual val remoteHostsDir: File = File(dataDir.absolutePath + File.separator + "remote_hosts")
 
 actual fun desktopOpenDatabaseDir() {
   if (Desktop.isDesktopSupported()) {
@@ -104,5 +104,5 @@ private fun fileFilterDescription(input: String): String = when(input) {
   else -> ""
 }
 
-actual fun URI.inputStream(): InputStream? = File(URI("file:" + toString().removePrefix("file:"))).inputStream()
-actual fun URI.outputStream(): OutputStream = File(URI("file:" + toString().removePrefix("file:"))).outputStream()
+actual fun URI.inputStream(): InputStream? = toFile().inputStream()
+actual fun URI.outputStream(): OutputStream = toFile().outputStream()

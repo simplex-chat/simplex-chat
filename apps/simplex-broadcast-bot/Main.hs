@@ -8,4 +8,4 @@ import Simplex.Chat.Terminal (terminalChatConfig)
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore terminalChatConfig (mkChatOpts opts) Nothing $ broadcastBot opts
+  simplexChatCore terminalChatConfig (mkChatOpts opts) $ broadcastBot opts

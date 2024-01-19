@@ -1,18 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
 
 module Simplex.Chat.Call where
 
-import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.Aeson as J
+import Data.Aeson (FromJSON (..), ToJSON (..))
+import qualified Data.Aeson.TH as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
@@ -20,12 +20,11 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics (Generic)
 import Simplex.Chat.Types (Contact, ContactId, User)
 import Simplex.Chat.Types.Util (decodeJSON, encodeJSON)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
 
 data Call = Call
   { contactId :: ContactId,
@@ -47,11 +46,7 @@ data CallStateTag
   | CSTCallOfferSent
   | CSTCallOfferReceived
   | CSTCallNegotiated
-  deriving (Show, Generic)
-
-instance ToJSON CallStateTag where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CSTCall"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CSTCall"
+  deriving (Show)
 
 callStateTag :: CallState -> CallStateTag
 callStateTag = \case
@@ -90,21 +85,7 @@ data CallState
         peerCallSession :: WebRTCSession,
         sharedKey :: Maybe C.Key
       }
-  deriving (Show, Generic)
-
--- database representation
-instance FromJSON CallState where
-  parseJSON = J.genericParseJSON $ singleFieldJSON fstToLower
-
-instance ToJSON CallState where
-  toJSON = J.genericToJSON $ singleFieldJSON fstToLower
-  toEncoding = J.genericToEncoding $ singleFieldJSON fstToLower
-
-instance ToField CallState where
-  toField = toField . encodeJSON
-
-instance FromField CallState where
-  fromField = fromTextField_ decodeJSON
+  deriving (Show)
 
 newtype CallId = CallId ByteString
   deriving (Eq, Show)
@@ -132,17 +113,13 @@ data RcvCallInvitation = RcvCallInvitation
     sharedKey :: Maybe C.Key,
     callTs :: UTCTime
   }
-  deriving (Show, Generic)
-
-instance ToJSON RcvCallInvitation where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data CallType = CallType
   { media :: CallMedia,
     capabilities :: CallCapabilities
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 defaultCallType :: CallType
 defaultCallType = CallType CMVideo $ CallCapabilities {encryption = True}
@@ -150,104 +127,54 @@ defaultCallType = CallType CMVideo $ CallCapabilities {encryption = True}
 encryptedCall :: CallType -> Bool
 encryptedCall CallType {capabilities = CallCapabilities {encryption}} = encryption
 
-instance ToJSON CallType where toEncoding = J.genericToEncoding J.defaultOptions
-
 -- | * Types for chat protocol
 data CallInvitation = CallInvitation
   { callType :: CallType,
     callDhPubKey :: Maybe C.PublicKeyX25519
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CallInvitation where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
-
-instance ToJSON CallInvitation where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 data CallMedia = CMAudio | CMVideo
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CallMedia where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CM"
-
-instance ToJSON CallMedia where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CM"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CM"
+  deriving (Eq, Show)
 
 data CallCapabilities = CallCapabilities
   { encryption :: Bool
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON CallCapabilities where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data CallOffer = CallOffer
   { callType :: CallType,
     rtcSession :: WebRTCSession,
     callDhPubKey :: Maybe C.PublicKeyX25519
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CallOffer where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
-
-instance ToJSON CallOffer where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 data WebRTCCallOffer = WebRTCCallOffer
   { callType :: CallType,
     rtcSession :: WebRTCSession
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON WebRTCCallOffer where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
-
-instance ToJSON WebRTCCallOffer where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 data CallAnswer = CallAnswer
   { rtcSession :: WebRTCSession
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON CallAnswer where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data CallExtraInfo = CallExtraInfo
   { rtcExtraInfo :: WebRTCExtraInfo
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON CallExtraInfo where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data WebRTCSession = WebRTCSession
   { rtcSession :: Text, -- LZW compressed JSON encoding of offer or answer
     rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON WebRTCSession where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data WebRTCExtraInfo = WebRTCExtraInfo
   { rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON WebRTCExtraInfo where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data WebRTCCallStatus = WCSConnecting | WCSConnected | WCSDisconnected | WCSFailed
   deriving (Show)
@@ -265,3 +192,36 @@ instance StrEncoding WebRTCCallStatus where
       "disconnected" -> pure WCSDisconnected
       "failed" -> pure WCSFailed
       _ -> fail "bad WebRTCCallStatus"
+
+$(J.deriveJSON (enumJSON $ dropPrefix "CSTCall") ''CallStateTag)
+
+$(J.deriveJSON (enumJSON $ dropPrefix "CM") ''CallMedia)
+
+$(J.deriveJSON defaultJSON ''CallCapabilities)
+
+$(J.deriveJSON defaultJSON ''CallType)
+
+$(J.deriveJSON defaultJSON ''CallInvitation)
+
+$(J.deriveJSON defaultJSON ''WebRTCSession)
+
+$(J.deriveJSON defaultJSON ''CallOffer)
+
+$(J.deriveJSON defaultJSON ''WebRTCCallOffer)
+
+$(J.deriveJSON defaultJSON ''CallAnswer)
+
+$(J.deriveJSON defaultJSON ''WebRTCExtraInfo)
+
+$(J.deriveJSON defaultJSON ''CallExtraInfo)
+
+-- database representation
+$(J.deriveJSON (singleFieldJSON fstToLower) ''CallState)
+
+instance ToField CallState where
+  toField = toField . encodeJSON
+
+instance FromField CallState where
+  fromField = fromTextField_ decodeJSON
+
+$(J.deriveJSON defaultJSON ''RcvCallInvitation)

@@ -20,6 +20,29 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 
 @Composable
+fun SimpleXLinkQRCode(
+  connReq: String,
+  modifier: Modifier = Modifier,
+  tintColor: Color = Color(0xff062d56),
+  withLogo: Boolean = true
+) {
+  QRCode(
+    simplexChatLink(connReq),
+    modifier,
+    tintColor,
+    withLogo
+  )
+}
+
+fun simplexChatLink(uri: String): String {
+  return if (uri.startsWith("simplex:/")) {
+    uri.replace("simplex:/", "https://simplex.chat/")
+  } else {
+    uri
+  }
+}
+
+@Composable
 fun QRCode(
   connReq: String,
   modifier: Modifier = Modifier,
@@ -44,7 +67,7 @@ fun QRCode(
           scope.launch {
             val image = qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
               .let { if (withLogo) it.addLogo() else it }
-            val file = saveTempImageUncompressed(image, false)
+            val file = saveTempImageUncompressed(image, true)
             if (file != null) {
               shareFile("", CryptoFile.plain(file.absolutePath))
             }

@@ -1,12 +1,13 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Profiles
@@ -42,6 +43,8 @@ module Simplex.Chat.Store.Profiles
     deleteUserAddress,
     getUserAddress,
     getUserContactLinkById,
+    getUserContactLinkByConnReq,
+    getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
     overwriteProtocolServers,
@@ -59,19 +62,17 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Aeson (ToJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import Data.Functor (($>))
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
-import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
@@ -84,9 +85,10 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 
 createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
 createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
@@ -114,8 +116,8 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
+      (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
@@ -245,19 +247,19 @@ updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOv
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
   | displayName == newName = do
-    liftIO $ updateContactProfile_ db userId profileId p'
-    pure user {profile, fullPreferences}
+      liftIO $ updateContactProfile_ db userId profileId p'
+      pure user {profile, fullPreferences}
   | otherwise =
-    checkConstraint SEDuplicateName . liftIO $ do
-      currentTs <- getCurrentTime
-      DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-      DB.execute
-        db
-        "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-        (newName, newName, userId, currentTs, currentTs)
-      updateContactProfile_' db userId profileId p' currentTs
-      updateContact_ db userId userContactId localDisplayName newName currentTs
-      pure user {localDisplayName = newName, profile, fullPreferences}
+      checkConstraint SEDuplicateName . liftIO $ do
+        currentTs <- getCurrentTime
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        DB.execute
+          db
+          "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+          (newName, newName, userId, currentTs, currentTs)
+        updateContactProfile_' db userId profileId p' currentTs
+        updateContact_ db userId userContactId localDisplayName newName currentTs
+        pure user {localDisplayName = newName, profile, fullPreferences}
   where
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} = user
     Profile {displayName = newName, preferences} = p'
@@ -320,7 +322,7 @@ getUserAddressConnections db User {userId} = do
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+              c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
               c.peer_chat_min_version, c.peer_chat_max_version
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
@@ -335,7 +337,7 @@ getUserContactLinks db User {userId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
           c.peer_chat_min_version, c.peer_chat_max_version,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
@@ -398,17 +400,17 @@ data UserContactLink = UserContactLink
   { connReqContact :: ConnReqContact,
     autoAccept :: Maybe AutoAccept
   }
-  deriving (Show, Generic)
-
-instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data AutoAccept = AutoAccept
   { acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
+$(J.deriveJSON defaultJSON ''AutoAccept)
+
+$(J.deriveJSON defaultJSON ''UserContactLink)
 
 toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
@@ -427,9 +429,9 @@ getUserAddress db User {userId} =
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId, GroupMemberRole))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupId, GroupMemberRole)
 getUserContactLinkById db userId userContactLinkId =
-  maybeFirstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) $
+  ExceptT . firstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
@@ -439,6 +441,34 @@ getUserContactLinkById db userId userContactLinkId =
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
+
+getUserContactLinkByConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe UserContactLink)
+getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
+  maybeFirstRow toUserContactLink $
+    DB.query
+      db
+      [sql|
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
+        FROM user_contact_links
+        WHERE user_id = ? AND conn_req_contact IN (?,?)
+      |]
+      (userId, cReqSchema1, cReqSchema2)
+
+getContactWithoutConnViaAddress :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2) = do
+  ctId_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT ct.contact_id
+          FROM contacts ct
+          JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+          LEFT JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
+        |]
+        (userId, cReqSchema1, cReqSchema2)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db user) ctId_
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do

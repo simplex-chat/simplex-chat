@@ -584,8 +584,6 @@
     <string name="message_delivery_error_desc">Muito provavelmente este contato eliminou a conexão consigo.</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="update_onion_hosts_settings_question">Atualizar definições de servidores .onion\?</string>
-    <string name="your_contacts_will_see_it">Os seus contatos no SimpleX irão vê-lo.
-\nVocê pode alterá-lo nas Definições.</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">AJUDA</string>
     <string name="settings_section_title_support">SUPORTE SIMPLEX CHAT</string>
@@ -635,7 +633,6 @@
     <string name="status_e2e_encrypted">encriptado ponta a ponta</string>
     <string name="feature_off">desligado</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: leia o código QR exibido a partir do aplicação, via <b>Ler código QR</b>.]]></string>
-    <string name="no_spaces">Sem espaços!</string>
     <string name="status_contact_has_no_e2e_encryption">contato não tem encriptação ponta a ponta</string>
     <string name="feature_offered_item_with_param">oferecido %s: %2s</string>
     <string name="chat_preferences_off">desligado</string>

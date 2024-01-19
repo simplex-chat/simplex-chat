@@ -10,6 +10,7 @@ module Simplex.Chat.Help
     myAddressHelpInfo,
     incognitoHelpInfo,
     messagesHelpInfo,
+    remoteHelpInfo,
     markdownInfo,
     settingsInfo,
     databaseHelpInfo,
@@ -87,7 +88,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "settings", "db"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/chats           " <> " - most recent chats",
@@ -154,7 +155,8 @@ groupsHelpInfo =
       "",
       green "Group chat preferences:",
       indent <> highlight "/set voice #<group> on/off         " <> " - enable/disable voice messages",
-      -- indent <> highlight "/set files #<group> on/off         " <> " - enable/disable files and media (other than voice)",
+      indent <> highlight "/set files #<group> on/off         " <> " - enable/disable files and media (other than voice)",
+      indent <> highlight "/set history #<group> on/off       " <> " - enable/disable sending recent history to new members",
       indent <> highlight "/set delete #<group> on/off        " <> " - enable/disable full message deletion",
       indent <> highlight "/set direct #<group> on/off        " <> " - enable/disable direct messages to other members",
       indent <> highlight "/set disappear #<group> on <time>  " <> " - enable disappearing messages with <time>:",
@@ -270,6 +272,34 @@ messagesHelpInfo =
       "To edit your most recent message that starts with \"hi\":",
       indent <> highlight "! @alice (hi) <new msg>  " <> " - to edit your message to alice",
       indent <> highlight "! #team (hi) <new msg>   " <> " - to edit your message in the group #team"
+    ]
+
+remoteHelpInfo :: [StyledString]
+remoteHelpInfo =
+  map
+    styleMarkdown
+    [ green "Remote control",
+      "You can use CLI as a remote controller for a mobile app or as a remote host for a desktop app (or another CLI).",
+      "For example, you can run CLI on a server and use it from a desktop computer, connecting via SSH port forwarding.",
+      "",
+      indent <> highlight "/set device name <name> " <> " - set CLI name for remote connections",
+      "",
+      green "Using as remote controller",
+      indent <> highlight "/start remote host new                 " <> " - pair and connect a new remote host",
+      indent <> highlight "/start remote host <id> [multicast=on] " <> " - start connection with a known (paired) remote host",
+      indent <> highlight "/stop remote host new                  " <> " - cancel pairing with a new remote host",
+      indent <> highlight "/stop remote host <id>                 " <> " - stop connection with connected remote host",
+      indent <> highlight "/switch remote host local              " <> " - switch to using local database",
+      indent <> highlight "/switch remote host <id>               " <> " - switch to connected remote host",
+      indent <> highlight "/list remote hosts                     " <> " - list known remote hosts",
+      indent <> highlight "/delete remote host <id>               " <> " - delete (unpair) known remote hosts - also deletes all host files from controller",
+      "",
+      green "Using as remote host",
+      indent <> highlight "/connect remote ctrl <session_address> " <> " - connect to remote controller via the adress from /start remote host",
+      indent <> highlight "/stop remote ctrl                      " <> " - stop connection with remote controller",
+      indent <> highlight "/find remote ctrl                      " <> " - find known remote controller on the local network (it should be started with multicast=on)",
+      indent <> highlight "/list remote ctrls                     " <> " - list known remote controllers",
+      indent <> highlight "/delete remote ctrl <id>               " <> " - delete known remote controller"
     ]
 
 markdownInfo :: [StyledString]

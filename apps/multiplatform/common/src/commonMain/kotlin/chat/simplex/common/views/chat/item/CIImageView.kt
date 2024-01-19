@@ -22,6 +22,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.net.URI
 
@@ -134,7 +137,7 @@ fun CIImageView(
     return false
   }
 
-  fun imageAndFilePath(file: CIFile?): Triple<ImageBitmap, ByteArray, String>? {
+  suspend fun imageAndFilePath(file: CIFile?): Triple<ImageBitmap, ByteArray, String>? {
     val res = getLoadedImage(file)
     if (res != null) {
       val (imageBitmap: ImageBitmap, data: ByteArray) = res
@@ -148,9 +151,29 @@ fun CIImageView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
     contentAlignment = Alignment.TopEnd
   ) {
-    val res = remember(file) { imageAndFilePath(file) }
-    if (res != null) {
-      val (imageBitmap, data, _) = res
+    val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
+      mutableStateOf(
+        if (chatModel.connectedToRemote()) null else runBlocking { imageAndFilePath(file) }
+      )
+    }
+    if (chatModel.connectedToRemote()) {
+      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
+        withBGApi {
+          if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+            res.value = imageAndFilePath(file)
+          }
+        }
+      }
+    } else {
+      KeyChangeEffect(file) {
+        if (res.value == null) {
+          res.value = imageAndFilePath(file)
+        }
+      }
+    }
+    val loaded = res.value
+    if (loaded != null) {
+      val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, onClick) })
     } else {
       imageView(base64ToBitmap(image), onClick = {

@@ -9,6 +9,18 @@
 import SwiftUI
 import SimpleXChat
 
+enum GroupProfileAlert: Identifiable {
+    case saveError(err: String)
+    case invalidName(validName: String)
+
+    var id: String {
+        switch self {
+        case let .saveError(err): return "saveError \(err)"
+        case let .invalidName(validName): return "invalidName \(validName)"
+        }
+    }
+}
+
 struct GroupProfileView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -18,8 +30,7 @@ struct GroupProfileView: View {
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
-    @State private var showSaveErrorAlert = false
-    @State private var saveGroupError: String? = nil
+    @State private var alert: GroupProfileAlert?
     @FocusState private var focusDisplayName
 
     var body: some View {
@@ -47,20 +58,29 @@ struct GroupProfileView: View {
             .frame(maxWidth: .infinity, alignment: .center)
 
             VStack(alignment: .leading) {
-                ZStack(alignment: .leading) {
-                    if !validDisplayName(groupProfile.displayName) {
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
-                            .padding(.bottom, 10)
+                ZStack(alignment: .topLeading) {
+                    if !validNewProfileName() {
+                        Button {
+                            alert = .invalidName(validName: mkValidName(groupProfile.displayName))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    } else {
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                     }
                     profileNameTextEdit("Group display name", $groupProfile.displayName)
                         .focused($focusDisplayName)
                 }
-                profileNameTextEdit("Group full name (optional)", $groupProfile.fullName)
+                .padding(.bottom)
+                let fullName = groupInfo.groupProfile.fullName
+                if fullName != "" && fullName != groupProfile.displayName {
+                    profileNameTextEdit("Group full name (optional)", $groupProfile.fullName)
+                        .padding(.bottom)
+                }
                 HStack(spacing: 20) {
                     Button("Cancel") { dismiss() }
                     Button("Save group profile") { saveProfile() }
-                        .disabled(groupProfile.displayName == "" || !validDisplayName(groupProfile.displayName))
+                        .disabled(!canUpdateProfile())
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -83,8 +103,10 @@ struct GroupProfileView: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
-                didSelectItem in showImagePicker = false
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
             }
         }
         .onChange(of: chosenImage) { image in
@@ -99,27 +121,39 @@ struct GroupProfileView: View {
                 focusDisplayName = true
             }
         }
-        .alert(isPresented: $showSaveErrorAlert) {
-            Alert(
-                title: Text("Error saving group profile"),
-                message: Text("\(saveGroupError ?? "Unexpected error")")
-            )
+        .alert(item: $alert) { a in
+            switch a {
+            case let .saveError(err):
+                return Alert(
+                    title: Text("Error saving group profile"),
+                    message: Text(err)
+                )
+            case let .invalidName(name):
+                return createInvalidNameAlert(name, $groupProfile.displayName)
+            }
         }
         .contentShape(Rectangle())
         .onTapGesture { hideKeyboard() }
     }
 
+    private func canUpdateProfile() -> Bool {
+        groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" && validNewProfileName()
+    }
+
+    private func validNewProfileName() -> Bool {
+        groupProfile.displayName == groupInfo.groupProfile.displayName
+            || validDisplayName(groupProfile.displayName.trimmingCharacters(in: .whitespaces))
+    }
+
     func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
         TextField(label, text: name)
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
-            .padding(.bottom)
-            .padding(.leading, 28)
+            .padding(.leading, 32)
     }
 
     func saveProfile() {
         Task {
             do {
+                groupProfile.displayName = groupProfile.displayName.trimmingCharacters(in: .whitespaces)
                 let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
                 await MainActor.run {
                     groupInfo = gInfo
@@ -128,8 +162,7 @@ struct GroupProfileView: View {
                 }
             } catch let error {
                 let err = responseError(error)
-                saveGroupError = err
-                showSaveErrorAlert = true
+                alert = .saveError(err: err)
                 logger.error("GroupProfile apiUpdateGroup error: \(err)")
             }
         }

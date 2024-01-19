@@ -13,11 +13,9 @@ struct CIEventView: View {
     var eventText: Text
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            eventText
-        }
-        .padding(.leading, 6)
-        .padding(.bottom, 6)
+        eventText
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
         .textSelection(.disabled)
     }
 }

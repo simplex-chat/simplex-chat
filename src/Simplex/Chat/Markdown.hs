@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -10,14 +11,15 @@
 module Simplex.Chat.Markdown where
 
 import Control.Applicative (optional, (<|>))
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit)
+import Data.Char (isDigit, isPunctuation)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.List (intercalate, foldl')
+import Data.List (foldl', intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
@@ -26,13 +28,12 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import GHC.Generics
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
+import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
@@ -48,27 +49,19 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, trustedUri :: Bool, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
-  deriving (Eq, Show, Generic)
-
-instance ToJSON SimplexLinkType where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "XL"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "XL"
+  deriving (Eq, Show)
 
 colored :: Color -> Format
 colored = Colored . FormatColor
 
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
-
-instance ToJSON Format where
-  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
-  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -91,6 +84,20 @@ instance IsString Markdown where fromString = unmarked . T.pack
 newtype FormatColor = FormatColor Color
   deriving (Eq, Show)
 
+instance FromJSON FormatColor where
+  parseJSON =
+    J.withText "FormatColor" $
+      fmap FormatColor . \case
+        "red" -> pure Red
+        "green" -> pure Green
+        "blue" -> pure Blue
+        "yellow" -> pure Yellow
+        "cyan" -> pure Cyan
+        "magenta" -> pure Magenta
+        "black" -> pure Black
+        "white" -> pure White
+        unexpected -> fail $ "unexpected FormatColor: " <> show unexpected
+
 instance ToJSON FormatColor where
   toJSON (FormatColor c) = case c of
     Red -> "red"
@@ -103,10 +110,7 @@ instance ToJSON FormatColor where
     White -> "white"
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
-  deriving (Eq, Show, Generic)
-
-instance ToJSON FormattedText where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 instance IsString FormattedText where
   fromString = FormattedText Nothing . T.pack
@@ -114,11 +118,6 @@ instance IsString FormattedText where
 type MarkdownList = [FormattedText]
 
 data ParsedMarkdown = ParsedMarkdown {formattedText :: Maybe MarkdownList}
-  deriving (Generic)
-
-instance ToJSON ParsedMarkdown where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
@@ -129,7 +128,7 @@ parseMaybeMarkdownList s
   | otherwise = Just . reverse $ foldl' acc [] ml
   where
     ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
-    acc [] m = [m] 
+    acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
       | otherwise = ft : ms
@@ -170,14 +169,14 @@ markdownP = mconcat <$> A.many' fragmentP
     md :: Char -> Format -> Text -> Markdown
     md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ c `T.cons` s `T.snoc` c
+          unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
     secretP :: Parser Markdown
     secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ '#' `T.cons` ss
+          unmarked $ '#' `T.cons` ss
       | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
@@ -217,11 +216,15 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s = case strDecode $ encodeUtf8 s of
-        Right cReq -> markdown (simplexUriFormat cReq) s
-        _ -> markdown Uri s
+      | isUri s =
+          let t = T.takeWhileEnd isPunctuation s
+              uri = uriMarkdown $ T.dropWhileEnd isPunctuation s
+           in if T.null t then uri else uri :|: unmarked t
       | isEmail s = markdown Email s
       | otherwise = unmarked s
+    uriMarkdown s = case strDecode $ encodeUtf8 s of
+      Right cReq -> markdown (simplexUriFormat cReq) s
+      _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
@@ -229,15 +232,20 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
         let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
-         in SimplexLink (linkType' crData) uri (trustedUri' crData) $ uriHosts crData
+         in SimplexLink (linkType' crData) uri $ uriHosts crData
       ACR _ (CRInvitationUri crData e2e) ->
         let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
-         in SimplexLink XLInvitation uri (trustedUri' crData) $ uriHosts crData
+         in SimplexLink XLInvitation uri $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
-        trustedUri' ConnReqUriData {crScheme} = case crScheme of
-          CRSSimplex -> True
-          CRSAppServer (SrvLoc host _) -> host == "simplex.chat"
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
+
+$(JQ.deriveJSON (sumTypeJSON fstToLower) ''Format)
+
+$(JQ.deriveJSON defaultJSON ''FormattedText)
+
+$(JQ.deriveToJSON defaultJSON ''ParsedMarkdown)

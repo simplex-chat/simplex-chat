@@ -52,6 +52,14 @@ fun annotatedStringResource(id: StringResource): AnnotatedString {
   }
 }
 
+@Composable
+fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedString {
+  val density = LocalDensity.current
+  return remember(id, args) {
+    escapedHtmlToAnnotatedString(id.localized().format(args = args), density)
+  }
+}
+
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
@@ -67,7 +75,7 @@ const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 expect fun getAppFileUri(fileName: String): URI
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-expect fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
+expect suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
 
 expect fun getFileName(uri: URI): String?
 
@@ -106,7 +114,7 @@ fun saveImage(image: ImageBitmap, encrypted: Boolean): CryptoFile? {
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
-    val destFileName = generateNewFileName("IMG", ext)
+    val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
       val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
@@ -124,6 +132,24 @@ fun saveImage(image: ImageBitmap, encrypted: Boolean): CryptoFile? {
   }
 }
 
+fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
+  val image = getBitmapFromUri(uri) ?: return null
+  return try {
+    val ext = if (image.hasAlpha()) "png" else "jpg"
+    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
+    val destFileName = generateNewFileName("IMG", ext, tmpDir)
+    val destFile = File(tmpDir, destFileName)
+    val output = FileOutputStream(destFile)
+    dataResized.writeTo(output)
+    output.flush()
+    output.close()
+    CryptoFile.plain(destFile.absolutePath)
+  } catch (e: Exception) {
+    Log.e(TAG, "Util.kt desktopSaveImageInTmp error: ${e.stackTraceToString()}")
+    null
+  }
+}
+
 fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
   return try {
     val filename = getFileName(uri)?.lowercase()
@@ -134,10 +160,10 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
     }
     // Just in case the image has a strange extension
     if (ext.length < 3 || ext.length > 4) ext = "gif"
-    val destFileName = generateNewFileName("IMG", ext)
+    val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
-      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readAllBytes() ?: return null)
+      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
       CryptoFile(destFileName, args)
     } else {
       Files.copy(uri.inputStream(), destFile.toPath())
@@ -151,12 +177,12 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
+fun saveFileFromUri(uri: URI, encrypted: Boolean, withAlertOnException: Boolean = true): CryptoFile? {
   return try {
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
     return if (inputStream != null && fileToSave != null) {
-      val destFileName = uniqueCombine(fileToSave)
+      val destFileName = uniqueCombine(fileToSave, File(getAppFilePath("")))
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
@@ -170,10 +196,14 @@ fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
       }
     } else {
       Log.e(TAG, "Util.kt saveFileFromUri null inputStream")
+      if (withAlertOnException) showWrongUriAlert()
+
       null
     }
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
+    if (withAlertOnException) showWrongUriAlert()
+
     null
   }
 }
@@ -189,21 +219,21 @@ fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
   }
 }
 
-fun generateNewFileName(prefix: String, ext: String): String {
+fun generateNewFileName(prefix: String, ext: String, dir: File): String {
   val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
   sdf.timeZone = TimeZone.getTimeZone("GMT")
   val timestamp = sdf.format(Date())
-  return uniqueCombine("${prefix}_$timestamp.$ext")
+  return uniqueCombine("${prefix}_$timestamp.$ext", dir)
 }
 
-fun uniqueCombine(fileName: String): String {
+fun uniqueCombine(fileName: String, dir: File): String {
   val orig = File(fileName)
   val name = orig.nameWithoutExtension
   val ext = orig.extension
   fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
     val f = "$name$suffix.$ext"
-    return if (File(getAppFilePath(f)).exists()) tryCombine(n + 1) else f
+    return if (File(dir, f).exists()) tryCombine(n + 1) else f
   }
   return tryCombine(0)
 }
@@ -267,7 +297,28 @@ fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   }
 }
 
-expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true): VideoPlayerInterface.PreviewAndDuration
+expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration
+
+fun showWrongUriAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.non_content_uri_alert_title),
+    text = generalGetString(MR.strings.non_content_uri_alert_text)
+  )
+}
+
+fun showImageDecodingException() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.image_decoding_exception_title),
+    text = generalGetString(MR.strings.image_decoding_exception_desc)
+  )
+}
+
+fun showVideoDecodingException() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.image_decoding_exception_title),
+    text = generalGetString(MR.strings.video_decoding_exception_desc)
+  )
+}
 
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
@@ -322,7 +373,7 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
 fun UriHandler.openVerifiedSimplexUri(uri: String) {
   val URI = try { URI.create(uri) } catch (e: Exception) { null }
   if (URI != null) {
-    connectIfOpenedViaUri(URI, ChatModel)
+    connectIfOpenedViaUri(chatModel.remoteHostId(), URI, ChatModel)
   }
 }
 
@@ -338,6 +389,28 @@ fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   save = { it.width to it.height },
   restore = { IntSize(it.first, it.second) }
 )
+
+private var lastExecutedComposables = HashSet<Any>()
+private val failedComposables = HashSet<Any>()
+
+@Composable
+fun tryOrShowError(key: Any = Exception().stackTraceToString().lines()[2], error: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+  if (!failedComposables.contains(key)) {
+    lastExecutedComposables.add(key)
+    content()
+    lastExecutedComposables.remove(key)
+  } else {
+    error()
+  }
+}
+
+fun includeMoreFailedComposables() {
+  lastExecutedComposables.forEach {
+    failedComposables.add(it)
+    Log.i(TAG, "Added composable key as failed: $it")
+  }
+  lastExecutedComposables.clear()
+}
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {

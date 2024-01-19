@@ -337,7 +337,7 @@
     <string name="error_sending_message">Mesaj gönderilirken hata oluştu</string>
     <string name="error_creating_address">Adres oluştururken hata oluştu</string>
     <string name="error_changing_address">Adres değiştirirken hata oluştu</string>
-    <string name="contact_wants_to_connect_via_call">1$s sizinle şu yolla bağlantı kurmak istiyor</string>
+    <string name="contact_wants_to_connect_via_call">%1$s sizinle şu yolla bağlantı kurmak istiyor</string>
     <string name="error_changing_message_deletion">Ayarları değiştirirken hata oluştu</string>
     <string name="error_creating_link_for_group">Toplu konuşma bağlantısı oluştururken hata oluştu</string>
     <string name="error_changing_role">Yetki değiştirirken hata oluştu</string>
@@ -593,7 +593,6 @@
     <string name="exit_without_saving">Kaydetmeden çık</string>
     <string name="hide_profile">Profili gizle</string>
     <string name="error_saving_user_password">Kullanıcı parolası kaydedilirken hata oluştu</string>
-    <string name="full_name_optional__prompt">Ad ve Soyad (isteğe bağlı)</string>
     <string name="hidden_profile_password">Gizli profil parolası</string>
     <string name="how_to_use_markdown">Markdown nasıl kullanılır</string>
     <string name="how_it_works">Nasıl çalışıyor</string>
@@ -748,9 +747,9 @@
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Aklınızda bulunsun</b>: kaybederseniz, parolayı kurtaramaz veya değiştiremezsiniz.]]></string>
     <string name="chat_archive_header">Sohbet arşivi</string>
     <string name="chat_archive_section">SOHBET ARŞİVİ</string>
-    <string name="group_invitation_item_description">1$s grubuna davet</string>
+    <string name="group_invitation_item_description">%1$s grubuna davet</string>
     <string name="join_group_question">Gruba katıl\?</string>
-    <string name="rcv_group_event_member_added">1$s davet edildi</string>
+    <string name="rcv_group_event_member_added">%1$s davet edildi</string>
     <string name="rcv_group_event_invited_via_your_group_link">grup bağlantınız üzerinden davet edildi</string>
     <string name="group_member_status_invited">davet edildi</string>
     <string name="invite_to_group_button">Gruba davet edin</string>
@@ -876,8 +875,6 @@
     <string name="incognito_info_share">Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">İsteğe bağlı karşılama mesajı ile.</string>
     <string name="your_contacts_will_remain_connected">Kişileriniz bağlı kalacaktır.</string>
-    <string name="your_contacts_will_see_it">SimpleX\'teki kişileriniz bunu görecektir.
-\nBunu Ayarlardan değiştirebilirsiniz.</string>
     <string name="you_can_create_it_later">Daha sonra oluşturabilirsiniz</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Mesajları biçimlendirmek için markdown kullanabilirsiniz:</string>
     <string name="your_chat_database">Mesaj veri tabanınız</string>
@@ -934,7 +931,6 @@
   <string name="v4_5_multiple_chat_profiles">Çoklu sohbet profilleri</string>
     <string name="v4_5_reduced_battery_usage_descr">Daha fazla gelişme yakında geliyor!</string>
     <string name="custom_time_unit_months">ay</string>
-    <string name="no_spaces">Boşluk yok!</string>
     <string name="new_database_archive">Yeni veri tabanı arşivi</string>
     <string name="old_database_archive">Eski veri tabanı arşivi</string>
     <string name="no_received_app_files">Alınan veya gönderilen dosya yok</string>
@@ -1050,4 +1046,27 @@
     <string name="users_delete_data_only">Sadece yerel profil verisi</string>
     <string name="info_row_local_name">Yerel ad</string>
     <string name="only_you_can_add_message_reactions">Sadece sen mesaj tepkileri ekleyebilirsin.</string>
+    <string name="stop_file__confirm">Durdur</string>
+    <string name="stop_file__action">Dosyayı durdur</string>
+    <string name="error_alert_title">Hata</string>
+    <string name="create_another_profile_button">ProfilProfil oluştur</string>
+    <string name="stop_chat_to_enable_database_actions">Veri tabanı eylemlerini etkinleştirmek için sohbeti durdur.</string>
+    <string name="stop_snd_file__title">Dosya göndermeyi durdur?</string>
+    <string name="auth_stop_chat">Sohbeti durdur</string>
+    <string name="connect_use_current_profile">Mevcut profili kullan</string>
+    <string name="la_mode_system">Sistem</string>
+    <string name="settings_section_title_support">SIMPLEX CHAT\'İ DESTEKLE</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Sohbet veri tabanını dışa aktarmak, içe aktarmak veya silmek için sohbeti durdur. Sohbet durdurulduğunda mesaj alamaz ve gönderemezsiniz.</string>
+    <string name="desktop_device">Masaüstü</string>
+    <string name="contact_tap_to_connect">Bağlanmak için dokun</string>
+    <string name="block_member_confirmation">Engelle</string>
+    <string name="tap_to_activate_profile">Profili etkinleştirmek için dokun.</string>
+    <string name="stop_chat_confirmation">Durdur</string>
+    <string name="stop_sharing_address">Adres paylaşmayı durdur?</string>
+    <string name="send_receipts_disabled">kapalı</string>
+    <string name="turn_off_battery_optimization_button">İzin ver</string>
+    <string name="error">Hata</string>
+    <string name="stop_sharing">Paylaşmayı durdur</string>
+    <string name="stop_rcv_file__title">Dosya almayı durdur?</string>
+    <string name="stop_chat_question">Sohbeti durdur?</string>
 </resources>

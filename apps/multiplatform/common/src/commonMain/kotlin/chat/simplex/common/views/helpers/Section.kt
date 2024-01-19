@@ -10,8 +10,10 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -99,6 +101,34 @@ fun SectionItemView(
 }
 
 @Composable
+fun SectionItemViewLongClickable(
+  click: () -> Unit,
+  longClick: () -> Unit,
+  minHeight: Dp = 46.dp,
+  disabled: Boolean = false,
+  extraPadding: Boolean = false,
+  padding: PaddingValues = if (extraPadding)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+  else
+    PaddingValues(horizontal = DEFAULT_PADDING),
+  content: (@Composable RowScope.() -> Unit)
+) {
+  val modifier = Modifier
+    .fillMaxWidth()
+    .sizeIn(minHeight = minHeight)
+  Row(
+    if (disabled) {
+      modifier.padding(padding)
+    } else {
+      modifier.combinedClickable(onClick = click, onLongClick = longClick).onRightClick(longClick).padding(padding)
+    },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    content()
+  }
+}
+
+@Composable
 fun SectionItemViewWithIcon(
   click: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
@@ -173,13 +203,14 @@ fun SectionTextFooter(text: String) {
 }
 
 @Composable
-fun SectionTextFooter(text: AnnotatedString) {
+fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
     color = MaterialTheme.colors.secondary,
     lineHeight = 18.sp,
-    fontSize = 14.sp
+    fontSize = 14.sp,
+    textAlign = textAlign
   )
 }
 

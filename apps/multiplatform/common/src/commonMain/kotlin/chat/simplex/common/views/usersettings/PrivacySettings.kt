@@ -64,7 +64,9 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles)
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
+        withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
+      })
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SettingsPreferenceItem(
@@ -90,17 +92,13 @@ fun PrivacySettingsView(
         chatModel.simplexLinkMode.value = it
       })
     }
-    if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
-      SectionTextFooter(stringResource(MR.strings.simplex_link_mode_browser_warning))
-    }
-    SectionDividerSpaced()
 
     val currentUser = chatModel.currentUser.value
     if (currentUser != null) {
       fun setSendReceiptsContacts(enable: Boolean, clearOverrides: Boolean) {
         withApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
-          chatModel.controller.apiSetUserContactReceipts(currentUser.userId, mrs)
+          chatModel.controller.apiSetUserContactReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
@@ -112,7 +110,7 @@ fun PrivacySettingsView(
                 val sendRcpts = contact.chatSettings.sendRcpts
                 if (sendRcpts != null && sendRcpts != enable) {
                   contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(contact)
+                  chatModel.updateContact(currentUser.remoteHostId, contact)
                 }
               }
             }
@@ -123,7 +121,7 @@ fun PrivacySettingsView(
       fun setSendReceiptsGroups(enable: Boolean, clearOverrides: Boolean) {
         withApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
-          chatModel.controller.apiSetUserGroupReceipts(currentUser.userId, mrs)
+          chatModel.controller.apiSetUserGroupReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
@@ -135,7 +133,7 @@ fun PrivacySettingsView(
                 val sendRcpts = groupInfo.chatSettings.sendRcpts
                 if (sendRcpts != null && sendRcpts != enable) {
                   groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateGroup(groupInfo)
+                  chatModel.updateGroup(currentUser.remoteHostId, groupInfo)
                 }
               }
             }
@@ -143,39 +141,42 @@ fun PrivacySettingsView(
         }
       }
 
-      DeliveryReceiptsSection(
-        currentUser = currentUser,
-        setOrAskSendReceiptsContacts = { enable ->
-          val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
-            if (chat.chatInfo is ChatInfo.Direct) {
-              val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
-              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+      if (!chatModel.desktopNoUserNoRemote) {
+        SectionDividerSpaced()
+        DeliveryReceiptsSection(
+          currentUser = currentUser,
+          setOrAskSendReceiptsContacts = { enable ->
+            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+              if (chat.chatInfo is ChatInfo.Direct) {
+                val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
+                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+              } else {
+                count
+              }
+            }
+            if (contactReceiptsOverrides == 0) {
+              setSendReceiptsContacts(enable, clearOverrides = false)
             } else {
-              count
+              showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
+            }
+          },
+          setOrAskSendReceiptsGroups = { enable ->
+            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+              if (chat.chatInfo is ChatInfo.Group) {
+                val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
+                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+              } else {
+                count
+              }
+            }
+            if (groupReceiptsOverrides == 0) {
+              setSendReceiptsGroups(enable, clearOverrides = false)
+            } else {
+              showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
             }
           }
-          if (contactReceiptsOverrides == 0) {
-            setSendReceiptsContacts(enable, clearOverrides = false)
-          } else {
-            showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
-          }
-        },
-        setOrAskSendReceiptsGroups = { enable ->
-          val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
-            if (chat.chatInfo is ChatInfo.Group) {
-              val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
-              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
-            } else {
-              count
-            }
-          }
-          if (groupReceiptsOverrides == 0) {
-            setSendReceiptsGroups(enable, clearOverrides = false)
-          } else {
-            showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
-          }
-        }
-      )
+        )
+      }
     }
     SectionBottomSpacer()
   }
@@ -183,8 +184,10 @@ fun PrivacySettingsView(
 
 @Composable
 private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
+  val modeValues = listOf(SimplexLinkMode.DESCRIPTION, SimplexLinkMode.FULL)
+  val pickerValues = modeValues + if (modeValues.contains(simplexLinkModeState.value)) emptyList() else listOf(simplexLinkModeState.value)
   val values = remember {
-    SimplexLinkMode.values().map {
+    pickerValues.map {
       when (it) {
         SimplexLinkMode.DESCRIPTION -> it to generalGetString(MR.strings.simplex_link_mode_description)
         SimplexLinkMode.FULL -> it to generalGetString(MR.strings.simplex_link_mode_full)
@@ -316,7 +319,7 @@ private fun showUserGroupsReceiptsAlert(
   )
 }
 
-private val laDelays = listOf(10, 30, 60, 180, 0)
+private val laDelays = listOf(10, 30, 60, 180, 600, 0)
 
 @Composable
 fun SimplexLockView(

@@ -1,0 +1,12 @@
+diff --git a/direct-sqlcipher.cabal b/direct-sqlcipher.cabal
+index 728ba3e..c63745e 100644
+--- a/direct-sqlcipher.cabal
++++ b/direct-sqlcipher.cabal
+@@ -84,6 +84,8 @@ library
+       cc-options: -DSQLITE_TEMP_STORE=2
+                   -DSQLITE_HAS_CODEC
+
++    extra-libraries: ws2_32
++
+     if !os(windows) && !os(android)
+       extra-libraries: pthread

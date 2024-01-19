@@ -13,7 +13,7 @@ import Text.Read
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore terminalChatConfig opts Nothing $
+  simplexChatCore terminalChatConfig opts $
     chatBotRepl welcomeMessage $ \_contact msg ->
       pure $ case readMaybe msg :: Maybe Integer of
         Just n -> msg <> " * " <> msg <> " = " <> show (n * n)

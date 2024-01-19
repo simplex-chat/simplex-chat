@@ -74,6 +74,7 @@ mkChatOpts :: BroadcastBotOpts -> ChatOpts
 mkChatOpts BroadcastBotOpts {coreOptions} =
   ChatOpts
     { coreOptions,
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -82,5 +83,6 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = False,
       maintenance = False
     }

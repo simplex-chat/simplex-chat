@@ -7,7 +7,7 @@ function readlink() {
 }
 
 if [ -z "${1}" ]; then
-    echo "Job repo is unset. Provide it via first argument like: $(readlink "$0")/download_libs.sh https://something.com/job/something/{master,stable}"
+    echo "Job repo is unset. Provide it via first argument like: $(readlink "$0")/download-libs.sh https://something.com/job/something/{master,stable}"
     exit 1
 fi
 
@@ -37,12 +37,12 @@ for ((i = 0 ; i < ${#arches[@]}; i++)); do
 
     mkdir -p "$output_dir" 2> /dev/null
 
-    curl --location -o libsupport.zip $job_repo/$arch-android:lib:support.x86_64-linux/latest/download/1 && \
+    curl --tlsv1.2 --location -o libsupport.zip $job_repo/$arch-android:lib:support.x86_64-linux/latest/download/1 && \
     unzip -o libsupport.zip && \
     mv libsupport.so "$output_dir" && \
     rm libsupport.zip
 
-    curl --location -o libsimplex.zip "$job_repo"/"$arch"-android:lib:simplex-chat.x86_64-linux/latest/download/1 && \
+    curl --tlsv1.2 --location -o libsimplex.zip "$job_repo"/"$arch"-android:lib:simplex-chat.x86_64-linux/latest/download/1 && \
     unzip -o libsimplex.zip && \
     mv libsimplex.so "$output_dir" && \
     rm libsimplex.zip

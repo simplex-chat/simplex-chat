@@ -12,38 +12,40 @@ import SimpleXChat
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
-    var groupInfo: GroupInfo
-    @State var member: GroupMember
+    @State var groupInfo: GroupInfo
+    @ObservedObject var groupMember: GMember
     var navigation: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
-    @State private var connectToMemberDialog: Bool = false
+    @State private var sheet: PlanAndConnectActionSheet?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
     @State private var progressIndicator = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
+        case blockMemberAlert(mem: GroupMember)
+        case unblockMemberAlert(mem: GroupMember)
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
-        case connRequestSentAlert(type: ConnReqType)
+        case planAndConnectAlert(alert: PlanAndConnectAlert)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
-        case other(alert: Alert)
 
         var id: String {
             switch self {
-            case .removeMemberAlert: return "removeMemberAlert"
-            case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
+            case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
+            case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
+            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
+            case let .changeMemberRoleAlert(mem, role): return "changeMemberRoleAlert \(mem.groupMemberId) \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
-            case .connRequestSentAlert: return "connRequestSentAlert"
+            case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
-            case let .other(alert): return "other \(alert)"
             }
         }
     }
@@ -68,6 +70,7 @@ struct GroupMemberInfoView: View {
     private func groupMemberInfoView() -> some View {
         ZStack {
             VStack {
+                let member = groupMember.wrapped
                 List {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
@@ -96,9 +99,9 @@ struct GroupMemberInfoView: View {
 
                     if let contactLink = member.contactLink {
                         Section {
-                            QRCode(uri: contactLink)
+                            SimpleXLinkQRCode(uri: contactLink)
                             Button {
-                                showShareSheet(items: [contactLink])
+                                showShareSheet(items: [simplexChatLink(contactLink)])
                             } label: {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
@@ -161,9 +164,14 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    if member.canBeRemoved(groupInfo: groupInfo) {
-                        Section {
-                            removeMemberButton(member)
+                    Section {
+                        if member.memberSettings.showMessages {
+                            blockMemberButton(member)
+                        } else {
+                            unblockMemberButton(member)
+                        }
+                        if member.canBeRemoved(groupInfo: groupInfo) {
+                                removeMemberButton(member)
                         }
                     }
 
@@ -180,37 +188,44 @@ struct GroupMemberInfoView: View {
                         // this condition prevents re-setting picker
                         if !justOpened { return }
                     }
-                    newRole = member.memberRole
-                    do {
-                        let (_, stats) = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                        let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
-                        member = mem
-                        connectionStats = stats
-                        connectionCode = code
-                    } catch let error {
-                        logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
-                    }
                     justOpened = false
+                    DispatchQueue.main.async {
+                        newRole = member.memberRole
+                        do {
+                            let (_, stats) = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                            let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                            _ = chatModel.upsertGroupMember(groupInfo, mem)
+                            connectionStats = stats
+                            connectionCode = code
+                        } catch let error {
+                            logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
+                        }
+                    }
                 }
-                .onChange(of: newRole) { _ in
+                .onChange(of: newRole) { newRole in
                     if newRole != member.memberRole {
                         alert = .changeMemberRoleAlert(mem: member, role: newRole)
                     }
+                }
+                .onChange(of: member.memberRole) { role in
+                    newRole = role
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .alert(item: $alert) { alertItem in
                 switch(alertItem) {
+                case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
+                case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
                 case let .removeMemberAlert(mem): return removeMemberAlert(mem)
                 case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
-                case let .connRequestSentAlert(type): return connReqSentAlert(type)
+                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .error(title, error): return Alert(title: Text(title), message: Text(error))
-                case let .other(alert): return alert
                 }
             }
+            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
 
             if progressIndicator {
                 ProgressView().scaleEffect(2)
@@ -220,24 +235,15 @@ struct GroupMemberInfoView: View {
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
         Button {
-            connectToMemberDialog = true
+            planAndConnect(
+                contactLink,
+                showAlert: { alert = .planAndConnectAlert(alert: $0) },
+                showActionSheet: { sheet = $0 },
+                dismiss: true,
+                incognito: nil
+            )
         } label: {
             Label("Connect", systemImage: "link")
-        }
-        .confirmationDialog("Connect directly", isPresented: $connectToMemberDialog, titleVisibility: .visible) {
-            Button("Use current profile") { connectViaAddress(incognito: false, contactLink: contactLink) }
-            Button("Use new incognito profile") { connectViaAddress(incognito: true, contactLink: contactLink) }
-        }
-    }
-
-    func connectViaAddress(incognito: Bool, contactLink: String) {
-        Task {
-            let (connReqType, connectAlert) = await apiConnect_(incognito: incognito, connReq: contactLink)
-            if let connReqType = connReqType {
-                alert = .connRequestSentAlert(type: connReqType)
-            } else if let connectAlert = connectAlert {
-                alert = .other(alert: connectAlert)
-            }
         }
     }
 
@@ -274,7 +280,7 @@ struct GroupMemberInfoView: View {
             progressIndicator = true
             Task {
                 do {
-                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, member.groupMemberId)
+                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
                     await MainActor.run {
                         progressIndicator = false
                         chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
@@ -332,20 +338,20 @@ struct GroupMemberInfoView: View {
     }
 
     private func verifyCodeButton(_ code: String) -> some View {
-        NavigationLink {
+        let member = groupMember.wrapped
+        return NavigationLink {
             VerifyCodeView(
                 displayName: member.displayName,
                 connectionCode: code,
                 connectionVerified: member.verified,
                 verify: { code in
+                    var member = groupMember.wrapped
                     if let r = apiVerifyGroupMember(member.groupId, member.groupMemberId, connectionCode: code) {
                         let (verified, existingCode) = r
                         let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
                         member.activeConn?.connectionCode = connCode
-                        if let i = chatModel.groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
-                            chatModel.groupMembers[i].activeConn?.connectionCode = connCode
-                        }
+                        _ = chatModel.upsertGroupMember(groupInfo, member)
                         return r
                     }
                     return nil
@@ -379,12 +385,29 @@ struct GroupMemberInfoView: View {
         }
     }
 
+    private func blockMemberButton(_ mem: GroupMember) -> some View {
+        Button(role: .destructive) {
+            alert = .blockMemberAlert(mem: mem)
+        } label: {
+            Label("Block member", systemImage: "hand.raised")
+                .foregroundColor(.red)
+        }
+    }
+
+    private func unblockMemberButton(_ mem: GroupMember) -> some View {
+        Button {
+            alert = .unblockMemberAlert(mem: mem)
+        } label: {
+            Label("Unblock member", systemImage: "hand.raised.slash")
+        }
+    }
+
     private func removeMemberButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
             alert = .removeMemberAlert(mem: mem)
         } label: {
             Label("Remove member", systemImage: "trash")
-                .foregroundColor(Color.red)
+                .foregroundColor(.red)
         }
     }
 
@@ -420,7 +443,6 @@ struct GroupMemberInfoView: View {
                     do {
                         let updatedMember = try await apiMemberRole(groupInfo.groupId, mem.groupMemberId, newRole)
                         await MainActor.run {
-                            member = updatedMember
                             _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
                         }
                         
@@ -441,10 +463,10 @@ struct GroupMemberInfoView: View {
     private func switchMemberAddress() {
         Task {
             do {
-                let stats = try apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                let stats = try apiSwitchGroupMember(groupInfo.apiId, groupMember.groupMemberId)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, groupMember.wrapped, stats)
                     dismiss()
                 }
             } catch let error {
@@ -460,10 +482,10 @@ struct GroupMemberInfoView: View {
     private func abortSwitchMemberAddress() {
         Task {
             do {
-                let stats = try apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                let stats = try apiAbortSwitchGroupMember(groupInfo.apiId, groupMember.groupMemberId)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, groupMember.wrapped, stats)
                 }
             } catch let error {
                 logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
@@ -478,7 +500,7 @@ struct GroupMemberInfoView: View {
     private func syncMemberConnection(force: Bool) {
         Task {
             do {
-                let (mem, stats) = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force)
+                let (mem, stats) = try apiSyncGroupMemberRatchet(groupInfo.apiId, groupMember.groupMemberId, force)
                 connectionStats = stats
                 await MainActor.run {
                     chatModel.updateGroupMemberConnectionStats(groupInfo, mem, stats)
@@ -495,11 +517,54 @@ struct GroupMemberInfoView: View {
     }
 }
 
+func blockMemberAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Block member?"),
+        message: Text("All new messages from \(mem.chatViewName) will be hidden!"),
+        primaryButton: .destructive(Text("Block")) {
+            toggleShowMemberMessages(gInfo, mem, false)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func unblockMemberAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Unblock member?"),
+        message: Text("Messages from \(mem.chatViewName) will be shown!"),
+        primaryButton: .default(Text("Unblock")) {
+            toggleShowMemberMessages(gInfo, mem, true)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func toggleShowMemberMessages(_ gInfo: GroupInfo, _ member: GroupMember, _ showMessages: Bool) {
+    var memberSettings = member.memberSettings
+    memberSettings.showMessages = showMessages
+    updateMemberSettings(gInfo, member, memberSettings)
+}
+
+func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSettings: GroupMemberSettings) {
+    Task {
+        do {
+            try await apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
+            await MainActor.run {
+                var mem = member
+                mem.memberSettings = memberSettings
+                _ = ChatModel.shared.upsertGroupMember(gInfo, mem)
+            }
+        } catch let error {
+            logger.error("apiSetMemberSettings error \(responseError(error))")
+        }
+    }
+}
+
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupMemberInfoView(
             groupInfo: GroupInfo.sampleData,
-            member: GroupMember.sampleData
+            groupMember: GMember.sampleData
         )
     }
 }

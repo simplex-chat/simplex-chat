@@ -137,13 +137,15 @@ textColor = describe "text color (red)" do
 uri :: Text -> Markdown
 uri = Markdown $ Just Uri
 
-simplexLink :: SimplexLinkType -> Text -> Bool -> NonEmpty Text -> Text -> Markdown
-simplexLink linkType simplexUri trustedUri smpHosts = Markdown $ Just SimplexLink {linkType, simplexUri, trustedUri, smpHosts}
+simplexLink :: SimplexLinkType -> Text -> NonEmpty Text -> Text -> Markdown
+simplexLink linkType simplexUri smpHosts = Markdown $ Just SimplexLink {linkType, simplexUri, smpHosts}
 
 textWithUri :: Spec
 textWithUri = describe "text with Uri" do
   it "correct markdown" do
     parseMarkdown "https://simplex.chat" `shouldBe` uri "https://simplex.chat"
+    parseMarkdown "https://simplex.chat." `shouldBe` uri "https://simplex.chat" <> "."
+    parseMarkdown "https://simplex.chat, hello" `shouldBe` uri "https://simplex.chat" <> ", hello"
     parseMarkdown "http://simplex.chat" `shouldBe` uri "http://simplex.chat"
     parseMarkdown "this is https://simplex.chat" `shouldBe` "this is " <> uri "https://simplex.chat"
     parseMarkdown "https://simplex.chat site" `shouldBe` uri "https://simplex.chat" <> " site"
@@ -152,13 +154,13 @@ textWithUri = describe "text with Uri" do
     parseMarkdown "this is _https://simplex.chat" `shouldBe` "this is _https://simplex.chat"
   it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
-    parseMarkdown ("https://simplex.chat" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) True ["smp.simplex.im"] ("https://simplex.chat" <> inv)
-    parseMarkdown ("simplex:" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) True ["smp.simplex.im"] ("simplex:" <> inv)
-    parseMarkdown ("https://example.com" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) False ["smp.simplex.im"] ("https://example.com" <> inv)
+    parseMarkdown ("https://simplex.chat" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://simplex.chat" <> inv)
+    parseMarkdown ("simplex:" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("simplex:" <> inv)
+    parseMarkdown ("https://example.com" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://example.com" <> inv)
     let ct = "/contact#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D"
-    parseMarkdown ("https://simplex.chat" <> ct) `shouldBe` simplexLink XLContact ("simplex:" <> ct) True ["smp.simplex.im"] ("https://simplex.chat" <> ct)
+    parseMarkdown ("https://simplex.chat" <> ct) `shouldBe` simplexLink XLContact ("simplex:" <> ct) ["smp.simplex.im"] ("https://simplex.chat" <> ct)
     let gr = "/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D"
-    parseMarkdown ("https://simplex.chat" <> gr) `shouldBe` simplexLink XLGroup ("simplex:" <> gr) True ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
+    parseMarkdown ("https://simplex.chat" <> gr) `shouldBe` simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
 
 email :: Text -> Markdown
 email = Markdown $ Just Email

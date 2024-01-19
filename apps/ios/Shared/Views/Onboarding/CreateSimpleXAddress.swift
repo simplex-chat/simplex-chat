@@ -31,7 +31,7 @@ struct CreateSimpleXAddress: View {
                         Spacer()
 
                         if let userAddress = m.userAddress {
-                            QRCode(uri: userAddress.connReqContact)
+                            SimpleXLinkQRCode(uri: userAddress.connReqContact)
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
@@ -81,11 +81,6 @@ struct CreateSimpleXAddress: View {
                         DispatchQueue.main.async {
                             m.userAddress = UserContactLink(connReqContact: connReqContact)
                         }
-                        if let u = try await apiSetProfileAddress(on: true) {
-                            DispatchQueue.main.async {
-                                m.updateUser(u)
-                            }
-                        }
                         await MainActor.run { progressIndicator = false }
                     } catch let error {
                         logger.error("CreateSimpleXAddress create address: \(responseError(error))")
@@ -100,7 +95,7 @@ struct CreateSimpleXAddress: View {
             } label: {
                 Text("Create SimpleX address").font(.title)
             }
-            Text("Your contacts in SimpleX will see it.\nYou can change it in Settings.")
+            Text("You can make it visible to your SimpleX contacts via Settings.")
                 .multilineTextAlignment(.center)
                 .font(.footnote)
                 .padding(.horizontal, 32)
@@ -126,7 +121,7 @@ struct CreateSimpleXAddress: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [userAddress.connReqContact])
+            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
@@ -194,7 +189,7 @@ struct SendAddressMailView: View {
         let messageBody = String(format: NSLocalizedString("""
             <p>Hi!</p>
             <p><a href="%@">Connect to me via SimpleX Chat</a></p>
-            """, comment: "email text"), userAddress.connReqContact)
+            """, comment: "email text"), simplexChatLink(userAddress.connReqContact))
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,

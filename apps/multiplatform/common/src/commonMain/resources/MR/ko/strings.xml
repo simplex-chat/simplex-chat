@@ -520,7 +520,6 @@
     <string name="group_members_can_delete">그룹 멤버는 보낸 메시지를 영구 삭제할 수 있어요.</string>
     <string name="group_members_can_send_voice">그룹 멤버는 음성 메시지를 보낼 수 있어요.</string>
     <string name="hidden_profile_password">숨긴 프로필 비밀번호</string>
-    <string name="full_name_optional__prompt">이름 (선택 사항)</string>
     <string name="how_it_works">작동 방식</string>
     <string name="hide_dev_options">숨기기 :</string>
     <string name="icon_descr_sent_msg_status_sent">보냄</string>

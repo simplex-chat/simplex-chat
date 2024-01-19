@@ -15,11 +15,10 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.usersettings.ProfilePreview
-import chat.simplex.common.platform.ntfManager
-import chat.simplex.common.platform.SoundPlayer
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
@@ -27,7 +26,11 @@ import kotlinx.datetime.Clock
 fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager
   val scope = rememberCoroutineScope()
-  LaunchedEffect(true) { SoundPlayer.start(scope, sound = !chatModel.showCallView.value) }
+  LaunchedEffect(Unit) {
+    if (chatModel.activeCallInvitation.value?.sentNotification == false || appPlatform.isDesktop) {
+      SoundPlayer.start(scope, sound = !chatModel.showCallView.value)
+    }
+  }
   DisposableEffect(true) { onDispose { SoundPlayer.stop() } }
   IncomingCallAlertLayout(
     invitation,
@@ -106,6 +109,7 @@ fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
     IncomingCallAlertLayout(
       invitation = RcvCallInvitation(
+        remoteHostId = null,
         user = User.sampleData,
         contact = Contact.sampleData,
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),

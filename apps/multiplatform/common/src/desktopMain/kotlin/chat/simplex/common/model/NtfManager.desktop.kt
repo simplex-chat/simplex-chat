@@ -16,8 +16,8 @@ import javax.imageio.ImageIO
 object NtfManager {
   private val prevNtfs = arrayListOf<Pair<ChatId, Slice>>()
 
-  fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    if (simplexWindowState.windowFocused.value) return
+  fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
+    if (simplexWindowState.windowFocused.value) return false
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
@@ -45,6 +45,11 @@ object NtfManager {
     displayNotificationViaLib(contactId, title, text, prepareIconPath(largeIcon), actions) {
       ntfManager.openChatAction(invitation.user.userId, contactId)
     }
+    return true
+  }
+
+  fun showMessage(title: String, text: String) {
+    displayNotificationViaLib("MESSAGE", title, text, null, emptyList()) {}
   }
 
   fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
@@ -113,7 +118,7 @@ object NtfManager {
 
   private fun prepareIconPath(icon: ImageBitmap?): String? = if (icon != null) {
     tmpDir.mkdir()
-    val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png"))
+    val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png", tmpDir))
     try {
       ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
       newFile.absolutePath

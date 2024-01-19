@@ -25,13 +25,14 @@ public enum ChatCommand {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(subscribe: Bool, expire: Bool, xftp: Bool)
+    case startChat(mainApp: Bool)
     case apiStopChat
-    case apiActivateChat
+    case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetXFTPConfig(config: XFTPFileConfig?)
+    case apiSetEncryptLocalFiles(enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -49,7 +50,7 @@ public enum ChatCommand {
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
-    case apiNewGroup(userId: Int64, groupProfile: GroupProfile)
+    case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
@@ -72,6 +73,7 @@ public enum ChatCommand {
     case apiGetNetworkConfig
     case reconnectAllServers
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
+    case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case apiSwitchContact(contactId: Int64)
@@ -86,8 +88,10 @@ public enum ChatCommand {
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
     case apiAddContact(userId: Int64, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
+    case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
-    case apiDeleteChat(type: ChatType, id: Int64)
+    case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
+    case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -110,11 +114,22 @@ public enum ChatCommand {
     case apiEndCall(contact: Contact)
     case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
+    case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool, inline: Bool?)
-    case setFileToReceive(fileId: Int64, encrypted: Bool)
+    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
+    case setFileToReceive(fileId: Int64, encrypted: Bool?)
     case cancelFile(fileId: Int64)
+    // remote desktop commands
+    case setLocalDeviceName(displayName: String)
+    case connectRemoteCtrl(xrcpInvitation: String)
+    case findKnownRemoteCtrl
+    case confirmRemoteCtrl(remoteCtrlId: Int64)
+    case verifyRemoteCtrlSession(sessionCode: String)
+    case listRemoteCtrls
+    case stopRemoteCtrl
+    case deleteRemoteCtrl(remoteCtrlId: Int64)
+    // misc
     case showVersion
     case string(String)
 
@@ -139,9 +154,9 @@ public enum ChatCommand {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(subscribe, expire, xftp): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire)) xftp=\(onOff(xftp))"
+            case let .startChat(mainApp): return "/_start main=\(onOff(mainApp))"
             case .apiStopChat: return "/_stop"
-            case .apiActivateChat: return "/_app activate"
+            case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
@@ -150,6 +165,7 @@ public enum ChatCommand {
             } else {
                 return "/_xftp off"
             }
+            case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -171,7 +187,7 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
-            case let .apiNewGroup(userId, groupProfile): return "/_group \(userId) \(encodeJSON(groupProfile))"
+            case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiMemberRole(groupId, memberId, memberRole): return "/_member role #\(groupId) \(memberId) \(memberRole.rawValue)"
@@ -194,6 +210,7 @@ public enum ChatCommand {
             case .apiGetNetworkConfig: return "/network"
             case .reconnectAllServers: return "/reconnect"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
+            case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case let .apiSwitchContact(contactId): return "/_switch @\(contactId)"
@@ -218,8 +235,14 @@ public enum ChatCommand {
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
             case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
+            case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
-            case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
+            case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
+            case let .apiDeleteChat(type, id, notify): if let notify = notify {
+                return "/_delete \(ref(type, id)) notify=\(onOff(notify))"
+            } else {
+                return "/_delete \(ref(type, id))"
+            }
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -241,16 +264,20 @@ public enum ChatCommand {
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
+            case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypted, inline):
-                let s = "/freceive \(fileId) encrypt=\(onOff(encrypted))"
-                if let inline = inline {
-                    return s + " inline=\(onOff(inline))"
-                }
-                return s
-            case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(onOff(encrypted))"
+            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
+            case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
+            case let .connectRemoteCtrl(xrcpInv): return "/connect remote ctrl \(xrcpInv)"
+            case .findKnownRemoteCtrl: return "/find remote ctrl"
+            case let .confirmRemoteCtrl(rcId): return "/confirm remote ctrl \(rcId)"
+            case let .verifyRemoteCtrlSession(sessCode): return "/verify remote ctrl \(sessCode)"
+            case .listRemoteCtrls: return "/list remote ctrls"
+            case .stopRemoteCtrl: return "/stop remote ctrl"
+            case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
             case .showVersion: return "/version"
             case let .string(str): return str
             }
@@ -279,6 +306,7 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetXFTPConfig: return "apiSetXFTPConfig"
+            case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -289,6 +317,7 @@ public enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
             case .apiGetNtfToken: return "apiGetNtfToken"
@@ -319,6 +348,7 @@ public enum ChatCommand {
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
             case .reconnectAllServers: return "reconnectAllServers"
             case .apiSetChatSettings: return "apiSetChatSettings"
+            case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .apiSwitchContact: return "apiSwitchContact"
@@ -333,6 +363,7 @@ public enum ChatCommand {
             case .apiVerifyGroupMember: return "apiVerifyGroupMember"
             case .apiAddContact: return "apiAddContact"
             case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
+            case .apiConnectPlan: return "apiConnectPlan"
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
@@ -356,11 +387,20 @@ public enum ChatCommand {
             case .apiEndCall: return "apiEndCall"
             case .apiGetCallInvitations: return "apiGetCallInvitations"
             case .apiCallStatus: return "apiCallStatus"
+            case .apiGetNetworkStatuses: return "apiGetNetworkStatuses"
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
             case .setFileToReceive: return "setFileToReceive"
             case .cancelFile: return "cancelFile"
+            case .setLocalDeviceName: return "setLocalDeviceName"
+            case .connectRemoteCtrl: return "connectRemoteCtrl"
+            case .findKnownRemoteCtrl: return "findKnownRemoteCtrl"
+            case .confirmRemoteCtrl: return "confirmRemoteCtrl"
+            case .verifyRemoteCtrlSession: return "verifyRemoteCtrlSession"
+            case .listRemoteCtrls: return "listRemoteCtrls"
+            case .stopRemoteCtrl: return "stopRemoteCtrl"
+            case .deleteRemoteCtrl: return "deleteRemoteCtrl"
             case .showVersion: return "showVersion"
             case .string: return "console command"
             }
@@ -414,6 +454,13 @@ public enum ChatCommand {
         b ? "on" : "off"
     }
 
+    private func onOffParam(_ param: String, _ b: Bool?) -> String {
+        if let b = b {
+            return " \(param)=\(onOff(b))"
+        }
+        return ""
+    }
+
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
@@ -438,7 +485,7 @@ public enum ChatResponse: Decodable, Error {
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
-    case contactInfo(user: UserRef, contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
+    case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
     case groupMemberInfo(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
     case contactSwitchStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchStarted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
@@ -457,11 +504,14 @@ public enum ChatResponse: Decodable, Error {
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
-    case sentConfirmation(user: UserRef)
-    case sentInvitation(user: UserRef)
+    case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
+    case sentConfirmation(user: UserRef, connection: PendingContactConnection)
+    case sentInvitation(user: UserRef, connection: PendingContactConnection)
+    case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
+    case contactDeletedByContact(user: UserRef, contact: Contact)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile, updateSummary: UserProfileUpdateSummary)
@@ -479,11 +529,15 @@ public enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
     case contactUpdated(user: UserRef, toContact: Contact)
+    case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
+    // TODO remove events below
     case contactsSubscribed(server: String, contactRefs: [ContactRef])
     case contactsDisconnected(server: String, contactRefs: [ContactRef])
-    case contactSubError(user: UserRef, contact: Contact, chatError: ChatError)
     case contactSubSummary(user: UserRef, contactSubscriptions: [ContactSubStatus])
-    case groupSubscribed(user: UserRef, groupInfo: GroupInfo)
+    // TODO remove events above
+    case networkStatus(networkStatus: NetworkStatus, connections: [String])
+    case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
+    case groupSubscribed(user: UserRef, groupInfo: GroupRef)
     case memberSubErrors(user: UserRef, memberSubErrors: [MemberSubError])
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
@@ -498,6 +552,7 @@ public enum ChatResponse: Decodable, Error {
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
+    case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
     case userDeletedMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: Group)
@@ -549,9 +604,17 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
-    case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
-    case newContactConnection(user: UserRef, connection: PendingContactConnection)
+    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
+    // remote desktop responses/events
+    case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
+    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
+    case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
+    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
+    // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
@@ -594,11 +657,14 @@ public enum ChatResponse: Decodable, Error {
             case .connectionVerified: return "connectionVerified"
             case .invitation: return "invitation"
             case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
+            case .connectionPlan: return "connectionPlan"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
+            case .sentInvitationToContact: return "sentInvitationToContact"
             case .contactAlreadyExists: return "contactAlreadyExists"
             case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
+            case .contactDeletedByContact: return "contactDeletedByContact"
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
@@ -616,10 +682,12 @@ public enum ChatResponse: Decodable, Error {
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
             case .contactUpdated: return "contactUpdated"
+            case .groupMemberUpdated: return "groupMemberUpdated"
             case .contactsSubscribed: return "contactsSubscribed"
             case .contactsDisconnected: return "contactsDisconnected"
-            case .contactSubError: return "contactSubError"
             case .contactSubSummary: return "contactSubSummary"
+            case .networkStatus: return "networkStatus"
+            case .networkStatuses: return "networkStatuses"
             case .groupSubscribed: return "groupSubscribed"
             case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
@@ -634,6 +702,7 @@ public enum ChatResponse: Decodable, Error {
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
+            case .groupLinkConnecting: return "groupLinkConnecting"
             case .userDeletedMember: return "userDeletedMember"
             case .leftMemberUser: return "leftMemberUser"
             case .groupMembers: return "groupMembers"
@@ -683,8 +752,14 @@ public enum ChatResponse: Decodable, Error {
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .ntfToken: return "ntfToken"
             case .ntfMessages: return "ntfMessages"
-            case .newContactConnection: return "newContactConnection"
+            case .ntfMessage: return "ntfMessage"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
+            case .remoteCtrlList: return "remoteCtrlList"
+            case .remoteCtrlFound: return "remoteCtrlFound"
+            case .remoteCtrlConnecting: return "remoteCtrlConnecting"
+            case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
+            case .remoteCtrlConnected: return "remoteCtrlConnected"
+            case .remoteCtrlStopped: return "remoteCtrlStopped"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
@@ -711,7 +786,7 @@ public enum ChatResponse: Decodable, Error {
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
-            case let .contactInfo(u, contact, connectionStats, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))")
+            case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
             case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
             case let .contactSwitchStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
@@ -728,13 +803,16 @@ public enum ChatResponse: Decodable, Error {
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
-            case let .invitation(u, connReqInvitation, _): return withUser(u, connReqInvitation)
+            case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
-            case .sentConfirmation: return noDetails
-            case .sentInvitation: return noDetails
+            case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
+            case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
+            case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
+            case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
             case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
+            case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile, _): return withUser(u, String(describing: toProfile))
@@ -752,10 +830,12 @@ public enum ChatResponse: Decodable, Error {
             case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails
             case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
+            case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
             case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactSubError(u, contact, chatError): return withUser(u, "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))")
             case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
+            case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
+            case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
             case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
             case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
@@ -770,6 +850,7 @@ public enum ChatResponse: Decodable, Error {
             case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
             case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
+            case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
             case let .userDeletedMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
             case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupMembers(u, group): return withUser(u, String(describing: group))
@@ -819,8 +900,14 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
-            case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
+            case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
+            case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
+            case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
+            case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
+            case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
+            case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
+            case .remoteCtrlStopped: return noDetails
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
@@ -846,6 +933,36 @@ public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
     case let .chatError(_, .error(error)): return error
     default: return nil
     }
+}
+
+public enum ConnectionPlan: Decodable {
+    case invitationLink(invitationLinkPlan: InvitationLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan)
+    case groupLink(groupLinkPlan: GroupLinkPlan)
+}
+
+public enum InvitationLinkPlan: Decodable {
+    case ok
+    case ownLink
+    case connecting(contact_: Contact?)
+    case known(contact: Contact)
+}
+
+public enum ContactAddressPlan: Decodable {
+    case ok
+    case ownLink
+    case connectingConfirmReconnect
+    case connectingProhibit(contact: Contact)
+    case known(contact: Contact)
+    case contactViaAddress(contact: Contact)
+}
+
+public enum GroupLinkPlan: Decodable {
+    case ok
+    case ownLink(groupInfo: GroupInfo)
+    case connectingConfirmReconnect
+    case connectingProhibit(groupInfo_: GroupInfo?)
+    case known(groupInfo: GroupInfo)
 }
 
 struct NewUser: Encodable {
@@ -1090,9 +1207,9 @@ public struct NetCfg: Codable, Equatable {
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 15_000_000,
-        tcpTimeout: 10_000_000,
-        tcpTimeoutPerKb: 30_000,
+        tcpConnectTimeout: 20_000_000,
+        tcpTimeout: 15_000_000,
+        tcpTimeoutPerKb: 45_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1178,18 +1295,67 @@ public struct KeepAliveOpts: Codable, Equatable {
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }
 
+public enum NetworkStatus: Decodable, Equatable {
+    case unknown
+    case connected
+    case disconnected
+    case error(connectionError: String)
+
+    public var statusString: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "connected"
+            case .error: return "error"
+            default: return "connecting"
+            }
+        }
+    }
+
+    public var statusExplanation: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "You are connected to the server used to receive messages from this contact."
+            case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+            default: return "Trying to connect to the server used to receive messages from this contact."
+            }
+        }
+    }
+
+    public var imageName: String {
+        get {
+            switch self {
+            case .unknown: return "circle.dotted"
+            case .connected: return "circle.fill"
+            case .disconnected: return "ellipsis.circle.fill"
+            case .error: return "exclamationmark.circle.fill"
+            }
+        }
+    }
+}
+
+public struct ConnNetworkStatus: Decodable {
+    public var agentConnId: String
+    public var networkStatus: NetworkStatus
+}
+
 public struct ChatSettings: Codable {
-    public var enableNtfs: Bool
+    public var enableNtfs: MsgFilter
     public var sendRcpts: Bool?
     public var favorite: Bool
 
-    public init(enableNtfs: Bool, sendRcpts: Bool?, favorite: Bool) {
+    public init(enableNtfs: MsgFilter, sendRcpts: Bool?, favorite: Bool) {
         self.enableNtfs = enableNtfs
         self.sendRcpts = sendRcpts
         self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, sendRcpts: nil, favorite: false)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: .all, sendRcpts: nil, favorite: false)
+}
+
+public enum MsgFilter: String, Codable {
+    case none
+    case all
+    case mentions
 }
 
 public struct UserMsgReceiptSettings: Codable {
@@ -1332,6 +1498,8 @@ public enum PushProvider: String, Decodable {
     }
 }
 
+// This notification mode is for app core, UI uses AppNotificationsMode.off to mean completely disable,
+// and .local for periodic background checks
 public enum NotificationsMode: String, Decodable, SelectableItem {
     case off = "OFF"
     case periodic = "PERIODIC"
@@ -1339,9 +1507,9 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
 
     public var label: LocalizedStringKey {
         switch self {
-        case .off: return "Off (Local)"
-        case .periodic: return "Periodically"
-        case .instant: return "Instantly"
+        case .off: "Local"
+        case .periodic: "Periodically"
+        case .instant: "Instantly"
         }
     }
 
@@ -1366,6 +1534,41 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public var id: String { self.rawValue }
 
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
+}
+
+public struct RemoteCtrlInfo: Decodable {
+    public var remoteCtrlId: Int64
+    public var ctrlDeviceName: String
+    public var sessionState: RemoteCtrlSessionState?
+
+    public var deviceViewName: String {
+        ctrlDeviceName == "" ? "\(remoteCtrlId)" : ctrlDeviceName
+    }
+}
+
+public enum RemoteCtrlSessionState: Decodable {
+    case starting
+    case searching
+    case connecting
+    case pendingConfirmation(sessionCode: String)
+    case connected(sessionCode: String)
+}
+
+public enum RemoteCtrlStopReason: Decodable {
+    case discoveryFailed(chatError: ChatError)
+    case connectionFailed(chatError: ChatError)
+    case setupFailed(chatError: ChatError)
+    case disconnected
+}
+
+public struct CtrlAppInfo: Decodable {
+    public var appVersionRange: AppVersionRange
+    public var deviceName: String
+}
+
+public struct AppVersionRange: Decodable {
+    public var minVersion: String
+    public var maxVersion: String
 }
 
 public struct CoreVersionInfo: Decodable {
@@ -1395,6 +1598,7 @@ public enum ChatError: Decodable {
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
+    case errorRemoteCtrl(remoteCtrlError: RemoteCtrlError)
     case invalidJSON(json: String)
 }
 
@@ -1417,9 +1621,11 @@ public enum ChatErrorType: Decodable {
     case chatNotStarted
     case chatNotStopped
     case chatStoreChanged
+    case connectionPlan(connectionPlan: ConnectionPlan)
     case invalidConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case contactNotReady(contact: Contact)
+    case contactNotActive(contact: Contact)
     case contactDisabled(contact: Contact)
     case connectionDisabled(connection: Connection)
     case groupUserRole(groupInfo: GroupInfo, requiredRole: GroupMemberRole)
@@ -1552,6 +1758,7 @@ public enum AgentErrorType: Decodable {
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
@@ -1609,6 +1816,22 @@ public enum XFTPErrorType: Decodable {
     case INTERNAL
 }
 
+public enum RCErrorType: Decodable {
+    case `internal`(internalErr: String)
+    case identity
+    case noLocalAddress
+    case tlsStartFailed
+    case exception(exception: String)
+    case ctrlAuth
+    case ctrlNotFound
+    case ctrlError(ctrlErr: String)
+    case version
+    case encrypt
+    case decrypt
+    case blockSize
+    case syntax(syntaxErr: String)
+}
+
 public enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
@@ -1643,4 +1866,15 @@ public enum SMPAgentError: Decodable {
 public enum ArchiveError: Decodable {
     case `import`(chatError: ChatError)
     case importFile(file: String, chatError: ChatError)
+}
+
+public enum RemoteCtrlError: Decodable {
+    case inactive
+    case badState
+    case busy
+    case timeout
+    case disconnected(remoteCtrlId: Int64, reason: String)
+    case badInvitation
+    case badVersion(appVersion: String)
+//    case protocolError(protocolError: RemoteProtocolError)
 }

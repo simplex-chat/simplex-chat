@@ -11,6 +11,7 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_)
+import Directory.Events (viewName)
 import Directory.Options
 import Directory.Service
 import Directory.Store
@@ -28,6 +29,8 @@ directoryServiceTests = do
   it "should register group" testDirectoryService
   it "should suspend and resume group" testSuspendResume
   it "should join found group via link" testJoinGroup
+  it "should support group names with spaces" testGroupNameWithSpaces
+  it "should return more groups in search, all and recent groups" testSearchGroups
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -65,6 +68,7 @@ mkDirectoryOpts tmp superUsers =
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
+      searchResults = 3,
       testing = True
     }
 
@@ -156,7 +160,7 @@ testDirectoryService tmp =
     search u s welcome = do
       u #> ("@SimpleX-Directory " <> s)
       u <# ("SimpleX-Directory> > " <> s)
-      u <## "      Found 1 group(s)"
+      u <## "      Found 1 group(s)."
       u <# "SimpleX-Directory> PSA (Privacy, Security & Anonymity)"
       u <## "Welcome message:"
       u <## welcome
@@ -195,16 +199,16 @@ testSuspendResume tmp =
 
 testJoinGroup :: HasCallStack => FilePath -> IO ()
 testJoinGroup tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \cath ->
-        withNewTestChat tmp "dan" danProfile $ \dan -> do
+  withDirectoryServiceCfg tmp testCfgGroupLinkViaContact $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgGroupLinkViaContact "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfgGroupLinkViaContact "cath" cathProfile $ \cath ->
+        withNewTestChatCfg tmp testCfgGroupLinkViaContact "dan" danProfile $ \dan -> do
           bob `connectVia` dsLink
           registerGroup superUser bob "privacy" "Privacy"
           cath `connectVia` dsLink
           cath #> "@SimpleX-Directory privacy"
           cath <# "SimpleX-Directory> > privacy"
-          cath <## "      Found 1 group(s)"
+          cath <## "      Found 1 group(s)."
           cath <# "SimpleX-Directory> privacy (Privacy)"
           cath <## "Welcome message:"
           welcomeMsg <- getTermLine cath
@@ -242,6 +246,110 @@ testJoinGroup tmp =
                 cath <## "#privacy: bob added dan (Daniel) to the group (connecting...)"
                 cath <## "#privacy: new member dan is connected"
             ]
+
+testGroupNameWithSpaces :: HasCallStack => FilePath -> IO ()
+testGroupNameWithSpaces tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroup superUser bob "Privacy & Security" ""
+      groupFound bob "Privacy & Security"
+      superUser #> "@SimpleX-Directory /suspend 1:'Privacy & Security'"
+      superUser <# "SimpleX-Directory> > /suspend 1:'Privacy & Security'"
+      superUser <## "      Group suspended!"
+      bob <# "SimpleX-Directory> The group ID 1 (Privacy & Security) is suspended and hidden from directory. Please contact the administrators."
+      groupNotFound bob "privacy"
+      superUser #> "@SimpleX-Directory /resume 1:'Privacy & Security'"
+      superUser <# "SimpleX-Directory> > /resume 1:'Privacy & Security'"
+      superUser <## "      Group listing resumed!"
+      bob <# "SimpleX-Directory> The group ID 1 (Privacy & Security) is listed in the directory again!"
+      groupFound bob "Privacy & Security"
+
+testSearchGroups :: HasCallStack => FilePath -> IO ()
+testSearchGroups tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        forM_ [1..8 :: Int] $ \i -> registerGroupId superUser bob (groups !! (i - 1)) "" i i
+        connectUsers bob cath
+        fullAddMember "MyGroup" "" bob cath GRMember
+        joinGroup "MyGroup" cath bob
+        cath <## "#MyGroup: member SimpleX-Directory_1 is connected"
+        cath <## "contact and member are merged: SimpleX-Directory, #MyGroup SimpleX-Directory_1"
+        cath <## "use @SimpleX-Directory <message> to send messages"
+        cath #> "@SimpleX-Directory MyGroup"
+        cath <# "SimpleX-Directory> > MyGroup"
+        cath <## "      Found 7 group(s), sending top 3."
+        receivedGroup cath 0 3
+        receivedGroup cath 1 2
+        receivedGroup cath 2 2
+        cath <# "SimpleX-Directory> Send /next or just . for 4 more result(s)."
+        cath #> "@SimpleX-Directory /next"
+        cath <# "SimpleX-Directory> > /next"
+        cath <## "      Sending 3 more group(s)."
+        receivedGroup cath 3 2
+        receivedGroup cath 4 2
+        receivedGroup cath 5 2
+        cath <# "SimpleX-Directory> Send /next or just . for 1 more result(s)."
+        -- search of another user does not affect the search of the first user
+        groupFound bob "Another"
+        cath #> "@SimpleX-Directory ."
+        cath <# "SimpleX-Directory> > ."
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 6 2
+        cath #> "@SimpleX-Directory /all"
+        cath <# "SimpleX-Directory> > /all"
+        cath <## "      8 group(s) listed, sending top 3."
+        receivedGroup cath 0 3
+        receivedGroup cath 1 2
+        receivedGroup cath 2 2
+        cath <# "SimpleX-Directory> Send /next or just . for 5 more result(s)."
+        cath #> "@SimpleX-Directory /new"
+        cath <# "SimpleX-Directory> > /new"
+        cath <## "      8 group(s) listed, sending the most recent 3."
+        receivedGroup cath 7 2
+        receivedGroup cath 6 2
+        receivedGroup cath 5 2
+        cath <# "SimpleX-Directory> Send /next or just . for 5 more result(s)."
+        cath #> "@SimpleX-Directory term3"
+        cath <# "SimpleX-Directory> > term3"
+        cath <## "      Found 3 group(s)."
+        receivedGroup cath 4 2
+        receivedGroup cath 5 2
+        receivedGroup cath 6 2
+        cath #> "@SimpleX-Directory term1"
+        cath <# "SimpleX-Directory> > term1"
+        cath <## "      Found 6 group(s), sending top 3."
+        receivedGroup cath 1 2
+        receivedGroup cath 2 2
+        receivedGroup cath 3 2
+        cath <# "SimpleX-Directory> Send /next or just . for 3 more result(s)."
+        cath #> "@SimpleX-Directory ."
+        cath <# "SimpleX-Directory> > ."
+        cath <## "      Sending 3 more group(s)."
+        receivedGroup cath 4 2
+        receivedGroup cath 5 2
+        receivedGroup cath 6 2
+  where
+    groups :: [String]
+    groups =
+      [ "MyGroup",
+        "MyGroup term1 1",
+        "MyGroup term1 2",
+        "MyGroup term1 term2",
+        "MyGroup term1 term2 term3",
+        "MyGroup term1 term2 term3 term4",
+        "MyGroup term1 term2 term3 term4 term5",
+        "Another"
+      ]
+    receivedGroup :: TestCC -> Int -> Int -> IO ()
+    receivedGroup u ix count = do
+      u <#. ("SimpleX-Directory> " <> groups !! ix)
+      u <## "Welcome message:"
+      u <##. "Link to join the group "
+      u <## (show count <> " members")
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
@@ -827,7 +935,7 @@ runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore cfg (mkChatOpts opts) Nothing $ directoryService st opts
+    bot st = simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
@@ -840,16 +948,16 @@ registerGroupId su u n fn gId ugId = do
 
 submitGroup :: TestCC -> String -> String -> IO ()
 submitGroup u n fn = do
-  u ##> ("/g " <> n <> " " <> fn)
-  u <## ("group #" <> n <> " (" <> fn <> ") is created")
-  u <## ("to add members use /a " <> n <> " <name> or /create link #" <> n)
-  u ##> ("/a " <> n <> " SimpleX-Directory admin")
-  u <## ("invitation to join the group #" <> n <> " sent to SimpleX-Directory")
+  u ##> ("/g " <> viewName n <> if null fn then "" else " " <> fn)
+  u <## ("group #" <> viewName n <> (if null fn then "" else " (" <> fn <> ")") <> " is created")
+  u <## ("to add members use /a " <> viewName n <> " <name> or /create link #" <> viewName n)
+  u ##> ("/a " <> viewName n <> " SimpleX-Directory admin")
+  u <## ("invitation to join the group #" <> viewName n <> " sent to SimpleX-Directory")
 
 groupAccepted :: TestCC -> String -> IO String
 groupAccepted u n = do
   u <# ("SimpleX-Directory> Joining the group " <> n <> "…")
-  u <## ("#" <> n <> ": SimpleX-Directory joined the group")
+  u <## ("#" <> viewName n <> ": SimpleX-Directory joined the group")
   u <# ("SimpleX-Directory> Joined the group " <> n <> ", creating the link…")
   u <# "SimpleX-Directory> Created the public link to join the group via this directory service that is always online."
   u <## ""
@@ -869,7 +977,7 @@ completeRegistrationId su u n fn welcomeWithLink gId ugId = do
 
 updateProfileWithLink :: TestCC -> String -> String -> Int -> IO ()
 updateProfileWithLink u n welcomeWithLink ugId = do
-  u ##> ("/set welcome " <> n <> " " <> welcomeWithLink)
+  u ##> ("/set welcome " <> viewName n <> " " <> welcomeWithLink)
   u <## "description changed to:"
   u <## welcomeWithLink
   u <# ("SimpleX-Directory> Thank you! The group link for ID " <> show ugId <> " (" <> n <> ") is added to the welcome message.")
@@ -879,13 +987,13 @@ notifySuperUser :: TestCC -> TestCC -> String -> String -> String -> Int -> IO (
 notifySuperUser su u n fn welcomeWithLink gId = do
   uName <- userName u
   su <# ("SimpleX-Directory> " <> uName <> " submitted the group ID " <> show gId <> ":")
-  su <## (n <> " (" <> fn <> ")")
+  su <## (n <> if null fn then "" else " (" <> fn <> ")")
   su <## "Welcome message:"
   su <## welcomeWithLink
   su .<## "members"
   su <## ""
   su <## "To approve send:"
-  let approve = "/approve " <> show gId <> ":" <> n <> " 1"
+  let approve = "/approve " <> show gId <> ":" <> viewName n <> " 1"
   su <# ("SimpleX-Directory> " <> approve)
 
 approveRegistration :: TestCC -> TestCC -> String -> Int -> IO ()
@@ -894,7 +1002,7 @@ approveRegistration su u n gId =
 
 approveRegistrationId :: TestCC -> TestCC -> String -> Int -> Int -> IO ()
 approveRegistrationId su u n gId ugId = do
-  let approve = "/approve " <> show gId <> ":" <> n <> " 1"
+  let approve = "/approve " <> show gId <> ":" <> viewName n <> " 1"
   su #> ("@SimpleX-Directory " <> approve)
   su <# ("SimpleX-Directory> > " <> approve)
   su <## "      Group approved!"
@@ -910,6 +1018,7 @@ u `connectVia` dsLink = do
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
+  u <## "Or send /all or /new to list groups."
   u <## ""
   u <## "Content and privacy policy: https://simplex.chat/docs/directory.html"
 
@@ -947,8 +1056,8 @@ groupFoundN :: Int -> TestCC -> String -> IO ()
 groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
   u <# ("SimpleX-Directory> > " <> name)
-  u <## "      Found 1 group(s)"
-  u <#. ("SimpleX-Directory> " <> name <> " (")
+  u <## "      Found 1 group(s)."
+  u <#. ("SimpleX-Directory> " <> name)
   u <## "Welcome message:"
   u <##. "Link to join the group "
   u <## (show count <> " members")

@@ -81,6 +81,19 @@ import Simplex.Chat.Migrations.M20230829_connections_chat_vrange
 import Simplex.Chat.Migrations.M20230903_connections_to_subscribe
 import Simplex.Chat.Migrations.M20230913_member_contacts
 import Simplex.Chat.Migrations.M20230914_member_probes
+import Simplex.Chat.Migrations.M20230926_contact_status
+import Simplex.Chat.Migrations.M20231002_conn_initiated
+import Simplex.Chat.Migrations.M20231009_via_group_link_uri_hash
+import Simplex.Chat.Migrations.M20231010_member_settings
+import Simplex.Chat.Migrations.M20231019_indexes
+import Simplex.Chat.Migrations.M20231030_xgrplinkmem_received
+import Simplex.Chat.Migrations.M20231107_indexes
+import Simplex.Chat.Migrations.M20231113_group_forward
+import Simplex.Chat.Migrations.M20231114_remote_control
+import Simplex.Chat.Migrations.M20231126_remote_ctrl_address
+import Simplex.Chat.Migrations.M20231207_chat_list_pagination
+import Simplex.Chat.Migrations.M20231214_item_content_tag
+import Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -161,7 +174,20 @@ schemaMigrations =
     ("20230829_connections_chat_vrange", m20230829_connections_chat_vrange, Just down_m20230829_connections_chat_vrange),
     ("20230903_connections_to_subscribe", m20230903_connections_to_subscribe, Just down_m20230903_connections_to_subscribe),
     ("20230913_member_contacts", m20230913_member_contacts, Just down_m20230913_member_contacts),
-    ("20230914_member_probes", m20230914_member_probes, Just down_m20230914_member_probes)
+    ("20230914_member_probes", m20230914_member_probes, Just down_m20230914_member_probes),
+    ("20230926_contact_status", m20230926_contact_status, Just down_m20230926_contact_status),
+    ("20231002_conn_initiated", m20231002_conn_initiated, Just down_m20231002_conn_initiated),
+    ("20231009_via_group_link_uri_hash", m20231009_via_group_link_uri_hash, Just down_m20231009_via_group_link_uri_hash),
+    ("20231010_member_settings", m20231010_member_settings, Just down_m20231010_member_settings),
+    ("20231019_indexes", m20231019_indexes, Just down_m20231019_indexes),
+    ("20231030_xgrplinkmem_received", m20231030_xgrplinkmem_received, Just down_m20231030_xgrplinkmem_received),
+    ("20231107_indexes", m20231107_indexes, Just down_m20231107_indexes),
+    ("20231113_group_forward", m20231113_group_forward, Just down_m20231113_group_forward),
+    ("20231114_remote_control", m20231114_remote_control, Just down_m20231114_remote_control),
+    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address),
+    ("20231207_chat_list_pagination", m20231207_chat_list_pagination, Just down_m20231207_chat_list_pagination),
+    ("20231214_item_content_tag", m20231214_item_content_tag, Just down_m20231214_item_content_tag),
+    ("20231215_recreate_msg_deliveries", m20231215_recreate_msg_deliveries, Just down_m20231215_recreate_msg_deliveries)
   ]
 
 -- | The list of migrations in ascending order by date

@@ -34,6 +34,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedViewState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
+  // TODO close new chat if remote host changes in model
   if (newChatSheetState.collectAsState().value.isVisible()) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
     newChatSheetState,
@@ -41,17 +42,17 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
     addContact = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
+      ModalManager.center.showModal { CreateLinkView(chatModel, chatModel.currentRemoteHost.value, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
+      ModalManager.center.showModalCloseable { close -> ConnectViaLinkView(chatModel, chatModel.currentRemoteHost.value, close) }
     },
     createGroup = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, close) }
+      ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
     },
     closeNewChatSheet,
   )

@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.*
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.getUserIdFromIntent
@@ -16,13 +17,13 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 
 class MainActivity: FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    platform.androidSetNightModeIfSupported()
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()
@@ -42,9 +43,7 @@ class MainActivity: FragmentActivity() {
       )
     }
     setContent {
-      SimpleXTheme {
-        AppScreen()
-      }
+      AppScreen()
     }
     SimplexApp.context.schedulePeriodicServiceRestartWorker()
     SimplexApp.context.schedulePeriodicWakeUp()
@@ -127,7 +126,9 @@ fun processIntent(intent: Intent?) {
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
-      if (uri != null) connectIfOpenedViaUri(uri.toURI(), ChatModel)
+      if (uri != null) {
+        chatModel.appOpenUrl.value = null to uri.toURI()
+      }
     }
   }
 }
@@ -143,6 +144,7 @@ fun processExternalIntent(intent: Intent?) {
           val text = intent.getStringExtra(Intent.EXTRA_TEXT)
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
+            if (uri.scheme != "content") return showWrongUriAlert()
             // Shared file that contains plain text, like `*.log` file
             chatModel.sharedContent.value = SharedContent.File(text ?: "", uri.toURI())
           } else if (text != null) {
@@ -153,12 +155,14 @@ fun processExternalIntent(intent: Intent?) {
         isMediaIntent(intent) -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
+            if (uri.scheme != "content") return showWrongUriAlert()
             chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri.toURI()))
           } // All other mime types
         }
         else -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
+            if (uri.scheme != "content") return showWrongUriAlert()
             chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri.toURI())
           }
         }
@@ -173,6 +177,7 @@ fun processExternalIntent(intent: Intent?) {
         isMediaIntent(intent) -> {
           val uris = intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>
           if (uris != null) {
+            if (uris.any { it.scheme != "content" }) return showWrongUriAlert()
             chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris.map { it.toURI() })
           } // All other mime types
         }

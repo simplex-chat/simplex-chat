@@ -71,6 +71,7 @@ CREATE TABLE contacts(
   contact_group_member_id INTEGER
   REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
+  contact_status TEXT NOT NULL DEFAULT 'active',
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -116,7 +117,8 @@ CREATE TABLE groups(
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
-  send_rcpts INTEGER, -- received
+  send_rcpts INTEGER,
+  via_group_link_uri_hash BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -143,6 +145,11 @@ CREATE TABLE group_members(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  show_messages INTEGER NOT NULL DEFAULT 1,
+  xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
+  invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -157,7 +164,8 @@ CREATE TABLE group_member_intros(
   direct_queue_info BLOB,
   intro_status TEXT NOT NULL,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- see GroupMemberIntroStatus
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
 );
 CREATE TABLE files(
@@ -263,6 +271,7 @@ CREATE TABLE connections(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
+  contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -317,19 +326,9 @@ CREATE TABLE messages(
   connection_id INTEGER DEFAULT NULL REFERENCES connections ON DELETE CASCADE,
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BLOB,
-  shared_msg_id_user INTEGER
-);
-CREATE TABLE msg_deliveries(
-  msg_delivery_id INTEGER PRIMARY KEY,
-  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages
-  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
-  agent_msg_id INTEGER, -- internal agent message ID(NULL while pending)
-  agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
-  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
-  UNIQUE(connection_id, agent_msg_id)
+  shared_msg_id_user INTEGER,
+  author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
@@ -367,7 +366,9 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT
+  item_deleted_ts TEXT,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  item_content_tag TEXT
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -434,13 +435,6 @@ CREATE TABLE extra_xftp_file_descriptions(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   file_descr_text TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
-CREATE TABLE msg_delivery_events(
-  msg_delivery_event_id INTEGER PRIMARY KEY,
-  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE,
-  delivery_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
@@ -515,14 +509,49 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
+CREATE TABLE remote_hosts(
+  -- e.g., mobiles known to a desktop app
+  remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  host_device_name TEXT NOT NULL,
+  store_path TEXT NOT NULL, -- relative folder name for host files
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  id_key BLOB NOT NULL, -- long-term/identity signing key
+  host_fingerprint BLOB NOT NULL, -- remote host CA cert fingerprint, set when connected
+  host_dh_pub BLOB NOT NULL -- last session DH key
+  ,
+  bind_addr TEXT,
+  bind_iface TEXT,
+  bind_port INTEGER
+);
+CREATE TABLE remote_controllers(
+  -- e.g., desktops known to a mobile app
+  remote_ctrl_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ctrl_device_name TEXT NOT NULL,
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  ctrl_fingerprint BLOB NOT NULL, -- remote controller CA cert fingerprint, set when connected
+  id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
+  dh_priv_key BLOB NOT NULL, -- last session DH key
+  prev_dh_priv_key BLOB -- previous session DH key
+);
+CREATE TABLE IF NOT EXISTS "msg_deliveries"(
+  msg_delivery_id INTEGER PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages and for batched messages
+  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
+  agent_msg_id INTEGER, -- internal agent message ID(NULL while pending), non UNIQUE for batched messages
+  agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
+  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
+  delivery_status TEXT -- MsgDeliveryStatus
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
-  via_contact_uri_hash
-);
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
@@ -549,7 +578,6 @@ CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON chat_items(
   group_member_id,
   shared_msg_id
 );
-CREATE INDEX idx_msg_deliveries_message_id ON msg_deliveries(message_id);
 CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
   group_id
 );
@@ -681,13 +709,6 @@ CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(
   timed_delete_at
 );
 CREATE INDEX idx_group_members_group_id ON group_members(user_id, group_id);
-CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON msg_deliveries(
-  connection_id,
-  agent_ack_cmd_id
-);
-CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(
-  msg_delivery_id
-);
 CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(
   group_id
 );
@@ -731,3 +752,63 @@ CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
 CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_received_probes_probe ON received_probes(probe);
 CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
+CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
+CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
+CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
+CREATE INDEX idx_connections_conn_req_inv ON connections(
+  user_id,
+  conn_req_inv
+);
+CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
+  user_id,
+  via_group_link_uri_hash
+);
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
+  user_id,
+  via_contact_uri_hash
+);
+CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
+  user_id,
+  contact_link
+);
+CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
+  re_group_member_id
+);
+CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
+  invited_by_group_member_id
+);
+CREATE INDEX idx_messages_author_group_member_id ON messages(
+  author_group_member_id
+);
+CREATE INDEX idx_messages_forwarded_by_group_member_id ON messages(
+  forwarded_by_group_member_id
+);
+CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
+  group_id,
+  shared_msg_id
+);
+CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON chat_items(
+  forwarded_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_remote_hosts_host_fingerprint ON remote_hosts(
+  host_fingerprint
+);
+CREATE UNIQUE INDEX idx_remote_controllers_ctrl_fingerprint ON remote_controllers(
+  ctrl_fingerprint
+);
+CREATE INDEX idx_contacts_chat_ts ON contacts(user_id, chat_ts);
+CREATE INDEX idx_groups_chat_ts ON groups(user_id, chat_ts);
+CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
+  user_id,
+  updated_at
+);
+CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
+CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
+CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(
+  connection_id,
+  agent_ack_cmd_id
+);
+CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
+  connection_id,
+  agent_msg_id
+);

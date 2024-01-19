@@ -9,13 +9,11 @@ import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
-import java.io.ByteArrayInputStream
-import java.io.File
+import java.io.*
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.io.path.toPath
 
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
@@ -87,31 +85,60 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
   AnnotatedString(text)
 }
 
-actual fun getAppFileUri(fileName: String): URI =
-  URI("file:" + appFilesDir.absolutePath + File.separator + fileName)
+actual fun getAppFileUri(fileName: String): URI {
+  val rh = chatModel.currentRemoteHost.value
+  return if (rh == null) {
+    createURIFromPath(appFilesDir.absolutePath + "/" + fileName)
+  } else {
+    createURIFromPath(dataDir.absolutePath + "/remote_hosts/" + rh.storePath + "/simplex_v1_files/" + fileName)
+  }
+}
 
-actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
-  val filePath = getLoadedFilePath(file)
+actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
+  var filePath = getLoadedFilePath(file)
+  if (chatModel.connectedToRemote() && filePath == null) {
+    file?.loadRemoteFile(false)
+    filePath = getLoadedFilePath(file)
+  }
   return if (filePath != null) {
-    val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
-    val bitmap = getBitmapFromByteArray(data, false)
-    if (bitmap != null) bitmap to data else null
+    try {
+      val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+      val bitmap = getBitmapFromByteArray(data, false)
+      if (bitmap != null) bitmap to data else null
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+      null
+    }
   } else {
     null
   }
 }
 
-actual fun getFileName(uri: URI): String? = uri.toPath().toFile().name
+actual fun getFileName(uri: URI): String? = uri.toFile().name
 
-actual fun getAppFilePath(uri: URI): String? = uri.path
+actual fun getAppFilePath(uri: URI): String? = uri.toFile().absolutePath
 
-actual fun getFileSize(uri: URI): Long? = uri.toPath().toFile().length()
+actual fun getFileSize(uri: URI): Long? = uri.toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
-  ImageIO.read(uri.inputStream()).toComposeImageBitmap()
+  try {
+    ImageIO.read(uri.inputStream()).toComposeImageBitmap()
+  } catch (e: Exception) {
+    Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
+    if (withAlertOnException) showImageDecodingException()
+
+    null
+  }
 
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? =
-  ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
+  try {
+    ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
+  } catch (e: Exception) {
+    Log.e(TAG, "Error while encoding bitmap from byte array: ${e.stackTraceToString()}")
+    if (withAlertOnException) showImageDecodingException()
+
+    null
+  }
 
 // LALAL implement to support animated drawable
 actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? = null
@@ -121,9 +148,8 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return if (file != null) {
     try {
       val ext = if (asPng) "png" else "jpg"
-      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext))
-      // LALAL FILE IS EMPTY
-      ImageIO.write(image.toAwtImage(), ext.uppercase(), newFile.outputStream())
+      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext, File(file.absolutePath)))
+      ImageIO.write(image.toAwtImage(), ext, newFile.outputStream())
       newFile
     } catch (e: Exception) {
       Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")
@@ -132,8 +158,8 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   } else null
 }
 
-actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
-  return VideoPlayer.getBitmapFromVideo(null, uri)
+actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean, withAlertOnException: Boolean): VideoPlayerInterface.PreviewAndDuration {
+  return VideoPlayer.getBitmapFromVideo(null, uri, withAlertOnException)
 }
 
 @OptIn(ExperimentalEncodingApi::class)

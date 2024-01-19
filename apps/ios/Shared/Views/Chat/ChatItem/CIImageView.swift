@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIImageView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     let chatItem: ChatItem
     let image: String
@@ -36,7 +37,7 @@ struct CIImageView: View {
                             switch file.fileStatus {
                             case .rcvInvitation:
                                 Task {
-                                    if let user = ChatModel.shared.currentUser {
+                                    if let user = m.currentUser {
                                         await receiveFile(user: user, fileId: file.fileId, encrypted: chatItem.encryptLocalFile)
                                     }
                                 }

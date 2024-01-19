@@ -17,6 +17,8 @@ struct UserProfile: View {
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
+    @State private var alert: UserProfileAlert?
+    @FocusState private var focusDisplayName
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -47,18 +49,27 @@ struct UserProfile: View {
 
                 VStack(alignment: .leading) {
                     ZStack(alignment: .leading) {
-                        if !validDisplayName(profile.displayName) {
-                            Image(systemName: "exclamationmark.circle")
-                                .foregroundColor(.red)
-                                .padding(.bottom, 10)
+                        if !validNewProfileName(user) {
+                            Button {
+                                alert = .invalidNameError(validName: mkValidName(profile.displayName))
+                            } label: {
+                                Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                            }
+                        } else {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                         }
-                        profileNameTextEdit("Display name", $profile.displayName)
+                        profileNameTextEdit("Profile name", $profile.displayName)
+                            .focused($focusDisplayName)
                     }
-                    profileNameTextEdit("Full name (optional)", $profile.fullName)
+                    .padding(.bottom)
+                    if showFullName(user) {
+                        profileNameTextEdit("Full name (optional)", $profile.fullName)
+                            .padding(.bottom)
+                    }
                     HStack(spacing: 20) {
                         Button("Cancel") { editProfile = false }
                         Button("Save (and notify contacts)") { saveProfile() }
-                            .disabled(profile.displayName == "" || !validDisplayName(profile.displayName))
+                            .disabled(!canSaveProfile(user))
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -74,11 +85,14 @@ struct UserProfile: View {
                 .frame(maxWidth: .infinity, alignment: .center)
 
                 VStack(alignment: .leading) {
-                    profileNameView("Display name:", user.profile.displayName)
-                    profileNameView("Full name:", user.profile.fullName)
+                    profileNameView("Profile name:", user.profile.displayName)
+                    if showFullName(user) {
+                        profileNameView("Full name:", user.profile.fullName)
+                    }
                     Button("Edit") {
                         profile = fromLocalProfile(user.profile)
                         editProfile = true
+                        focusDisplayName = true
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -106,8 +120,10 @@ struct UserProfile: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
-                didSelectItem in showImagePicker = false
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
             }
         }
         .onChange(of: chosenImage) { image in
@@ -117,14 +133,12 @@ struct UserProfile: View {
                 profile.image = nil
             }
         }
+        .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
     }
 
     func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
         TextField(label, text: name)
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
-            .padding(.bottom)
-            .padding(.leading, 28)
+            .padding(.leading, 32)
     }
 
     func profileNameView(_ label: LocalizedStringKey, _ name: String) -> some View {
@@ -141,19 +155,34 @@ struct UserProfile: View {
         showChooseSource = true
     }
 
+    private func validNewProfileName(_ user: User) -> Bool {
+        profile.displayName == user.profile.displayName || validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
+    }
+
+    private func showFullName(_ user: User) -> Bool {
+        user.profile.fullName != "" && user.profile.fullName != user.profile.displayName
+    }
+
+    private func canSaveProfile(_ user: User) -> Bool {
+        profile.displayName.trimmingCharacters(in: .whitespaces) != "" && validNewProfileName(user)
+    }
+
     func saveProfile() {
         Task {
             do {
+                profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     DispatchQueue.main.async {
                         chatModel.updateCurrentUser(newProfile)
                         profile = newProfile
                     }
+                    editProfile = false
+                } else {
+                    alert = .duplicateUserError
                 }
             } catch {
                 logger.error("UserProfile apiUpdateProfile error: \(responseError(error))")
             }
-            editProfile = false
         }
     }
 }

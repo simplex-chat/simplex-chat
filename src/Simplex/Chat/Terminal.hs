@@ -15,7 +15,6 @@ import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
-import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (defaultNetworkConfig)
@@ -36,16 +35,16 @@ terminalChatConfig =
             ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"],
             xftp = defaultXFTPServers,
             netCfg = defaultNetworkConfig
-          }
+          },
+      deviceNameForRemote = "SimpleX CLI"
     }
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChatTerminal cfg opts t = do
-  sendToast <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
-  handle checkDBKeyError . simplexChatCore cfg opts sendToast $ \u cc -> do
-    ct <- newChatTerminal t
+simplexChatTerminal cfg opts t =
+  handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
+    ct <- newChatTerminal t opts
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
-    runChatTerminal ct cc
+    runChatTerminal ct cc opts
 
 checkDBKeyError :: SQLError -> IO ()
 checkDBKeyError e = case sqlError e of
@@ -54,5 +53,5 @@ checkDBKeyError e = case sqlError e of
     exitFailure
   _ -> throwIO e
 
-runChatTerminal :: ChatTerminal -> ChatController -> IO ()
-runChatTerminal ct cc = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc, runInputLoop ct cc]
+runChatTerminal :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
+runChatTerminal ct cc opts = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc opts, runInputLoop ct cc]

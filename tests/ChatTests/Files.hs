@@ -1,7 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Files where
@@ -17,14 +16,11 @@ import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
-import System.Environment (withArgs)
-import System.IO.Silently (capture_)
 import Test.Hspec
 
 chatFileTests :: SpecWith FilePath
@@ -33,6 +29,7 @@ chatFileTests = do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
     describe "send file, receive and locally encrypt file" $ fileTestMatrix2 runTestFileTransferEncrypted
     it "send and receive file inline (without accepting)" testInlineFileTransfer
+    it "send inline file, receive (without accepting) and locally encrypt" testInlineFileTransferEncrypted
     xit'' "accept inline file transfer, sender cancels during transfer" testAcceptInlineFileSndCancelDuringTransfer
     it "send and receive small file inline (default config)" testSmallInlineFileTransfer
     it "small file sent without acceptance is ignored in terminal by default" testSmallInlineFileIgnored
@@ -107,7 +104,6 @@ runTestFileTransferEncrypted alice bob = do
   bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
   bob ##> "/fr 1 encrypt=on ./tests/tmp"
   bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
-  Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
   concurrently_
     (bob <## "started receiving file 1 (test.pdf) from alice")
     (alice <## "started sending file 1 (test.pdf) to bob")
@@ -123,6 +119,7 @@ runTestFileTransferEncrypted alice bob = do
                "completed sending file 1 (test.pdf) to bob"
              ]
     ]
+  Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
   src <- B.readFile "./tests/fixtures/test.pdf"
   -- dest <- B.readFile "./tests/tmp/test.pdf"
   -- dest `shouldBe` src
@@ -151,6 +148,34 @@ testInlineFileTransfer =
     src <- B.readFile "./tests/fixtures/test.jpg"
     dest <- B.readFile "./tests/tmp/test.jpg"
     dest `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
+
+testInlineFileTransferEncrypted :: HasCallStack => FilePath -> IO ()
+testInlineFileTransferEncrypted =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob ##> "/_files_folder ./tests/tmp/"
+    bob <## "ok"
+    bob ##> "/_files_encrypt on"
+    bob <## "ok"
+    alice ##> "/_send @2 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/test.jpg\"}"
+    alice <# "@bob voice message (00:10)"
+    alice <# "/f @bob ./tests/fixtures/test.jpg"
+    -- below is not shown in "sent" mode
+    -- alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> voice message (00:10)"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    -- below is not shown in "sent" mode
+    -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    concurrently_
+      (alice <## "completed sending file 1 (test.jpg) to bob")
+      (bob <## "completed receiving file 1 (test.jpg) from alice")
+    Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    Right dest <- chatReadFile "./tests/tmp/test.jpg" (strEncode key) (strEncode nonce)
+    LB.toStrict dest `shouldBe` src
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
@@ -575,6 +600,7 @@ testSendImage =
       -- deleting contact without files folder set should not remove file
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
+      alice <## "bob (Bob) deleted contact with you"
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
 
@@ -637,6 +663,7 @@ testFilesFoldersSendImage =
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
+        alice <## "bob (Bob) deleted contact with you"
 
 testFilesFoldersImageSndDelete :: HasCallStack => FilePath -> IO ()
 testFilesFoldersImageSndDelete =
@@ -660,6 +687,7 @@ testFilesFoldersImageSndDelete =
       checkActionDeletesFile "./tests/tmp/alice_app_files/test_1MB.pdf" $ do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
+        bob <## "alice (Alice) deleted contact with you"
         bob ##> "/fs 1"
         bob <##. "receiving file 1 (test_1MB.pdf) progress"
       -- deleting contact should remove cancelled file
@@ -689,7 +717,10 @@ testFilesFoldersImageRcvDelete =
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
-        alice <## "bob cancelled receiving file 1 (test.jpg)"
+        alice
+          <### [ "bob (Bob) deleted contact with you",
+                 "bob cancelled receiving file 1 (test.jpg)"
+               ]
         alice ##> "/fs 1"
         alice <## "sending file 1 (test.jpg) cancelled: bob"
         alice <## "file transfer cancelled"
@@ -1060,7 +1091,7 @@ testXFTPFileTransferEncrypted =
     let srcPath = "./tests/tmp/alice/test.pdf"
     createDirectoryIfMissing True "./tests/tmp/alice/"
     createDirectoryIfMissing True "./tests/tmp/bob/"
-    WFResult cfArgs <- chatWriteFile srcPath src
+    WFResult cfArgs <- chatWriteFile (chatController alice) srcPath src
     let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath $ Just cfArgs
     withXFTPServer $ do
       connectUsers alice bob
@@ -1071,10 +1102,10 @@ testXFTPFileTransferEncrypted =
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 encrypt=on ./tests/tmp/bob/"
       bob <## "saving file 1 from alice to ./tests/tmp/bob/test.pdf"
-      Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
       alice <## "completed uploading file 1 (test.pdf) for bob"
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
+      Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
       Right dest <- chatReadFile "./tests/tmp/bob/test.pdf" (strEncode key) (strEncode nonce)
       LB.length dest `shouldBe` fromIntegral srcLen
       LB.toStrict dest `shouldBe` src
@@ -1358,10 +1389,16 @@ testXFTPMarkToReceive = do
       alice <## "completed uploading file 1 (test.pdf) for bob"
       bob #$> ("/_set_file_to_receive 1", id, "ok")
 
+      threadDelay 100000
+
       bob ##> "/_stop"
       bob <## "chat stopped"
+
       bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
       bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
+
+      threadDelay 100000
+
       bob ##> "/_start"
       bob <## "chat started"
 
@@ -1456,7 +1493,7 @@ testXFTPCancelRcvRepeat =
       dest <- B.readFile "./tests/tmp/testfile_1"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
 testAutoAcceptFile =
@@ -1507,9 +1544,6 @@ testProhibitFiles =
     (cath </)
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
-
-xftpCLI :: [String] -> IO [String]
-xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =

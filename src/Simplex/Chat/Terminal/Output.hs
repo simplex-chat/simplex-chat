@@ -3,24 +3,40 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Terminal.Output where
 
 import Control.Concurrent (ThreadId)
+import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.List (intercalate)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Simplex.Chat (processChatCommand)
+import Simplex.Chat (execChatCommand, processChatCommand)
 import Simplex.Chat.Controller
-import Simplex.Chat.Messages hiding (NewChatItem (..))
+import Simplex.Chat.Markdown
+import Simplex.Chat.Messages
+import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
+import Simplex.Chat.Options
+import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
+import Simplex.Chat.Remote.Types (RHKey (..), RemoteHostId, RemoteHostInfo (..), RemoteHostSession (..))
 import Simplex.Chat.Styled
+import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
+import Simplex.Chat.Types
 import Simplex.Chat.View
+import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Console.ANSI.Types
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Mem.Weak (Weak)
@@ -34,7 +50,10 @@ data ChatTerminal = ChatTerminal
     termSize :: Size,
     liveMessageState :: TVar (Maybe LiveMessage),
     nextMessageRow :: TVar Int,
-    termLock :: TMVar ()
+    termLock :: TMVar (),
+    sendNotification :: Maybe (Notification -> IO ()),
+    activeTo :: TVar String,
+    currentRemoteUsers :: TMap RemoteHostId User
   }
 
 data TerminalState = TerminalState
@@ -79,16 +98,30 @@ instance WithTerminal VirtualTerminal where
 withChatTerm :: (MonadIO m, MonadMask m) => ChatTerminal -> (forall t. WithTerminal t => TerminalT t m a) -> m a
 withChatTerm ChatTerminal {termDevice = TerminalDevice t} action = withTerm t $ runTerminalT action
 
-newChatTerminal :: WithTerminal t => t -> IO ChatTerminal
-newChatTerminal t = do
+newChatTerminal :: WithTerminal t => t -> ChatOpts -> IO ChatTerminal
+newChatTerminal t opts = do
   termSize <- withTerm t . runTerminalT $ getWindowSize
   let lastRow = height termSize - 1
   termState <- newTVarIO mkTermState
   liveMessageState <- newTVarIO Nothing
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
+  sendNotification <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
+  activeTo <- newTVarIO ""
+  currentRemoteUsers <- newTVarIO mempty
   -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {termDevice = TerminalDevice t, termState, termSize, liveMessageState, nextMessageRow, termLock}
+  pure
+    ChatTerminal
+      { termDevice = TerminalDevice t,
+        termState,
+        termSize,
+        liveMessageState,
+        nextMessageRow,
+        termLock,
+        sendNotification,
+        activeTo,
+        currentRemoteUsers
+      }
 
 mkTermState :: TerminalState
 mkTermState =
@@ -109,38 +142,155 @@ withTermLock ChatTerminal {termLock} action = do
   action
   atomically $ putTMVar termLock ()
 
-runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = do
+runTerminalOutput :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
+runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} ChatOpts {markRead} = do
   forever $ do
-    (_, r) <- atomically $ readTBQueue outputQ
+    (_, outputRH, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem _ ci -> markChatItemRead ci
-      CRChatItemUpdated _ ci -> markChatItemRead ci
+      CRNewChatItem u ci -> when markRead $ markChatItemRead u ci
+      CRChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
+      CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
+      CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
     let printResp = case logFilePath of
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    responseString cc liveItems r >>= printResp
+    responseString ct cc liveItems outputRH r >>= printResp
+    responseNotification ct cc r
   where
-    markChatItemRead (AChatItem _ _ chat item@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
-      case (muted chat chatDir, itemStatus) of
-        (False, CISRcvNew) -> do
-          let itemId = chatItemId' item
+    markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
+      case (chatDirNtf u chat chatDir (isMention ci), itemStatus) of
+        (True, CISRcvNew) -> do
+          let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
+    getRemoteUser rhId =
+      runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
+        CRActiveUser {user} -> updateRemoteUser ct user rhId
+        cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
+    removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
-printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
-printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct
+responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
+responseNotification t@ChatTerminal {sendNotification} cc = \case
+  CRNewChatItem u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
+    when (chatDirNtf u cInfo chatDir $ isMention ci) $ do
+      whenCurrUser cc u $ setActiveChat t cInfo
+      case (cInfo, chatDir) of
+        (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
+        (GroupChat g, CIGroupRcv m) -> sendNtf (fromGroup_ g m, text)
+        _ -> pure ()
+    where
+      text = msgText mc formattedText
+  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
+    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isMention ci) $ setActiveChat t cInfo
+  CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
+    whenCurrUser cc u $ setActiveContact t ct
+    sendNtf (viewContactName ct <> "> ", "connected")
+  CRContactAnotherClient u ct -> do
+    whenCurrUser cc u $ unsetActiveContact t ct
+    when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
+  CRContactsDisconnected srv _ -> serverNtf srv "disconnected"
+  CRContactsSubscribed srv _ -> serverNtf srv "connected"
+  CRReceivedGroupInvitation u g ct _ _ ->
+    when (contactNtf u ct False) $
+      sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
+  CRUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
+    whenCurrUser cc u $ setActiveGroup t g
+    sendNtf ("#" <> viewGroupName g, "you are connected to group")
+  CRJoinedGroupMember u g m ->
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+  CRConnectedToGroupMember u g m _ ->
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+  CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
+    when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
+  _ -> pure ()
+  where
+    sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
+    serverNtf (SMPServer host _ _) str = sendNtf ("server " <> str, safeDecodeUtf8 $ strEncode host)
 
-responseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
-responseString cc liveItems r = do
-  user <- readTVarIO $ currentUser cc
+msgText :: MsgContent -> Maybe MarkdownList -> Text
+msgText (MCFile _) _ = "wants to send a file"
+msgText mc md_ = maybe (msgContentText mc) (mconcat . map hideSecret) md_
+  where
+    hideSecret :: FormattedText -> Text
+    hideSecret FormattedText {format = Just Secret} = "..."
+    hideSecret FormattedText {text} = text
+
+chatActiveTo :: ChatName -> String
+chatActiveTo (ChatName cType name) = case cType of
+  CTDirect -> T.unpack $ "@" <> viewName name <> " "
+  CTGroup -> T.unpack $ "#" <> viewName name <> " "
+  _ -> ""
+
+chatInfoActiveTo :: ChatInfo c -> String
+chatInfoActiveTo = \case
+  DirectChat c -> contactActiveTo c
+  GroupChat g -> groupActiveTo g
+  _ -> ""
+
+contactActiveTo :: Contact -> String
+contactActiveTo c = T.unpack $ "@" <> viewContactName c <> " "
+
+groupActiveTo :: GroupInfo -> String
+groupActiveTo g = T.unpack $ "#" <> viewGroupName g <> " "
+
+setActiveChat :: ChatTerminal -> ChatInfo c -> IO ()
+setActiveChat t = setActive t . chatInfoActiveTo
+
+setActiveContact :: ChatTerminal -> Contact -> IO ()
+setActiveContact t = setActive t . contactActiveTo
+
+setActiveGroup :: ChatTerminal -> GroupInfo -> IO ()
+setActiveGroup t = setActive t . groupActiveTo
+
+setActive :: ChatTerminal -> String -> IO ()
+setActive ChatTerminal {activeTo} to = atomically $ writeTVar activeTo to
+
+unsetActiveContact :: ChatTerminal -> Contact -> IO ()
+unsetActiveContact t = unsetActive t . contactActiveTo
+
+unsetActiveGroup :: ChatTerminal -> GroupInfo -> IO ()
+unsetActiveGroup t = unsetActive t . groupActiveTo
+
+unsetActive :: ChatTerminal -> String -> IO ()
+unsetActive ChatTerminal {activeTo} to' = atomically $ modifyTVar activeTo unset
+  where
+    unset to = if to == to' then "" else to
+
+whenCurrUser :: ChatController -> User -> IO () -> IO ()
+whenCurrUser cc u a = do
+  u_ <- readTVarIO $ currentUser cc
+  when (sameUser u u_) a
+  where
+    sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
+
+printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO ()
+printRespToTerminal ct cc liveItems outputRH r = responseString ct cc liveItems outputRH r >>= printToTerminal ct
+
+responseString :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
+responseString ct cc liveItems outputRH r = do
+  cu <- getCurrentUser ct cc
   ts <- getCurrentTime
   tz <- getCurrentTimeZone
-  pure $ responseToView user (config cc) liveItems ts tz r
+  pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+
+updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
+updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentRemoteUsers ct)
+
+getCurrentUser :: ChatTerminal -> ChatController -> IO (Maybe RemoteHostId, Maybe User)
+getCurrentUser ct cc = atomically $ do
+  localUser_ <- readTVar (currentUser cc)
+  readTVar (currentRemoteHost cc) >>= \case
+    Nothing -> pure (Nothing, localUser_)
+    Just rhId ->
+      TM.lookup (RHId rhId) (remoteHostSessions cc) >>= \case
+        Just (_, RHSessionConnected {}) -> do
+          hostUser_ <- TM.lookup rhId (currentRemoteUsers ct)
+          pure (Just rhId, hostUser_)
+        _ -> pure (Nothing, localUser_)
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =
@@ -177,9 +327,9 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
     clearLines from till
       | from >= till = return ()
       | otherwise = do
-        setCursorPosition $ Position {row = from, col = 0}
-        eraseInLine EraseForward
-        clearLines (from + 1) till
+          setCursorPosition $ Position {row = from, col = 0}
+          eraseInLine EraseForward
+          clearLines (from + 1) till
     inputHeight :: TerminalState -> Int
     inputHeight ts = length (autoCompletePrefix ts <> inputPrompt ts <> inputString ts) `div` width + 1
     autoCompletePrefix :: TerminalState -> String

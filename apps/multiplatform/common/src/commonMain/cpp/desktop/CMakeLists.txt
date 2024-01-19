@@ -31,9 +31,9 @@ else()
     set(CMAKE_BUILD_RPATH "@loader_path")
 endif()
 
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64")
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64")
     set(OS_LIB_ARCH "x86_64")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "ARM64")
     set(OS_LIB_ARCH "aarch64")
 else()
     set(OS_LIB_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
@@ -54,9 +54,13 @@ add_library( # Sets the name of the library.
     simplex-api.c)
 
 add_library( simplex SHARED IMPORTED )
-# Lib has different name because of version, find it
-FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/libHSsimplex-chat-*.${OS_LIB_EXT})
-set_target_properties( simplex PROPERTIES IMPORTED_LOCATION ${SIMPLEXLIB})
+if(WIN32)
+    FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/lib*simplex*.${OS_LIB_EXT})
+    set_target_properties( simplex PROPERTIES IMPORTED_IMPLIB ${SIMPLEXLIB})
+else()
+    FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/lib*simplex-chat*.${OS_LIB_EXT})
+    set_target_properties( simplex PROPERTIES IMPORTED_LOCATION ${SIMPLEXLIB})
+endif()
 
 
 # Specifies libraries CMake should link to your target library. You
@@ -67,12 +71,17 @@ if(NOT APPLE)
 else()
 	# Without direct linking it can't find hs_init in linking step
 	add_library( rts SHARED IMPORTED )
-	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/deps/libHSrts*_thr-*.${OS_LIB_EXT})
+	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/libHSrts*_thr-*.${OS_LIB_EXT})
 	set_target_properties( rts PROPERTIES IMPORTED_LOCATION ${RTSLIB})
 
 	target_link_libraries(app-lib rts simplex)
 endif()
 
+if(APPLE)
+    add_custom_command(TARGET app-lib POST_BUILD
+        COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/patch-libapp-mac.sh
+)
+endif()
 
 
 # Trying to copy resulting files into needed directory, but none of these work for some reason. This could allow to
