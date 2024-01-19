@@ -1595,4 +1595,31 @@
     <string name="group_member_status_unknown">未知状态</string>
     <string name="developer_options_section">开发者选项</string>
     <string name="possible_slow_function_desc">函数执行花费的时间过久：%1$d 秒: %2$s</string>
+    <string name="v5_5_message_delivery">改进了消息传递</string>
+    <string name="v5_5_join_group_conversation">加入群对话</string>
+    <string name="v5_5_simpler_connect_ui">粘贴链接以连接！</string>
+    <string name="v5_5_safer_groups">更安全的群</string>
+    <string name="v5_5_simpler_connect_ui_descr">搜索栏接受邀请链接。</string>
+    <string name="v5_5_private_notes_descr">加密的文件和媒体。</string>
+    <string name="v5_5_message_delivery_descr">降低了电量使用。</string>
+    <string name="clear_note_folder_warning">所有消息都将被删除 - 这无法被撤销！</string>
+    <string name="v5_5_safer_groups_descr">- 封禁一名成员，让其他成员免于垃圾信息的侵扰
+\n- 不会共享联系地址。</string>
+    <string name="info_row_created_at">创建于</string>
+    <string name="share_text_created_at">创建于：%s</string>
+    <string name="v5_5_new_interface_languages">匈牙利语和土耳其语用户界面</string>
+    <string name="v5_5_private_notes">私密笔记</string>
+    <string name="v5_5_join_group_conversation_descr">最近历史和改进的目录机器人。</string>
+    <string name="profile_update_event_contact_name_changed">联系人姓名从 %1$s 改为了 %2$s</string>
+    <string name="profile_update_event_member_name_changed">成员姓名从 %1$s 改为了 %2$s</string>
+    <string name="profile_update_event_removed_address">删除了联系地址</string>
+    <string name="profile_update_event_removed_picture">删除了资料图片</string>
+    <string name="profile_update_event_set_new_address">设置新的联系地址</string>
+    <string name="profile_update_event_set_new_picture">设置新的资料图片</string>
+    <string name="profile_update_event_updated_profile">更新了资料</string>
+    <string name="error_creating_message">创建消息出错</string>
+    <string name="error_deleting_note_folder">删除私密笔记出错</string>
+    <string name="note_folder_local_display_name">私密笔记</string>
+    <string name="clear_note_folder_question">清除私密笔记？</string>
+    <string name="saved_message_title">已保存的消息</string>
 </resources>
