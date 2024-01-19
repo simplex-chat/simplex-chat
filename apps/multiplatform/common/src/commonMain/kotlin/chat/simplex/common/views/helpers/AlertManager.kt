@@ -22,6 +22,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class AlertManager {
@@ -128,6 +129,8 @@ class AlertManager {
             ) {
               val focusRequester = remember { FocusRequester() }
               LaunchedEffect(Unit) {
+                // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+                delay(200)
                 focusRequester.requestFocus()
               }
               TextButton(onClick = {
@@ -195,6 +198,8 @@ class AlertManager {
           AlertContent(text, hostDevice, extraPadding = true) {
             val focusRequester = remember { FocusRequester() }
             LaunchedEffect(Unit) {
+              // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+              delay(200)
               focusRequester.requestFocus()
             }
             Row(
