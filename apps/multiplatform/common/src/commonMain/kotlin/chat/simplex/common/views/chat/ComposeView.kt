@@ -267,7 +267,7 @@ fun ComposeView(
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-      withBGApi {
+      withLongRunningApi(slow = 30_000, deadlock = 60_000) {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
@@ -551,7 +551,7 @@ fun ComposeView(
   }
 
   fun sendMessage(ttl: Int?) {
-    withBGApi {
+    withLongRunningApi(slow = 30_000, deadlock = 60_000) {
       sendMessageAsync(null, false, ttl)
     }
   }
