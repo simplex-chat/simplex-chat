@@ -1725,30 +1725,27 @@ processChatCommand' vr = \case
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIBlockMemberForAll groupId memberId blocked -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
-    if memberId /= groupMemberId' membership
-      then case findMember memberId members of
-        Just (bm, remainingMembers) -> do
-          let GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp} = bm
-          assertUserGroupRole gInfo $ max GRAdmin bmRole
-          withChatLock "blockForAll" . procCmd $
-            if blocked /= blockedByAdmin bm
-              then do
-                let mrs = if blocked then MRSBlocked else MRSUnrestricted
-                    event = XGrpMemRestrict bmMemberId MemberRestrictions {restriction = mrs}
-                (msg, _) <- sendGroupMessage' user gInfo remainingMembers event
-                let ciContent = CISndGroupEvent $ SGEMemberBlocked memberId (fromLocalProfile bmp) blocked
-                ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
-                toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
-                bm' <- withStore $ \db -> do
-                  liftIO $ updateGroupMemberBlocked db user groupId memberId mrs
-                  getGroupMember db user groupId memberId
-                toggleNtf user bm' (not blocked)
-                pure CRMemberBlockedForAllUser {user, groupInfo = gInfo, member = bm', blocked}
-              else throwChatError $ CECommandError $ if blocked then "already blocked" else "already unblocked"
-        Nothing -> throwChatError $ CEException "expected to find a single blocked member"
-      else throwChatError $ CECommandError "can't block/unblock self"
+    when (memberId == groupMemberId' membership) $ throwChatError $ CECommandError "can't block/unblock self"
+    case splitMember memberId members of
+      Nothing -> throwChatError $ CEException "expected to find a single blocked member"
+      Just (bm, remainingMembers) -> do
+        let GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp} = bm
+        assertUserGroupRole gInfo $ max GRAdmin bmRole
+        when (blocked == blockedByAdmin bm) $ throwChatError $ CECommandError $ if blocked then "already blocked" else "already unblocked"
+        withChatLock "blockForAll" . procCmd $ do
+          let mrs = if blocked then MRSBlocked else MRSUnrestricted
+              event = XGrpMemRestrict bmMemberId MemberRestrictions {restriction = mrs}
+          (msg, _) <- sendGroupMessage' user gInfo remainingMembers event
+          let ciContent = CISndGroupEvent $ SGEMemberBlocked memberId (fromLocalProfile bmp) blocked
+          ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
+          toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+          bm' <- withStore $ \db -> do
+            liftIO $ updateGroupMemberBlocked db user groupId memberId mrs
+            getGroupMember db user groupId memberId
+          toggleNtf user bm' (not blocked)
+          pure CRMemberBlockedForAllUser {user, groupInfo = gInfo, member = bm', blocked}
     where
-      findMember mId ms = case break ((== mId) . groupMemberId') ms of
+      splitMember mId ms = case break ((== mId) . groupMemberId') ms of
         (_, []) -> Nothing
         (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
   APIRemoveMember groupId memberId -> withUser $ \user -> do
