@@ -448,7 +448,7 @@ userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
-  (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && not (memberBlocked' m) && showMessages (memberSettings m)
+  (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
@@ -1011,7 +1011,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GSMemCreator -> ["created group"]
       _ -> []
     muted m
-      | memberBlocked' m = ["blocked by admin"]
+      | blockedByAdmin m = ["blocked by admin"]
       | not (showMessages $ memberSettings m) = ["blocked"]
       | otherwise = []
 

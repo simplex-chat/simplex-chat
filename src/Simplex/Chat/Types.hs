@@ -641,7 +641,7 @@ data MemberRestrictions = MemberRestrictions
 
 memberRestrictions :: GroupMember -> Maybe MemberRestrictions
 memberRestrictions m
-  | memberBlocked' m = Just MemberRestrictions {blocked = Just MBSBlocked}
+  | blockedByAdmin m = Just MemberRestrictions {blocked = Just MBSBlocked}
   | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -720,8 +720,8 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
 
-memberBlocked' :: GroupMember -> Bool
-memberBlocked' GroupMember {memberBlocked} = memberBlocked == MBSBlocked
+blockedByAdmin :: GroupMember -> Bool
+blockedByAdmin GroupMember {memberBlocked} = memberBlocked == MBSBlocked
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,

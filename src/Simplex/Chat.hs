@@ -1731,7 +1731,7 @@ processChatCommand' vr = \case
           let GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp} = bm
           assertUserGroupRole gInfo $ max GRAdmin bmRole
           withChatLock "blockForAll" . procCmd $
-            if blocked /= memberBlocked' bm
+            if blocked /= blockedByAdmin bm
               then do
                 let mbs = if blocked then MBSBlocked else MBSNotBlocked
                     event = XGrpMemRestrict bmMemberId MemberRestrictions {blocked = Just mbs}
@@ -3799,7 +3799,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               itemForwardEvents :: CChatItem 'CTGroup -> m [ChatMsgEvent 'Json]
               itemForwardEvents cci = case cci of
                 (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file})
-                  | not (memberBlocked' sender) -> do
+                  | not (blockedByAdmin sender) -> do
                       fInvDescr_ <- join <$> forM file getRcvFileInvDescr
                       processContentItem sender ci mc fInvDescr_
                 (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
@@ -3897,7 +3897,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           checkSendRcpt $ rights aChatMsgs
         -- currently only a single message is forwarded
         let GroupMember {memberRole = membershipMemRole} = membership
-        when (membershipMemRole >= GRAdmin && not (memberBlocked' m)) $ case aChatMsgs of
+        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
           [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
           _ -> pure ()
         where
@@ -4549,7 +4549,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> m ()
     newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded
-      | memberBlocked' m = createBlockedByAdmin
+      | blockedByAdmin m = createBlockedByAdmin
       | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
       | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
       | otherwise =
