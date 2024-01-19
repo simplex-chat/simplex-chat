@@ -244,11 +244,12 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
-  XGrpMemIntro :: MemberInfo -> ChatMsgEvent 'Json
+  XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
   XGrpMemRole :: MemberId -> GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
   XGrpMemDel :: MemberId -> ChatMsgEvent 'Json
@@ -290,6 +291,7 @@ isForwardedGroupMsg ev = case ev of
   XInfo _ -> True
   XGrpMemNew _ -> True
   XGrpMemRole {} -> True
+  XGrpMemRestrict {} -> True
   XGrpMemDel _ -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
   XGrpLeave -> True
   XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
@@ -300,6 +302,14 @@ forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMes
 forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
   _ -> Nothing
+
+-- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat
+forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> ChatMessage e -> [GroupMember]
+forwardedToGroupMembers ms ChatMessage {chatMsgEvent} = case encoding @e of
+  SJson -> case chatMsgEvent of
+    XGrpMemRestrict mId _ -> filter (\GroupMember {memberId} -> memberId /= mId) ms
+    _ -> ms
+  _ -> []
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -629,6 +639,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpMemFwd_ :: CMEventTag 'Json
   XGrpMemInfo_ :: CMEventTag 'Json
   XGrpMemRole_ :: CMEventTag 'Json
+  XGrpMemRestrict_ :: CMEventTag 'Json
   XGrpMemCon_ :: CMEventTag 'Json
   XGrpMemConAll_ :: CMEventTag 'Json
   XGrpMemDel_ :: CMEventTag 'Json
@@ -678,6 +689,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpMemFwd_ -> "x.grp.mem.fwd"
     XGrpMemInfo_ -> "x.grp.mem.info"
     XGrpMemRole_ -> "x.grp.mem.role"
+    XGrpMemRestrict_ -> "x.grp.mem.restrict"
     XGrpMemCon_ -> "x.grp.mem.con"
     XGrpMemConAll_ -> "x.grp.mem.con.all"
     XGrpMemDel_ -> "x.grp.mem.del"
@@ -728,6 +740,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.mem.fwd" -> XGrpMemFwd_
         "x.grp.mem.info" -> XGrpMemInfo_
         "x.grp.mem.role" -> XGrpMemRole_
+        "x.grp.mem.restrict" -> XGrpMemRestrict_
         "x.grp.mem.con" -> XGrpMemCon_
         "x.grp.mem.con.all" -> XGrpMemConAll_
         "x.grp.mem.del" -> XGrpMemDel_
@@ -769,11 +782,12 @@ toCMEventTag msg = case msg of
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpMemNew _ -> XGrpMemNew_
-  XGrpMemIntro _ -> XGrpMemIntro_
+  XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
   XGrpMemFwd _ _ -> XGrpMemFwd_
   XGrpMemInfo _ _ -> XGrpMemInfo_
   XGrpMemRole _ _ -> XGrpMemRole_
+  XGrpMemRestrict _ _ -> XGrpMemRestrict_
   XGrpMemCon _ -> XGrpMemCon_
   XGrpMemConAll _ -> XGrpMemConAll_
   XGrpMemDel _ -> XGrpMemDel_
@@ -868,11 +882,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
-      XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
+      XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
       XGrpMemInfo_ -> XGrpMemInfo <$> p "memberId" <*> p "profile"
       XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role"
+      XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
@@ -928,11 +943,12 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
-      XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
+      XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]
       XGrpMemInfo memId profile -> o ["memberId" .= memId, "profile" .= profile]
       XGrpMemRole memId role -> o ["memberId" .= memId, "role" .= role]
+      XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
       XGrpMemDel memId -> o ["memberId" .= memId]

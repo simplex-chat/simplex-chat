@@ -929,6 +929,7 @@ msgDeliveryStatusT' s =
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c
   CIBlocked :: Maybe UTCTime -> CIDeleted 'CTGroup
+  CIBlockedByAdmin :: Maybe UTCTime -> CIDeleted 'CTGroup
   CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
@@ -938,6 +939,7 @@ data ACIDeleted = forall c. ChatTypeI c => ACIDeleted (SChatType c) (CIDeleted c
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
   | JCIDBlocked {deletedTs :: Maybe UTCTime}
+  | JCIBlockedByAdmin {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show)
 
@@ -945,18 +947,21 @@ jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
   CIBlocked ts -> JCIDBlocked ts
+  CIBlockedByAdmin ts -> JCIBlockedByAdmin ts
   CIModerated ts m -> JCIDModerated ts m
 
 jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
 jsonACIDeleted = \case
   JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
   JCIDBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
+  JCIBlockedByAdmin ts -> ACIDeleted SCTGroup $ CIBlockedByAdmin ts
   JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
 itemDeletedTs = \case
   CIDeleted ts -> ts
   CIBlocked ts -> ts
+  CIBlockedByAdmin ts -> ts
   CIModerated ts _ -> ts
 
 data ChatItemInfo = ChatItemInfo

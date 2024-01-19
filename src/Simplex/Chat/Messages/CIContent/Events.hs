@@ -15,6 +15,7 @@ data RcvGroupEvent
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | RGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAll
   | RGEUserRole {role :: GroupMemberRole}
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
@@ -30,6 +31,7 @@ data RcvGroupEvent
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | SGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAllUser
   | SGEUserRole {role :: GroupMemberRole}
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
