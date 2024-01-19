@@ -5370,7 +5370,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     xGrpMemRestrict :: GroupInfo -> GroupMember -> MemberId -> MemberRestrictions -> RcvMessage -> UTCTime -> m ()
     xGrpMemRestrict
-      gInfo@GroupInfo {groupId, membership}
+      gInfo@GroupInfo {groupId, membership = GroupMember {memberId = membershipMemId}}
       m@GroupMember {memberRole = senderRole}
       memId
       MemberRestrictions {restriction}
@@ -5401,7 +5401,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               liftIO $ updateGroupMemberBlocked db user groupId bmId restriction
               getGroupMember db user groupId bmId
           blocked = mrsBlocked restriction
-          GroupMember {memberId = membershipMemId} = membership
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> m ()
     xGrpMemCon gInfo sendingMember memId = do
