@@ -1595,4 +1595,24 @@
     <string name="group_member_status_unknown">stato sconosciuto</string>
     <string name="possible_deadlock_title">Stallo</string>
     <string name="developer_options_section">Opzioni sviluppatore</string>
+    <string name="v5_5_private_notes">Note private</string>
+    <string name="v5_5_new_interface_languages">Interfaccia in ungherese e turco</string>
+    <string name="v5_5_join_group_conversation_descr">Cronologia recente e bot della directory migliorato.</string>
+    <string name="v5_5_safer_groups">Gruppi più sicuri</string>
+    <string name="info_row_created_at">Creato il</string>
+    <string name="clear_note_folder_warning">Tutti i messaggi verranno eliminati, non è reversibile!</string>
+    <string name="v5_5_safer_groups_descr">- blocca un membro per fermare lo spam a tutti.
+\n- l\'indirizzo del contatto non viene condiviso.</string>
+    <string name="share_text_created_at">Creato il: %s</string>
+    <string name="error_creating_message">Errore di creazione del messaggio</string>
+    <string name="error_deleting_note_folder">Errore di eliminazione delle note private</string>
+    <string name="v5_5_message_delivery">Consegna dei messaggi migliorata</string>
+    <string name="v5_5_join_group_conversation">Entra in conversazioni di gruppo</string>
+    <string name="profile_update_event_member_name_changed">membro %1$s cambiato in %2$s</string>
+    <string name="v5_5_simpler_connect_ui">Incolla un link per connettere!</string>
+    <string name="profile_update_event_removed_address">indirizzo di contatto rimosso</string>
+    <string name="profile_update_event_contact_name_changed">contatto %1$s cambiato in %2$s</string>
+    <string name="note_folder_local_display_name">Note private</string>
+    <string name="clear_note_folder_question">Svuotare le note private?</string>
+    <string name="profile_update_event_removed_picture">immagine del profilo rimossa</string>
 </resources>
