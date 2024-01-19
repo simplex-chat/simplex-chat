@@ -368,7 +368,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
 }
 
 fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, progressIndicator: MutableState<Boolean>? = null) {
-  withBGApi {
+  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
     try {
       progressIndicator?.value = true
       if (chatDbChanged.value) {
@@ -378,12 +378,12 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
       if (m.chatDbStatus.value !is DBMigrationResult.OK) {
         /** Hide current view and show [DatabaseErrorView] */
         ModalManager.closeAllModalsEverywhere()
-        return@withBGApi
+        return@withLongRunningApi
       }
       val user = m.currentUser.value
       if (user == null) {
         ModalManager.closeAllModalsEverywhere()
-        return@withBGApi
+        return@withLongRunningApi
       } else {
         m.controller.startChat(user)
       }
@@ -581,7 +581,7 @@ private fun importArchive(
   progressIndicator.value = true
   val archivePath = saveArchiveFromURI(importedArchiveURI)
   if (archivePath != null) {
-    withBGApi {
+    withLongRunningApi(slow = 60_000, deadlock = 180_000) {
       try {
         m.controller.apiDeleteStorage()
         try {
