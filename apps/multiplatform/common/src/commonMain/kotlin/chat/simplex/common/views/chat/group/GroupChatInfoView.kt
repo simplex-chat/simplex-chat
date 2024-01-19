@@ -368,6 +368,18 @@ private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick
 
 @Composable
 private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -> Unit)? = null) {
+  @Composable
+  fun MemberInfo() {
+    if (member.blocked) {
+      Text(stringResource(MR.strings.member_info_member_blocked), color = MaterialTheme.colors.secondary)
+    } else {
+      val role = member.memberRole
+      if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Observer)) {
+        Text(role.text, color = MaterialTheme.colors.secondary)
+      }
+    }
+  }
+
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -401,10 +413,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
         )
       }
     }
-    val role = member.memberRole
-    if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Observer)) {
-      Text(role.text, color = MaterialTheme.colors.secondary)
-    }
+    MemberInfo()
   }
 }
 
@@ -415,25 +424,47 @@ private fun MemberVerifiedShield() {
 
 @Composable
 private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
-  DefaultDropdownMenu(showMenu) {
-    if (member.canBeRemoved(groupInfo)) {
-      ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
-        removeMemberAlert(rhId, groupInfo, member)
-        showMenu.value = false
-      })
+    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+      val canBlockForAll = member.canBlockForAll(groupInfo)
+      val canRemove = member.canBeRemoved(groupInfo)
+      if (canBlockForAll || canRemove) {
+        DefaultDropdownMenu(showMenu) {
+          if (canBlockForAll) {
+            if (member.blockedByAdmin) {
+              ItemAction(stringResource(MR.strings.unblock_for_all), painterResource(MR.images.ic_do_not_touch), onClick = {
+                unblockForAllAlert(rhId, groupInfo, member)
+                showMenu.value = false
+              })
+            } else {
+              ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+                blockForAllAlert(rhId, groupInfo, member)
+                showMenu.value = false
+              })
+            }
+          }
+          if (canRemove) {
+            ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+              removeMemberAlert(rhId, groupInfo, member)
+              showMenu.value = false
+            })
+          }
+        }
+      }
+    } else if (!member.blockedByAdmin) {
+      DefaultDropdownMenu(showMenu) {
+        if (member.memberSettings.showMessages) {
+          ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+            blockMemberAlert(rhId, groupInfo, member)
+            showMenu.value = false
+          })
+        } else {
+          ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
+            unblockMemberAlert(rhId, groupInfo, member)
+            showMenu.value = false
+          })
+        }
+      }
     }
-    if (member.memberSettings.showMessages) {
-      ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
-        blockMemberAlert(rhId, groupInfo, member)
-        showMenu.value = false
-      })
-    } else {
-      ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
-        unblockMemberAlert(rhId, groupInfo, member)
-        showMenu.value = false
-      })
-    }
-  }
 }
 
 @Composable

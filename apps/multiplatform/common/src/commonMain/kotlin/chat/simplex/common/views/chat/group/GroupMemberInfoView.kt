@@ -3,9 +3,11 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import java.net.URI
 import androidx.compose.foundation.*
@@ -99,6 +101,8 @@ fun GroupMemberInfoView(
       },
       blockMember = { blockMemberAlert(rhId, groupInfo, member) },
       unblockMember = { unblockMemberAlert(rhId, groupInfo, member) },
+      blockForAll = { blockForAllAlert(rhId, groupInfo, member) },
+      unblockForAll = { unblockForAllAlert(rhId, groupInfo, member) },
       removeMember = { removeMemberDialog(rhId, groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
@@ -230,6 +234,8 @@ fun GroupMemberInfoLayout(
   connectViaAddress: (String) -> Unit,
   blockMember: () -> Unit,
   unblockMember: () -> Unit,
+  blockForAll: () -> Unit,
+  unblockForAll: () -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -245,6 +251,46 @@ fun GroupMemberInfoLayout(
       chat
     } else {
       null
+    }
+  }
+
+  @Composable
+  fun AdminDestructiveSection() {
+    val canBlockForAll = member.canBlockForAll(groupInfo)
+    val canRemove = member.canBeRemoved(groupInfo)
+    if (canBlockForAll || canRemove) {
+      SectionDividerSpaced(maxBottomPadding = false)
+      SectionView {
+        if (canBlockForAll) {
+          if (member.blockedByAdmin) {
+            UnblockForAllButton(unblockForAll)
+          } else {
+            BlockForAllButton(blockForAll)
+          }
+        }
+        if (canRemove) {
+          RemoveMemberButton(removeMember)
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun NonAdminBlockSection() {
+    SectionDividerSpaced(maxBottomPadding = false)
+    SectionView {
+      if (member.blockedByAdmin) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_back_hand),
+          stringResource(MR.strings.member_blocked_by_admin),
+          click = null,
+          disabled = true
+        )
+      } else if (member.memberSettings.showMessages) {
+        BlockMemberButton(blockMember)
+      } else {
+        UnblockMemberButton(unblockMember)
+      }
     }
   }
 
@@ -344,16 +390,10 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = false)
-    SectionView {
-      if (member.memberSettings.showMessages) {
-        BlockMemberButton(blockMember)
-      } else {
-        UnblockMemberButton(unblockMember)
-      }
-      if (member.canBeRemoved(groupInfo)) {
-        RemoveMemberButton(removeMember)
-      }
+    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+      AdminDestructiveSection()
+    } else {
+      NonAdminBlockSection()
     }
 
     if (developerTools) {
@@ -423,6 +463,26 @@ fun UnblockMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_do_not_touch),
     stringResource(MR.strings.unblock_member_button),
+    click = onClick
+  )
+}
+
+@Composable
+fun BlockForAllButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_back_hand),
+    stringResource(MR.strings.block_for_all),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
+fun UnblockForAllButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_do_not_touch),
+    stringResource(MR.strings.unblock_for_all),
     click = onClick
   )
 }
@@ -553,6 +613,36 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   }
 }
 
+fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.block_for_all_question),
+    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.block_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, mem, true)
+    },
+    destructive = true,
+  )
+}
+
+fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_for_all_question),
+    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.unblock_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, mem, false)
+    },
+  )
+}
+
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
+  withBGApi {
+    val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
+    chatModel.upsertGroupMember(rhId, gInfo, updatedMember)
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -570,6 +660,8 @@ fun PreviewGroupMemberInfoLayout() {
       connectViaAddress = {},
       blockMember = {},
       unblockMember = {},
+      blockForAll = {},
+      unblockForAll = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

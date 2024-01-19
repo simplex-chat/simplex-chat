@@ -59,6 +59,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<B
           moderatedBy.add(itemDeleted.byGroupMember.displayName)
         }
         is CIDeleted.Blocked -> blocked += 1
+        is CIDeleted.BlockedByAdmin -> blocked +=1
         is CIDeleted.Deleted -> deleted += 1
       }
       i++
@@ -91,9 +92,9 @@ private fun markedDeletedText(meta: CIMeta): String =
   when (meta.itemDeleted) {
     is CIDeleted.Moderated ->
       String.format(generalGetString(MR.strings.moderated_item_description), meta.itemDeleted.byGroupMember.displayName)
-    is CIDeleted.Blocked ->
+    is CIDeleted.Blocked, is CIDeleted.BlockedByAdmin ->
       generalGetString(MR.strings.blocked_item_description)
-    else ->
+    is CIDeleted.Deleted, null ->
       generalGetString(MR.strings.marked_deleted_description)
   }
 
