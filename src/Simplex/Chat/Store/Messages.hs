@@ -52,8 +52,10 @@ module Simplex.Chat.Store.Messages
     updateGroupChatItem,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
+    updateGroupCIBlockedByAdmin,
     markGroupChatItemDeleted,
     markGroupChatItemBlocked,
+    markGroupCIBlockedByAdmin,
     deleteLocalChatItem,
     updateDirectChatItemsRead,
     getDirectUnreadTimedItems,
@@ -462,7 +464,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
             SELECT i.chat_item_id,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-              m.member_status, m.show_messages, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+              m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -828,7 +830,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            _ -> Just (CIDeleted @'CTLocal deletedTs)
+            _ -> Just (CIDeleted @CTLocal deletedTs)
           itemEdited' = fromMaybe False itemEdited
        in mkCIMeta itemId content itemText status sharedMsgId itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
     ciTimed :: Maybe CITimed
@@ -1361,7 +1363,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            _ -> Just (CIDeleted @'CTDirect deletedTs)
+            _ -> Just (CIDeleted @CTDirect deletedTs)
           itemEdited' = fromMaybe False itemEdited
        in mkCIMeta itemId content itemText status sharedMsgId itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
     ciTimed :: Maybe CITimed
@@ -1413,7 +1415,8 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
             DBCIBlocked -> Just (CIBlocked deletedTs)
-            _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
+            DBCIBlockedByAdmin -> Just (CIBlockedByAdmin deletedTs)
+            _ -> Just (maybe (CIDeleted @CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
           itemEdited' = fromMaybe False itemEdited
        in mkCIMeta itemId content itemText status sharedMsgId itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt
     ciTimed :: Maybe CITimed
@@ -1764,7 +1767,24 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just currentTs) m), editable = False}, formattedText = Nothing}
+  pure $ ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False}, formattedText = Nothing}
+
+updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
+updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
+  currentTs <- getCurrentTime
+  let itemId = chatItemId' ci
+  deleteChatItemMessages_ db itemId
+  deleteChatItemVersions_ db itemId
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_deleted = ?, item_deleted_ts = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+      |]
+      (DBCIBlockedByAdmin, deletedTs, currentTs, userId, groupId, itemId)
+  pure $ ci {meta = (meta ci) {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False}, formattedText = Nothing}
 
 pattern DBCINotDeleted :: Int
 pattern DBCINotDeleted = 0
@@ -1775,13 +1795,16 @@ pattern DBCIDeleted = 1
 pattern DBCIBlocked :: Int
 pattern DBCIBlocked = 2
 
+pattern DBCIBlockedByAdmin :: Int
+pattern DBCIBlockedByAdmin = 3
+
 markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> MessageId -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
 markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} msgId byGroupMember_ deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
-        _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
+        _ -> (Nothing, Just $ CIDeleted @CTGroup (Just deletedTs))
   insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
@@ -1805,6 +1828,19 @@ markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
     |]
     (DBCIBlocked, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
   pure ci {meta = meta {itemDeleted = Just $ CIBlocked $ Just deletedTs}}
+
+markGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
+markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
+  deletedTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = ?, item_deleted_ts = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    (DBCIBlockedByAdmin, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
+  pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs}}
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
@@ -1864,17 +1900,17 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             i.forwarded_by_group_member_id,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-            m.member_status, m.show_messages, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+            m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
-            rm.member_status, rm.show_messages, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
+            rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.image, rp.contact_link, rp.local_alias, rp.preferences,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
-            dbm.member_status, dbm.show_messages, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
+            dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
