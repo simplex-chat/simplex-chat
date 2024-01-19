@@ -3499,9 +3499,9 @@ public enum RcvGroupEvent: Decodable {
             return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
         case let .memberBlocked(_, profile, blocked):
             if blocked {
-                return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "rcv group event chat item"), profile.profileViewName)
             } else {
-                return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "rcv group event chat item"), profile.profileViewName)
             }
         case let .userRole(role):
             return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text)
@@ -3544,9 +3544,9 @@ public enum SndGroupEvent: Decodable {
             return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
         case let .memberBlocked(_, profile, blocked):
             if blocked {
-                return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("you blocked %@", comment: "snd group event chat item"), profile.profileViewName)
             } else {
-                return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("you unblocked %@", comment: "snd group event chat item"), profile.profileViewName)
             }
         case let .userRole(role):
             return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
