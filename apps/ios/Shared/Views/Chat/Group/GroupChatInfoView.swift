@@ -251,7 +251,11 @@ struct GroupChatInfoView: View {
                     v
                 }
             } else {
-                blockSwipe(member, v)
+                if !member.blockedByAdmin {
+                    blockSwipe(member, v)
+                } else {
+                    v
+                }
             }
         }
 
