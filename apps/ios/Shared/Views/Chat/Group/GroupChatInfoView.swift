@@ -290,15 +290,15 @@ struct GroupChatInfoView: View {
             v.swipeActions(edge: .leading) {
                 if member.blockedByAdmin {
                     Button {
-                        alert = .blockForAllAlert(mem: member)
-                    } label: {
-                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
-                    }
-                } else {
-                    Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
                         Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                    }
+                } else {
+                    Button {
+                        alert = .blockForAllAlert(mem: member)
+                    } label: {
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
                     }
                 }
             }
