@@ -2793,6 +2793,7 @@ public enum CIContent: Decodable, ItemContent {
         case .rcvDecryptionError: return true
         case .rcvGroupInvitation: return true
         case .rcvModerated: return true
+        case .rcvBlocked: return true
         case .invalidJSON: return true
         default: return false
         }
