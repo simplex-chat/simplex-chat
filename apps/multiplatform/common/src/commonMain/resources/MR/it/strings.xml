@@ -1621,4 +1621,5 @@
     <string name="profile_update_event_set_new_address">impostato nuovo indirizzo di contatto</string>
     <string name="profile_update_event_updated_profile">profilo aggiornato</string>
     <string name="saved_message_title">Messaggio salvato</string>
+    <string name="v5_5_message_delivery_descr">Con consumo di batteria ridotto.</string>
 </resources>
