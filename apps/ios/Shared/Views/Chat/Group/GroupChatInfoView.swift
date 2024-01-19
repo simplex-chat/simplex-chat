@@ -36,6 +36,8 @@ struct GroupChatInfoView: View {
         case largeGroupReceiptsDisabled
         case blockMemberAlert(mem: GroupMember)
         case unblockMemberAlert(mem: GroupMember)
+        case blockForAllAlert(mem: GroupMember)
+        case unblockForAllAlert(mem: GroupMember)
         case removeMemberAlert(mem: GroupMember)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
@@ -48,6 +50,8 @@ struct GroupChatInfoView: View {
             case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
             case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
             case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
+            case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
+            case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
             case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
             case let .error(title, _): return "error \(title)"
             }
@@ -143,6 +147,8 @@ struct GroupChatInfoView: View {
             case .largeGroupReceiptsDisabled: return largeGroupReceiptsDisabledAlert()
             case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
             case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
+            case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
+            case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
@@ -231,8 +237,18 @@ struct GroupChatInfoView: View {
 
             if user {
                 v
-            } else if member.canBeRemoved(groupInfo: groupInfo) {
-                removeSwipe(member, blockSwipe(member, v))
+            } else if groupInfo.membership.memberRole >= .admin {
+                let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
+                let canRemove = member.canBeRemoved(groupInfo: groupInfo)
+                if canBlockForAll && canRemove {
+                    removeSwipe(member, blockForAllSwipe(member, v))
+                } else if canBlockForAll {
+                    blockForAllSwipe(member, v)
+                } else if canRemove {
+                    removeSwipe(member, v)
+                } else {
+                    v
+                }
             } else {
                 blockSwipe(member, v)
             }
@@ -264,6 +280,24 @@ struct GroupChatInfoView: View {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
                         Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                    }
+                }
+            }
+        }
+
+        private func blockForAllSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .leading) {
+                if member.blockedByAdmin {
+                    Button {
+                        alert = .blockForAllAlert(mem: member)
+                    } label: {
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
+                    }
+                } else {
+                    Button {
+                        alert = .unblockForAllAlert(mem: member)
+                    } label: {
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
                     }
                 }
             }

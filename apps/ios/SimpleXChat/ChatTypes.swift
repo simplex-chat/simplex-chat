@@ -1912,7 +1912,7 @@ public struct GroupMember: Identifiable, Decodable {
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft
+        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .admin
             && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
