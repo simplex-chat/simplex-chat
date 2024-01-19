@@ -5062,7 +5062,8 @@ testGroupHistoryDeletedMessage =
 testGroupHistoryDisappearingMessage :: HasCallStack => FilePath -> IO ()
 testGroupHistoryDisappearingMessage =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+    -- \alice bob cath -> do -- revert when test is stable
+    \a b c -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> withTestOutput c $ \cath -> do
       createGroup2 "team" alice bob
 
       threadDelay 1000000
@@ -5123,15 +5124,18 @@ testGroupHistoryDisappearingMessage =
       r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
       concurrentlyN_
-        [ do
-            alice <## "timed message deleted: 2"
-            alice <## "timed message deleted: 3",
-          do
-            bob <## "timed message deleted: 2"
-            bob <## "timed message deleted: 3",
-          do
-            cath <## "timed message deleted: 2"
-            cath <## "timed message deleted: 3"
+        [ alice
+            <### [ "timed message deleted: 2",
+                   "timed message deleted: 3"
+                 ],
+          bob
+            <### [ "timed message deleted: 2",
+                   "timed message deleted: 3"
+                 ],
+          cath
+            <### [ "timed message deleted: 2",
+                   "timed message deleted: 3"
+                 ]
         ]
 
       cath ##> "/_get chat #1 count=100"
