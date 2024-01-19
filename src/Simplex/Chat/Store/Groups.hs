@@ -115,7 +115,8 @@ module Simplex.Chat.Store.Groups
     createNewUnknownGroupMember,
     updateUnknownMemberAnnounced,
     updateUserMemberProfileSentAt,
-  ) where
+  )
+where
 
 import Control.Monad
 import Control.Monad.Except
@@ -163,7 +164,7 @@ toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
   let memberProfile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       memberSettings = GroupMemberSettings {showMessages}
-      memberRestriction = fromMaybe MRSUnrestricted memberRestriction_
+      blockedByAdmin = maybe False mrsBlocked memberRestriction_
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
       memberChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
@@ -430,7 +431,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         memberCategory,
         memberStatus,
         memberSettings = defaultMemberSettings,
-        memberRestriction = MRSUnrestricted,
+        blockedByAdmin = False,
         invitedBy,
         invitedByGroupMemberId,
         localDisplayName,
@@ -799,7 +800,7 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             memberCategory = GCInviteeMember,
             memberStatus = GSMemInvited,
             memberSettings = defaultMemberSettings,
-            memberRestriction = MRSUnrestricted,
+            blockedByAdmin = False,
             invitedBy = IBUser,
             invitedByGroupMemberId = Just invitedByGroupMemberId,
             localDisplayName,
@@ -1019,7 +1020,7 @@ createNewMember_
           memberCategory,
           memberStatus,
           memberSettings = defaultMemberSettings,
-          memberRestriction = fromMaybe MRSUnrestricted memRestriction,
+          blockedByAdmin = maybe False mrsBlocked memRestriction,
           invitedBy,
           invitedByGroupMemberId = memInvitedByGroupMemberId,
           localDisplayName,

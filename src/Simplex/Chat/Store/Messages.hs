@@ -13,104 +13,105 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
-module Simplex.Chat.Store.Messages (
-  getContactConnIds_,
+module Simplex.Chat.Store.Messages
+  ( getContactConnIds_,
 
-  -- * Message and chat item functions
-  deleteContactCIs,
-  getGroupFileInfo,
-  deleteGroupCIs,
-  createNewSndMessage,
-  createSndMsgDelivery,
-  createNewMessageAndRcvMsgDelivery,
-  createNewRcvMessage,
-  updateSndMsgDeliveryStatus,
-  updateRcvMsgDeliveryStatus,
-  createPendingGroupMessage,
-  getPendingGroupMessages,
-  deletePendingGroupMessage,
-  deleteOldMessages,
-  updateChatTs,
-  createNewSndChatItem,
-  createNewRcvChatItem,
-  createNewChatItemNoMsg,
-  createNewChatItem_,
-  getChatPreviews,
-  getDirectChat,
-  getGroupChat,
-  getLocalChat,
-  getDirectChatItemsLast,
-  getAllChatItems,
-  getAChatItem,
-  updateDirectChatItem,
-  updateDirectChatItem',
-  addInitialAndNewCIVersions,
-  createChatItemVersion,
-  deleteDirectChatItem,
-  markDirectChatItemDeleted,
-  updateGroupChatItemStatus,
-  updateGroupChatItem,
-  deleteGroupChatItem,
-  updateGroupChatItemModerated,
-  updateGroupCIBlockedByAdmin,
-  markGroupChatItemDeleted,
-  markGroupChatItemBlocked,
-  markGroupCIBlockedByAdmin,
-  deleteLocalChatItem,
-  updateDirectChatItemsRead,
-  getDirectUnreadTimedItems,
-  setDirectChatItemDeleteAt,
-  updateGroupChatItemsRead,
-  getGroupUnreadTimedItems,
-  setGroupChatItemDeleteAt,
-  updateLocalChatItemsRead,
-  getChatRefViaItemId,
-  getChatItemVersions,
-  getDirectCIReactions,
-  getDirectReactions,
-  setDirectReaction,
-  getGroupCIReactions,
-  getGroupReactions,
-  setGroupReaction,
-  getChatItemIdByAgentMsgId,
-  getDirectChatItem,
-  getDirectCIWithReactions,
-  getDirectChatItemBySharedMsgId,
-  getDirectChatItemByAgentMsgId,
-  getGroupChatItem,
-  getGroupCIWithReactions,
-  getGroupChatItemBySharedMsgId,
-  getGroupMemberCIBySharedMsgId,
-  getGroupChatItemByAgentMsgId,
-  getGroupMemberChatItemLast,
-  getLocalChatItem,
-  updateLocalChatItem',
-  getDirectChatItemIdByText,
-  getDirectChatItemIdByText',
-  getGroupChatItemIdByText,
-  getGroupChatItemIdByText',
-  getLocalChatItemIdByText,
-  getLocalChatItemIdByText',
-  getChatItemByFileId,
-  getChatItemByGroupId,
-  updateDirectChatItemStatus,
-  getTimedItems,
-  getChatItemTTL,
-  setChatItemTTL,
-  getContactExpiredFileInfo,
-  deleteContactExpiredCIs,
-  getGroupExpiredFileInfo,
-  deleteGroupExpiredCIs,
-  createCIModeration,
-  getCIModeration,
-  deleteCIModeration,
-  createGroupSndStatus,
-  getGroupSndStatus,
-  updateGroupSndStatus,
-  getGroupSndStatuses,
-  getGroupSndStatusCounts,
-  getGroupHistoryItems,
-) where
+    -- * Message and chat item functions
+    deleteContactCIs,
+    getGroupFileInfo,
+    deleteGroupCIs,
+    createNewSndMessage,
+    createSndMsgDelivery,
+    createNewMessageAndRcvMsgDelivery,
+    createNewRcvMessage,
+    updateSndMsgDeliveryStatus,
+    updateRcvMsgDeliveryStatus,
+    createPendingGroupMessage,
+    getPendingGroupMessages,
+    deletePendingGroupMessage,
+    deleteOldMessages,
+    updateChatTs,
+    createNewSndChatItem,
+    createNewRcvChatItem,
+    createNewChatItemNoMsg,
+    createNewChatItem_,
+    getChatPreviews,
+    getDirectChat,
+    getGroupChat,
+    getLocalChat,
+    getDirectChatItemsLast,
+    getAllChatItems,
+    getAChatItem,
+    updateDirectChatItem,
+    updateDirectChatItem',
+    addInitialAndNewCIVersions,
+    createChatItemVersion,
+    deleteDirectChatItem,
+    markDirectChatItemDeleted,
+    updateGroupChatItemStatus,
+    updateGroupChatItem,
+    deleteGroupChatItem,
+    updateGroupChatItemModerated,
+    updateGroupCIBlockedByAdmin,
+    markGroupChatItemDeleted,
+    markGroupChatItemBlocked,
+    markGroupCIBlockedByAdmin,
+    deleteLocalChatItem,
+    updateDirectChatItemsRead,
+    getDirectUnreadTimedItems,
+    setDirectChatItemDeleteAt,
+    updateGroupChatItemsRead,
+    getGroupUnreadTimedItems,
+    setGroupChatItemDeleteAt,
+    updateLocalChatItemsRead,
+    getChatRefViaItemId,
+    getChatItemVersions,
+    getDirectCIReactions,
+    getDirectReactions,
+    setDirectReaction,
+    getGroupCIReactions,
+    getGroupReactions,
+    setGroupReaction,
+    getChatItemIdByAgentMsgId,
+    getDirectChatItem,
+    getDirectCIWithReactions,
+    getDirectChatItemBySharedMsgId,
+    getDirectChatItemByAgentMsgId,
+    getGroupChatItem,
+    getGroupCIWithReactions,
+    getGroupChatItemBySharedMsgId,
+    getGroupMemberCIBySharedMsgId,
+    getGroupChatItemByAgentMsgId,
+    getGroupMemberChatItemLast,
+    getLocalChatItem,
+    updateLocalChatItem',
+    getDirectChatItemIdByText,
+    getDirectChatItemIdByText',
+    getGroupChatItemIdByText,
+    getGroupChatItemIdByText',
+    getLocalChatItemIdByText,
+    getLocalChatItemIdByText',
+    getChatItemByFileId,
+    getChatItemByGroupId,
+    updateDirectChatItemStatus,
+    getTimedItems,
+    getChatItemTTL,
+    setChatItemTTL,
+    getContactExpiredFileInfo,
+    deleteContactExpiredCIs,
+    getGroupExpiredFileInfo,
+    deleteGroupExpiredCIs,
+    createCIModeration,
+    getCIModeration,
+    deleteCIModeration,
+    createGroupSndStatus,
+    getGroupSndStatus,
+    updateGroupSndStatus,
+    getGroupSndStatuses,
+    getGroupSndStatusCounts,
+    getGroupHistoryItems,
+  )
+where
 
 import Control.Monad
 import Control.Monad.Except
@@ -2224,22 +2225,22 @@ getDirectReactions db ct itemSharedMId sent =
 setDirectReaction :: DB.Connection -> Contact -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
 setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
   | add =
-    DB.execute
-      db
-      [sql|
+      DB.execute
+        db
+        [sql|
           INSERT INTO chat_item_reactions
             (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
             VALUES (?,?,?,?,?,?)
         |]
-      (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
+        (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
-    DB.execute
-      db
-      [sql|
+      DB.execute
+        db
+        [sql|
           DELETE FROM chat_item_reactions
           WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
         |]
-      (contactId' ct, itemSharedMId, sent, reaction)
+        (contactId' ct, itemSharedMId, sent, reaction)
 
 getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
 getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
@@ -2256,22 +2257,22 @@ getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
 setGroupReaction :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
 setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reaction add msgId reactionTs
   | add =
-    DB.execute
-      db
-      [sql|
+      DB.execute
+        db
+        [sql|
           INSERT INTO chat_item_reactions
             (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
             VALUES (?,?,?,?,?,?,?,?)
         |]
-      (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
+        (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
-    DB.execute
-      db
-      [sql|
+      DB.execute
+        db
+        [sql|
           DELETE FROM chat_item_reactions
           WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
         |]
-      (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
+        (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =

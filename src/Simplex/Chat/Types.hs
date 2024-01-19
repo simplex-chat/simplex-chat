@@ -666,7 +666,7 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
-    memberRestriction :: MemberRestrictionStatus,
+    blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -722,9 +722,6 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
-
-blockedByAdmin :: GroupMember -> Bool
-blockedByAdmin GroupMember {memberRestriction} = memberRestriction == MRSBlocked
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,

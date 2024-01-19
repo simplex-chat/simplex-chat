@@ -6,13 +6,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
-module Simplex.Chat.Store.Connections (
-  getConnectionEntity,
-  getConnectionEntityByConnReq,
-  getContactConnEntityByConnReqHash,
-  getConnectionsToSubscribe,
-  unsetConnectionToSubscribe,
-) where
+module Simplex.Chat.Store.Connections
+  ( getConnectionEntity,
+    getConnectionEntityByConnReq,
+    getContactConnEntityByConnReqHash,
+    getConnectionsToSubscribe,
+    unsetConnectionToSubscribe,
+  )
+where
 
 import Control.Applicative ((<|>))
 import Control.Monad
