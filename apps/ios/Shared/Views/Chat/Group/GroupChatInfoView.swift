@@ -238,6 +238,7 @@ struct GroupChatInfoView: View {
             if user {
                 v
             } else if groupInfo.membership.memberRole >= .admin {
+                // TODO if there are more actions, refactor to build lists of swipeActions
                 let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
                 let canRemove = member.canBeRemoved(groupInfo: groupInfo)
                 if canBlockForAll && canRemove {

@@ -44,6 +44,7 @@ struct MarkedDeletedItemView: View {
                     moderated += 1
                     moderatedBy.insert(byGroupMember.displayName)
                 case .blocked: blocked += 1
+                case .blockedByAdmin: blocked += 1
                 case .deleted: deleted += 1
                 }
                 i += 1
