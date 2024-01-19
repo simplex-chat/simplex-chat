@@ -151,25 +151,26 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            if let user = chatModel.currentUser {
-                settingsView(user: user)
-            }
+            settingsView()
             if let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
             }
         }
     }
 
-    @ViewBuilder func settingsView(user: User) -> some View {
+    @ViewBuilder func settingsView() -> some View {
+        let user = chatModel.currentUser
         NavigationView {
             List {
                 Section("You") {
-                    NavigationLink {
-                        UserProfile()
-                            .navigationTitle("Your current profile")
-                    } label: {
-                        ProfilePreview(profileOf: user)
-                        .padding(.leading, -8)
+                    if let user = user {
+                        NavigationLink {
+                            UserProfile()
+                                .navigationTitle("Your current profile")
+                        } label: {
+                            ProfilePreview(profileOf: user)
+                                .padding(.leading, -8)
+                        }
                     }
 
                     NavigationLink {
@@ -178,19 +179,22 @@ struct SettingsView: View {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
 
-                    NavigationLink {
-                        UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
-                            .navigationTitle("SimpleX address")
-                            .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX address") }
-                    }
 
-                    NavigationLink {
-                        PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                            .navigationTitle("Your preferences")
-                    } label: {
-                        settingsRow("switch.2") { Text("Chat preferences") }
+                    if let user = user {
+                        NavigationLink {
+                            UserAddressView(shareViaProfile: user.addressShared)
+                                .navigationTitle("SimpleX address")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("qrcode") { Text("Your SimpleX address") }
+                        }
+
+                        NavigationLink {
+                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                                .navigationTitle("Your preferences")
+                        } label: {
+                            settingsRow("switch.2") { Text("Chat preferences") }
+                        }
                     }
 
                     NavigationLink {
@@ -251,12 +255,14 @@ struct SettingsView: View {
                 }
 
                 Section("Help") {
-                    NavigationLink {
-                        ChatHelp(showSettings: $showSettings)
-                            .navigationTitle("Welcome \(user.displayName)!")
-                            .frame(maxHeight: .infinity, alignment: .top)
-                    } label: {
-                        settingsRow("questionmark") { Text("How to use it") }
+                    if let user = user {
+                        NavigationLink {
+                            ChatHelp(showSettings: $showSettings)
+                                .navigationTitle("Welcome \(user.displayName)!")
+                                .frame(maxHeight: .infinity, alignment: .top)
+                        } label: {
+                            settingsRow("questionmark") { Text("How to use it") }
+                        }
                     }
                     NavigationLink {
                         WhatsNewView(viaSettings: true)
