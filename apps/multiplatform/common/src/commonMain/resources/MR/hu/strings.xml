@@ -1605,4 +1605,15 @@
     <string name="saved_message_title">Mentett üzenet</string>
     <string name="share_text_created_at">Létrehozva ekkor: %s</string>
     <string name="clear_note_folder_warning">Az összes üzenet törlődik – ez nem vonható vissza!</string>
+    <string name="v5_5_message_delivery">Továbbfejlesztett üzenetküldés</string>
+    <string name="v5_5_join_group_conversation">Csatlakozás csoportos beszélgetésekhez</string>
+    <string name="v5_5_simpler_connect_ui">A link beillesztése a csatlakozáshoz!</string>
+    <string name="v5_5_private_notes">Privát jegyzetek</string>
+    <string name="v5_5_safer_groups">Biztonságosabb csoportok</string>
+    <string name="v5_5_simpler_connect_ui_descr">A keresősáv fogadja a meghívó hivatkozásokat.</string>
+    <string name="v5_5_private_notes_descr">Titkosított fájlokkal és média állományokkal.</string>
+    <string name="v5_5_message_delivery_descr">Csökkentett akkumulátorhasználattal.</string>
+    <string name="v5_5_safer_groups_descr">- blokkolj egy tagot, hogy megállítsd a spameket.
+\n- a kapcsolattartási cím nincs megosztva.</string>
+    <string name="v5_5_new_interface_languages">Magyar és török felhasználói felület</string>
 </resources>
