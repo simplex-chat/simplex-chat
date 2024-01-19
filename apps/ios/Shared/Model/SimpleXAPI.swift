@@ -1324,7 +1324,7 @@ func startChat(refreshInvitations: Bool = true) throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func changeActiveUser(_ userId: Int64?, viewPwd: String?) {
+func changeActiveUser(_ userId: Int64, viewPwd: String?) {
     do {
         try changeActiveUser_(userId, viewPwd: viewPwd)
     } catch let error {
@@ -1332,13 +1332,9 @@ func changeActiveUser(_ userId: Int64?, viewPwd: String?) {
     }
 }
 
-private func changeActiveUser_(_ userId: Int64?, viewPwd: String?) throws {
+private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     let m = ChatModel.shared
-    m.currentUser = if let userId = userId {
-        try apiSetActiveUser(userId, viewPwd: viewPwd)
-    } else {
-        try apiGetActiveUser()
-    }
+    m.currentUser = try apiSetActiveUser(userId, viewPwd: viewPwd)
     m.users = try listUsers()
     try getUserChatData()
 }
