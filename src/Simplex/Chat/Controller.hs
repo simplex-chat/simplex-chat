@@ -1058,6 +1058,7 @@ data ChatErrorType
   | CEGroupDuplicateMemberId
   | CEGroupNotJoined {groupInfo :: GroupInfo}
   | CEGroupMemberNotActive
+  | CECantBlockMemberForSelf {groupInfo :: GroupInfo, member :: GroupMember, setShowMessages :: Bool}
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound
   | CEGroupMemberIntroNotFound {contactName :: ContactName}

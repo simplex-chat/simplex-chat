@@ -1257,6 +1257,9 @@ testMuteGroup =
         (bob <# "#team alice> hi again")
         (cath <# "#team alice> hi again")
       bob ##> "/block #team alice"
+      bob <## "admins or above can't block member for self, use /block for all #team alice"
+      -- can bypass with api
+      bob ##> "/_member settings #1 1 {\"showMessages\": false}"
       bob <## "ok"
       bob ##> "/ms team"
       bob <## "bob (Bob): admin, you, connected"
@@ -1282,6 +1285,9 @@ testMuteGroup =
       bob <# "#team cath> test 2"
       threadDelay 1000000
       bob ##> "/unblock #team alice"
+      bob <## "admins or above can't block member for self, use /unblock for all #team alice"
+      -- can bypass with api
+      bob ##> "/_member settings #1 1 {\"showMessages\": true}"
       bob <## "ok"
       bob ##> "/ms team"
       bob <## "bob (Bob): admin, you, connected"

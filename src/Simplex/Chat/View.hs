@@ -1856,6 +1856,13 @@ viewChatError logLevel testView = \case
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> viewGroupName g)]
     CEGroupMemberNotActive -> ["your group connection is not active yet, try later"]
+    CECantBlockMemberForSelf g m showMsgs ->
+      [ "admins or above can't block member for self, use "
+          <> highlight
+            ( (if showMsgs then "/unblock for all" else "/block for all")
+                <> (" #" <> viewGroupName g <> " " <> viewMemberName m)
+            )
+      ]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound -> ["group doesn't have this member"]
     CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
