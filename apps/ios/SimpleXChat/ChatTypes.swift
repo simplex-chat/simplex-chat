@@ -1928,7 +1928,7 @@ public struct GroupMember: Identifiable, Decodable {
         memberCategory: .inviteeMember,
         memberStatus: .memComplete,
         memberSettings: GroupMemberSettings(showMessages: true),
-        memberRestriction: .unrestricted,
+        blockedByAdmin: false,
         invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: LocalProfile.sampleData,
