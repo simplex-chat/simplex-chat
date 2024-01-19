@@ -388,12 +388,18 @@ struct GroupMemberInfoView: View {
     }
 
     @ViewBuilder private func blockMemberRow(_ mem: GroupMember) -> some View {
-        if groupInfo.canBlockMembersForAll {
+        if groupInfo.membership.memberRole >= .admin {
             if mem.canBlockForAll(groupInfo: groupInfo) {
                 if mem.blockedByAdmin {
                     unblockForAllButton(mem)
                 } else {
                     blockForAllButton(mem)
+                }
+            } else {
+                if mem.blockedByAdmin {
+                    Label("Blocked by admin", systemImage: "hand.raised")
+                } else {
+                    Label("Member not blocked", systemImage: "hand.raised.slash")
                 }
             }
         } else {

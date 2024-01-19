@@ -1766,10 +1766,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         return membership.memberRole >= .admin && membership.memberActive
     }
 
-    public var canBlockMembersForAll: Bool {
-        return membership.memberRole >= .admin && membership.memberActive
-    }
-
     public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
