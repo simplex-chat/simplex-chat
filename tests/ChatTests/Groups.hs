@@ -5074,12 +5074,12 @@ testGroupHistoryDisappearingMessage =
       threadDelay 1000000
 
       -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
-      alice ##> "/set disappear #team on 3"
+      alice ##> "/set disappear #team on 4"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages: on (3 sec)"
+      alice <## "Disappearing messages: on (4 sec)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages: on (3 sec)"
+      bob <## "Disappearing messages: on (4 sec)"
 
       bob #> "#team 2"
       alice <# "#team bob> 2"
