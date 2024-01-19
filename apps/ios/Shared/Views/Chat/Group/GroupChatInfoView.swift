@@ -242,6 +242,19 @@ struct GroupChatInfoView: View {
             }
         }
 
+        @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
+            if member.blocked {
+                Text("blocked")
+                    .foregroundColor(.secondary)
+            } else {
+                let role = member.memberRole
+                if [.owner, .admin, .observer].contains(role) {
+                    Text(member.memberRole.text)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+
         private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
             v.swipeActions(edge: .leading) {
                 if member.memberSettings.showMessages {
