@@ -399,7 +399,7 @@ struct GroupMemberInfoView: View {
                 if mem.blockedByAdmin {
                     Label("Blocked by admin", systemImage: "hand.raised")
                 } else {
-                    Label("Member not blocked", systemImage: "hand.raised.slash")
+                    Label("No member restrictions", systemImage: "hand.raised.slash")
                 }
             }
         } else {

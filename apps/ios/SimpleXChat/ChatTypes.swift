@@ -1814,7 +1814,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
     public var memberSettings: GroupMemberSettings
-    public var memberBlocked: MemberBlockStatus
+    public var memberRestriction: MemberRestrictionStatus
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: LocalProfile
@@ -1834,7 +1834,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
     public var verified: Bool { activeConn?.connectionCode != nil }
-    public var blockedByAdmin: Bool { memberBlocked == .blocked }
+    public var blockedByAdmin: Bool { memberRestriction == .blocked }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
     var directChatId: ChatId? {
@@ -1929,7 +1929,7 @@ public struct GroupMember: Identifiable, Decodable {
         memberCategory: .inviteeMember,
         memberStatus: .memComplete,
         memberSettings: GroupMemberSettings(showMessages: true),
-        memberBlocked: .notBlocked,
+        memberRestriction: .unrestricted,
         invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: LocalProfile.sampleData,
@@ -2044,9 +2044,9 @@ public enum GroupMemberStatus: String, Decodable {
     }
 }
 
-public enum MemberBlockStatus: String, Decodable {
+public enum MemberRestrictionStatus: String, Decodable {
     case blocked = "blocked"
-    case notBlocked = "not_blocked"
+    case unrestricted = "unrestricted"
 }
 
 public struct NoteFolder: Identifiable, Decodable, NamedChat {
