@@ -3532,8 +3532,8 @@ public enum RcvGroupEvent: Decodable {
 
 public enum SndGroupEvent: Decodable {
     case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
-    case memberBlocked(groupMemberId: Int64, profile: Profile, blocked: Bool)
     case userRole(role: GroupMemberRole)
+    case memberBlocked(groupMemberId: Int64, profile: Profile, blocked: Bool)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
     case groupUpdated(groupProfile: GroupProfile)
@@ -3542,14 +3542,14 @@ public enum SndGroupEvent: Decodable {
         switch self {
         case let .memberRole(_, profile, role):
             return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
+        case let .userRole(role):
+            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
         case let .memberBlocked(_, profile, blocked):
             if blocked {
                 return String.localizedStringWithFormat(NSLocalizedString("you blocked %@", comment: "snd group event chat item"), profile.profileViewName)
             } else {
                 return String.localizedStringWithFormat(NSLocalizedString("you unblocked %@", comment: "snd group event chat item"), profile.profileViewName)
             }
-        case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
