@@ -409,6 +409,7 @@ struct GroupMemberInfoView: View {
         Section {
             if mem.blockedByAdmin {
                 Label("Blocked by admin", systemImage: "hand.raised")
+                    .foregroundColor(.secondary)
             } else if mem.memberSettings.showMessages {
                 blockMemberButton(mem)
             } else {
