@@ -399,6 +399,9 @@
 "All group members will remain connected." = "Alle groepsleden blijven verbonden.";
 
 /* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone!" = "Alle berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.";
 
 /* No comment provided by engineer. */
@@ -636,9 +639,6 @@
 "Camera not available" = "Camera niet beschikbaar";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Kan gebruikers profiel niet verwijderen!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kan contact niet uitnodigen!";
 
 /* No comment provided by engineer. */
@@ -752,6 +752,9 @@
 
 /* No comment provided by engineer. */
 "Clear conversation?" = "Gesprek wissen?";
+
+/* No comment provided by engineer. */
+"Clear private notes?" = "Privénotities verwijderen?";
 
 /* No comment provided by engineer. */
 "Clear verification" = "Verwijderd verificatie";
@@ -891,6 +894,9 @@
 /* connection information */
 "connection:%@" = "verbinding:%@";
 
+/* profile update event chat item */
+"contact %@ changed to %@" = "contactpersoon %1$@ gewijzigd in %2$@";
+
 /* No comment provided by engineer. */
 "Contact allows" = "Contact maakt het mogelijk";
 
@@ -974,6 +980,12 @@
 
 /* No comment provided by engineer. */
 "Create your profile" = "Maak je profiel aan";
+
+/* No comment provided by engineer. */
+"Created at" = "Gemaakt op";
+
+/* copied message info */
+"Created at: %@" = "Aangemaakt op: %@";
 
 /* No comment provided by engineer. */
 "Created on %@" = "Gemaakt op %@";
@@ -1300,6 +1312,9 @@
 "Do it later" = "Doe het later";
 
 /* No comment provided by engineer. */
+"Do not send history to new members." = "Stuur geen geschiedenis naar nieuwe leden.";
+
+/* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Gebruik SimpleX NIET voor noodoproepen.";
 
 /* No comment provided by engineer. */
@@ -1523,6 +1538,9 @@
 
 /* No comment provided by engineer. */
 "Error creating member contact" = "Fout bij aanmaken contact";
+
+/* No comment provided by engineer. */
+"Error creating message" = "Fout bij het maken van een bericht";
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Fout bij aanmaken van profiel!";
@@ -1878,6 +1896,9 @@
 /* No comment provided by engineer. */
 "History" = "Geschiedenis";
 
+/* No comment provided by engineer. */
+"History is not sent to new members." = "Geschiedenis wordt niet naar nieuwe leden gestuurd.";
+
 /* time unit */
 "hours" = "uren";
 
@@ -1934,6 +1955,9 @@
 
 /* No comment provided by engineer. */
 "Import database" = "Database importeren";
+
+/* No comment provided by engineer. */
+"Improved message delivery" = "Verbeterde berichtbezorging";
 
 /* No comment provided by engineer. */
 "Improved privacy and security" = "Verbeterde privacy en veiligheid";
@@ -2018,6 +2042,9 @@
 
 /* invalid chat item */
 "invalid data" = "ongeldige gegevens";
+
+/* No comment provided by engineer. */
+"Invalid display name!" = "Ongeldige weergavenaam!";
 
 /* No comment provided by engineer. */
 "Invalid link" = "Ongeldige link";
@@ -2108,6 +2135,9 @@
 
 /* No comment provided by engineer. */
 "Join group" = "Word lid van groep";
+
+/* No comment provided by engineer. */
+"Join group conversations" = "Neem deel aan groep gesprekken";
 
 /* No comment provided by engineer. */
 "Join group?" = "Deelnemen aan groep?";
@@ -2243,6 +2273,9 @@
 
 /* No comment provided by engineer. */
 "Member" = "Lid";
+
+/* profile update event chat item */
+"member %@ changed to %@" = "lid %1$@ gewijzigd in %2$@";
 
 /* rcv group event chat item */
 "member connected" = "is toegetreden";
@@ -2588,11 +2621,17 @@
 /* No comment provided by engineer. */
 "Password to show" = "Wachtwoord om weer te geven";
 
+/* past/unknown group member */
+"Past member %@" = "Voormalig lid %@";
+
 /* No comment provided by engineer. */
 "Paste desktop address" = "Desktopadres plakken";
 
 /* No comment provided by engineer. */
 "Paste image" = "Afbeelding plakken";
+
+/* No comment provided by engineer. */
+"Paste link to connect!" = "Plak link om te verbinden!";
 
 /* No comment provided by engineer. */
 "Paste the link you received" = "Plak de link die je hebt ontvangen";
@@ -2680,6 +2719,9 @@
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privé bestandsnamen";
+
+/* name of notes to self */
+"Private notes" = "Privé notities";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profiel- en serververbindingen";
@@ -2796,6 +2838,9 @@
 "Receiving via" = "Ontvang via";
 
 /* No comment provided by engineer. */
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Recente geschiedenis en verbeterde [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2 F%3Fv%3D1-2% 26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Ontvangers zien updates terwijl u ze typt.";
 
 /* No comment provided by engineer. */
@@ -2848,6 +2893,12 @@
 
 /* rcv group event chat item */
 "removed %@" = "verwijderd %@";
+
+/* profile update event chat item */
+"removed contact address" = "contactadres verwijderd";
+
+/* profile update event chat item */
+"removed profile picture" = "profielfoto verwijderd";
 
 /* rcv group event chat item */
 "removed you" = "heeft je verwijderd";
@@ -2972,6 +3023,9 @@
 /* No comment provided by engineer. */
 "Save welcome message?" = "Welkomst bericht opslaan?";
 
+/* message info title */
+"Saved message" = "Opgeslagen bericht";
+
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Opgeslagen WebRTC ICE servers worden verwijderd";
 
@@ -2992,6 +3046,9 @@
 
 /* No comment provided by engineer. */
 "Search" = "Zoeken";
+
+/* No comment provided by engineer. */
+"Search bar accepts invitation links." = "Zoekbalk accepteert uitnodigingslinks.";
 
 /* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Zoek of plak de SimpleX link";
@@ -3075,6 +3132,9 @@
 "Send them from gallery or custom keyboards." = "Stuur ze vanuit de galerij of aangepaste toetsenborden.";
 
 /* No comment provided by engineer. */
+"Send up to 100 last messages to new members." = "Stuur tot 100 laatste berichten naar nieuwe leden.";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Afzender heeft bestandsoverdracht geannuleerd.";
 
 /* No comment provided by engineer. */
@@ -3145,6 +3205,12 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Stel het in in plaats van systeemverificatie.";
+
+/* profile update event chat item */
+"set new contact address" = "nieuw contactadres instellen";
+
+/* profile update event chat item */
+"set new profile picture" = "nieuwe profielfoto instellen";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Toegangscode instellen";
@@ -3432,12 +3498,6 @@
 "Theme" = "Thema";
 
 /* No comment provided by engineer. */
-"There should be at least one user profile." = "Er moet ten minste één gebruikers profiel zijn.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Er moet ten minste één zichtbaar gebruikers profiel zijn.";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Deze instellingen zijn voor uw huidige profiel **%@**.";
 
 /* No comment provided by engineer. */
@@ -3457,6 +3517,9 @@
 
 /* No comment provided by engineer. */
 "This device name" = "Deze apparaatnaam";
+
+/* No comment provided by engineer. */
+"This display name is invalid. Please choose another name." = "Deze weergavenaam is ongeldig. Kies een andere naam.";
 
 /* No comment provided by engineer. */
 "This group has over %lld members, delivery receipts are not sent." = "Deze groep heeft meer dan %lld -leden, ontvangstbevestigingen worden niet verzonden.";
@@ -3519,6 +3582,9 @@
 "Trying to connect to the server used to receive messages from this contact." = "Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
 
 /* No comment provided by engineer. */
+"Turkish interface" = "Turkse interface";
+
+/* No comment provided by engineer. */
 "Turn off" = "Uitschakelen";
 
 /* No comment provided by engineer. */
@@ -3570,6 +3636,9 @@
 "Unknown error" = "Onbekende fout";
 
 /* No comment provided by engineer. */
+"unknown status" = "onbekende status";
+
+/* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Schakel de modus Niet storen in om onderbrekingen te voorkomen, tenzij u de iOS-oproepinterface gebruikt.";
 
 /* No comment provided by engineer. */
@@ -3594,6 +3663,9 @@
 "Unread" = "Ongelezen";
 
 /* No comment provided by engineer. */
+"Up to 100 last messages are sent to new members." = "Er worden maximaal 100 laatste berichten naar nieuwe leden verzonden.";
+
+/* No comment provided by engineer. */
 "Update" = "Update";
 
 /* No comment provided by engineer. */
@@ -3610,6 +3682,9 @@
 
 /* rcv group event chat item */
 "updated group profile" = "bijgewerkt groep profiel";
+
+/* profile update event chat item */
+"updated profile" = "bijgewerkt profiel";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle servers.";
@@ -3719,6 +3794,9 @@
 /* No comment provided by engineer. */
 "View security code" = "Beveiligingscode bekijken";
 
+/* chat feature */
+"Visible history" = "Zichtbare geschiedenis";
+
 /* No comment provided by engineer. */
 "Voice message…" = "Spraakbericht…";
 
@@ -3783,7 +3861,13 @@
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.";
 
 /* No comment provided by engineer. */
+"With encrypted files and media." = "‐Met versleutelde bestanden en media.";
+
+/* No comment provided by engineer. */
 "With optional welcome message." = "Met optioneel welkomst bericht.";
+
+/* No comment provided by engineer. */
+"With reduced battery usage." = "Met verminderd batterijgebruik.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Verkeerd wachtwoord voor de database";

@@ -636,9 +636,6 @@
 "Camera not available" = "Камерата е неодстъпна";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Потребителският профил не може да се изтрие!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Не може да покани контакта!";
 
 /* No comment provided by engineer. */
@@ -1300,6 +1297,9 @@
 "Do it later" = "Отложи";
 
 /* No comment provided by engineer. */
+"Do not send history to new members." = "Не изпращай история на нови членове.";
+
+/* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "НЕ използвайте SimpleX за спешни повиквания.";
 
 /* No comment provided by engineer. */
@@ -1318,7 +1318,7 @@
 "Download file" = "Свали файл";
 
 /* No comment provided by engineer. */
-"Duplicate display name!" = "Дублирано показвано име!";
+"Duplicate display name!" = "Дублирано име!";
 
 /* integrity error chat item */
 "duplicate message" = "дублирано съобщение";
@@ -1783,7 +1783,7 @@
 "group deleted" = "групата е изтрита";
 
 /* No comment provided by engineer. */
-"Group display name" = "Показвано име на групата";
+"Group display name" = "Име на групата";
 
 /* No comment provided by engineer. */
 "Group full name (optional)" = "Пълно име на групата (незадължително)";
@@ -1877,6 +1877,9 @@
 
 /* No comment provided by engineer. */
 "History" = "История";
+
+/* No comment provided by engineer. */
+"History is not sent to new members." = "Историята не се изпраща на нови членове.";
 
 /* time unit */
 "hours" = "часове";
@@ -2018,6 +2021,9 @@
 
 /* invalid chat item */
 "invalid data" = "невалидни данни";
+
+/* No comment provided by engineer. */
+"Invalid display name!" = "Невалидно име!";
 
 /* No comment provided by engineer. */
 "Invalid link" = "Невалиден линк";
@@ -2377,7 +2383,7 @@
 "New desktop app!" = "Ново настолно приложение!";
 
 /* No comment provided by engineer. */
-"New display name" = "Ново показвано име";
+"New display name" = "Ново име";
 
 /* No comment provided by engineer. */
 "New in %@" = "Ново в %@";
@@ -3075,6 +3081,9 @@
 "Send them from gallery or custom keyboards." = "Изпрати от галерия или персонализирани клавиатури.";
 
 /* No comment provided by engineer. */
+"Send up to 100 last messages to new members." = "Изпращане до последните 100 съобщения на нови членове.";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Подателят отмени прехвърлянето на файла.";
 
 /* No comment provided by engineer. */
@@ -3432,12 +3441,6 @@
 "Theme" = "Тема";
 
 /* No comment provided by engineer. */
-"There should be at least one user profile." = "Трябва да има поне един потребителски профил.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Трябва да има поне един видим потребителски профил.";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Тези настройки са за текущия ви профил **%@**.";
 
 /* No comment provided by engineer. */
@@ -3457,6 +3460,9 @@
 
 /* No comment provided by engineer. */
 "This device name" = "Името на това устройство";
+
+/* No comment provided by engineer. */
+"This display name is invalid. Please choose another name." = "Това име е невалидно. Моля, изберете друго име.";
 
 /* No comment provided by engineer. */
 "This group has over %lld members, delivery receipts are not sent." = "Тази група има над %lld членове, потвърждения за доставка не се изпращат.";
@@ -3594,6 +3600,9 @@
 "Unread" = "Непрочетено";
 
 /* No comment provided by engineer. */
+"Up to 100 last messages are sent to new members." = "На новите членове се изпращат до последните 100 съобщения.";
+
+/* No comment provided by engineer. */
 "Update" = "Актуализация";
 
 /* No comment provided by engineer. */
@@ -3719,6 +3728,9 @@
 /* No comment provided by engineer. */
 "View security code" = "Виж кода за сигурност";
 
+/* chat feature */
+"Visible history" = "Видима история";
+
 /* No comment provided by engineer. */
 "Voice message…" = "Гласово съобщение…";
 
@@ -3807,7 +3819,7 @@
 "You allow" = "Вие позволявате";
 
 /* No comment provided by engineer. */
-"You already have a chat profile with the same display name. Please choose another name." = "Вече имате чат профил със същото показвано име. Моля, изберете друго име.";
+"You already have a chat profile with the same display name. Please choose another name." = "Вече имате чат профил със същото име. Моля, изберете друго име.";
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Вече сте вече свързани с %@.";

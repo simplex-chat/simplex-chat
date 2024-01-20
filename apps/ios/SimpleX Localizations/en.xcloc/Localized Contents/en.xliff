@@ -217,6 +217,11 @@
         <target>%lld messages blocked</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+        <source>%lld messages blocked by admin</source>
+        <target>%lld messages blocked by admin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
         <source>%lld messages marked deleted</source>
         <target>%lld messages marked deleted</target>
@@ -370,13 +375,6 @@
       <trans-unit id=", " xml:space="preserve">
         <source>, </source>
         <target>, </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="- block a member to stop spam for all.&#10;- contact address is not shared." xml:space="preserve">
-        <source>- block a member to stop spam for all.
-- contact address is not shared.</source>
-        <target>- block a member to stop spam for all.
-- contact address is not shared.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
@@ -925,6 +923,11 @@
         <target>Block</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Block for all" xml:space="preserve">
+        <source>Block for all</source>
+        <target>Block for all</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
         <target>Block group members</target>
@@ -935,9 +938,19 @@
         <target>Block member</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Block member for all?" xml:space="preserve">
+        <source>Block member for all?</source>
+        <target>Block member for all?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
         <target>Block member?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Blocked by admin" xml:space="preserve">
+        <source>Blocked by admin</source>
+        <target>Blocked by admin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -988,11 +1001,6 @@
       <trans-unit id="Camera not available" xml:space="preserve">
         <source>Camera not available</source>
         <target>Camera not available</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Can't delete user profile!" xml:space="preserve">
-        <source>Can't delete user profile!</source>
-        <target>Can't delete user profile!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -4406,11 +4414,6 @@ Error: %@</target>
         <target>SMP servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Safer groups" xml:space="preserve">
-        <source>Safer groups</source>
-        <target>Safer groups</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Save</target>
@@ -5233,16 +5236,6 @@ It can happen because of some bug or when the connection is compromised.</target
         <target>Theme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one user profile." xml:space="preserve">
-        <source>There should be at least one user profile.</source>
-        <target>There should be at least one user profile.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
-        <source>There should be at least one visible user profile.</source>
-        <target>There should be at least one visible user profile.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve">
         <source>These settings are for your current profile **%@**.</source>
         <target>These settings are for your current profile **%@**.</target>
@@ -5405,9 +5398,19 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Unblock</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unblock for all" xml:space="preserve">
+        <source>Unblock for all</source>
+        <target>Unblock for all</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
         <source>Unblock member</source>
         <target>Unblock member</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unblock member for all?" xml:space="preserve">
+        <source>Unblock member for all?</source>
+        <target>Unblock member for all?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -6290,6 +6293,16 @@ SimpleX servers cannot see your profile.</target>
         <target>blocked</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="blocked %@" xml:space="preserve">
+        <source>blocked %@</source>
+        <target>blocked %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="blocked by admin" xml:space="preserve">
+        <source>blocked by admin</source>
+        <target>blocked by admin</target>
+        <note>blocked chat item</note>
+      </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
         <target>bold</target>
@@ -6877,6 +6890,11 @@ SimpleX servers cannot see your profile.</target>
         <target>this contact</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="unblocked %@" xml:space="preserve">
+        <source>unblocked %@</source>
+        <target>unblocked %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
         <source>unknown</source>
         <target>unknown</target>
@@ -6967,6 +6985,11 @@ SimpleX servers cannot see your profile.</target>
         <target>you are observer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you blocked %@" xml:space="preserve">
+        <source>you blocked %@</source>
+        <target>you blocked %@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
         <source>you changed address</source>
         <target>you changed address</target>
@@ -7006,6 +7029,11 @@ SimpleX servers cannot see your profile.</target>
         <source>you shared one-time link incognito</source>
         <target>you shared one-time link incognito</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="you unblocked %@" xml:space="preserve">
+        <source>you unblocked %@</source>
+        <target>you unblocked %@</target>
+        <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">
         <source>you: </source>

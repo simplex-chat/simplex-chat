@@ -546,9 +546,6 @@
 "Calls" = "Puhelut";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Käyttäjäprofiilia ei voi poistaa!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kontaktia ei voi kutsua!";
 
 /* No comment provided by engineer. */
@@ -3064,12 +3061,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Teema";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Käyttäjäprofiileja tulee olla vähintään yksi.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Näkyviä käyttäjäprofiileja tulee olla vähintään yksi.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Nämä asetukset koskevat nykyistä profiiliasi **%@**.";

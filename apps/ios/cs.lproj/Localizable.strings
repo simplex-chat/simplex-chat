@@ -561,9 +561,6 @@
 "Calls" = "Hovory";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Nemohu smazat uživatelský profil!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Nelze pozvat kontakt!";
 
 /* No comment provided by engineer. */
@@ -3103,12 +3100,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Téma";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Měl by tam být alespoň jeden uživatelský profil.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Měl by tam být alespoň jeden viditelný uživatelský profil.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";

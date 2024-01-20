@@ -615,9 +615,6 @@
 "Calls" = "Дзвінки";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Не можу видалити профіль користувача!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Не вдається запросити контакт!";
 
 /* No comment provided by engineer. */
@@ -3145,12 +3142,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Тема";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Повинен бути принаймні один профіль користувача.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Повинен бути принаймні один видимий профіль користувача.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Ці налаштування стосуються вашого поточного профілю **%@**.";
