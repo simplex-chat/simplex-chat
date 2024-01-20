@@ -2754,7 +2754,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
-            case .rcvBlocked: return NSLocalizedString("blocked", comment: "blocked chat item")
+            case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }

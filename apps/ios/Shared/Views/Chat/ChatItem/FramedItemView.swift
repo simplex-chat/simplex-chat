@@ -44,8 +44,10 @@ struct FramedItemView: View {
                     switch di {
                     case let .moderated(_, byGroupMember):
                         framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
-                    case .blocked, .blockedByAdmin:
+                    case .blocked:
                         framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
+                    case .blockedByAdmin:
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
                     case .deleted:
                         framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
                     }
