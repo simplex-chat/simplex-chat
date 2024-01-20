@@ -522,9 +522,6 @@
 "Calls" = "โทร";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "ไม่สามารถลบโปรไฟล์ผู้ใช้ได้!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
 /* No comment provided by engineer. */
@@ -2983,12 +2980,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "ธีม";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "ควรมีโปรไฟล์ผู้ใช้อย่างน้อยหนึ่งโปรไฟล์";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "ควรมีอย่างน้อยหนึ่งโปรไฟล์ผู้ใช้ที่มองเห็นได้";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";

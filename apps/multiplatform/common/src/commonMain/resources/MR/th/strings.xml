@@ -142,7 +142,6 @@
     <string name="change_member_role_question">เปลี่ยนบทบาทกลุ่ม\?</string>
     <string name="icon_descr_cancel_live_message">ยกเลิกข้อความสด</string>
     <string name="feature_cancelled_item">ยกเลิกเรียบร้อยแล้ว %s</string>
-    <string name="cant_delete_user_profile">ไม่สามารถลบโปรไฟล์ผู้ใช้ได้!</string>
     <string name="alert_title_cant_invite_contacts">ไม่สามารถเชิญผู้ติดต่อได้!</string>
     <string name="change_verb">เปลี่ยน</string>
     <string name="change_database_passphrase_question">เปลี่ยนรหัสผ่านฐานข้อมูล\?</string>
@@ -1213,8 +1212,6 @@
     <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง</string>
     <string name="user_unhide">ยกเลิกการซ่อน</string>
     <string name="user_unmute">เปิดเสียง</string>
-    <string name="should_be_at_least_one_profile">ควรมีโปรไฟล์ผู้ใช้อย่างน้อยหนึ่งโปรไฟล์</string>
-    <string name="should_be_at_least_one_visible_profile">ควรมีอย่างน้อยหนึ่งโปรไฟล์ผู้ใช้ที่มองเห็นได้</string>
     <string name="you_can_hide_or_mute_user_profile">คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - กดค้างไว้เพื่อที่จะแสดงเมนู</string>
     <string name="unhide_profile">เลิกซ่อนโปรไฟล์</string>
     <string name="chat_preferences_you_allow">คุณอนุญาต</string>

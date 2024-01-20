@@ -35,6 +35,7 @@ import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -50,7 +51,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 
 class IsContact a where
@@ -596,9 +597,55 @@ data MemberInfo = MemberInfo
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole cvr (redactedMemberProfile $ fromLocalProfile memberProfile)
-  where
-    cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
+  MemberInfo
+    { memberId,
+      memberRole,
+      v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
+      profile = redactedMemberProfile $ fromLocalProfile memberProfile
+    }
+
+data MemberRestrictionStatus
+  = MRSBlocked
+  | MRSUnrestricted
+  | MRSUnknown Text
+  deriving (Eq, Show)
+
+instance FromField MemberRestrictionStatus where fromField = fromBlobField_ strDecode
+
+instance ToField MemberRestrictionStatus where toField = toField . strEncode
+
+instance StrEncoding MemberRestrictionStatus where
+  strEncode = \case
+    MRSBlocked -> "blocked"
+    MRSUnrestricted -> "unrestricted"
+    MRSUnknown tag -> encodeUtf8 tag
+  strDecode s = Right $ case s of
+    "blocked" -> MRSBlocked
+    "unrestricted" -> MRSUnrestricted
+    tag -> MRSUnknown $ safeDecodeUtf8 tag
+  strP = strDecode <$?> A.takeByteString
+
+instance FromJSON MemberRestrictionStatus where
+  parseJSON = strParseJSON "MemberRestrictionStatus"
+
+instance ToJSON MemberRestrictionStatus where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+mrsBlocked :: MemberRestrictionStatus -> Bool
+mrsBlocked = \case
+  MRSBlocked -> True
+  _ -> False
+
+data MemberRestrictions = MemberRestrictions
+  { restriction :: MemberRestrictionStatus
+  }
+  deriving (Eq, Show)
+
+memberRestrictions :: GroupMember -> Maybe MemberRestrictions
+memberRestrictions m
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked}
+  | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -619,6 +666,7 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
+    blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -679,6 +727,7 @@ data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
+    memRestriction :: Maybe MemberRestrictionStatus,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -1640,6 +1689,8 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
 $(JQ.deriveJSON defaultJSON ''MemberInfo)
+
+$(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 

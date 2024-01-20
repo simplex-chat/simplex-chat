@@ -133,7 +133,7 @@ actual fun QRCodeScanner(
           }
         }
         !cameraPermissionState.hasPermission -> {
-          Button({ withBGApi { cameraPermissionState.launchPermissionRequest() } }, modifier = modifier, colors = buttonColors) {
+          Button({ cameraPermissionState.launchPermissionRequest() }, modifier = modifier, colors = buttonColors) {
             Icon(painterResource(MR.images.ic_camera_enhance), null)
             Spacer(Modifier.width(DEFAULT_PADDING_HALF))
             Text(stringResource(MR.strings.enable_camera_access))

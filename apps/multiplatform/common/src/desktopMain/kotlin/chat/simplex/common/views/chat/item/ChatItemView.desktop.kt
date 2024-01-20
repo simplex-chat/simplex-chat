@@ -42,7 +42,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
     }
     var fileSource = getLoadedFileSource(cItem.file)
     if (chatModel.connectedToRemote() && fileSource == null) {
-      withBGApi {
+      withLongRunningApi(slow = 60_000, deadlock = 600_000) {
         cItem.file?.loadRemoteFile(true)
         fileSource = getLoadedFileSource(cItem.file)
         saveIfExists()
@@ -51,7 +51,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   })
 }
 
-actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withBGApi {
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withLongRunningApi(slow = 60_000, deadlock = 600_000) {
   var fileSource = getLoadedFileSource(cItem.file)
   if (chatModel.connectedToRemote() && fileSource == null) {
     cItem.file?.loadRemoteFile(true)
@@ -63,10 +63,10 @@ actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = w
       val tmpFile = File(tmpDir, fileSource.filePath)
       tmpFile.deleteOnExit()
       try {
-        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs ?: return@withBGApi, tmpFile.absolutePath)
+        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs ?: return@withLongRunningApi, tmpFile.absolutePath)
       } catch (e: Exception) {
         Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
-        return@withBGApi
+        return@withLongRunningApi
       }
       tmpFile.absolutePath
     } else {

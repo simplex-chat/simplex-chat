@@ -12,6 +12,8 @@ module Simplex.Chat.Store.Direct
   ( updateContactLDN_,
     updateContactProfile_,
     updateContactProfile_',
+    updateMemberContactProfileReset_',
+    updateMemberContactProfileReset_,
     updateMemberContactProfile_,
     updateMemberContactProfile_',
     deleteContactProfile_,
@@ -455,7 +457,24 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, image
     |]
     (displayName, fullName, image, contactLink, preferences, updatedAt, userId, profileId)
 
--- update only member profile fields
+-- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
+updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
+updateMemberContactProfileReset_ db userId profileId profile = do
+  currentTs <- getCurrentTime
+  updateMemberContactProfileReset_' db userId profileId profile currentTs
+
+updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, image} updatedAt = do
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET display_name = ?, full_name = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
+    |]
+    (displayName, fullName, image, updatedAt, userId, profileId)
+
+-- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
 updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
 updateMemberContactProfile_ db userId profileId profile = do
   currentTs <- getCurrentTime

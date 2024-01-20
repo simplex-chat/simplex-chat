@@ -63,6 +63,7 @@ testOpts =
       deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
+      chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       showReactions = True,

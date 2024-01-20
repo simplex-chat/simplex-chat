@@ -299,7 +299,8 @@
     <string name="connection_you_accepted_will_be_cancelled">Подтвержденное соединение будет отменено!</string>
     <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="alert_title_contact_connection_pending">Соединение еще не установлено!</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Ваш контакт должен быть в сети, чтобы установить соединение.
+\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).</string>
     <!-- Contact Request Information - ContactRequestView.kt -->
     <string name="contact_wants_to_connect_with_you">хочет соединиться с Вами!</string>
     <!-- Image Placeholder - ChatInfoImage.kt -->
@@ -487,7 +488,7 @@
     <!-- SetNotificationsMode.kt -->
     <string name="use_chat">Использовать чат</string>
     <!-- MakeConnection -->
-    <string name="paste_the_link_you_received">Вставить полученную ссылку</string>
+    <string name="paste_the_link_you_received">Вставьте полученную ссылку</string>
     <!-- Call -->
     <string name="incoming_video_call">Входящий видеозвонок</string>
     <string name="incoming_audio_call">Входящий аудиозвонок</string>
@@ -872,15 +873,15 @@
     <string name="feature_enabled_for_contact">включено для контакта</string>
     <string name="feature_off">выключено</string>
     <string name="feature_received_prohibited">получено, не разрешено</string>
-    <string name="allow_your_contacts_irreversibly_delete">Разрешить Вашим контактам необратимо удалять отправленные сообщения.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Разрешить необратимое удаление сообщений, только если Ваш контакт разрешает это Вам.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Разрешить Вашим контактам необратимо удалять отправленные сообщения. (24 часа)</string>
+    <string name="allow_irreversible_message_deletion_only_if">Разрешить необратимое удаление сообщений, только если Ваш контакт разрешает это Вам. (24 часа)</string>
     <string name="contacts_can_mark_messages_for_deletion">Контакты могут помечать сообщения для удаления; Вы сможете просмотреть их.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Разрешить Вашим контактам отправлять голосовые сообщения.</string>
     <string name="allow_voice_messages_only_if">Разрешить голосовые сообщения, только если их разрешает Ваш контакт.</string>
     <string name="prohibit_sending_voice_messages">Запретить отправлять голосовые сообщений.</string>
-    <string name="both_you_and_your_contacts_can_delete">Вы и Ваш контакт можете необратимо удалять отправленные сообщения.</string>
-    <string name="only_you_can_delete_messages">Только Вы можете необратимо удалять сообщения (Ваш контакт может помечать их на удаление).</string>
-    <string name="only_your_contact_can_delete">Только Ваш контакт может необратимо удалять сообщения (Вы можете помечать их на удаление).</string>
+    <string name="both_you_and_your_contacts_can_delete">Вы и Ваш контакт можете необратимо удалять отправленные сообщения. (24 часа)</string>
+    <string name="only_you_can_delete_messages">Только Вы можете необратимо удалять сообщения (Ваш контакт может помечать их на удаление). (24 часа)</string>
+    <string name="only_your_contact_can_delete">Только Ваш контакт может необратимо удалять сообщения (Вы можете помечать их на удаление). (24 часа)</string>
     <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="both_you_and_your_contact_can_send_voice">Вы и Ваш контакт можете отправлять голосовые сообщения.</string>
     <string name="only_you_can_send_voice">Только Вы можете отправлять голосовые сообщения.</string>
@@ -888,13 +889,13 @@
     <string name="voice_prohibited_in_this_chat">Голосовые сообщения запрещены в этом чате.</string>
     <string name="allow_direct_messages">Разрешить посылать прямые сообщения членам группы.</string>
     <string name="prohibit_direct_messages">Запретить посылать прямые сообщения членам группы.</string>
-    <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения.</string>
+    <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
     <string name="group_members_can_send_dms">Члены группы могут посылать прямые сообщения.</string>
     <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами группы запрещены.</string>
-    <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения.</string>
+    <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>
     <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этой группе.</string>
@@ -1044,8 +1045,6 @@
     <string name="v4_6_audio_video_calls">Аудио и видео звонки</string>
     <string name="error_saving_user_password">Ошибка при сохранении пароля пользователя</string>
     <string name="smp_save_servers_question">Сохранить серверы\?</string>
-    <string name="should_be_at_least_one_profile">Должен быть хотя бы один профиль пользователя.</string>
-    <string name="should_be_at_least_one_visible_profile">Должен быть хотя бы один открытый профиль пользователя.</string>
     <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице Ваши профили.</string>
     <string name="user_unmute">Уведомлять</string>
     <string name="group_welcome_title">Приветственное сообщение</string>
@@ -1054,7 +1053,6 @@
     <string name="button_welcome_message">Приветственное сообщение</string>
     <string name="save_and_update_group_profile">Сохранить сообщение и обновить группу</string>
     <string name="muted_when_inactive">Без звука, когда не активный!</string>
-    <string name="cant_delete_user_profile">Нельзя удалить профиль пользователя!</string>
     <string name="enter_password_to_show">Введите пароль в поиске!</string>
     <string name="save_profile_password">Сохранить пароль профиля</string>
     <string name="v4_6_chinese_spanish_interface">Китайский и Испанский интерфейс</string>
@@ -1575,7 +1573,7 @@
     <string name="group_members_n">%s, %s и %d членов группы</string>
     <string name="this_device">Это устройство</string>
     <string name="unblock_member_button">Разблокировать члена группы</string>
-    <string name="contact_tap_to_connect">Нажмите чтобы соединиться</string>
+    <string name="contact_tap_to_connect">Нажмите, чтобы соединиться</string>
     <string name="this_device_name">Имя этого устройства</string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Вы уже состоите в группе <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Это ваш собственный адрес SimpleX!</string>
@@ -1610,4 +1608,98 @@
     <string name="disconnect_remote_hosts">Отключить мобильные</string>
     <string name="no_connected_mobile">Нет подключённых мобильных</string>
     <string name="add_contact_tab">Добавить контакт</string>
+    <string name="v5_5_private_notes">Личные заметки</string>
+    <string name="v5_5_join_group_conversation">Присоединяйтесь к разговорам в группах</string>
+    <string name="v5_5_simpler_connect_ui">Вставьте ссылку, чтобы соединиться!</string>
+    <string name="v5_5_simpler_connect_ui_descr">Поле поиска поддерживает ссылки-приглашения.</string>
+    <string name="v5_5_join_group_conversation_descr">История сообщений и улучшенный каталог групп.</string>
+    <string name="remote_host_error_inactive"><![CDATA[Мобильный <b>%s</b> неактивен]]></string>
+    <string name="remote_ctrl_error_timeout">Превышено максимальное время соединения с компьютером.</string>
+    <string name="remote_ctrl_error_disconnected">Компьютер отсоединён</string>
+    <string name="remote_ctrl_error_bad_invitation">Неверный код приглашения у компьютера</string>
+    <string name="loading_chats">Загрузка чатов…</string>
+    <string name="enable_camera_access">Включить доступ к камере</string>
+    <string name="tap_to_scan">Нажмите, чтобы сканировать</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Создать группу</b>: создать новую группу.]]></string>
+    <string name="disable_sending_recent_history">Не отправлять историю новым членам.</string>
+    <string name="enable_sending_recent_history">Отправить до 100 последних сообщений новым членам.</string>
+    <string name="clear_note_folder_warning">Все сообщения будут удалены - это нельзя отменить!</string>
+    <string name="camera_not_available">Камера недоступна</string>
+    <string name="la_app_passcode">Код доступа в приложение</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Добавить контакт</b>: создать новую ссылку-приглашение или подключиться через полученную ссылку.]]></string>
+    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите ее обратно до запуска чата.</string>
+    <string name="remote_host_was_disconnected_title">Соединение остановлено</string>
+    <string name="info_row_created_at">Создано</string>
+    <string name="keep_invitation_link">Оставить</string>
+    <string name="share_text_created_at">Создано: %s</string>
+    <string name="remote_host_error_missing"><![CDATA[Мобильный <b>%s</b> отсутствует]]></string>
+    <string name="or_show_this_qr_code">Или покажите этот код</string>
+    <string name="agent_internal_error_desc">Пожалуйста, сообщите об этом разработчикам:
+\n%s</string>
+    <string name="developer_options_section">Опции разработчика</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Отсоединён от мобильного <b>%s</b> по причине: %s]]></string>
+    <string name="error_creating_message">Ошибка создания сообщения</string>
+    <string name="error_deleting_note_folder">Ошибка удаления заметки</string>
+    <string name="v5_5_new_interface_languages">Венгерский и Турецкий интерфейс</string>
+    <string name="search_or_paste_simplex_link">Искать или вставьте ссылку SimpleX</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">Этот QR код не является SimpleX-ccылкой.</string>
+    <string name="v5_5_private_notes_descr">С зашифрованными файлами и медиа.</string>
+    <string name="v5_5_message_delivery_descr">С уменьшенным потреблением батареи.</string>
+    <string name="keep_unused_invitation_question">Оставить неиспользованное приглашение?</string>
+    <string name="v5_5_message_delivery">Улучшенная доставка сообщений</string>
+    <string name="remote_ctrl_was_disconnected_title">Соединение остановлено</string>
+    <string name="restart_chat_button">Перезапустить чат</string>
+    <string name="start_chat_question">Запустить чат?</string>
+    <string name="note_folder_local_display_name">Личные заметки</string>
+    <string name="recent_history">Доступ к истории</string>
+    <string name="recent_history_is_not_sent_to_new_members">История не отправляется новым членам.</string>
+    <string name="recent_history_is_sent_to_new_members">До 100 последних сообщений отправляются новым членам.</string>
+    <string name="show_internal_errors">Показывать внутренние ошибки</string>
+    <string name="remote_ctrl_error_bad_state">Ошибка соединения с компьютером</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Ошибка соединения с мобильным <b>%s</b>]]></string>
+    <string name="remote_ctrl_error_busy">Компьютер занят</string>
+    <string name="remote_ctrl_error_inactive">Компьютер неактивен</string>
+    <string name="remote_host_error_bad_version"><![CDATA[Версия приложения на мобильном <b>%s</b> не поддерживается. Пожалуйста, установите одинаковую версию на оба устройства.]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Мобильный <b>%s</b> занят]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[Мобильный <b>%s</b> отсоединён]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[Превышено максимальное время соединения с мобильным <b>%s</b>]]></string>
+    <string name="agent_critical_error_title">Критическая ошибка</string>
+    <string name="agent_critical_error_desc">Пожалуйста, сообщите об этом разработчикам:
+\n%s
+\n
+\nРекомендовано перезапустить приложение.</string>
+    <string name="failed_to_create_user_invalid_title">Ошибка имени!</string>
+    <string name="failed_to_create_user_invalid_desc">Ошибка имени профиля. Пожалуйста, выберите другое имя.</string>
+    <string name="the_text_you_pasted_is_not_a_link">Вставленный текст не является SimpleX-ссылкой.</string>
+    <string name="creating_link">Создаётся ссылка…</string>
+    <string name="tap_to_paste_link">Нажмите, чтобы вставить ссылку</string>
+    <string name="invalid_qr_code">Ошибка QR кода</string>
+    <string name="share_this_1_time_link">Поделиться одноразовой ссылкой-приглашением</string>
+    <string name="retry_verb">Повторить</string>
+    <string name="app_was_crashed">Ошибка приложения</string>
+    <string name="error_showing_message">ошибка отображения сообщения</string>
+    <string name="error_showing_content">ошибка отображения содержания</string>
+    <string name="remote_ctrl_disconnected_with_reason">Отсоединён по причине: %s</string>
+    <string name="possible_deadlock_title">Взаимная блокировка</string>
+    <string name="possible_deadlock_desc">Выполнение задачи занимает долгое время: %1$d секунд. Возможно, приложение заблокировано: %2$s</string>
+    <string name="possible_slow_function_desc">Выполнение задачи занимает долгое время: %1$d секунд: %2$s</string>
+    <string name="possible_slow_function_title">Медленный вызов</string>
+    <string name="profile_update_event_contact_name_changed">контакт %1$s изменён на %2$s</string>
+    <string name="profile_update_event_member_name_changed">член %1$s изменился на %2$s</string>
+    <string name="profile_update_event_removed_address">удалён адрес контакта</string>
+    <string name="profile_update_event_removed_picture">удалена картинка профиля</string>
+    <string name="profile_update_event_set_new_address">установлен новый адрес контакта</string>
+    <string name="profile_update_event_set_new_picture">установлена новая картинка профиля</string>
+    <string name="profile_update_event_updated_profile">профиль обновлён</string>
+    <string name="remote_ctrl_error_bad_version">Версия приложения на компьютере не поддерживается. Пожалуйста, установите одинаковую версию на оба устройства.</string>
+    <string name="agent_internal_error_title">Внутренняя ошибка</string>
+    <string name="clear_note_folder_question">Очистить личные заметки?</string>
+    <string name="new_chat">Новый чат</string>
+    <string name="or_scan_qr_code">Или отсканируйте QR код</string>
+    <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
+    <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
+    <string name="past_member_vName">Бывший член %1$s</string>
+    <string name="saved_message_title">Сохраненное сообщение</string>
+    <string name="group_member_status_unknown_short">неизвестно</string>
+    <string name="group_member_status_unknown">неизвестный статус</string>
 </resources>
