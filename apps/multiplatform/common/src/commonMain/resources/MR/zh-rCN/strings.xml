@@ -1503,7 +1503,7 @@
     <string name="v5_4_block_group_members_descr">隐藏不需要的信息。</string>
     <string name="v5_4_better_groups">更佳的群组</string>
     <string name="v5_4_incognito_groups">匿名群组</string>
-    <string name="remote_host_was_disconnected_toast">移动主机 <b>%s</b> 连接断开</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[移动主机 <b>%s</b> 连接断开]]></string>
     <string name="v5_4_better_groups_descr">加入速度更快、信息更可靠。</string>
     <string name="v5_4_more_things_descr">- 可选择通知已删除的联系人。
 \n- 带空格的个人资料名称。
@@ -1566,7 +1566,7 @@
     <string name="agent_critical_error_title">严重错误</string>
     <string name="restart_chat_button">重启聊天</string>
     <string name="show_internal_errors">显示内部错误</string>
-    <string name="remote_host_disconnected_from">和移动主机<b>%s</b>的连接断开，原因是：%s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[和移动主机<b>%s</b>的连接断开，原因是：%s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">断连原因：%s</string>
     <string name="remote_ctrl_error_timeout">连接到桌面时超时</string>
     <string name="remote_ctrl_error_busy">桌面繁忙</string>
@@ -1577,14 +1577,14 @@
     <string name="remote_ctrl_error_disconnected">桌面连接已断开</string>
     <string name="failed_to_create_user_invalid_title">无效的显示名！</string>
     <string name="remote_ctrl_was_disconnected_title">连接停止</string>
-    <string name="remote_host_error_bad_version">移动主机 <b>%s</b> 有一个不受支持的版本。请确保两台设备安装的版本相同</string>
-    <string name="remote_host_error_busy">移动主机 <b>%s</b> 繁忙</string>
-    <string name="remote_host_error_inactive">移动主机 <b>%s</b>不活跃</string>
-    <string name="remote_host_error_missing">移动主机 <b>%s</b> 缺失</string>
-    <string name="remote_host_error_disconnected">移动主机<b>%s</b>连接断开</string>
+    <string name="remote_host_error_bad_version"><![CDATA[移动主机 <b>%s</b> 有一个不受支持的版本。请确保两台设备安装的版本相同]]></string>
+    <string name="remote_host_error_busy"><![CDATA[移动主机 <b>%s</b> 繁忙]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[移动主机 <b>%s</b>不活跃]]></string>
+    <string name="remote_host_error_missing"><![CDATA[移动主机 <b>%s</b> 缺失]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[移动主机<b>%s</b>连接断开]]></string>
     <string name="remote_host_was_disconnected_title">连接停止</string>
-    <string name="remote_host_error_bad_state">到移动主机 <b>%s</b>的连接状态不佳</string>
-    <string name="remote_host_error_timeout">连接到移动主机<b>%s</b>时超时</string>
+    <string name="remote_host_error_bad_state"><![CDATA[到移动主机 <b>%s</b>的连接状态不佳]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[连接到移动主机<b>%s</b>时超时]]></string>
     <string name="failed_to_create_user_invalid_desc">显示名无效。请另选一个名称。</string>
     <string name="possible_deadlock_title">死锁</string>
     <string name="possible_deadlock_desc">代码执行花费的时间过久：%1$d秒。应用可能卡住了：%2$s</string>

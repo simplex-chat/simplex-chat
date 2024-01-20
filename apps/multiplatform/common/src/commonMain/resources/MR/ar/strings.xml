@@ -829,7 +829,7 @@
     <string name="call_connection_peer_to_peer">ندّ لِندّ</string>
     <string name="people_can_connect_only_via_links_you_share">يمكن للناس التواصل معك فقط عبر الرابط الذي تقوم بمشاركته</string>
     <string name="icon_descr_call_pending_sent">مكالمة في الانتظار</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المُرسلة باستخدام <b>تعمية ثنائية الطبقات من بين الطريفين</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المُرسلة باستخدام <b>تعمية ثنائية الطبقات من بين الطريفين</b>.]]></string>
     <string name="reset_color">إعادة تعيين الألوان</string>
     <string name="save_verb">حفظ</string>
     <string name="smp_servers_preset_address">عنوان الخادم المحدد مسبقًا</string>
@@ -1564,23 +1564,23 @@
 \n
 \nيوصى بإعادة تشغيل التطبيق.</string>
     <string name="restart_chat_button">أعد تشغيل الدردشة</string>
-    <string name="remote_host_error_inactive">الجوال <b>%s</b> غير نشط</string>
+    <string name="remote_host_error_inactive"><![CDATA[الجوال <b>%s</b> غير نشط]]></string>
     <string name="show_slow_api_calls">أظهر مكالمات API البطيئة</string>
     <string name="group_member_status_unknown_short">غير معروف</string>
     <string name="profile_update_event_updated_profile">حدّثت الملف الشخصي</string>
-    <string name="remote_host_error_missing">الجوال <b>%s</b> مفقود</string>
-    <string name="remote_host_error_bad_version">الجوال <b>%s</b> لديه إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين</string>
-    <string name="remote_host_error_bad_state">الاتصال بالجوال <b>%s</b> في حالة سيئة</string>
+    <string name="remote_host_error_missing"><![CDATA[الجوال <b>%s</b> مفقود]]></string>
+    <string name="remote_host_error_bad_version"><![CDATA[الجوال <b>%s</b> لديه إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين]]></string>
+    <string name="remote_host_error_bad_state"><![CDATA[الاتصال بالجوال <b>%s</b> في حالة سيئة]]></string>
     <string name="failed_to_create_user_invalid_title">اسم العرض غير صالح!</string>
     <string name="failed_to_create_user_invalid_desc">اسم العرض هذا غير صالح. الرجاء اختيار اسم آخر.</string>
     <string name="remote_host_was_disconnected_title">توقف الاتصال</string>
     <string name="remote_ctrl_was_disconnected_title">توقف الاتصال</string>
-    <string name="remote_host_disconnected_from">قُطع الاتصال بالجوال <b>%s</b> بسبب: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[قُطع الاتصال بالجوال <b>%s</b> بسبب: %s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">قُطع الاتصال بسبب: %s</string>
-    <string name="remote_host_error_disconnected">قُطع اتصال الجوال <b>%s</b></string>
-    <string name="remote_host_error_timeout">انتهت المهلة أثناء الاتصال بالجوال <b>%s</b></string>
+    <string name="remote_host_error_disconnected"><![CDATA[قُطع اتصال الجوال <b>%s</b>]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[انتهت المهلة أثناء الاتصال بالجوال <b>%s</b>]]></string>
     <string name="remote_ctrl_error_inactive">سطح المكتب غير نشط</string>
-    <string name="remote_host_error_busy">الجوال <b>%s</b> مشغول</string>
+    <string name="remote_host_error_busy"><![CDATA[الجوال <b>%s</b> مشغول]]></string>
     <string name="remote_ctrl_error_timeout">انتهت المهلة أثناء الاتصال بسطح المكتب</string>
     <string name="remote_ctrl_error_disconnected">قُطع اتصال سطح المكتب</string>
     <string name="remote_ctrl_error_bad_state">الاتصال بسطح المكتب في حالة سيئة</string>

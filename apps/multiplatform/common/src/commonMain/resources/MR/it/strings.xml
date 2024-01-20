@@ -678,7 +678,7 @@
     <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
     <string name="onboarding_notifications_mode_off">Quando l\'app è in esecuzione</string>
     <string name="contact_wants_to_connect_via_call">%1$s vuole connettersi con te via</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Tu decidi attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti quali server usi per inviare loro i messaggi.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Tu decidi attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti quali server usi per inviare loro i messaggi.]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
 \n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
 \n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
@@ -1566,21 +1566,21 @@
 \n%s</string>
     <string name="restart_chat_button">Riavvia la chat</string>
     <string name="show_internal_errors">Mostra errori interni</string>
-    <string name="remote_host_disconnected_from">Disconnesso dal telefono <b>%s</b> per il motivo: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Disconnesso dal telefono <b>%s</b> per il motivo: %s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">Disconnesso per il motivo: %s</string>
     <string name="remote_host_was_disconnected_title">Connessione interrotta</string>
     <string name="remote_ctrl_was_disconnected_title">Connessione interrotta</string>
-    <string name="remote_host_error_missing">Telefono <b>%s</b> non trovato</string>
+    <string name="remote_host_error_missing"><![CDATA[Telefono <b>%s</b> non trovato]]></string>
     <string name="remote_ctrl_error_busy">Il desktop è occupato</string>
     <string name="remote_ctrl_error_bad_version">Il desktop ha una versione non supportata. Assicurati di usare la stessa versione su entrambi i dispositivi</string>
     <string name="failed_to_create_user_invalid_title">Nome da mostrare non valido!</string>
     <string name="failed_to_create_user_invalid_desc">Questo nome da mostrare non è valido. Scegline un altro.</string>
-    <string name="remote_host_error_bad_state">La connessione al telefono <b>%s</b> è in cattivo stato</string>
-    <string name="remote_host_error_bad_version">Il telefono <b>%s</b> ha una versione non supportata. Assicurati di usare la stessa versione su entrambi i dispositivi</string>
-    <string name="remote_host_error_busy">Il telefono <b>%s</b> è occupato</string>
-    <string name="remote_host_error_inactive">Il telefono <b>%s</b> è inattivo</string>
-    <string name="remote_host_error_disconnected">Il telefono <b>%s</b> è stato disconnesso</string>
-    <string name="remote_host_error_timeout">Tempo scaduto durante la connessione al telefono <b>%s</b></string>
+    <string name="remote_host_error_bad_state"><![CDATA[La connessione al telefono <b>%s</b> è in cattivo stato]]></string>
+    <string name="remote_host_error_bad_version"><![CDATA[Il telefono <b>%s</b> ha una versione non supportata. Assicurati di usare la stessa versione su entrambi i dispositivi]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Il telefono <b>%s</b> è occupato]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Il telefono <b>%s</b> è inattivo]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[Il telefono <b>%s</b> è stato disconnesso]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[Tempo scaduto durante la connessione al telefono <b>%s</b>]]></string>
     <string name="remote_ctrl_error_bad_state">La connessione al desktop è in cattivo stato</string>
     <string name="remote_ctrl_error_bad_invitation">Il desktop ha un codice di invito sbagliato</string>
     <string name="remote_ctrl_error_inactive">Il desktop è inattivo</string>

@@ -1561,12 +1561,12 @@
     <string name="failed_to_create_user_invalid_title">表示名が無効です！</string>
     <string name="remote_host_was_disconnected_title">切断されました。</string>
     <string name="remote_ctrl_was_disconnected_title">切断されました。</string>
-    <string name="remote_host_disconnected_from">携帯 <b>%s</b> が次の理由で切断されました： %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[携帯 <b>%s</b> が次の理由で切断されました： %s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">次の理由で切断されました： %s</string>
     <string name="remote_ctrl_error_bad_state">PC版との接続が不安定</string>
-    <string name="remote_host_error_bad_state">携帯 <b>%s</b> との接続が不安定</string>
+    <string name="remote_host_error_bad_state"><![CDATA[携帯 <b>%s</b> との接続が不安定]]></string>
     <string name="remote_ctrl_error_inactive">PC版が非アクティブ</string>
-    <string name="remote_host_error_bad_version">携帯版 <b>%s</b> のバージョンがサポートされてません。。両端末のバージョンが同じかどうか、ご確認ください。</string>
+    <string name="remote_host_error_bad_version"><![CDATA[携帯版 <b>%s</b> のバージョンがサポートされてません。。両端末のバージョンが同じかどうか、ご確認ください。]]></string>
     <string name="remote_ctrl_error_bad_invitation">PC版の招待コードが正しくない</string>
     <string name="remote_ctrl_error_busy">PC版が処理中</string>
     <string name="remote_ctrl_error_disconnected">PC版が切断されました</string>
@@ -1574,7 +1574,7 @@
     <string name="possible_deadlock_title">デッドロック状態</string>
     <string name="developer_options_section">開発者向けの設定</string>
     <string name="possible_deadlock_desc">処理時間が異常にかかるようです: %1$d 秒。アプリが固まった恐れがあります: %2$s</string>
-    <string name="remote_host_error_busy">携帯版 <b>%s</b> がただいま処理中</string>
+    <string name="remote_host_error_busy"><![CDATA[携帯版 <b>%s</b> がただいま処理中]]></string>
     <string name="possible_slow_function_desc">機能の処理時間が以上にかかってます: %1$d 秒: %2$s</string>
     <string name="show_internal_errors">内部エラーを表示</string>
     <string name="agent_internal_error_desc">開発側にお伝えください:
@@ -1584,12 +1584,12 @@
 \n
 \nアプリを再起動してください。</string>
     <string name="failed_to_create_user_invalid_desc">表示名が無効です。別の名前にしてください。</string>
-    <string name="remote_host_error_inactive">携帯版 <b>%s</b> が非アクティブ</string>
-    <string name="remote_host_error_missing">携帯版 <b>%s</b> が見つかりません</string>
-    <string name="remote_host_error_timeout">携帯版に接続する段階で時間切れになりました <b>%s</b></string>
+    <string name="remote_host_error_inactive"><![CDATA[携帯版 <b>%s</b> が非アクティブ]]></string>
+    <string name="remote_host_error_missing"><![CDATA[携帯版 <b>%s</b> が見つかりません]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[携帯版に接続する段階で時間切れになりました <b>%s</b>]]></string>
     <string name="remote_ctrl_error_timeout">PC版に接続する段階で時間切れになりました</string>
     <string name="restart_chat_button">チャットを再起動</string>
-    <string name="remote_host_error_disconnected">携帯版 <b>%s</b> が切断されました</string>
+    <string name="remote_host_error_disconnected"><![CDATA[携帯版 <b>%s</b> が切断されました]]></string>
     <string name="group_member_status_unknown_short">不明</string>
     <string name="past_member_vName">過去のメンバー %1$s</string>
     <string name="possible_slow_function_title">遅延が発生した機能</string>
