@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Main where
@@ -8,7 +9,7 @@ import Control.Monad
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Server
-import Simplex.Chat.Controller (ChatController (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatController (..), ChatResponse (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
@@ -23,25 +24,28 @@ main = do
   opts@ChatOpts {chatCmd, chatServerPort} <- getChatOpts appDir "simplex_v1"
   if null chatCmd
     then case chatServerPort of
-      Just chatPort ->
-        simplexChatServer defaultChatServerConfig {chatPort} terminalChatConfig opts
-      _ -> do
-        welcome opts
-        t <- withTerminal pure
-        simplexChatTerminal terminalChatConfig opts t
-    else simplexChatCore terminalChatConfig opts $ \user cc -> do
-      rh <- readTVarIO $ currentRemoteHost cc
-      void . forkIO . forever $ do
-        (_, _, r') <- atomically . readTBQueue $ outputQ cc
-        printResponse rh user r'
-      r <- sendChatCmdStr cc chatCmd
-      printResponse rh user r
-      threadDelay $ chatCmdDelay opts * 1000000
+      Just chatPort -> simplexChatServer defaultChatServerConfig {chatPort} terminalChatConfig opts
+      _ -> runCLI opts
+    else simplexChatCore terminalChatConfig opts $ runCommand opts
   where
-    printResponse rh user r = do
-      ts <- getCurrentTime
-      tz <- getCurrentTimeZone
-      putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
+    runCLI opts = do
+      welcome opts
+      t <- withTerminal pure
+      simplexChatTerminal terminalChatConfig opts t
+    runCommand ChatOpts {chatCmd, chatCmdLog, chatCmdDelay} user cc = do
+      when (chatCmdLog /= CCLNone) . void . forkIO . forever $ do
+        (_, _, r') <- atomically . readTBQueue $ outputQ cc
+        case r' of
+          CRNewChatItem {} -> printResponse r'
+          _ -> when (chatCmdLog == CCLAll) $ printResponse r'
+      sendChatCmdStr cc chatCmd >>= printResponse
+      threadDelay $ chatCmdDelay * 1000000
+      where
+        printResponse r = do
+          ts <- getCurrentTime
+          tz <- getCurrentTimeZone
+          rh <- readTVarIO $ currentRemoteHost cc
+          putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
 welcome :: ChatOpts -> IO ()
 welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, networkConfig}} =
