@@ -1279,6 +1279,7 @@ data class GroupMember (
   val memberCategory: GroupMemberCategory,
   val memberStatus: GroupMemberStatus,
   val memberSettings: GroupMemberSettings,
+  val blockedByAdmin: Boolean,
   val invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: LocalProfile,
@@ -1297,6 +1298,7 @@ data class GroupMember (
   val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
+  val blocked get() = blockedByAdmin || !memberSettings.showMessages
 
   val chatViewName: String
     get() {
@@ -1345,7 +1347,7 @@ data class GroupMember (
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
     return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberCurrent
+        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
@@ -1353,6 +1355,12 @@ data class GroupMember (
     else groupInfo.membership.memberRole.let { userRole ->
       GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Author }
     }
+
+  fun canBlockForAll(groupInfo: GroupInfo): Boolean {
+    val userRole = groupInfo.membership.memberRole
+    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Admin
+        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+  }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
 
@@ -1365,6 +1373,7 @@ data class GroupMember (
       memberCategory = GroupMemberCategory.InviteeMember,
       memberStatus = GroupMemberStatus.MemComplete,
       memberSettings = GroupMemberSettings(showMessages = true),
+      blockedByAdmin = false,
       invitedBy = InvitedBy.IBUser(),
       localDisplayName = "alice",
       memberProfile = LocalProfile.sampleData,
@@ -1734,6 +1743,7 @@ data class ChatItem (
       is CIContent.RcvDeleted -> true
       is CIContent.SndModerated -> true
       is CIContent.RcvModerated -> true
+      is CIContent.RcvBlocked -> true
       else -> false
     }
 
@@ -1785,20 +1795,18 @@ data class ChatItem (
     }
   }
 
-  private val showNtfDir: Boolean get() = !chatDir.sent
-
   val showNotification: Boolean get() =
     when (content) {
-      is CIContent.SndMsgContent -> showNtfDir
-      is CIContent.RcvMsgContent -> showNtfDir
-      is CIContent.SndDeleted -> showNtfDir
-      is CIContent.RcvDeleted -> showNtfDir
-      is CIContent.SndCall -> showNtfDir
+      is CIContent.SndMsgContent -> false
+      is CIContent.RcvMsgContent -> meta.itemDeleted == null
+      is CIContent.SndDeleted -> false
+      is CIContent.RcvDeleted -> false
+      is CIContent.SndCall -> false
       is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
-      is CIContent.RcvIntegrityError -> showNtfDir
-      is CIContent.RcvDecryptionError -> showNtfDir
-      is CIContent.RcvGroupInvitation -> showNtfDir
-      is CIContent.SndGroupInvitation -> showNtfDir
+      is CIContent.RcvIntegrityError -> false
+      is CIContent.RcvDecryptionError -> false
+      is CIContent.RcvGroupInvitation -> true
+      is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
         is RcvDirectEvent.ContactDeleted -> false
         is RcvDirectEvent.ProfileUpdated -> true
@@ -1808,28 +1816,30 @@ data class ChatItem (
         is RcvGroupEvent.MemberConnected -> false
         is RcvGroupEvent.MemberLeft -> false
         is RcvGroupEvent.MemberRole -> false
-        is RcvGroupEvent.UserRole -> showNtfDir
+        is RcvGroupEvent.MemberBlocked -> false
+        is RcvGroupEvent.UserRole -> true
         is RcvGroupEvent.MemberDeleted -> false
-        is RcvGroupEvent.UserDeleted -> showNtfDir
-        is RcvGroupEvent.GroupDeleted -> showNtfDir
+        is RcvGroupEvent.UserDeleted -> true
+        is RcvGroupEvent.GroupDeleted -> true
         is RcvGroupEvent.GroupUpdated -> false
         is RcvGroupEvent.InvitedViaGroupLink -> false
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
       }
-      is CIContent.SndGroupEventContent -> showNtfDir
+      is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
-      is CIContent.SndConnEventContent -> showNtfDir
+      is CIContent.SndConnEventContent -> false
       is CIContent.RcvChatFeature -> false
-      is CIContent.SndChatFeature -> showNtfDir
+      is CIContent.SndChatFeature -> false
       is CIContent.RcvChatPreference -> false
-      is CIContent.SndChatPreference -> showNtfDir
+      is CIContent.SndChatPreference -> false
       is CIContent.RcvGroupFeature -> false
-      is CIContent.SndGroupFeature -> showNtfDir
-      is CIContent.RcvChatFeatureRejected -> showNtfDir
-      is CIContent.RcvGroupFeatureRejected -> showNtfDir
-      is CIContent.SndModerated -> true
-      is CIContent.RcvModerated -> true
+      is CIContent.SndGroupFeature -> false
+      is CIContent.RcvChatFeatureRejected -> true
+      is CIContent.RcvGroupFeatureRejected -> false
+      is CIContent.SndModerated -> false
+      is CIContent.RcvModerated -> false
+      is CIContent.RcvBlocked -> false
       is CIContent.InvalidJSON -> false
     }
 
@@ -2174,6 +2184,7 @@ enum class SndCIStatusProgress {
 sealed class CIDeleted {
   @Serializable @SerialName("deleted") class Deleted(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("blocked") class Blocked(val deletedTs: Instant?): CIDeleted()
+  @Serializable @SerialName("blockedByAdmin") class BlockedByAdmin(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("moderated") class Moderated(val deletedTs: Instant?, val byGroupMember: GroupMember): CIDeleted()
 }
 
@@ -2218,6 +2229,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvGroupFeatureRejected") class RcvGroupFeatureRejected(val groupFeature: GroupFeature): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndModerated") object SndModerated: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvModerated") object RcvModerated: CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvBlocked") object RcvBlocked: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when (this) {
@@ -2246,6 +2258,7 @@ sealed class CIContent: ItemContent {
       is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(MR.strings.feature_received_prohibited)}"
       is SndModerated -> generalGetString(MR.strings.moderated_description)
       is RcvModerated -> generalGetString(MR.strings.moderated_description)
+      is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
       is InvalidJSON -> "invalid data"
     }
 
@@ -2258,6 +2271,7 @@ sealed class CIContent: ItemContent {
       is RcvDecryptionError -> true
       is RcvGroupInvitation -> true
       is RcvModerated -> true
+      is RcvBlocked -> true
       is InvalidJSON -> true
       else -> false
     }
@@ -2958,6 +2972,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
   @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
   @Serializable @SerialName("memberRole") class MemberRole(val groupMemberId: Long, val profile: Profile, val role: GroupMemberRole): RcvGroupEvent()
+  @Serializable @SerialName("memberBlocked") class MemberBlocked(val groupMemberId: Long, val profile: Profile, val blocked: Boolean): RcvGroupEvent()
   @Serializable @SerialName("userRole") class UserRole(val role: GroupMemberRole): RcvGroupEvent()
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
@@ -2972,6 +2987,11 @@ sealed class RcvGroupEvent() {
     is MemberConnected -> generalGetString(MR.strings.rcv_group_event_member_connected)
     is MemberLeft -> generalGetString(MR.strings.rcv_group_event_member_left)
     is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
+    is MemberBlocked -> if (blocked) {
+      String.format(generalGetString(MR.strings.rcv_group_event_member_blocked), profile.profileViewName)
+    } else {
+      String.format(generalGetString(MR.strings.rcv_group_event_member_unblocked), profile.profileViewName)
+    }
     is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text)
     is MemberDeleted -> String.format(generalGetString(MR.strings.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
@@ -3000,6 +3020,7 @@ sealed class RcvGroupEvent() {
 sealed class SndGroupEvent() {
   @Serializable @SerialName("memberRole") class MemberRole(val groupMemberId: Long, val profile: Profile, val role: GroupMemberRole): SndGroupEvent()
   @Serializable @SerialName("userRole") class UserRole(val role: GroupMemberRole): SndGroupEvent()
+  @Serializable @SerialName("memberBlocked") class MemberBlocked(val groupMemberId: Long, val profile: Profile, val blocked: Boolean): SndGroupEvent()
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
@@ -3007,6 +3028,11 @@ sealed class SndGroupEvent() {
   val text: String get() = when (this) {
     is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
     is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
+    is MemberBlocked -> if (blocked) {
+      String.format(generalGetString(MR.strings.snd_group_event_member_blocked), profile.profileViewName)
+    } else {
+      String.format(generalGetString(MR.strings.snd_group_event_member_unblocked), profile.profileViewName)
+    }
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
