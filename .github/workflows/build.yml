@@ -324,7 +324,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
-          export PATH=$PATH:/c/ghcup/bin
+          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
           ./gradlew packageMsi
