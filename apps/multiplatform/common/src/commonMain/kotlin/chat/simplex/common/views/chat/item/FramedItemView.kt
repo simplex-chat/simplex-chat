@@ -35,7 +35,7 @@ fun FramedItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   linkMode: SimplexLinkMode,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
 ) {
@@ -209,7 +209,10 @@ fun FramedItemView(
               is CIDeleted.Blocked -> {
                 FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
               }
-              else -> {
+              is CIDeleted.BlockedByAdmin -> {
+                FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
+              }
+              is CIDeleted.Deleted -> {
                 FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
               }
             }
@@ -232,7 +235,7 @@ fun FramedItemView(
           } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, ci.encryptLocalFile, metaColor = metaColor, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, metaColor = metaColor, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

@@ -240,7 +240,7 @@ fun DatabaseLayout(
       SettingsActionItem(
         painterResource(MR.images.ic_download),
         stringResource(MR.strings.import_database),
-        { withBGApi { importArchiveLauncher.launch("application/zip") } },
+        { withLongRunningApi { importArchiveLauncher.launch("application/zip") } },
         textColor = Color.Red,
         iconColor = Color.Red,
         disabled = operationsDisabled
@@ -368,7 +368,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
 }
 
 fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, progressIndicator: MutableState<Boolean>? = null) {
-  withBGApi {
+  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
     try {
       progressIndicator?.value = true
       if (chatDbChanged.value) {
@@ -378,12 +378,12 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
       if (m.chatDbStatus.value !is DBMigrationResult.OK) {
         /** Hide current view and show [DatabaseErrorView] */
         ModalManager.closeAllModalsEverywhere()
-        return@withBGApi
+        return@withLongRunningApi
       }
       val user = m.currentUser.value
       if (user == null) {
         ModalManager.closeAllModalsEverywhere()
-        return@withBGApi
+        return@withLongRunningApi
       } else {
         m.controller.startChat(user)
       }
@@ -470,10 +470,10 @@ suspend fun deleteChatAsync(m: ChatModel) {
   m.controller.apiDeleteStorage()
   DatabaseUtils.ksDatabasePassword.remove()
   m.controller.appPrefs.storeDBPassphrase.set(true)
-  deleteAppDatabaseAndFiles()
+  deleteChatDatabaseFilesAndState()
 }
 
-fun deleteAppDatabaseAndFiles() {
+fun deleteChatDatabaseFilesAndState() {
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
   val agent = File(dataDir, agentDatabaseFileName)
@@ -489,6 +489,13 @@ fun deleteAppDatabaseAndFiles() {
   tmpDir.mkdir()
   DatabaseUtils.ksDatabasePassword.remove()
   controller.appPrefs.storeDBPassphrase.set(true)
+  controller.ctrl = null
+
+  // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
+  chatModel.chatId.value = null
+  chatModel.chatItems.clear()
+  chatModel.chats.clear()
+  chatModel.users.clear()
 }
 
 private fun exportArchive(
@@ -500,7 +507,7 @@ private fun exportArchive(
   saveArchiveLauncher: FileChooserLauncher
 ) {
   progressIndicator.value = true
-  withBGApi {
+  withLongRunningApi {
     try {
       val archiveFile = exportChatArchive(m, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
@@ -574,7 +581,7 @@ private fun importArchive(
   progressIndicator.value = true
   val archivePath = saveArchiveFromURI(importedArchiveURI)
   if (archivePath != null) {
-    withBGApi {
+    withLongRunningApi(slow = 60_000, deadlock = 180_000) {
       try {
         m.controller.apiDeleteStorage()
         try {

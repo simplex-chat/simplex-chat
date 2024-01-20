@@ -239,7 +239,6 @@
     <string name="call_on_lock_screen">Chamadas no ecrã de bloqueio:</string>
     <string name="alert_title_cant_invite_contacts">Não é possível convidar contatos!</string>
     <string name="change_verb">Alterar</string>
-    <string name="cant_delete_user_profile">Não é possível eliminar o perfil do utilizador!</string>
     <string name="feature_cancelled_item">cancelado %s</string>
     <string name="cannot_receive_file">Não é possível receber o ficheiro</string>
     <string name="icon_descr_cancel_image_preview">Cancelar pré-visualização da imagem</string>

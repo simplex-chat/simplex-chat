@@ -32,11 +32,10 @@ import java.net.URI
 fun CIImageView(
   image: String,
   file: CIFile?,
-  encryptLocalFile: Boolean,
   metaColor: Color,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   @Composable
   fun progressIndicator() {
@@ -71,6 +70,7 @@ fun CIImageView(
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> {}
+              FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndTransfer -> progressIndicator()
           is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_image_snd_complete)
@@ -181,7 +181,7 @@ fun CIImageView(
           when (file.fileStatus) {
             CIFileStatus.RcvInvitation ->
               if (fileSizeValid()) {
-                receiveFile(file.fileId, encryptLocalFile)
+                receiveFile(file.fileId)
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(MR.strings.large_file),
@@ -200,6 +200,7 @@ fun CIImageView(
                     generalGetString(MR.strings.waiting_for_image),
                     generalGetString(MR.strings.image_will_be_received_when_contact_is_online)
                   )
+                FileProtocol.LOCAL -> {}
               }
             CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
             CIFileStatus.RcvComplete -> {} // ?

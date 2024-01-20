@@ -25,7 +25,6 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
-import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
@@ -812,12 +811,10 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
   Just Refl -> Right x
   Nothing -> Left "bad chat type"
 
-type LazyMsgBody = L.ByteString
-
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
-    msgBody :: LazyMsgBody
+    msgBody :: MsgBody
   }
   deriving (Show)
 
@@ -839,7 +836,7 @@ data RcvMessage = RcvMessage
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
     cmEventTag :: ACMEventTag,
-    msgBody :: LazyMsgBody,
+    msgBody :: MsgBody,
     introId_ :: Maybe Int64
   }
 
@@ -932,6 +929,7 @@ msgDeliveryStatusT' s =
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c
   CIBlocked :: Maybe UTCTime -> CIDeleted 'CTGroup
+  CIBlockedByAdmin :: Maybe UTCTime -> CIDeleted 'CTGroup
   CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
@@ -941,6 +939,7 @@ data ACIDeleted = forall c. ChatTypeI c => ACIDeleted (SChatType c) (CIDeleted c
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
   | JCIDBlocked {deletedTs :: Maybe UTCTime}
+  | JCIDBlockedByAdmin {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show)
 
@@ -948,18 +947,21 @@ jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
   CIBlocked ts -> JCIDBlocked ts
+  CIBlockedByAdmin ts -> JCIDBlockedByAdmin ts
   CIModerated ts m -> JCIDModerated ts m
 
 jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
 jsonACIDeleted = \case
   JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
   JCIDBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
+  JCIDBlockedByAdmin ts -> ACIDeleted SCTGroup $ CIBlockedByAdmin ts
   JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
 itemDeletedTs = \case
   CIDeleted ts -> ts
   CIBlocked ts -> ts
+  CIBlockedByAdmin ts -> ts
   CIModerated ts _ -> ts
 
 data ChatItemInfo = ChatItemInfo

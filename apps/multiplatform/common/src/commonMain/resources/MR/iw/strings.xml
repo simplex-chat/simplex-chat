@@ -112,7 +112,6 @@
     <string name="icon_descr_call_progress">שיחה מתמשכת</string>
     <string name="settings_section_title_calls">שיחות</string>
     <string name="cannot_access_keychain">לא ניתן לגשת ל־Keystore כדי לאחסן את סיסמת מסד הנתונים</string>
-    <string name="cant_delete_user_profile">לא ניתן למחוק פרופיל משתמש!</string>
     <string name="feature_cancelled_item">בוטל %s</string>
     <string name="v4_5_transport_isolation_descr">לפי פרופיל צ׳אט (ברירת מחדל) או לפי חיבור (בביטא).</string>
     <string name="callstatus_calling">מתקשר…</string>
@@ -1055,8 +1054,6 @@
     <string name="messages_section_description">הגדרה זו חלה על הודעות בפרופיל הצ׳אט הנוכחי שלך</string>
     <string name="database_backup_can_be_restored">הניסיון לשנות את סיסמת מסד הנתונים לא הושלם.</string>
     <string name="color_title">כותרת</string>
-    <string name="should_be_at_least_one_profile">נדרש לפחות פרופיל משתמש אחד.</string>
-    <string name="should_be_at_least_one_visible_profile">נדרש לפחות פרופיל משתמש אחד גלוי.</string>
     <string name="group_is_decentralized">הקבוצה מבוזרת לחלוטין - היא גלויה רק לחברי הקבוצה.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">כדי לשמור על הפרטיות, במקום מזהי משתמש הקיימים בכל הפלטפורמות האחרות, ל־SimpleX יש מזהים לתורי הודעות, נפרדים עבור כל אחד מאנשי הקשר שלך.</string>
     <string name="using_simplex_chat_servers">משתמש בשרתי SimpleX Chatז</string>
