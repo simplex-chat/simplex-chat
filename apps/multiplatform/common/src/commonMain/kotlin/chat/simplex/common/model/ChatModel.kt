@@ -1795,23 +1795,21 @@ data class ChatItem (
     }
   }
 
-  private val showNtfDir: Boolean get() = !chatDir.sent
-
   val showNotification: Boolean get() =
     when (content) {
-      is CIContent.SndMsgContent -> showNtfDir
-      is CIContent.RcvMsgContent -> showNtfDir
-      is CIContent.SndDeleted -> showNtfDir
-      is CIContent.RcvDeleted -> showNtfDir
-      is CIContent.SndCall -> showNtfDir
+      is CIContent.SndMsgContent -> false
+      is CIContent.RcvMsgContent -> meta.itemDeleted == null
+      is CIContent.SndDeleted -> false
+      is CIContent.RcvDeleted -> false
+      is CIContent.SndCall -> false
       is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
-      is CIContent.RcvIntegrityError -> showNtfDir
-      is CIContent.RcvDecryptionError -> showNtfDir
-      is CIContent.RcvGroupInvitation -> showNtfDir
-      is CIContent.SndGroupInvitation -> showNtfDir
+      is CIContent.RcvIntegrityError -> false
+      is CIContent.RcvDecryptionError -> false
+      is CIContent.RcvGroupInvitation -> true
+      is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
         is RcvDirectEvent.ContactDeleted -> false
-        is RcvDirectEvent.ProfileUpdated -> showNtfDir
+        is RcvDirectEvent.ProfileUpdated -> true
       }
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
@@ -1819,29 +1817,29 @@ data class ChatItem (
         is RcvGroupEvent.MemberLeft -> false
         is RcvGroupEvent.MemberRole -> false
         is RcvGroupEvent.MemberBlocked -> false
-        is RcvGroupEvent.UserRole -> showNtfDir
+        is RcvGroupEvent.UserRole -> true
         is RcvGroupEvent.MemberDeleted -> false
-        is RcvGroupEvent.UserDeleted -> showNtfDir
-        is RcvGroupEvent.GroupDeleted -> showNtfDir
+        is RcvGroupEvent.UserDeleted -> true
+        is RcvGroupEvent.GroupDeleted -> true
         is RcvGroupEvent.GroupUpdated -> false
         is RcvGroupEvent.InvitedViaGroupLink -> false
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
       }
-      is CIContent.SndGroupEventContent -> showNtfDir
+      is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
-      is CIContent.SndConnEventContent -> showNtfDir
+      is CIContent.SndConnEventContent -> false
       is CIContent.RcvChatFeature -> false
-      is CIContent.SndChatFeature -> showNtfDir
+      is CIContent.SndChatFeature -> false
       is CIContent.RcvChatPreference -> false
-      is CIContent.SndChatPreference -> showNtfDir
+      is CIContent.SndChatPreference -> false
       is CIContent.RcvGroupFeature -> false
-      is CIContent.SndGroupFeature -> showNtfDir
-      is CIContent.RcvChatFeatureRejected -> showNtfDir
-      is CIContent.RcvGroupFeatureRejected -> showNtfDir
-      is CIContent.SndModerated -> showNtfDir
-      is CIContent.RcvModerated -> showNtfDir
-      is CIContent.RcvBlocked -> showNtfDir
+      is CIContent.SndGroupFeature -> false
+      is CIContent.RcvChatFeatureRejected -> true
+      is CIContent.RcvGroupFeatureRejected -> false
+      is CIContent.SndModerated -> false
+      is CIContent.RcvModerated -> false
+      is CIContent.RcvBlocked -> false
       is CIContent.InvalidJSON -> false
     }
 
