@@ -206,8 +206,11 @@ fun FramedItemView(
               is CIDeleted.Moderated -> {
                 FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
               }
-              is CIDeleted.Blocked, is CIDeleted.BlockedByAdmin -> {
+              is CIDeleted.Blocked -> {
                 FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
+              }
+              is CIDeleted.BlockedByAdmin -> {
+                FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
               }
               is CIDeleted.Deleted -> {
                 FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))

@@ -2260,7 +2260,7 @@ sealed class CIContent: ItemContent {
       is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(MR.strings.feature_received_prohibited)}"
       is SndModerated -> generalGetString(MR.strings.moderated_description)
       is RcvModerated -> generalGetString(MR.strings.moderated_description)
-      is RcvBlocked -> generalGetString(MR.strings.blocked_item_description)
+      is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
       is InvalidJSON -> "invalid data"
     }
 
