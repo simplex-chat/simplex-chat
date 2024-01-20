@@ -235,28 +235,38 @@ struct GroupChatInfoView: View {
                 memberInfo(member)
             }
 
+            // revert from this:
             if user {
                 v
-            } else if groupInfo.membership.memberRole >= .admin {
-                // TODO if there are more actions, refactor with lists of swipeActions
-                let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
-                let canRemove = member.canBeRemoved(groupInfo: groupInfo)
-                if canBlockForAll && canRemove {
-                    removeSwipe(member, blockForAllSwipe(member, v))
-                } else if canBlockForAll {
-                    blockForAllSwipe(member, v)
-                } else if canRemove {
-                    removeSwipe(member, v)
-                } else {
-                    v
-                }
+            } else if member.canBeRemoved(groupInfo: groupInfo) {
+                removeSwipe(member, blockSwipe(member, v))
             } else {
-                if !member.blockedByAdmin {
-                    blockSwipe(member, v)
-                } else {
-                    v
-                }
+                blockSwipe(member, v)
             }
+            // revert to this: vvv
+//            if user {
+//                v
+//            } else if groupInfo.membership.memberRole >= .admin {
+//                // TODO if there are more actions, refactor with lists of swipeActions
+//                let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
+//                let canRemove = member.canBeRemoved(groupInfo: groupInfo)
+//                if canBlockForAll && canRemove {
+//                    removeSwipe(member, blockForAllSwipe(member, v))
+//                } else if canBlockForAll {
+//                    blockForAllSwipe(member, v)
+//                } else if canRemove {
+//                    removeSwipe(member, v)
+//                } else {
+//                    v
+//                }
+//            } else {
+//                if !member.blockedByAdmin {
+//                    blockSwipe(member, v)
+//                } else {
+//                    v
+//                }
+//            }
+            // ^^^
         }
 
         @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
