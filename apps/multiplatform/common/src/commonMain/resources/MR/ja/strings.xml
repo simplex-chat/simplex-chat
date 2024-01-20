@@ -582,7 +582,7 @@
     <string name="v4_5_private_filenames">プライベートなファイル名</string>
     <string name="v4_5_reduced_battery_usage">電池使用量低減</string>
     <string name="error_removing_member">メンバー削除でエラー発生</string>
-    <string name="conn_level_desc_indirect">"間接  (%1$s)"</string>
+    <string name="conn_level_desc_indirect">間接  (%1$s)</string>
     <string name="incognito">シークレットモード</string>
     <string name="incognito_info_protects">シークレット モードでは、連絡先ごとに新しいランダムなプロファイルを使用してプライバシーを保護します。</string>
     <string name="chat_preferences_no">いいえ</string>
@@ -981,7 +981,7 @@
     <string name="database_upgrade">データベースアップグレード</string>
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
-    <string name="feature_received_prohibited">受信完了、禁止</string>
+    <string name="feature_received_prohibited">受信拒絶</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
     <string name="smp_server_test_delete_file">ファイルの削除</string>
     <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
@@ -1353,7 +1353,7 @@
     <string name="receipts_contacts_enable_keep_overrides">有効にする（設定の優先を維持）</string>
     <string name="receipts_groups_disable_keep_overrides">無効にする (グループの上書きを維持)</string>
     <string name="receipts_groups_enable_keep_overrides">有効にする（グループの設定の優先を維持）</string>
-    <string name="receipts_contacts_disable_keep_overrides">無効化（設定した内容は保持されます）</string>
+    <string name="receipts_contacts_disable_keep_overrides">無効化（設定の優先を維持）</string>
     <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
     <string name="v5_2_message_delivery_receipts">メッセージの配送通知</string>
     <string name="delivery_receipts_title">配信通知！</string>
