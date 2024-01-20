@@ -1141,6 +1141,12 @@ func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMembe
     throw r
 }
 
+func apiBlockMemberForAll(_ groupId: Int64, _ memberId: Int64, _ blocked: Bool) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiBlockMemberForAll(groupId: groupId, memberId: memberId, blocked: blocked), bgTask: false)
+    if case let .memberBlockedForAllUser(_, _, member, _) = r { return member }
+    throw r
+}
+
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)
@@ -1674,6 +1680,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
+        }
+    case let .memberBlockedForAll(user, groupInfo, byMember: _, member: member, blocked: _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
