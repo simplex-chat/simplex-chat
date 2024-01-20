@@ -27,6 +27,8 @@ struct GroupMemberInfoView: View {
     enum GroupMemberInfoViewAlert: Identifiable {
         case blockMemberAlert(mem: GroupMember)
         case unblockMemberAlert(mem: GroupMember)
+        case blockForAllAlert(mem: GroupMember)
+        case unblockForAllAlert(mem: GroupMember)
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
@@ -39,6 +41,8 @@ struct GroupMemberInfoView: View {
             switch self {
             case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
             case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
+            case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
+            case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
             case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
             case let .changeMemberRoleAlert(mem, role): return "changeMemberRoleAlert \(mem.groupMemberId) \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
@@ -164,6 +168,7 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
+                    // revert from this:
                     Section {
                         if member.memberSettings.showMessages {
                             blockMemberButton(member)
@@ -171,9 +176,16 @@ struct GroupMemberInfoView: View {
                             unblockMemberButton(member)
                         }
                         if member.canBeRemoved(groupInfo: groupInfo) {
-                                removeMemberButton(member)
+                            removeMemberButton(member)
                         }
                     }
+                    // revert to this: vvv
+//                    if groupInfo.membership.memberRole >= .admin {
+//                        adminDestructiveSection(member)
+//                    } else {
+//                        nonAdminBlockSection(member)
+//                    }
+                    // ^^^
 
                     if developerTools {
                         Section("For console") {
@@ -216,6 +228,8 @@ struct GroupMemberInfoView: View {
                 switch(alertItem) {
                 case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
                 case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
+                case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
+                case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
                 case let .removeMemberAlert(mem): return removeMemberAlert(mem)
                 case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
@@ -382,6 +396,55 @@ struct GroupMemberInfoView: View {
         } label: {
             Label("Renegotiate encryption", systemImage: "exclamationmark.triangle")
                 .foregroundColor(.red)
+        }
+    }
+
+    @ViewBuilder private func adminDestructiveSection(_ mem: GroupMember) -> some View {
+        let canBlockForAll = mem.canBlockForAll(groupInfo: groupInfo)
+        let canRemove = mem.canBeRemoved(groupInfo: groupInfo)
+        if canBlockForAll || canRemove {
+            Section {
+                if canBlockForAll {
+                    if mem.blockedByAdmin {
+                        unblockForAllButton(mem)
+                    } else {
+                        blockForAllButton(mem)
+                    }
+                }
+                if canRemove {
+                    removeMemberButton(mem)
+                }
+            }
+        }
+    }
+
+    private func nonAdminBlockSection(_ mem: GroupMember) -> some View {
+        Section {
+            if mem.blockedByAdmin {
+                Label("Blocked by admin", systemImage: "hand.raised")
+                    .foregroundColor(.secondary)
+            } else if mem.memberSettings.showMessages {
+                blockMemberButton(mem)
+            } else {
+                unblockMemberButton(mem)
+            }
+        }
+    }
+
+    private func blockForAllButton(_ mem: GroupMember) -> some View {
+        Button(role: .destructive) {
+            alert = .blockForAllAlert(mem: mem)
+        } label: {
+            Label("Block for all", systemImage: "hand.raised")
+                .foregroundColor(.red)
+        }
+    }
+
+    private func unblockForAllButton(_ mem: GroupMember) -> some View {
+        Button {
+            alert = .unblockForAllAlert(mem: mem)
+        } label: {
+            Label("Unblock for all", systemImage: "hand.raised.slash")
         }
     }
 
@@ -556,6 +619,41 @@ func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSet
             }
         } catch let error {
             logger.error("apiSetMemberSettings error \(responseError(error))")
+        }
+    }
+}
+
+func blockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Block member for all?"),
+        message: Text("All new messages from \(mem.chatViewName) will be hidden!"),
+        primaryButton: .destructive(Text("Block for all")) {
+            blockMemberForAll(gInfo, mem, true)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func unblockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Unblock member for all?"),
+        message: Text("Messages from \(mem.chatViewName) will be shown!"),
+        primaryButton: .default(Text("Unblock for all")) {
+            blockMemberForAll(gInfo, mem, false)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool) {
+    Task {
+        do {
+            let updatedMember = try await apiBlockMemberForAll(gInfo.groupId, member.groupMemberId, blocked)
+            await MainActor.run {
+                _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
+            }
+        } catch let error {
+            logger.error("apiBlockMemberForAll error: \(responseError(error))")
         }
     }
 }
