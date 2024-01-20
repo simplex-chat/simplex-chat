@@ -16,7 +16,7 @@ import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do
@@ -1559,7 +1559,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
     alice <## "Voice messages: enabled (you allow: yes, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled")])
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled")])
     (alice </)
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
@@ -1570,7 +1570,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "Voice messages: off (you allow: no, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])

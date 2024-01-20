@@ -217,6 +217,10 @@
         <target>%lld mensaje(s) bloqueado(s)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+        <source>%lld messages blocked by admin</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
         <source>%lld messages marked deleted</source>
         <target>%lld mensaje(s) marcado(s) eliminado(s)</target>
@@ -314,6 +318,7 @@
       </trans-unit>
       <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve">
         <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+        <target>**Añadir contacto**: crea un enlace de invitación nuevo o usa un enlace recibido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
@@ -323,6 +328,7 @@
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
         <source>**Create group**: to create a new group.</source>
+        <target>**Crear grupo**: crea un grupo nuevo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
@@ -507,12 +513,12 @@
       </trans-unit>
       <trans-unit id="Abort changing address" xml:space="preserve">
         <source>Abort changing address</source>
-        <target>Cancelar cambio de dirección</target>
+        <target>Cancelar cambio de servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Abort changing address?" xml:space="preserve">
         <source>Abort changing address?</source>
-        <target>¿Cancelar el cambio de dirección?</target>
+        <target>¿Cancelar el cambio de servidor?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -563,6 +569,7 @@
       </trans-unit>
       <trans-unit id="Add contact" xml:space="preserve">
         <source>Add contact</source>
+        <target>Añadir contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add preset servers" xml:space="preserve">
@@ -635,6 +642,10 @@
         <target>Todos los miembros del grupo permanecerán conectados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
+        <source>All messages will be deleted - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
         <target>Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!</target>
@@ -670,9 +681,9 @@
         <target>Se permiten los mensajes temporales pero sólo si tu contacto también los permite para tí.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
-        <source>Allow irreversible message deletion only if your contact allows it to you.</source>
-        <target>Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también la permite para tí.</target>
+      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
+        <source>Allow irreversible message deletion only if your contact allows it to you. (24 hours)</source>
+        <target>Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también la permite para tí. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
@@ -682,7 +693,7 @@
       </trans-unit>
       <trans-unit id="Allow message reactions." xml:space="preserve">
         <source>Allow message reactions.</source>
-        <target>Permitir reacciones a los mensajes.</target>
+        <target>Se permiten reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
@@ -695,9 +706,9 @@
         <target>Permites el envío de mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
-        <source>Allow to irreversibly delete sent messages.</source>
-        <target>Se permite la eliminación irreversible de mensajes.</target>
+      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Allow to irreversibly delete sent messages. (24 hours)</source>
+        <target>Se permite la eliminación irreversible de mensajes. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve">
@@ -730,9 +741,9 @@
         <target>Permites que tus contactos puedan llamarte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
-        <source>Allow your contacts to irreversibly delete sent messages.</source>
-        <target>Permites a tus contactos eliminar irreversiblemente los mensajes enviados.</target>
+      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
+        <target>Permites a tus contactos eliminar irreversiblemente los mensajes enviados. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
@@ -757,7 +768,7 @@
       </trans-unit>
       <trans-unit id="Already joining the group!" xml:space="preserve">
         <source>Already joining the group!</source>
-        <target>¡Ya en proceso de unirse al grupo!</target>
+        <target>¡Ya en proceso de unirte al grupo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -910,6 +921,10 @@
         <target>Bloquear</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Block for all" xml:space="preserve">
+        <source>Block for all</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
         <target>Bloquear miembros del grupo</target>
@@ -920,9 +935,17 @@
         <target>Bloquear miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Block member for all?" xml:space="preserve">
+        <source>Block member for all?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
         <target>¿Bloquear miembro?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Blocked by admin" xml:space="preserve">
+        <source>Blocked by admin</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -930,9 +953,9 @@
         <target>Tanto tú como tu contacto podéis añadir reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
-        <source>Both you and your contact can irreversibly delete sent messages.</source>
-        <target>Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados.</target>
+      <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Both you and your contact can irreversibly delete sent messages. (24 hours)</source>
+        <target>Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
@@ -972,11 +995,7 @@
       </trans-unit>
       <trans-unit id="Camera not available" xml:space="preserve">
         <source>Camera not available</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Can't delete user profile!" xml:space="preserve">
-        <source>Can't delete user profile!</source>
-        <target>¡No se puede eliminar el perfil!</target>
+        <target>Cámara no disponible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -986,7 +1005,7 @@
       </trans-unit>
       <trans-unit id="Can't invite contacts!" xml:space="preserve">
         <source>Can't invite contacts!</source>
-        <target>¡No se puede invitar a los contactos!</target>
+        <target>¡No se pueden invitar contactos!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -1021,7 +1040,7 @@
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
-        <target>¿Cambiar el rol del miembro?</target>
+        <target>¿Cambiar rol?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
@@ -1092,6 +1111,7 @@
       </trans-unit>
       <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <target>Chat está detenido. Si estás usando esta base de datos en otro dispositivo, deberías transferirla de vuelta antes de iniciarlo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
@@ -1137,6 +1157,10 @@
       <trans-unit id="Clear conversation?" xml:space="preserve">
         <source>Clear conversation?</source>
         <target>¿Vaciar conversación?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear private notes?" xml:space="preserve">
+        <source>Clear private notes?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve">
@@ -1433,6 +1457,14 @@ This is your own one-time link!</source>
         <target>Crea tu perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Created at" xml:space="preserve">
+        <source>Created at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Created at: %@" xml:space="preserve">
+        <source>Created at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Created on %@" xml:space="preserve">
         <source>Created on %@</source>
         <target>Creado en %@</target>
@@ -1440,6 +1472,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Creating link…" xml:space="preserve">
         <source>Creating link…</source>
+        <target>Creando enlace…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -1744,7 +1777,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
         <source>Delete pending connection?</source>
-        <target>¿Eliminar la conexion pendiente?</target>
+        <target>¿Eliminar conexión pendiente?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete profile" xml:space="preserve">
@@ -1922,6 +1955,10 @@ This cannot be undone!</source>
         <target>Hacer más tarde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Do not send history to new members." xml:space="preserve">
+        <source>Do not send history to new members.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
         <source>Don't create address</source>
         <target>No crear dirección SimpleX</target>
@@ -1994,6 +2031,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Enable camera access" xml:space="preserve">
         <source>Enable camera access</source>
+        <target>Permitir acceso a la cámara</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -2063,6 +2101,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
         <source>Encrypted message: app is stopped</source>
+        <target>Mensaje cifrado: la aplicación está parada</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
@@ -2177,7 +2216,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
         <source>Error changing address</source>
-        <target>Error al cambiar dirección</target>
+        <target>Error al cambiar servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
@@ -2208,6 +2247,10 @@ This cannot be undone!</source>
       <trans-unit id="Error creating member contact" xml:space="preserve">
         <source>Error creating member contact</source>
         <target>Error al establecer contacto con el miembro</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error creating message" xml:space="preserve">
+        <source>Error creating message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
@@ -2287,7 +2330,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Error joining group" xml:space="preserve">
         <source>Error joining group</source>
-        <target>Error al unirse al grupo</target>
+        <target>Error al unirte al grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error loading %@ servers" xml:space="preserve">
@@ -2297,6 +2340,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
         <source>Error opening chat</source>
+        <target>Error al abrir chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2341,6 +2385,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Error scanning code: %@" xml:space="preserve">
         <source>Error scanning code: %@</source>
+        <target>Error al escanear código: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending email" xml:space="preserve">
@@ -2673,9 +2718,9 @@ This cannot be undone!</source>
         <target>Los miembros pueden añadir reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can irreversibly delete sent messages." xml:space="preserve">
-        <source>Group members can irreversibly delete sent messages.</source>
-        <target>Los miembros del grupo pueden eliminar mensajes de forma irreversible.</target>
+      <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Group members can irreversibly delete sent messages. (24 hours)</source>
+        <target>Los miembros del grupo pueden eliminar mensajes de forma irreversible. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send direct messages." xml:space="preserve">
@@ -2710,7 +2755,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve">
         <source>Group preferences</source>
-        <target>Preferencias de grupo</target>
+        <target>Preferencias del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -2781,6 +2826,10 @@ This cannot be undone!</source>
       <trans-unit id="History" xml:space="preserve">
         <source>History</source>
         <target>Historial</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="History is not sent to new members." xml:space="preserve">
+        <source>History is not sent to new members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -2871,6 +2920,10 @@ This cannot be undone!</source>
       <trans-unit id="Import database" xml:space="preserve">
         <source>Import database</source>
         <target>Importar base de datos</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved message delivery" xml:space="preserve">
+        <source>Improved message delivery</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved privacy and security" xml:space="preserve">
@@ -2977,6 +3030,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Invalid QR code" xml:space="preserve">
         <source>Invalid QR code</source>
+        <target>Código QR no válido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -2984,8 +3038,13 @@ This cannot be undone!</source>
         <target>Enlace de conexión no válido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid display name!" xml:space="preserve">
+        <source>Invalid display name!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invalid link" xml:space="preserve">
         <source>Invalid link</source>
+        <target>Enlace no válido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid name!" xml:space="preserve">
@@ -2995,6 +3054,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Invalid response" xml:space="preserve">
         <source>Invalid response</source>
+        <target>Respuesta no válida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
@@ -3080,22 +3140,26 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
         <source>Join</source>
-        <target>Únete</target>
+        <target>Unirte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
-        <target>Únete al grupo</target>
+        <target>Unirte al grupo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Join group conversations" xml:space="preserve">
+        <source>Join group conversations</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group?" xml:space="preserve">
         <source>Join group?</source>
-        <target>¿Unirse al grupo?</target>
+        <target>¿Unirte al grupo?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join incognito" xml:space="preserve">
         <source>Join incognito</source>
-        <target>Únete en modo incógnito</target>
+        <target>Unirte en modo incógnito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join with current profile" xml:space="preserve">
@@ -3117,6 +3181,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Keep" xml:space="preserve">
         <source>Keep</source>
+        <target>Guardar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
@@ -3126,6 +3191,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Keep unused invitation?" xml:space="preserve">
         <source>Keep unused invitation?</source>
+        <target>¿Guardar invitación no usada?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -3300,12 +3366,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>El rol de miembro cambiará a "%@". Todos los miembros del grupo serán notificados.</target>
+        <target>El rol del miembro cambiará a "%@" y se notificará al grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>El rol del miembro cambiará a "%@". El miembro recibirá una invitación nueva.</target>
+        <target>El rol del miembro cambiará a "%@" y recibirá una invitación nueva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
@@ -3330,7 +3396,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
         <source>Message reactions</source>
-        <target>Reacciones a los mensajes</target>
+        <target>Reacciones a mensajes</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve">
@@ -3460,6 +3526,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
+        <target>Nuevo chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -3588,6 +3655,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="OK" xml:space="preserve">
         <source>OK</source>
+        <target>OK</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off" xml:space="preserve">
@@ -3637,7 +3705,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
         <source>Only group owners can change group preferences.</source>
-        <target>Sólo los propietarios pueden modificar las preferencias de grupo.</target>
+        <target>Sólo los propietarios pueden modificar las preferencias del grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
@@ -3655,9 +3723,9 @@ This is your link for group %@!</source>
         <target>Sólo tú puedes añadir reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
-        <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
-        <target>Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcarlos para eliminar).</target>
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
+        <source>Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</source>
+        <target>Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcarlos para eliminar). (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve">
@@ -3680,9 +3748,9 @@ This is your link for group %@!</source>
         <target>Sólo tu contacto puede añadir reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
-        <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
-        <target>Sólo tu contacto puede eliminar mensajes de forma irreversible (tu puedes marcarlos para eliminar).</target>
+      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve">
+        <source>Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)</source>
+        <target>Sólo tu contacto puede eliminar mensajes de forma irreversible (tu puedes marcarlos para eliminar). (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can make calls." xml:space="preserve">
@@ -3737,14 +3805,17 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
+        <target>Iniciando aplicación…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or scan QR code" xml:space="preserve">
         <source>Or scan QR code</source>
+        <target>O escanear código QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or show this code" xml:space="preserve">
         <source>Or show this code</source>
+        <target>O mostrar este código</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -3787,6 +3858,10 @@ This is your link for group %@!</source>
         <target>Contraseña para hacerlo visible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Past member %@" xml:space="preserve">
+        <source>Past member %@</source>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
         <target>Pegar dirección de ordenador</target>
@@ -3797,8 +3872,13 @@ This is your link for group %@!</source>
         <target>Pegar imagen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Paste link to connect!" xml:space="preserve">
+        <source>Paste link to connect!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve">
         <source>Paste the link you received</source>
+        <target>Pegar el enlace recibido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
@@ -3839,11 +3919,13 @@ This is your link for group %@!</source>
       <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
         <source>Please contact developers.
 Error: %@</source>
+        <target>Por favor, contacta con los desarrolladores.
+Error: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
         <source>Please contact group admin.</source>
-        <target>Póngase en contacto con el administrador del grupo.</target>
+        <target>Ponte en contacto con el administrador del grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -3925,6 +4007,10 @@ Error: %@</source>
         <source>Private filenames</source>
         <target>Nombres de archivos privados</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private notes" xml:space="preserve">
+        <source>Private notes</source>
+        <note>name of notes to self</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -4043,26 +4129,27 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
-        <target>Más información en el [Manual de usuario](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
+        <target>Saber más en el [Manual del Usuario](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</source>
+        <target>Saber más en [Guía de Usuario](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
-        <target>Más información en el [Manual de usuario](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
+        <target>Saber más en el [Manual del Usuario](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
         <source>Read more in our GitHub repository.</source>
-        <target>Más información en nuestro repositorio GitHub.</target>
+        <target>Saber más en nuestro repositorio GitHub.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
         <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
-        <target>Más información en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
+        <target>Saber más en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
@@ -4103,6 +4190,10 @@ Error: %@</source>
       <trans-unit id="Receiving via" xml:space="preserve">
         <source>Receiving via</source>
         <target>Recibiendo vía</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." xml:space="preserve">
+        <source>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
@@ -4262,6 +4353,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Retry" xml:space="preserve">
         <source>Retry</source>
+        <target>Reintentar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reveal" xml:space="preserve">
@@ -4321,12 +4413,12 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
-        <target>Guardar y notificar a los miembros del grupo</target>
+        <target>Guardar y notificar grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
         <source>Save and update group profile</source>
-        <target>Guardar y actualizar perfil de grupo</target>
+        <target>Guardar y actualizar perfil del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -4389,6 +4481,10 @@ Error: %@</source>
         <target>Los servidores WebRTC ICE guardados serán eliminados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved message" xml:space="preserve">
+        <source>Saved message</source>
+        <note>message info title</note>
+      </trans-unit>
       <trans-unit id="Scan QR code" xml:space="preserve">
         <source>Scan QR code</source>
         <target>Escanear código QR</target>
@@ -4419,8 +4515,13 @@ Error: %@</source>
         <target>Buscar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Search bar accepts invitation links." xml:space="preserve">
+        <source>Search bar accepts invitation links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
         <source>Search or paste SimpleX link</source>
+        <target>Buscar o pegar enlace SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
@@ -4526,6 +4627,10 @@ Error: %@</source>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
         <source>Send them from gallery or custom keyboards.</source>
         <target>Envíalos desde la galería o desde teclados personalizados.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
+        <source>Send up to 100 last messages to new members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -4700,6 +4805,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
+        <target>Compartir este enlace de un uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share with contacts" xml:space="preserve">
@@ -4829,6 +4935,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Start chat?" xml:space="preserve">
         <source>Start chat?</source>
+        <target>¿Iniciar chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
@@ -4948,7 +5055,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
         <source>Tap to join</source>
-        <target>Pulsa para unirse</target>
+        <target>Pulsa para unirte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join incognito" xml:space="preserve">
@@ -4958,10 +5065,12 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Tap to paste link" xml:space="preserve">
         <source>Tap to paste link</source>
+        <target>Pulsa para pegar enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to scan" xml:space="preserve">
         <source>Tap to scan</source>
+        <target>Pulsa para escanear</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to start a new chat" xml:space="preserve">
@@ -5028,6 +5137,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
         <source>The code you scanned is not a SimpleX link QR code.</source>
+        <target>El código QR escaneado no es un enlace SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
@@ -5097,21 +5207,12 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
+        <target>El texto pegado no es un enlace SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Theme" xml:space="preserve">
         <source>Theme</source>
         <target>Tema</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="There should be at least one user profile." xml:space="preserve">
-        <source>There should be at least one user profile.</source>
-        <target>Debe haber al menos un perfil.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
-        <source>There should be at least one visible user profile.</source>
-        <target>Debe haber al menos un perfil visible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve">
@@ -5142,6 +5243,10 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       <trans-unit id="This device name" xml:space="preserve">
         <source>This device name</source>
         <target>Nombre del dispositivo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
+        <source>This display name is invalid. Please choose another name.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -5223,7 +5328,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>Para comprobar el cifrado de extremo a extremo con tu contacto compara (o escanea) el código en tus dispositivos.</target>
+        <target>Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -5246,6 +5351,10 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Intentando conectar con el servidor usado para recibir mensajes de este contacto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Turkish interface" xml:space="preserve">
+        <source>Turkish interface</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Turn off" xml:space="preserve">
         <source>Turn off</source>
         <target>Desactivar</target>
@@ -5266,9 +5375,17 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Desbloquear</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unblock for all" xml:space="preserve">
+        <source>Unblock for all</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
         <source>Unblock member</source>
         <target>Desbloquear miembro</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unblock member for all?" xml:space="preserve">
+        <source>Unblock member for all?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -5369,6 +5486,10 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>No leído</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
+        <source>Up to 100 last messages are sent to new members.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
         <source>Update</source>
         <target>Actualizar</target>
@@ -5456,6 +5577,7 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
         <source>Use only local notifications?</source>
+        <target>¿Usar sólo notificaciones locales?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5537,6 +5659,10 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <source>View security code</source>
         <target>Mostrar código de seguridad</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Visible history" xml:space="preserve">
+        <source>Visible history</source>
+        <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
         <source>Voice messages</source>
@@ -5623,9 +5749,17 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="With encrypted files and media." xml:space="preserve">
+        <source>With encrypted files and media.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="With optional welcome message." xml:space="preserve">
         <source>With optional welcome message.</source>
         <target>Con mensaje de bienvenida opcional.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="With reduced battery usage." xml:space="preserve">
+        <source>With reduced battery usage.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -5712,7 +5846,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
         <source>You are invited to group</source>
-        <target>Has sido invitado al grupo</target>
+        <target>Has sido invitado a un grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
@@ -5742,6 +5876,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <target>Puedes hacerlo visible para tus contactos de SimpleX en Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -5756,7 +5891,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target>Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</target>
+        <target>Puedes compartir un enlace o código QR para que cualquiera pueda unirse al grupo. Si decides eliminarlo más tarde, los miembros del grupo se mantendrán.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
@@ -5766,7 +5901,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
         <source>You can share your address as a link or QR code - anybody can connect to you.</source>
-        <target>Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo.</target>
+        <target>Puedes compartir tu dirección como enlace o código QR para que cualquiera pueda conectarse contigo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
@@ -5786,6 +5921,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can view invitation link again in connection details." xml:space="preserve">
         <source>You can view invitation link again in connection details.</source>
+        <target>Podrás ver el enlace de invitación en detalles de conexión.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
@@ -5912,7 +6048,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
-        <target>Estás usando un perfil incógnito para este grupo, por tanto para evitar compartir tu perfil principal no se permite invitar a contactos</target>
+        <target>Estás usando un perfil incógnito en este grupo. Para evitar descubrir tu perfil principal no se permite invitar contactos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your %@ servers" xml:space="preserve">
@@ -6129,6 +6265,14 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>bloqueado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="blocked %@" xml:space="preserve">
+        <source>blocked %@</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="blocked by admin" xml:space="preserve">
+        <source>blocked by admin</source>
+        <note>blocked chat item</note>
+      </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
         <target>negrita</target>
@@ -6156,7 +6300,7 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
         <source>changed address for you</source>
-        <target>el servidor de envío ha cambiado para tí</target>
+        <target>ha cambiado tu servidor de envío</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
@@ -6171,12 +6315,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve">
         <source>changing address for %@…</source>
-        <target>cambiando dirección para %@…</target>
+        <target>cambiando el servidor para %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve">
         <source>changing address…</source>
-        <target>cambiando dirección…</target>
+        <target>cambiando de servidor…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -6248,6 +6392,10 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <source>connection:%@</source>
         <target>conexión: % @</target>
         <note>connection information</note>
+      </trans-unit>
+      <trans-unit id="contact %@ changed to %@" xml:space="preserve">
+        <source>contact %1$@ changed to %2$@</source>
+        <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
         <source>contact has e2e encryption</source>
@@ -6519,6 +6667,10 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>miembro</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="member %@ changed to %@" xml:space="preserve">
+        <source>member %1$@ changed to %2$@</source>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
         <target>conectado</target>
@@ -6641,6 +6793,14 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>ha expulsado a %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="removed contact address" xml:space="preserve">
+        <source>removed contact address</source>
+        <note>profile update event chat item</note>
+      </trans-unit>
+      <trans-unit id="removed profile picture" xml:space="preserve">
+        <source>removed profile picture</source>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
         <source>removed you</source>
         <target>te ha expulsado</target>
@@ -6671,6 +6831,14 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>Enviar mensaje directo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="set new contact address" xml:space="preserve">
+        <source>set new contact address</source>
+        <note>profile update event chat item</note>
+      </trans-unit>
+      <trans-unit id="set new profile picture" xml:space="preserve">
+        <source>set new profile picture</source>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
         <target>inicializando…</target>
@@ -6686,15 +6854,27 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>este contacto</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="unblocked %@" xml:space="preserve">
+        <source>unblocked %@</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
         <source>unknown</source>
         <target>desconocido</target>
         <note>connection info</note>
       </trans-unit>
+      <trans-unit id="unknown status" xml:space="preserve">
+        <source>unknown status</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
         <source>updated group profile</source>
         <target>ha actualizado el perfil del grupo</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="updated profile" xml:space="preserve">
+        <source>updated profile</source>
+        <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="v%@" xml:space="preserve">
         <source>v%@</source>
@@ -6758,13 +6938,17 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
         <source>you are invited to group</source>
-        <target>has sido invitado al grupo</target>
+        <target>has sido invitado a un grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
         <source>you are observer</source>
         <target>Tu rol es observador</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="you blocked %@" xml:space="preserve">
+        <source>you blocked %@</source>
+        <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
         <source>you changed address</source>
@@ -6805,6 +6989,10 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <source>you shared one-time link incognito</source>
         <target>has compartido enlace de un solo uso en modo incógnito</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="you unblocked %@" xml:space="preserve">
+        <source>you unblocked %@</source>
+        <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">
         <source>you: </source>

@@ -33,9 +33,11 @@
   <string name="marked_deleted_description">marked deleted</string>
   <string name="marked_deleted_items_description">%d messages marked deleted</string>
   <string name="moderated_item_description">moderated by %s</string>
-  <string name="moderated_items_description">%d messages moderated by %s</string>
+  <string name="moderated_items_description">%1$d messages moderated by %2$s</string>
   <string name="blocked_item_description">blocked</string>
+  <string name="blocked_by_admin_item_description">blocked by admin</string>
   <string name="blocked_items_description">%d messages blocked</string>
+  <string name="blocked_by_admin_items_description">%d messages blocked by admin</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -50,6 +52,9 @@
 
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
+
+  <!-- NoteFolder - ChatModel.kt -->
+  <string name="note_folder_local_display_name">Private notes</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection %1$d</string>
@@ -99,6 +104,7 @@
   <string name="connection_error">Connection error</string>
   <string name="network_error_desc">Please check your network connection with %1$s and try again.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_creating_message">Error creating message</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
@@ -116,6 +122,7 @@
   <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
+  <string name="error_deleting_note_folder">Error deleting private notes</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
@@ -139,6 +146,10 @@
   <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
   <string name="error_updating_user_privacy">Error updating user privacy</string>
+  <string name="possible_deadlock_title">Deadlock</string>
+  <string name="possible_deadlock_desc">Execution of code takes too long time: %1$d seconds. Probably, the app is frozen: %2$s</string>
+  <string name="possible_slow_function_title">Slow function</string>
+  <string name="possible_slow_function_desc">Execution of function takes too long time: %1$d seconds: %2$s</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -467,7 +478,9 @@
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
   <string name="clear_chat_question">Clear chat?</string>
+  <string name="clear_note_folder_question">Clear private notes?</string>
   <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</string>
+  <string name="clear_note_folder_warning">All messages will be deleted - this cannot be undone!</string>
   <string name="clear_verb">Clear</string>
   <string name="clear_chat_button">Clear chat</string>
   <string name="clear_chat_menu_action">Clear</string>
@@ -686,7 +699,9 @@
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
+  <string name="developer_options_section">Developer options</string>
   <string name="show_internal_errors">Show internal errors</string>
+  <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
@@ -1163,6 +1178,8 @@
   <string name="rcv_group_event_member_connected">connected</string>
   <string name="rcv_group_event_member_left">left</string>
   <string name="rcv_group_event_changed_member_role">changed role of %s to %s</string>
+  <string name="rcv_group_event_member_blocked">blocked %s</string>
+  <string name="rcv_group_event_member_unblocked">unblocked %s</string>
   <string name="rcv_group_event_changed_your_role">changed your role to %s</string>
   <string name="rcv_group_event_member_deleted">removed %1$s</string>
   <string name="rcv_group_event_user_deleted">removed you</string>
@@ -1172,6 +1189,8 @@
   <string name="rcv_group_event_member_created_contact">connected directly</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
+  <string name="snd_group_event_member_blocked">you blocked %s</string>
+  <string name="snd_group_event_member_unblocked">you unblocked %s</string>
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
@@ -1186,6 +1205,15 @@
   <string name="group_members_n">%s, %s and %d members</string>
 
   <string name="rcv_group_event_open_chat">Open</string>
+
+  <!-- Profile update event chat items -->
+  <string name="profile_update_event_contact_name_changed">contact %1$s changed to %2$s</string>
+  <string name="profile_update_event_removed_picture">removed profile picture</string>
+  <string name="profile_update_event_set_new_picture">set new profile picture</string>
+  <string name="profile_update_event_removed_address">removed contact address</string>
+  <string name="profile_update_event_set_new_address">set new contact address</string>
+  <string name="profile_update_event_updated_profile">updated profile</string>
+  <string name="profile_update_event_member_name_changed">member %1$s changed to %2$s</string>
 
   <!-- Conn event chat items -->
   <string name="rcv_conn_event_switch_queue_phase_completed">changed address for you</string>
@@ -1217,6 +1245,7 @@
   <string name="group_member_status_removed">removed</string>
   <string name="group_member_status_left">left</string>
   <string name="group_member_status_group_deleted">group deleted</string>
+  <string name="group_member_status_unknown">unknown status</string>
   <string name="group_member_status_invited">invited</string>
   <string name="group_member_status_introduced">connecting (introduced)</string>
   <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
@@ -1227,6 +1256,9 @@
   <string name="group_member_status_creator">creator</string>
 
   <string name="group_member_status_connecting">connecting</string>
+  <string name="group_member_status_unknown_short">unknown</string>
+
+  <string name="past_member_vName">Past member %1$s</string>
 
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>
@@ -1282,6 +1314,7 @@
   <string name="info_row_database_id">Database ID</string>
   <string name="info_row_updated_at">Record updated at</string>
   <string name="info_row_sent_at">Sent at</string>
+  <string name="info_row_created_at">Created at</string>
   <string name="info_row_received_at">Received at</string>
   <string name="info_row_deleted_at">Deleted at</string>
   <string name="info_row_moderated_at">Moderated at</string>
@@ -1289,6 +1322,7 @@
   <string name="share_text_database_id">Database ID: %d</string>
   <string name="share_text_updated_at">Record updated at: %s</string>
   <string name="share_text_sent_at">Sent at: %s</string>
+  <string name="share_text_created_at">Created at: %s</string>
   <string name="share_text_received_at">Received at: %s</string>
   <string name="share_text_deleted_at">Deleted at: %s</string>
   <string name="share_text_moderated_at">Moderated at: %s</string>
@@ -1298,6 +1332,7 @@
   <string name="current_version_timestamp">%s (current)</string>
   <string name="item_info_no_text">no text</string>
   <string name="recipient_colon_delivery_status">%s: %s</string>
+  <string name="saved_message_title">Saved message</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member_question">Remove member?</string>
@@ -1310,11 +1345,17 @@
   <string name="block_member_question">Block member?</string>
   <string name="block_member_button">Block member</string>
   <string name="block_member_confirmation">Block</string>
+  <string name="block_for_all_question">Block member for all?</string>
+  <string name="block_for_all">Block for all</string>
   <string name="block_member_desc">All new messages from %s will be hidden!</string>
   <string name="unblock_member_question">Unblock member?</string>
   <string name="unblock_member_button">Unblock member</string>
   <string name="unblock_member_confirmation">Unblock</string>
+  <string name="unblock_for_all_question">Unblock member for all?</string>
+  <string name="unblock_for_all">Unblock for all</string>
   <string name="unblock_member_desc">Messages from %s will be shown!</string>
+  <string name="member_blocked_by_admin">Blocked by admin</string>
+  <string name="member_info_member_blocked">blocked</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="role_in_group">Role</string>
   <string name="change_role">Change role</string>
@@ -1327,6 +1368,7 @@
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
   <string name="error_removing_member">Error removing member</string>
   <string name="error_changing_role">Error changing role</string>
+  <string name="error_blocking_member_for_all">Error blocking member for all</string>
   <string name="info_row_group">Group</string>
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
@@ -1394,9 +1436,6 @@
   <string name="user_unmute">Unmute</string>
   <string name="enter_password_to_show">Enter password in search</string>
   <string name="tap_to_activate_profile">Tap to activate profile.</string>
-  <string name="cant_delete_user_profile">Can\'t delete user profile!</string>
-  <string name="should_be_at_least_one_visible_profile">There should be at least one visible user profile.</string>
-  <string name="should_be_at_least_one_profile">There should be at least one user profile.</string>
   <string name="make_profile_private">Make profile private!</string>
   <string name="you_can_hide_or_mute_user_profile">You can hide or mute a user profile - hold it for the menu.</string>
   <string name="dont_show_again">Don\'t show again</string>
@@ -1653,6 +1692,15 @@
   <string name="v5_4_block_group_members">Block group members</string>
   <string name="v5_4_block_group_members_descr">To hide unwanted messages.</string>
   <string name="v5_4_more_things_descr">- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!</string>
+  <string name="v5_5_private_notes">Private notes</string>
+  <string name="v5_5_private_notes_descr">With encrypted files and media.</string>
+  <string name="v5_5_simpler_connect_ui">Paste link to connect!</string>
+  <string name="v5_5_simpler_connect_ui_descr">Search bar accepts invitation links.</string>
+  <string name="v5_5_join_group_conversation">Join group conversations</string>
+  <string name="v5_5_join_group_conversation_descr">Recent history and improved directory bot.</string>
+  <string name="v5_5_message_delivery">Improved message delivery</string>
+  <string name="v5_5_message_delivery_descr">With reduced battery usage.</string>
+  <string name="v5_5_new_interface_languages">Hungarian and Turkish UI</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

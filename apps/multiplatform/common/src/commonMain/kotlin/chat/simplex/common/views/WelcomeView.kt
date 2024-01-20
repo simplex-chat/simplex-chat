@@ -175,10 +175,12 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 }
 
 fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
-  withApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withApi
+  withBGApi {
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withBGApi
+    if (!chatModel.connectedToRemote()) {
+      chatModel.localUserCreated.value = true
+    }
     controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
-    chatModel.chatRunning.value = false
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
     close()
@@ -186,11 +188,11 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
 }
 
 fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
-  withApi {
+  withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
       rhId, Profile(displayName.trim(), "", null)
-    ) ?: return@withApi
+    ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
@@ -206,10 +208,11 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 }
 
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
-  withApi {
+  withBGApi {
     chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
       null, Profile(displayName.trim(), "", null)
-    ) ?: return@withApi
+    ) ?: return@withBGApi
+    chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     if (chatModel.users.isEmpty()) {
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {

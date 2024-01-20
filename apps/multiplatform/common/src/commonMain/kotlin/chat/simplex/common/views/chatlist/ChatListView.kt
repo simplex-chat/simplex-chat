@@ -107,7 +107,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         modifier = Modifier
           .fillMaxSize()
       ) {
-        ChatList(chatModel, searchText = searchText)
+        if (!chatModel.desktopNoUserNoRemote) {
+          ChatList(chatModel, searchText = searchText)
+        }
         if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
             if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
@@ -319,7 +321,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
-    withApi {
+    withBGApi {
       planAndConnect(rhId, uri, incognito = null, close = null)
     }
   }
@@ -516,6 +518,7 @@ private fun filteredChats(
           } else {
             viewNameContains(cInfo, s)
           }
+          is ChatInfo.Local -> s.isEmpty() || viewNameContains(cInfo, s)
           is ChatInfo.ContactRequest -> s.isEmpty() || viewNameContains(cInfo, s)
           is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.contactConnection.localAlias.lowercase().contains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
           is ChatInfo.InvalidJSON -> chat.id == chatModel.chatId.value

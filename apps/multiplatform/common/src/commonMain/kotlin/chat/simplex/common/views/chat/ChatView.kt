@@ -117,7 +117,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     }
     val clipboard = LocalClipboardManager.current
     when (chat.chatInfo) {
-      is ChatInfo.Direct, is ChatInfo.Group -> {
+      is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         ChatLayout(
           chat,
           unreadCount,
@@ -164,7 +164,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               return@ChatLayout
             }
             hideKeyboard(view)
-            withApi {
+            withBGApi {
               // The idea is to preload information before showing a modal because large groups can take time to load all members
               var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
               var preloadedCode: String? = null
@@ -205,7 +205,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           },
           showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
             hideKeyboard(view)
-            withApi {
+            withBGApi {
               val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
               val stats = r?.second
               val (_, code) = if (member.memberActive) {
@@ -228,7 +228,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             val c = chatModel.getChat(chatModel.chatId.value ?: return@ChatLayout)
             val firstId = chatModel.chatItems.firstOrNull()?.id
             if (c != null && firstId != null) {
-              withApi {
+              withBGApi {
                 Log.d(TAG, "TODOCHAT: loadPrevMessages: loading for ${c.id}, current chatId ${ChatModel.chatId.value}, size was ${ChatModel.chatItems.size}")
                 apiLoadPrevMessages(c, chatModel, firstId, searchText.value)
                 Log.d(TAG, "TODOCHAT: loadPrevMessages: loaded for ${c.id}, current chatId ${ChatModel.chatId.value}, size now ${ChatModel.chatItems.size}")
@@ -236,7 +236,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           deleteMessage = { itemId, mode ->
-            withApi {
+            withBGApi {
               val cInfo = chat.chatInfo
               val toDeleteItem = chatModel.chatItems.firstOrNull { it.id == itemId }
               val toModerate = toDeleteItem?.memberToModerate(chat.chatInfo)
@@ -290,14 +290,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             }
           },
-          receiveFile = { fileId, encrypted ->
-            withApi { chatModel.controller.receiveFile(chatRh, user, fileId, encrypted) }
+          receiveFile = { fileId ->
+            withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId) }
           },
           cancelFile = { fileId ->
-            withApi { chatModel.controller.cancelFile(chatRh, user, fileId) }
+            withBGApi { chatModel.controller.cancelFile(chatRh, user, fileId) }
           },
           joinGroup = { groupId, onComplete ->
-            withApi {
+            withBGApi {
               chatModel.controller.apiJoinGroup(chatRh, groupId)
               onComplete.invoke()
             }
@@ -314,11 +314,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           },
           endCall = {
             val call = chatModel.activeCall.value
-            if (call != null) withApi { chatModel.callManager.endCall(call) }
+            if (call != null) withBGApi { chatModel.callManager.endCall(call) }
           },
           acceptCall = { contact ->
             hideKeyboard(view)
-            withApi {
+            withBGApi {
               val invitation = chatModel.callInvitations.remove(contact.id)
                 ?: controller.apiGetCallInvitations(chatModel.remoteHostId()).firstOrNull { it.contact.id == contact.id }
               if (invitation == null) {
@@ -329,17 +329,17 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           acceptFeature = { contact, feature, param ->
-            withApi {
+            withBGApi {
               chatModel.controller.allowFeatureToContact(chatRh, contact, feature, param)
             }
           },
           openDirectChat = { contactId ->
-            withApi {
+            withBGApi {
               openDirectChat(chatRh, contactId, chatModel)
             }
           },
           updateContactStats = { contact ->
-            withApi {
+            withBGApi {
               val r = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
               if (r != null) {
                 val contactStats = r.first
@@ -349,7 +349,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           updateMemberStats = { groupInfo, member ->
-            withApi {
+            withBGApi {
               val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
               if (r != null) {
                 val memStats = r.second
@@ -360,7 +360,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           syncContactConnection = { contact ->
-            withApi {
+            withBGApi {
               val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
               if (cStats != null) {
                 chatModel.updateContactConnectionStats(chatRh, contact, cStats)
@@ -368,7 +368,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           syncMemberConnection = { groupInfo, member ->
-            withApi {
+            withBGApi {
               val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
               if (r != null) {
                 chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
@@ -382,7 +382,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             chatModel.groupMembers.find { it.id == memberId }
           },
           setReaction = { cInfo, cItem, add, reaction ->
-            withApi {
+            withBGApi {
               val updatedCI = chatModel.controller.apiChatItemReaction(
                 rh = chatRh,
                 type = cInfo.chatType,
@@ -397,7 +397,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           showItemDetails = { cInfo, cItem ->
-            withApi {
+            withBGApi {
               val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
               if (ciInfo != null) {
                 if (chat.chatInfo is ChatInfo.Group) {
@@ -416,7 +416,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           },
           addMembers = { groupInfo ->
             hideKeyboard(view)
-            withApi {
+            withBGApi {
               setGroupMembers(chatRh, groupInfo, chatModel)
               ModalManager.end.closeModals()
               ModalManager.end.showModalCloseable(true) { close ->
@@ -426,7 +426,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           },
           openGroupLink = { groupInfo ->
             hideKeyboard(view)
-            withApi {
+            withBGApi {
               val link = chatModel.controller.apiGetGroupLink(chatRh, groupInfo.groupId)
               ModalManager.end.closeModals()
               ModalManager.end.showModalCloseable(true) {
@@ -451,7 +451,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             if (searchText.value == value) return@ChatLayout
             if (chatModel.chatId.value != activeChat.value?.id) return@ChatLayout
             val c = chatModel.getChat(chatModel.chatId.value ?: return@ChatLayout) ?: return@ChatLayout
-            withApi {
+            withBGApi {
               apiFindMessages(c, chatModel, value)
               searchText.value = value
             }
@@ -505,7 +505,7 @@ fun ChatLayout(
   loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
   startCall: (CallMediaType) -> Unit,
@@ -624,11 +624,27 @@ fun ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   val activeCall by remember { chatModel.activeCall }
-  menuItems.add {
-    ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
-      showMenu.value = false
-      showSearch = true
-    })
+  if (chat.chatInfo is ChatInfo.Local) {
+    barButtons.add {
+      IconButton({
+        showMenu.value = false
+        showSearch = true
+        }, enabled = chat.chatInfo.noteFolder.ready
+      ) {
+        Icon(
+          painterResource(MR.images.ic_search),
+          stringResource(MR.strings.search_verb).capitalize(Locale.current),
+          tint = if (chat.chatInfo.noteFolder.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+        )
+      }
+    }
+  } else {
+    menuItems.add {
+      ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        showMenu.value = false
+        showSearch = true
+      })
+    }
   }
 
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
@@ -743,16 +759,18 @@ fun ChatInfoToolbar(
     }
   }
 
-  barButtons.add {
-    IconButton({ showMenu.value = true }) {
-      Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+  if (menuItems.isNotEmpty()) {
+    barButtons.add {
+      IconButton({ showMenu.value = true }) {
+        Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      }
     }
   }
 
   DefaultTopAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
-    onTitleClick = info,
+    onTitleClick = if (chat.chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
@@ -830,7 +848,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -910,7 +928,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
           LaunchedEffect(Unit) {
             scope.launch {
-              if (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) {
+              if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chat.chatInfo !is ChatInfo.Local) {
                 if (composeState.value.editing) {
                   composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
                 } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
@@ -1344,7 +1362,7 @@ fun chatViewItemsRange(currIndex: Int?, prevHidden: Int?): IntRange? =
 
 sealed class ProviderMedia {
   data class Image(val data: ByteArray, val image: ImageBitmap): ProviderMedia()
-  data class Video(val uri: URI, val preview: String): ProviderMedia()
+  data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
 private fun providerForGallery(
@@ -1394,7 +1412,7 @@ private fun providerForGallery(
           val filePath = if (chatModel.connectedToRemote() && item.file?.loaded == true) getAppFilePath(item.file.fileName) else getLoadedFilePath(item.file)
           if (filePath != null) {
             val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-            ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
+            ProviderMedia.Video(uri, item.file?.fileSource, (item.content.msgContent as MsgContent.MCVideo).image)
           } else null
         }
         else -> null
@@ -1487,7 +1505,7 @@ fun PreviewChatLayout() {
       loadPrevMessages = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
-      receiveFile = { _, _ -> },
+      receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
       startCall = {},
@@ -1560,7 +1578,7 @@ fun PreviewGroupChatLayout() {
       loadPrevMessages = {},
       deleteMessage = { _, _ -> },
       deleteMessages = {},
-      receiveFile = { _, _ -> },
+      receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
       startCall = {},
