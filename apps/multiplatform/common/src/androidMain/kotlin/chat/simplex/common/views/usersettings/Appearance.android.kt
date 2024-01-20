@@ -102,7 +102,7 @@ fun AppearanceScope.AppearanceLayout(
       val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
       LangSelector(state) {
         state.value = it
-        withBGApi {
+        withApi {
           delay(200)
           val activity = context as? Activity
           if (activity != null) {

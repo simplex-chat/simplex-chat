@@ -213,7 +213,7 @@ fun ChatItemView(
                       showMenu.value = false
                     }
                     if (chatModel.connectedToRemote() && fileSource == null) {
-                      withBGApi {
+                      withLongRunningApi(slow = 60_000, deadlock = 600_000) {
                         cItem.file?.loadRemoteFile(true)
                         fileSource = getLoadedFileSource(cItem.file)
                         shareIfExists()
@@ -319,7 +319,7 @@ fun ChatItemView(
           }
         }
 
-        @Composable fun DeletedItem() {
+        @Composable fun LegacyDeletedItem() {
           DeletedItemView(cItem, cInfo.timedMessagesTTL)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
@@ -371,7 +371,7 @@ fun ChatItemView(
         }
 
         @Composable
-        fun ModeratedItem() {
+        fun DeletedItem() {
           MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
@@ -382,8 +382,8 @@ fun ChatItemView(
         when (val c = cItem.content) {
           is CIContent.SndMsgContent -> ContentItem()
           is CIContent.RcvMsgContent -> ContentItem()
-          is CIContent.SndDeleted -> DeletedItem()
-          is CIContent.RcvDeleted -> DeletedItem()
+          is CIContent.SndDeleted -> LegacyDeletedItem()
+          is CIContent.RcvDeleted -> LegacyDeletedItem()
           is CIContent.SndCall -> CallItem(c.status, c.duration)
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
           is CIContent.RcvIntegrityError -> if (developerTools) {
@@ -449,8 +449,9 @@ fun ChatItemView(
             CIChatFeatureView(cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
-          is CIContent.SndModerated -> ModeratedItem()
-          is CIContent.RcvModerated -> ModeratedItem()
+          is CIContent.SndModerated -> DeletedItem()
+          is CIContent.RcvModerated -> DeletedItem()
+          is CIContent.RcvBlocked -> DeletedItem()
           is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
         }
       }

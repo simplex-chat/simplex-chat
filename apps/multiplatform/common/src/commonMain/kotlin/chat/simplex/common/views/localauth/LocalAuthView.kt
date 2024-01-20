@@ -49,7 +49,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
 }
 
 private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (LAResult) -> Unit) {
-  withBGApi {
+  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
     try {
       /** Waiting until [initChatController] finishes */
       while (m.ctrlInitInProgress.value) {
@@ -78,7 +78,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       displayNamePref.set(null)
       reinitChatController()
       if (m.currentUser.value != null) {
-        return@withBGApi
+        return@withLongRunningApi
       }
       var profile: Profile? = null
       if (!displayName.isNullOrEmpty()) {

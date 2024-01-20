@@ -939,7 +939,7 @@ data ACIDeleted = forall c. ChatTypeI c => ACIDeleted (SChatType c) (CIDeleted c
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
   | JCIDBlocked {deletedTs :: Maybe UTCTime}
-  | JCIBlockedByAdmin {deletedTs :: Maybe UTCTime}
+  | JCIDBlockedByAdmin {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show)
 
@@ -947,14 +947,14 @@ jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
   CIBlocked ts -> JCIDBlocked ts
-  CIBlockedByAdmin ts -> JCIBlockedByAdmin ts
+  CIBlockedByAdmin ts -> JCIDBlockedByAdmin ts
   CIModerated ts m -> JCIDModerated ts m
 
 jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
 jsonACIDeleted = \case
   JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
   JCIDBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
-  JCIBlockedByAdmin ts -> ACIDeleted SCTGroup $ CIBlockedByAdmin ts
+  JCIDBlockedByAdmin ts -> ACIDeleted SCTGroup $ CIBlockedByAdmin ts
   JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime

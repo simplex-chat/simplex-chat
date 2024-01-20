@@ -29,7 +29,7 @@
 "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- Optionale Benachrichtigung von gelöschten Kontakten.\n- Profilnamen mit Leerzeichen.\n- Und mehr!";
 
 /* No comment provided by engineer. */
-"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten.\n- Zeitdauer für verschwindende Nachrichten anpassen.\n- Nachrichten-Verlauf bearbeiten.";
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten\n- Zeitdauer für verschwindende Nachrichten anpassen\n- Nachrichtenverlauf bearbeiten";
 
 /* No comment provided by engineer. */
 ", " = ", ";
@@ -101,7 +101,7 @@
 "# %@" = "# %@";
 
 /* copied message info */
-"## History" = "## Verlauf";
+"## History" = "## Nachrichtenverlauf";
 
 /* copied message info */
 "## In reply to" = "## Als Antwort auf";
@@ -634,9 +634,6 @@
 
 /* No comment provided by engineer. */
 "Camera not available" = "Kamera nicht verfügbar";
-
-/* No comment provided by engineer. */
-"Can't delete user profile!" = "Das Benutzerprofil kann nicht gelöscht werden!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Kontakt kann nicht eingeladen werden!";
@@ -1300,6 +1297,9 @@
 "Do it later" = "Später wiederholen";
 
 /* No comment provided by engineer. */
+"Do not send history to new members." = "Den Nachrichtenverlauf nicht an neue Mitglieder senden.";
+
+/* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Nutzen Sie SimpleX nicht für Notrufe.";
 
 /* No comment provided by engineer. */
@@ -1876,7 +1876,10 @@
 "Hide:" = "Verberge:";
 
 /* No comment provided by engineer. */
-"History" = "Verlauf";
+"History" = "Nachrichtenverlauf";
+
+/* No comment provided by engineer. */
+"History is not sent to new members." = "Der Nachrichtenverlauf wird nicht an neue Gruppenmitglieder gesendet.";
 
 /* time unit */
 "hours" = "Stunden";
@@ -2018,6 +2021,9 @@
 
 /* invalid chat item */
 "invalid data" = "Ungültige Daten";
+
+/* No comment provided by engineer. */
+"Invalid display name!" = "Ungültiger Anzeigename!";
 
 /* No comment provided by engineer. */
 "Invalid link" = "Ungültiger Link";
@@ -2428,7 +2434,7 @@
 "No group!" = "Die Gruppe wurde nicht gefunden!";
 
 /* No comment provided by engineer. */
-"No history" = "Kein Verlauf";
+"No history" = "Kein Nachrichtenverlauf";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Keine Berechtigung für das Aufnehmen von Sprachnachrichten";
@@ -3075,6 +3081,9 @@
 "Send them from gallery or custom keyboards." = "Senden Sie diese aus dem Fotoalbum oder von individuellen Tastaturen.";
 
 /* No comment provided by engineer. */
+"Send up to 100 last messages to new members." = "Bis zu 100 der letzten Nachrichten an neue Gruppenmitglieder senden.";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Der Absender hat die Dateiübertragung abgebrochen.";
 
 /* No comment provided by engineer. */
@@ -3432,12 +3441,6 @@
 "Theme" = "Design";
 
 /* No comment provided by engineer. */
-"There should be at least one user profile." = "Es muss mindestens ein Benutzer-Profil vorhanden sein.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Diese Einstellungen betreffen Ihr aktuelles Profil **%@**.";
 
 /* No comment provided by engineer. */
@@ -3457,6 +3460,9 @@
 
 /* No comment provided by engineer. */
 "This device name" = "Dieser Gerätename";
+
+/* No comment provided by engineer. */
+"This display name is invalid. Please choose another name." = "Der Anzeigename ist ungültig. Bitte wählen Sie einen anderen Namen.";
 
 /* No comment provided by engineer. */
 "This group has over %lld members, delivery receipts are not sent." = "Es werden keine Empfangsbestätigungen gesendet, da diese Gruppe über %lld Mitglieder hat.";
@@ -3594,6 +3600,9 @@
 "Unread" = "Ungelesen";
 
 /* No comment provided by engineer. */
+"Up to 100 last messages are sent to new members." = "Bis zu 100 der letzten Nachrichten werden an neue Mitglieder gesendet.";
+
+/* No comment provided by engineer. */
 "Update" = "Aktualisieren";
 
 /* No comment provided by engineer. */
@@ -3718,6 +3727,9 @@
 
 /* No comment provided by engineer. */
 "View security code" = "Schauen Sie sich den Sicherheitscode an";
+
+/* chat feature */
+"Visible history" = "Sichtbarer Nachrichtenverlauf";
 
 /* No comment provided by engineer. */
 "Voice message…" = "Sprachnachrichten…";
@@ -3978,7 +3990,7 @@
 "You will still receive calls and notifications from muted profiles when they are active." = "Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.";
 
 /* No comment provided by engineer. */
-"You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.";
+"You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.";
 
 /* No comment provided by engineer. */
 "You won't lose your contacts if you later delete your address." = "Sie werden Ihre damit verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";

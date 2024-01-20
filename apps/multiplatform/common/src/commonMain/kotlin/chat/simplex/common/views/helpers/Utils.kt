@@ -27,11 +27,9 @@ import kotlin.math.*
 
 private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
-
-fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
+fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
   Exception().let {
-    scope.launch { withContext(Dispatchers.Main, block = { wrapWithLogging(action, it) }) }
+    CoroutineScope(Dispatchers.Main).launch(block = { wrapWithLogging(action, it) })
   }
 
 fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =

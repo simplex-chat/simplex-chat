@@ -1814,6 +1814,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
     public var memberSettings: GroupMemberSettings
+    public var blockedByAdmin: Bool
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: LocalProfile
@@ -1833,6 +1834,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
     public var verified: Bool { activeConn?.connectionCode != nil }
+    public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
     var directChatId: ChatId? {
         get {
@@ -1899,13 +1901,19 @@ public struct GroupMember: Identifiable, Decodable {
     public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
         return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberCurrent
+            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
         return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .author }
+    }
+
+    public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
+        let userRole = groupInfo.membership.memberRole
+        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .admin
+            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
     public var memberIncognito: Bool {
@@ -1920,6 +1928,7 @@ public struct GroupMember: Identifiable, Decodable {
         memberCategory: .inviteeMember,
         memberStatus: .memComplete,
         memberSettings: GroupMemberSettings(showMessages: true),
+        blockedByAdmin: false,
         invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: LocalProfile.sampleData,
@@ -2184,6 +2193,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvDeleted: return true
         case .sndModerated: return true
         case .rcvModerated: return true
+        case .rcvBlocked: return true
         default: return false
         }
     }
@@ -2228,22 +2238,18 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    private var showNtfDir: Bool {
-        return !chatDir.sent
-    }
-
     public var showNotification: Bool {
         switch content {
-        case .sndMsgContent: return showNtfDir
-        case .rcvMsgContent: return showNtfDir
-        case .sndDeleted: return showNtfDir
-        case .rcvDeleted: return showNtfDir
-        case .sndCall: return showNtfDir
+        case .sndMsgContent: return false
+        case .rcvMsgContent: return meta.itemDeleted == nil
+        case .sndDeleted: return false
+        case .rcvDeleted: return false
+        case .sndCall: return false
         case .rcvCall: return false // notification is shown on .callInvitation instead
-        case .rcvIntegrityError: return showNtfDir
-        case .rcvDecryptionError: return showNtfDir
-        case .rcvGroupInvitation: return showNtfDir
-        case .sndGroupInvitation: return showNtfDir
+        case .rcvIntegrityError: return false
+        case .rcvDecryptionError: return false
+        case .rcvGroupInvitation: return true
+        case .sndGroupInvitation: return false
         case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
             switch rcvDirectEvent {
             case .contactDeleted: return false
@@ -2254,9 +2260,10 @@ public struct ChatItem: Identifiable, Decodable {
             case .groupUpdated: return false
             case .memberConnected: return false
             case .memberRole: return false
-            case .userRole: return showNtfDir
-            case .userDeleted: return showNtfDir
-            case .groupDeleted: return showNtfDir
+            case .memberBlocked: return false
+            case .userRole: return true
+            case .userDeleted: return true
+            case .groupDeleted: return true
             case .memberAdded: return false
             case .memberLeft: return false
             case .memberDeleted: return false
@@ -2264,19 +2271,20 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberCreatedContact: return false
             case .memberProfileUpdated: return false
             }
-        case .sndGroupEvent: return showNtfDir
+        case .sndGroupEvent: return false
         case .rcvConnEvent: return false
-        case .sndConnEvent: return showNtfDir
+        case .sndConnEvent: return false
         case .rcvChatFeature: return false
-        case .sndChatFeature: return showNtfDir
+        case .sndChatFeature: return false
         case .rcvChatPreference: return false
-        case .sndChatPreference: return showNtfDir
+        case .sndChatPreference: return false
         case .rcvGroupFeature: return false
-        case .sndGroupFeature: return showNtfDir
-        case .rcvChatFeatureRejected: return showNtfDir
-        case .rcvGroupFeatureRejected: return showNtfDir
-        case .sndModerated: return true
-        case .rcvModerated: return true
+        case .sndGroupFeature: return false
+        case .rcvChatFeatureRejected: return true
+        case .rcvGroupFeatureRejected: return false
+        case .sndModerated: return false
+        case .rcvModerated: return false
+        case .rcvBlocked: return false
         case .invalidJSON: return false
         }
     }
@@ -2663,12 +2671,14 @@ public enum SndCIStatusProgress: String, Decodable {
 public enum CIDeleted: Decodable {
     case deleted(deletedTs: Date?)
     case blocked(deletedTs: Date?)
+    case blockedByAdmin(deletedTs: Date?)
     case moderated(deletedTs: Date?, byGroupMember: GroupMember)
 
     var id: String {
         switch self {
         case .deleted: return  "deleted"
         case .blocked: return  "blocked"
+        case .blockedByAdmin: return "blocked by admin"
         case .moderated: return "moderated"
         }
     }
@@ -2709,6 +2719,7 @@ public enum CIContent: Decodable, ItemContent {
     case rcvGroupFeatureRejected(groupFeature: GroupFeature)
     case sndModerated
     case rcvModerated
+    case rcvBlocked
     case invalidJSON(json: String)
 
     public var text: String {
@@ -2739,6 +2750,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
+            case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }
@@ -2777,6 +2789,7 @@ public enum CIContent: Decodable, ItemContent {
         case .rcvDecryptionError: return true
         case .rcvGroupInvitation: return true
         case .rcvModerated: return true
+        case .rcvBlocked: return true
         case .invalidJSON: return true
         default: return false
         }
@@ -3463,6 +3476,7 @@ public enum RcvGroupEvent: Decodable {
     case memberConnected
     case memberLeft
     case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
+    case memberBlocked(groupMemberId: Int64, profile: Profile, blocked: Bool)
     case userRole(role: GroupMemberRole)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
@@ -3480,6 +3494,12 @@ public enum RcvGroupEvent: Decodable {
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberRole(_, profile, role):
             return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
+        case let .memberBlocked(_, profile, blocked):
+            if blocked {
+                return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "rcv group event chat item"), profile.profileViewName)
+            } else {
+                return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "rcv group event chat item"), profile.profileViewName)
+            }
         case let .userRole(role):
             return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text)
         case let .memberDeleted(_, profile):
@@ -3510,6 +3530,7 @@ public enum RcvGroupEvent: Decodable {
 public enum SndGroupEvent: Decodable {
     case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
     case userRole(role: GroupMemberRole)
+    case memberBlocked(groupMemberId: Int64, profile: Profile, blocked: Bool)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
     case groupUpdated(groupProfile: GroupProfile)
@@ -3520,6 +3541,12 @@ public enum SndGroupEvent: Decodable {
             return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
         case let .userRole(role):
             return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
+        case let .memberBlocked(_, profile, blocked):
+            if blocked {
+                return String.localizedStringWithFormat(NSLocalizedString("you blocked %@", comment: "snd group event chat item"), profile.profileViewName)
+            } else {
+                return String.localizedStringWithFormat(NSLocalizedString("you unblocked %@", comment: "snd group event chat item"), profile.profileViewName)
+            }
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")

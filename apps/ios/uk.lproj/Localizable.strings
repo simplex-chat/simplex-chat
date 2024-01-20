@@ -20,7 +20,7 @@
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- підключитися до [сервера каталогів](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex. im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id. цибуля) (БЕТА)!\n- підтвердження доставлення (до 20 учасників).\n- швидше і стабільніше.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- підключитися до [сервера каталогів](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (БЕТА)!\n- підтвердження доставлення (до 20 учасників).\n- швидше і стабільніше.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- стабільніша доставка повідомлень.\n- трохи кращі групи.\n- і багато іншого!";
@@ -613,9 +613,6 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Дзвінки";
-
-/* No comment provided by engineer. */
-"Can't delete user profile!" = "Не можу видалити профіль користувача!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Не вдається запросити контакт!";
@@ -3145,12 +3142,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Тема";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Повинен бути принаймні один профіль користувача.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Повинен бути принаймні один видимий профіль користувача.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Ці налаштування стосуються вашого поточного профілю **%@**.";

@@ -139,7 +139,7 @@ final class ChatModel: ObservableObject {
     }
 
     func removeUser(_ user: User) {
-        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+        if let i = getUserIndex(user) {
             users.remove(at: i)
         }
     }
