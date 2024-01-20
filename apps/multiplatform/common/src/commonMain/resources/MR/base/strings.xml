@@ -1685,8 +1685,6 @@
   <string name="v5_5_simpler_connect_ui_descr">Search bar accepts invitation links.</string>
   <string name="v5_5_join_group_conversation">Join group conversations</string>
   <string name="v5_5_join_group_conversation_descr">Recent history and improved directory bot.</string>
-  <string name="v5_5_safer_groups">Safer groups</string>
-  <string name="v5_5_safer_groups_descr">- block a member to stop spam for all.\n- contact address is not shared.</string>
   <string name="v5_5_message_delivery">Improved message delivery</string>
   <string name="v5_5_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_5_new_interface_languages">Hungarian and Turkish UI</string>
