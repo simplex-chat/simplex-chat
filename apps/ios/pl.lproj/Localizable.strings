@@ -636,9 +636,6 @@
 "Camera not available" = "Kamera nie dostępna";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Nie można usunąć profilu użytkownika!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Nie można zaprosić kontaktu!";
 
 /* No comment provided by engineer. */
@@ -3430,12 +3427,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Motyw";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Powinien istnieć co najmniej jeden profil użytkownika.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Powinien istnieć co najmniej jeden widoczny profil użytkownika.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Te ustawienia dotyczą Twojego bieżącego profilu **%@**.";

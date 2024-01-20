@@ -41,7 +41,7 @@ fun CIVideoView(
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
-        withBGApi {
+        withLongRunningApi(slow = 60_000, deadlock = 600_000) {
           if (file != null && file.loaded && getLoadedFilePath(file) == null) {
             file.loadRemoteFile(false)
             filePath.value = getLoadedFilePath(file)
@@ -82,12 +82,12 @@ fun CIVideoView(
                       generalGetString(MR.strings.waiting_for_video),
                       generalGetString(MR.strings.video_will_be_received_when_contact_completes_uploading)
                     )
-
                   FileProtocol.SMP ->
                     AlertManager.shared.showAlertMsg(
                       generalGetString(MR.strings.waiting_for_video),
                       generalGetString(MR.strings.video_will_be_received_when_contact_is_online)
                     )
+                  FileProtocol.LOCAL -> {}
                 }
               CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
               CIFileStatus.RcvComplete -> {} // ?
@@ -377,11 +377,13 @@ private fun loadingIndicator(file: CIFile?) {
           when (file.fileProtocol) {
             FileProtocol.XFTP -> progressIndicator()
             FileProtocol.SMP -> {}
+            FileProtocol.LOCAL -> {}
           }
         is CIFileStatus.SndTransfer ->
           when (file.fileProtocol) {
             FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
             FileProtocol.SMP -> progressIndicator()
+            FileProtocol.LOCAL -> {}
           }
         is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_video_snd_complete)
         is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)

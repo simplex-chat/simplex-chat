@@ -1180,7 +1180,7 @@ testMuteContact =
       bob ##> "/mute @alice"
       bob <## "ok"
       alice #> "@bob hi"
-      (bob </)
+      bob <# "alice> hi <muted>"
       bob ##> "/contacts"
       bob <## "alice (Alice) (muted, you can /unmute @alice)"
       bob ##> "/unmute @alice"
@@ -1204,7 +1204,7 @@ testMuteGroup =
       bob <## "ok"
       alice #> "#team hi"
       concurrently_
-        (bob </)
+        (bob <# "#team alice> hi <muted>")
         (cath <# "#team alice> hi")
       bob #> "#team hello"
       concurrently_
@@ -1214,7 +1214,9 @@ testMuteGroup =
       cath <# "#team > bob hello"
       cath <## "      hello too!"
       concurrentlyN_
-        [ (bob </),
+        [ do
+            bob <# "#team cath> > bob hello <muted>"
+            bob <## "      hello too! <muted>",
           do
             alice <# "#team cath> > bob hello"
             alice <## "      hello too!"
@@ -1236,7 +1238,9 @@ testMuteGroup =
       alice <# "#team > cath hello too!"
       alice <## "      hey cath!"
       concurrentlyN_
-        [ (bob </),
+        [ do
+            bob <# "#team alice> > cath hello too! <muted>"
+            bob <## "      hey cath! <muted>",
           do
             cath <# "#team alice> > cath hello too!"
             cath <## "      hey cath!"
@@ -1245,20 +1249,32 @@ testMuteGroup =
       bob <## "#team (3 members, mentions only, you can /unmute #team)"
       bob ##> "/unmute #team"
       bob <## "ok"
+
+      threadDelay 1000000
+
       alice #> "#team hi again"
       concurrently_
         (bob <# "#team alice> hi again")
         (cath <# "#team alice> hi again")
       bob ##> "/block #team alice"
+      bob <## "admins or above can't block member for self, use /block for all #team alice"
+      -- can bypass with api
+      bob ##> "/_member settings #1 1 {\"showMessages\": false}"
       bob <## "ok"
       bob ##> "/ms team"
       bob <## "bob (Bob): admin, you, connected"
       bob <## "alice (Alice): owner, host, connected, blocked"
       bob <## "cath (Catherine): admin, connected"
+
+      threadDelay 1000000
+
       alice #> "#team test 1"
       concurrently_
-        (bob </)
+        (bob <# "#team alice> test 1 [blocked] <muted>")
         (cath <# "#team alice> test 1")
+
+      threadDelay 1000000
+
       cath #> "#team test 2"
       concurrently_
         (bob <# "#team cath> test 2")
@@ -1269,6 +1285,9 @@ testMuteGroup =
       bob <# "#team cath> test 2"
       threadDelay 1000000
       bob ##> "/unblock #team alice"
+      bob <## "admins or above can't block member for self, use /unblock for all #team alice"
+      -- can bypass with api
+      bob ##> "/_member settings #1 1 {\"showMessages\": true}"
       bob <## "ok"
       bob ##> "/ms team"
       bob <## "bob (Bob): admin, you, connected"

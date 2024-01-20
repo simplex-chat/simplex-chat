@@ -151,6 +151,8 @@ struct ChatView: View {
                             )
                         )
                     }
+                } else if case .local = cInfo {
+                    ChatInfoToolbar(chat: chat)
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -205,6 +207,8 @@ struct ChatView: View {
                             Image(systemName: "ellipsis")
                         }
                     }
+                case .local:
+                    searchButton()
                 default:
                     EmptyView()
                 }
@@ -636,7 +640,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
                     }
-                    if let di = deletingItem, di.meta.editable {
+                    if let di = deletingItem, di.meta.editable && !di.localNote {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
@@ -720,7 +724,7 @@ struct ChatView: View {
                     }
                     menu.append(rm)
                 }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
                     menu.append(replyUIAction(ci))
                 }
                 let fileSource = getLoadedFileSource(ci.file)
@@ -748,9 +752,9 @@ struct ChatView: View {
                 if revealed {
                     menu.append(hideUIAction())
                 }
-                if ci.meta.itemDeleted == nil,
+                if ci.meta.itemDeleted == nil && !ci.localNote,
                    let file = ci.file,
-                   let cancelAction = file.cancelAction  {
+                   let cancelAction = file.cancelAction {
                     menu.append(cancelFileUIAction(file.fileId, cancelAction))
                 }
                 if !live || !ci.meta.isLive {

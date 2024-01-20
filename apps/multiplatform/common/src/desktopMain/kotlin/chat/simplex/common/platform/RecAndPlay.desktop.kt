@@ -211,15 +211,13 @@ actual object SoundPlayer: SoundPlayerInterface {
   var playing = false
 
   override fun start(scope: CoroutineScope, sound: Boolean) {
-    withBGApi {
-      val tmpFile = File(tmpDir, UUID.randomUUID().toString())
-      tmpFile.deleteOnExit()
-      SoundPlayer::class.java.getResource("/media/ring_once.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
-      playing = true
-      while (playing) {
-        if (sound) {
-          AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
-        }
+    val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+    tmpFile.deleteOnExit()
+    SoundPlayer::class.java.getResource("/media/ring_once.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+    playing = true
+    scope.launch {
+      while (playing && sound) {
+        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
         delay(3500)
       }
     }

@@ -185,7 +185,6 @@
     <string name="change_verb">Промени</string>
     <string name="change_member_role_question">Промяна на груповата роля\?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Все още ще получавате обаждания и известия от заглушени профили, когато са активни.</string>
-    <string name="cant_delete_user_profile">Потребителският профил не може да се изтрие!</string>
     <string name="allow_disappearing_messages_only_if">Позволи изчезващи съобщения само ако вашият контакт ги разрешава.</string>
     <string name="allow_your_contacts_irreversibly_delete">Позволи на вашите контакти да изтриват необратимо изпратените съобщения. (24 часа)</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Позволи на вашите контакти да изпращат изчезващи съобщения.</string>
@@ -476,7 +475,7 @@
     <string name="scan_qr_to_connect_to_contact">За да се свърже, вашият контакт може да сканира QR код или да използва линка в приложението.</string>
     <string name="direct_messages">Лични съобщения</string>
     <string name="display_name">Въведи своето име:</string>
-    <string name="display_name_cannot_contain_whitespace">Показваното име не може да съдържа интервал.</string>
+    <string name="display_name_cannot_contain_whitespace">Името не може да съдържа интервал.</string>
     <string name="sending_delivery_receipts_will_be_enabled">Изпращането на потвърждениe за доставка ще бъде активирано за всички контакти.</string>
     <string name="receipts_contacts_enable_for_all">Активиране за всички</string>
     <string name="error_enabling_delivery_receipts">Грешка при активирането на потвърждениeто за доставка!</string>
@@ -547,8 +546,8 @@
     <string name="smp_server_test_delete_queue">Изтрий опашка</string>
     <string name="smp_server_test_disconnect">Прекъсни връзката</string>
     <string name="smp_server_test_download_file">Свали файл</string>
-    <string name="failed_to_create_user_duplicate_title">Дублирано показвано име!</string>
-    <string name="failed_to_create_user_duplicate_desc">Вече имате чат профил със същото показвано име. Моля, изберете друго име.</string>
+    <string name="failed_to_create_user_duplicate_title">Дублирано име!</string>
+    <string name="failed_to_create_user_duplicate_desc">Вече имате чат профил със същото име. Моля, изберете друго име.</string>
     <string name="la_minutes">%d минути</string>
     <string name="la_seconds">%d секунди</string>
     <string name="edit_verb">Редактирай</string>
@@ -567,7 +566,7 @@
     <string name="integrity_msg_duplicate">дублирано съобщение</string>
     <string name="privacy_and_security">Поверителност и сигурност</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Това може да се случи, когато вие или вашата връзка използвате старо резервно копие на базата данни.</string>
-    <string name="self_destruct_new_display_name">Ново показвано име:</string>
+    <string name="self_destruct_new_display_name">Ново име:</string>
     <string name="enable_lock">Активирай заключване</string>
     <string name="enable_self_destruct">Активирай самоунищожение</string>
     <string name="chat_item_ttl_none">никога</string>
@@ -1165,8 +1164,6 @@
     <string name="profile_is_only_shared_with_your_contacts">Профилът се споделя само с вашите контакти.</string>
     <string name="delete_files_and_media_desc">Това действие не може да бъде отменено - всички получени и изпратени файлове и медия ще бъдат изтрити. Снимките с ниска разделителна способност ще бъдат запазени.</string>
     <string name="tap_to_activate_profile">Докосни за активиране на профил.</string>
-    <string name="should_be_at_least_one_profile">Трябва да има поне един потребителски профил.</string>
-    <string name="should_be_at_least_one_visible_profile">Трябва да има поне един видим потребителски профил.</string>
     <string name="language_system">Системен</string>
     <string name="color_title">Заглавие</string>
     <string name="to_share_with_your_contact">(за споделяне с вашия контакт)</string>
@@ -1556,4 +1553,43 @@
     <string name="search_or_paste_simplex_link">Търсене или поставяне на SimpleX линк</string>
     <string name="start_chat_question">Стартирай чата?</string>
     <string name="chat_is_stopped_you_should_transfer_database">Чатът е спрян. Ако вече сте използвали тази база данни на друго устройство, трябва да я прехвърлите обратно, преди да стартирате чата отново.</string>
+    <string name="remote_ctrl_error_bad_invitation">Настолното устройство има грешен код за връзка</string>
+    <string name="remote_ctrl_error_bad_version">Настолното устройство е с неподдържана версия. Моля, уверете се, че използвате една и съща версия и на двете устройства</string>
+    <string name="possible_deadlock_desc">Изпълнението на кода отнема твърде много време: %1$d секунди. Вероятно приложението е замразено: %2$s</string>
+    <string name="possible_slow_function_title">Бавна функция</string>
+    <string name="possible_slow_function_desc">Изпълнението на функцията отнема твърде много време: %1$d секунди: %2$s</string>
+    <string name="show_internal_errors">Покажи вътрешните грешки</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Прекъсната е връзката с мобилното устройство <b>%s</b> с причина: %s]]></string>
+    <string name="remote_ctrl_was_disconnected_title">Връзката е прекъсната</string>
+    <string name="failed_to_create_user_invalid_title">Невалидно име!</string>
+    <string name="failed_to_create_user_invalid_desc">Това име е невалидно. Моля, изберете друго име.</string>
+    <string name="remote_host_was_disconnected_title">Връзката е прекъсната</string>
+    <string name="remote_ctrl_disconnected_with_reason">Прекъсната е връзката с причината: %s</string>
+    <string name="remote_host_error_missing"><![CDATA[Мобилното устройство <b>%s</b> липсва]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Мобилното устройство <b>%s</b> е неактивно]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Мобилното устройство <b>%s</b> е заето]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[Времето за изчакване е достигнато при свързване с мобилното устройство <b>%s</b>]]></string>
+    <string name="remote_host_error_bad_state"><![CDATA[Връзката с мобилното устройство <b>%s</b> е в лошо състояние]]></string>
+    <string name="remote_host_error_bad_version"><![CDATA[Мобилното устройство <b>%s</b> е с неподдържана версия. Моля, уверете се, че използвате една и съща версия и на двете устройства]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[Връзката с мобилното устройство <b>%s</b> бе прекъсната]]></string>
+    <string name="remote_ctrl_error_inactive">Настолното устройство е неактивно</string>
+    <string name="remote_ctrl_error_timeout">Времето за изчакване е достигнато при свързване с настолното устройство</string>
+    <string name="remote_ctrl_error_bad_state">Връзката с настолното устройство е в лошо състояние</string>
+    <string name="remote_ctrl_error_busy">Настолното устройство е заето</string>
+    <string name="remote_ctrl_error_disconnected">Връзката с настолното устройство бе прекъсната</string>
+    <string name="agent_critical_error_title">Критична грешка</string>
+    <string name="past_member_vName">Бивш член %1$s</string>
+    <string name="group_member_status_unknown">неизвестен статус</string>
+    <string name="group_member_status_unknown_short">неизвестен</string>
+    <string name="agent_internal_error_title">Вътрешна грешка</string>
+    <string name="agent_internal_error_desc">Моля, докладвайте го на разработчиците:
+\n%s</string>
+    <string name="restart_chat_button">Рестартирай чата</string>
+    <string name="agent_critical_error_desc">Моля, докладвайте го на разработчиците:
+\n%s
+\n
+\nПрепоръчително е да рестартирате приложението.</string>
+    <string name="developer_options_section">Опции за разработчици</string>
+    <string name="show_slow_api_calls">Показване на бавни API заявки</string>
+    <string name="possible_deadlock_title">Грешка в заключено положение</string>
 </resources>

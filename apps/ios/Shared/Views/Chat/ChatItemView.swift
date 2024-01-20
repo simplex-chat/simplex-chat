@@ -109,6 +109,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         case .sndModerated: deletedItemView()
         case .rcvModerated: deletedItemView()
+        case .rcvBlocked: deletedItemView()
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
         }
     }

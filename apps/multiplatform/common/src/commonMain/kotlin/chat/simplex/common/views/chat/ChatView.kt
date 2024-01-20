@@ -117,7 +117,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     }
     val clipboard = LocalClipboardManager.current
     when (chat.chatInfo) {
-      is ChatInfo.Direct, is ChatInfo.Group -> {
+      is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         ChatLayout(
           chat,
           unreadCount,
@@ -624,11 +624,27 @@ fun ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   val activeCall by remember { chatModel.activeCall }
-  menuItems.add {
-    ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
-      showMenu.value = false
-      showSearch = true
-    })
+  if (chat.chatInfo is ChatInfo.Local) {
+    barButtons.add {
+      IconButton({
+        showMenu.value = false
+        showSearch = true
+        }, enabled = chat.chatInfo.noteFolder.ready
+      ) {
+        Icon(
+          painterResource(MR.images.ic_search),
+          stringResource(MR.strings.search_verb).capitalize(Locale.current),
+          tint = if (chat.chatInfo.noteFolder.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+        )
+      }
+    }
+  } else {
+    menuItems.add {
+      ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        showMenu.value = false
+        showSearch = true
+      })
+    }
   }
 
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
@@ -743,16 +759,18 @@ fun ChatInfoToolbar(
     }
   }
 
-  barButtons.add {
-    IconButton({ showMenu.value = true }) {
-      Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+  if (menuItems.isNotEmpty()) {
+    barButtons.add {
+      IconButton({ showMenu.value = true }) {
+        Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      }
     }
   }
 
   DefaultTopAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
-    onTitleClick = info,
+    onTitleClick = if (chat.chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
@@ -910,7 +928,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
           LaunchedEffect(Unit) {
             scope.launch {
-              if (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) {
+              if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chat.chatInfo !is ChatInfo.Local) {
                 if (composeState.value.editing) {
                   composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
                 } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {

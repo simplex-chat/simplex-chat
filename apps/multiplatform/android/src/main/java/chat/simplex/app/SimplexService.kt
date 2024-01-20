@@ -104,7 +104,7 @@ class SimplexService: Service() {
     if (wakeLock != null || isStartingService) return
     val self = this
     isStartingService = true
-    withBGApi {
+    withLongRunningApi(slow = 30_000, deadlock = 60_000) {
       val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {
@@ -114,7 +114,7 @@ class SimplexService: Service() {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
           safeStopService()
-          return@withBGApi
+          return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
         wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {

@@ -139,7 +139,7 @@ final class ChatModel: ObservableObject {
     }
 
     func removeUser(_ user: User) {
-        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+        if let i = getUserIndex(user) {
             users.remove(at: i)
         }
     }
@@ -756,6 +756,8 @@ final class Chat: ObservableObject, Identifiable {
         case let .group(groupInfo):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole >= .member
+        case .local:
+            return true
         default: return false
         }
     }

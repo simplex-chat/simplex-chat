@@ -68,8 +68,8 @@ fun CIFileView(
 
   fun fileAction() {
     if (file != null) {
-      when (file.fileStatus) {
-        is CIFileStatus.RcvInvitation -> {
+      when {
+        file.fileStatus is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
             receiveFile(file.fileId)
           } else {
@@ -79,7 +79,7 @@ fun CIFileView(
             )
           }
         }
-        is CIFileStatus.RcvAccepted ->
+        file.fileStatus is CIFileStatus.RcvAccepted ->
           when (file.fileProtocol) {
             FileProtocol.XFTP ->
               AlertManager.shared.showAlertMsg(
@@ -91,9 +91,10 @@ fun CIFileView(
                 generalGetString(MR.strings.waiting_for_file),
                 generalGetString(MR.strings.file_will_be_received_when_contact_is_online)
               )
+            FileProtocol.LOCAL -> {}
           }
-        is CIFileStatus.RcvComplete -> {
-          withBGApi {
+        file.fileStatus is CIFileStatus.RcvComplete || (file.fileStatus is CIFileStatus.SndStored && file.fileProtocol == FileProtocol.LOCAL) -> {
+          withLongRunningApi(slow = 60_000, deadlock = 600_000) {
             var filePath = getLoadedFilePath(file)
             if (chatModel.connectedToRemote() && filePath == null) {
               file.loadRemoteFile(true)
@@ -152,11 +153,13 @@ fun CIFileView(
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> fileIcon()
+              FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
+              FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
