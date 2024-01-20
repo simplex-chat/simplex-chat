@@ -2238,26 +2238,22 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    private var showNtfDir: Bool {
-        return !chatDir.sent
-    }
-
     public var showNotification: Bool {
         switch content {
-        case .sndMsgContent: return showNtfDir
-        case .rcvMsgContent: return showNtfDir
-        case .sndDeleted: return showNtfDir
-        case .rcvDeleted: return showNtfDir
-        case .sndCall: return showNtfDir
+        case .sndMsgContent: return false
+        case .rcvMsgContent: return meta.itemDeleted == nil
+        case .sndDeleted: return false
+        case .rcvDeleted: return false
+        case .sndCall: return false
         case .rcvCall: return false // notification is shown on .callInvitation instead
-        case .rcvIntegrityError: return showNtfDir
-        case .rcvDecryptionError: return showNtfDir
-        case .rcvGroupInvitation: return showNtfDir
-        case .sndGroupInvitation: return showNtfDir
+        case .rcvIntegrityError: return false
+        case .rcvDecryptionError: return false
+        case .rcvGroupInvitation: return true
+        case .sndGroupInvitation: return false
         case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
             switch rcvDirectEvent {
             case .contactDeleted: return false
-            case .profileUpdated: return showNtfDir
+            case .profileUpdated: return true
             }
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
             switch rcvGroupEvent {
@@ -2265,9 +2261,9 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberConnected: return false
             case .memberRole: return false
             case .memberBlocked: return false
-            case .userRole: return showNtfDir
-            case .userDeleted: return showNtfDir
-            case .groupDeleted: return showNtfDir
+            case .userRole: return true
+            case .userDeleted: return true
+            case .groupDeleted: return true
             case .memberAdded: return false
             case .memberLeft: return false
             case .memberDeleted: return false
@@ -2275,20 +2271,20 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberCreatedContact: return false
             case .memberProfileUpdated: return false
             }
-        case .sndGroupEvent: return showNtfDir
+        case .sndGroupEvent: return false
         case .rcvConnEvent: return false
-        case .sndConnEvent: return showNtfDir
+        case .sndConnEvent: return false
         case .rcvChatFeature: return false
-        case .sndChatFeature: return showNtfDir
+        case .sndChatFeature: return false
         case .rcvChatPreference: return false
-        case .sndChatPreference: return showNtfDir
+        case .sndChatPreference: return false
         case .rcvGroupFeature: return false
-        case .sndGroupFeature: return showNtfDir
-        case .rcvChatFeatureRejected: return showNtfDir
-        case .rcvGroupFeatureRejected: return showNtfDir
-        case .sndModerated: return showNtfDir
-        case .rcvModerated: return showNtfDir
-        case .rcvBlocked: return showNtfDir
+        case .sndGroupFeature: return false
+        case .rcvChatFeatureRejected: return true
+        case .rcvGroupFeatureRejected: return false
+        case .sndModerated: return false
+        case .rcvModerated: return false
+        case .rcvBlocked: return false
         case .invalidJSON: return false
         }
     }
