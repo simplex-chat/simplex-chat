@@ -1598,13 +1598,10 @@
     <string name="v5_5_message_delivery">改进了消息传递</string>
     <string name="v5_5_join_group_conversation">加入群对话</string>
     <string name="v5_5_simpler_connect_ui">粘贴链接以连接！</string>
-    <string name="v5_5_safer_groups">更安全的群</string>
     <string name="v5_5_simpler_connect_ui_descr">搜索栏接受邀请链接。</string>
     <string name="v5_5_private_notes_descr">加密的文件和媒体。</string>
     <string name="v5_5_message_delivery_descr">降低了电量使用。</string>
     <string name="clear_note_folder_warning">所有消息都将被删除 - 这无法被撤销！</string>
-    <string name="v5_5_safer_groups_descr">- 封禁一名成员，让其他成员免于垃圾信息的侵扰
-\n- 不会共享联系地址。</string>
     <string name="info_row_created_at">创建于</string>
     <string name="share_text_created_at">创建于：%s</string>
     <string name="v5_5_new_interface_languages">匈牙利语和土耳其语用户界面</string>

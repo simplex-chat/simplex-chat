@@ -1602,13 +1602,10 @@
     <string name="possible_slow_function_desc">يستغرق تنفيذ الوظيفة وقتًا طويلاً جدًا: %1$d ثانية: %2$s</string>
     <string name="v5_5_private_notes">ملاحظات خاصة</string>
     <string name="v5_5_join_group_conversation">انضم إلى المحادثات الجماعية</string>
-    <string name="v5_5_safer_groups">مجموعات أكثر أمانا</string>
     <string name="v5_5_simpler_connect_ui_descr">يقبل شريط البحث روابط الدعوة.</string>
     <string name="v5_5_message_delivery">تحسّن تسليم الرسائل</string>
     <string name="v5_5_message_delivery_descr">مع انخفاض استخدام البطارية.</string>
     <string name="clear_note_folder_warning">سيتم حذف كافة الرسائل - لا يمكن التراجع عن هذا!</string>
-    <string name="v5_5_safer_groups_descr">- حظر عضو لإيقاف الرسائل المزعجة للجميع.
-\n- لا تتم مشاركة عنوان الاتصال.</string>
     <string name="info_row_created_at">أُنشئ في</string>
     <string name="v5_5_new_interface_languages">واجهة المستخدم المجرية والتركية</string>
     <string name="v5_5_simpler_connect_ui">الصق الرابط للاتصال!</string>

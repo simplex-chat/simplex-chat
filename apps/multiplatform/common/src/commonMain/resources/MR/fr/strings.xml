@@ -1597,12 +1597,9 @@
     <string name="remote_ctrl_error_inactive">Le bureau est inactif</string>
     <string name="v5_5_private_notes_descr">Avec les fichiers et les médias chiffrés.</string>
     <string name="v5_5_join_group_conversation_descr">Historique récent et bot d\'annuaire amélioré.</string>
-    <string name="v5_5_safer_groups">Groupes plus sûrs</string>
     <string name="v5_5_simpler_connect_ui_descr">La barre de recherche accepte les liens d\'invitation.</string>
     <string name="v5_5_message_delivery_descr">Consommation réduite de la batterie.</string>
     <string name="clear_note_folder_warning">Tous les messages seront supprimés - il n\'est pas possible de revenir en arrière !</string>
-    <string name="v5_5_safer_groups_descr">- bloquer un membre pour arrêter le spam pour tous.
-\n- L\'adresse de contact n\'est pas partagée.</string>
     <string name="v5_5_new_interface_languages">Interface utilisateur en hongrois et en turc</string>
     <string name="v5_5_private_notes">Notes privées</string>
     <string name="info_row_created_at">Créé à</string>
