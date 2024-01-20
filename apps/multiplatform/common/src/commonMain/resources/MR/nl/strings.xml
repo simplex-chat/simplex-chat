@@ -1598,8 +1598,6 @@
     <string name="v5_5_simpler_connect_ui">Plak link om te verbinden!</string>
     <string name="v5_5_private_notes">Privé notities</string>
     <string name="clear_note_folder_warning">Alle berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
-    <string name="v5_5_safer_groups_descr">- blokkeer een lid om spam voor iedereen te stoppen.
-\n- Contactadres wordt niet gedeeld.</string>
     <string name="info_row_created_at">Gemaakt op</string>
     <string name="error_creating_message">Fout bij het maken van een bericht</string>
     <string name="v5_5_new_interface_languages">Hongaarse en Turkse gebruikersinterface</string>
@@ -1610,7 +1608,6 @@
     <string name="profile_update_event_contact_name_changed">contactpersoon %1$s gewijzigd in %2$s</string>
     <string name="error_deleting_note_folder">Fout bij verwijderen van privénotities</string>
     <string name="clear_note_folder_question">Privénotities verwijderen?</string>
-    <string name="v5_5_safer_groups">Veiligere groepen</string>
     <string name="v5_5_simpler_connect_ui_descr">Zoekbalk accepteert uitnodigingslinks.</string>
     <string name="v5_5_private_notes_descr">‐Met versleutelde bestanden en media.</string>
     <string name="v5_5_message_delivery_descr">Met verminderd batterijgebruik.</string>

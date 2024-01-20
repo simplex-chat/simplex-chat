@@ -1598,11 +1598,8 @@
     <string name="v5_5_private_notes">Note private</string>
     <string name="v5_5_new_interface_languages">Interfaccia in ungherese e turco</string>
     <string name="v5_5_join_group_conversation_descr">Cronologia recente e bot della directory migliorato.</string>
-    <string name="v5_5_safer_groups">Gruppi più sicuri</string>
     <string name="info_row_created_at">Creato il</string>
     <string name="clear_note_folder_warning">Tutti i messaggi verranno eliminati, non è reversibile!</string>
-    <string name="v5_5_safer_groups_descr">- blocca un membro per fermare lo spam a tutti.
-\n- l\'indirizzo del contatto non viene condiviso.</string>
     <string name="share_text_created_at">Creato il: %s</string>
     <string name="error_creating_message">Errore di creazione del messaggio</string>
     <string name="error_deleting_note_folder">Errore di eliminazione delle note private</string>
