@@ -624,9 +624,6 @@
 "Camera not available" = "Kamera mevcut değil";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "Kullanıcı profili silinemiyor!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kişi davet edilemiyor!";
 
 /* No comment provided by engineer. */
@@ -3409,12 +3406,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Tema";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "En az bir kullanıcı profili olmalıdır.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "En az bir görünür kullanıcı profili olmalıdır.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Bu ayarlar mevcut profiliniz **%@** içindir.";

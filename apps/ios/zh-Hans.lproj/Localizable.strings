@@ -555,9 +555,6 @@
 "Calls" = "通话";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "无法删除用户个人资料！";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "无法邀请联系人！";
 
 /* No comment provided by engineer. */
@@ -3100,12 +3097,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "主题";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "应该至少有一个用户资料。";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "应该至少有一个可见的用户资料。";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "这些设置适用于您当前的配置文件 **%@**。";

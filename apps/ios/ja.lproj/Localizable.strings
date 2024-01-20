@@ -561,9 +561,6 @@
 "Calls" = "通話";
 
 /* No comment provided by engineer. */
-"Can't delete user profile!" = "ユーザープロフィールが削除できません!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "連絡先を招待できません！";
 
 /* No comment provided by engineer. */
@@ -3064,12 +3061,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "テーマ";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "少なくとも1つのユーザープロファイルが必要です。";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "少なくとも1つのユーザープロフィールが表示されている必要があります。";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "これらの設定は現在のプロファイル **%@** 用です。";
