@@ -8,6 +8,7 @@
 module Simplex.Chat.Options
   ( ChatOpts (..),
     CoreChatOpts (..),
+    ChatCmdLog (..),
     chatOptsP,
     coreChatOptsP,
     getChatOpts,
@@ -37,6 +38,7 @@ data ChatOpts = ChatOpts
     deviceName :: Maybe Text,
     chatCmd :: String,
     chatCmdDelay :: Int,
+    chatCmdLog :: ChatCmdLog,
     chatServerPort :: Maybe String,
     optFilesFolder :: Maybe FilePath,
     showReactions :: Bool,
@@ -61,6 +63,9 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     highlyAvailable :: Bool
   }
+
+data ChatCmdLog = CCLAll | CCLMessages | CCLNone
+  deriving (Eq)
 
 agentLogLevel :: ChatLogLevel -> LogLevel
 agentLogLevel = \case
@@ -229,6 +234,14 @@ chatOptsP appDir defaultDbFileName = do
           <> value 3
           <> showDefault
       )
+  chatCmdLog <-
+    option
+      parseChatCmdLog
+      ( long "execute-log"
+          <> metavar "EXEC_LOG"
+          <> help "Log during command execution: all, messages, none (default)"
+          <> value CCLNone
+      )
   chatServerPort <-
     option
       parseServerPort
@@ -288,6 +301,7 @@ chatOptsP appDir defaultDbFileName = do
         deviceName,
         chatCmd,
         chatCmdDelay,
+        chatCmdLog,
         chatServerPort,
         optFilesFolder,
         showReactions,
@@ -326,6 +340,13 @@ parseLogLevel = eitherReader $ \case
   "error" -> Right CLLError
   "important" -> Right CLLImportant
   _ -> Left "Invalid log level"
+
+parseChatCmdLog :: ReadM ChatCmdLog
+parseChatCmdLog = eitherReader $ \case
+  "all" -> Right CCLAll
+  "messages" -> Right CCLMessages
+  "none" -> Right CCLNone
+  _ -> Left "Invalid chat command log level"
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =
