@@ -1558,9 +1558,9 @@
     <string name="agent_critical_error_title">Kritische fout</string>
     <string name="agent_internal_error_title">Interne fout</string>
     <string name="agent_internal_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars:
-\n%S</string>
+\n%s</string>
     <string name="agent_critical_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars:
-\n%S
+\n%s
 \n
 \nHet wordt aanbevolen om de app opnieuw te starten.</string>
     <string name="remote_ctrl_error_bad_version">Desktop heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt</string>
@@ -1568,11 +1568,11 @@
     <string name="failed_to_create_user_invalid_desc">Deze weergavenaam is ongeldig. Kies een andere naam.</string>
     <string name="remote_host_was_disconnected_title">Verbinding gestopt</string>
     <string name="remote_ctrl_was_disconnected_title">Verbinding gestopt</string>
-    <string name="remote_host_disconnected_from">Verbinding met mobiel <b>%s</b> \u0020is verbroken met als reden: %s</string>
-    <string name="remote_host_error_busy">Mobiel <b>%s</b> is bezet</string>
-    <string name="remote_host_error_inactive">Mobiel <b>%s</b> is inactief</string>
-    <string name="remote_host_error_missing">Mobiel <b>%s</b> ontbreekt</string>
-    <string name="remote_host_error_bad_state">De verbinding met de mobiel <b>%s</b> is in slechte staat</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Verbinding met mobiel <b>%s</b> \u0020is verbroken met als reden: %s]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Mobiel <b>%s</b> is bezet]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Mobiel <b>%s</b> is inactief]]></string>
+    <string name="remote_host_error_missing"><![CDATA[Mobiel <b>%s</b> ontbreekt]]></string>
+    <string name="remote_host_error_bad_state"><![CDATA[De verbinding met de mobiel <b>%s</b> is in slechte staat]]></string>
     <string name="remote_ctrl_error_disconnected">De verbinding met desktop is verbroken</string>
     <string name="possible_deadlock_title">Impasse</string>
     <string name="possible_slow_function_desc">Uitvoering van functie duurt te lang: %1$d seconden: %2$s</string>
@@ -1584,13 +1584,13 @@
     <string name="remote_ctrl_disconnected_with_reason">Verbinding verbroken met als reden: %s</string>
     <string name="remote_ctrl_error_busy">Desktop is bezet</string>
     <string name="remote_ctrl_error_inactive">Desktop is inactief</string>
-    <string name="remote_host_error_disconnected">Mobiele verbinding <b>%s</b> is verbroken</string>
+    <string name="remote_host_error_disconnected"><![CDATA[Mobiele verbinding <b>%s</b> is verbroken]]></string>
     <string name="restart_chat_button">Chat opnieuw starten</string>
-    <string name="remote_host_error_timeout">Time-out bereikt tijdens het verbinden met de mobiel <b>%s</b></string>
+    <string name="remote_host_error_timeout"><![CDATA[Time-out bereikt tijdens het verbinden met de mobiel <b>%s</b>]]></string>
     <string name="remote_ctrl_error_bad_state">De verbinding met de desktop is in slechte staat</string>
     <string name="possible_deadlock_desc">Het uitvoeren van de code duurt te lang: %1$d seconden. Waarschijnlijk is de app vastgelopen: %2$s</string>
     <string name="remote_ctrl_error_bad_invitation">Desktop heeft verkeerde uitnodigingscode</string>
-    <string name="remote_host_error_bad_version">Mobiel <b>%s</b> heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt</string>
+    <string name="remote_host_error_bad_version"><![CDATA[Mobiel <b>%s</b> heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt]]></string>
     <string name="remote_ctrl_error_timeout">Time-out bereikt tijdens het verbinden met de desktop</string>
     <string name="group_member_status_unknown">onbekende status</string>
     <string name="v5_5_message_delivery">Verbeterde berichtbezorging</string>
