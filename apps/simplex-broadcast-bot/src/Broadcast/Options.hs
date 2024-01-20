@@ -10,7 +10,7 @@ import Data.Maybe (fromMaybe)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data BroadcastBotOpts = BroadcastBotOpts
   { coreOptions :: CoreChatOpts,
@@ -77,6 +77,7 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
+      chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       showReactions = False,
