@@ -1594,8 +1594,8 @@
     <string name="remote_ctrl_error_timeout">Time-out bereikt tijdens het verbinden met de desktop</string>
     <string name="group_member_status_unknown">onbekende status</string>
     <string name="v5_5_message_delivery">Verbeterde berichtbezorging</string>
-    <string name="v5_5_join_group_conversation">Neem deel aan groep gesprekken</string>
-    <string name="v5_5_simpler_connect_ui">Plak link om te verbinden!</string>
+    <string name="v5_5_join_group_conversation">Neem deel aan groepsgesprekken</string>
+    <string name="v5_5_simpler_connect_ui">Plak een link om te verbinden!</string>
     <string name="v5_5_private_notes">Privé notities</string>
     <string name="clear_note_folder_warning">Alle berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
     <string name="info_row_created_at">Gemaakt op</string>
