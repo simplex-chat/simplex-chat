@@ -1619,4 +1619,17 @@
     <string name="profile_update_event_updated_profile">profilo aggiornato</string>
     <string name="saved_message_title">Messaggio salvato</string>
     <string name="v5_5_message_delivery_descr">Con consumo di batteria ridotto.</string>
+    <string name="blocked_by_admin_items_description">%d messaggi bloccati dall\'amministratore</string>
+    <string name="rcv_group_event_member_blocked">ha bloccato %s</string>
+    <string name="rcv_group_event_member_unblocked">ha sbloccato %s</string>
+    <string name="snd_group_event_member_unblocked">hai sbloccato %s</string>
+    <string name="unblock_for_all">Sblocca per tutti</string>
+    <string name="unblock_for_all_question">Sbloccare il membro per tutti?</string>
+    <string name="block_for_all">Blocca per tutti</string>
+    <string name="member_info_member_blocked">bloccato</string>
+    <string name="blocked_by_admin_item_description">bloccato dall\'amministratore</string>
+    <string name="member_blocked_by_admin">Bloccato dall\'amministratore</string>
+    <string name="block_for_all_question">Bloccare il membro per tutti?</string>
+    <string name="error_blocking_member_for_all">Errore nel blocco del membro per tutti</string>
+    <string name="snd_group_event_member_blocked">hai bloccato %s</string>
 </resources>
