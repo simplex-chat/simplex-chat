@@ -1610,7 +1610,7 @@
     <string name="v5_5_simpler_connect_ui">A link beillesztése a csatlakozáshoz!</string>
     <string name="v5_5_private_notes">Privát jegyzetek</string>
     <string name="v5_5_simpler_connect_ui_descr">A keresősáv fogadja a meghívó hivatkozásokat.</string>
-    <string name="v5_5_private_notes_descr">Titkosított fájlokkal és média állományokkal.</string>
+    <string name="v5_5_private_notes_descr">Titkosított fájlokkal és médiatartalommal.</string>
     <string name="v5_5_message_delivery_descr">Csökkentett akkumulátorhasználattal.</string>
     <string name="v5_5_new_interface_languages">Magyar és török felhasználói felület</string>
     <string name="v5_5_join_group_conversation_descr">A közelmúlt eseményei és továbbfejlesztett Jegyzék Bot.</string>
