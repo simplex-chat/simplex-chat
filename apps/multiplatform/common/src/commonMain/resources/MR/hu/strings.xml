@@ -65,7 +65,7 @@
     <string name="cannot_receive_file">Nem tud fájlt fogadni</string>
     <string name="auth_unavailable">Hitelesítés elérhetetlen</string>
     <string name="app_version_title">Alkalmazás verzió</string>
-    <string name="button_add_welcome_message">Üdvözlőszöveg hozzáadása</string>
+    <string name="button_add_welcome_message">Üdvözlő üzenet hozzáadása</string>
     <string name="snd_conn_event_ratchet_sync_started">a(z) %s titkosításának elfogadása…</string>
     <string name="available_in_v51">"
 \nElérhető a v5.1-ben"</string>
@@ -216,7 +216,7 @@
     <string name="connect_plan_connect_to_yourself">Kapcsolódás saját magához?</string>
     <string name="copied">Kimásolva a vágólapra</string>
     <string name="connection_request_sent">Kapcsolódási kérés elküldve!</string>
-    <string name="connecting_to_desktop">Kapcsolódás az asztalhoz</string>
+    <string name="connecting_to_desktop">Kapcsolódás az asztali klienshez</string>
     <string name="network_session_mode_entity">Kapcsolat</string>
     <string name="correct_name_to">Név helyesbítése erre: %s?</string>
     <string name="connection_timeout">Kapcsolat időtúllépés</string>
@@ -229,7 +229,7 @@
     <string name="status_contact_has_no_e2e_encryption">az ismerősnél az e2e titkosítás nem elérhető</string>
     <string name="chat_preferences_contact_allows">Az ismerős engedélyezi</string>
     <string name="notification_preview_somebody">Ismerős elrejtve:</string>
-    <string name="connect_to_desktop">Kapcsolódás az asztalhoz</string>
+    <string name="connect_to_desktop">Kapcsolódás az asztali klienshez</string>
     <string name="icon_descr_context">Kontextus ikon</string>
     <string name="connect_via_link">Kapcsolódás egy linken keresztül</string>
     <string name="receipts_section_contacts">Ismerősök</string>
@@ -260,7 +260,7 @@
     <string name="theme_dark">Sötét</string>
     <string name="create_profile">Profil létrehozása</string>
     <string name="rcv_group_event_group_deleted">törölt csoport</string>
-    <string name="full_deletion">Törlés mindenkinek</string>
+    <string name="full_deletion">Törlés mindenkinél</string>
     <string name="button_create_group_link">Link létrehozása</string>
     <string name="chat_preferences">Chat beállítások</string>
     <string name="chat_archive_header">Chat archívum</string>
@@ -487,7 +487,7 @@
 \nCsatlakozz hozzám SimpleX Chaten: %s</string>
     <string name="display_name_cannot_contain_whitespace">A megjelenített név nem tartalmazhat szóközöket.</string>
     <string name="info_row_group">Csoport</string>
-    <string name="enter_welcome_message_optional">Add meg az üdvözlőszöveget… (opcionális)</string>
+    <string name="enter_welcome_message_optional">Írd be az üdvözlő üzenetet… (opcionális)</string>
     <string name="error_exporting_chat_database">Hiba a chat adatbázis exportálásakor</string>
     <string name="error_saving_file">Hiba a fájl elmentésekor</string>
     <string name="encrypt_local_files">Helyi fájlok titkosítása</string>
@@ -544,7 +544,7 @@
     <string name="alert_text_encryption_renegotiation_failed">Titkosítás újra egyeztetés sikertelen.</string>
     <string name="error_deleting_user">Hiba a felhasználói profil törlésekor</string>
     <string name="fix_connection_not_supported_by_group_member">A javítás nem támogatott a csoporttag által</string>
-    <string name="enter_welcome_message">Add meg az üdvözlőszöveget…</string>
+    <string name="enter_welcome_message">Írd be az üdvözlő üzenetet…</string>
     <string name="encrypted_database">Titkosított adatbázis</string>
     <string name="enter_password_to_show">Add meg a jelszót a keresőben</string>
     <string name="file_will_be_received_when_contact_completes_uploading">A fájl megérkezik amint az ismerősöd befejezi a feltöltését.</string>
@@ -577,7 +577,7 @@
     <string name="group_members_can_send_dms">A csoporttagok küldhetnek közvetlen üzeneteket.</string>
     <string name="error_removing_member">Hiba a tag eltávolításakor</string>
     <string name="callstate_ended">befejeződött</string>
-    <string name="v4_6_group_welcome_message">Csoport üdvözlő szöveg</string>
+    <string name="v4_6_group_welcome_message">A csoport üdvözlő üzenete</string>
     <string name="group_display_name_field">Csoport neve:</string>
     <string name="error_sending_message_contact_invitation">Hiba a meghívó küldésekor</string>
     <string name="display_name">Add meg a nevedet:</string>
@@ -938,7 +938,7 @@
     <string name="use_chat">Használd a chatet</string>
     <string name="share_verb">Megosztás</string>
     <string name="received_message">Fogadott üzenet</string>
-    <string name="button_welcome_message">Üdvözlő szöveg</string>
+    <string name="button_welcome_message">Üdvözlő üzenet</string>
     <string name="rcv_group_event_n_members_connected">%s, %s és %d további tag csatlakozott</string>
     <string name="only_your_contact_can_make_calls">Kizárólag az ismerősöd tud hívást indítani.</string>
     <string name="settings_section_title_themes">SZÍNSÉMÁK</string>
@@ -1131,7 +1131,7 @@
     <string name="simplex_link_connection">%1$s keresztül</string>
     <string name="chat_preferences_yes">igen</string>
     <string name="voice_message">Hangüzenet</string>
-    <string name="settings_section_title_use_from_desktop">Számítógépről használat</string>
+    <string name="settings_section_title_use_from_desktop">Használat asztali kliensről</string>
     <string name="settings_section_title_you">TE</string>
     <string name="network_proxy_port">port %d</string>
     <string name="to_connect_via_link_title">Kapcsolódás link által</string>
@@ -1429,7 +1429,7 @@
     <string name="verify_code_on_mobile">Ellenőrizd a kódot a mobilon!</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakoztál ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphetsz <font color="#0088ff">a SimpleX Chat fejlesztőivel és kérdezhetsz bármit és értesülhetsz az újdonságokról</font>.]]></string>
-    <string name="v4_2_auto_accept_contact_requests_desc">Opcionális üdvözlő szöveggel.</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">Opcionális üdvözlő üzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázis hiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheted vagy némíthatod egy felhasználó profilját - tartsd lenyomva a menühöz!</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód csatlakozáskor</string>
@@ -1614,4 +1614,16 @@
     <string name="v5_5_message_delivery_descr">Csökkentett akkumulátorhasználattal.</string>
     <string name="v5_5_new_interface_languages">Magyar és török felhasználói felület</string>
     <string name="v5_5_join_group_conversation_descr">A közelmúlt eseményei és továbbfejlesztett Jegyzék Bot.</string>
+    <string name="rcv_group_event_member_unblocked">%s letiltása feloldva</string>
+    <string name="snd_group_event_member_unblocked">feloldottad %s letiltását</string>
+    <string name="member_info_member_blocked">letiltva</string>
+    <string name="blocked_by_admin_item_description">letiltva az admin által</string>
+    <string name="member_blocked_by_admin">Letiltva az admin által</string>
+    <string name="rcv_group_event_member_blocked">%s letiltva</string>
+    <string name="block_for_all">Mindenki számára letiltva</string>
+    <string name="block_for_all_question">Mindenki számára letiltod ezt a tagot?</string>
+    <string name="blocked_by_admin_items_description">%d üzenet letiltva az admin által</string>
+    <string name="unblock_for_all">Letiltás feloldása mindenki számára</string>
+    <string name="unblock_for_all_question">Mindenki számára feloldod ennek a tagnak a letiltását?</string>
+    <string name="snd_group_event_member_blocked">letiltottad %s-t</string>
 </resources>
