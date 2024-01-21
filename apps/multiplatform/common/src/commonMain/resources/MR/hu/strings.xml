@@ -135,7 +135,7 @@
     <string name="callstatus_ended">a(z) %1$s hívás befejeződött</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. A háttérszolgáltatás ellenőrzi az új üzeneteket 10 percenként. Hívásokról és fontos üzenetekről maradhatsz le.]]></string>
     <string name="group_member_role_author">szerző</string>
-    <string name="allow_your_contacts_irreversibly_delete">Ismerőseid véglegesen törölhetnek elküldött üzeneteket engedélyezése. (24 óra)</string>
+    <string name="allow_your_contacts_irreversibly_delete">Engedélyezi ismerőseidnek, hogy visszafordíthatatlanul töröljék az elküldött üzeneteket. (24 óra)</string>
     <string name="cancel_verb">Megszakítás</string>
     <string name="notifications_mode_off_desc">Az alkalmazás csak akkor tud értesítéseket fogadni amikor fut, a héttérszolgáltatás nem kerül elindításra.</string>
     <string name="v5_1_better_messages">Jobb üzenetek</string>
@@ -1362,7 +1362,7 @@
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a link nem érvényes meghívó link!</string>
     <string name="to_verify_compare">A felek közötti titkosítás (e2e) ellenőrzéséhez hasonlítsd össze (vagy olvasd be) a kódot az ismerősöddel együtt az eszközeiteken!</string>
-    <string name="you_must_use_the_most_recent_version_of_database">A legfrissebb chat adatbázis verziódat kell használd, kizárólag egyetlen eszközön, máskülönben leállhat az üzenetek fogadása néhény ismerőstől!</string>
+    <string name="you_must_use_the_most_recent_version_of_database">A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnod, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogod megkapni valamennyi kapcsolatodtól.</string>
     <string name="messages_section_description">Ez a beállítás a jelenlegi chat profilodban lévő üzenetekre érvényes</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Meg vagy hívva a csoportba. Csatlakozz és lépj kapcsolatba a csoporttagokkal!</string>
     <string name="alert_message_no_group">Ez a csoport többé nem létezik.</string>
@@ -1626,4 +1626,5 @@
     <string name="unblock_for_all">Letiltás feloldása mindenki számára</string>
     <string name="unblock_for_all_question">Mindenki számára feloldod ennek a tagnak a letiltását?</string>
     <string name="snd_group_event_member_blocked">letiltottad %s-t</string>
+    <string name="error_blocking_member_for_all">Hiba az összes tag letiltása során</string>
 </resources>
