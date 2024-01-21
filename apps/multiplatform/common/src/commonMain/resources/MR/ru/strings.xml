@@ -1702,4 +1702,17 @@
     <string name="saved_message_title">Сохраненное сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
+    <string name="blocked_by_admin_items_description">%d сообщений заблокировано администратором</string>
+    <string name="rcv_group_event_member_blocked">%s заблокирован</string>
+    <string name="rcv_group_event_member_unblocked">%s разблокирован</string>
+    <string name="snd_group_event_member_unblocked">Вы разблокировали %s</string>
+    <string name="unblock_for_all">Разблокировать для всех</string>
+    <string name="block_for_all_question">Заблокировать члена для всех?</string>
+    <string name="member_info_member_blocked">заблокирован</string>
+    <string name="blocked_by_admin_item_description">заблокировано администратором</string>
+    <string name="member_blocked_by_admin">Заблокирован администратором</string>
+    <string name="block_for_all">Заблокировать для всех</string>
+    <string name="error_blocking_member_for_all">Ошибка при блокировании члена для всех</string>
+    <string name="unblock_for_all_question">Разблокировать члена для всех?</string>
+    <string name="snd_group_event_member_blocked">Вы заблокировали %s</string>
 </resources>
