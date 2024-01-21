@@ -3157,9 +3157,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Word lid van groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join group conversations" xml:space="preserve">
+      <trans-unit id="Join group conversations" xml:space="preserve" approved="no">
         <source>Join group conversations</source>
-        <target>Neem deel aan groep gesprekken</target>
+        <target state="translated">Neem deel aan groepsgesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group?" xml:space="preserve">
@@ -3883,9 +3883,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Afbeelding plakken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste link to connect!" xml:space="preserve">
+      <trans-unit id="Paste link to connect!" xml:space="preserve" approved="no">
         <source>Paste link to connect!</source>
-        <target>Plak link om te verbinden!</target>
+        <target state="translated">Plak een link om te verbinden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve">
