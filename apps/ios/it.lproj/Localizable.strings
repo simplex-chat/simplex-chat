@@ -203,6 +203,9 @@
 "%lld messages blocked" = "%lld messaggi bloccati";
 
 /* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld messaggi bloccati dall'amministratore";
+
+/* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld messaggi contrassegnati eliminati";
 
 /* No comment provided by engineer. */
@@ -585,16 +588,31 @@
 "Block" = "Blocca";
 
 /* No comment provided by engineer. */
+"Block for all" = "Blocca per tutti";
+
+/* No comment provided by engineer. */
 "Block group members" = "Blocca i membri dei gruppi";
 
 /* No comment provided by engineer. */
 "Block member" = "Blocca membro";
 
 /* No comment provided by engineer. */
+"Block member for all?" = "Bloccare il membro per tutti?";
+
+/* No comment provided by engineer. */
 "Block member?" = "Bloccare il membro?";
 
 /* No comment provided by engineer. */
 "blocked" = "bloccato";
+
+/* rcv group event chat item */
+"blocked %@" = "ha bloccato %@";
+
+/* blocked chat item */
+"blocked by admin" = "bloccato dall'amministratore";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Bloccato dall'amministratore";
 
 /* No comment provided by engineer. */
 "bold" = "grassetto";
@@ -3597,10 +3615,19 @@
 "Unblock" = "Sblocca";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Sblocca per tutti";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Sblocca membro";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Sbloccare il membro per tutti?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Sbloccare il membro?";
+
+/* rcv group event chat item */
+"unblocked %@" = "ha sbloccato %@";
 
 /* item status description */
 "Unexpected error: %@" = "Errore imprevisto: % @";
@@ -3929,6 +3956,9 @@
 /* No comment provided by engineer. */
 "you are observer" = "sei un osservatore";
 
+/* snd group event chat item */
+"you blocked %@" = "hai bloccato %@";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Puoi accettare chiamate dalla schermata di blocco, senza l'autenticazione del dispositivo e dell'app.";
 
@@ -4039,6 +4069,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "hai condiviso un link incognito una tantum";
+
+/* snd group event chat item */
+"you unblocked %@" = "hai sbloccato %@";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Verrai connesso/a al gruppo quando il dispositivo dell'host del gruppo sarà in linea, attendi o controlla più tardi!";

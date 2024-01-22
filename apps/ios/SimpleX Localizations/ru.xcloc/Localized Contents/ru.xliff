@@ -217,9 +217,9 @@
         <target>%lld сообщений заблокировано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
         <source>%lld messages blocked by admin</source>
-        <target state="translated">%lld сообщений заблокировано администратором</target>
+        <target>%lld сообщений заблокировано администратором</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
@@ -923,9 +923,9 @@
         <target>Заблокировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve" approved="no">
+      <trans-unit id="Block for all" xml:space="preserve">
         <source>Block for all</source>
-        <target state="translated">Заблокировать для всех</target>
+        <target>Заблокировать для всех</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
@@ -938,9 +938,9 @@
         <target>Заблокировать члена группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
+      <trans-unit id="Block member for all?" xml:space="preserve">
         <source>Block member for all?</source>
-        <target state="translated">Заблокировать члена для всех?</target>
+        <target>Заблокировать члена для всех?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
@@ -948,9 +948,9 @@
         <target>Заблокировать члена группы?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="Blocked by admin" xml:space="preserve">
         <source>Blocked by admin</source>
-        <target state="translated">Заблокировано администратором</target>
+        <target>Заблокировано администратором</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -5398,9 +5398,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Разблокировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock for all" xml:space="preserve" approved="no">
+      <trans-unit id="Unblock for all" xml:space="preserve">
         <source>Unblock for all</source>
-        <target state="translated">Разблокировать для всех</target>
+        <target>Разблокировать для всех</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
@@ -5408,9 +5408,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Разблокировать члена группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock member for all?" xml:space="preserve" approved="no">
+      <trans-unit id="Unblock member for all?" xml:space="preserve">
         <source>Unblock member for all?</source>
-        <target state="translated">Разблокировать члена для всех?</target>
+        <target>Разблокировать члена для всех?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -6293,14 +6293,14 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>заблокировано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="blocked %@" xml:space="preserve">
         <source>blocked %@</source>
-        <target state="translated">%@ заблокирован</target>
+        <target>%@ заблокирован</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
-        <target state="translated">заблокировано администратором</target>
+        <target>заблокировано администратором</target>
         <note>blocked chat item</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
@@ -6890,9 +6890,9 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>этот контакт</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unblocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="unblocked %@" xml:space="preserve">
         <source>unblocked %@</source>
-        <target state="translated">%@ разблокировано</target>
+        <target>%@ разблокировано</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
@@ -6985,9 +6985,9 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>только чтение сообщений</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you blocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="you blocked %@" xml:space="preserve">
         <source>you blocked %@</source>
-        <target state="translated">Вы заблокировали %@</target>
+        <target>Вы заблокировали %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
@@ -7030,9 +7030,9 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>Вы создали ссылку инкогнито</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you unblocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="you unblocked %@" xml:space="preserve">
         <source>you unblocked %@</source>
-        <target state="translated">Вы разблокировали %@</target>
+        <target>Вы разблокировали %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">

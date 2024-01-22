@@ -203,6 +203,9 @@
 "%lld messages blocked" = "%lld сообщений заблокировано";
 
 /* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld сообщений заблокировано администратором";
+
+/* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld сообщений помечено удалёнными";
 
 /* No comment provided by engineer. */
@@ -585,16 +588,31 @@
 "Block" = "Заблокировать";
 
 /* No comment provided by engineer. */
+"Block for all" = "Заблокировать для всех";
+
+/* No comment provided by engineer. */
 "Block group members" = "Блокируйте членов группы";
 
 /* No comment provided by engineer. */
 "Block member" = "Заблокировать члена группы";
 
 /* No comment provided by engineer. */
+"Block member for all?" = "Заблокировать члена для всех?";
+
+/* No comment provided by engineer. */
 "Block member?" = "Заблокировать члена группы?";
 
 /* No comment provided by engineer. */
 "blocked" = "заблокировано";
+
+/* rcv group event chat item */
+"blocked %@" = "%@ заблокирован";
+
+/* blocked chat item */
+"blocked by admin" = "заблокировано администратором";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Заблокировано администратором";
 
 /* No comment provided by engineer. */
 "bold" = "жирный";
@@ -3597,10 +3615,19 @@
 "Unblock" = "Разблокировать";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Разблокировать для всех";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Разблокировать члена группы";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Разблокировать члена для всех?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Разблокировать члена группы?";
+
+/* rcv group event chat item */
+"unblocked %@" = "%@ разблокировано";
 
 /* item status description */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
@@ -3929,6 +3956,9 @@
 /* No comment provided by engineer. */
 "you are observer" = "только чтение сообщений";
 
+/* snd group event chat item */
+"you blocked %@" = "Вы заблокировали %@";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Вы можете принимать звонки на экране блокировки, без аутентификации.";
 
@@ -4039,6 +4069,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "Вы создали ссылку инкогнито";
+
+/* snd group event chat item */
+"you unblocked %@" = "Вы разблокировали %@";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!";

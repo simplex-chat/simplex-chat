@@ -12,19 +12,19 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" " xml:space="preserve" approved="no">
+      <trans-unit id=" " xml:space="preserve">
         <source> </source>
-        <target state="translated"> </target>
+        <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="  " xml:space="preserve" approved="no">
+      <trans-unit id="  " xml:space="preserve">
         <source>  </source>
-        <target state="translated">  </target>
+        <target>  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve" approved="no">
+      <trans-unit id="   " xml:space="preserve">
         <source>   </source>
-        <target state="translated">   </target>
+        <target>   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve">

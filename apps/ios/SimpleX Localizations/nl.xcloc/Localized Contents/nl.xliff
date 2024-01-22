@@ -217,9 +217,9 @@
         <target>%lld berichten geblokkeerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
         <source>%lld messages blocked by admin</source>
-        <target state="translated">%lld berichten geblokkeerd door beheerder</target>
+        <target>%lld berichten geblokkeerd door beheerder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
@@ -923,9 +923,9 @@
         <target>Blokkeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve" approved="no">
+      <trans-unit id="Block for all" xml:space="preserve">
         <source>Block for all</source>
-        <target state="translated">Blokkeren voor iedereen</target>
+        <target>Blokkeren voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
@@ -938,9 +938,9 @@
         <target>Lid blokkeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
+      <trans-unit id="Block member for all?" xml:space="preserve">
         <source>Block member for all?</source>
-        <target state="translated">Lid voor iedereen blokkeren?</target>
+        <target>Lid voor iedereen blokkeren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
@@ -948,9 +948,9 @@
         <target>Lid blokkeren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="Blocked by admin" xml:space="preserve">
         <source>Blocked by admin</source>
-        <target state="translated">Geblokkeerd door beheerder</target>
+        <target>Geblokkeerd door beheerder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -3161,9 +3161,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Word lid van groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join group conversations" xml:space="preserve" approved="no">
+      <trans-unit id="Join group conversations" xml:space="preserve">
         <source>Join group conversations</source>
-        <target state="translated">Neem deel aan groepsgesprekken</target>
+        <target>Neem deel aan groepsgesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group?" xml:space="preserve">
@@ -3887,9 +3887,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Afbeelding plakken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste link to connect!" xml:space="preserve" approved="no">
+      <trans-unit id="Paste link to connect!" xml:space="preserve">
         <source>Paste link to connect!</source>
-        <target state="translated">Plak een link om te verbinden!</target>
+        <target>Plak een link om te verbinden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve">
@@ -4539,9 +4539,9 @@ Fout: %@</target>
         <target>Zoekbalk accepteert uitnodigingslinks.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
         <source>Search or paste SimpleX link</source>
-        <target state="translated">Zoek of plak een SimpleX link</target>
+        <target>Zoek of plak een SimpleX link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
@@ -5398,9 +5398,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Deblokkeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock for all" xml:space="preserve" approved="no">
+      <trans-unit id="Unblock for all" xml:space="preserve">
         <source>Unblock for all</source>
-        <target state="translated">Deblokkeer voor iedereen</target>
+        <target>Deblokkeer voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
@@ -5408,9 +5408,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Lid deblokkeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock member for all?" xml:space="preserve" approved="no">
+      <trans-unit id="Unblock member for all?" xml:space="preserve">
         <source>Unblock member for all?</source>
-        <target state="translated">Lid voor iedereen deblokkeren?</target>
+        <target>Lid voor iedereen deblokkeren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -6293,14 +6293,14 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>geblokkeerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="blocked %@" xml:space="preserve">
         <source>blocked %@</source>
-        <target state="translated">geblokkeerd %@</target>
+        <target>geblokkeerd %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
-        <target state="translated">geblokkeerd door beheerder</target>
+        <target>geblokkeerd door beheerder</target>
         <note>blocked chat item</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
@@ -6890,9 +6890,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>dit contact</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unblocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="unblocked %@" xml:space="preserve">
         <source>unblocked %@</source>
-        <target state="translated">gedeblokkeerd %@</target>
+        <target>gedeblokkeerd %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
@@ -6985,9 +6985,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>jij bent waarnemer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you blocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="you blocked %@" xml:space="preserve">
         <source>you blocked %@</source>
-        <target state="translated">je hebt %@ geblokkeerd</target>
+        <target>je hebt %@ geblokkeerd</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
@@ -7030,9 +7030,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>je hebt een eenmalige link incognito gedeeld</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you unblocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="you unblocked %@" xml:space="preserve">
         <source>you unblocked %@</source>
-        <target state="translated">je hebt %@ gedeblokkeerd</target>
+        <target>je hebt %@ gedeblokkeerd</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">
