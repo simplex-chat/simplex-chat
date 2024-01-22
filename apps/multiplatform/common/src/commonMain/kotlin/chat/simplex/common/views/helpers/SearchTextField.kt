@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.res.MR
@@ -95,7 +96,7 @@ fun SearchTextField(
         value = searchText.value.text,
         innerTextField = innerTextField,
         placeholder = {
-          Text(placeholder)
+          Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis)
         },
         trailingIcon = if (searchText.value.text.isNotEmpty()) {{
           IconButton({
