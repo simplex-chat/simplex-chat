@@ -91,7 +91,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<B
   )
 }
 
-private fun markedDeletedText(meta: CIMeta): String =
+fun markedDeletedText(meta: CIMeta): String =
   when (meta.itemDeleted) {
     is CIDeleted.Moderated ->
       String.format(generalGetString(MR.strings.moderated_item_description), meta.itemDeleted.byGroupMember.displayName)
