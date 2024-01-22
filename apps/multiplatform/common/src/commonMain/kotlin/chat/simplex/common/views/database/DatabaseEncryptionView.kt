@@ -233,13 +233,13 @@ fun resetFormAfterEncryption(
   storedKey: MutableState<Boolean>,
   stored: Boolean = false,
 ) {
-  m.chatDbEncrypted.value = true
-  initialRandomDBPassphrase.value = false
-  m.controller.appPrefs.initialRandomDBPassphrase.set(false)
   currentKey.value = ""
   newKey.value = ""
   confirmNewKey.value = ""
   storedKey.value = stored
+  m.chatDbEncrypted.value = true
+  initialRandomDBPassphrase.value = false
+  m.controller.appPrefs.initialRandomDBPassphrase.set(false)
 }
 
 fun setUseKeychain(value: Boolean, useKeychain: MutableState<Boolean>, prefs: AppPreferences) {
@@ -392,12 +392,11 @@ suspend fun encryptDatabase(
         false
       }
       else -> {
-        prefs.initialRandomDBPassphrase.set(false)
-        initialRandomDBPassphrase.value = false
-        if (useKeychain.value) {
-          DatabaseUtils.ksDatabasePassword.set(newKey.value)
-        }
+        val new = newKey.value
         resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
+        if (useKeychain.value) {
+          DatabaseUtils.ksDatabasePassword.set(new)
+        }
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
         }
