@@ -203,6 +203,9 @@
 "%lld messages blocked" = "%lld Nachrichten blockiert";
 
 /* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld Nachrichten wurden vom Administrator blockiert";
+
+/* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld Nachrichten als gelöscht markiert";
 
 /* No comment provided by engineer. */
@@ -399,10 +402,13 @@
 "All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
 
 /* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone!" = "Es werden alle Nachrichten gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
 
 /* No comment provided by engineer. */
-"All new messages from %@ will be hidden!" = "Alle neuen Nachrichten von %@ werden verborgen!";
+"All new messages from %@ will be hidden!" = "Von %@ werden alle neuen Nachrichten ausgeblendet!";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Alle Ihre Kontakte bleiben verbunden.";
@@ -582,16 +588,31 @@
 "Block" = "Blockieren";
 
 /* No comment provided by engineer. */
+"Block for all" = "Für Alle blockieren";
+
+/* No comment provided by engineer. */
 "Block group members" = "Gruppenmitglieder blockieren";
 
 /* No comment provided by engineer. */
 "Block member" = "Mitglied blockieren";
 
 /* No comment provided by engineer. */
+"Block member for all?" = "Mitglied für Alle blockieren?";
+
+/* No comment provided by engineer. */
 "Block member?" = "Mitglied blockieren?";
 
 /* No comment provided by engineer. */
-"blocked" = "blockiert";
+"blocked" = "Blockiert";
+
+/* rcv group event chat item */
+"blocked %@" = "%@ wurde blockiert";
+
+/* blocked chat item */
+"blocked by admin" = "wurde vom Administrator blockiert";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "wurde vom Administrator blockiert";
 
 /* No comment provided by engineer. */
 "bold" = "fett";
@@ -751,6 +772,9 @@
 "Clear conversation?" = "Unterhaltung löschen?";
 
 /* No comment provided by engineer. */
+"Clear private notes?" = "Private Notizen löschen?";
+
+/* No comment provided by engineer. */
 "Clear verification" = "Überprüfung zurücknehmen";
 
 /* No comment provided by engineer. */
@@ -888,6 +912,9 @@
 /* connection information */
 "connection:%@" = "Verbindung:%@";
 
+/* profile update event chat item */
+"contact %@ changed to %@" = "Der Kontaktname %1$@ wurde auf %2$@ geändert";
+
 /* No comment provided by engineer. */
 "Contact allows" = "Der Kontakt erlaubt";
 
@@ -971,6 +998,12 @@
 
 /* No comment provided by engineer. */
 "Create your profile" = "Erstellen Sie Ihr Profil";
+
+/* No comment provided by engineer. */
+"Created at" = "Erstellt um";
+
+/* copied message info */
+"Created at: %@" = "Erstellt um: %@";
 
 /* No comment provided by engineer. */
 "Created on %@" = "Erstellt am %@";
@@ -1525,6 +1558,9 @@
 "Error creating member contact" = "Fehler beim Anlegen eines Mitglied-Kontaktes";
 
 /* No comment provided by engineer. */
+"Error creating message" = "Fehler beim Erstellen der Nachricht";
+
+/* No comment provided by engineer. */
 "Error creating profile!" = "Fehler beim Erstellen des Profils!";
 
 /* No comment provided by engineer. */
@@ -1939,6 +1975,9 @@
 "Import database" = "Datenbank importieren";
 
 /* No comment provided by engineer. */
+"Improved message delivery" = "Verbesserte Zustellung von Nachrichten";
+
+/* No comment provided by engineer. */
 "Improved privacy and security" = "Verbesserte Privatsphäre und Sicherheit";
 
 /* No comment provided by engineer. */
@@ -2116,6 +2155,9 @@
 "Join group" = "Treten Sie der Gruppe bei";
 
 /* No comment provided by engineer. */
+"Join group conversations" = "Gruppenunterhaltungen beitreten";
+
+/* No comment provided by engineer. */
 "Join group?" = "Der Gruppe beitreten?";
 
 /* No comment provided by engineer. */
@@ -2249,6 +2291,9 @@
 
 /* No comment provided by engineer. */
 "Member" = "Mitglied";
+
+/* profile update event chat item */
+"member %@ changed to %@" = "Der Mitgliedsname %1$@ wurde auf %2$@ geändert";
 
 /* rcv group event chat item */
 "member connected" = "ist der Gruppe beigetreten";
@@ -2594,11 +2639,17 @@
 /* No comment provided by engineer. */
 "Password to show" = "Passwort anzeigen";
 
+/* past/unknown group member */
+"Past member %@" = "Ehemaliges Mitglied %@";
+
 /* No comment provided by engineer. */
 "Paste desktop address" = "Desktop-Adresse einfügen";
 
 /* No comment provided by engineer. */
 "Paste image" = "Bild einfügen";
+
+/* No comment provided by engineer. */
+"Paste link to connect!" = "Zum Verbinden den Link einfügen!";
 
 /* No comment provided by engineer. */
 "Paste the link you received" = "Fügen Sie den erhaltenen Link ein";
@@ -2686,6 +2737,9 @@
 
 /* No comment provided by engineer. */
 "Private filenames" = "Neutrale Dateinamen";
+
+/* name of notes to self */
+"Private notes" = "Private Notizen";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profil und Serververbindungen";
@@ -2802,6 +2856,9 @@
 "Receiving via" = "Empfangen über";
 
 /* No comment provided by engineer. */
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Aktueller Nachrichtenverlauf und verbesserter [Gruppenverzeichnis-Bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Die Empfänger sehen Nachrichtenaktualisierungen, während Sie sie eingeben.";
 
 /* No comment provided by engineer. */
@@ -2854,6 +2911,12 @@
 
 /* rcv group event chat item */
 "removed %@" = "hat %@ aus der Gruppe entfernt";
+
+/* profile update event chat item */
+"removed contact address" = "Kontaktadresse wurde entfernt";
+
+/* profile update event chat item */
+"removed profile picture" = "Profil-Bild wurde entfernt";
 
 /* rcv group event chat item */
 "removed you" = "hat Sie aus der Gruppe entfernt";
@@ -2978,6 +3041,9 @@
 /* No comment provided by engineer. */
 "Save welcome message?" = "Begrüßungsmeldung speichern?";
 
+/* message info title */
+"Saved message" = "Gespeicherte Nachricht";
+
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Gespeicherte WebRTC ICE-Server werden entfernt";
 
@@ -2998,6 +3064,9 @@
 
 /* No comment provided by engineer. */
 "Search" = "Suche";
+
+/* No comment provided by engineer. */
+"Search bar accepts invitation links." = "Von der Suchleiste werden Einladungslinks akzeptiert.";
 
 /* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Suchen oder fügen Sie den SimpleX-Link ein";
@@ -3154,6 +3223,12 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Anstelle der System-Authentifizierung festlegen.";
+
+/* profile update event chat item */
+"set new contact address" = "Neue Kontaktadresse wurde festgelegt";
+
+/* profile update event chat item */
+"set new profile picture" = "Neues Profil-Bild wurde festgelegt";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Zugangscode einstellen";
@@ -3525,6 +3600,9 @@
 "Trying to connect to the server used to receive messages from this contact." = "Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
 
 /* No comment provided by engineer. */
+"Turkish interface" = "Türkische Bedienoberfläche";
+
+/* No comment provided by engineer. */
 "Turn off" = "Abschalten";
 
 /* No comment provided by engineer. */
@@ -3537,10 +3615,19 @@
 "Unblock" = "Freigeben";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Für Alle freigeben";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Mitglied freigeben";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Mitglied für Alle freigeben?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Mitglied freigeben?";
+
+/* rcv group event chat item */
+"unblocked %@" = "%@ wurde freigegeben";
 
 /* item status description */
 "Unexpected error: %@" = "Unerwarteter Fehler: %@";
@@ -3574,6 +3661,9 @@
 
 /* No comment provided by engineer. */
 "Unknown error" = "Unbekannter Fehler";
+
+/* No comment provided by engineer. */
+"unknown status" = "unbekannter Gruppenmitglieds-Status";
 
 /* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Aktivieren Sie den Modus \"Bitte nicht stören\", um Unterbrechungen zu vermeiden, es sei denn, Sie verwenden die iOS Anrufschnittstelle.";
@@ -3619,6 +3709,9 @@
 
 /* rcv group event chat item */
 "updated group profile" = "Aktualisiertes Gruppenprofil";
+
+/* profile update event chat item */
+"updated profile" = "Das Profil wurde aktualisiert";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.";
@@ -3795,7 +3888,13 @@
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil auch für die Gruppen verwendet, für die Sie von diesem Kontakt eingeladen werden.";
 
 /* No comment provided by engineer. */
+"With encrypted files and media." = "Mit verschlüsselten Dateien und Medien.";
+
+/* No comment provided by engineer. */
 "With optional welcome message." = "Mit optionaler Begrüßungsmeldung.";
+
+/* No comment provided by engineer. */
+"With reduced battery usage." = "Mit reduziertem Akkuverbrauch.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Falsches Datenbank-Passwort";
@@ -3856,6 +3955,9 @@
 
 /* No comment provided by engineer. */
 "you are observer" = "Sie sind Beobachter";
+
+/* snd group event chat item */
+"you blocked %@" = "Sie haben %@ blockiert";
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Sie können Anrufe ohne Geräte- und App-Authentifizierung vom Sperrbildschirm aus annehmen.";
@@ -3967,6 +4069,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "Sie haben Inkognito einen Einmal-Link geteilt";
+
+/* snd group event chat item */
+"you unblocked %@" = "Sie haben %@ freigegeben";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!";
