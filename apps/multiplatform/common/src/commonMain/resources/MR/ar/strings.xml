@@ -1402,7 +1402,7 @@
     <string name="block_member_confirmation">حظر</string>
     <string name="bad_desktop_address">عنوان سطح المكتب غير صالح</string>
     <string name="block_member_desc">سيتم إخفاء كافة الرسائل الجديدة من %s!</string>
-    <string name="blocked_item_description">حظر للجميع</string>
+    <string name="blocked_item_description">محظور</string>
     <string name="v5_4_block_group_members">حظر أعضاء المجموعة</string>
     <string name="rcv_direct_event_contact_deleted">جهة الاتصال المحذوفة</string>
     <string name="v5_4_incognito_groups_descr">أنشِئ مجموعة باستخدام ملف تعريف عشوائي.</string>
