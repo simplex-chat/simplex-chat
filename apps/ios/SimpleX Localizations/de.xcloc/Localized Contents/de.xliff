@@ -6245,7 +6245,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
-        <target>Administrator</target>
+        <target>Admin</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">

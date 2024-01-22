@@ -375,7 +375,7 @@
 "Address change will be aborted. Old receiving address will be used." = "Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.";
 
 /* member role */
-"admin" = "Administrator";
+"admin" = "Admin";
 
 /* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Administratoren können Links für den Beitritt zu Gruppen erzeugen.";

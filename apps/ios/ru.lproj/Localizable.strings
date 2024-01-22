@@ -612,7 +612,7 @@
 "blocked by admin" = "заблокировано администратором";
 
 /* No comment provided by engineer. */
-"Blocked by admin" = "Заблокировано администратором";
+"Blocked by admin" = "Заблокирован администратором";
 
 /* No comment provided by engineer. */
 "bold" = "жирный";
@@ -3627,7 +3627,7 @@
 "Unblock member?" = "Разблокировать члена группы?";
 
 /* rcv group event chat item */
-"unblocked %@" = "%@ разблокировано";
+"unblocked %@" = "%@ разблокирован";
 
 /* item status description */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";

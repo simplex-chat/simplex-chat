@@ -950,7 +950,7 @@
       </trans-unit>
       <trans-unit id="Blocked by admin" xml:space="preserve">
         <source>Blocked by admin</source>
-        <target>Заблокировано администратором</target>
+        <target>Заблокирован администратором</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -6892,7 +6892,7 @@ SimpleX серверы не могут получить доступ к Ваше
       </trans-unit>
       <trans-unit id="unblocked %@" xml:space="preserve">
         <source>unblocked %@</source>
-        <target>%@ разблокировано</target>
+        <target>%@ разблокирован</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">

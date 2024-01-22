@@ -732,7 +732,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse wurde gestartet…</string>
     <!-- GroupMemberRole -->
     <string name="group_member_role_member">Mitglied</string>
-    <string name="group_member_role_admin">Administrator</string>
+    <string name="group_member_role_admin">Admin</string>
     <string name="group_member_role_owner">Eigentümer</string>
     <!-- GroupMemberStatus -->
     <string name="group_member_status_removed">Entfernt</string>
