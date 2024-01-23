@@ -36,7 +36,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       Icon(
         painterResource(MR.images.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { uriHandler.openUriCatching(link) }
+          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }
       )
     }
 
