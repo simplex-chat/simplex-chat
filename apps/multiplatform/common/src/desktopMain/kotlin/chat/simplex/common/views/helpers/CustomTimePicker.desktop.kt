@@ -33,7 +33,7 @@ actual fun CustomTimePicker(
   val values = remember(unit.value) {
     val limit = timeUnitsLimits.first { it.timeUnit == unit.value }
     val res = ArrayList<Pair<Int, String>>()
-    for (i in limit.minValue .. limit.maxValue) {
+    for (i in limit.minValue..limit.maxValue) {
       val seconds = i * limit.timeUnit.toSeconds
       val desc = i.toString()
       res.add(seconds to desc)
@@ -45,7 +45,6 @@ actual fun CustomTimePicker(
     }
     res
   }
-
   val units = remember {
     val res = ArrayList<Pair<CustomTimeUnit, String>>()
     for (unit in timeUnitsLimits) {
@@ -57,7 +56,8 @@ actual fun CustomTimePicker(
   Row(
     Modifier.padding(DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.SpaceEvenly) {
+    horizontalArrangement = Arrangement.SpaceEvenly
+  ) {
     ExposedDropDownSetting(
       values,
       selection,
