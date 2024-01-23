@@ -65,6 +65,7 @@ struct MarkedDeletedItemView: View {
         }
     }
 
+    // TODO refactor with markedDeletedText in ChatPreviewView
     var markedDeletedText: LocalizedStringKey {
         switch chatItem.meta.itemDeleted {
         case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"

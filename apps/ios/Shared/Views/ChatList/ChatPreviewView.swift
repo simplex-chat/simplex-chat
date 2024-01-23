@@ -171,9 +171,19 @@ struct ChatPreviewView: View {
     }
 
     func chatItemPreview(_ cItem: ChatItem) -> Text {
-        let itemText = cItem.meta.itemDeleted == nil ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+        let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
         return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false)
+
+        // TODO refactor with markedDeletedText in MarkedDeletedItemView
+        func markedDeletedText() -> String {
+            switch cItem.meta.itemDeleted {
+            case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
+            case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
+            case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
+            case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+            }
+        }
 
         func attachment() -> String? {
             switch cItem.content.msgContent {
