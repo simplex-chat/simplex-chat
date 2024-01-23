@@ -1303,8 +1303,8 @@ func startChat(refreshInvitations: Bool = true) throws {
     try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
     m.users = try listUsers()
+    try getUserChatData()
     if justStarted {
-        try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         if (refreshInvitations) {
             try refreshCallInvitations()
@@ -1324,8 +1324,6 @@ func startChat(refreshInvitations: Bool = true) throws {
                 m.setDeliveryReceipts = true
             }
         }
-    } else {
-        try getUserChatData()
     }
     ChatReceiver.shared.start()
     m.chatRunning = true
