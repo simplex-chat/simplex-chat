@@ -1619,4 +1619,17 @@
     <string name="note_folder_local_display_name">私密笔记</string>
     <string name="clear_note_folder_question">清除私密笔记？</string>
     <string name="saved_message_title">已保存的消息</string>
+    <string name="blocked_by_admin_items_description">管理员封禁了 %d 条消息</string>
+    <string name="rcv_group_event_member_unblocked">已解封 %s</string>
+    <string name="block_for_all">为所有人封禁</string>
+    <string name="unblock_for_all">为所有人解封</string>
+    <string name="unblock_for_all_question">为所有其他成员解封该成员？</string>
+    <string name="member_blocked_by_admin">由管理员封禁</string>
+    <string name="blocked_by_admin_item_description">由管理员封禁</string>
+    <string name="rcv_group_event_member_blocked">已封禁 %s</string>
+    <string name="block_for_all_question">为所有其他成员封禁该成员？</string>
+    <string name="error_blocking_member_for_all">执行为所有人封禁时出错</string>
+    <string name="member_info_member_blocked">已封禁</string>
+    <string name="snd_group_event_member_blocked">你封禁了 %s</string>
+    <string name="snd_group_event_member_unblocked">你解封了 %s</string>
 </resources>

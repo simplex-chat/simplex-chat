@@ -203,6 +203,9 @@
 "%lld messages blocked" = "%lld berichten geblokkeerd";
 
 /* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld berichten geblokkeerd door beheerder";
+
+/* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld berichten gemarkeerd als verwijderd";
 
 /* No comment provided by engineer. */
@@ -585,16 +588,31 @@
 "Block" = "Blokkeren";
 
 /* No comment provided by engineer. */
+"Block for all" = "Blokkeren voor iedereen";
+
+/* No comment provided by engineer. */
 "Block group members" = "Groepsleden blokkeren";
 
 /* No comment provided by engineer. */
 "Block member" = "Lid blokkeren";
 
 /* No comment provided by engineer. */
+"Block member for all?" = "Lid voor iedereen blokkeren?";
+
+/* No comment provided by engineer. */
 "Block member?" = "Lid blokkeren?";
 
 /* No comment provided by engineer. */
 "blocked" = "geblokkeerd";
+
+/* rcv group event chat item */
+"blocked %@" = "geblokkeerd %@";
+
+/* blocked chat item */
+"blocked by admin" = "geblokkeerd door beheerder";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
 "bold" = "vetgedrukt";
@@ -2137,7 +2155,7 @@
 "Join group" = "Word lid van groep";
 
 /* No comment provided by engineer. */
-"Join group conversations" = "Neem deel aan groep gesprekken";
+"Join group conversations" = "Neem deel aan groepsgesprekken";
 
 /* No comment provided by engineer. */
 "Join group?" = "Deelnemen aan groep?";
@@ -2631,7 +2649,7 @@
 "Paste image" = "Afbeelding plakken";
 
 /* No comment provided by engineer. */
-"Paste link to connect!" = "Plak link om te verbinden!";
+"Paste link to connect!" = "Plak een link om te verbinden!";
 
 /* No comment provided by engineer. */
 "Paste the link you received" = "Plak de link die je hebt ontvangen";
@@ -3051,7 +3069,7 @@
 "Search bar accepts invitation links." = "Zoekbalk accepteert uitnodigingslinks.";
 
 /* No comment provided by engineer. */
-"Search or paste SimpleX link" = "Zoek of plak de SimpleX link";
+"Search or paste SimpleX link" = "Zoek of plak een SimpleX link";
 
 /* network option */
 "sec" = "sec";
@@ -3597,10 +3615,19 @@
 "Unblock" = "Deblokkeren";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Deblokkeer voor iedereen";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Lid deblokkeren";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Lid voor iedereen deblokkeren?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Lid deblokkeren?";
+
+/* rcv group event chat item */
+"unblocked %@" = "gedeblokkeerd %@";
 
 /* item status description */
 "Unexpected error: %@" = "Onverwachte fout: %@";
@@ -3929,6 +3956,9 @@
 /* No comment provided by engineer. */
 "you are observer" = "jij bent waarnemer";
 
+/* snd group event chat item */
+"you blocked %@" = "je hebt %@ geblokkeerd";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "U kunt oproepen van het vergrendelingsscherm accepteren, zonder apparaat- en app-verificatie.";
 
@@ -4039,6 +4069,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "je hebt een eenmalige link incognito gedeeld";
+
+/* snd group event chat item */
+"you unblocked %@" = "je hebt %@ gedeblokkeerd";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Je wordt verbonden met de groep wanneer het apparaat van de groep host online is, even geduld a.u.b. of controleer het later!";
