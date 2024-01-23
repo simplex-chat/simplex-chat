@@ -1022,15 +1022,15 @@ getGroupChat db vr user groupId pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
   case pagination of
-    CPLast count -> getGroupChatLast_ db user g count search
+    CPLast count -> liftIO $ getGroupChatLast_ db user g count search
     CPAfter afterId count -> getGroupChatAfter_ db user g afterId count search
     CPBefore beforeId count -> getGroupChatBefore_ db user g beforeId count search
 
-getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- liftIO getGroupChatItemIdsLast_
-  chatItems <- mapM (getGroupCIWithReactions db user g) chatItemIds
+  chatItemIds <- getGroupChatItemIdsLast_
+  chatItems <- rights <$> mapM (runExceptT . getGroupCIWithReactions db user g) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
@@ -1068,7 +1068,7 @@ getGroupChatAfter_ db user@User {userId} g@GroupInfo {groupId} afterChatItemId c
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
-  chatItems <- mapM (getGroupCIWithReactions db user g) chatItemIds
+  chatItems <- liftIO $ rights <$> mapM (runExceptT . getGroupCIWithReactions db user g) chatItemIds
   pure $ Chat (GroupChat g) chatItems stats
   where
     getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
@@ -1091,7 +1091,7 @@ getGroupChatBefore_ db user@User {userId} g@GroupInfo {groupId} beforeChatItemId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
-  chatItems <- mapM (getGroupCIWithReactions db user g) chatItemIds
+  chatItems <- liftIO $ rights <$> mapM (runExceptT . getGroupCIWithReactions db user g) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
@@ -1113,16 +1113,16 @@ getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String
 getLocalChat db user folderId pagination search_ = do
   let search = fromMaybe "" search_
   nf <- getNoteFolder db user folderId
-  case pagination of
+  liftIO $ case pagination of
     CPLast count -> getLocalChatLast_ db user nf count search
     CPAfter afterId count -> getLocalChatAfter_ db user nf afterId count search
     CPBefore beforeId count -> getLocalChatBefore_ db user nf beforeId count search
 
-getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
+getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- liftIO getLocalChatItemIdsLast_
-  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
+  chatItemIds <- getLocalChatItemIdsLast_
+  chatItems <- rights <$> mapM (runExceptT . getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsLast_ :: IO [ChatItemId]
@@ -1139,11 +1139,11 @@ getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count searc
           |]
           (userId, noteFolderId, search, count)
 
-getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
+getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- liftIO getLocalChatItemIdsAfter_
-  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
+  chatItemIds <- getLocalChatItemIdsAfter_
+  chatItems <- rights <$> mapM (runExceptT . getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) chatItems stats
   where
     getLocalChatItemIdsAfter_ :: IO [ChatItemId]
@@ -1161,11 +1161,11 @@ getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatI
           |]
           (userId, noteFolderId, search, afterChatItemId, count)
 
-getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
+getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- liftIO getLocalChatItemIdsBefore_
-  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
+  chatItemIds <- getLocalChatItemIdsBefore_
+  chatItems <- rights <$> mapM (runExceptT . getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsBefore_ :: IO [ChatItemId]
