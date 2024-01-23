@@ -922,22 +922,23 @@ getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe Strin
 getDirectChat db user contactId pagination search_ = do
   let search = fromMaybe "" search_
   ct <- getContact db user contactId
-  liftIO . getDirectChatReactions_ db ct =<< case pagination of
-    CPLast count -> getDirectChatLast_ db user ct count search
-    CPAfter afterId count -> getDirectChatAfter_ db user ct afterId count search
-    CPBefore beforeId count -> getDirectChatBefore_ db user ct beforeId count search
+  liftIO $
+    getDirectChatReactions_ db ct =<< case pagination of
+      CPLast count -> getDirectChatLast_ db user ct count search
+      CPAfter afterId count -> getDirectChatAfter_ db user ct afterId count search
+      CPBefore beforeId count -> getDirectChatBefore_ db user ct beforeId count search
 
-getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO (Chat 'CTDirect)
 getDirectChatLast_ db user ct@Contact {contactId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- getDirectChatItemsLast db user contactId count search
   pure $ Chat (DirectChat ct) (reverse chatItems) stats
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
-getDirectChatItemsLast :: DB.Connection -> User -> ContactId -> Int -> String -> ExceptT StoreError IO [CChatItem 'CTDirect]
-getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
+getDirectChatItemsLast :: DB.Connection -> User -> ContactId -> Int -> String -> IO [CChatItem 'CTDirect]
+getDirectChatItemsLast db User {userId} contactId count search = do
   currentTs <- getCurrentTime
-  mapM (toDirectChatItem currentTs)
+  rights . map (toDirectChatItem currentTs)
     <$> DB.query
       db
       [sql|
@@ -957,16 +958,16 @@ getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
       |]
       (userId, contactId, search, count)
 
-getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- ExceptT getDirectChatItemsAfter_
+  chatItems <- getDirectChatItemsAfter_
   pure $ Chat (DirectChat ct) chatItems stats
   where
-    getDirectChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTDirect])
+    getDirectChatItemsAfter_ :: IO [CChatItem 'CTDirect]
     getDirectChatItemsAfter_ = do
       currentTs <- getCurrentTime
-      mapM (toDirectChatItem currentTs)
+      rights . map (toDirectChatItem currentTs)
         <$> DB.query
           db
           [sql|
@@ -987,16 +988,16 @@ getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId coun
           |]
           (userId, contactId, search, afterChatItemId, count)
 
-getDirectChatBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO (Chat 'CTDirect)
 getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- ExceptT getDirectChatItemsBefore_
+  chatItems <- getDirectChatItemsBefore_
   pure $ Chat (DirectChat ct) (reverse chatItems) stats
   where
-    getDirectChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTDirect])
+    getDirectChatItemsBefore_ :: IO [CChatItem 'CTDirect]
     getDirectChatItemsBefore_ = do
       currentTs <- getCurrentTime
-      mapM (toDirectChatItem currentTs)
+      rights . map (toDirectChatItem currentTs)
         <$> DB.query
           db
           [sql|
