@@ -46,7 +46,9 @@ struct FramedItemView: View {
                         framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
                     case .blocked:
                         framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
-                    default:
+                    case .blockedByAdmin:
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
+                    case .deleted:
                         framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
                     }
                 } else if chatItem.meta.isLive {

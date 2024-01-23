@@ -14,17 +14,17 @@
       </trans-unit>
       <trans-unit id=" " xml:space="preserve">
         <source> </source>
-        <target> . </target>
+        <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="  " xml:space="preserve">
         <source>  </source>
-        <target> </target>
+        <target>  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="   " xml:space="preserve">
         <source>   </source>
-        <target>   .   </target>
+        <target>   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
@@ -217,6 +217,10 @@
         <target>%lld mesajlar engellendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+        <source>%lld messages blocked by admin</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
         <source>%lld messages marked deleted</source>
         <target>%lld mesajlar silinmiş olarak işaretlendi</target>
@@ -370,11 +374,6 @@
       <trans-unit id=", " xml:space="preserve">
         <source>, </source>
         <target>, </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="- block a member to stop spam for all.&#10;- contact address is not shared." xml:space="preserve">
-        <source>- block a member to stop spam for all.
-- contact address is not shared.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
@@ -919,6 +918,10 @@
         <target>Engelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Block for all" xml:space="preserve">
+        <source>Block for all</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
         <target>Grup üyelerini engelle</target>
@@ -929,9 +932,17 @@
         <target>Üyeyi engelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Block member for all?" xml:space="preserve">
+        <source>Block member for all?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
         <target>Üyeyi engelle?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Blocked by admin" xml:space="preserve">
+        <source>Blocked by admin</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -981,11 +992,6 @@
       <trans-unit id="Camera not available" xml:space="preserve">
         <source>Camera not available</source>
         <target>Kamera mevcut değil</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Can't delete user profile!" xml:space="preserve">
-        <source>Can't delete user profile!</source>
-        <target>Kullanıcı profili silinemiyor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -4383,10 +4389,6 @@ Hata: %@</target>
         <target>SMP sunucuları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Safer groups" xml:space="preserve">
-        <source>Safer groups</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Kaydet</target>
@@ -5206,16 +5208,6 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
         <target>Tema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one user profile." xml:space="preserve">
-        <source>There should be at least one user profile.</source>
-        <target>En az bir kullanıcı profili olmalıdır.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
-        <source>There should be at least one visible user profile.</source>
-        <target>En az bir görünür kullanıcı profili olmalıdır.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve">
         <source>These settings are for your current profile **%@**.</source>
         <target>Bu ayarlar mevcut profiliniz **%@** içindir.</target>
@@ -5376,9 +5368,17 @@ Bu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenec
         <target>Engeli kaldır</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unblock for all" xml:space="preserve">
+        <source>Unblock for all</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
         <source>Unblock member</source>
         <target>Üyenin engelini kaldır</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unblock member for all?" xml:space="preserve">
+        <source>Unblock member for all?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -6257,6 +6257,14 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>engellendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="blocked %@" xml:space="preserve">
+        <source>blocked %@</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="blocked by admin" xml:space="preserve">
+        <source>blocked by admin</source>
+        <note>blocked chat item</note>
+      </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
         <target>kalın</target>
@@ -6838,6 +6846,10 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>Bu kişi</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="unblocked %@" xml:space="preserve">
+        <source>unblocked %@</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
         <source>unknown</source>
         <target>bilinmeyen</target>
@@ -6926,6 +6938,10 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>gözlemcisiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you blocked %@" xml:space="preserve">
+        <source>you blocked %@</source>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
         <source>you changed address</source>
         <target>adresinizi değiştirdiniz</target>
@@ -6965,6 +6981,10 @@ SimpleX sunucuları profilinizi göremez.</target>
         <source>you shared one-time link incognito</source>
         <target>tek kullanımlık link paylaştınız gizli</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="you unblocked %@" xml:space="preserve">
+        <source>you unblocked %@</source>
+        <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">
         <source>you: </source>

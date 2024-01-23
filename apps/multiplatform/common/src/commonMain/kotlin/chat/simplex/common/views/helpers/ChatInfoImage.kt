@@ -27,8 +27,8 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> MR.images.ic_supervised_user_circle_filled
-      is ChatInfo.Direct -> MR.images.ic_account_circle_filled
-      else -> MR.images.ic_folder_filled
+      is ChatInfo.Local -> MR.images.ic_folder_filled
+      else -> MR.images.ic_account_circle_filled
     }
   ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
 }

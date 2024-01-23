@@ -465,19 +465,19 @@ object ChatController {
   suspend fun sendCmd(rhId: Long?, cmd: CC): CR {
     val ctrl = ctrl ?: throw Exception("Controller is not initialized")
 
-    //return withContext(Dispatchers.IO) {
-    val c = cmd.cmdString
-    chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-    Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-    val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
-    val r = APIResponse.decodeStr(json)
-    Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
-    if (r.resp is CR.Response || r.resp is CR.Invalid) {
-      Log.d(TAG, "sendCmd response json $json")
+    return withContext(Dispatchers.IO) {
+      val c = cmd.cmdString
+      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
+      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
+      val r = APIResponse.decodeStr(json)
+      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
+      if (r.resp is CR.Response || r.resp is CR.Invalid) {
+        Log.d(TAG, "sendCmd response json $json")
+      }
+      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
+      r.resp
     }
-    chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
-    return r.resp
-    //}
   }
 
   private fun recvMsg(ctrl: ChatCtrl): APIResponse? {
@@ -1332,6 +1332,17 @@ object ChatController {
       }
     }
 
+  suspend fun apiBlockMemberForAll(rh: Long?, groupId: Long, memberId: Long, blocked: Boolean): GroupMember =
+    when (val r = sendCmd(rh, CC.ApiBlockMemberForAll(groupId, memberId, blocked))) {
+      is CR.MemberBlockedForAllUser -> r.member
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiBlockMemberForAll", generalGetString(MR.strings.error_blocking_member_for_all), r)
+        }
+        throw Exception("failed to block member for all: ${r.responseType} ${r.details}")
+      }
+    }
+
   suspend fun apiLeaveGroup(rh: Long?, groupId: Long): GroupInfo? {
     val r = sendCmd(rh, CC.ApiLeaveGroup(groupId))
     if (r is CR.LeftMemberUser) return r.groupInfo
@@ -1783,6 +1794,10 @@ object ChatController {
           chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.MemberRoleUser ->
+        if (active(r.user)) {
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
+        }
+      is CR.MemberBlockedForAll ->
         if (active(r.user)) {
           chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
@@ -2275,6 +2290,7 @@ sealed class CC {
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiMemberRole(val groupId: Long, val memberId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiBlockMemberForAll(val groupId: Long, val memberId: Long, val blocked: Boolean): CC()
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
@@ -2409,6 +2425,7 @@ sealed class CC {
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiMemberRole -> "/_member role #$groupId $memberId ${memberRole.memberRole}"
+    is ApiBlockMemberForAll -> "/_block #$groupId $memberId blocked=${onOff(blocked)}"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
@@ -2538,6 +2555,7 @@ sealed class CC {
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiMemberRole -> "apiMemberRole"
+    is ApiBlockMemberForAll -> "apiBlockMemberForAll"
     is ApiRemoveMember -> "apiRemoveMember"
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
@@ -3928,6 +3946,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberRole") class MemberRole(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
   @Serializable @SerialName("memberRoleUser") class MemberRoleUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
+  @Serializable @SerialName("memberBlockedForAll") class MemberBlockedForAll(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val blocked: Boolean): CR()
+  @Serializable @SerialName("memberBlockedForAllUser") class MemberBlockedForAllUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val blocked: Boolean): CR()
   @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -4080,6 +4100,8 @@ sealed class CR {
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberRole -> "memberRole"
     is MemberRoleUser -> "memberRoleUser"
+    is MemberBlockedForAll -> "memberBlockedForAll"
+    is MemberBlockedForAllUser -> "memberBlockedForAllUser"
     is DeletedMemberUser -> "deletedMemberUser"
     is DeletedMember -> "deletedMember"
     is LeftMember -> "leftMember"
@@ -4227,6 +4249,8 @@ sealed class CR {
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberRole -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
     is MemberRoleUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
+    is MemberBlockedForAll -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nblocked: $blocked")
+    is MemberBlockedForAllUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nblocked: $blocked")
     is DeletedMemberUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember")
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")

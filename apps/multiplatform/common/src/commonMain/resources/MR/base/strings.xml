@@ -35,7 +35,9 @@
   <string name="moderated_item_description">moderated by %s</string>
   <string name="moderated_items_description">%1$d messages moderated by %2$s</string>
   <string name="blocked_item_description">blocked</string>
+  <string name="blocked_by_admin_item_description">blocked by admin</string>
   <string name="blocked_items_description">%d messages blocked</string>
+  <string name="blocked_by_admin_items_description">%d messages blocked by admin</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -1176,6 +1178,8 @@
   <string name="rcv_group_event_member_connected">connected</string>
   <string name="rcv_group_event_member_left">left</string>
   <string name="rcv_group_event_changed_member_role">changed role of %s to %s</string>
+  <string name="rcv_group_event_member_blocked">blocked %s</string>
+  <string name="rcv_group_event_member_unblocked">unblocked %s</string>
   <string name="rcv_group_event_changed_your_role">changed your role to %s</string>
   <string name="rcv_group_event_member_deleted">removed %1$s</string>
   <string name="rcv_group_event_user_deleted">removed you</string>
@@ -1185,6 +1189,8 @@
   <string name="rcv_group_event_member_created_contact">connected directly</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
+  <string name="snd_group_event_member_blocked">you blocked %s</string>
+  <string name="snd_group_event_member_unblocked">you unblocked %s</string>
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
@@ -1339,11 +1345,17 @@
   <string name="block_member_question">Block member?</string>
   <string name="block_member_button">Block member</string>
   <string name="block_member_confirmation">Block</string>
+  <string name="block_for_all_question">Block member for all?</string>
+  <string name="block_for_all">Block for all</string>
   <string name="block_member_desc">All new messages from %s will be hidden!</string>
   <string name="unblock_member_question">Unblock member?</string>
   <string name="unblock_member_button">Unblock member</string>
   <string name="unblock_member_confirmation">Unblock</string>
+  <string name="unblock_for_all_question">Unblock member for all?</string>
+  <string name="unblock_for_all">Unblock for all</string>
   <string name="unblock_member_desc">Messages from %s will be shown!</string>
+  <string name="member_blocked_by_admin">Blocked by admin</string>
+  <string name="member_info_member_blocked">blocked</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="role_in_group">Role</string>
   <string name="change_role">Change role</string>
@@ -1356,6 +1368,7 @@
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
   <string name="error_removing_member">Error removing member</string>
   <string name="error_changing_role">Error changing role</string>
+  <string name="error_blocking_member_for_all">Error blocking member for all</string>
   <string name="info_row_group">Group</string>
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
@@ -1685,8 +1698,6 @@
   <string name="v5_5_simpler_connect_ui_descr">Search bar accepts invitation links.</string>
   <string name="v5_5_join_group_conversation">Join group conversations</string>
   <string name="v5_5_join_group_conversation_descr">Recent history and improved directory bot.</string>
-  <string name="v5_5_safer_groups">Safer groups</string>
-  <string name="v5_5_safer_groups_descr">- block a member to stop spam for all.\n- contact address is not shared.</string>
   <string name="v5_5_message_delivery">Improved message delivery</string>
   <string name="v5_5_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_5_new_interface_languages">Hungarian and Turkish UI</string>

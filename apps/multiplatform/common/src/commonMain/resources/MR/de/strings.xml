@@ -3,8 +3,8 @@
     <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <!-- Connect via Link - MainActivity.kt -->
-    <string name="connect_via_contact_link">Über die Kontakt-Adresse verbinden?</string>
-    <string name="connect_via_invitation_link">Über den Einmal-Link verbinden?</string>
+    <string name="connect_via_contact_link">Über den Kontaktadressen-Link verbinden?</string>
+    <string name="connect_via_invitation_link">Über den Einmal-Einladungslink verbinden?</string>
     <string name="connect_via_group_link">Der Gruppe beitreten?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</string>
     <string name="you_will_join_group">Sie werden mit allen Gruppenmitgliedern verbunden.</string>
@@ -39,7 +39,7 @@
     <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
     <!-- FormattedText, SimpleX links - ChatModel.kt -->
     <string name="simplex_link_contact">SimpleX-Kontaktadressen-Link</string>
-    <string name="simplex_link_invitation">SimpleX-Einmal-Einladung</string>
+    <string name="simplex_link_invitation">SimpleX-Einmal-Einladungslink</string>
     <string name="simplex_link_group">SimpleX-Gruppen-Link</string>
     <string name="simplex_link_connection">über %1$s</string>
     <string name="simplex_link_mode">SimpleX-Links</string>
@@ -331,7 +331,7 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird
 \nan Ihren Kontakt gesendet</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs scannen</b> oder Ihr Kontakt kann einen Einladungslink über einen anderen Kanal mit Ihnen teilen.]]></string>
-    <string name="share_invitation_link">Einmal-Link teilen</string>
+    <string name="share_invitation_link">Einmal-Einladungslink teilen</string>
     <!-- PasteToConnect.kt -->
     <string name="connect_via_link">Über einen Link verbinden</string>
     <string name="connect_button">Verbinden</string>
@@ -690,7 +690,7 @@
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Sie sind dieser Gruppe beigetreten. Sie werden mit dem einladenden Gruppenmitglied verbunden.</string>
     <string name="leave_group_button">Verlassen</string>
     <string name="leave_group_question">Die Gruppe verlassen?</string>
-    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</string>
     <string name="icon_descr_add_members">Mitglieder einladen</string>
     <string name="icon_descr_group_inactive">Gruppe inaktiv</string>
     <string name="alert_title_group_invitation_expired">Die Einladung ist abgelaufen!</string>
@@ -1313,7 +1313,7 @@
     <string name="custom_time_unit_hours">Stunden</string>
     <string name="v5_1_better_messages_descr">- Bis zu 5 Minuten lange Sprachnachrichten
 \n- Zeitdauer für verschwindende Nachrichten anpassen
-\n- Nachrichten-Verlauf bearbeiten</string>
+\n- Nachrichtenverlauf bearbeiten</string>
     <string name="custom_time_picker_custom">benutzerdefiniert</string>
     <string name="custom_time_unit_months">Monate</string>
     <string name="custom_time_picker_select">Auswählen</string>
@@ -1324,7 +1324,7 @@
     <string name="share_text_deleted_at">Gelöscht um: %s</string>
     <string name="info_row_disappears_at">Verschwindet um</string>
     <string name="share_text_disappears_at">Verschwindet um: %s</string>
-    <string name="edit_history">Verlauf bearbeiten</string>
+    <string name="edit_history">Nachrichtenverlauf bearbeiten</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten – weitere Details finden Sie in der Chat-Konsole.</string>
@@ -1356,7 +1356,7 @@
     <string name="error_synchronizing_connection">Fehler beim Synchronisieren der Verbindung</string>
     <string name="sync_connection_force_question">Verschlüsselung neu aushandeln\?</string>
     <string name="fix_connection_question">Verbindung reparieren\?</string>
-    <string name="no_history">Kein Verlauf</string>
+    <string name="no_history">Kein Nachrichtenverlauf</string>
     <string name="sync_connection_force_confirm">Neu aushandeln</string>
     <string name="sync_connection_force_desc">Die Verschlüsselung funktioniert und ein neues Verschlüsselungsabkommen ist nicht erforderlich. Es kann zu Verbindungsfehlern kommen!</string>
     <string name="renegotiate_encryption">Verschlüsselung neu aushandeln</string>
@@ -1512,7 +1512,7 @@
     <string name="remove_member_button">Mitglied entfernen</string>
     <string name="block_member_confirmation">Blockieren</string>
     <string name="unblock_member_question">Mitglied freigeben?</string>
-    <string name="blocked_items_description">%d Nachrichten blockiert</string>
+    <string name="blocked_items_description">%d Nachrichten wurden blockiert</string>
     <string name="block_member_button">Mitglied blockieren</string>
     <string name="connect_plan_repeat_join_request">Verbindungsanfrage wiederholen?</string>
     <string name="button_remove_member_question">Mitglied entfernen?</string>
@@ -1530,8 +1530,8 @@
     <string name="non_content_uri_alert_title">Ungültiger Datei-Pfad</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Sie haben über diese Adresse bereits eine Verbindung beantragt!</string>
     <string name="terminal_always_visible">Die Konsole in einem neuen Fenster anzeigen</string>
-    <string name="block_member_desc">Alle neuen Nachrichten von %s werden ausgeblendet!</string>
-    <string name="blocked_item_description">blockiert</string>
+    <string name="block_member_desc">Von %s werden alle neuen Nachrichten ausgeblendet!</string>
+    <string name="blocked_item_description">Blockiert</string>
     <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
     <string name="alert_text_encryption_renegotiation_failed">Neuverhandlung der Verschlüsselung fehlgeschlagen</string>
     <string name="v5_4_block_group_members">Gruppenmitglieder blockieren</string>
@@ -1608,12 +1608,12 @@
     <string name="error_showing_content">Fehler beim Anzeigen des Inhalts</string>
     <string name="error_showing_message">Fehler beim Anzeigen der Nachricht</string>
     <string name="you_can_make_address_visible_via_settings">Sie können sie über Einstellungen für Ihre SimpleX-Kontakte sichtbar machen.</string>
-    <string name="recent_history_is_not_sent_to_new_members">Der Verlauf wird nicht an neue Gruppenmitglieder gesendet.</string>
+    <string name="recent_history_is_not_sent_to_new_members">Der Nachrichtenverlauf wird nicht an neue Gruppenmitglieder gesendet.</string>
     <string name="retry_verb">Wiederholen</string>
     <string name="camera_not_available">Kamera nicht verfügbar</string>
     <string name="enable_sending_recent_history">Bis zu 100 der letzten Nachrichten an neue Gruppenmitglieder senden.</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Kontakt hinzufügen</b>: Um einen neuen Einladungslink zu erstellen oder eine Verbindung über einen Link herzustellen, den Sie erhalten haben.]]></string>
-    <string name="disable_sending_recent_history">Den Verlauf nicht an neue Mitglieder senden.</string>
+    <string name="disable_sending_recent_history">Den Nachrichtenverlauf nicht an neue Mitglieder senden.</string>
     <string name="or_show_this_qr_code">Oder diesen QR-Code anzeigen</string>
     <string name="recent_history_is_sent_to_new_members">Bis zu 100 der letzten Nachrichten werden an neue Mitglieder gesendet.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Der von Ihnen gescannte Code ist kein SimpleX-Link-QR-Code.</string>
@@ -1623,7 +1623,7 @@
     <string name="keep_unused_invitation_question">Nicht genutzte Einladung behalten?</string>
     <string name="share_this_1_time_link">Teilen Sie diesen Einmal-Einladungslink</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Gruppe erstellen</b>: Um eine neue Gruppe zu erstellen.]]></string>
-    <string name="recent_history">Sichtbarer Verlauf</string>
+    <string name="recent_history">Sichtbarer Nachrichtenverlauf</string>
     <string name="la_app_passcode">App-Zugangscode</string>
     <string name="new_chat">Neuer Chat</string>
     <string name="loading_chats">Chats werden geladen…</string>
@@ -1667,4 +1667,50 @@
     <string name="agent_internal_error_title">Interner Fehler</string>
     <string name="remote_host_error_bad_version"><![CDATA[Auf dem Mobiltelefon <b>%s</b> wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen]]></string>
     <string name="remote_host_error_busy"><![CDATA[Mobiltelefon <b>%s</b> ist besetzt]]></string>
+    <string name="past_member_vName">Ehemaliges Mitglied %1$s</string>
+    <string name="possible_slow_function_desc">Die Ausführung dieser Funktion dauert zu lange: %1$d Sekunden: %2$s</string>
+    <string name="possible_slow_function_title">Langsame Funktion</string>
+    <string name="show_slow_api_calls">Zeige langsame API-Aufrufe an</string>
+    <string name="group_member_status_unknown_short">unbekannt</string>
+    <string name="possible_deadlock_title">Blockade</string>
+    <string name="developer_options_section">Optionen für Entwickler</string>
+    <string name="possible_deadlock_desc">Die Code-Ausführung dauert zu lange: %1$d Sekunden. Wahrscheinlich ist die App eingefroren: %2$s</string>
+    <string name="group_member_status_unknown">unbekannter Gruppenmitglieds-Status</string>
+    <string name="v5_5_private_notes_descr">Mit verschlüsselten Dateien und Medien.</string>
+    <string name="v5_5_private_notes">Private Notizen</string>
+    <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden!</string>
+    <string name="clear_note_folder_question">Private Notizen löschen?</string>
+    <string name="rcv_group_event_member_blocked">%s wurde blockiert</string>
+    <string name="rcv_group_event_member_unblocked">%s wurde freigegeben</string>
+    <string name="snd_group_event_member_blocked">Sie haben %s blockiert</string>
+    <string name="snd_group_event_member_unblocked">Sie haben %s freigegeben</string>
+    <string name="block_for_all_question">Mitglied für Alle blockieren?</string>
+    <string name="saved_message_title">Gespeicherte Nachricht</string>
+    <string name="v5_5_simpler_connect_ui">Zum Verbinden den Link einfügen!</string>
+    <string name="v5_5_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
+    <string name="v5_5_join_group_conversation_descr">Aktueller Nachrichtenverlauf und verbesserter Gruppenverzeichnis-Bot.</string>
+    <string name="v5_5_simpler_connect_ui_descr">Von der Suchleiste werden Einladungslinks akzeptiert.</string>
+    <string name="unblock_for_all">Für Alle freigeben</string>
+    <string name="unblock_for_all_question">Mitglied für Alle freigeben?</string>
+    <string name="member_info_member_blocked">wurde blockiert</string>
+    <string name="blocked_by_admin_item_description">ist vom Administrator blockiert worden</string>
+    <string name="member_blocked_by_admin">wurde vom Administrator blockiert</string>
+    <string name="block_for_all">Für Alle blockiert</string>
+    <string name="info_row_created_at">Erstellt um</string>
+    <string name="share_text_created_at">Erstellt um: %s</string>
+    <string name="blocked_by_admin_items_description">%d Nachrichten wurden vom Administrator blockiert</string>
+    <string name="error_blocking_member_for_all">Fehler beim Blockieren des Mitglieds für Alle</string>
+    <string name="error_creating_message">Fehler beim Erstellen der Nachricht</string>
+    <string name="error_deleting_note_folder">Fehler beim Löschen der privaten Notizen</string>
+    <string name="v5_5_message_delivery">Verbesserte Zustellung von Nachrichten</string>
+    <string name="v5_5_join_group_conversation">Gruppenunterhaltungen beitreten</string>
+    <string name="v5_5_new_interface_languages">Ungarische und türkische Bedienoberfläche</string>
+    <string name="profile_update_event_contact_name_changed">Kontaktname %1$s wurde auf %2$s geändert</string>
+    <string name="profile_update_event_member_name_changed">Mitgliedsname %1$s wurde auf %2$s geändert</string>
+    <string name="profile_update_event_set_new_address">Neue Kontaktadresse wurde festgelegt</string>
+    <string name="profile_update_event_set_new_picture">Neues Profil-Bild wurde festgelegt</string>
+    <string name="profile_update_event_updated_profile">Das Profil wurde aktualisiert</string>
+    <string name="profile_update_event_removed_picture">Profil-Bild wurde entfernt</string>
+    <string name="profile_update_event_removed_address">Kontaktadresse wurde entfernt</string>
+    <string name="note_folder_local_display_name">Private Notizen</string>
 </resources>
