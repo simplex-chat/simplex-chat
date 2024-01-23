@@ -1324,6 +1324,8 @@ func startChat(refreshInvitations: Bool = true) throws {
                 m.setDeliveryReceipts = true
             }
         }
+    } else {
+        try getUserChatData()
     }
     ChatReceiver.shared.start()
     m.chatRunning = true
