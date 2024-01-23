@@ -1,6 +1,7 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,7 @@ actual fun CustomTimePicker(
     ExposedDropDownSetting(
       values,
       selection,
+      textColor = MaterialTheme.colors.onBackground,
       enabled = remember { mutableStateOf(true) },
       onSelected = { selection.value = it }
     )
@@ -67,6 +69,7 @@ actual fun CustomTimePicker(
     ExposedDropDownSetting(
       units,
       unit,
+      textColor = MaterialTheme.colors.onBackground,
       enabled = remember { mutableStateOf(true) },
       onSelected = { unit.value = it }
     )
