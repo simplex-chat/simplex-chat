@@ -1236,7 +1236,7 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
+func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, refreshChatData: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
     m.ctrlInitInProgress = true
@@ -1261,13 +1261,13 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
         showStartChatAfterRestartAlert { start in
             do {
                 if start { AppChatState.shared.set(.active) }
-                try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+                try chatInitialized(start: start, refreshInvitations: refreshInvitations, refreshChatData: refreshChatData)
             } catch let error {
                 logger.error("ChatInitialized error: \(error)")
             }
         }
     } else {
-        try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+        try chatInitialized(start: start, refreshInvitations: refreshInvitations, refreshChatData: refreshChatData)
     }
 }
 
@@ -1284,11 +1284,11 @@ func showStartChatAfterRestartAlert(result: @escaping (_ start: Bool) -> Void) {
     ))
 }
 
-private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
+private func chatInitialized(start: Bool, refreshInvitations: Bool, refreshChatData: Bool) throws {
     let m = ChatModel.shared
     if m.currentUser == nil { return }
     if start {
-        try startChat(refreshInvitations: refreshInvitations)
+        try startChat(refreshInvitations: refreshInvitations, refreshChatData: refreshChatData)
     } else {
         m.chatRunning = false
         try getUserChatData()
@@ -1297,7 +1297,7 @@ private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
     }
 }
 
-func startChat(refreshInvitations: Bool = true) throws {
+func startChat(refreshInvitations: Bool = true, refreshChatData: Bool = false) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
@@ -1324,6 +1324,8 @@ func startChat(refreshInvitations: Bool = true) throws {
                 m.setDeliveryReceipts = true
             }
         }
+    } else if refreshChatData {
+        try getUserChatData()
     }
     ChatReceiver.shared.start()
     m.chatRunning = true
@@ -1388,6 +1390,7 @@ private func getUserChatDataAsync() async throws {
     } else {
         await MainActor.run {
             m.userAddress = nil
+            m.chatItemTTL = .none
             m.chats = []
         }
     }

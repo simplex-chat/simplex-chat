@@ -103,7 +103,7 @@ func activateChat(appState: AppState = .active) {
     }
 }
 
-func initChatAndMigrate(refreshInvitations: Bool = true) {
+func initChatAndMigrate(refreshInvitations: Bool = true, refreshChatData: Bool = true) {
     let m = ChatModel.shared
     if (!m.chatInitialized) {
         m.v3DBMigration = v3DBMigrationDefault.get()
@@ -116,7 +116,7 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
 
     func initialize(start: Bool, confirmStart: Bool = false) {
         do {
-            try initializeChat(start: m.v3DBMigration.startChat && start, confirmStart: m.v3DBMigration.startChat && confirmStart, refreshInvitations: refreshInvitations)
+            try initializeChat(start: m.v3DBMigration.startChat && start, confirmStart: m.v3DBMigration.startChat && confirmStart, refreshInvitations: refreshInvitations, refreshChatData: refreshChatData)
         } catch let error {
             AlertManager.shared.showAlertMsg(
                 title: start ? "Error starting chat" : "Error opening chat",
