@@ -159,12 +159,13 @@ struct ChatView: View {
                 switch cInfo {
                 case let .direct(contact):
                     HStack {
-                        if contact.allowsFeature(.calls) {
+                        let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                        if callsPrefEnabled {
                             callButton(contact, .audio, imageName: "phone")
                                 .disabled(!contact.ready || !contact.active)
                         }
                         Menu {
-                            if contact.allowsFeature(.calls) {
+                            if callsPrefEnabled {
                                 Button {
                                     CallController.shared.startCall(contact, .video)
                                 } label: {
