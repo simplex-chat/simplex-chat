@@ -332,7 +332,7 @@ fun ChatItemView(
         }
 
         fun mergedGroupEventText(chatItem: ChatItem): String? {
-          val (count, ns) = chatModel.getConnectedMemberNames(chatItem)
+          val (count, ns, lastNonConnectedEvent) = chatModel.getConnectedMemberNames(chatItem)
           val members = when {
             ns.size == 1 -> String.format(generalGetString(MR.strings.rcv_group_event_1_member_connected), ns[0])
             ns.size == 2 -> String.format(generalGetString(MR.strings.rcv_group_event_2_members_connected), ns[0], ns[1])
@@ -342,6 +342,8 @@ fun ChatItemView(
           }
           return if (count <= 1) {
             null
+          } else if (lastNonConnectedEvent != null) {
+            lastNonConnectedEvent + " " + generalGetString(MR.strings.rcv_group_and_other_events).format(count - ns.size)
           } else if (ns.isEmpty()) {
             generalGetString(MR.strings.rcv_group_events_count).format(count)
           } else if (count > ns.size) {

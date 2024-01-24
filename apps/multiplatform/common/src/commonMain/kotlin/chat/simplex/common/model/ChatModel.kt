@@ -494,10 +494,11 @@ object ChatModel {
   }
 
   // this function analyses "connected" events and assumes that each member will be there only once
-  fun getConnectedMemberNames(cItem: ChatItem): Pair<Int, List<String>> {
+  fun getConnectedMemberNames(cItem: ChatItem): Triple<Int, List<String>, String?> {
     var count = 0
     val ns = mutableListOf<String>()
     var idx = getChatItemIndexOrNull(cItem)
+    var lastNonConnectedEvent: String? = null
     if (cItem.mergeCategory != null && idx != null) {
       val reversedChatItems = chatItems.asReversed()
       while (idx < reversedChatItems.size) {
@@ -506,12 +507,14 @@ object ChatModel {
         val m = ci.memberConnected
         if (m != null) {
           ns.add(m.displayName)
+        } else if (count == 0) {
+          lastNonConnectedEvent = if (ci.memberDisplayName != null) ci.memberDisplayName + " " + ci.text else ci.text
         }
         count++
         idx++
       }
     }
-    return count to ns
+    return Triple(count, ns, lastNonConnectedEvent)
   }
 
   // returns the index of the passed item and the next item (it has smaller index)
