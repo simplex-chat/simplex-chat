@@ -68,12 +68,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
         .onEach { Log.d(TAG, "TODOCHAT: chatId: activeChatId ${activeChat.value?.id} == new chatId $it ${activeChat.value?.id == it} ") }
-        .filter { it != null && activeChat.value?.id != it }
+        .filterNotNull()
         .collect { chatId ->
-          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-          // Also for situation when chatId changes after clicking in notification, etc
-          activeChat.value = chatModel.getChat(chatId!!)
-          Log.d(TAG, "TODOCHAT: chatId: activeChatId became ${activeChat.value?.id}")
+          if (activeChat.value?.id != chatId) {
+            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+            // Also for situation when chatId changes after clicking in notification, etc
+            activeChat.value = chatModel.getChat(chatId)
+            Log.d(TAG, "TODOCHAT: chatId: activeChatId became ${activeChat.value?.id}")
+          }
           markUnreadChatAsRead(activeChat, chatModel)
         }
     }
