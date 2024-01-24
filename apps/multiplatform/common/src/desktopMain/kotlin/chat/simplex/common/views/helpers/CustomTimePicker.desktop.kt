@@ -41,7 +41,7 @@ actual fun CustomTimePicker(
     if (res.none { it.first == selection.value }) {
       // Doesn't fit into min..max, put it equal to the closest value
       selection.value = selection.value.coerceIn(res.first().first, res.last().first)
-      selection.value = res.last { it.first <= selection.value }.first
+      //selection.value = res.last { it.first <= selection.value }.first
     }
     res
   }
@@ -54,7 +54,7 @@ actual fun CustomTimePicker(
   }
 
   Row(
-    Modifier.padding(DEFAULT_PADDING),
+    Modifier.padding(bottom = DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceEvenly
   ) {
@@ -71,7 +71,10 @@ actual fun CustomTimePicker(
       unit,
       textColor = MaterialTheme.colors.onBackground,
       enabled = remember { mutableStateOf(true) },
-      onSelected = { unit.value = it }
+      onSelected = {
+        selection.value = selection.value / unit.value.toSeconds * it.toSeconds
+        unit.value = it
+      }
     )
   }
 }

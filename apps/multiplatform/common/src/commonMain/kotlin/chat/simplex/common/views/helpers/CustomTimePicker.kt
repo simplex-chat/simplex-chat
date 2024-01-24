@@ -1,22 +1,15 @@
 package chat.simplex.common.views.helpers
 
-import androidx.compose.foundation.clickable
+import SectionItemView
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import dev.icerock.moko.resources.compose.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.model.CustomTimeUnit
 import chat.simplex.common.model.timeText
 import chat.simplex.res.MR
-import com.sd.lib.compose.wheel_picker.*
 
 @Composable
 expect fun CustomTimePicker(
@@ -53,8 +46,7 @@ data class TimeUnitLimits(
   }
 }
 
-@Composable
-fun CustomTimePickerDialog(
+fun showCustomTimePickerDialog(
   selection: MutableState<Int>,
   timeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
   title: String,
@@ -62,53 +54,26 @@ fun CustomTimePickerDialog(
   confirmButtonAction: (Int) -> Unit,
   cancel: () -> Unit
 ) {
-  DefaultDialog(onDismissRequest = cancel) {
-    Surface(
-      shape = RoundedCornerShape(corner = CornerSize(25.dp)),
-      contentColor = LocalContentColor.current
-    ) {
-      Box(
-        contentAlignment = Alignment.Center
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = title,
+    onDismissRequest = cancel
+  ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      CustomTimePicker(
+        selection,
+        timeUnitsLimits
+      )
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        confirmButtonAction(selection.value)
+      }
       ) {
-        Column(
-          modifier = Modifier.padding(DEFAULT_PADDING),
-          verticalArrangement = Arrangement.spacedBy(6.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Text(" ") // centers title
-            Text(
-              title,
-              fontSize = 16.sp,
-              color = MaterialTheme.colors.secondary
-            )
-            Icon(
-              painterResource(MR.images.ic_close),
-              generalGetString(MR.strings.icon_descr_close_button),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier
-                .size(25.dp)
-                .clickable { cancel() }
-            )
-          }
-
-          CustomTimePicker(
-            selection,
-            timeUnitsLimits
-          )
-
-          TextButton(onClick = { confirmButtonAction(selection.value) }) {
-            Text(
-              confirmButtonText,
-              fontSize = 18.sp,
-              color = MaterialTheme.colors.primary
-            )
-          }
-        }
+        Text(
+          confirmButtonText,
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.primary
+        )
       }
     }
   }
@@ -132,7 +97,6 @@ fun DropdownCustomTimePickerSettingRow(
 
   val dropdownSelection: MutableState<DropdownSelection> = remember { mutableStateOf(DropdownSelection.DropdownValue(selection.value)) }
   val values: MutableState<List<DropdownSelection>> = remember { mutableStateOf(getValues(selection.value)) }
-  val showCustomTimePicker = remember { mutableStateOf(false) }
 
   fun updateValue(selectedValue: Int?) {
     values.value = getValues(selectedValue)
@@ -159,28 +123,22 @@ fun DropdownCustomTimePickerSettingRow(
     onSelected = { sel: DropdownSelection ->
       when (sel) {
         is DropdownSelection.DropdownValue -> updateValue(sel.value)
-        DropdownSelection.Custom -> showCustomTimePicker.value = true
+        DropdownSelection.Custom -> {
+          val selectedCustomTime = mutableStateOf(selection.value ?: 86400)
+          showCustomTimePickerDialog(
+            selectedCustomTime,
+            timeUnitsLimits = customPickerTimeUnitsLimits,
+            title = customPickerTitle,
+            confirmButtonText = customPickerConfirmButtonText,
+            confirmButtonAction = ::updateValue,
+            cancel = {
+              dropdownSelection.value = DropdownSelection.DropdownValue(selection.value)
+            }
+          )
+        }
       }
     }
   )
-
-  if (showCustomTimePicker.value) {
-    val selectedCustomTime = remember { mutableStateOf(selection.value ?: 86400) }
-    CustomTimePickerDialog(
-      selectedCustomTime,
-      timeUnitsLimits = customPickerTimeUnitsLimits,
-      title = customPickerTitle,
-      confirmButtonText = customPickerConfirmButtonText,
-      confirmButtonAction = { time ->
-        updateValue(time)
-        showCustomTimePicker.value = false
-      },
-      cancel = {
-        dropdownSelection.value = DropdownSelection.DropdownValue(selection.value)
-        showCustomTimePicker.value = false
-      }
-    )
-  }
 }
 
 private sealed class DropdownSelection {
