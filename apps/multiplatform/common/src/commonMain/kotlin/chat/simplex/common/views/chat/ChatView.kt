@@ -647,7 +647,7 @@ fun ChatInfoToolbar(
     }
   }
 
-  if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
+  if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.mergedPreferences.calls.enabled.forUser) {
     if (activeCall == null) {
       barButtons.add {
         if (appPlatform.isAndroid) {
