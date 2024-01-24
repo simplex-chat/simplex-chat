@@ -1554,4 +1554,83 @@
     <string name="color_received_message">Alınmış mesaj</string>
     <string name="rcv_group_event_member_created_contact">doğrudan bağlandı</string>
     <string name="blocked_item_description">engellendi</string>
+    <string name="v5_5_private_notes">Gizli notlar</string>
+    <string name="v5_5_message_delivery_descr">Azaltılmış pil kullanımı ile birlikte.</string>
+    <string name="v5_5_message_delivery">İyileştirilmiş mesaj iletimi</string>
+    <string name="v5_5_new_interface_languages">Macarca ve Türkçe arayüz</string>
+    <string name="remote_host_error_timeout">Telefona bağlanırken zaman aşımına uğranıldı <b>%s</b></string>
+    <string name="remote_host_error_disconnected">Telefon <b>%s</b> bağlantısı kesildi</string>
+    <string name="remote_ctrl_error_disconnected">Masaüstünün bağlantısı kesilmiş</string>
+    <string name="blocked_by_admin_item_description">yönetici tarafından engellendi</string>
+    <string name="blocked_by_admin_items_description">%d mesaj yönetici tarafından engellendi</string>
+    <string name="clear_note_folder_question">Gizli notlar temizlensin mi?</string>
+    <string name="clear_note_folder_warning">Tüm mesajlar silinecektir - bu geri alınamaz!</string>
+    <string name="developer_options_section">Geliştirici seçenekleri</string>
+    <string name="show_internal_errors">Dahili hataları göster</string>
+    <string name="show_slow_api_calls">Yavaş API aramalarını göster</string>
+    <string name="rcv_group_event_member_blocked">engellendi %s</string>
+    <string name="rcv_group_event_member_unblocked">engeli kaldırıldı %s</string>
+    <string name="group_member_status_unknown_short">bilinmeyen</string>
+    <string name="group_member_status_unknown">bilinmeyen durum</string>
+    <string name="snd_group_event_member_blocked">engelledin %s</string>
+    <string name="snd_group_event_member_unblocked">engeli kaldırdın %s</string>
+    <string name="past_member_vName">Geçmiş üye %1$s</string>
+    <string name="member_blocked_by_admin">Yönetici tarafından engellendi</string>
+    <string name="block_for_all">Herkes için engelle</string>
+    <string name="info_row_created_at">Şurada oluşturuldu</string>
+    <string name="share_text_created_at">Şurada oluşturuldu: %s</string>
+    <string name="error_blocking_member_for_all">Üye herkes için engellenirken hata oluştu</string>
+    <string name="unblock_for_all">Herkes için engelini kaldır</string>
+    <string name="saved_message_title">Kaydedilmiş mesaj</string>
+    <string name="remote_host_was_disconnected_title">Bağlantı durduruldu</string>
+    <string name="remote_host_error_bad_state">Telefona bağlantı <b>%s</b> kötü durumda</string>
+    <string name="remote_host_disconnected_from">Telefon bağlantısı <b>%s</b> şu nedenle kesildi: %s</string>
+    <string name="remote_ctrl_disconnected_with_reason">Nedeniyle birlikte bağlantı kesildi: %s</string>
+    <string name="v5_5_private_notes_descr">Şifrelenmiş dosyalar ve medya ile birlikte.</string>
+    <string name="v5_5_join_group_conversation">Grup sohbetlerine katıl</string>
+    <string name="v5_5_simpler_connect_ui">Bağlanmak için bağlantıyı yapıştır!</string>
+    <string name="remote_ctrl_error_timeout">Masaüstüne bağlanırken zaman aşımına ulaşıldı</string>
+    <string name="v5_5_join_group_conversation_descr">Yakın tarih ve geliştirilmiş dizin botu.</string>
+    <string name="v5_5_simpler_connect_ui_descr">Arama çubuğu davet bağlantılarını kabul eder.</string>
+    <string name="member_info_member_blocked">engellendi</string>
+    <string name="block_for_all_question">Üye herkes için engellensin mi?</string>
+    <string name="unblock_for_all_question">Üyenin engeli herkes için kaldırılsın mı?</string>
+    <string name="remote_host_error_bad_version">Mobil <b>%s</b> desteklenmeyen bir sürüme sahip. Lütfen her iki cihazda da aynı sürümü kullandığınızdan emin olun</string>
+    <string name="remote_host_error_busy">Telefon <b>%s</b> meşgul</string>
+    <string name="remote_host_error_inactive">Telefon <b>%s</b> aktif değil</string>
+    <string name="remote_host_error_missing">Telefon <b>%s</b> kayıp</string>
+    <string name="remote_ctrl_error_inactive">Masaüstü aktif değil</string>
+    <string name="remote_ctrl_error_bad_state">Masaüstüne bağlantı kötü durumda</string>
+    <string name="remote_ctrl_error_busy">Masaüstü meşgul</string>
+    <string name="remote_ctrl_error_bad_version">Masaüstü desteklenmeyen bir sürüme sahiptir. Lütfen her iki cihazda da aynı sürümü kullandığınızdan emin olun</string>
+    <string name="agent_critical_error_title">Kritik hata</string>
+    <string name="remote_ctrl_error_bad_invitation">Masaüstünün yanlış davetiye kodu var</string>
+    <string name="agent_internal_error_title">Dahili hata</string>
+    <string name="agent_internal_error_desc">Lütfen geliştiricilere bildir:
+\n
+\n%s</string>
+    <string name="agent_critical_error_desc">Lütfen geliştiricilere bildir:
+\n
+\n%s
+\n
+\nUygulamayı yeniden başlatmak önerilir.</string>
+    <string name="restart_chat_button">Sohbeti yeniden başlat</string>
+    <string name="failed_to_create_user_invalid_desc">Bu görünen ad geçersiz.
+\nLütfen başka bir ad seç.</string>
+    <string name="failed_to_create_user_invalid_title">Geçersiz görünen ad!</string>
+    <string name="remote_ctrl_was_disconnected_title">Bağlantı durduruldu</string>
+    <string name="possible_deadlock_title">Kördüğüm</string>
+    <string name="possible_deadlock_desc">Kodun yürütülmesi çok uzun zaman alıyor: %1$d saniye. Muhtemelen uygulama dondu: %2$s</string>
+    <string name="possible_slow_function_desc">İşlevin yürütülmesi çok uzun zaman alıyor: %1$d saniye: %2$s</string>
+    <string name="possible_slow_function_title">Yavaş fonksiyon</string>
+    <string name="profile_update_event_contact_name_changed">kişi %1$s olarak değişti %2$s</string>
+    <string name="profile_update_event_updated_profile">güncellenmiş profil</string>
+    <string name="profile_update_event_member_name_changed">üye %1$s olarak değişti %2$s</string>
+    <string name="profile_update_event_set_new_address">yeni kişi adresi ayarla</string>
+    <string name="profile_update_event_set_new_picture">yeni profil fotoğrafı ayarla</string>
+    <string name="profile_update_event_removed_address">kişi adresi silindi</string>
+    <string name="profile_update_event_removed_picture">profil fotoğrafı silindi</string>
+    <string name="error_creating_message">Mesaj oluşturulurken hata</string>
+    <string name="error_deleting_note_folder">Gizli notlar silinirken hata</string>
+    <string name="note_folder_local_display_name">Gizli notlar</string>
 </resources>
