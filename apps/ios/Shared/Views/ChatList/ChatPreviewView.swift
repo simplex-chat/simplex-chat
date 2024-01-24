@@ -34,7 +34,7 @@ struct ChatPreviewView: View {
                 HStack(alignment: .top) {
                     chatPreviewTitle()
                     Spacer()
-                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.updatedAt))
+                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.chatTs))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
