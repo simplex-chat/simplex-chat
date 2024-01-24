@@ -3612,18 +3612,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           where
             processErr cryptoErr = do
               let e@(mde, n) = agentMsgDecryptError cryptoErr
-              ci_ <- withStore' $ \db ->
-                getDirectChatItemsLast db user contactId 1 ""
-                  >>= mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
-                    . (mdeUpdatedCI e <=< headMaybe)
+              ci_ <- withStore $ \db ->
+                getDirectChatItemLast db user contactId
+                  >>= liftIO
+                    . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
+                    . mdeUpdatedCI e
               case ci_ of
                 Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
                 _ -> do
                   toView $ CRContactRatchetSync user ct (RatchetSyncProgress rss cStats)
                   createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
-            headMaybe = \case
-              x : _ -> Just x
-              _ -> Nothing
             ratchetSyncEventItem ct' = do
               toView $ CRContactRatchetSync user ct' (RatchetSyncProgress rss cStats)
               createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCERatchetSync rss) Nothing

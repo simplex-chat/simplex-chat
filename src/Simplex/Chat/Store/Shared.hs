@@ -97,6 +97,7 @@ data StoreError
   | SEChatItemNotFoundByText {text :: Text}
   | SEChatItemSharedMsgIdNotFound {sharedMsgId :: SharedMsgId}
   | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
+  | SEChatItemNotFoundByContactId {contactId :: ContactId}
   | SEChatItemNotFoundByGroupId {groupId :: GroupId}
   | SEProfileNotFound {profileId :: Int64}
   | SEDuplicateGroupLink {groupInfo :: GroupInfo}
