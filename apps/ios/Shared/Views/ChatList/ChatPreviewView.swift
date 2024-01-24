@@ -175,7 +175,8 @@ struct ChatPreviewView: View {
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
         return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false)
 
-        // TODO refactor with markedDeletedText in MarkedDeletedItemView
+        // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
+        // can be refactored into a single function if functions calling these are changed to return same type
         func markedDeletedText() -> String {
             switch cItem.meta.itemDeleted {
             case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
