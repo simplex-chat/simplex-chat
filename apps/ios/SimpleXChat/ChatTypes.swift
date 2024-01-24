@@ -1367,6 +1367,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var chatTs: Date {
+        switch self {
+        case let .direct(contact): return contact.chatTs ?? contact.updatedAt
+        case let .group(groupInfo): return groupInfo.chatTs ?? groupInfo.updatedAt
+        case let .local(noteFolder): return noteFolder.chatTs
+        case let .contactRequest(contactRequest): return contactRequest.updatedAt
+        case let .contactConnection(contactConnection): return contactConnection.updatedAt
+        case .invalidJSON: return .now
+        }
+    }
+
     public struct SampleData {
         public var direct: ChatInfo
         public var group: ChatInfo
@@ -1425,6 +1436,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var mergedPreferences: ContactUserPreferences
     var createdAt: Date
     var updatedAt: Date
+    var chatTs: Date?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
 
@@ -1744,6 +1756,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
+    var chatTs: Date?
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
@@ -2049,6 +2062,7 @@ public struct NoteFolder: Identifiable, Decodable, NamedChat {
     public var unread: Bool
     var createdAt: Date
     public var updatedAt: Date
+    var chatTs: Date
 
     public var id: ChatId { get { "*\(noteFolderId)" } }
     public var apiId: Int64 { get { noteFolderId } }
@@ -2070,7 +2084,8 @@ public struct NoteFolder: Identifiable, Decodable, NamedChat {
         favorite: false,
         unread: false,
         createdAt: .now,
-        updatedAt: .now
+        updatedAt: .now,
+        chatTs: .now
     )
 }
 

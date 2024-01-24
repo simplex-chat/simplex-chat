@@ -286,7 +286,7 @@ fun ChatPreviewView(
     Box(
       contentAlignment = Alignment.TopEnd
     ) {
-      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
+      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
       Text(
         ts,
         color = MaterialTheme.colors.secondary,
