@@ -195,13 +195,11 @@ fun SendMsgView(
             DefaultDropdownMenu(showDropdown) {
               menuItems.forEach { composable -> composable() }
             }
-            if (showCustomDisappearingMessageDialog.value) {
-              CustomDisappearingMessageDialog(
-                sendMessage = sendMessage,
-                setShowDialog = { showCustomDisappearingMessageDialog.value = it },
-                customDisappearingMessageTimePref = customDisappearingMessageTimePref
-              )
-            }
+            CustomDisappearingMessageDialog(
+              showCustomDisappearingMessageDialog,
+              sendMessage = sendMessage,
+              customDisappearingMessageTimePref = customDisappearingMessageTimePref
+            )
           } else {
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
           }
@@ -219,14 +217,10 @@ expect fun VoiceButtonWithoutPermissionByPlatform()
 
 @Composable
 private fun CustomDisappearingMessageDialog(
+  showMenu: MutableState<Boolean>,
   sendMessage: (Int?) -> Unit,
-  setShowDialog: (Boolean) -> Unit,
   customDisappearingMessageTimePref: SharedPreference<Int>?
 ) {
-  val showMenu = rememberSaveable { mutableStateOf(true) }
-  LaunchedEffect(showMenu.value) {
-    setShowDialog(showMenu.value)
-  }
   DefaultDropdownMenu(showMenu) {
     Text(
       generalGetString(MR.strings.send_disappearing_message),
@@ -237,15 +231,15 @@ private fun CustomDisappearingMessageDialog(
 
     ItemAction(generalGetString(MR.strings.send_disappearing_message_30_seconds)) {
       sendMessage(30)
-      setShowDialog(false)
+      showMenu.value = false
     }
     ItemAction(generalGetString(MR.strings.send_disappearing_message_1_minute)) {
       sendMessage(60)
-      setShowDialog(false)
+      showMenu.value = false
     }
     ItemAction(generalGetString(MR.strings.send_disappearing_message_5_minutes)) {
       sendMessage(300)
-      setShowDialog(false)
+      showMenu.value = false
     }
     ItemAction(generalGetString(MR.strings.send_disappearing_message_custom_time)) {
       showMenu.value = false
@@ -257,9 +251,8 @@ private fun CustomDisappearingMessageDialog(
         confirmButtonAction = { ttl ->
           sendMessage(ttl)
           customDisappearingMessageTimePref?.set?.invoke(ttl)
-          setShowDialog(false)
         },
-        cancel = { setShowDialog(false) }
+        cancel = { showMenu.value = false }
       )
     }
   }
