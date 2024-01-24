@@ -262,7 +262,7 @@ class SimplexService: Service() {
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
     private const val WORK_NAME_ONCE = "ServiceStartWorkerOnce"
 
-    private var isServiceStarted = false
+    var isServiceStarted = false
     private var stopAfterStart = false
 
     fun scheduleStart(context: Context) {

@@ -969,6 +969,16 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo.chatSettings
       else -> null
     }
+
+  val chatTs: Instant
+    get() = when(this) {
+      is Direct -> contact.chatTs ?: contact.updatedAt
+      is Group -> groupInfo.chatTs ?: groupInfo.updatedAt
+      is Local -> noteFolder.chatTs
+      is ContactRequest -> contactRequest.updatedAt
+      is ContactConnection -> contactConnection.updatedAt
+      is InvalidJSON -> updatedAt
+    }
 }
 
 @Serializable
@@ -1009,6 +1019,7 @@ data class Contact(
   val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
   override val updatedAt: Instant,
+  val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean
 ): SomeChat, NamedChat {
@@ -1077,6 +1088,7 @@ data class Contact(
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
+      chatTs = Clock.System.now(),
       contactGrpInvSent = false
     )
   }
@@ -1204,7 +1216,8 @@ data class GroupInfo (
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
   override val createdAt: Instant,
-  override val updatedAt: Instant
+  override val updatedAt: Instant,
+  val chatTs: Instant?
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1245,7 +1258,8 @@ data class GroupInfo (
       hostConnCustomUserProfileId = null,
       chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
-      updatedAt = Clock.System.now()
+      updatedAt = Clock.System.now(),
+      chatTs = Clock.System.now()
     )
   }
 }
@@ -1507,7 +1521,8 @@ class NoteFolder(
   val favorite: Boolean,
   val unread: Boolean,
   override val createdAt: Instant,
-  override val updatedAt: Instant
+  override val updatedAt: Instant,
+  val chatTs: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Local
   override val id get() = "*$noteFolderId"
@@ -1530,7 +1545,8 @@ class NoteFolder(
       favorite = false,
       unread = false,
       createdAt = Clock.System.now(),
-      updatedAt = Clock.System.now()
+      updatedAt = Clock.System.now(),
+      chatTs = Clock.System.now()
     )
   }
 }
