@@ -125,6 +125,7 @@ import Data.List (sortBy)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
@@ -828,7 +829,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTLocal d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTLocal
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
-    badItem = Left $ SEBadChatItem itemId
+    badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTLocal d
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
@@ -958,6 +959,32 @@ getDirectChatItemsLast db User {userId} contactId count search = do
       |]
       (userId, contactId, search, count)
 
+getMaybeBadDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
+getMaybeBadDirectItem db user ct currentTs itemId = do
+  runExceptT (getDirectCIWithReactions db user ct itemId)
+    >>= pure <$> toMaybeBadDirectItem currentTs itemId
+
+toMaybeBadDirectItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTDirect) -> CChatItem 'CTDirect
+toMaybeBadDirectItem currentTs itemId = \case
+  Right ci -> ci
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badDirectItem itemTs e
+  Left e -> badDirectItem currentTs e
+  where
+    badDirectItem :: UTCTime -> StoreError -> CChatItem 'CTDirect
+    badDirectItem ts e =
+      let errorText = T.pack $ show e
+       in CChatItem
+            SMDSnd
+            ChatItem
+              { chatDir = CIDirectSnd,
+                meta = dummyMeta itemId ts errorText,
+                content = CIInvalidJSON errorText,
+                formattedText = Nothing,
+                quotedItem = Nothing,
+                reactions = [],
+                file = Nothing
+              }
+
 getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
@@ -1031,7 +1058,8 @@ getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (
 getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getGroupChatItemIdsLast_
-  chatItems <- rights <$> mapM (runExceptT . getGroupCIWithReactions db user g) chatItemIds
+  currentTs <- getCurrentTime
+  chatItems <- mapM (getMaybeBadGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
@@ -1047,6 +1075,32 @@ getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
             LIMIT ?
           |]
           (userId, groupId, search, count)
+
+getMaybeBadGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
+getMaybeBadGroupItem db user g currentTs itemId = do
+  runExceptT (getGroupCIWithReactions db user g itemId)
+    >>= pure <$> toMaybeBadGroupItem currentTs itemId
+
+toMaybeBadGroupItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
+toMaybeBadGroupItem currentTs itemId = \case
+  Right ci -> ci
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badGroupItem itemTs e
+  Left e -> badGroupItem currentTs e
+  where
+    badGroupItem :: UTCTime -> StoreError -> CChatItem 'CTGroup
+    badGroupItem ts e =
+      let errorText = T.pack $ show e
+       in CChatItem
+            SMDSnd
+            ChatItem
+              { chatDir = CIGroupSnd,
+                meta = dummyMeta itemId ts errorText,
+                content = CIInvalidJSON errorText,
+                formattedText = Nothing,
+                quotedItem = Nothing,
+                reactions = [],
+                file = Nothing
+              }
 
 getGroupMemberChatItemLast :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
@@ -1069,7 +1123,8 @@ getGroupChatAfter_ db user@User {userId} g@GroupInfo {groupId} afterChatItemId c
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
-  chatItems <- liftIO $ rights <$> mapM (runExceptT . getGroupCIWithReactions db user g) chatItemIds
+  currentTs <- liftIO getCurrentTime
+  chatItems <- liftIO $ mapM (getMaybeBadGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) chatItems stats
   where
     getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
@@ -1092,7 +1147,8 @@ getGroupChatBefore_ db user@User {userId} g@GroupInfo {groupId} beforeChatItemId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
-  chatItems <- liftIO $ rights <$> mapM (runExceptT . getGroupCIWithReactions db user g) chatItemIds
+  currentTs <- liftIO getCurrentTime
+  chatItems <- liftIO $ mapM (getMaybeBadGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
@@ -1123,7 +1179,8 @@ getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO 
 getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getLocalChatItemIdsLast_
-  chatItems <- rights <$> mapM (runExceptT . getLocalChatItem db user noteFolderId) chatItemIds
+  currentTs <- getCurrentTime
+  chatItems <- mapM (getMaybeBadLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsLast_ :: IO [ChatItemId]
@@ -1140,11 +1197,38 @@ getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count searc
           |]
           (userId, noteFolderId, search, count)
 
+getMaybeBadLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
+getMaybeBadLocalItem db user NoteFolder {noteFolderId} currentTs itemId = do
+  runExceptT (getLocalChatItem db user noteFolderId itemId)
+    >>= pure <$> toMaybeBadLocalItem currentTs itemId
+
+toMaybeBadLocalItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTLocal) -> CChatItem 'CTLocal
+toMaybeBadLocalItem currentTs itemId = \case
+  Right ci -> ci
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badLocalItem itemTs e
+  Left e -> badLocalItem currentTs e
+  where
+    badLocalItem :: UTCTime -> StoreError -> CChatItem 'CTLocal
+    badLocalItem ts e =
+      let errorText = T.pack $ show e
+       in CChatItem
+            SMDSnd
+            ChatItem
+              { chatDir = CILocalSnd,
+                meta = dummyMeta itemId ts errorText,
+                content = CIInvalidJSON errorText,
+                formattedText = Nothing,
+                quotedItem = Nothing,
+                reactions = [],
+                file = Nothing
+              }
+
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getLocalChatItemIdsAfter_
-  chatItems <- rights <$> mapM (runExceptT . getLocalChatItem db user noteFolderId) chatItemIds
+  currentTs <- getCurrentTime
+  chatItems <- mapM (getMaybeBadLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) chatItems stats
   where
     getLocalChatItemIdsAfter_ :: IO [ChatItemId]
@@ -1166,7 +1250,8 @@ getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int 
 getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getLocalChatItemIdsBefore_
-  chatItems <- rights <$> mapM (runExceptT . getLocalChatItem db user noteFolderId) chatItemIds
+  currentTs <- getCurrentTime
+  chatItems <- mapM (getMaybeBadLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsBefore_ :: IO [ChatItemId]
@@ -1189,7 +1274,7 @@ toChatItemRef = \case
   (itemId, Just contactId, Nothing, Nothing) -> Right (ChatRef CTDirect contactId, itemId)
   (itemId, Nothing, Just groupId, Nothing) -> Right (ChatRef CTGroup groupId, itemId)
   (itemId, Nothing, Nothing, Just folderId) -> Right (ChatRef CTLocal folderId, itemId)
-  (itemId, _, _, _) -> Left $ SEBadChatItem itemId
+  (itemId, _, _, _) -> Left $ SEBadChatItem itemId Nothing
 
 updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO ()
 updateDirectChatItemsRead db User {userId} contactId itemsRange_ = do
@@ -1362,7 +1447,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
-    badItem = Left $ SEBadChatItem itemId
+    badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
@@ -1413,7 +1498,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
-    badItem = Left $ SEBadChatItem itemId
+    badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
@@ -2110,7 +2195,7 @@ getChatRefViaItemId db User {userId} itemId = do
     toChatRef = \case
       (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId
       (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
-      (_, _) -> Left $ SEBadChatItem itemId
+      (_, _) -> Left $ SEBadChatItem itemId Nothing
 
 getAChatItem :: DB.Connection -> VersionRange -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
 getAChatItem db vr user chatRef itemId = case chatRef of
