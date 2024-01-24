@@ -4,7 +4,7 @@
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
     <link href="https://simplex.chat/feed.atom" rel="self"/>
     <link href="https://simplex.chat/"/>
-    <updated>2023-11-25T00:00:00Z</updated>
+    <updated>2024-01-24T00:00:00Z</updated>
     <id>https://simplex.chat/</id>
     <author>
         <name>SimpleX Chat</name>
@@ -1863,6 +1863,89 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;When you delete contacts, you can notify them - to let them know they can&#39;t message you.&lt;/p&gt;
 &lt;p&gt;When you try to connect to the same contact or join the same group, or connect via your own link, the app will recognize it and warn you, or simply open the correct conversation.&lt;/p&gt;
 &lt;p&gt;You can find the full list of fixed bugs and small improvements in the &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/tag/v5.4.0&quot;&gt;release notes&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-platform&quot; tabindex=&quot;-1&quot;&gt;SimpleX platform&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions&quot;&gt;How SimpleX is different from Session, Matrix, Signal, etc.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</content>
+            
+        </entry>
+        <entry>
+            <title>SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.</title>
+            <link href="https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html"/>
+            
+            <updated>24 Jan 2024</updated>
+            <id>https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html</id>
+            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-free-infrastructure-from-linode-v55-released-with-private-notes-group-history-and-a-simpler-ux-to-connect&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jan 24, 2024&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html#simplex-chat-infrastructure-on-linode&quot;&gt;SimpleX Chat infrastructure on Linode&lt;/a&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Free infrastructure.&lt;/li&gt;
+&lt;li&gt;SimpleX servers in Linode Marketplace.&lt;/li&gt;
+&lt;li&gt;High capacity messaging servers.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;What&#39;s new in v5.5:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html#private-notes&quot;&gt;private notes&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html#group-history&quot;&gt;group history&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html#simpler-ux-to-connect-to-other-users&quot;&gt;simpler UX to connect to other users&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html#message-delivery-stability-and-other-improvements&quot;&gt;message delivery stability and other improvements&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, we added Hungarian (only Android) and Turkish interface languages, thanks to &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat&quot;&gt;our users and Weblate&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;SimpleX Chat Android app is now available in 20 languages!&lt;/p&gt;
+&lt;h2 id=&quot;simplex-chat-infrastructure-on-linode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat infrastructure on Linode&lt;/h2&gt;
+&lt;p&gt;We chose Linode as our hosting provider as and they have been consistently reliable, cheaper than alternatives, with excellent support and great documentation.&lt;/p&gt;
+&lt;p&gt;When Linode was acquired by Akamai, we were a bit nervous about how it may affect service quality. So far it&#39;s been working out quite well.&lt;/p&gt;
+&lt;p&gt;As the usage of SimpleX network was growing, so did our hosting costs, and from being really small they started to become significant, particularly as we didn&#39;t yet manage to optimize the servers last year.&lt;/p&gt;
+&lt;p&gt;Linode helped - we&#39;re really excited to announce that Akamai decided to support SimpleX Chat growth by accepting it into their &lt;a href=&quot;https://www.linode.com/linode-for-startups/&quot;&gt;Linode Rise startup program&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Thanks to this program:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;we received free infrastructure for the first year up to $10,000 per month, no strings attached. It already saved us some money, and gave us enough time to optimize the servers - the latest version of the servers are much less costly to operate with the current traffic, and can support a much larger traffic within this limit. In the year 2 of the program we will receive 50% discount with unlimited traffic, and in year 3 - 25% discount.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Linode Marketplace now includes &lt;a href=&quot;https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/&quot;&gt;SimpleX Chat messages and file servers&lt;/a&gt; - you can get free $100 credits for the first 2 months and run your own servers in just a few clicks, and use them in SimpleX Chat apps. Anybody can submit their application to Linode marketplace, but dedicated support we have from Linode team via this program made it simpler.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Akamai solution engineers are helping us to design high capacity server solution, free of charge, so that a single host can provide horizontally scalable capacity for messaging, allowing for a much larger number of concurrent users on a single server address. Initially we considered using HAProxy, and the latest proof of concept uses OpenResty - a fork of Nginx with Lua script engine - to route requests from a single host to multiple SMP relays, reducing an overhead for the clients that would be configured with a smaller number of higher capacity servers. This project is still in progress, there will be more details as we roll it out.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;whats-new-in-v55&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v5.5&lt;/h2&gt;
+&lt;h3 id=&quot;private-notes&quot; tabindex=&quot;-1&quot;&gt;Private notes&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240124-notes1.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240124-notes2.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;&amp;quot;Where do I put notes for myself?&amp;quot;&lt;/em&gt; was a very common support question. There was a workaround - you could create an empty group, just with yourself, and use it to save notes, but it was not very convenient, and you could accidentally add members there.&lt;/p&gt;
+&lt;p&gt;This version has a more convenient and private alternative - the Private notes. It looks like an ordinary conversation where you can put text messages, links with previews, and any media and files, but they are not sent anywhere - they are stored locally, only on your device, with encrypted files.&lt;/p&gt;
+&lt;p&gt;You can access the Private notes created in mobile app from desktop app too, by linking a mobile and desktop apps - the feature &lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html&quot;&gt;added in the previous version&lt;/a&gt;. It allows to conveniently share files between the devices without sending them over the Internet.&lt;/p&gt;
+&lt;h3 id=&quot;group-history&quot; tabindex=&quot;-1&quot;&gt;Group history&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240124-history1.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240124-history2.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;In the previous version, when users joined groups, they only saw an empty conversation, and the notifications of being connected to other members. This version allows group admins sending recent group history to the new members - this option is enabled by default for new groups, and can be enabled for the existing groups in the preferences. So now new members can join the conversation as soon as they join.&lt;/p&gt;
+&lt;p&gt;This does not mean that these messages are stored on any servers - the admin member that adds a new member to the group sends these messages directly when a new member joins. Groups are still fully decentralized, do not have any identity on the network, and fully private - only their members know they exist.&lt;/p&gt;
+&lt;p&gt;That is, unless a group owner decides to make it public. Groups can be registered in &lt;a href=&quot;https://simplex.chat/contact#/?v=1-4&amp;amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&quot;&gt;SimpleX groups directory&lt;/a&gt; to be discovered by the new members - group directory is also improved.&lt;/p&gt;
+&lt;h3 id=&quot;simpler-ux-to-connect-to-other-users&quot; tabindex=&quot;-1&quot;&gt;Simpler UX to connect to other users&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240124-connect1.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240124-connect2.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;SimpleX platform has no user accounts or identities, and while it improves metadata privacy, it also makes it harder to understand how to connect to other people, particularly for the new users who are not invited by the existing users.&lt;/p&gt;
+&lt;p&gt;This version simplifies this interface by allowing to connect via the received link just by pasting the address into the search bar, as is common in many wallet apps and some other decentralized messengers. We also improved the interface of creating invitation links.&lt;/p&gt;
+&lt;p&gt;We will continue working on improving and simplifying user interface throughout the year. Please send us any feedback and suggestions to the team&#39;s address available in the app.&lt;/p&gt;
+&lt;h3 id=&quot;message-delivery-stability-and-other-improvements&quot; tabindex=&quot;-1&quot;&gt;Message delivery stability and other improvements&lt;/h3&gt;
+&lt;p&gt;One of the long standing issues was that message reception could get stuck in some rare occasions, and only get resumed once the app is fully restarted. As Android app includes an always-on notification service that runs in background, full restart should be done via the app settings.&lt;/p&gt;
+&lt;p&gt;This version fixed many issues with message delivery stability and also added some diagnostics to identify any other cases when message delivery may stop. These fixes should also reduce battery usage, particularly on slow internet connections.&lt;/p&gt;
+&lt;p&gt;Other improvements in this version:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;you can now reveal secret messages by tapping. To send a secret message wrap in &amp;quot;#&amp;quot; characters, e.g. &amp;quot;#password#&amp;quot;.&lt;/li&gt;
+&lt;li&gt;you can delete the last user profile, simplifying account deletion. If you have &lt;a href=&quot;https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html&quot;&gt;hidden user profiles&lt;/a&gt;, they won&#39;t be deleted in this case, and will be accessible again once you create a new profile.&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h2 id=&quot;simplex-platform&quot; tabindex=&quot;-1&quot;&gt;SimpleX platform&lt;/h2&gt;
 &lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
