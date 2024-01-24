@@ -103,7 +103,7 @@ fun ChatItemView(
               setReaction(cInfo, cItem, !r.userReacted, r.reaction)
             }
           }
-          Row(modifier.padding(2.dp)) {
+          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
@@ -112,7 +112,6 @@ fun ChatItemView(
                 fontSize = 11.5.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-                modifier = if (appPlatform.isAndroid) Modifier else Modifier.padding(top = 4.dp)
               )
             }
           }
