@@ -651,6 +651,23 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
   }
 }
 
+@Composable
+fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Unit) {
+  val finalColor = if (color == Color.Unspecified) {
+    MenuTextColor
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Text(
+      text,
+      modifier = Modifier
+        .fillMaxWidth()
+        .weight(1F)
+        .padding(end = 15.dp),
+      color = finalColor
+    )
+  }
+}
+
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(cancelAction.alert.titleId),
