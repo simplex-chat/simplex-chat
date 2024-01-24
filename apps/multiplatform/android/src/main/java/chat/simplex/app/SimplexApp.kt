@@ -197,10 +197,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
         CoroutineScope(Dispatchers.Default).launch {
-          if (mode == NotificationsMode.SERVICE)
+          if (mode == NotificationsMode.SERVICE) {
             SimplexService.start()
-          else
+            // Sometimes, when we change modes fast from one to another, system destroys the service after start.
+            // We can wait a little and restart the service, and it will work in 100% of cases
+            delay(2000)
+            if (!SimplexService.isServiceStarted && appPrefs.notificationsMode.get() == NotificationsMode.SERVICE) {
+              Log.i(TAG, "Service tried to start but destroyed by system, repeating once more")
+              SimplexService.start()
+            }
+          } else {
             SimplexService.safeStopService()
+          }
         }
 
         if (mode != NotificationsMode.PERIODIC) {
