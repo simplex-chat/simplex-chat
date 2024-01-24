@@ -149,7 +149,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private var mergedGroupEventText: Text? {
-        let (count, ns) = chatModel.getConnectedMemberNames(chatItem)
+        let (count, ns, lastNonConnectedEvent) = chatModel.getConnectedMemberNames(chatItem)
         let members: LocalizedStringKey =
             switch ns.count {
             case 1: "\(ns[0]) connected"
@@ -162,6 +162,8 @@ struct ChatItemContentView<Content: View>: View {
             }
         return if count <= 1 {
             nil
+        } else if let last = lastNonConnectedEvent {
+            Text(last) + Text(" ") + Text("and \(count - ns.count) other events")
         } else if ns.count == 0 {
             Text("\(count) group events")
         } else if count > ns.count {

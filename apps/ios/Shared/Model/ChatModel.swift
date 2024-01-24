@@ -556,9 +556,10 @@ final class ChatModel: ObservableObject {
     }
 
     // this function analyses "connected" events and assumes that each member will be there only once
-    func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
+    func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String], String?) {
         var count = 0
         var ns: [String] = []
+        var lastNonConnectedEvent: String? = nil
         if let ciCategory = chatItem.mergeCategory,
            var i = getChatItemIndex(chatItem) {
             while i < reversedChatItems.count {
@@ -566,12 +567,14 @@ final class ChatModel: ObservableObject {
                 if ci.mergeCategory != ciCategory { break }
                 if let m = ci.memberConnected {
                     ns.append(m.displayName)
+                } else if count == 0 {
+                    lastNonConnectedEvent = if let name = ci.memberDisplayName { name + " " + ci.text } else { ci.text }
                 }
                 count += 1
                 i += 1
             }
         }
-        return (count, ns)
+        return (count, ns, lastNonConnectedEvent)
     }
 
     // returns the index of the passed item and the next item (it has smaller index)
