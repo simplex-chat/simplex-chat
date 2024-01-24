@@ -49,31 +49,37 @@ Thanks to this programme, we received:
 
 ### Private notes
 
-*"Where do I put notes for myself?"* was a very common support question. There was a workaround - you could create an empty group, just with yourself, and use it as a notepad, but it was not very convenient.
+*"Where do I put notes for myself?"* was a very common support question. There was a workaround - you could create an empty group, just with yourself, and use it as a notepad, but it was not very convenient, and you could accidentally add members there.
 
-This version has a more convenient and private alternative - the Private notes. It looks like an ordinary conversation where you can put text messages, links with previews, and any media and files, but they are not sent anywhere and simply stored only on your device, with locally encrypted files.
+This version has a more convenient and private alternative - the Private notes. It looks like an ordinary conversation where you can put text messages, links with previews, and any media and files, but they are not sent anywhere - they are stored locally, only on your device, with encrypted files.
 
-You can access the Private notes on mobile from desktop app by linking a mobile and desktop apps - the feature added in the previous version. It allows you conveniently share files between the devices without sending the over the network.
+You can access the Private notes created in mobile app from desktop app too, by linking a mobile and desktop apps - the feature [added in the previous version](./20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md). It allows to conveniently share files between the devices without sending them over the network.
 
 ### Group history
 
-In the previous version when users joined groups they only saw an empty conversation, and the notifications of being connected to other members. This version allows group admins sending recent group history to the new members - this option can be enabled in group preferences (it will be enabled by default in the next version).
+In the previous version, when users joined groups, they only saw an empty conversation, and the notifications of being connected to other members. This version allows group admins sending recent group history to the new members - this option is enabled by default for new groups, and can be enabled for the existing groups in the preferences. So now new members can join the conversation as soon as they join.
 
-This does not mean that these messages are stored on any servers - the admin member that adds you to the group sends these messages directly to you when you join. Groups are still fully decentralised, do not have any identity to the network, and fully private - they are know only to their members.
+This does not mean that these messages are stored on any servers - the admin member that adds a new member to the group sends these messages directly when a new member joins. Groups are still fully decentralised, do not have any identity on the network, and fully private - only their members know they exist.
 
-That is, unless a group owner decides to make it public. Groups can be registered in SimpleX groups directory to be discovered by the new version - it is also improved together with this release.
+That is, unless a group owner decides to make it public. Groups can be registered in SimpleX groups directory to be discovered by the new members - group directory is also improved.
 
 ### Simpler UX to connect to other users
 
-SimpleX platform has no user account or identities, and while it improves metadata privacy, it also makes it harder to understand how to connect to other users, particularly for the new users who are not invited by the existing users.
+SimpleX platform has no user accounts or identities, and while it improves metadata privacy, it also makes it harder to understand how to connect to other people, particularly for the new users who are not invited by the existing users.
 
-This version simplifies this interface by allowing to connect via the received link just by pasting the address into a search bar, as is customary in many wallet apps and decentralised messenger platforms, and also improves the interface of creating invitation links.
+This version simplifies this interface by allowing to connect via the received link just by pasting the address into the search bar, as is common in many wallet apps and some other decentralised messengers, and also improves the interface of creating invitation links.
 
-We will continue working on improving user interface throughout the year. Please send us any feedback and suggestions to the team's address available in the app.
+We will continue working on improving and simplifying user interface throughout the year. Please send us any feedback and suggestions to the team's address available in the app.
 
 ### Message delivery stability and other improvements
 
-TODO
+One of the long standing issues was that message reception could get stuck in some rare occasions, and only get resumed once the app is fully restarted. As Android app includes an always-on notification service that runs in background, full restart should be done via the app settings.
+
+This version fixed many issues with message delivery stability and also added some diagnostics to identify any other cases when message delivery may stop. These fixes should also reduce battery usage, particularly on slow internet connections.
+
+Other improvements in this version:
+- you can now reveal secret messages by tapping. To send a secret message wrap in in # characters, e.g. "\#password\#".
+- you can delete the last user profile, simplifying account deletion. If you have [hidden user profiles](./20230328-simplex-chat-v4-6-hidden-profiles.md), they won't be deleted in this case, and will be accessible again once you create a new profile.
 
 ## SimpleX platform
 
