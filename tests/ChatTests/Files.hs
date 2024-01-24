@@ -21,7 +21,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatFileTests :: SpecWith FilePath
 chatFileTests = do

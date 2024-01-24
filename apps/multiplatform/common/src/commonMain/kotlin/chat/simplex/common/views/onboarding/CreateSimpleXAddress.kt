@@ -43,7 +43,7 @@ fun CreateSimpleXAddress(m: ChatModel, rhId: Long?) {
       )
     },
     createAddress = {
-      withApi {
+      withBGApi {
         progressIndicator = true
         val connReqContact = m.controller.apiCreateUserAddress(rhId)
         if (connReqContact != null) {
@@ -84,7 +84,7 @@ private fun CreateSimpleXAddressLayout(
     Spacer(Modifier.weight(1f))
 
     if (userAddress != null) {
-      SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+      SimpleXLinkQRCode(userAddress.connReqContact)
       ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
       Spacer(Modifier.weight(1f))
       ShareViaEmailButton { sendEmail(userAddress) }
@@ -170,20 +170,9 @@ private fun ProgressIndicator() {
 
 private fun prepareChatBeforeAddressCreation(rhId: Long?) {
   if (chatModel.users.isNotEmpty()) return
-  withApi {
-    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withApi
+  withBGApi {
+    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withBGApi
     chatModel.currentUser.value = user
-    if (chatModel.users.isEmpty()) {
-      if (appPlatform.isDesktop) {
-        // Make possible to use chat after going to remote device linking and returning back to local profile creation
-        chatModel.chatRunning.value = false
-      }
-      chatModel.controller.startChat(user)
-    } else {
-      val users = chatModel.controller.listUsers(rhId)
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
-      chatModel.controller.getUserChatData(rhId)
-    }
+    chatModel.controller.startChat(user)
   }
 }

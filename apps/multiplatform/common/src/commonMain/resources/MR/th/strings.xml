@@ -112,8 +112,6 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาต่อข้อความได้</string>
     <string name="both_you_and_your_contacts_can_delete">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</string>
     <string name="use_camera_button">กล้อง</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> เพิ่มผู้ติดต่อใหม่ </b>: เพื่อสร้างรหัส QR แบบใช้ครั้งเดียวสําหรับผู้ติดต่อของคุณ]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>สแกนรหัส QR</b>: เพื่อเชื่อมต่อกับผู้ติดต่อที่แสดงรหัส QR ให้คุณ]]></string>
     <string name="learn_more_about_address">เกี่ยวกับที่อยู่ SimpleX</string>
     <string name="bold_text">ตัวหนา</string>
     <string name="callstatus_calling">กำลังโทร…</string>
@@ -144,7 +142,6 @@
     <string name="change_member_role_question">เปลี่ยนบทบาทกลุ่ม\?</string>
     <string name="icon_descr_cancel_live_message">ยกเลิกข้อความสด</string>
     <string name="feature_cancelled_item">ยกเลิกเรียบร้อยแล้ว %s</string>
-    <string name="cant_delete_user_profile">ไม่สามารถลบโปรไฟล์ผู้ใช้ได้!</string>
     <string name="alert_title_cant_invite_contacts">ไม่สามารถเชิญผู้ติดต่อได้!</string>
     <string name="change_verb">เปลี่ยน</string>
     <string name="change_database_passphrase_question">เปลี่ยนรหัสผ่านฐานข้อมูล\?</string>
@@ -205,7 +202,6 @@
     <string name="icon_descr_close_button">ปุ่มปิด</string>
     <string name="connect_button">เชื่อมต่อ</string>
     <string name="connect_via_link">เชื่อมต่อผ่านลิงก์</string>
-    <string name="create_one_time_link">สร้างลิงก์เชิญแบบใช้ครั้งเดียว</string>
     <string name="clear_verification">ล้างการยืนยัน</string>
     <string name="chat_console">คอนโซลแชท</string>
     <string name="smp_servers_check_address">ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง</string>
@@ -1216,8 +1212,6 @@
     <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง</string>
     <string name="user_unhide">ยกเลิกการซ่อน</string>
     <string name="user_unmute">เปิดเสียง</string>
-    <string name="should_be_at_least_one_profile">ควรมีโปรไฟล์ผู้ใช้อย่างน้อยหนึ่งโปรไฟล์</string>
-    <string name="should_be_at_least_one_visible_profile">ควรมีอย่างน้อยหนึ่งโปรไฟล์ผู้ใช้ที่มองเห็นได้</string>
     <string name="you_can_hide_or_mute_user_profile">คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - กดค้างไว้เพื่อที่จะแสดงเมนู</string>
     <string name="unhide_profile">เลิกซ่อนโปรไฟล์</string>
     <string name="chat_preferences_you_allow">คุณอนุญาต</string>

@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.res.MR
@@ -34,6 +35,8 @@ fun SearchTextField(
   alwaysVisible: Boolean,
   searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) },
   placeholder: String = stringResource(MR.strings.search_verb),
+  enabled: Boolean = true,
+  trailingContent: @Composable (() -> Unit)? = null,
   onValueChange: (String) -> Unit
 ) {
   val focusRequester = remember { FocusRequester() }
@@ -54,12 +57,12 @@ fun SearchTextField(
     }
   }
 
-  val enabled = true
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = Color.Unspecified,
     textColor = MaterialTheme.colors.onBackground,
     focusedIndicatorColor = Color.Unspecified,
     unfocusedIndicatorColor = Color.Unspecified,
+    disabledIndicatorColor = Color.Unspecified,
   )
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
@@ -77,6 +80,7 @@ fun SearchTextField(
       searchText.value = it
       onValueChange(it.text)
     },
+    enabled = rememberUpdatedState(enabled).value,
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = VisualTransformation.None,
     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -92,7 +96,7 @@ fun SearchTextField(
         value = searchText.value.text,
         innerTextField = innerTextField,
         placeholder = {
-          Text(placeholder)
+          Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis)
         },
         trailingIcon = if (searchText.value.text.isNotEmpty()) {{
           IconButton({
@@ -105,7 +109,7 @@ fun SearchTextField(
           }) {
             Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
           }
-        }} else null,
+        }} else trailingContent,
         singleLine = true,
         enabled = enabled,
         interactionSource = interactionSource,

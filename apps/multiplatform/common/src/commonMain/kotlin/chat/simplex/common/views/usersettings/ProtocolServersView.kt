@@ -23,12 +23,10 @@ import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.views.usersettings.ScanProtocolServer
 import chat.simplex.res.MR
-import kotlinx.coroutines.launch
 
 @Composable
-fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
+fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
   var presetServers by remember(rhId) { mutableStateOf(emptyList<String>()) }
   var servers by remember(rhId) {
     mutableStateOf(m.userSMPServersUnsaved.value ?: emptyList())
@@ -56,16 +54,18 @@ fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtoco
   }
 
   LaunchedEffect(rhId) {
-    val res = m.controller.getUserProtoServers(rhId, serverProtocol)
-    if (res != null) {
-      currServers.value = res.protoServers
-      presetServers = res.presetServers
-      if (servers.isEmpty()) {
-        servers = currServers.value
+    withApi {
+      val res = m.controller.getUserProtoServers(rhId, serverProtocol)
+      if (res != null) {
+        currServers.value = res.protoServers
+        presetServers = res.presetServers
+        if (servers.isEmpty()) {
+          servers = currServers.value
+        }
       }
     }
   }
-
+  val testServersJob = CancellableOnGoneJob()
   fun showServer(server: ServerCfg) {
     ModalManager.start.showModalCloseable(true) { close ->
       var old by remember { mutableStateOf(server) }
@@ -91,7 +91,6 @@ fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtoco
         })
     }
   }
-  val scope = rememberCoroutineScope()
   ModalView(
     close = {
       if (saveDisabled.value) close()
@@ -148,7 +147,7 @@ fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtoco
         )
       },
       testServers = {
-        scope.launch {
+        testServersJob.value = withLongRunningApi {
           testServers(testing, servers, m) {
             servers = it
             m.userSMPServersUnsaved.value = servers
@@ -338,6 +337,7 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   val updatedServers = ArrayList<ServerCfg>(servers)
   for ((index, server) in servers.withIndex()) {
     if (server.enabled) {
+      interruptIfCancelled()
       val (updatedServer, f) = testServerConnection(server, m)
       updatedServers.removeAt(index)
       updatedServers.add(index, updatedServer)
@@ -352,7 +352,7 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
 }
 
 private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
-  withApi {
+  withBGApi {
     if (m.controller.setUserProtoServers(rhId, protocol, servers)) {
       currServers.value = servers
       m.userSMPServersUnsaved.value = null

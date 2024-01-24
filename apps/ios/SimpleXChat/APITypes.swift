@@ -41,6 +41,7 @@ public enum ChatCommand {
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
     case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
+    case apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
@@ -54,6 +55,7 @@ public enum ChatCommand {
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
+    case apiBlockMemberForAll(groupId: Int64, memberId: Int64, blocked: Bool)
     case apiRemoveMember(groupId: Int64, memberId: Int64)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
@@ -178,6 +180,9 @@ public enum ChatCommand {
                 let msg = encodeJSON(ComposedMessage(fileSource: file, quotedItemId: quotedItemId, msgContent: mc))
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
+            case let .apiCreateChatItem(noteFolderId, file, mc):
+                let msg = encodeJSON(ComposedMessage(fileSource: file, msgContent: mc))
+                return "/_create *\(noteFolderId) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
@@ -191,6 +196,7 @@ public enum ChatCommand {
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiMemberRole(groupId, memberId, memberRole): return "/_member role #\(groupId) \(memberId) \(memberRole.rawValue)"
+            case let .apiBlockMemberForAll(groupId, memberId, blocked): return "/_block #\(groupId) \(memberId) blocked=\(onOff(blocked))"
             case let .apiRemoveMember(groupId, memberId): return "/_remove #\(groupId) \(memberId)"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
@@ -315,6 +321,7 @@ public enum ChatCommand {
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessage: return "apiSendMessage"
+            case .apiCreateChatItem: return "apiCreateChatItem"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
@@ -329,6 +336,7 @@ public enum ChatCommand {
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
             case .apiMemberRole: return "apiMemberRole"
+            case .apiBlockMemberForAll: return "apiBlockMemberForAll"
             case .apiRemoveMember: return "apiRemoveMember"
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
@@ -561,6 +569,8 @@ public enum ChatResponse: Decodable, Error {
     case joinedGroupMemberConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, member: GroupMember)
     case memberRole(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
     case memberRoleUser(user: UserRef, groupInfo: GroupInfo, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
+    case memberBlockedForAll(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, blocked: Bool)
+    case memberBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, member: GroupMember, blocked: Bool)
     case deletedMemberUser(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case deletedMember(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember)
     case leftMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
@@ -711,6 +721,8 @@ public enum ChatResponse: Decodable, Error {
             case .joinedGroupMemberConnecting: return "joinedGroupMemberConnecting"
             case .memberRole: return "memberRole"
             case .memberRoleUser: return "memberRoleUser"
+            case .memberBlockedForAll: return "memberBlockedForAll"
+            case .memberBlockedForAllUser: return "memberBlockedForAllUser"
             case .deletedMemberUser: return "deletedMemberUser"
             case .deletedMember: return "deletedMember"
             case .leftMember: return "leftMember"
@@ -859,6 +871,8 @@ public enum ChatResponse: Decodable, Error {
             case let .joinedGroupMemberConnecting(u, groupInfo, hostMember, member): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)")
             case let .memberRole(u, groupInfo, byMember, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
             case let .memberRoleUser(u, groupInfo, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
+            case let .memberBlockedForAll(u, groupInfo, byMember, member, blocked): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nblocked: \(blocked)")
+            case let .memberBlockedForAllUser(u, groupInfo, member, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nblocked: \(blocked)")
             case let .deletedMemberUser(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
             case let .deletedMember(u, groupInfo, byMember, deletedMember): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)")
             case let .leftMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
@@ -1610,6 +1624,7 @@ public enum ChatErrorType: Decodable {
     case userUnknown
     case activeUserExists
     case userExists
+    case invalidDisplayName
     case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
     case cantDeleteActiveUser(userId: Int64)
     case cantDeleteLastUser(userId: Int64)

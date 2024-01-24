@@ -24,8 +24,6 @@
     <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
     <string name="back">Voltar</string>
     <string name="choose_file">Arquivo</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.]]></string>
     <string name="accept_contact_button">Aceitar</string>
     <string name="clear_chat_question">Limpar chat\?</string>
     <string name="clear_verb">Limpar</string>
@@ -374,7 +372,6 @@
     <string name="auth_device_authentication_is_disabled_turning_off">A autenticação do dispositivo está desativada. Desativando o bloqueio SimpleX.</string>
     <string name="for_everybody">Para todos</string>
     <string name="notification_preview_mode_hidden">Oculto</string>
-    <string name="create_one_time_link">Gerar um link de convite de uso único.</string>
     <string name="how_to_use_your_servers">Como usar seus servidores</string>
     <string name="import_database_confirmation">Importar</string>
     <string name="import_database_question">Importar banco de dados de chat\?</string>
@@ -709,7 +706,6 @@
     <string name="no_contacts_to_add">Sem contatos para adicionar</string>
     <string name="member_role_will_be_changed_with_notification">A função será alterada para \"%s\". Todos no grupo serão notificados.</string>
     <string name="user_mute">Mutar</string>
-    <string name="should_be_at_least_one_visible_profile">Deve haver pelo menos um perfil de usuário visível.</string>
     <string name="only_you_can_send_voice">Somente você pode enviar mensagens de voz.</string>
     <string name="only_your_contact_can_send_voice">Somente seu contato pode enviar mensagens de voz.</string>
     <string name="prohibit_message_deletion">Proibir a exclusão irreversível de mensagens.</string>
@@ -742,9 +738,7 @@
     <string name="incompatible_database_version">Versão do banco de dados incompatível</string>
     <string name="button_remove_member">Remover membro</string>
     <string name="group_main_profile_sent">Seu perfil de chat será enviado aos membros do grupo</string>
-    <string name="cant_delete_user_profile">Não é possível excluir o perfil do usuário!</string>
     <string name="make_profile_private">Torne o perfil privado!</string>
-    <string name="should_be_at_least_one_profile">Deve haver pelo menos um perfil de usuário.</string>
     <string name="v4_2_security_assessment">Avaliação de segurança</string>
     <string name="v4_5_multiple_chat_profiles_descr">Nomes diferentes, avatares e isolamento de transporte.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Com mensagem de boas-vindas opcional.</string>

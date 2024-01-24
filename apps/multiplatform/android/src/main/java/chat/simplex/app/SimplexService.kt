@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.platform.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
@@ -21,12 +20,13 @@ import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.NotificationsMode
-import chat.simplex.common.platform.androidAppContext
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlin.system.exitProcess
 
 // based on:
 // https://robertohuertas.com/2019/06/29/android_foreground_services/
@@ -72,6 +72,10 @@ class SimplexService: Service() {
       stopSelf()
     } else {
       isServiceStarted = true
+      // In case of self-destruct is enabled the initialization process will not start in SimplexApp, Let's start it here
+      if (DatabaseUtils.ksSelfDestructPassword.get() != null && chatModel.chatDbStatus.value == null) {
+        initChatControllerAndRunMigrations()
+      }
     }
   }
 
@@ -100,7 +104,7 @@ class SimplexService: Service() {
     if (wakeLock != null || isStartingService) return
     val self = this
     isStartingService = true
-    withApi {
+    withLongRunningApi(slow = 30_000, deadlock = 60_000) {
       val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {
@@ -110,7 +114,7 @@ class SimplexService: Service() {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
           safeStopService()
-          return@withApi
+          return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
         wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
@@ -172,6 +176,11 @@ class SimplexService: Service() {
   override fun onTaskRemoved(rootIntent: Intent) {
     // Just to make sure that after restart of the app the user will need to re-authenticate
     AppLock.clearAuthState()
+
+    if (appPreferences.chatStopped.get()) {
+      stopSelf()
+      exitProcess(0)
+    }
 
     // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {

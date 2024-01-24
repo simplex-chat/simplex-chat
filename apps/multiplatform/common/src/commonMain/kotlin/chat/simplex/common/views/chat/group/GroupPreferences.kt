@@ -32,7 +32,7 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
   var currentPreferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(preferences) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
@@ -111,6 +111,11 @@ private fun GroupPreferencesLayout(
     val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
     FeatureSection(GroupFeature.Files, allowFiles, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(files = GroupPreference(enable = it)))
+    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
+    FeatureSection(GroupFeature.History, enableHistory, groupInfo, preferences, onTTLUpdated) {
+      applyPrefs(preferences.copy(history = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)

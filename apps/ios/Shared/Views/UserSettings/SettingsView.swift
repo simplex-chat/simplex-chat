@@ -95,6 +95,12 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
 ]
 
+// not used anymore
+enum ConnectViaLinkTab: String {
+    case scan
+    case paste
+}
+
 enum SimpleXLinkMode: String, Identifiable {
     case description
     case full
@@ -153,37 +159,42 @@ struct SettingsView: View {
     }
 
     @ViewBuilder func settingsView() -> some View {
-        let user: User = chatModel.currentUser!
+        let user = chatModel.currentUser
         NavigationView {
             List {
                 Section("You") {
-                    NavigationLink {
-                        UserProfile()
-                            .navigationTitle("Your current profile")
-                    } label: {
-                        ProfilePreview(profileOf: user)
-                        .padding(.leading, -8)
+                    if let user = user {
+                        NavigationLink {
+                            UserProfile()
+                                .navigationTitle("Your current profile")
+                        } label: {
+                            ProfilePreview(profileOf: user)
+                                .padding(.leading, -8)
+                        }
                     }
 
                     NavigationLink {
-                        UserProfilesView()
+                        UserProfilesView(showSettings: $showSettings)
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
 
-                    NavigationLink {
-                        UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
-                            .navigationTitle("SimpleX address")
-                            .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX address") }
-                    }
 
-                    NavigationLink {
-                        PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                            .navigationTitle("Your preferences")
-                    } label: {
-                        settingsRow("switch.2") { Text("Chat preferences") }
+                    if let user = user {
+                        NavigationLink {
+                            UserAddressView(shareViaProfile: user.addressShared)
+                                .navigationTitle("SimpleX address")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("qrcode") { Text("Your SimpleX address") }
+                        }
+
+                        NavigationLink {
+                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                                .navigationTitle("Your preferences")
+                        } label: {
+                            settingsRow("switch.2") { Text("Chat preferences") }
+                        }
                     }
 
                     NavigationLink {
@@ -244,12 +255,14 @@ struct SettingsView: View {
                 }
 
                 Section("Help") {
-                    NavigationLink {
-                        ChatHelp(showSettings: $showSettings)
-                            .navigationTitle("Welcome \(user.displayName)!")
-                            .frame(maxHeight: .infinity, alignment: .top)
-                    } label: {
-                        settingsRow("questionmark") { Text("How to use it") }
+                    if let user = user {
+                        NavigationLink {
+                            ChatHelp(showSettings: $showSettings)
+                                .navigationTitle("Welcome \(user.displayName)!")
+                                .frame(maxHeight: .infinity, alignment: .top)
+                        } label: {
+                            settingsRow("questionmark") { Text("How to use it") }
+                        }
                     }
                     NavigationLink {
                         WhatsNewView(viaSettings: true)

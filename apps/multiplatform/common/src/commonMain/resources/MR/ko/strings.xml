@@ -27,7 +27,6 @@
     <string name="icon_descr_context">컨텍스트 아이콘</string>
     <string name="icon_descr_server_status_connected">연결됨</string>
     <string name="back">뒤로</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>새 대화 상대 추가</b> : 대화를 위한 일회용 QR 코드 만들기]]></string>
     <string name="cancel_verb">취소</string>
     <string name="icon_descr_cancel_live_message">라이브 메시지 취소</string>
     <string name="choose_file">파일 선택</string>
@@ -112,7 +111,6 @@
     <string name="change_member_role_question">그룹 역할을 바꾸시겠습니까\?</string>
     <string name="info_row_connection">연결</string>
     <string name="users_add">프로필 추가</string>
-    <string name="cant_delete_user_profile">사용자 프로필을 삭제할 수 없습니다!</string>
     <string name="chat_preferences_always">항상</string>
     <string name="chat_preferences_contact_allows">대화 상대가 허용함</string>
     <string name="contact_preferences">연락처 개별 설정</string>
@@ -171,7 +169,6 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>배터리에 가장 좋음</b>. 앱이 실행 중일 때만 알림을 받게 됩니다 (백그라운드에서 실행되지 않음).]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>설정을 통해 비활성화할 수 있습니다.</b> – 앱이 실행되는 동안 알림이 표시됩니다.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">당신과 대화 상대 모두 사라지는 메시지를 보낼 수 있습니다.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR 코드 스캔</b>: QR 코드를 보여주는 사람과 대화할 수 있습니다.]]></string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 Keystore에 접근할 수 없습니다.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>배터리 더욱 사용</b>! 백그라운드 서비스가 항상 실행됩니다. - 메시지를 수신되는 즉시 알림이 표시됩니다.]]></string>
     <string name="callstatus_ended">통화 종료됨 %1$s</string>
@@ -202,7 +199,6 @@
     <string name="status_contact_has_e2e_encryption">대화 상대와 종단간 암호화됨</string>
     <string name="alert_title_contact_connection_pending">대화 상대와 아직 연결되지 않았습니다!</string>
     <string name="archive_created_on_ts">%1$s에 생성 완료</string>
-    <string name="create_one_time_link">일회용 초대 링크 생성</string>
     <string name="create_secret_group_title">비밀 그룹 생성</string>
     <string name="accept_contact_incognito_button">익명 수락</string>
     <string name="chat_item_ttl_month">1개월</string>
@@ -829,12 +825,10 @@
     <string name="stop_chat_confirmation">멈추기</string>
     <string name="snd_group_event_changed_member_role">%s의 역할을 %s로 변경했어요.</string>
     <string name="section_title_for_console">콘솔용</string>
-    <string name="should_be_at_least_one_visible_profile">적어도 하나의 숨겨지지 않은 사용자 프로필이 있어야 해요.</string>
     <string name="set_group_preferences">그룹 설정 지정하기</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">%s의 주소를 바꿨어요</string>
     <string name="snd_conn_event_switch_queue_phase_completed">주소를 바꿨어요</string>
     <string name="snd_group_event_group_profile_updated">그룹 프로필 업데이트됨</string>
-    <string name="should_be_at_least_one_profile">적어도 하나의 사용자 프로필이 있어야 해요.</string>
     <string name="smp_servers_test_server">서버 테스트하기</string>
     <string name="smp_servers_use_server">서버 사용하기</string>
     <string name="smp_servers_use_server_for_new_conn">새로운 대화에 사용</string>

@@ -15,6 +15,7 @@ data RcvGroupEvent
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | RGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAll
   | RGEUserRole {role :: GroupMemberRole}
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
@@ -25,10 +26,12 @@ data RcvGroupEvent
   -- and be created as unread without adding / working around new status for sent items
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
+  | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
   deriving (Show)
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | SGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAllUser
   | SGEUserRole {role :: GroupMemberRole}
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
@@ -47,8 +50,8 @@ data SndConnEvent
   deriving (Show)
 
 data RcvDirectEvent
-  = -- RDEProfileChanged {...}
-    RDEContactDeleted
+  = RDEContactDeleted
+  | RDEProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRContactUpdated
   deriving (Show)
 
 -- platform-specific JSON encoding (used in API)

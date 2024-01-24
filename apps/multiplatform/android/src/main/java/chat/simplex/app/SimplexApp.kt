@@ -1,6 +1,9 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.content.Context
+import androidx.compose.ui.platform.ClipboardManager
+import chat.simplex.common.platform.Log
 import android.app.UiModeManager
 import android.os.*
 import androidx.lifecycle.*
@@ -43,8 +46,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
           try {
             Looper.loop()
           } catch (e: Throwable) {
-            if (e.message != null && e.message!!.startsWith("Unable to start activity")) {
-              android.os.Process.killProcess(android.os.Process.myPid())
+            if (e is UnsatisfiedLinkError || e.message?.startsWith("Unable to start activity") == true) {
+              Process.killProcess(Process.myPid())
               break
             } else {
               // Send it to our exception handled because it will not get the exception otherwise
@@ -60,16 +63,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    withBGApi {
-      initChatController()
-      runMigrations()
+    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+      initChatControllerAndRunMigrations()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-    withApi {
+    withBGApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
@@ -95,6 +97,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
+          /**
+           * When the app calls [ClipboardManager.shareText] and a user copies text in clipboard, Android denies
+           * access to clipboard because the app considered in background.
+           * This will ensure that the app will get the event on resume
+           * */
+          val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+          chatModel.clipboardHasText.value = service.hasPrimaryClip()
           if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && chatModel.currentUser.value != null) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }

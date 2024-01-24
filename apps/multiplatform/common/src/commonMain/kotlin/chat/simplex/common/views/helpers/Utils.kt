@@ -2,6 +2,7 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
@@ -21,15 +22,69 @@ import java.net.URI
 import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.Executors
 import kotlin.math.*
 
-fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
+private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
-  scope.launch { withContext(Dispatchers.Main, action) }
+fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
+  Exception().let {
+    CoroutineScope(Dispatchers.Main).launch(block = { wrapWithLogging(action, it) })
+  }
 
 fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
-  CoroutineScope(Dispatchers.Default).launch(block = action)
+  Exception().let {
+    CoroutineScope(singleThreadDispatcher).launch(block = { wrapWithLogging(action, it) })
+  }
+
+fun withLongRunningApi(slow: Long = Long.MAX_VALUE, deadlock: Long = Long.MAX_VALUE, action: suspend CoroutineScope.() -> Unit): Job =
+  Exception().let {
+    CoroutineScope(Dispatchers.Default).launch(block = { wrapWithLogging(action, it, slow = slow, deadlock = deadlock) })
+  }
+
+private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, exception: java.lang.Exception, slow: Long = 10_000, deadlock: Long = 60_000) = coroutineScope {
+  val start = System.currentTimeMillis()
+  val job = launch {
+    delay(deadlock)
+    Log.e(TAG, "Possible deadlock of the thread, not finished after ${deadlock / 1000}s:\n${exception.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.possible_deadlock_title),
+      text = generalGetString(MR.strings.possible_deadlock_desc).format(deadlock / 1000, exception.stackTraceToString()),
+    )
+  }
+  action()
+  job.cancel()
+  if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
+    val end = System.currentTimeMillis()
+    if (end - start > slow) {
+      Log.e(TAG, "Possible problem with execution of the thread, took ${(end - start) / 1000}s:\n${exception.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.possible_slow_function_title),
+        text = generalGetString(MR.strings.possible_slow_function_desc).format((end - start) / 1000, exception.stackTraceToString()),
+      )
+    }
+  }
+}
+
+@OptIn(InternalCoroutinesApi::class)
+suspend fun interruptIfCancelled() = coroutineScope {
+  if (!isActive) {
+    Log.d(TAG, "Coroutine was cancelled and interrupted: ${Exception().stackTraceToString()}")
+    throw coroutineContext.job.getCancellationException()
+  }
+}
+
+/**
+ * This coroutine helper makes possible to cancel coroutine scope when a user goes back but not when the user rotates a screen
+ * */
+@Composable
+fun ModalData.CancellableOnGoneJob(key: String = rememberSaveable { UUID.randomUUID().toString() }): MutableState<Job> {
+  val job = remember { stateGetOrPut<Job>(key) { Job() } }
+  DisposableEffectOnGone {
+    job.value.cancel()
+  }
+  return job
+}
 
 enum class KeyboardState {
   Opened, Closed
@@ -60,6 +115,9 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
   }
 }
 
+@Composable
+expect fun SetupClipboardListener()
+
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
@@ -71,6 +129,8 @@ const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 300_000
 const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
+
+const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
 
@@ -105,13 +165,14 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
-fun saveImage(uri: URI, encrypted: Boolean): CryptoFile? {
+fun saveImage(uri: URI): CryptoFile? {
   val bitmap = getBitmapFromUri(uri) ?: return null
-  return saveImage(bitmap, encrypted)
+  return saveImage(bitmap)
 }
 
-fun saveImage(image: ImageBitmap, encrypted: Boolean): CryptoFile? {
+fun saveImage(image: ImageBitmap): CryptoFile? {
   return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
@@ -150,8 +211,9 @@ fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
   }
 }
 
-fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
+fun saveAnimImage(uri: URI): CryptoFile? {
   return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val filename = getFileName(uri)?.lowercase()
     var ext = when {
       // remove everything but extension
@@ -177,8 +239,9 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI, encrypted: Boolean, withAlertOnException: Boolean = true): CryptoFile? {
+fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile? {
   return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
     return if (inputStream != null && fileToSave != null) {
@@ -294,6 +357,7 @@ fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   return when (fileProtocol) {
     FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
     FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
   }
 }
 
@@ -419,8 +483,12 @@ fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}
     val orientation = windowOrientation()
     onDispose {
       whenDispose()
-      if (orientation == windowOrientation()) {
-        whenGone()
+      withApi {
+        // It needs some delay before check orientation again because it can still be not updated to actual value
+        delay(300)
+        if (orientation == windowOrientation()) {
+          whenGone()
+        }
       }
     }
   }

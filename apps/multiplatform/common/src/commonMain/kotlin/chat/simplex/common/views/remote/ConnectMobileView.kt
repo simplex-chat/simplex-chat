@@ -38,7 +38,9 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun ConnectMobileView() {
@@ -46,7 +48,9 @@ fun ConnectMobileView() {
   val remoteHosts = remember { chatModel.remoteHosts }
   val deviceName = chatModel.controller.appPrefs.deviceNameForRemoteAccess
   LaunchedEffect(Unit) {
-    controller.reloadRemoteHosts()
+    withBGApi {
+      controller.reloadRemoteHosts()
+    }
   }
   ConnectMobileLayout(
     deviceName = remember { deviceName.state },
@@ -187,11 +191,7 @@ private fun ConnectMobileViewLayout(
     SectionView {
       if (invitation != null && sessionCode == null && port != null) {
         Box {
-          QRCode(
-            invitation, Modifier
-              .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF)
-              .aspectRatio(1f)
-          )
+          QRCode(invitation)
           if (staleQrCode) {
             Box(Modifier.matchParentSize().background(MaterialTheme.colors.background.copy(alpha = 0.9f)), contentAlignment = Alignment.Center) {
               SimpleButtonDecorated(stringResource(MR.strings.refresh_qr_code), painterResource(MR.images.ic_refresh), click = refreshQrCode)

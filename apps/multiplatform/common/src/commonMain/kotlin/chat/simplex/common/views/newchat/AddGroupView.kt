@@ -36,7 +36,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
   val rhId = rh?.remoteHostId
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
-      withApi {
+      withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
           chatModel.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
@@ -139,7 +139,8 @@ fun AddGroupLayout(
               createGroup(incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),
                 fullName = "",
-                image = profileImage.value
+                image = profileImage.value,
+                groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
               ))
             },
             textColor = MaterialTheme.colors.primary,

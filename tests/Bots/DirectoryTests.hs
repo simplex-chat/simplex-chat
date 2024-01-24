@@ -18,10 +18,10 @@ import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
+import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (GroupMemberRole (..), Profile (..))
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
@@ -63,7 +63,7 @@ directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", im
 mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
 mkDirectoryOpts tmp superUsers =
   DirectoryOpts
-    { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> serviceDbPrefix},
+    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",

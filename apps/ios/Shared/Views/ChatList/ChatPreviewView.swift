@@ -13,6 +13,7 @@ struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
+    @State var deleting: Bool = false
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
@@ -55,6 +56,9 @@ struct ChatPreviewView: View {
             .frame(maxHeight: .infinity)
         }
         .padding(.bottom, -8)
+        .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
+            deleting = contains
+        }
     }
 
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
@@ -87,13 +91,13 @@ struct ChatPreviewView: View {
         let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
         switch chat.chatInfo {
         case let .direct(contact):
-            previewTitle(contact.verified == true ? verifiedIcon + t : t)
+            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
         case let .group(groupInfo):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
-            case .memInvited: v.foregroundColor(chat.chatInfo.incognito ? .indigo : .accentColor)
+            case .memInvited: v.foregroundColor(deleting ? .secondary : chat.chatInfo.incognito ? .indigo : .accentColor)
             case .memAccepted: v.foregroundColor(.secondary)
-            default: v
+            default: if deleting  { v.foregroundColor(.secondary) } else { v }
             }
         default: previewTitle(t)
         }
@@ -130,9 +134,9 @@ struct ChatPreviewView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 4)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
+                    .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? Color.accentColor : Color.secondary)
                     .cornerRadius(10)
-            } else if !chat.chatInfo.ntfsEnabled {
+            } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
                 Image(systemName: "speaker.slash.fill")
                     .foregroundColor(.secondary)
             } else if chat.chatInfo.chatSettings?.favorite ?? false {
@@ -150,7 +154,7 @@ struct ChatPreviewView: View {
         let msg = draft.message
         return image("rectangle.and.pencil.and.ellipsis", color: .accentColor)
                 + attachment()
-                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true)
+                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
             Text(Image(systemName: s)).foregroundColor(color) + Text(" ")
@@ -169,7 +173,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false)
 
         func attachment() -> String? {
             switch cItem.content.msgContent {

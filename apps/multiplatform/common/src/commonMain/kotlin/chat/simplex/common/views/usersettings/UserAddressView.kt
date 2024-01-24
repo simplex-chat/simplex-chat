@@ -70,7 +70,7 @@ fun UserAddressView(
       shareViaProfile,
       onCloseHandler,
       createAddress = {
-        withApi {
+        withBGApi {
           progressIndicator = true
           val connReqContact = chatModel.controller.apiCreateUserAddress(user?.value?.remoteHostId)
           if (connReqContact != null) {
@@ -116,7 +116,7 @@ fun UserAddressView(
           confirmText = generalGetString(MR.strings.delete_verb),
           onConfirm = {
             progressIndicator = true
-            withApi {
+            withBGApi {
               val u = chatModel.controller.apiDeleteUserAddress(user?.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
@@ -155,7 +155,7 @@ fun UserAddressView(
       contentAlignment = Alignment.Center
     ) {
       if (userAddress.value != null) {
-        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), shape = RoundedCornerShape(50)){}
+        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
       }
       CircularProgressIndicator(
         Modifier
@@ -207,7 +207,7 @@ private fun UserAddressLayout(
         val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
         val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
         SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-          SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+          SimpleXLinkQRCode(userAddress.connReqContact)
           ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
           ShareViaEmailButton { sendEmail(userAddress) }
           ShareWithContactsButton(shareViaProfile, setProfileAddress)

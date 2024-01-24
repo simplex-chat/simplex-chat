@@ -4,10 +4,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.Messages.Batch (
-  MsgBatch (..),
-  batchMessages,
-) where
+module Simplex.Chat.Messages.Batch
+  ( MsgBatch (..),
+    batchMessages,
+  )
+where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B

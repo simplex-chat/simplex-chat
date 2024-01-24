@@ -1,6 +1,12 @@
 package chat.simplex.common.ui.theme
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material.LocalContentColor
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.*
+import chat.simplex.common.views.helpers.mixWith
+import kotlin.math.min
 
 val Purple200 = Color(0xFFBB86FC)
 val Purple500 = Color(0xFF6200EE)
@@ -25,4 +31,17 @@ val WarningOrange = Color(255, 127, 0, 255)
 val WarningYellow = Color(255, 192, 0, 255)
 val FileLight = Color(183, 190, 199, 255)
 val FileDark = Color(101, 101, 106, 255)
-val MenuTextColorDark = Color.White.copy(alpha = 0.8f)
+val SentMessageColor = Color(0x1E45B8FF)
+
+val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black
+val NoteFolderIconColor: Color @Composable get() = with(CurrentColors.collectAsState().value.appColors.sentMessage) {
+  // Default color looks too light and better to have it here a little bit brighter
+  if (alpha == SentMessageColor.alpha) {
+    copy(min(SentMessageColor.alpha + 0.1f, 1f))
+  } else {
+    // Color is non-standard and theme maker can choose color without alpha at all since the theme bound to dark/light variant,
+    // and it shouldn't be universal
+    this
+  }
+}
+

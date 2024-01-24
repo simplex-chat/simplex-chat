@@ -11,6 +11,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
+import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
@@ -20,6 +21,7 @@ import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -33,7 +35,9 @@ import System.Environment (lookupEnv, withArgs)
 import System.FilePath ((</>))
 import System.IO.Silently (capture_)
 import System.Info (os)
-import Test.Hspec
+import Test.Hspec hiding (it)
+import qualified Test.Hspec as Hspec
+import UnliftIO (timeout)
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
@@ -53,11 +57,17 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
-xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+it :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
+it name test =
+  Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
+  where
+    t = 90 * 1000000
+
+xit' :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit it
+xit'' = ifCI xit Hspec.it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
 xdescribe'' = ifCI xdescribe describe
@@ -223,8 +233,8 @@ groupFeatures'' =
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
-    ((0, "Files and media: on"), Nothing, Nothing)
-    -- ((0, "Recent history: on"), Nothing, Nothing)
+    ((0, "Files and media: on"), Nothing, Nothing),
+    ((0, "Recent history: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -286,6 +296,11 @@ cc <##.. ls = do
   let prefix = any (`isPrefixOf` l) ls
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
+
+(/*) :: HasCallStack => TestCC -> String -> IO ()
+cc /* note = do
+  cc `send` ("/* " <> note)
+  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
 
 data ConsoleResponse
   = ConsoleString String
@@ -461,6 +476,12 @@ withCCUser cc action = do
 withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCTransaction cc action =
   withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+createCCNoteFolder :: TestCC -> IO ()
+createCCNoteFolder cc =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =

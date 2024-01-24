@@ -365,10 +365,25 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
     }
 }
 
+func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
+    let r = await chatSendCmd(.apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg))
+    if case let .newChatItem(_, aChatItem) = r { return aChatItem.chatItem }
+    createChatItemErrorAlert(r)
+    return nil
+}
+
 private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("apiSendMessage error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
+        message: "Error: \(String(describing: r))"
+    )
+}
+
+private func createChatItemErrorAlert(_ r: ChatResponse) {
+    logger.error("apiCreateChatItem error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating message",
         message: "Error: \(String(describing: r))"
     )
 }
@@ -581,15 +596,15 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
+func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
-        return nil
+        return (nil, nil)
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
-    AlertManager.shared.showAlert(connectionErrorAlert(r))
-    return nil
+    if case let .invitation(_, connReqInvitation, connection) = r { return ((connReqInvitation, connection), nil) }
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
 }
 
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
@@ -691,6 +706,9 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Co
 }
 
 func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let chatId = type.rawValue + id.description
+    DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
+    defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
@@ -852,8 +870,8 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: any UserLike, fileId: Int64, encrypted: Bool, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: encrypted, auto: auto) {
+func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)
     }
 }
@@ -1123,6 +1141,12 @@ func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMembe
     throw r
 }
 
+func apiBlockMemberForAll(_ groupId: Int64, _ memberId: Int64, _ blocked: Bool) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiBlockMemberForAll(groupId: groupId, memberId: memberId, blocked: blocked), bgTask: false)
+    if case let .memberBlockedForAllUser(_, _, member, _) = r { return member }
+    throw r
+}
+
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)
@@ -1212,9 +1236,11 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
+func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
+    m.ctrlInitInProgress = true
+    defer { m.ctrlInitInProgress = false }
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
@@ -1231,7 +1257,37 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
         m.onboardingStage = .step1_SimpleXInfo
-    } else if start {
+    } else if confirmStart {
+        showStartChatAfterRestartAlert { start in
+            do {
+                if start { AppChatState.shared.set(.active) }
+                try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+            } catch let error {
+                logger.error("ChatInitialized error: \(error)")
+            }
+        }
+    } else {
+        try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+    }
+}
+
+func showStartChatAfterRestartAlert(result: @escaping (_ start: Bool) -> Void) {
+    AlertManager.shared.showAlert(Alert(
+        title: Text("Start chat?"),
+        message: Text("Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat."),
+        primaryButton: .default(Text("Ok")) {
+            result(true)
+        },
+        secondaryButton: .cancel {
+            result(false)
+        }
+    ))
+}
+
+private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
+    let m = ChatModel.shared
+    if m.currentUser == nil { return }
+    if start {
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
@@ -1289,8 +1345,12 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     try getUserChatData()
 }
 
-func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
-    let currentUser = try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?) async throws {
+    let currentUser = if let userId = userId {
+        try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+    } else {
+        try apiGetActiveUser()
+    }
     let users = try await listUsersAsync()
     await MainActor.run {
         let m = ChatModel.shared
@@ -1299,7 +1359,7 @@ func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
     }
     try await getUserChatDataAsync()
     await MainActor.run {
-        if var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
+        if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
             activateCall(invitation)
         }
@@ -1315,14 +1375,21 @@ func getUserChatData() throws {
 }
 
 private func getUserChatDataAsync() async throws {
-    let userAddress = try await apiGetUserAddressAsync()
-    let chatItemTTL = try await getChatItemTTLAsync()
-    let chats = try await apiGetChatsAsync()
-    await MainActor.run {
-        let m = ChatModel.shared
-        m.userAddress = userAddress
-        m.chatItemTTL = chatItemTTL
-        m.chats = chats.map { Chat.init($0) }
+    let m = ChatModel.shared
+    if m.currentUser != nil {
+        let userAddress = try await apiGetUserAddressAsync()
+        let chatItemTTL = try await getChatItemTTLAsync()
+        let chats = try await apiGetChatsAsync()
+        await MainActor.run {
+            m.userAddress = userAddress
+            m.chatItemTTL = chatItemTTL
+            m.chats = chats.map { Chat.init($0) }
+        }
+    } else {
+        await MainActor.run {
+            m.userAddress = nil
+            m.chats = []
+        }
     }
 }
 
@@ -1481,7 +1548,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         if let file = cItem.autoReceiveFile() {
             Task {
-                await receiveFile(user: user, fileId: file.fileId, encrypted: cItem.encryptLocalFile, auto: true)
+                await receiveFile(user: user, fileId: file.fileId, auto: true)
             }
         }
         if cItem.showNotification {
@@ -1613,6 +1680,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
+        }
+    case let .memberBlockedForAll(user, groupInfo, byMember: _, member: member, blocked: _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
