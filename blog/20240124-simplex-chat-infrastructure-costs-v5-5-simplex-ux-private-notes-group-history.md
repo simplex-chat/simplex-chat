@@ -1,6 +1,6 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat: free infrastructure from Linode, v5.5 released with a simpler UX to connect, private notes and group history"
+title: "SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect."
 date: 2024-01-24
 # previewBody: blog_previews/20231125.html
 # image: images/20231125-mobile2.png
@@ -8,7 +8,7 @@ draft: true
 permalink: "/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html"
 ---
 
-# SimpleX Chat: free infrastructure from Linode, v5.5 released with a simpler UX to connect, private notes and group history.
+# SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.
 
 **Published:** Jan 24, 2024
 
@@ -23,7 +23,7 @@ What's new in v5.5:
 - [simpler UX to connect to other users](#simpler-ux-to-connect-to-other-users)
 - [message delivery stability and other improvements](#message-delivery-stability-and-other-improvements)
 
-Also, we added Hungarian (only Android) and Turkish interface languages, thanks to [the users' community and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
+Also, we added Hungarian (only Android) and Turkish interface languages, thanks to [our users and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
 
 SimpleX Chat Android app is now available in 20 languages!
 
