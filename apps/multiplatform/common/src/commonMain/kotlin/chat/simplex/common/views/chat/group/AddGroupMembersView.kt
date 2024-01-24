@@ -86,7 +86,7 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { it.contactId !in memberContactIds && it.ready && it.active && it.chatViewName.lowercase().contains(s) }
+    .filter { it.ready && it.active && it.contactId !in memberContactIds && it.chatViewName.lowercase().contains(s) }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
