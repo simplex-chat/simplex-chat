@@ -1355,7 +1355,7 @@
     <string name="turn_off_system_restriction_button">Apri impostazioni app</string>
     <string name="system_restricted_background_in_call_desc">L\'app potrebbe venire chiusa dopo 1 minuto in secondo piano.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Incolla il link che hai ricevuto per connetterti con il contatto…</string>
-    <string name="connect__your_profile_will_be_shared">Il tuo profilo %1$s verrà condiviso.</string>
+    <string name="connect__your_profile_will_be_shared">Verrà condiviso il tuo profilo %1$s.</string>
     <string name="connect__a_new_random_profile_will_be_shared">Verrà condiviso un nuovo profilo casuale.</string>
     <string name="disable_notifications_button">Disattiva le notifiche</string>
     <string name="system_restricted_background_in_call_title">Nessuna chiamata in secondo piano</string>
