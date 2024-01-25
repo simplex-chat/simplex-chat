@@ -18,6 +18,8 @@ struct GroupWelcomeView: View {
     @FocusState private var keyboardVisible: Bool
     @State private var showSaveDialog = false
 
+    let maxCharacterCount = 1200
+
     var body: some View {
         VStack {
             if groupInfo.canEdit {
@@ -29,9 +31,12 @@ struct GroupWelcomeView: View {
                             showSaveDialog = true
                         }
                     })
-                    .confirmationDialog("Save welcome message?", isPresented: $showSaveDialog) {
-                        Button("Save and update group profile") {
-                            save()
+                    .confirmationDialog(
+                        "Save welcome message?",
+                        isPresented: $showSaveDialog
+                    ) {
+                        if welcomeTextFitsLimit() {
+                            Button("Save and update group profile") { save() }
                         }
                         Button("Exit without saving") { dismiss() }
                     }
@@ -53,7 +58,7 @@ struct GroupWelcomeView: View {
 
     private func textPreview() -> some View {
         messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false)
-            .frame(minHeight: 140, alignment: .topLeading)
+            .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -73,7 +78,7 @@ struct GroupWelcomeView: View {
                         }
                         .padding(.horizontal, -5)
                         .padding(.top, -8)
-                        .frame(height: 140, alignment: .topLeading)
+                        .frame(height: 130, alignment: .topLeading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
@@ -92,6 +97,9 @@ struct GroupWelcomeView: View {
                 }
                 .disabled(welcomeText.isEmpty)
                 copyButton()
+            } footer: {
+                Text(welcomeText.isEmpty ? "Character limit: \(maxCharacterCount)" : "Character limit: \(welcomeText.count) / \(maxCharacterCount)")
+                    .foregroundColor(welcomeTextFitsLimit() ? .secondary : .red)
             }
 
             Section {
@@ -112,11 +120,15 @@ struct GroupWelcomeView: View {
         Button("Save and update group profile") {
             save()
         }
-        .disabled(welcomeTextUnchanged())
+        .disabled(welcomeTextUnchanged() || !welcomeTextFitsLimit())
     }
 
     private func welcomeTextUnchanged() -> Bool {
         welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil)
+    }
+
+    private func welcomeTextFitsLimit() -> Bool {
+        welcomeText.count <= maxCharacterCount
     }
 
     private func save() {
