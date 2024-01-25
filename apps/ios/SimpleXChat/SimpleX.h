@@ -25,6 +25,7 @@ extern char *chat_parse_markdown(char *str);
 extern char *chat_parse_server(char *str);
 extern char *chat_password_hash(char *pwd, char *salt);
 extern char *chat_valid_name(char *name);
+extern int chat_json_length(char *str);
 extern char *chat_encrypt_media(chat_ctrl ctl, char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
 

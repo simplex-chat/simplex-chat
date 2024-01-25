@@ -18,7 +18,7 @@ struct GroupWelcomeView: View {
     @FocusState private var keyboardVisible: Bool
     @State private var showSaveDialog = false
 
-    let maxCharacterCount = 1200
+    let maxByteCount = 1200
 
     var body: some View {
         VStack {
@@ -98,7 +98,7 @@ struct GroupWelcomeView: View {
                 .disabled(welcomeText.isEmpty)
                 copyButton()
             } footer: {
-                Text(welcomeText.isEmpty ? "Character limit: \(maxCharacterCount)" : "Character limit: \(welcomeText.count) / \(maxCharacterCount)")
+                Text(welcomeText.isEmpty ? "Byte limit: \(maxByteCount)" : "Byte limit: \(chatJsonLength(welcomeText)) / \(maxByteCount)")
                     .foregroundColor(welcomeTextFitsLimit() ? .secondary : .red)
             }
 
@@ -128,7 +128,7 @@ struct GroupWelcomeView: View {
     }
 
     private func welcomeTextFitsLimit() -> Bool {
-        welcomeText.count <= maxCharacterCount
+        chatJsonLength(welcomeText) <= maxByteCount
     }
 
     private func save() {
