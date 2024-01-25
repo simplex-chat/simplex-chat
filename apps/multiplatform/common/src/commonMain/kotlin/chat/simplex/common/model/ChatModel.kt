@@ -2031,6 +2031,10 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLast() {
   value = SnapshotStateList<ChatItem>().apply { addAll(value); removeLast() }
 }
 
+fun MutableState<SnapshotStateList<ChatItem>>.replace(chatItems: List<ChatItem>) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(chatItems) }
+}
+
 fun MutableState<SnapshotStateList<ChatItem>>.clear() {
   value = SnapshotStateList<ChatItem>()
 }
