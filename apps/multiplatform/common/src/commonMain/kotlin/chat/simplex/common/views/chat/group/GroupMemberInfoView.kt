@@ -3,11 +3,9 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import java.net.URI
 import androidx.compose.foundation.*
@@ -75,7 +73,7 @@ fun GroupMemberInfoView(
               chatModel.addChat(c)
             }
             chatModel.chatItemStatuses.clear()
-            chatModel.chatItems.replace(c.chatItems)
+            chatModel.chatItems.replaceAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
           }

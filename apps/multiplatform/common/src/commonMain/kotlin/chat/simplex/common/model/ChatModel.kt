@@ -312,9 +312,10 @@ object ChatModel {
     return withContext(Dispatchers.Main) {
       // update current chat
       if (chatId.value == cInfo.id) {
-        val itemIndex = chatItems.value.indexOfFirst { it.id == cItem.id }
+        val items = chatItems.value
+        val itemIndex = items.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
-          chatItems.value[itemIndex] = cItem
+          items[itemIndex] = cItem
           Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
@@ -337,9 +338,10 @@ object ChatModel {
   suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
     withContext(Dispatchers.Main) {
       if (chatId.value == cInfo.id) {
-        val itemIndex = chatItems.value.indexOfFirst { it.id == cItem.id }
+        val items = chatItems.value
+        val itemIndex = items.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
-          chatItems.value[itemIndex] = cItem
+          items[itemIndex] = cItem
         }
       } else if (status != null) {
         chatItemStatuses[cItem.id] = status
@@ -363,10 +365,10 @@ object ChatModel {
     }
     // remove from current chat
     if (chatId.value == cInfo.id) {
-      val itemIndex = chatItems.value.indexOfFirst { it.id == cItem.id }
-      if (itemIndex >= 0) {
-        AudioPlayer.stop(chatItems.value[itemIndex])
-        chatItems.removeAt(itemIndex)
+      chatItems.removeAll {
+        val remove = it.id == cItem.id
+        if (remove) { AudioPlayer.stop(it) }
+        remove
       }
     }
   }
@@ -440,13 +442,14 @@ object ChatModel {
     if (chatId.value == cInfo.id) {
       var i = 0
       Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marking read ${cInfo.id}, current chatId ${chatId.value}, size was ${chatItems.size}")
-      while (i < chatItems.size) {
-        val item = chatItems.value[i]
+      val items = chatItems.value
+      while (i < items.size) {
+        val item = items[i]
         if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
           val newItem = item.withStatus(CIStatus.RcvRead())
-          chatItems.value[i] = newItem
+          items[i] = newItem
           if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
-            chatItems.value[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
+            items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
               deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
             )
           }
@@ -2023,6 +2026,10 @@ fun MutableState<SnapshotStateList<ChatItem>>.addAll(chatItems: List<ChatItem>) 
   value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(chatItems) }
 }
 
+fun MutableState<SnapshotStateList<ChatItem>>.removeAll(block: (ChatItem) -> Boolean) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAll(block) }
+}
+
 fun MutableState<SnapshotStateList<ChatItem>>.removeAt(index: Int) {
   value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAt(index) }
 }
@@ -2031,7 +2038,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLast() {
   value = SnapshotStateList<ChatItem>().apply { addAll(value); removeLast() }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.replace(chatItems: List<ChatItem>) {
+fun MutableState<SnapshotStateList<ChatItem>>.replaceAll(chatItems: List<ChatItem>) {
   value = SnapshotStateList<ChatItem>().apply { addAll(chatItems) }
 }
 

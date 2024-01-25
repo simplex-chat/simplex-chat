@@ -222,7 +222,7 @@ suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
 
 fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatItemStatuses.clear()
-  chatModel.chatItems.replace(chat.chatItems)
+  chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
 }
 
@@ -238,7 +238,7 @@ suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
   val chatInfo = ch.chatInfo
   val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
   if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.replace(chat.chatItems)
+  chatModel.chatItems.replaceAll(chat.chatItems)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
