@@ -324,7 +324,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
           .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
       ) {
-        LaunchedEffect(Unit) {
+        LaunchedEffect(ciInfo) {
           if (ciInfo.memberDeliveryStatuses != null) {
             selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
           }
