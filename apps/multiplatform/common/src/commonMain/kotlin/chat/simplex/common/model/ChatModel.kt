@@ -270,18 +270,15 @@ object ChatModel {
     } else {
       addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
     }
-    Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
     withContext(Dispatchers.Main) {
       // add to current chat
       if (chatId.value == cInfo.id) {
-        Log.d(TAG, "TODOCHAT: addChatItem: chatIds are equal, size ${chatItems.size}")
         // Prevent situation when chat item already in the list received from backend
         if (chatItems.value.none { it.id == cItem.id }) {
           if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
             chatItems.add(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
           } else {
             chatItems.add(cItem)
-            Log.d(TAG, "TODOCHAT: addChatItem: added to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           }
         }
       }
@@ -308,7 +305,6 @@ object ChatModel {
       addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       res = true
     }
-    Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
     return withContext(Dispatchers.Main) {
       // update current chat
       if (chatId.value == cInfo.id) {
@@ -316,7 +312,6 @@ object ChatModel {
         val itemIndex = items.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           items[itemIndex] = cItem
-          Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
           val status = chatItemStatuses.remove(cItem.id)
@@ -326,7 +321,6 @@ object ChatModel {
             cItem
           }
           chatItems.add(ci)
-          Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
       } else {
@@ -441,7 +435,6 @@ object ChatModel {
     var markedRead = 0
     if (chatId.value == cInfo.id) {
       var i = 0
-      Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marking read ${cInfo.id}, current chatId ${chatId.value}, size was ${chatItems.size}")
       val items = chatItems.value
       while (i < items.size) {
         val item = items[i]
@@ -457,7 +450,6 @@ object ChatModel {
         }
         i += 1
       }
-      Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marked read ${cInfo.id}, current chatId ${chatId.value}, size now ${chatItems.size}")
     }
     return markedRead
   }

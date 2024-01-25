@@ -212,11 +212,9 @@ suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) {
 }
 
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
-  Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
     openLoadedChat(chat, chatModel)
-    Log.d(TAG, "TODOCHAT: openChat: opened ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   }
 }
 
