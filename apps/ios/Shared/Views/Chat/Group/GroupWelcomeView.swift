@@ -133,7 +133,7 @@ struct GroupWelcomeView: View {
                 }
                 await MainActor.run {
                     groupInfo = gInfo
-                    ChatModel.shared.updateGroup(groupInfo)
+                    ChatModel.shared.updateGroup(gInfo)
                     dismiss()
                 }
             } catch let error {
