@@ -23,7 +23,7 @@ struct GroupWelcomeView: View {
             if groupInfo.canEdit {
                 editorView()
                     .modifier(BackButton {
-                        if welcomeTextChanged() {
+                        if welcomeTextUnchanged() {
                             dismiss()
                         } else {
                             showSaveDialog = true
@@ -112,10 +112,10 @@ struct GroupWelcomeView: View {
         Button("Save and update group profile") {
             save()
         }
-        .disabled(welcomeTextChanged())
+        .disabled(welcomeTextUnchanged())
     }
 
-    private func welcomeTextChanged() -> Bool {
+    private func welcomeTextUnchanged() -> Bool {
         welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil)
     }
 
