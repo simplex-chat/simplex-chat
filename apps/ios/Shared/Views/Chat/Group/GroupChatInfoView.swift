@@ -370,7 +370,11 @@ struct GroupChatInfoView: View {
 
     private func addOrEditWelcomeMessage() -> some View {
         NavigationLink {
-            GroupWelcomeView(groupId: groupInfo.groupId, groupInfo: $groupInfo)
+            GroupWelcomeView(
+                groupInfo: $groupInfo,
+                groupProfile: groupInfo.groupProfile,
+                welcomeText: groupInfo.groupProfile.description ?? ""
+            )
             .navigationTitle("Welcome message")
             .navigationBarTitleDisplayMode(.large)
         } label: {
