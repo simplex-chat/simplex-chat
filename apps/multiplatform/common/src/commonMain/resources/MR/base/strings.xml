@@ -1377,9 +1377,12 @@
   <!-- GroupWelcomeView.kt -->
   <string name="group_welcome_title">Welcome message</string>
   <string name="save_welcome_message_question">Save welcome message?</string>
+  <string name="welcome_message_is_too_long">Welcome message is too long</string>
   <string name="save_and_update_group_profile">Save and update group profile</string>
   <string name="group_welcome_preview">Preview</string>
   <string name="enter_welcome_message">Enter welcome message…</string>
+  <string name="byte_limit_n">Byte limit: %1$d</string>
+  <string name="byte_limit_m_out_of_n">Byte limit: %1$d \/ %2$d</string>
 
   <!-- ConnectionStats -->
   <string name="conn_stats_section_title_servers">SERVERS</string>
