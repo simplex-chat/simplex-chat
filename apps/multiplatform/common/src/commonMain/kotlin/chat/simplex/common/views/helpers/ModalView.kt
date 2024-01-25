@@ -61,10 +61,10 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
     }
   }
 

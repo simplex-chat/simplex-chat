@@ -406,12 +406,15 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                   setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
                 }
                 ModalManager.end.closeModals()
-                ModalManager.end.showModal(endButtons = {
+                ModalManager.end.showModalCloseable(endButtons = {
                   ShareButton {
                     clipboard.shareText(itemInfoShareText(chatModel, cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
                   }
-                }) {
+                }) { close ->
                   ChatItemInfoView(chatModel, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+                  KeyChangeEffect(chatModel.chatId.value) {
+                    close()
+                  }
                 }
               }
             }
