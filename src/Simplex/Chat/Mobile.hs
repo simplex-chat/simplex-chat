@@ -181,7 +181,7 @@ cChatValidName cName = newCString . mkValidName =<< peekCString cName
 
 -- | returns length of JSON encoded string
 cChatJsonLength :: CString -> IO CInt
-cChatJsonLength s = fromIntegral . subtract 2 . B.length . LB.toStrict . J.encode . safeDecodeUtf8 <$> B.packCString s
+cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
 
 mobileChatOpts :: String -> ChatOpts
 mobileChatOpts dbFilePrefix =
