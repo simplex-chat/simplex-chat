@@ -583,6 +583,10 @@ fun ComposeView(
   }
 
   fun cancelLinkPreview() {
+    val pendingLink = pendingLinkUrl.value
+    if (pendingLink != null) {
+      cancelledLinks.add(pendingLink)
+    }
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
       cancelledLinks.add(uri)
