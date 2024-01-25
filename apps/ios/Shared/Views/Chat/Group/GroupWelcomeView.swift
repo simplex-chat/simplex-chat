@@ -128,9 +128,6 @@ struct GroupWelcomeView: View {
                 }
                 groupProfile.description = welcome
                 let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
-                if let descr = gInfo.groupProfile.description {
-                    logger.debug("#################### \(descr)")
-                }
                 await MainActor.run {
                     groupInfo = gInfo
                     ChatModel.shared.updateGroup(gInfo)
