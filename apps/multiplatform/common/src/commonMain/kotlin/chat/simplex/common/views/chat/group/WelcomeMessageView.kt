@@ -114,9 +114,9 @@ private fun GroupWelcomeLayout(
       }
       SectionTextFooter(
         if (welcomeText.value == "")
-          generalGetString(MR.strings.byte_limit_n).format(maxByteCount)
+          generalGetString(MR.strings.message_size_n).format(maxByteCount)
         else
-          generalGetString(MR.strings.byte_limit_m_out_of_n).format(chatJsonLength(welcomeText.value), maxByteCount),
+          generalGetString(MR.strings.message_size_m_out_of_n).format(chatJsonLength(welcomeText.value), maxByteCount),
         color = if (welcomeTextFitsLimit(wt)) MaterialTheme.colors.secondary else Color.Red
       )
 
