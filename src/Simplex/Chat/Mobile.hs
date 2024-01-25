@@ -20,6 +20,7 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
@@ -93,6 +94,8 @@ foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSON
 foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
+
+foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 
@@ -175,6 +178,10 @@ cChatPasswordHash cPwd cSalt = do
 -- This function supports utf8 strings
 cChatValidName :: CString -> IO CString
 cChatValidName cName = newCString . mkValidName =<< peekCString cName
+
+-- | returns length of JSON encoded string
+cChatJsonLength :: CString -> IO CInt
+cChatJsonLength s = fromIntegral . subtract 2 . B.length . LB.toStrict . J.encode . safeDecodeUtf8 <$> B.packCString s
 
 mobileChatOpts :: String -> ChatOpts
 mobileChatOpts dbFilePrefix =
