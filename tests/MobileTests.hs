@@ -68,7 +68,8 @@ mobileTests = do
       it "no exception on missing file" testMissingFileEncryptionCApi
     describe "validate name" $ do
       it "should convert invalid name to a valid name" testValidNameCApi
-      it "should compute length of JSON string" testChatJsonLengthCApi
+    describe "JSON length" $ do
+      it "should compute length of JSON encoded string" testChatJsonLengthCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
