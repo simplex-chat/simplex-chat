@@ -32,7 +32,7 @@ struct GroupWelcomeView: View {
                         }
                     })
                     .confirmationDialog(
-                        "Save welcome message?",
+                        welcomeTextFitsLimit() ? "Save welcome message?" : "Welcome message is too long",
                         isPresented: $showSaveDialog
                     ) {
                         if welcomeTextFitsLimit() {
