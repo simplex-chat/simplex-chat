@@ -33,7 +33,8 @@ CREATE TABLE users(
   view_pwd_salt BLOB,
   show_ntfs INTEGER NOT NULL DEFAULT 1,
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
-  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
+  user_member_profile_updated_at TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -118,7 +119,8 @@ CREATE TABLE groups(
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
-  via_group_link_uri_hash BLOB, -- received
+  via_group_link_uri_hash BLOB,
+  user_member_profile_sent_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -150,6 +152,7 @@ CREATE TABLE group_members(
   invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  member_restriction TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -189,7 +192,8 @@ CREATE TABLE files(
   agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL),
   protocol TEXT NOT NULL DEFAULT 'smp',
   file_crypto_key BLOB,
-  file_crypto_nonce BLOB
+  file_crypto_nonce BLOB,
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -368,7 +372,8 @@ CREATE TABLE chat_items(
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   item_deleted_ts TEXT,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_content_tag TEXT
+  item_content_tag TEXT,
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -546,6 +551,15 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   updated_at TEXT CHECK(updated_at NOT NULL),
   agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   delivery_status TEXT -- MsgDeliveryStatus
+);
+CREATE TABLE note_folders(
+  note_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
+  favorite INTEGER NOT NULL DEFAULT 0,
+  unread_chat INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -811,4 +825,32 @@ CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
   connection_id,
   agent_msg_id
+);
+CREATE INDEX chat_items_note_folder_id ON chat_items(note_folder_id);
+CREATE INDEX files_note_folder_id ON files(note_folder_id);
+CREATE INDEX note_folders_user_id ON note_folders(user_id);
+CREATE INDEX idx_chat_items_contacts_created_at on chat_items(
+  user_id,
+  contact_id,
+  created_at
+);
+CREATE INDEX idx_chat_items_contacts_item_status on chat_items(
+  user_id,
+  contact_id,
+  item_status
+);
+CREATE INDEX idx_chat_items_groups_item_status on chat_items(
+  user_id,
+  group_id,
+  item_status
+);
+CREATE INDEX idx_chat_items_notes_created_at on chat_items(
+  user_id,
+  note_folder_id,
+  created_at
+);
+CREATE INDEX idx_chat_items_notes_item_status on chat_items(
+  user_id,
+  note_folder_id,
+  item_status
 );

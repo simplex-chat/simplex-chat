@@ -267,7 +267,7 @@ fun ComposeView(
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-      withApi {
+      withLongRunningApi(slow = 30_000, deadlock = 60_000) {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
@@ -353,7 +353,10 @@ fun ComposeView(
 
   suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
-    val aChatItem = chatModel.controller.apiSendMessage(
+    val aChatItem = if (chat.chatInfo.chatType == ChatType.Local)
+      chatModel.controller.apiCreateChatItem(rh = chat.remoteHostId, noteFolderId = chat.chatInfo.apiId, file = file, mc = mc)
+    else
+      chatModel.controller.apiSendMessage(
       rh = chat.remoteHostId,
       type = cInfo.chatType,
       id = cInfo.apiId,
@@ -459,16 +462,15 @@ fun ComposeView(
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
-            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
             val file = when (it) {
               is UploadContent.SimpleImage ->
-                if (remoteHost == null) saveImage(it.uri, encrypted = encrypted)
+                if (remoteHost == null) saveImage(it.uri)
                 else desktopSaveImageInTmp(it.uri)
               is UploadContent.AnimatedImage ->
-                if (remoteHost == null) saveAnimImage(it.uri, encrypted = encrypted)
+                if (remoteHost == null) saveAnimImage(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false)
+                if (remoteHost == null) saveFileFromUri(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
@@ -506,7 +508,7 @@ fun ComposeView(
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
-            saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+            saveFileFromUri(preview.uri)
           } else {
             CryptoFile.desktopPlain(preview.uri)
           }
@@ -549,7 +551,7 @@ fun ComposeView(
   }
 
   fun sendMessage(ttl: Int?) {
-    withBGApi {
+    withLongRunningApi(slow = 30_000, deadlock = 60_000) {
       sendMessageAsync(null, false, ttl)
     }
   }
@@ -575,12 +577,16 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    withApi {
+    withBGApi {
       chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Voice)
     }
   }
 
   fun cancelLinkPreview() {
+    val pendingLink = pendingLinkUrl.value
+    if (pendingLink != null) {
+      cancelledLinks.add(pendingLink)
+    }
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
       cancelledLinks.add(uri)
@@ -878,7 +884,7 @@ fun ComposeView(
           sendMessage(ttl)
           resetLinkPreview()
         },
-        sendLiveMessage = ::sendLiveMessage,
+        sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
         updateLiveMessage = ::updateLiveMessage,
         cancelLiveMessage = {
           composeState.value = composeState.value.copy(liveMessage = null)

@@ -23,7 +23,7 @@ mkdir -p $vlc_dir/vlc || exit 0
 cd /tmp
 mkdir tmp 2>/dev/null || true
 cd tmp
-curl https://github.com/simplex-chat/vlc/releases/download/v$vlc_version/vlc-macos-$ARCH.zip -L -o vlc
+curl --tlsv1.2 https://github.com/simplex-chat/vlc/releases/download/v$vlc_version/vlc-macos-$ARCH.zip -L -o vlc
 unzip -oqq vlc
 install_name_tool -add_rpath "@loader_path/VLC.app/Contents/MacOS/lib" vlc-cache-gen
 cd VLC.app/Contents/MacOS/lib

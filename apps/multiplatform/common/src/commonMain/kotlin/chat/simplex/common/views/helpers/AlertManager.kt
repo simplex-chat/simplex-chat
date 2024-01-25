@@ -22,24 +22,27 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class AlertManager {
-  private var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
+  // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
+  // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
+  private var alertViews = MutableStateFlow(listOf<(@Composable () -> Unit)>())
 
   fun showAlert(alert: @Composable () -> Unit) {
     Log.d(TAG, "AlertManager.showAlert")
-    alertViews.add(alert)
+    alertViews.value += alert
   }
 
   fun hideAlert() {
-    alertViews.removeLastOrNull()
+    alertViews.value = ArrayList(alertViews.value).also { it.removeLastOrNull() }
   }
 
   fun hideAllAlerts() {
-    alertViews.clear()
+    alertViews.value = listOf()
   }
 
-  fun hasAlertsShown() = alertViews.isNotEmpty()
+  fun hasAlertsShown() = alertViews.value.isNotEmpty()
 
   fun showAlertDialogButtons(
     title: String,
@@ -242,7 +245,7 @@ class AlertManager {
 
   @Composable
   fun showInView() {
-    remember { alertViews }.lastOrNull()?.invoke()
+    alertViews.collectAsState().value.lastOrNull()?.invoke()
   }
 
   companion object {

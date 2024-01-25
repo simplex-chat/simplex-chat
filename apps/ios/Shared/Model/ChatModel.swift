@@ -54,11 +54,13 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    @Published var ctrlInitInProgress: Bool = false
     // local authentication
     @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
+    @Published var deletedChats: Set<String> = []
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
@@ -137,7 +139,7 @@ final class ChatModel: ObservableObject {
     }
 
     func removeUser(_ user: User) {
-        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+        if let i = getUserIndex(user) {
             users.remove(at: i)
         }
     }
@@ -754,6 +756,8 @@ final class Chat: ObservableObject, Identifiable {
         case let .group(groupInfo):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole >= .member
+        case .local:
+            return true
         default: return false
         }
     }

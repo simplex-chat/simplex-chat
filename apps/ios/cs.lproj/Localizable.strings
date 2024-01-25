@@ -20,7 +20,7 @@
 "_italic_" = "\\_kurzíva_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- připojit k [adresářová služba](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.cibule) (BETA)!\n- doručenky (až 20 členů).\n- Rychlejší a stabilnější.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- připojit k [adresářová služba](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- doručenky (až 20 členů).\n- Rychlejší a stabilnější.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- více stabilní doručování zpráv.\n- o trochu lepší skupiny.\n- a více!";
@@ -59,9 +59,6 @@
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Přidat nový kontakt**: pro vytvoření jednorázového QR kódu nebo odkazu pro váš kontakt.";
 
 /* No comment provided by engineer. */
-"**Create link / QR code** for your contact to use." = "**Vytvořte odkaz / QR kód** pro váš kontakt.";
-
-/* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e šifrovaný** audio hovor";
 
 /* No comment provided by engineer. */
@@ -74,16 +71,10 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Nejsoukromější**: nepoužívejte server oznámení SimpleX Chat, pravidelně kontrolujte zprávy na pozadí (závisí na tom, jak často aplikaci používáte).";
 
 /* No comment provided by engineer. */
-"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Vložte přijatý odkaz** nebo jej otevřete v prohlížeči a klepněte na **Otevřít v mobilní aplikaci**.";
-
-/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Upozornění**: Pokud heslo ztratíte, NEBUDETE jej moci obnovit ani změnit.";
 
 /* No comment provided by engineer. */
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.";
-
-/* No comment provided by engineer. */
-"**Scan QR code**: to connect to your contact in person or via video call." = "** Naskenujte QR kód**: pro připojení ke kontaktu osobně nebo prostřednictvím videohovoru.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Upozornění**: Okamžitě doručovaná oznámení vyžadují přístupové heslo uložené v Klíčence.";
@@ -119,10 +110,16 @@
 "%@ %@" = "%@ %@";
 
 /* No comment provided by engineer. */
+"%@ and %@" = "%@ a %@";
+
+/* No comment provided by engineer. */
 "%@ and %@ connected" = "%@ a %@ připojen";
 
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ na %2$@:";
+
+/* No comment provided by engineer. */
+"%@ connected" = "%@ připojen";
 
 /* notification title */
 "%@ is connected!" = "%@ je připojen!";
@@ -246,9 +243,6 @@
 
 /* time interval */
 "1 week" = "1 týden";
-
-/* No comment provided by engineer. */
-"1-time link" = "Jednorázový odkaz";
 
 /* No comment provided by engineer. */
 "5 minutes" = "5 minut";
@@ -387,7 +381,7 @@
 "Allow disappearing messages only if your contact allows it to you." = "Povolte mizící zprávy, pouze pokud vám to váš kontakt dovolí.";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you." = "Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt dovolí.";
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt dovolí. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Povolit reakce na zprávy, pokud je váš kontakt povolí.";
@@ -402,7 +396,7 @@
 "Allow sending disappearing messages." = "Povolit odesílání mizících zpráv.";
 
 /* No comment provided by engineer. */
-"Allow to irreversibly delete sent messages." = "Povolit nevratné smazání odeslaných zpráv.";
+"Allow to irreversibly delete sent messages. (24 hours)" = "Povolit nevratné smazání odeslaných zpráv. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Povolit odesílání souborů a médii.";
@@ -423,7 +417,7 @@
 "Allow your contacts to call you." = "Povolte svým kontaktům vám volat.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to irreversibly delete sent messages." = "Umožněte svým kontaktům nevratně odstranit odeslané zprávy.";
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Umožněte svým kontaktům nevratně odstranit odeslané zprávy. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Umožněte svým kontaktům odesílat mizící zprávy.";
@@ -534,7 +528,7 @@
 "Both you and your contact can add message reactions." = "Vy i váš kontakt můžete přidávat reakce na zprávy.";
 
 /* No comment provided by engineer. */
-"Both you and your contact can irreversibly delete sent messages." = "Vy i váš kontakt můžete nevratně mazat odeslané zprávy.";
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Vy i váš kontakt můžete nevratně mazat odeslané zprávy. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "Volat můžete vy i váš kontakt.";
@@ -565,9 +559,6 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Hovory";
-
-/* No comment provided by engineer. */
-"Can't delete user profile!" = "Nemohu smazat uživatelský profil!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Nelze pozvat kontakt!";
@@ -730,9 +721,6 @@
 "Connect via link" = "Připojte se prostřednictvím odkazu";
 
 /* No comment provided by engineer. */
-"Connect via link / QR code" = "Připojit se prostřednictvím odkazu / QR kódu";
-
-/* No comment provided by engineer. */
 "Connect via one-time link" = "Připojit se jednorázovým odkazem";
 
 /* No comment provided by engineer. */
@@ -848,9 +836,6 @@
 
 /* No comment provided by engineer. */
 "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Vytvořit nový profil v [desktop app](https://simplex.chat/downloads/). 💻";
-
-/* No comment provided by engineer. */
-"Create one-time invitation link" = "Vytvořit jednorázovou pozvánku";
 
 /* server test step */
 "Create queue" = "Vytvořit frontu";
@@ -1621,7 +1606,7 @@
 "Group members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages." = "Členové skupiny mohou nevratně mazat odeslané zprávy.";
+"Group members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Group members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
@@ -1712,9 +1697,6 @@
 
 /* No comment provided by engineer. */
 "If you can't meet in person, show QR code in a video call, or share the link." = "Pokud se nemůžete setkat osobně, zobrazte QR kód ve videohovoru nebo sdílejte odkaz.";
-
-/* No comment provided by engineer. */
-"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Pokud se nemůžete setkat osobně, můžete **naskenovat QR kód během videohovoru**, nebo váš kontakt může sdílet odkaz na pozvánku.";
 
 /* No comment provided by engineer. */
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Pokud tento přístupový kód zadáte při otevření aplikace, všechna data budou nenávratně smazána!";
@@ -2268,7 +2250,7 @@
 "Only you can add message reactions." = "Reakce na zprávy můžete přidávat pouze vy.";
 
 /* No comment provided by engineer. */
-"Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Nevratně mazat zprávy můžete pouze vy (váš kontakt je může označit ke smazání).";
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Nevratně mazat zprávy můžete pouze vy (váš kontakt je může označit ke smazání). (24 hodin)";
 
 /* No comment provided by engineer. */
 "Only you can make calls." = "Volat můžete pouze vy.";
@@ -2283,7 +2265,7 @@
 "Only your contact can add message reactions." = "Reakce na zprávy může přidávat pouze váš kontakt.";
 
 /* No comment provided by engineer. */
-"Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Nevratně mazat zprávy může pouze váš kontakt (vy je můžete označit ke smazání).";
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Nevratně mazat zprávy může pouze váš kontakt (vy je můžete označit ke smazání). (24 hodin)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Volat může pouze váš kontakt.";
@@ -2334,16 +2316,7 @@
 "Password to show" = "Heslo k zobrazení";
 
 /* No comment provided by engineer. */
-"Paste" = "Vložit";
-
-/* No comment provided by engineer. */
 "Paste image" = "Vložit obrázek";
-
-/* No comment provided by engineer. */
-"Paste received link" = "Vložení přijatého odkazu";
-
-/* placeholder */
-"Paste the link you received to connect with your contact." = "Vložte odkaz, který jste obdrželi, do pole níže a spojte se se svým kontaktem.";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "peer-to-peer";
@@ -2895,9 +2868,6 @@
 "Share link" = "Sdílet odkaz";
 
 /* No comment provided by engineer. */
-"Share one-time invitation link" = "Jednorázový zvací odkaz";
-
-/* No comment provided by engineer. */
 "Share with contacts" = "Sdílet s kontakty";
 
 /* No comment provided by engineer. */
@@ -2971,9 +2941,6 @@
 
 /* notification title */
 "Somebody" = "Někdo";
-
-/* No comment provided by engineer. */
-"Start a new chat" = "Začít nový chat";
 
 /* No comment provided by engineer. */
 "Start chat" = "Začít chat";
@@ -3133,12 +3100,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Téma";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Měl by tam být alespoň jeden uživatelský profil.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Měl by tam být alespoň jeden viditelný uživatelský profil.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
@@ -3478,9 +3439,6 @@
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Můžete přijímat hovory z obrazovky zámku, bez ověření zařízení a aplikace.";
-
-/* No comment provided by engineer. */
-"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko **Otevřít v mobilní aplikaci**.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Můžete vytvořit později";

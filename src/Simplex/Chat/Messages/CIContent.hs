@@ -138,6 +138,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
+  CIRcvBlocked :: CIContent 'MDRcv
   CIInvalidJSON :: Text -> CIContent d
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
@@ -169,12 +170,15 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
-    CIRcvDirectEvent _ -> False
+    CIRcvDirectEvent rde -> case rde of
+      RDEContactDeleted -> False
+      RDEProfileUpdated {} -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
       RGEMemberLeft -> False
       RGEMemberRole {} -> False
+      RGEMemberBlocked {} -> False
       RGEUserRole _ -> True
       RGEMemberDeleted {} -> False
       RGEUserDeleted -> True
@@ -182,6 +186,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEGroupUpdated _ -> False
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
+      RGEMemberProfileUpdated {} -> False
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -189,6 +194,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
+    CIRcvBlocked -> False
     CIInvalidJSON _ -> False
 
 newtype DBMsgErrorType = DBME MsgErrorType
@@ -243,6 +249,7 @@ ciContentToText = \case
   CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
+  CIRcvBlocked -> "blocked"
   CIInvalidJSON _ -> "invalid content JSON"
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
@@ -252,6 +259,7 @@ ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayN
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
   RDEContactDeleted -> "contact deleted"
+  RDEProfileUpdated {} -> "updated profile"
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
@@ -259,6 +267,7 @@ rcvGroupEventToText = \case
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
   RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
   RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
@@ -266,10 +275,12 @@ rcvGroupEventToText = \case
   RGEGroupUpdated _ -> "group profile updated"
   RGEInvitedViaGroupLink -> "invited via your group link"
   RGEMemberCreatedContact -> "started direct connection with you"
+  RGEMemberProfileUpdated {} -> "updated profile"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
   SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  SGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
   SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
@@ -370,6 +381,7 @@ data JSONCIContent
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | JCISndModerated
   | JCIRcvModerated
+  | JCIRcvBlocked
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -399,6 +411,7 @@ jsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
+  CIRcvBlocked -> JCIRcvBlocked
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -428,6 +441,7 @@ aciContentJSON = \case
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -458,6 +472,7 @@ data DBJSONCIContent
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | DBJCISndModerated
   | DBJCIRcvModerated
+  | DBJCIRcvBlocked
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -487,6 +502,7 @@ dbJsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
+  CIRcvBlocked -> DBJCIRcvBlocked
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -516,6 +532,7 @@ aciContentDBJSON = \case
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -608,4 +625,5 @@ toCIContentTag ciContent = case ciContent of
   CIRcvGroupFeatureRejected _ -> "rcvGroupFeatureRejected"
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
+  CIRcvBlocked -> "rcvBlocked"
   CIInvalidJSON _ -> "invalidJSON"

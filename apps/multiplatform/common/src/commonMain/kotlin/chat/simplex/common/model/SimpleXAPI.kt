@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -108,6 +109,8 @@ class AppPreferences {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
+  val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
@@ -276,6 +279,8 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
+    private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
@@ -333,20 +338,19 @@ object ChatController {
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
-  private fun currentUserId(funcName: String): Long {
+  private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
     if (userId == null) {
       val error = "$funcName: no current user"
       Log.e(TAG, error)
       throw Exception(error)
     }
-    return userId
+    userId
   }
 
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
       appPrefs.chatStopped.set(false)
@@ -405,15 +409,18 @@ object ChatController {
     }
   }
 
-  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long, viewPwd: String?) {
-    val currentUser = apiSetActiveUser(rhId, toUserId, viewPwd)
-    chatModel.currentUser.value = currentUser
+  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
+    val currentUser = changingActiveUserMutex.withLock {
+      (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
+        chatModel.currentUser.value = it
+      }
+    }
     val users = listUsers(rhId)
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData(rhId)
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
-    if (invitation != null) {
+    if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
   }
@@ -504,6 +511,10 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
     ) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.InvalidDisplayName
+    ) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_invalid_title), generalGetString(MR.strings.failed_to_create_user_invalid_desc))
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_title), r.details)
     }
@@ -572,7 +583,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(): Boolean {
-    val r = sendCmd(null, CC.StartChat(expire = true))
+    val r = sendCmd(null, CC.StartChat(mainApp = true))
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -665,6 +676,17 @@ object ChatController {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiSendMessage", generalGetString(MR.strings.error_sending_message), r)
         }
+        null
+      }
+    }
+  }
+   suspend fun apiCreateChatItem(rh: Long?, noteFolderId: Long, file: CryptoFile? = null, mc: MsgContent): AChatItem? {
+    val cmd = CC.ApiCreateChatItem(noteFolderId, file, mc)
+    val r = sendCmd(rh, cmd)
+    return when (r) {
+      is CR.NewChatItem -> r.chatItem
+      else -> {
+        apiErrorAlert("apiCreateChatItem", generalGetString(MR.strings.error_creating_message), r)
         null
       }
     }
@@ -880,10 +902,7 @@ object ChatController {
 
 
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<String, PendingContactConnection>?, (() -> Unit)?> {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiAddContact: no current user")
-      return null to null
-    }
+    val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
     val r = sendCmd(rh, CC.APIAddContact(userId, incognito))
     return when (r) {
       is CR.Invitation -> (r.connReqInvitation to r.connection) to null
@@ -912,10 +931,7 @@ object ChatController {
   }
 
   suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection?  {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiConnect: no current user")
-      return null
-    }
+    val userId = try { currentUserId("apiConnect") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIConnect(userId, incognito, connReq))
     when {
       r is CR.SentConfirmation -> return r.connection
@@ -954,10 +970,7 @@ object ChatController {
   }
 
   suspend fun apiConnectContactViaAddress(rh: Long?, incognito: Boolean, contactId: Long): Contact? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiConnectContactViaAddress: no current user")
-      return null
-    }
+    val userId = try { currentUserId("apiConnectContactViaAddress") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     when {
       r is CR.SentInvitationToContact -> return r.contact
@@ -978,22 +991,37 @@ object ChatController {
   }
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+    chatModel.deletedChats.value += rh to type.type + id
     val r = sendCmd(rh, CC.ApiDeleteChat(type, id, notify))
-    when {
-      r is CR.ContactDeleted && type == ChatType.Direct -> return true
-      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
-      r is CR.GroupDeletedUser && type == ChatType.Group -> return true
+    val success = when {
+      r is CR.ContactDeleted && type == ChatType.Direct -> true
+      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> true
+      r is CR.GroupDeletedUser && type == ChatType.Group -> true
       else -> {
         val titleId = when (type) {
           ChatType.Direct -> MR.strings.error_deleting_contact
           ChatType.Group -> MR.strings.error_deleting_group
+          ChatType.Local -> MR.strings.error_deleting_note_folder
           ChatType.ContactRequest -> MR.strings.error_deleting_contact_request
           ChatType.ContactConnection -> MR.strings.error_deleting_pending_contact_connection
         }
         apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+        false
       }
     }
-    return false
+    chatModel.deletedChats.value -= rh to type.type + id
+    return success
+  }
+
+  fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
+    withBGApi {
+      val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
+      if (updatedChatInfo != null) {
+        chatModel.clearChat(chat.remoteHostId, updatedChatInfo)
+        ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
+        close?.invoke()
+      }
+    }
   }
 
   suspend fun apiClearChat(rh: Long?, type: ChatType, id: Long): ChatInfo? {
@@ -1120,6 +1148,13 @@ object ChatController {
     if (r is CR.ContactRequestRejected) return true
     Log.e(TAG, "apiRejectContactRequest bad response: ${r.responseType} ${r.details}")
     return false
+  }
+
+  suspend fun apiGetCallInvitations(rh: Long?): List<RcvCallInvitation> {
+    val r = sendCmd(rh, CC.ApiGetCallInvitations())
+    if (r is CR.CallInvitations) return r.callInvitations
+    Log.e(TAG, "apiGetCallInvitations bad response: ${r.responseType} ${r.details}")
+    return emptyList()
   }
 
   suspend fun apiSendCallInvitation(rh: Long?, contact: Contact, callType: CallType): Boolean {
@@ -1294,6 +1329,17 @@ object ChatController {
           apiErrorAlert("apiMemberRole", generalGetString(MR.strings.error_changing_role), r)
         }
         throw Exception("failed to change member role: ${r.responseType} ${r.details}")
+      }
+    }
+
+  suspend fun apiBlockMemberForAll(rh: Long?, groupId: Long, memberId: Long, blocked: Boolean): GroupMember =
+    when (val r = sendCmd(rh, CC.ApiBlockMemberForAll(groupId, memberId, blocked))) {
+      is CR.MemberBlockedForAllUser -> r.member
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiBlockMemberForAll", generalGetString(MR.strings.error_blocking_member_for_all), r)
+        }
+        throw Exception("failed to block member for all: ${r.responseType} ${r.details}")
       }
     }
 
@@ -1654,7 +1700,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
+          withBGApi { receiveFile(rhId, r.user, file.fileId, auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1748,6 +1794,10 @@ object ChatController {
           chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.MemberRoleUser ->
+        if (active(r.user)) {
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
+        }
+      is CR.MemberBlockedForAll ->
         if (active(r.user)) {
           chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
@@ -1852,10 +1902,8 @@ object ChatController {
         }
         withCall(r, r.contact) { _ ->
           chatModel.callCommand.add(WCallCommand.End)
-          withApi {
-            chatModel.activeCall.value = null
-            chatModel.showCallView.value = false
-          }
+          chatModel.activeCall.value = null
+          chatModel.showCallView.value = false
         }
       }
       is CR.ContactSwitch ->
@@ -1878,9 +1926,34 @@ object ChatController {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.remoteHostPairing.value = null
         if (disconnectedHost != null) {
-          showToast(
-            generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
-          )
+          val deviceName = disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() }
+          when (r.rhStopReason) {
+            is RemoteHostStopReason.ConnectionFailed -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_host_was_disconnected_title),
+                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                } else {
+                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                }
+              )
+            }
+            is RemoteHostStopReason.Crashed -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_host_was_disconnected_title),
+                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                } else {
+                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                }
+              )
+            }
+            is RemoteHostStopReason.Disconnected -> {
+              if (r.rhsState is RemoteHostSessionState.Connected || r.rhsState is RemoteHostSessionState.Confirmed) {
+                showToast(generalGetString(MR.strings.remote_host_was_disconnected_toast).format(deviceName))
+              }
+            }
+          }
         }
         if (chatModel.remoteHostId() == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
@@ -1911,9 +1984,38 @@ object ChatController {
         val sess = chatModel.remoteCtrlSession.value
         if (sess != null) {
           chatModel.remoteCtrlSession.value = null
+          fun showAlert(chatError: ChatError) {
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              if (chatError is ChatError.ChatErrorRemoteCtrl) {
+                chatError.remoteCtrlError.localizedString
+              } else {
+                generalGetString(MR.strings.remote_ctrl_disconnected_with_reason).format(chatError.string)
+              }
+            )
+          }
+          when (r.rcStopReason) {
+            is RemoteCtrlStopReason.DiscoveryFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.ConnectionFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.SetupFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.Disconnected -> {
+              /*AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              )*/
+            }
+          }
+
           if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
             switchToLocalSession()
           }
+        }
+      }
+      is CR.ChatCmdError -> when {
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
+          chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
+        }
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.developerTools.get() && appPrefs.showInternalErrors.get() -> {
+          chatModel.processedInternalError.newError(r.chatError.agentError, false)
         }
       }
       else ->
@@ -1939,20 +2041,18 @@ object ChatController {
     }
   }
 
-  fun switchToLocalSession() {
+  suspend fun switchToLocalSession() {
     val m = chatModel
     m.remoteCtrlSession.value = null
-    withBGApi {
-      val users = listUsers(null)
-      m.users.clear()
-      m.users.addAll(users)
-      getUserChatData(null)
-      val statuses = apiGetNetworkStatuses(null)
-      if (statuses != null) {
-        chatModel.networkStatuses.clear()
-        val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-        chatModel.networkStatuses.putAll(ss)
-      }
+    val users = listUsers(null)
+    m.users.clear()
+    m.users.addAll(users)
+    getUserChatData(null)
+    val statuses = apiGetNetworkStatuses(null)
+    if (statuses != null) {
+      chatModel.networkStatuses.clear()
+      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
+      chatModel.networkStatuses.putAll(ss)
     }
   }
 
@@ -1968,7 +2068,8 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, auto: Boolean = false) {
+    val encrypted = appPrefs.privacyEncryptLocalFiles.get()
     val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
@@ -2165,7 +2266,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val expire: Boolean): CC()
+  class StartChat(val mainApp: Boolean): CC()
   class ApiStopChat: CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
@@ -2180,6 +2281,7 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: CryptoFile?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
+  class ApiCreateChatItem(val noteFolderId: Long, val file: CryptoFile?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
@@ -2188,6 +2290,7 @@ sealed class CC {
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiMemberRole(val groupId: Long, val memberId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiBlockMemberForAll(val groupId: Long, val memberId: Long, val blocked: Boolean): CC()
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
@@ -2236,6 +2339,7 @@ sealed class CC {
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
   class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
+  class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
   class ApiSendCallOffer(val contact: Contact, val callOffer: WebRTCCallOffer): CC()
@@ -2292,7 +2396,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start subscribe=on expire=${onOff(expire)} xftp=on"
+    is StartChat -> "/_start main=${onOff(mainApp)}"
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
@@ -2310,6 +2414,9 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     }
+    is ApiCreateChatItem -> {
+      "/_create *$noteFolderId json ${json.encodeToString(ComposedMessage(file, null, mc))}"
+    }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
@@ -2318,6 +2425,7 @@ sealed class CC {
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiMemberRole -> "/_member role #$groupId $memberId ${memberRole.memberRole}"
+    is ApiBlockMemberForAll -> "/_block #$groupId $memberId blocked=${onOff(blocked)}"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
@@ -2372,6 +2480,7 @@ sealed class CC {
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
+    is ApiGetCallInvitations -> "/_call get"
     is ApiSendCallInvitation -> "/_call invite @${contact.apiId} ${json.encodeToString(callType)}"
     is ApiRejectCall -> "/_call reject @${contact.apiId}"
     is ApiSendCallOffer -> "/_call offer @${contact.apiId} ${json.encodeToString(callOffer)}"
@@ -2437,6 +2546,7 @@ sealed class CC {
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessage -> "apiSendMessage"
+    is ApiCreateChatItem -> "apiCreateChatItem"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
@@ -2445,6 +2555,7 @@ sealed class CC {
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiMemberRole -> "apiMemberRole"
+    is ApiBlockMemberForAll -> "apiBlockMemberForAll"
     is ApiRemoveMember -> "apiRemoveMember"
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
@@ -2495,6 +2606,7 @@ sealed class CC {
     is ApiAddressAutoAccept -> "apiAddressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
+    is ApiGetCallInvitations -> "apiGetCallInvitations"
     is ApiSendCallInvitation -> "apiSendCallInvitation"
     is ApiRejectCall -> "apiRejectCall"
     is ApiSendCallOffer -> "apiSendCallOffer"
@@ -3834,6 +3946,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberRole") class MemberRole(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
   @Serializable @SerialName("memberRoleUser") class MemberRoleUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
+  @Serializable @SerialName("memberBlockedForAll") class MemberBlockedForAll(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val blocked: Boolean): CR()
+  @Serializable @SerialName("memberBlockedForAllUser") class MemberBlockedForAllUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val blocked: Boolean): CR()
   @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -3870,6 +3984,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem: AChatItem): CR()
   // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
+  @Serializable @SerialName("callInvitations") class CallInvitations(val callInvitations: List<RcvCallInvitation>): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: UserRef, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: UserRef, val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
@@ -3985,6 +4100,8 @@ sealed class CR {
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberRole -> "memberRole"
     is MemberRoleUser -> "memberRoleUser"
+    is MemberBlockedForAll -> "memberBlockedForAll"
+    is MemberBlockedForAllUser -> "memberBlockedForAllUser"
     is DeletedMemberUser -> "deletedMemberUser"
     is DeletedMember -> "deletedMember"
     is LeftMember -> "leftMember"
@@ -4017,6 +4134,7 @@ sealed class CR {
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
     is SndFileError -> "sndFileError"
+    is CallInvitations -> "callInvitations"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
     is CallAnswer -> "callAnswer"
@@ -4131,6 +4249,8 @@ sealed class CR {
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberRole -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
     is MemberRoleUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
+    is MemberBlockedForAll -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nblocked: $blocked")
+    is MemberBlockedForAllUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nblocked: $blocked")
     is DeletedMemberUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember")
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
@@ -4163,6 +4283,7 @@ sealed class CR {
     is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndFileError -> withUser(user, json.encodeToString(chatItem))
+    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
@@ -4437,6 +4558,7 @@ sealed class ChatErrorType {
       is EmptyUserPassword -> "emptyUserPassword"
       is UserAlreadyHidden -> "userAlreadyHidden"
       is UserNotHidden -> "userNotHidden"
+      is InvalidDisplayName -> "invalidDisplayName"
       is ChatNotStarted -> "chatNotStarted"
       is ChatNotStopped -> "chatNotStopped"
       is ChatStoreChanged -> "chatStoreChanged"
@@ -4514,6 +4636,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("emptyUserPassword") class EmptyUserPassword(val userId: Long): ChatErrorType()
   @Serializable @SerialName("userAlreadyHidden") class UserAlreadyHidden(val userId: Long): ChatErrorType()
   @Serializable @SerialName("userNotHidden") class UserNotHidden(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("invalidDisplayName") object InvalidDisplayName: ChatErrorType()
   @Serializable @SerialName("chatNotStarted") object ChatNotStarted: ChatErrorType()
   @Serializable @SerialName("chatNotStopped") object ChatNotStopped: ChatErrorType()
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
@@ -4731,6 +4854,7 @@ sealed class AgentErrorType {
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
     is INACTIVE -> "INACTIVE"
+    is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -4742,6 +4866,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
+  @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
 }
 
 @Serializable
@@ -4961,6 +5086,15 @@ sealed class RemoteHostError {
     is BadVersion -> "badVersion"
     is Disconnected -> "disconnected"
   }
+  fun localizedString(name: String): String = when (this) {
+    is Missing -> generalGetString(MR.strings.remote_host_error_missing)
+    is Inactive -> generalGetString(MR.strings.remote_host_error_inactive)
+    is Busy -> generalGetString(MR.strings.remote_host_error_busy)
+    is Timeout -> generalGetString(MR.strings.remote_host_error_timeout)
+    is BadState -> generalGetString(MR.strings.remote_host_error_bad_state)
+    is BadVersion -> generalGetString(MR.strings.remote_host_error_bad_version)
+    is Disconnected -> generalGetString(MR.strings.remote_host_error_disconnected)
+  }.format(name)
   @Serializable @SerialName("missing") object Missing: RemoteHostError()
   @Serializable @SerialName("inactive") object Inactive: RemoteHostError()
   @Serializable @SerialName("busy") object Busy: RemoteHostError()
@@ -4981,6 +5115,16 @@ sealed class RemoteCtrlError {
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
   }
+  val localizedString: String get() = when (this) {
+    is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
+    is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
+    is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
+    is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
+    is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
+    is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+  }
+
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()

@@ -295,7 +295,7 @@ struct ComposeView: View {
                             sendMessage(ttl: ttl)
                             resetLinkPreview()
                         },
-                        sendLiveMessage: sendLiveMessage,
+                        sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                         updateLiveMessage: updateLiveMessage,
                         cancelLiveMessage: {
                             composeState.liveMessage = nil
@@ -689,7 +689,7 @@ struct ComposeView: View {
                 let file = voiceCryptoFile(recordingFileName)
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
-                if let savedFile = saveFileFromURL(file, encrypted: privacyEncryptLocalFilesGroupDefault.get()) {
+                if let savedFile = saveFileFromURL(file) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
@@ -792,15 +792,17 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            if let chatItem = await apiSendMessage(
-                type: chat.chatInfo.chatType,
-                id: chat.chatInfo.apiId,
-                file: file,
-                quotedItemId: quoted,
-                msg: mc,
-                live: live,
-                ttl: ttl
-            ) {
+            if let chatItem = chat.chatInfo.chatType == .local
+                ? await apiCreateChatItem(noteFolderId: chat.chatInfo.apiId, file: file, msg: mc)
+                : await apiSendMessage(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    file: file,
+                    quotedItemId: quoted,
+                    msg: mc,
+                    live: live,
+                    ttl: ttl
+                ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
                     chatModel.addChatItem(chat.chatInfo, chatItem)
@@ -976,6 +978,9 @@ struct ComposeView: View {
     }
 
     private func cancelLinkPreview() {
+        if let pendingLink = pendingLinkUrl?.absoluteString {
+            cancelledLinks.insert(pendingLink)
+        }
         if let uri = composeState.linkPreview?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }

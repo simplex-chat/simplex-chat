@@ -25,6 +25,8 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.chat.item.markedDeletedText
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -36,7 +38,7 @@ fun ChatPreviewView(
   chatModelDraftChatId: ChatId?,
   currentUserProfileDisplayName: String?,
   contactNetworkStatus: NetworkStatus?,
-  stopped: Boolean,
+  disabled: Boolean,
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
   progressByTimeout: Boolean
@@ -127,24 +129,35 @@ fun ChatPreviewView(
 
   @Composable
   fun chatPreviewTitle() {
+    val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
     when (cInfo) {
       is ChatInfo.Direct ->
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (cInfo.contact.verified) {
             VerifiedIcon()
           }
-          chatPreviewTitleText()
+          chatPreviewTitleText(
+            if (deleting)
+              MaterialTheme.colors.secondary
+            else
+              Color.Unspecified
+          )
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
           GroupMemberStatus.MemInvited -> chatPreviewTitleText(
-            if (inProgress)
+            if (inProgress || deleting)
               MaterialTheme.colors.secondary
             else
               if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
           )
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(MaterialTheme.colors.secondary)
-          else -> chatPreviewTitleText()
+          else -> chatPreviewTitleText(
+            if (deleting)
+              MaterialTheme.colors.secondary
+            else
+              Color.Unspecified
+          )
         }
       else -> chatPreviewTitleText()
     }
@@ -158,7 +171,7 @@ fun ChatPreviewView(
         val (text: CharSequence, inlineTextContent) = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
           ci.meta.itemDeleted == null -> ci.text to null
-          else -> generalGetString(MR.strings.marked_deleted_description) to null
+          else -> markedDeletedText(ci.meta) to null
         }
         val formattedText = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> null
@@ -274,7 +287,7 @@ fun ChatPreviewView(
     Box(
       contentAlignment = Alignment.TopEnd
     ) {
-      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
+      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
       Text(
         ts,
         color = MaterialTheme.colors.secondary,
@@ -293,7 +306,7 @@ fun ChatPreviewView(
             color = Color.White,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (stopped || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+              .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -374,6 +387,6 @@ fun unreadCountStr(n: Int): String {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
+    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
   }
 }

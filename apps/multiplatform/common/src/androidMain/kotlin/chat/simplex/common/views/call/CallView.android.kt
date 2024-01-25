@@ -383,7 +383,7 @@ private fun DisabledBackgroundCallsButton() {
       Modifier
         .padding(bottom = 24.dp)
         .clickable {
-          withBGApi {
+          withLongRunningApi {
             show = !platform.androidAskToAllowBackgroundCalls()
           }
         }

@@ -54,7 +54,7 @@
     "simplex-unique-4-title": "Possiedi la rete SimpleX",
     "simplex-unique-4-overlay-1-title": "Completamente decentralizzata &mdash; gli utenti possiedono la rete SimpleX",
     "hero-overlay-card-1-p-1": "Molti utenti hanno chiesto: <em>se SimpleX non ha identificatori utente, come può sapere dove recapitare i messaggi? </em>",
-    "hero-overlay-card-1-p-3": "Sei tu a definire quale/i server usare per ricevere i messaggi, i tuoi contatti &mdash; i server che usi per inviare loro i messaggi. È probabile che ogni conversazione utilizzi due server diversi.",
+    "hero-overlay-card-1-p-3": "Sei tu a definire quale/i server usare per ricevere i messaggi, i tuoi contatti i server che usi per inviare loro i messaggi. È probabile che ogni conversazione utilizzi due server diversi.",
     "hero-overlay-card-1-p-5": "Solo i dispositivi client conservano profili utente, contatti e gruppi; i messaggi vengono inviati con crittografia end-to-end a 2 livelli.",
     "hero-overlay-card-1-p-6": "Maggiori informazioni nel <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>libro bianco di SimpleX</a>.",
     "hero-overlay-card-2-p-2": "Potrebbero quindi correlare queste informazioni con i social network pubblici esistenti e determinare alcune identità reali.",

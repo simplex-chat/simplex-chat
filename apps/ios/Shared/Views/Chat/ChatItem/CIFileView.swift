@@ -52,7 +52,7 @@ struct CIFileView: View {
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
-            case .sndStored: return false
+            case .sndStored: return file.fileProtocol == .local
             case .sndTransfer: return false
             case .sndComplete: return false
             case .sndCancelled: return false
@@ -85,8 +85,7 @@ struct CIFileView: View {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         if let user = m.currentUser {
-                            let encrypted = privacyEncryptLocalFilesGroupDefault.get()
-                            await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
+                            await receiveFile(user: user, fileId: file.fileId)
                         }
                     }
                 } else {
@@ -108,10 +107,16 @@ struct CIFileView: View {
                         title: "Waiting for file",
                         message: "File will be received when your contact is online, please wait or check later!"
                     )
+                case .local: ()
                 }
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
+                    saveCryptoFile(fileSource)
+                }
+            case .sndStored:
+                logger.debug("CIFileView fileAction - in .sndStored")
+                if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
                     saveCryptoFile(fileSource)
                 }
             default: break
@@ -126,11 +131,13 @@ struct CIFileView: View {
                 switch file.fileProtocol {
                 case .xftp: progressView()
                 case .smp: fileIcon("doc.fill")
+                case .local: fileIcon("doc.fill")
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
                 case .xftp: progressCircle(sndProgress, sndTotal)
                 case .smp: progressView()
+                case .local: EmptyView()
                 }
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)

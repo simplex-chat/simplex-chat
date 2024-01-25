@@ -35,6 +35,7 @@ import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -50,7 +51,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 
 class IsContact a where
@@ -112,7 +113,8 @@ data User = User
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
-    sendRcptsSmallGroups :: Bool
+    sendRcptsSmallGroups :: Bool,
+    userMemberProfileUpdatedAt :: Maybe UTCTime
   }
   deriving (Show)
 
@@ -346,7 +348,8 @@ data GroupInfo = GroupInfo
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime
+    chatTs :: Maybe UTCTime,
+    userMemberProfileSentAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -481,6 +484,10 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
+redactedMemberProfile :: Profile -> Profile
+redactedMemberProfile Profile {displayName, fullName, image} =
+  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
+
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
@@ -590,9 +597,55 @@ data MemberInfo = MemberInfo
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole cvr (fromLocalProfile memberProfile)
-  where
-    cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
+  MemberInfo
+    { memberId,
+      memberRole,
+      v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
+      profile = redactedMemberProfile $ fromLocalProfile memberProfile
+    }
+
+data MemberRestrictionStatus
+  = MRSBlocked
+  | MRSUnrestricted
+  | MRSUnknown Text
+  deriving (Eq, Show)
+
+instance FromField MemberRestrictionStatus where fromField = fromBlobField_ strDecode
+
+instance ToField MemberRestrictionStatus where toField = toField . strEncode
+
+instance StrEncoding MemberRestrictionStatus where
+  strEncode = \case
+    MRSBlocked -> "blocked"
+    MRSUnrestricted -> "unrestricted"
+    MRSUnknown tag -> encodeUtf8 tag
+  strDecode s = Right $ case s of
+    "blocked" -> MRSBlocked
+    "unrestricted" -> MRSUnrestricted
+    tag -> MRSUnknown $ safeDecodeUtf8 tag
+  strP = strDecode <$?> A.takeByteString
+
+instance FromJSON MemberRestrictionStatus where
+  parseJSON = strParseJSON "MemberRestrictionStatus"
+
+instance ToJSON MemberRestrictionStatus where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+mrsBlocked :: MemberRestrictionStatus -> Bool
+mrsBlocked = \case
+  MRSBlocked -> True
+  _ -> False
+
+data MemberRestrictions = MemberRestrictions
+  { restriction :: MemberRestrictionStatus
+  }
+  deriving (Eq, Show)
+
+memberRestrictions :: GroupMember -> Maybe MemberRestrictions
+memberRestrictions m
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked}
+  | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -613,6 +666,7 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
+    blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -673,6 +727,7 @@ data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
+    memRestriction :: Maybe MemberRestrictionStatus,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -825,6 +880,7 @@ data GroupMemberStatus
   = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
+  | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
@@ -851,6 +907,7 @@ memberActive m = case memberStatus m of
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
@@ -869,6 +926,7 @@ memberCurrent' = \case
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
@@ -883,6 +941,7 @@ memberRemoved m = case memberStatus m of
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
@@ -897,6 +956,7 @@ instance TextEncoding GroupMemberStatus where
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
+    "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
@@ -910,6 +970,7 @@ instance TextEncoding GroupMemberStatus where
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
+    GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"
@@ -1155,6 +1216,15 @@ data FileTransferMeta = FileTransferMeta
     fileInline :: Maybe InlineFileMode,
     chunkSize :: Integer,
     cancelled :: Bool
+  }
+  deriving (Eq, Show)
+
+data LocalFileMeta = LocalFileMeta
+  { fileId :: FileTransferId,
+    fileName :: String,
+    filePath :: String,
+    fileSize :: Integer,
+    fileCryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show)
 
@@ -1522,6 +1592,20 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
+-- | Entity for local chats
+data NoteFolder = NoteFolder
+  { noteFolderId :: NoteFolderId,
+    userId :: UserId,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    chatTs :: UTCTime,
+    favorite :: Bool,
+    unread :: Bool
+  }
+  deriving (Eq, Show)
+
+type NoteFolderId = Int64
+
 data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
     preset :: Bool,
@@ -1606,6 +1690,8 @@ $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
 $(JQ.deriveJSON defaultJSON ''MemberInfo)
 
+$(JQ.deriveJSON defaultJSON ''MemberRestrictions)
+
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 
 $(JQ.deriveJSON defaultJSON ''FileDescr)
@@ -1628,6 +1714,8 @@ $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
 
+$(JQ.deriveJSON defaultJSON ''LocalFileMeta)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FT") ''FileTransfer)
 
 $(JQ.deriveJSON defaultJSON ''UserPwdHash)
@@ -1641,6 +1729,8 @@ $(JQ.deriveJSON defaultJSON ''UserInfo)
 $(JQ.deriveJSON defaultJSON ''Contact)
 
 $(JQ.deriveJSON defaultJSON ''ContactRef)
+
+$(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)

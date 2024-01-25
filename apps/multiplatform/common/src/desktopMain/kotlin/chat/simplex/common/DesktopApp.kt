@@ -185,7 +185,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
     }
   }
   // Reload all strings in all @Composable's after language change at runtime
-  if (remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
+  if (remember { ChatController.appPrefs.developerTools.state }.value && remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)

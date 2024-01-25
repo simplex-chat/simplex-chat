@@ -1,0 +1,15 @@
+{
+  "colors" : [
+    {
+      "idiom" : "universal",
+      "locale" : "tr"
+    }
+  ],
+  "properties" : {
+    "localizable" : true
+  },
+  "info" : {
+    "version" : 1,
+    "author" : "xcode"
+  }
+}
