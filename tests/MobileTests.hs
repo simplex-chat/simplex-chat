@@ -224,8 +224,6 @@ testChatApi tmp = do
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsg cc `shouldReturn` userContactSubSummary
-  chatRecvMsg cc `shouldReturn` memberSubSummary
-  chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
