@@ -1551,7 +1551,7 @@
     <string name="tap_to_scan">Tik om te scannen</string>
     <string name="keep_invitation_link">Bewaar</string>
     <string name="tap_to_paste_link">Tik om de link te plakken</string>
-    <string name="search_or_paste_simplex_link">Zoek of plak een SimpleX link</string>
+    <string name="search_or_paste_simplex_link">Zoeken of plak een SimpleX link</string>
     <string name="chat_is_stopped_you_should_transfer_database">De chat is gestopt. Als u deze database al op een ander apparaat heeft gebruikt, moet u deze terugzetten voordat u met chatten begint.</string>
     <string name="start_chat_question">Begin chat?</string>
     <string name="show_internal_errors">Toon interne fouten</string>
