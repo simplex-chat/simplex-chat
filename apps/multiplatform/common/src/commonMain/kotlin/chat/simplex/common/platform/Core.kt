@@ -63,7 +63,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
-    if (res is DBMigrationResult.ErrorMigration && confirm != MigrationConfirmation.Error) {
+    if (res is DBMigrationResult.ErrorMigration && !(res.migrationError is MigrationError.Downgrade && confirm == MigrationConfirmation.YesUp) && confirm != MigrationConfirmation.Error) {
       chatModel.dbMigrationInProgress.value = true
       migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
       res = runCatching {
