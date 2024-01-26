@@ -642,7 +642,8 @@ object ChatModel {
   }
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.value.size >= 500) {
+    val maxItems = if (appPreferences.developerTools.get()) 500 else 200
+    if (terminalItems.value.size >= maxItems) {
       terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
     }
     terminalItems.value += item
