@@ -238,7 +238,7 @@
     <string name="icon_descr_call_progress">Arama yapılıyor</string>
     <string name="icon_descr_call_rejected">Geri çevrilmiş çağrı</string>
     <string name="icon_descr_call_ended">Görüşme bitti.</string>
-    <string name="alert_text_decryption_error_too_many_skipped">%1$d mesajlar atlanıldı.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d mesaj atlanıldı.</string>
     <string name="chat_database_deleted">Sohbet veritabanı silindi</string>
     <string name="error_with_info">Hata: %s</string>
     <string name="unknown_error">Bilinmeyen hata</string>
@@ -1306,7 +1306,7 @@
     <string name="receipts_contacts_override_enabled">Alıcılar %d bağlantıları için etkinleştirilecektir</string>
     <string name="moderate_message_will_be_marked_warning">Mesaj herkes için yönetilmiş olarak işaretlenecek.</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Bu senin kendi tek-kullanımlık bağlantın!</string>
-    <string name="marked_deleted_items_description">%d mesajları silinmiş olarak işaretlendi</string>
+    <string name="marked_deleted_items_description">%d mesaj silinmiş olarak işaretlendi</string>
     <string name="connect_use_new_incognito_profile">Yeni sahte profil kullan</string>
     <string name="chat_is_stopped_you_should_transfer_database">Sohbet durduruldu. Eğer çoktan başka bir cihazda bu veritabanını kullandıysan,sohbeti başlatmadan önce veritabanını geri aktarmalısın.</string>
     <string name="send_link_previews">Bağlantı ön izlemelerini gönder</string>
@@ -1359,7 +1359,7 @@
     <string name="share_text_sent_at">%s de gönderildi</string>
     <string name="enable_sending_recent_history">Yeni katılımcılara 100e kadar son mesajlar gönder</string>
     <string name="moderate_verb">Yönet</string>
-    <string name="moderated_items_description">%1$d mesajları %2$s tarafından yönetildi</string>
+    <string name="moderated_items_description">%1$d mesaj %2$s tarafından yönetildi</string>
     <string name="remove_passphrase_from_settings">Ayarlardaki parola silinsin mi?</string>
     <string name="receipts_contacts_title_enable">Alıcılar etkinleştirilsin mi?</string>
     <string name="tap_to_start_new_chat">Yeni bir sohbet başlatmak için tıkla</string>
@@ -1429,7 +1429,7 @@
     <string name="set_database_passphrase">Veritabanı parolası ayarla</string>
     <string name="share_this_1_time_link">Bu tek-kullanımlık davet bağlantısını paylaş</string>
     <string name="unblock_member_question">Kişinin engeli kaldırılsın mı?</string>
-    <string name="blocked_items_description">%d mesajları engellendi</string>
+    <string name="blocked_items_description">%d mesaj engellendi</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Grup oluştur</b>: yeni bir grup oluşturmak için.]]></string>
     <string name="icon_descr_video_asked_to_receive">Videoyu almak için soruldu</string>
     <string name="open_port_in_firewall_desc">Telefon uygulamanın bilgisayarına bağlanmasına izin vermek için, güvenlik duvarın etkin ise bu portu aç</string>
@@ -1633,4 +1633,6 @@
     <string name="error_creating_message">Mesaj oluşturulurken hata</string>
     <string name="error_deleting_note_folder">Gizli notlar silinirken hata</string>
     <string name="note_folder_local_display_name">Gizli notlar</string>
+    <string name="welcome_message_is_too_long">Hoşgeldin mesajı çok uzun</string>
+    <string name="message_too_large">Mesaj çok büyük</string>
 </resources>
