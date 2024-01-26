@@ -1035,6 +1035,7 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
         deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
+        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         pure $ CRGroupDeletedUser user gInfo
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
@@ -1686,17 +1687,9 @@ processChatCommand' vr = \case
             createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-          updateCIGroupInvitationStatus user
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` \_ -> pure ()
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
-    where
-      updateCIGroupInvitationStatus user = do
-        AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db vr user groupId
-        case (cInfo, content) of
-          (DirectChat ct, CIRcvGroupInvitation ciGroupInv memRole) -> do
-            let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = CIGISAccepted} memRole
-            updateDirectChatItemView user ct itemId aciContent False Nothing
-          _ -> pure () -- prohibited
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
     if memberId == groupMemberId' membership
@@ -2512,6 +2505,14 @@ processChatCommand' vr = \case
         cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
+    updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
+      AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db vr user groupId
+      case (cInfo, content) of
+        (DirectChat ct, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
+          | status == CIGISPending -> do
+              let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = newStatus} memRole
+              updateDirectChatItemView user ct itemId aciContent False Nothing
+        _ -> pure () -- prohibited
 
 toggleNtf :: ChatMonad m => User -> GroupMember -> Bool -> m ()
 toggleNtf user m ntfOn =
