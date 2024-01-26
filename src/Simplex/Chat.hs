@@ -1028,6 +1028,7 @@ processChatCommand' vr = \case
         when (memberActive membership && isOwner) . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections user members
+        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
@@ -1035,7 +1036,6 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
         deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
-        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         pure $ CRGroupDeletedUser user gInfo
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
