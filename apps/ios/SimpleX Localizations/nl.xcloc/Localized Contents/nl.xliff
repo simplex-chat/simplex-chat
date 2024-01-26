@@ -4539,9 +4539,9 @@ Fout: %@</target>
         <target>Zoekbalk accepteert uitnodigingslinks.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
         <source>Search or paste SimpleX link</source>
-        <target>Zoek of plak een SimpleX link</target>
+        <target state="translated">Zoeken of plak een SimpleX link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
