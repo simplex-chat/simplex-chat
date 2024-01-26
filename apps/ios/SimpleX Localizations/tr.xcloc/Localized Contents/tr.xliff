@@ -212,24 +212,24 @@
         <target>%lld üyeler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked" xml:space="preserve">
+      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
-        <target>%lld mesajlar engellendi</target>
+        <target state="translated">%lld mesaj engellendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
         <source>%lld messages blocked by admin</source>
-        <target state="translated">%lld mesajlar yönetici tarafından engellendi</target>
+        <target state="translated">%lld mesaj yönetici tarafından engellendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages marked deleted" xml:space="preserve">
+      <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
         <source>%lld messages marked deleted</source>
-        <target>%lld mesajlar silinmiş olarak işaretlendi</target>
+        <target state="translated">%lld mesaj silinmiş olarak işaretlendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
-        <target>%lld mesajları %@ tarafından yönetildi</target>
+        <target state="translated">%lld mesaj %@ tarafından yönetildi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
@@ -1621,9 +1621,9 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Sil</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Delete %lld messages?" xml:space="preserve">
+      <trans-unit id="Delete %lld messages?" xml:space="preserve" approved="no">
         <source>Delete %lld messages?</source>
-        <target>%lld mesajları silinsin mi?</target>
+        <target state="translated">%lld mesaj silinsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete Contact" xml:space="preserve">
