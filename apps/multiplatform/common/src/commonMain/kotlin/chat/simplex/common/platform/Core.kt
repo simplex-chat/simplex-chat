@@ -59,10 +59,17 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
-    val res: DBMigrationResult = kotlin.runCatching {
+    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+    if (res is DBMigrationResult.ErrorMigration && confirm != MigrationConfirmation.Error) {
+      chatModel.dbMigrationInProgress.value = true
+      migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      res = runCatching {
+        json.decodeFromString<DBMigrationResult>(migrated[0] as String)
+      }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+    }
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
@@ -120,6 +127,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
   } finally {
     chatModel.ctrlInitInProgress.value = false
+    chatModel.dbMigrationInProgress.value = false
   }
 }
 
