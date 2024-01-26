@@ -5,6 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 
@@ -20,7 +21,7 @@ fun DefaultProgressView(description: String?) {
         strokeWidth = 2.5.dp
       )
       if (description != null) {
-        Text(description)
+        Text(description, textAlign = TextAlign.Center)
       }
     }
   }
