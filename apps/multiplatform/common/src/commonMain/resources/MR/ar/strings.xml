@@ -1630,4 +1630,6 @@
     <string name="block_for_all_question">حظر العضو للجميع؟</string>
     <string name="blocked_by_admin_item_description">محظور من قبل المشرف</string>
     <string name="member_blocked_by_admin">محظور من قبل المشرف</string>
+    <string name="message_too_large">الرسالة كبيرة جدًا</string>
+    <string name="welcome_message_is_too_long">رسالة الترحيب طويلة جدًا</string>
 </resources>
