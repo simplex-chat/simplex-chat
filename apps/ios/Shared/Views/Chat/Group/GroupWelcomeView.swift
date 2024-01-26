@@ -98,8 +98,8 @@ struct GroupWelcomeView: View {
                 .disabled(welcomeText.isEmpty)
                 copyButton()
             } footer: {
-                Text(welcomeText.isEmpty ? "Message size: \(maxByteCount)" : "Message size: \(chatJsonLength(welcomeText)) / \(maxByteCount)")
-                    .foregroundColor(welcomeTextFitsLimit() ? .secondary : .red)
+                Text(!welcomeTextFitsLimit() ? "Message too large" : "")
+                    .foregroundColor(.red)
             }
 
             Section {
