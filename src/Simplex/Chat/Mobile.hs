@@ -271,9 +271,18 @@ chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO 
 chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
-chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
+chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
   where
     json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
+    readChatResponse = do
+      out@(_, _, cr) <- atomically $ readTBQueue outputQ
+      if filterEvent cr then pure out else readChatResponse
+    filterEvent = \case
+      CRGroupSubscribed {} -> False
+      CRGroupEmpty {} -> False
+      CRMemberSubSummary {} -> False
+      CRPendingSubSummary {} -> False
+      _ -> True
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
