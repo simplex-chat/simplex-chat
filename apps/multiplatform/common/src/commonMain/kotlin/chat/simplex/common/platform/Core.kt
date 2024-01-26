@@ -63,7 +63,13 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
-    if (res is DBMigrationResult.ErrorMigration && !(res.migrationError is MigrationError.Downgrade && confirm == MigrationConfirmation.YesUp) && confirm != MigrationConfirmation.Error) {
+    val rerunMigration = res is DBMigrationResult.ErrorMigration && when (res.migrationError) {
+      // we don't allow to run down migrations without confirmation in UI, so currently it won't be YesUpDown
+      is MigrationError.Upgrade -> confirm == MigrationConfirmation.YesUp || confirm == MigrationConfirmation.YesUpDown
+      is MigrationError.Downgrade ->  confirm == MigrationConfirmation.YesUpDown
+      is MigrationError.Error -> false
+    }
+    if (rerunMigration) {
       chatModel.dbMigrationInProgress.value = true
       migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
       res = runCatching {
