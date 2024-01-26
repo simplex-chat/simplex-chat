@@ -749,7 +749,9 @@ struct ChatView: View {
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction(ci))
                 }
-                menu.append(viewInfoUIAction(ci))
+                if !ci.isLiveDummy {
+                    menu.append(viewInfoUIAction(ci))
+                }
                 if revealed {
                     menu.append(hideUIAction())
                 }
