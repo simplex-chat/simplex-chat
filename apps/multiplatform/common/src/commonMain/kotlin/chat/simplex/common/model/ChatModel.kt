@@ -64,8 +64,6 @@ object ChatModel {
 
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
-  // Allows to temporary save servers that are being edited on multiple screens
-  val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent

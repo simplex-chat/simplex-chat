@@ -177,7 +177,8 @@ fun ChatItemView(
         fun MsgContentItemDropdownMenu() {
           val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
           when {
-            cItem.content.msgContent != null -> {
+            // cItem.id check is a special case for live message chat item which has negative ID while not sent yet
+            cItem.content.msgContent != null && cItem.id >= 0 -> {
               DefaultDropdownMenu(showMenu) {
                 if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                   MsgReactionsMenu()
