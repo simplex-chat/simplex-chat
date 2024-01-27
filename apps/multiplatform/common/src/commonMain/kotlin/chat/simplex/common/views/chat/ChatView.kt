@@ -1067,6 +1067,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
+  if (appPlatform.isDesktop) {
+    VerticalScrollbar(
+      modifier = Modifier.align(Alignment.CenterEnd)
+        .fillMaxHeight(),
+      adapter = rememberScrollbarAdapter(listState),
+      reverseLayout = true
+    )
+  }
   FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
 }
 
