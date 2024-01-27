@@ -1189,62 +1189,78 @@
         <target state="translated">Biztonsági kódok összehasonlítása az ismerősökkel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure ICE servers" xml:space="preserve">
+      <trans-unit id="Configure ICE servers" xml:space="preserve" approved="no">
         <source>Configure ICE servers</source>
+        <target state="translated">ICE szerverek beállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm" xml:space="preserve">
+      <trans-unit id="Confirm" xml:space="preserve" approved="no">
         <source>Confirm</source>
+        <target state="translated">Megerősítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm Passcode" xml:space="preserve">
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
         <source>Confirm Passcode</source>
+        <target state="translated">Jelkód megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm database upgrades" xml:space="preserve">
+      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
         <source>Confirm database upgrades</source>
+        <target state="translated">Adatbázis frissítés megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm new passphrase…" xml:space="preserve">
+      <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
+        <target state="translated">Új jelmondat megerősítése…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm password" xml:space="preserve">
+      <trans-unit id="Confirm password" xml:space="preserve" approved="no">
         <source>Confirm password</source>
+        <target state="translated">Jelszó megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect" xml:space="preserve">
+      <trans-unit id="Connect" xml:space="preserve" approved="no">
         <source>Connect</source>
+        <target state="translated">Kapcsolódás</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Connect automatically" xml:space="preserve">
+      <trans-unit id="Connect automatically" xml:space="preserve" approved="no">
         <source>Connect automatically</source>
+        <target state="translated">Kapcsolódás automatikusan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect incognito" xml:space="preserve">
+      <trans-unit id="Connect incognito" xml:space="preserve" approved="no">
         <source>Connect incognito</source>
+        <target state="translated">Inkognítóban csatlakozva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to desktop" xml:space="preserve">
+      <trans-unit id="Connect to desktop" xml:space="preserve" approved="no">
         <source>Connect to desktop</source>
+        <target state="translated">Kapcsolódás az asztali klienshez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to yourself?" xml:space="preserve">
+      <trans-unit id="Connect to yourself?" xml:space="preserve" approved="no">
         <source>Connect to yourself?</source>
+        <target state="translated">Kapcsolódás saját magadhoz?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve">
+      <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve" approved="no">
         <source>Connect to yourself?
 This is your own SimpleX address!</source>
+        <target state="translated">Kapcsolódás saját magadhoz?
+Ez a te saját SimpleX azonosítód!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve">
+      <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve" approved="no">
         <source>Connect to yourself?
 This is your own one-time link!</source>
+        <target state="translated">Kapcsolódás saját magadhoz?
+Ez a te egyszer használatos linked!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via contact address" xml:space="preserve">
+      <trans-unit id="Connect via contact address" xml:space="preserve" approved="no">
         <source>Connect via contact address</source>
+        <target state="translated">Kapcsolódás ismerős azonosítója által</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve">
@@ -1656,52 +1672,64 @@ This cannot be undone!</source>
         <source>Delete old database?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete pending connection" xml:space="preserve">
+      <trans-unit id="Delete pending connection" xml:space="preserve" approved="no">
         <source>Delete pending connection</source>
+        <target state="translated">Függőben lévő kapcsolat törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete pending connection?" xml:space="preserve">
+      <trans-unit id="Delete pending connection?" xml:space="preserve" approved="no">
         <source>Delete pending connection?</source>
+        <target state="translated">Törlöd a függőben lévő kapcsolatfelvételi kérést?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete profile" xml:space="preserve">
+      <trans-unit id="Delete profile" xml:space="preserve" approved="no">
         <source>Delete profile</source>
+        <target state="translated">Profil törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete queue" xml:space="preserve">
+      <trans-unit id="Delete queue" xml:space="preserve" approved="no">
         <source>Delete queue</source>
+        <target state="translated">Várólista törlése</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete user profile?" xml:space="preserve">
+      <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
         <source>Delete user profile?</source>
+        <target state="translated">Törlöd a felhasználói profilt?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at" xml:space="preserve">
+      <trans-unit id="Deleted at" xml:space="preserve" approved="no">
         <source>Deleted at</source>
+        <target state="translated">Törölve ekkor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at: %@" xml:space="preserve">
+      <trans-unit id="Deleted at: %@" xml:space="preserve" approved="no">
         <source>Deleted at: %@</source>
+        <target state="translated">Törölve ekkor: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery" xml:space="preserve">
+      <trans-unit id="Delivery" xml:space="preserve" approved="no">
         <source>Delivery</source>
+        <target state="translated">Kézbesítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
+        <target state="translated">Kézbesítési igazolások kikapcsolva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve">
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
+        <target state="translated">Kézbesítési igazolások!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Description" xml:space="preserve">
+      <trans-unit id="Description" xml:space="preserve" approved="no">
         <source>Description</source>
+        <target state="translated">Leírás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Desktop address" xml:space="preserve">
+      <trans-unit id="Desktop address" xml:space="preserve" approved="no">
         <source>Desktop address</source>
+        <target state="translated">Számítógép azonosítója</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve">
