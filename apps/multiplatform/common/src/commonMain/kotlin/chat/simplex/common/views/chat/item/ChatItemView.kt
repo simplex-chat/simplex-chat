@@ -527,8 +527,9 @@ fun DeleteItemAction(
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (range != null) {
             val itemIds: ArrayList<Long> = arrayListOf()
+            val reversedChatItems = chatModel.chatItems.asReversed()
             for (i in range) {
-              itemIds.add(chatModel.chatItems.asReversed()[i].id)
+              itemIds.add(reversedChatItems[i].id)
             }
             deleteMessagesAlertDialog(itemIds, generalGetString(MR.strings.delete_message_mark_deleted_warning), deleteMessages = deleteMessages)
           } else {
