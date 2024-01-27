@@ -105,6 +105,11 @@ public func parseSimpleXMarkdown(_ s: String) -> [FormattedText]? {
     return nil
 }
 
+public func chatJsonLength(_ s: String) -> Int {
+    var c = s.cString(using: .utf8)!
+    return Int(chat_json_length(&c))
+}
+
 struct ParsedMarkdown: Decodable {
     var formattedText: [FormattedText]?
 }

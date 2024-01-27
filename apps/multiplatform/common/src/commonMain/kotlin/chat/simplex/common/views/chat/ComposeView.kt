@@ -583,6 +583,10 @@ fun ComposeView(
   }
 
   fun cancelLinkPreview() {
+    val pendingLink = pendingLinkUrl.value
+    if (pendingLink != null) {
+      cancelledLinks.add(pendingLink)
+    }
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
       cancelledLinks.add(uri)
@@ -661,7 +665,7 @@ fun ComposeView(
 
   fun editPrevMessage() {
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
-    val lastEditable = chatModel.chatItems.findLast { it.meta.editable }
+    val lastEditable = chatModel.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
       composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
     }

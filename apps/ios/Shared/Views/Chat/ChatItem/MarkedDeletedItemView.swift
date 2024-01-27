@@ -65,6 +65,8 @@ struct MarkedDeletedItemView: View {
         }
     }
 
+    // same texts are in markedDeletedText in ChatPreviewView, but it returns String;
+    // can be refactored into a single function if functions calling these are changed to return same type
     var markedDeletedText: LocalizedStringKey {
         switch chatItem.meta.itemDeleted {
         case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"

@@ -30,8 +30,12 @@
                 <div class="absolute mt-[-100px]">
                     <img class="" src="/img/new/contact_page_mobile.png" alt="">
                 </div>
+                
+                <noscript class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
+                    <p class="text-2xl font-medium text-center max-w-[234px] mb-32">{{ "please-enable-javascript" | i18n({}, lang ) | safe }}</p>
+                </noscript>
 
-                <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
+                <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px] d-none-if-js-disabled">
                     <p class="text-base font-medium text-center max-w-[234px]">{{ "scan-qr-code-from-mobile-app" | i18n({}, lang ) | safe }}</p>
                     <canvas class="conn_req_uri_qrcode"></canvas>
                 </div>
@@ -61,7 +65,11 @@
             </div>
 
             <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
-                <p class="text-xl font-medium text-grey-black dark:text-white mb-4">{{ "connect-in-app" | i18n({}, lang ) | safe }}</p>
+                <p class="text-xl font-medium text-grey-black dark:text-white mb-4 d-none-if-js-disabled">{{ "connect-in-app" | i18n({}, lang ) | safe }}</p>
+                <noscript>
+                    <p class="text-xl font-medium text-grey-black dark:text-white mb-4">{{ "please-use-link-in-mobile-app" | i18n({}, lang ) | safe }}</p>
+                </noscript>
+
                 <a id="mobile_conn_req_uri" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">{{ "open-simplex-app" | i18n({}, lang ) | safe }}</a>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
@@ -69,7 +77,7 @@
                 </div>
             </div>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative">
+            <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative d-none-if-js-disabled">
                 <p class="text-xl font-medium text-grey-black dark:text-white max-w-[230px] text-center">{{ "tap-the-connect-button-in-the-app" | i18n({}, lang ) | safe }}</p>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
@@ -81,7 +89,7 @@
 </section>
 
 
-<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[20px]">
+<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[20px] d-none-if-js-disabled">
     <div class="container px-5">
         <div class="text-grey-black dark:text-white">
             
@@ -164,3 +172,7 @@
 
 {# join simplex #}
 {% include "sections/join_simplex.html" %}
+
+<script>
+    document.querySelectorAll('.d-none-if-js-disabled').forEach(el => el.classList.remove('d-none-if-js-disabled'));
+</script>

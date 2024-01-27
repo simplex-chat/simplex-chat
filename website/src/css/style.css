@@ -957,3 +957,7 @@ p a{
     top: calc(66px + 2rem);
   }
 }
+
+.d-none-if-js-disabled{
+  display: none !important;
+}

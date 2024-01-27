@@ -47,10 +47,6 @@ fun NetworkAndServersView(
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
 
-  LaunchedEffect(Unit) {
-    chatModel.userSMPServersUnsaved.value = null
-  }
-
   val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
   NetworkAndServersLayout(
     currentRemoteHost = currentRemoteHost,
