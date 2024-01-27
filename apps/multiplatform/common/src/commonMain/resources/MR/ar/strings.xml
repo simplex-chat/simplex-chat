@@ -1632,4 +1632,6 @@
     <string name="member_blocked_by_admin">محظور من قبل المشرف</string>
     <string name="message_too_large">الرسالة كبيرة جدًا</string>
     <string name="welcome_message_is_too_long">رسالة الترحيب طويلة جدًا</string>
+    <string name="database_migration_in_progress">ترحيل قاعدة البيانات قيد التقدم.
+\nقد يستغرق بضع دقائق.</string>
 </resources>
