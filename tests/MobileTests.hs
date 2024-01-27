@@ -68,6 +68,8 @@ mobileTests = do
       it "no exception on missing file" testMissingFileEncryptionCApi
     describe "validate name" $ do
       it "should convert invalid name to a valid name" testValidNameCApi
+    describe "JSON length" $ do
+      it "should compute length of JSON encoded string" testChatJsonLengthCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -222,8 +224,6 @@ testChatApi tmp = do
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsg cc `shouldReturn` userContactSubSummary
-  chatRecvMsg cc `shouldReturn` memberSubSummary
-  chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
@@ -355,6 +355,13 @@ testValidNameCApi _ = do
   peekCString cName1 `shouldReturn` goodName
   cName2 <- cChatValidName =<< newCString " @'Джон'  Доу   👍 "
   peekCString cName2 `shouldReturn` goodName
+
+testChatJsonLengthCApi :: FilePath -> IO ()
+testChatJsonLengthCApi _ = do
+  cInt1 <- cChatJsonLength =<< newCString "Hello!"
+  cInt1 `shouldBe` 6
+  cInt2 <- cChatJsonLength =<< newCString "こんにちは！"
+  cInt2 `shouldBe` 18
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

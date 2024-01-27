@@ -365,10 +365,25 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
     }
 }
 
+func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
+    let r = await chatSendCmd(.apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg))
+    if case let .newChatItem(_, aChatItem) = r { return aChatItem.chatItem }
+    createChatItemErrorAlert(r)
+    return nil
+}
+
 private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("apiSendMessage error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
+        message: "Error: \(String(describing: r))"
+    )
+}
+
+private func createChatItemErrorAlert(_ r: ChatResponse) {
+    logger.error("apiCreateChatItem error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating message",
         message: "Error: \(String(describing: r))"
     )
 }
@@ -1126,6 +1141,12 @@ func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMembe
     throw r
 }
 
+func apiBlockMemberForAll(_ groupId: Int64, _ memberId: Int64, _ blocked: Bool) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiBlockMemberForAll(groupId: groupId, memberId: memberId, blocked: blocked), bgTask: false)
+    if case let .memberBlockedForAllUser(_, _, member, _) = r { return member }
+    throw r
+}
+
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)
@@ -1151,7 +1172,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
-        .filter{ !memberContactIds.contains($0.apiId) }
+        .filter{ c in c.ready && c.active && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
@@ -1324,8 +1345,12 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     try getUserChatData()
 }
 
-func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
-    let currentUser = try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?) async throws {
+    let currentUser = if let userId = userId {
+        try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+    } else {
+        try apiGetActiveUser()
+    }
     let users = try await listUsersAsync()
     await MainActor.run {
         let m = ChatModel.shared
@@ -1334,7 +1359,7 @@ func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
     }
     try await getUserChatDataAsync()
     await MainActor.run {
-        if var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
+        if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
             activateCall(invitation)
         }
@@ -1350,14 +1375,21 @@ func getUserChatData() throws {
 }
 
 private func getUserChatDataAsync() async throws {
-    let userAddress = try await apiGetUserAddressAsync()
-    let chatItemTTL = try await getChatItemTTLAsync()
-    let chats = try await apiGetChatsAsync()
-    await MainActor.run {
-        let m = ChatModel.shared
-        m.userAddress = userAddress
-        m.chatItemTTL = chatItemTTL
-        m.chats = chats.map { Chat.init($0) }
+    let m = ChatModel.shared
+    if m.currentUser != nil {
+        let userAddress = try await apiGetUserAddressAsync()
+        let chatItemTTL = try await getChatItemTTLAsync()
+        let chats = try await apiGetChatsAsync()
+        await MainActor.run {
+            m.userAddress = userAddress
+            m.chatItemTTL = chatItemTTL
+            m.chats = chats.map { Chat.init($0) }
+        }
+    } else {
+        await MainActor.run {
+            m.userAddress = nil
+            m.chats = []
+        }
     }
 }
 
@@ -1648,6 +1680,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
+        }
+    case let .memberBlockedForAll(user, groupInfo, byMember: _, member: member, blocked: _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)

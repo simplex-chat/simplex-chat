@@ -351,7 +351,6 @@ object ChatController {
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
       appPrefs.chatStopped.set(false)
@@ -410,9 +409,9 @@ object ChatController {
     }
   }
 
-  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long, viewPwd: String?) {
+  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
     val currentUser = changingActiveUserMutex.withLock {
-      apiSetActiveUser(rhId, toUserId, viewPwd).also {
+      (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
         chatModel.currentUser.value = it
       }
     }
@@ -421,7 +420,7 @@ object ChatController {
     chatModel.users.addAll(users)
     getUserChatData(rhId)
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
-    if (invitation != null) {
+    if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
   }
@@ -466,19 +465,19 @@ object ChatController {
   suspend fun sendCmd(rhId: Long?, cmd: CC): CR {
     val ctrl = ctrl ?: throw Exception("Controller is not initialized")
 
-    //return withContext(Dispatchers.IO) {
-    val c = cmd.cmdString
-    chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-    Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-    val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
-    val r = APIResponse.decodeStr(json)
-    Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
-    if (r.resp is CR.Response || r.resp is CR.Invalid) {
-      Log.d(TAG, "sendCmd response json $json")
+    return withContext(Dispatchers.IO) {
+      val c = cmd.cmdString
+      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
+      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
+      val r = APIResponse.decodeStr(json)
+      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
+      if (r.resp is CR.Response || r.resp is CR.Invalid) {
+        Log.d(TAG, "sendCmd response json $json")
+      }
+      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
+      r.resp
     }
-    chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
-    return r.resp
-    //}
   }
 
   private fun recvMsg(ctrl: ChatCtrl): APIResponse? {
@@ -677,6 +676,17 @@ object ChatController {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiSendMessage", generalGetString(MR.strings.error_sending_message), r)
         }
+        null
+      }
+    }
+  }
+   suspend fun apiCreateChatItem(rh: Long?, noteFolderId: Long, file: CryptoFile? = null, mc: MsgContent): AChatItem? {
+    val cmd = CC.ApiCreateChatItem(noteFolderId, file, mc)
+    val r = sendCmd(rh, cmd)
+    return when (r) {
+      is CR.NewChatItem -> r.chatItem
+      else -> {
+        apiErrorAlert("apiCreateChatItem", generalGetString(MR.strings.error_creating_message), r)
         null
       }
     }
@@ -991,6 +1001,7 @@ object ChatController {
         val titleId = when (type) {
           ChatType.Direct -> MR.strings.error_deleting_contact
           ChatType.Group -> MR.strings.error_deleting_group
+          ChatType.Local -> MR.strings.error_deleting_note_folder
           ChatType.ContactRequest -> MR.strings.error_deleting_contact_request
           ChatType.ContactConnection -> MR.strings.error_deleting_pending_contact_connection
         }
@@ -1000,6 +1011,17 @@ object ChatController {
     }
     chatModel.deletedChats.value -= rh to type.type + id
     return success
+  }
+
+  fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
+    withBGApi {
+      val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
+      if (updatedChatInfo != null) {
+        chatModel.clearChat(chat.remoteHostId, updatedChatInfo)
+        ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
+        close?.invoke()
+      }
+    }
   }
 
   suspend fun apiClearChat(rh: Long?, type: ChatType, id: Long): ChatInfo? {
@@ -1307,6 +1329,17 @@ object ChatController {
           apiErrorAlert("apiMemberRole", generalGetString(MR.strings.error_changing_role), r)
         }
         throw Exception("failed to change member role: ${r.responseType} ${r.details}")
+      }
+    }
+
+  suspend fun apiBlockMemberForAll(rh: Long?, groupId: Long, memberId: Long, blocked: Boolean): GroupMember =
+    when (val r = sendCmd(rh, CC.ApiBlockMemberForAll(groupId, memberId, blocked))) {
+      is CR.MemberBlockedForAllUser -> r.member
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiBlockMemberForAll", generalGetString(MR.strings.error_blocking_member_for_all), r)
+        }
+        throw Exception("failed to block member for all: ${r.responseType} ${r.details}")
       }
     }
 
@@ -1761,6 +1794,10 @@ object ChatController {
           chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.MemberRoleUser ->
+        if (active(r.user)) {
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
+        }
+      is CR.MemberBlockedForAll ->
         if (active(r.user)) {
           chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
@@ -2244,6 +2281,7 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: CryptoFile?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
+  class ApiCreateChatItem(val noteFolderId: Long, val file: CryptoFile?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
@@ -2252,6 +2290,7 @@ sealed class CC {
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiMemberRole(val groupId: Long, val memberId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiBlockMemberForAll(val groupId: Long, val memberId: Long, val blocked: Boolean): CC()
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
@@ -2375,6 +2414,9 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     }
+    is ApiCreateChatItem -> {
+      "/_create *$noteFolderId json ${json.encodeToString(ComposedMessage(file, null, mc))}"
+    }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
@@ -2383,6 +2425,7 @@ sealed class CC {
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiMemberRole -> "/_member role #$groupId $memberId ${memberRole.memberRole}"
+    is ApiBlockMemberForAll -> "/_block #$groupId $memberId blocked=${onOff(blocked)}"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
@@ -2503,6 +2546,7 @@ sealed class CC {
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessage -> "apiSendMessage"
+    is ApiCreateChatItem -> "apiCreateChatItem"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
@@ -2511,6 +2555,7 @@ sealed class CC {
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiMemberRole -> "apiMemberRole"
+    is ApiBlockMemberForAll -> "apiBlockMemberForAll"
     is ApiRemoveMember -> "apiRemoveMember"
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
@@ -3901,6 +3946,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberRole") class MemberRole(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
   @Serializable @SerialName("memberRoleUser") class MemberRoleUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
+  @Serializable @SerialName("memberBlockedForAll") class MemberBlockedForAll(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val blocked: Boolean): CR()
+  @Serializable @SerialName("memberBlockedForAllUser") class MemberBlockedForAllUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val blocked: Boolean): CR()
   @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -4053,6 +4100,8 @@ sealed class CR {
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberRole -> "memberRole"
     is MemberRoleUser -> "memberRoleUser"
+    is MemberBlockedForAll -> "memberBlockedForAll"
+    is MemberBlockedForAllUser -> "memberBlockedForAllUser"
     is DeletedMemberUser -> "deletedMemberUser"
     is DeletedMember -> "deletedMember"
     is LeftMember -> "leftMember"
@@ -4200,6 +4249,8 @@ sealed class CR {
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberRole -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
     is MemberRoleUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
+    is MemberBlockedForAll -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nblocked: $blocked")
+    is MemberBlockedForAllUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nblocked: $blocked")
     is DeletedMemberUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember")
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")

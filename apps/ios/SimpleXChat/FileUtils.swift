@@ -22,6 +22,8 @@ public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
+public let MAX_FILE_SIZE_LOCAL: Int64 = Int64.max
+
 public let MAX_FILE_SIZE_SMP: Int64 = 8000000
 
 public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300)
@@ -240,6 +242,7 @@ public func getMaxFileSize(_ fileProtocol: FileProtocol) -> Int64 {
     switch fileProtocol {
     case .xftp: return MAX_FILE_SIZE_XFTP
     case .smp: return MAX_FILE_SIZE_SMP
+    case .local: return MAX_FILE_SIZE_LOCAL
     }
 }
 

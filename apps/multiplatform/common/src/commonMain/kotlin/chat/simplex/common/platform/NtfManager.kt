@@ -55,7 +55,7 @@ abstract class NtfManager {
   }
 
   fun openChatAction(userId: Long?, chatId: ChatId) {
-    withBGApi {
+    withLongRunningApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
         // TODO include remote host ID in desktop notifications?
@@ -70,7 +70,7 @@ abstract class NtfManager {
   }
 
   fun showChatsAction(userId: Long?) {
-    withBGApi {
+    withLongRunningApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
         // TODO include remote host ID in desktop notifications?

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -91,7 +92,7 @@ fun ChatInfoView(
         }
       },
       deleteContact = { deleteContactDialog(chat, chatModel, close) },
-      clearChat = { clearChatDialog(chat, chatModel, close) },
+      clearChat = { clearChatDialog(chat, close) },
       switchContactAddress = {
         showSwitchAddressAlert(switchAddress = {
           withBGApi {
@@ -254,23 +255,22 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, notify
   }
 }
 
-fun clearChatDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  val chatInfo = chat.chatInfo
+fun clearChatDialog(chat: Chat, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.clear_chat_question),
     text = generalGetString(MR.strings.clear_chat_warning),
     confirmText = generalGetString(MR.strings.clear_verb),
-    onConfirm = {
-      withBGApi {
-        val chatRh = chat.remoteHostId
-        val updatedChatInfo = chatModel.controller.apiClearChat(chatRh, chatInfo.chatType, chatInfo.apiId)
-        if (updatedChatInfo != null) {
-          chatModel.clearChat(chatRh, updatedChatInfo)
-          ntfManager.cancelNotificationsForChat(chatInfo.id)
-          close?.invoke()
-        }
-      }
-    },
+    onConfirm = { controller.clearChat(chat, close) },
+    destructive = true,
+  )
+}
+
+fun clearNoteFolderDialog(chat: Chat, close: (() -> Unit)? = null) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.clear_note_folder_question),
+    text = generalGetString(MR.strings.clear_note_folder_warning),
+    confirmText = generalGetString(MR.strings.clear_verb),
+    onConfirm = { controller.clearChat(chat, close) },
     destructive = true,
   )
 }

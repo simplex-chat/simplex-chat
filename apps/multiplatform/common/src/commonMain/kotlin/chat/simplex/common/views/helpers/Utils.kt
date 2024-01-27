@@ -27,11 +27,9 @@ import kotlin.math.*
 
 private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
-
-fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
+fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
   Exception().let {
-    scope.launch { withContext(Dispatchers.Main, block = { wrapWithLogging(action, it) }) }
+    CoroutineScope(Dispatchers.Main).launch(block = { wrapWithLogging(action, it) })
   }
 
 fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
@@ -131,6 +129,8 @@ const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 300_000
 const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
+
+const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
 
@@ -357,6 +357,7 @@ fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   return when (fileProtocol) {
     FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
     FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
   }
 }
 

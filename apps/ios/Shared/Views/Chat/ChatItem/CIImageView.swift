@@ -53,6 +53,7 @@ struct CIImageView: View {
                                         title: "Waiting for image",
                                         message: "Image will be received when your contact is online, please wait or check later!"
                                     )
+                                case .local: ()
                                 }
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
@@ -90,6 +91,7 @@ struct CIImageView: View {
                 switch file.fileProtocol {
                 case .xftp: progressView()
                 case .smp: EmptyView()
+                case .local: EmptyView()
                 }
             case .sndTransfer: progressView()
             case .sndComplete: fileIcon("checkmark", 10, 13)

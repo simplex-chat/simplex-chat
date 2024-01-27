@@ -1,5 +1,20 @@
 # Blog
 
+Jan 24, 2024 [SimpleX Chat: free infrastructure from Linode, v5.5 released](./20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
+
+SimpleX Chat infrastructure on Linode:
+- Free infrastructure.
+- SimpleX servers in Linode Marketplace.
+- High capacity messaging servers.
+
+What's new in v5.5:
+- private notes.
+- group history.
+- simpler UX to connect to other users.
+- message delivery stability and other improvements.
+
+---
+
 Nov 25, 2023 [SimpleX Chat v5.4 released](./20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md)
 
 - Link mobile and desktop apps via secure quantum-resistant protocol. 🔗

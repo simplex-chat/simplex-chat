@@ -179,6 +179,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
+  CRUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CRUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileDescrReady _ _ -> []
@@ -243,6 +244,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectedToGroupMember u g m _ -> ttyUser u [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
   CRMemberRole u g by m r r' -> ttyUser u $ viewMemberRoleChanged g by m r r'
   CRMemberRoleUser u g m r r' -> ttyUser u $ viewMemberRoleUserChanged g m r r'
+  CRMemberBlockedForAll u g by m blocked -> ttyUser u $ viewMemberBlockedForAll g by m blocked
+  CRMemberBlockedForAllUser u g m blocked -> ttyUser u $ viewMemberBlockedForAllUser g m blocked
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
@@ -355,6 +358,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ("active subscriptions:" : map sShow activeSubscriptions)
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
       <> ("removed subscriptions: " : map sShow removedSubscriptions)
+  CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> plain (LB.unpack $ J.encode agentWorkersSummary)]
+  CRAgentWorkersDetails {agentWorkersDetails} ->
+    [ "agent workers details:",
+      plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
+    ]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
@@ -431,21 +439,16 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     unmuted' :: User -> ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]
     unmuted' u chat chatDir mention s
       | chatDirNtf u chat chatDir mention = s
+      | testView = map (<> " <muted>") s
       | otherwise = []
 
 userNtf :: User -> Bool
 userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 
-chatNtf :: User -> ChatInfo c -> Bool -> Bool
-chatNtf user cInfo mention = case cInfo of
-  DirectChat ct -> contactNtf user ct mention
-  GroupChat g -> groupNtf user g mention
-  _ -> False
-
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
-  (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && showMessages (memberSettings m)
+  (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
@@ -468,6 +471,7 @@ chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ 
       CIModerated _ m -> markedDeleted content <> byMember m
       CIDeleted _ -> markedDeleted content
       CIBlocked _ -> "blocked"
+      CIBlockedByAdmin _ -> "blocked by admin"
     markedDeleted = \case
       CISndModerated -> "deleted"
       CIRcvModerated -> "deleted"
@@ -550,6 +554,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupInvitation {} -> showRcvItemProhibited from
           CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
+          CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
           _ -> showRcvItem from
           where
             from = ttyFromGroup g m
@@ -973,6 +978,14 @@ viewMemberRoleUserChanged g@GroupInfo {membership} m r r'
   where
     view s = [ttyGroup' g <> ": you changed " <> s <> " from " <> showRole r <> " to " <> showRole r']
 
+viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> Bool -> [StyledString]
+viewMemberBlockedForAll g by m blocked =
+  [ttyGroup' g <> ": " <> ttyMember by <> " " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m]
+
+viewMemberBlockedForAllUser :: GroupInfo -> GroupMember -> Bool -> [StyledString]
+viewMemberBlockedForAllUser g m blocked =
+  [ttyGroup' g <> ": you " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m]
+
 showRole :: GroupMemberRole -> StyledString
 showRole = plain . strEncode
 
@@ -998,8 +1011,9 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GSMemCreator -> ["created group"]
       _ -> []
     muted m
-      | showMessages (memberSettings m) = []
-      | otherwise = ["blocked"]
+      | blockedByAdmin m = ["blocked by admin"]
+      | not (showMessages $ memberSettings m) = ["blocked"]
+      | otherwise = []
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =
@@ -1842,6 +1856,13 @@ viewChatError logLevel testView = \case
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> viewGroupName g)]
     CEGroupMemberNotActive -> ["your group connection is not active yet, try later"]
+    CECantBlockMemberForSelf g m showMsgs ->
+      [ "admins or above can't block member for self, use "
+          <> highlight
+            ( (if showMsgs then "/unblock for all" else "/block for all")
+                <> (" #" <> viewGroupName g <> " " <> viewMemberName m)
+            )
+      ]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound -> ["group doesn't have this member"]
     CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
