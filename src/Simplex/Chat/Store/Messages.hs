@@ -1142,24 +1142,26 @@ getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count searc
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- liftIO getLocalChatItemIdsAfter_
+  afterChatItem <- getLocalChatItem db user noteFolderId afterChatItemId
+  chatItemIds <- liftIO $ getLocalChatItemIdsAfter_ (chatItemTs afterChatItem)
   chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) chatItems stats
   where
-    getLocalChatItemIdsAfter_ :: IO [ChatItemId]
-    getLocalChatItemIdsAfter_ =
+    getLocalChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
+    getLocalChatItemIdsAfter_ afterChatItemTs =
       map fromOnly
         <$> DB.query
           db
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
-              AND chat_item_id > ?
+            WHERE user_id = ? AND note_folder_id = ?
+              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+              AND item_text LIKE '%' || ? || '%'
             ORDER BY created_at ASC, chat_item_id ASC
             LIMIT ?
           |]
-          (userId, noteFolderId, search, afterChatItemId, count)
+          (userId, noteFolderId, search, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
 
 getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
