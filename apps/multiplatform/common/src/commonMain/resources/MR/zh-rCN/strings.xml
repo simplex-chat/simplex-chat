@@ -1632,4 +1632,8 @@
     <string name="member_info_member_blocked">已封禁</string>
     <string name="snd_group_event_member_blocked">你封禁了 %s</string>
     <string name="snd_group_event_member_unblocked">你解封了 %s</string>
+    <string name="welcome_message_is_too_long">欢迎消息太大了</string>
+    <string name="database_migration_in_progress">正在进行数据库迁移。
+\n可能需要几分钟时间。</string>
+    <string name="message_too_large">消息太大了</string>
 </resources>
