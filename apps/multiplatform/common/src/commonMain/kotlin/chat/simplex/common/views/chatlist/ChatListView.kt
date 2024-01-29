@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -121,7 +123,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   }
   if (searchText.value.text.isEmpty()) {
-    DesktopActiveCallOverlayLayout(newChatSheetState)
+    if (appPlatform.isDesktop) {
+      ActiveCallIntractableArea(newChatSheetState)
+    }
     // TODO disable this button and sheet for the duration of the switch
     tryOrShowError("NewChatSheet", error = {}) {
       NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
@@ -314,7 +318,7 @@ private fun ToggleFilterDisabledButton() {
 }
 
 @Composable
-expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
+expect fun ActiveCallIntractableArea(newChatSheetState: MutableStateFlow<AnimatedViewState>)
 
 fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")

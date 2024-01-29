@@ -615,7 +615,7 @@ fun ChatInfoToolbar(
       showSearch = false
     }
   }
-  if (appPlatform.isAndroid) {
+  if (appPlatform.isAndroid && chatModel.activeCallViewIsCollapsed.value) {
     BackHandler(onBack = onBackClicked)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
@@ -673,7 +673,7 @@ fun ChatInfoToolbar(
           }
         }
       }
-    } else if (activeCall?.contact?.id == chat.id) {
+    } else if (activeCall?.contact?.id == chat.id && appPlatform.isDesktop) {
       barButtons.add {
         val call = remember { chatModel.activeCall }.value
         val connectedAt = call?.connectedAt

@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
@@ -209,6 +210,9 @@ fun MainScreen() {
 @Composable
 fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
+    if (appPlatform.isAndroid && chatModel.activeCall.value != null) {
+      ActiveCallIntractableArea(remember { MutableStateFlow(AnimatedViewState.GONE) })
+    }
     var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
@@ -216,6 +220,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         .graphicsLayer {
           translationX = -offset.value.dp.toPx()
         }
+        .padding(top = if (appPlatform.isAndroid && chatModel.activeCall.value != null) 50.dp else 0.dp)
     ) {
       StartPartOfScreen(settingsState)
     }
@@ -242,7 +247,10 @@ fun AndroidScreen(settingsState: SettingsViewState) {
           }
       }
     }
-    Box(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@{
+    Box(Modifier
+      .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
+      .padding(top = if (appPlatform.isAndroid && chatModel.activeCall.value != null) 50.dp else 0.dp)
+    ) Box2@{
       currentChatId?.let {
         ChatView(it, chatModel, onComposed)
       }

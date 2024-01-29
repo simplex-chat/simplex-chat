@@ -53,10 +53,8 @@ import kotlinx.serialization.encodeToString
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
-  val chatModel = ChatModel
   BackHandler(onBack = {
-    val call = chatModel.activeCall.value
-    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
+    chatModel.activeCallViewIsCollapsed.value = true
   })
   val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
   val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE }
@@ -109,7 +107,7 @@ actual fun ActiveCallView() {
     }
   }
   val scope = rememberCoroutineScope()
-  Box(Modifier.fillMaxSize()) {
+  Box(Modifier.fillMaxSize().offset(if (remember { chatModel.activeCallViewIsCollapsed }.value) 10000.dp else 0.dp)) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
       val call = chatModel.activeCall.value
