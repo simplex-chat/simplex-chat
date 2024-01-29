@@ -22,6 +22,7 @@
 
 module Simplex.Chat.Types where
 
+import Control.Applicative (optional, (<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
 import qualified Data.Aeson as J
@@ -29,10 +30,12 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Maybe (isJust)
+import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -49,7 +52,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (base64P, defaultJSON, dropPrefix, enumJSON, fromTextField_, parseString, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
@@ -523,19 +526,39 @@ data GroupProfile = GroupProfile
   }
   deriving (Eq, Show)
 
-newtype ImageData = ImageData Text
+newtype ImageData = ImageData ByteString
   deriving (Eq, Show)
 
+-- The encoding does not add prefix, as the old clients do not validate that it is present.
+-- The decoding strips an optional prefix, as the old clients would have it added in the UI.
+instance StrEncoding ImageData where
+  strEncode (ImageData d) = B64.encode d
+  strP = ImageData <$> (optional ("data:image/jpg;base64," <|> "data:image/png;base64,") *> base64P)
+
+instance IsString ImageData where
+  fromString = parseString strDecode
+
 instance FromJSON ImageData where
-  parseJSON = fmap ImageData . J.parseJSON
+  parseJSON = strParseJSON "ImageData"
 
 instance ToJSON ImageData where
-  toJSON (ImageData t) = J.toJSON t
-  toEncoding (ImageData t) = J.toEncoding t
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
+-- The encoder saves image data is binary blob.
+-- We can do it because SQLite supports different value types in the same column.
 instance ToField ImageData where toField (ImageData t) = toField t
 
-instance FromField ImageData where fromField = fmap ImageData . fromField
+-- The decoder supports both the old Text format, with and without prefix, and the new binary format too.
+-- We need to support Text format without prefix as the old clients can receive Text without prefix
+-- from the new clients in JSON and store it in the database as Text.
+instance FromField ImageData where
+  fromField f@(Field r _) = case r of
+    SQLBlob b -> Ok $ ImageData b
+    SQLText t -> case strDecode $ encodeUtf8 t of
+      Right d -> Ok d
+      Left e -> returnError ConversionFailed f ("couldn't parse field ImageData: " ++ e)
+    _ -> returnError ConversionFailed f "expecting SQLBlob or SQLText column type"
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 

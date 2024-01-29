@@ -1294,7 +1294,7 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, p
 
 viewUserProfileImage :: Profile -> [StyledString]
 viewUserProfileImage Profile {image} = case image of
-  Just (ImageData img) -> ["Profile image:", plain img]
+  Just img -> ["Profile image:", plain $ strEncode img]
   _ -> ["No profile image"]
 
 viewUserContactPrefsUpdated :: User -> Contact -> Contact -> [StyledString]

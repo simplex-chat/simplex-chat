@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests.Groups where
 
@@ -8,7 +9,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (void, when)
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
@@ -16,6 +17,7 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
@@ -3046,6 +3048,7 @@ testGroupLinkNoContactHostProfileReceived =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       let profileImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+          profileImageData = either error id $ strDecode $ B.pack profileImage
       alice ##> ("/set profile image " <> profileImage)
       alice <## "profile image updated"
 
@@ -3067,7 +3070,7 @@ testGroupLinkNoContactHostProfileReceived =
       threadDelay 100000
 
       aliceImage <- getProfilePictureByName bob "alice"
-      aliceImage `shouldBe` Just profileImage
+      aliceImage `shouldBe` Just profileImageData
 
 testGroupLinkNoContactExistingContactMerged :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactExistingContactMerged =
