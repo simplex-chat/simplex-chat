@@ -387,7 +387,7 @@
     <string name="receipts_contacts_disable_for_all">Letiltás mindenki számára</string>
     <string name="settings_developer_tools">Fejlesztői eszközök</string>
     <string name="database_passphrase">Adatbázis jelmondat</string>
-    <string name="ttl_days">%d napok</string>
+    <string name="ttl_days">%d nap</string>
     <string name="icon_descr_server_status_disconnected">Szétkapcsolva</string>
     <string name="encrypted_with_random_passphrase">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, lecserélheted.</string>
     <string name="ttl_h">%dó</string>
@@ -651,7 +651,7 @@
     <string name="host_verb">Házigazda</string>
     <string name="initial_member_role">Kezdeti szerepkör</string>
     <string name="invalid_chat">Érvénytelen chat</string>
-    <string name="custom_time_unit_hours">órák</string>
+    <string name="custom_time_unit_hours">óra</string>
     <string name="incognito">Inkognitó</string>
     <string name="how_to_use_simplex_chat">Hogyan használd</string>
     <string name="v4_3_improved_privacy_and_security_desc">Alkalmazás képernyőjének elrejtése a gyakran használt appok között.</string>
