@@ -18,6 +18,8 @@ Adding post quantum encryption requires adding additional message headers with a
 - switch to a binary format for messages. The downside is that, depending on the format, it may be more difficult to extend and debug, and in any case it is not human readable.
 - allow larger client messages than the block size, by extending SMP agent protocol. This is possible, but 1) quite complex, 2) leaks information when an image preview is sent, as multiple messages would be required sent in rapid succession (or some additional throttling logic).
 - use hybrid format combining JSON format for the text and metadata part of the message, and binary format for the image previews and profile pictures.
+- use some other binary format, e.g. MessagePack or CBOR.
+- compress messages, e.g. using zstd.
 
 The latter option looks attractive, as it avoids the complexities and downsides of the other options, while allows to provide the space for additional cryptographic data in the message headers without reducing image quality.
 
@@ -41,11 +43,31 @@ We could use a standart multipart format, but it seems unnecessarily generic and
 
 This syntax is sufficiently generic and extensible, and can be used for messages with more than two parts if necessary.
 
-## MessagePack
+The downside is that it is ad-hoc, and does not achieve any possible reduction for other binary fields in JSON.
 
-Using [MessagePack](https://github.com/msgpack/msgpack/blob/master/spec.md) instead of JSON is another attractive option, as it's both compact and efficient. While it's not human readable, it will result not only in more efficient binary encoding for images, but for all fields (such as hashes and member IDs, for example), and will also result in more efficient batching of small messages.
+## MessagePack or CBOR
+
+Using [MessagePack](https://github.com/msgpack/msgpack/blob/master/spec.md) or CBOR instead of JSON is another possible option, as it's both compact and efficient. While it's not human readable, it will result not only in more efficient binary encoding for images, but for all fields (such as hashes and member IDs, for example), and will also result in more efficient batching of small messages.
 
 As we need to maintain backwards compatibility, we need to recognise MessagePack format, and as it has no distinct first byte of its own, we could use some fixed letter for it, e.g. `X` (we use `x` as a namespace prefix for all protocol message types).
+
+The downside is implementation complexity, particularly given that historically use different binary encoding in JSON (base64 for images and base64url for other binary fields), so we would have to do one of the following:
+- maintain two different encodings for all types that are sent between the clients, some of these encodings are manual.
+- implement alternative AST for extended JSON format with binary support.
+- in either case, types representing binary data would have to support decoding from both JSON strings and from binary data.
+
+## Message compression
+
+This might be the simplest option, as it does not require any changes to protocol encoding other than adding compression and have a different encoding for batching that can be the same as for SMP protocol (we could reuse the same function). The syntax for chat packet would be:
+
+```abnf
+chatPacket = %s'X' count 1*(message)
+count = OCTET ; up to 255 messages in the batch
+message = length compressedMessage
+length = 2*2 OCTET ; length of compressed message, up to 65535 bytes (we have less than 15000 bytes limit).
+```
+
+After the character 'X' the encoding is the same as for SMP batches, so the same function can be used.
 
 ## Additional considerations
 
