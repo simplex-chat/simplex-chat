@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
@@ -21,10 +22,9 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
-actual fun ActiveCallIntractableArea(newChatSheetState: MutableStateFlow<AnimatedViewState>) {
-  val call = remember { chatModel.activeCall}.value
-  //  if (call?.callState == CallState.Connected && !newChatSheetState.collectAsState().value.isVisible()) {
-  if (call != null && !newChatSheetState.collectAsState().value.isVisible()) {
+actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>) {
+  //  if (call.callState == CallState.Connected && !newChatSheetState.collectAsState().value.isVisible()) {
+  if (!newChatSheetState.collectAsState().value.isVisible()) {
       val showMenu = remember { mutableStateOf(false) }
       val media = call.peerMedia ?: call.localMedia
       CompositionLocalProvider(

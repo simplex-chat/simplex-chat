@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.model.Contact
 import chat.simplex.common.model.durationText
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -25,37 +24,36 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Clock
 
 @Composable
-actual fun ActiveCallIntractableArea(newChatSheetState: MutableStateFlow<AnimatedViewState>) {
-  val call = remember { chatModel.activeCall }.value// ?: Call(remoteHostId = null, contact = Contact.sampleData, callState = CallState.Connected, localMedia = CallMediaType.Audio)
-  if (call != null) {
-    val media = call.peerMedia ?: call.localMedia
-    Row(
-      Modifier
-        .fillMaxWidth()
-        .background(SimplexGreen)
-        .combinedClickable(onClick = {
-          val chat = chatModel.getChat(call.contact.id)
-          if (chat != null) {
-            withBGApi {
-              chatModel.activeCallViewIsCollapsed.value = false
-              openChat(chat.remoteHostId, chat.chatInfo, chatModel)
-            }
+actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>) {
+  val media = call.peerMedia ?: call.localMedia
+  Row(
+    Modifier
+      .fillMaxSize()
+      .background(SimplexGreen)
+      .combinedClickable(onClick = {
+        chatModel.activeCallViewIsCollapsed.value = false
+        platform.androidStartCallActivity(false)
+        val chat = chatModel.getChat(call.contact.id)
+        if (chat != null) {
+          withBGApi {
+            openChat(chat.remoteHostId, chat.chatInfo, chatModel)
           }
-        })
-        .padding(vertical = DEFAULT_PADDING_HALF, horizontal = DEFAULT_PADDING),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      if (chatModel.users.size > 1) {
-        ProfileImage(size = 32.dp, image = chatModel.activeCallInvitation.value?.user?.profile?.image, color = MaterialTheme.colors.secondaryVariant)
-        Spacer(Modifier.width(4.dp))
-      }
-      if (media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
-      else CallIcon(painterResource(MR.images.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call))
+        }
+      })
+      .padding(horizontal = DEFAULT_PADDING),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
+  ) {
+    if (chatModel.users.size > 1) {
+      ProfileImage(size = 30.dp, image = chatModel.activeCallInvitation.value?.user?.profile?.image, color = MaterialTheme.colors.secondaryVariant)
       Spacer(Modifier.width(4.dp))
-      ProfileImage(size = 32.dp, image = call.contact.profile.image)
-      Spacer(Modifier.weight(1f))
-      CallDuration(call)
     }
+    if (media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
+    else CallIcon(painterResource(MR.images.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call))
+    Spacer(Modifier.width(4.dp))
+    ProfileImage(size = 30.dp, image = call.contact.profile.image)
+    Spacer(Modifier.weight(1f))
+    CallDuration(call)
   }
   DisposableEffectOnGone {
     chatModel.activeCallViewIsCollapsed.value = false
@@ -63,7 +61,7 @@ actual fun ActiveCallIntractableArea(newChatSheetState: MutableStateFlow<Animate
 }
 
 @Composable
-private fun CallIcon(icon: Painter, descr: String) = Icon(icon, descr, tint = Color.White)
+private fun CallIcon(icon: Painter, descr: String) = Icon(icon, descr, Modifier.size(20.dp), tint = Color.White)
 
 @Composable
 private fun CallDuration(call: Call) {

@@ -109,6 +109,12 @@
         android:exported="false"
         android:launchMode="singleTask"/>
 
+    <activity android:name=".views.call.CallActivity"
+        android:exported="false"
+        android:launchMode="singleInstance"
+        android:supportsPictureInPicture="true"
+        android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"/>
+
     <provider
         android:name="androidx.core.content.FileProvider"
         android:authorities="${provider_authorities}"

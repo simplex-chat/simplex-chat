@@ -1,5 +1,6 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.model.ChatId
 import chat.simplex.common.model.NotificationsMode
 
 interface PlatformInterface {
@@ -11,6 +12,7 @@ interface PlatformInterface {
   fun androidChatInitializedAndStarted() {}
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
+  fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
 }
 /**

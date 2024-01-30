@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import chat.simplex.common.platform.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,9 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.common.model.*
 import chat.simplex.app.model.NtfManager.OpenChatAction
-import chat.simplex.common.platform.ntfManager
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.helpers.*
@@ -100,12 +100,7 @@ fun IncomingCallActivityView(m: ChatModel) {
       color = MaterialTheme.colors.background,
       contentColor = LocalContentColor.current
     ) {
-      if (showCallView) {
-        Box {
-          ActiveCallView()
-          if (invitation != null) IncomingCallAlertView(invitation, m)
-        }
-      } else if (invitation != null) {
+      if (!showCallView && invitation != null) {
         IncomingCallLockScreenAlert(invitation, m)
       }
     }
@@ -132,7 +127,10 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
       chatModel.activeCallInvitation.value = null
       ntfManager.cancelCallNotification()
     },
-    acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
+    acceptCall = {
+      (context as Activity).finish()
+      platform.androidStartCallActivity(true, invitation.remoteHostId, invitation.contact.id)
+    },
     openApp = {
       val intent = Intent(context, MainActivity::class.java)
         .setAction(OpenChatAction)

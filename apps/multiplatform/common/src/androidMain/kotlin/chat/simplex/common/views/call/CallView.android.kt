@@ -107,7 +107,11 @@ actual fun ActiveCallView() {
     }
   }
   val scope = rememberCoroutineScope()
-  Box(Modifier.fillMaxSize().offset(if (remember { chatModel.activeCallViewIsCollapsed }.value) 10000.dp else 0.dp)) {
+  val call = chatModel.activeCall.value
+  Box(Modifier
+    .fillMaxSize()
+    /*.offset(if (remember { chatModel.activeCallViewIsCollapsed }.value && call?.supportsVideo() == false) 10000.dp else 0.dp)*/
+  ) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
       val call = chatModel.activeCall.value
@@ -181,8 +185,9 @@ actual fun ActiveCallView() {
         }
       }
     }
-    val call = chatModel.activeCall.value
-    if (call != null)  ActiveCallOverlay(call, chatModel, audioViaBluetooth)
+    if (call != null && !chatModel.activeCallViewIsCollapsed.value) {
+      ActiveCallOverlay(call, chatModel, audioViaBluetooth)
+    }
   }
 
   val context = LocalContext.current

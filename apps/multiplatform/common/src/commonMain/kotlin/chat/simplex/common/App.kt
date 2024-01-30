@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
@@ -21,8 +20,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateFirstProfile
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.common.views.SplashView
-import chat.simplex.common.views.call.ActiveCallView
-import chat.simplex.common.views.call.IncomingCallAlertView
+import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ChatView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.DatabaseErrorView
@@ -40,6 +38,8 @@ data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
   val scaffoldState: ScaffoldState
 )
+
+private val CALL_INTERACTIVE_AREA_HEIGHT = 40.dp
 
 @Composable
 fun AppScreen() {
@@ -170,7 +170,13 @@ fun MainScreen() {
       }
     } else {
       if (chatModel.showCallView.value) {
-        ActiveCallView()
+        if (appPlatform.isAndroid) {
+          LaunchedEffect(Unit) {
+            platform.androidStartCallActivity(false)
+          }
+        } else {
+          ActiveCallView()
+        }
       } else {
         // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
         ModalManager.fullscreen.showPasscodeInView()
@@ -210,8 +216,12 @@ fun MainScreen() {
 @Composable
 fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
-    if (appPlatform.isAndroid && chatModel.activeCall.value != null) {
-      ActiveCallIntractableArea(remember { MutableStateFlow(AnimatedViewState.GONE) })
+    val call = remember { chatModel.activeCall} .value
+    val showCallArea = call != null && call.callState != CallState.WaitCapabilities
+    if (call != null && showCallArea) {
+      Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT)) {
+        ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
+      }
     }
     var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
@@ -220,7 +230,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         .graphicsLayer {
           translationX = -offset.value.dp.toPx()
         }
-        .padding(top = if (appPlatform.isAndroid && chatModel.activeCall.value != null) 50.dp else 0.dp)
+        .padding(top = if (showCallArea) CALL_INTERACTIVE_AREA_HEIGHT else 0.dp)
     ) {
       StartPartOfScreen(settingsState)
     }
@@ -249,7 +259,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
     }
     Box(Modifier
       .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
-      .padding(top = if (appPlatform.isAndroid && chatModel.activeCall.value != null) 50.dp else 0.dp)
+      .padding(top = if (showCallArea) CALL_INTERACTIVE_AREA_HEIGHT else 0.dp)
     ) Box2@{
       currentChatId?.let {
         ChatView(it, chatModel, onComposed)

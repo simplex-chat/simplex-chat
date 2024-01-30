@@ -1,14 +1,16 @@
 package chat.simplex.app
 
-import android.app.Application
+import android.app.*
 import android.content.Context
 import androidx.compose.ui.platform.ClipboardManager
 import chat.simplex.common.platform.Log
-import android.app.UiModeManager
+import android.content.Intent
 import android.os.*
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
+import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
@@ -252,6 +254,19 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long?, chatId: ChatId?) {
+        val context = mainActivity.get() ?: return
+        val intent = Intent(context, CallActivity::class.java)
+          .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        if (acceptCall) {
+          intent.setAction(AcceptCallAction)
+            .putExtra("remoteHostId", remoteHostId)
+            .putExtra("chatId", chatId)
+        }
+        intent.flags += Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+        context.startActivity(intent)
       }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
