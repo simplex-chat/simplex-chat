@@ -528,7 +528,6 @@
     <string name="all_group_members_will_remain_connected">Visi grupės nariai liks prisijungę.</string>
     <string name="authentication_cancelled">Tapatybės patvirtinimo atsisakyta</string>
     <string name="always_use_relay">Visada naudoti retransliavimą</string>
-    <string name="icon_descr_asked_to_receive"></string>
     <string name="send_disappearing_message_5_minutes">5 minutės</string>
     <string name="onboarding_notifications_mode_off_desc"><b>Mažiausios akumuliatoriaus sąnaudos</b>. Jūs gausite pranešimus tik tada, kai programėlė bus atverta (BE foninės tarnybos).</string>
     <string name="abort_switch_receiving_address">Nutraukti adreso keitimą</string>
@@ -547,14 +546,12 @@
     <string name="notifications_mode_service_desc">Foninė tarnyba visada veikia – pranešimai bus rodomi iš karto, kai tik bus prieinamos žinutės.</string>
     <string name="la_authenticate">Patvirtinti tapatybę</string>
     <string name="add_address_to_your_profile">Pridėkite adresą prie savo profilio, kad jūsų adresatai galėtų bendrinti jį su kitais žmonėmis. Apie profilio atnaujinimą bus pranešta jūsų adresatams.</string>
-    <string name="icon_descr_video_asked_to_receive"></string>
     <string name="abort_switch_receiving_address_question">Nutraukti adreso keitimą?</string>
     <string name="abort_switch_receiving_address_desc">Adreso keitimas bus nutrauktas. Bus naudojamas senas priėmimo adresas.</string>
     <string name="send_disappearing_message_1_minute">1 minutė</string>
     <string name="icon_descr_audio_on">Įjungti garsą</string>
     <string name="icon_descr_audio_off">Išjungti garsą</string>
     <string name="all_app_data_will_be_cleared">Visi programėlės duomenys bus ištrinti.</string>
-    <string name="app_passcode_replaced_with_self_destruct"></string>
     <string name="empty_chat_profile_is_created">Sukuriamas tuščias pokalbių profilis nurodytu pavadinimu ir programėlė atveriama kaip įprasta.</string>
     <string name="settings_section_title_app">PROGRAMĖLĖ</string>
     <string name="keychain_is_storing_securely">Saugiam slaptafrazės saugojimui yra naudojama „Android Keystore“ – tai įgalina pranešimų tarnybą veikti.</string>
@@ -567,7 +564,6 @@
     <string name="callstatus_accepted">atsilieptas skambutis</string>
     <string name="accept">Priimti</string>
     <string name="integrity_msg_skipped">Praleista žinučių: %1$d.</string>
-    <string name="auto_accept_images"></string>
     <string name="full_backup">Programėlės duomenų atsarginė kopija</string>
     <string name="color_primary">Akcentavimas</string>
     <string name="keychain_allows_to_receive_ntfs">Paleidus programėlę iš naujo ar pakeitus slaptafrazę, saugiam slaptafrazės saugojimui bus naudojama „Android Keystore“ – tai leis gauti pranešimus.</string>
@@ -587,7 +583,6 @@
     <string name="allow_your_contacts_adding_message_reactions">Leisti jūsų adresatams reaguoti į žinutes.</string>
     <string name="allow_your_contacts_to_call">Leisti jūsų adresatams jums skambinti.</string>
     <string name="allow_message_reactions">Leisti reaguoti į žinutes.</string>
-    <string name="v5_0_app_passcode"></string>
     <string name="v5_1_better_messages">Geresnės žinutės</string>
     <string name="la_auth_failed">Tapatybės patvirtinimas patyrė nesėkmę</string>
     <string name="accept_connection_request__question">Priimti sujungimo užklausą?</string>
@@ -675,7 +670,6 @@
     <string name="paste_button">Įdėti</string>
     <string name="v5_5_message_delivery">Pagerintas žinučių pristatymas</string>
     <string name="settings_notification_preview_title">Pranešimo peržiūra</string>
-    <string name="auth_open_chat_console"></string>
     <string name="loading_remote_file_title">Įkeliamas failas</string>
     <string name="notifications">Pranešimai</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Jei gavote SimpleX Chat pakvietimo nuorodą, galite ją atverti naršyklėje:</string>
@@ -684,7 +678,6 @@
     <string name="invalid_qr_code">Neteisingas QR kodas</string>
     <string name="network_settings_title">Tinklo nustatymai</string>
     <string name="rcv_group_event_member_left">išėjo</string>
-    <string name="v4_3_irreversible_message_deletion"></string>
     <string name="v4_5_reduced_battery_usage_descr">Daugiau patobulinimų jau greitai!</string>
     <string name="v5_5_join_group_conversation">Prisijunkite prie pokalbių grupėse</string>
     <string name="connect_plan_open_group">Atverti grupę</string>
