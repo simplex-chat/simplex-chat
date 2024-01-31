@@ -123,6 +123,11 @@ class CallActivity: ComponentActivity() {
     }
   }
 
+  override fun onResume() {
+    super.onResume()
+    chatModel.activeCallViewIsCollapsed.value = false
+  }
+
   override fun onStop() {
     super.onStop()
     val call = chatModel.activeCall.value
