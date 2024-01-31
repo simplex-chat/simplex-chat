@@ -263,13 +263,17 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       }
     }
     if (call != null && showCallArea) {
-      Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT + 10.dp)) {
+      Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT + 15.dp)) {
         Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT)) {
           ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
         }
-        Box(Modifier.size(50.dp).background(SimplexGreen, CircleShape).align(Alignment.BottomCenter), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(60.dp).offset(y = (-5).dp).background(SimplexGreen, CircleShape).align(Alignment.BottomCenter), contentAlignment = Alignment.Center) {
           val media = call.peerMedia ?: call.localMedia
-          Icon(painterResource(if (media == CallMediaType.Video) MR.images.ic_videocam_filled else MR.images.ic_call_filled), null, Modifier.size(30.dp), tint = Color.White)
+          if (media == CallMediaType.Video) {
+            Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(30.dp).offset(x = 2.dp), tint = Color.White)
+          } else {
+            Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(30.dp).offset(x = (-3).dp), tint = Color.White)
+          }
         }
       }
     }
