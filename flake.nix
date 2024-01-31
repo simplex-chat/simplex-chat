@@ -385,6 +385,7 @@
                   "chat_send_cmd"
                   "chat_send_remote_cmd"
                   "chat_valid_name"
+                  "chat_json_length"
                   "chat_write_file"
                 ];
                 postInstall = ''
@@ -487,6 +488,7 @@
                   "chat_send_cmd"
                   "chat_send_remote_cmd"
                   "chat_valid_name"
+                  "chat_json_length"
                   "chat_write_file"
                 ];
                 postInstall = ''
