@@ -144,4 +144,10 @@
     <string name="possible_deadlock_title">بن‌بست</string>
     <string name="connection_error_auth_desc">مگر اینکه مخاطبتان اتصال را حذف کرده یا این لینک قبلا استفاده شده باشد، ممکن است این یک اشکال باشد - لطفا آن را گزارش دهید.
 \nبرای متصل شدن، لطفا از مخاطبتان بخواهید لینک اتصال دیگری ایجاد کند و بررسی کنید که اتصال شبکه باثباتی دارید.</string>
+    <string name="possible_deadlock_desc">اجرای کد زمان زیادی می‌گیرد: %1$d ثانیه. احتمالا برنامه به حالت معلق درآمده است: %2$s</string>
+    <string name="possible_slow_function_title">عملکرد کند</string>
+    <string name="possible_slow_function_desc">اجرای این عملکرد زمان زیادی می‌گیرد: %1$d ثانیه: %2$s</string>
+    <string name="icon_descr_instant_notifications">اعلان‌های آنی</string>
+    <string name="service_notifications_disabled">اعلان‌های آنی غیرفعال شده‌اند!</string>
+    <string name="service_notifications">اعلان‌های آنی!</string>
 </resources>
