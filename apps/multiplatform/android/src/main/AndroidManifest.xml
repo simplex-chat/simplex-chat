@@ -103,16 +103,12 @@
       </intent-filter>
     </activity-alias>
 
-
-    <activity android:name=".views.call.IncomingCallActivity"
-        android:showOnLockScreen="true"
-        android:exported="false"
-        android:launchMode="singleTask"/>
-
     <activity android:name=".views.call.CallActivity"
+        android:showOnLockScreen="true"
         android:exported="false"
         android:launchMode="singleInstance"
         android:supportsPictureInPicture="true"
+        android:excludeFromRecents="true"
         android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"/>
 
     <provider

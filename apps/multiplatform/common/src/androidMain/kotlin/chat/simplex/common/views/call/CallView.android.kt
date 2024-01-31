@@ -53,9 +53,6 @@ import kotlinx.serialization.encodeToString
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
-  BackHandler(onBack = {
-    chatModel.activeCallViewIsCollapsed.value = true
-  })
   val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
   val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE }
   LaunchedEffect(Unit) {

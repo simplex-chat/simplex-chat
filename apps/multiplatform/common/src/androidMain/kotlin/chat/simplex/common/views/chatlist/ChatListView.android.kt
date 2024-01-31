@@ -31,14 +31,12 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
       .fillMaxSize()
       .background(SimplexGreen)
       .combinedClickable(onClick = {
-        chatModel.activeCallViewIsCollapsed.value = false
-        platform.androidStartCallActivity(false)
-        val chat = chatModel.getChat(call.contact.id)
-        if (chat != null) {
-          withBGApi {
-            openChat(chat.remoteHostId, chat.chatInfo, chatModel)
-          }
+        // For video this variable will be set when PiP mode changes, it will be a smooth transition.
+        // For audio - it should be set here
+        if (!call.supportsVideo()) {
+          chatModel.activeCallViewIsCollapsed.value = false
         }
+        platform.androidStartCallActivity(false)
       })
       .padding(horizontal = DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically,

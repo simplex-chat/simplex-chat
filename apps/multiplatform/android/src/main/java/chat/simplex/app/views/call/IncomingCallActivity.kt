@@ -77,9 +77,6 @@ class IncomingCallActivity: ComponentActivity() {
   }
 }
 
-fun getKeyguardManager(context: Context): KeyguardManager =
-  context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-
 @Composable
 fun IncomingCallActivityView(m: ChatModel) {
   val switchingCall = m.switchingCall.value
@@ -107,115 +104,7 @@ fun IncomingCallActivityView(m: ChatModel) {
   }
 }
 
-@Composable
-fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatModel) {
-  val cm = chatModel.callManager
-  val callOnLockScreen by remember { mutableStateOf(chatModel.controller.appPrefs.callOnLockScreen.get()) }
-  val context = LocalContext.current
-  DisposableEffect(Unit) {
-    onDispose {
-      // Cancel notification whatever happens next since otherwise sound from notification and from inside the app can co-exist
-      ntfManager.cancelCallNotification()
-    }
-  }
-  IncomingCallLockScreenAlertLayout(
-    invitation,
-    callOnLockScreen,
-    chatModel,
-    rejectCall = { cm.endCall(invitation = invitation) },
-    ignoreCall = {
-      chatModel.activeCallInvitation.value = null
-      ntfManager.cancelCallNotification()
-    },
-    acceptCall = {
-      (context as Activity).finish()
-      platform.androidStartCallActivity(true, invitation.remoteHostId, invitation.contact.id)
-    },
-    openApp = {
-      val intent = Intent(context, MainActivity::class.java)
-        .setAction(OpenChatAction)
-        .putExtra("userId", invitation.user.userId)
-        .putExtra("chatId", invitation.contact.id)
-      context.startActivity(intent)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        getKeyguardManager(context).requestDismissKeyguard((context as Activity), null)
-      }
-      (context as Activity).finish()
-    }
-  )
-}
 
-@Composable
-fun IncomingCallLockScreenAlertLayout(
-  invitation: RcvCallInvitation,
-  callOnLockScreen: CallOnLockScreen?,
-  chatModel: ChatModel,
-  rejectCall: () -> Unit,
-  ignoreCall: () -> Unit,
-  acceptCall: () -> Unit,
-  openApp: () -> Unit
-) {
-  Column(
-    Modifier
-      .padding(30.dp)
-      .fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    IncomingCallInfo(invitation, chatModel)
-    Spacer(Modifier.fillMaxHeight().weight(1f))
-    if (callOnLockScreen == CallOnLockScreen.ACCEPT) {
-      ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
-      Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
-      Spacer(Modifier.fillMaxHeight().weight(1f))
-      Row {
-        LockScreenCallButton(stringResource(MR.strings.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
-        Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(MR.strings.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
-        Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(MR.strings.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
-      }
-    } else if (callOnLockScreen == CallOnLockScreen.SHOW) {
-      SimpleXLogo()
-      Text(stringResource(MR.strings.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
-      Text(stringResource(MR.strings.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
-      Spacer(Modifier.fillMaxHeight().weight(1f))
-      SimpleButton(text = stringResource(MR.strings.open_verb), icon = painterResource(R.drawable.ic_check_filled), click = openApp)
-    }
-  }
-}
-
-@Composable
-private fun SimpleXLogo() {
-  Image(
-    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
-    contentDescription = stringResource(MR.strings.image_descr_simplex_logo),
-    modifier = Modifier
-      .padding(vertical = DEFAULT_PADDING)
-      .fillMaxWidth(0.80f)
-  )
-}
-
-@Composable
-private fun LockScreenCallButton(text: String, icon: Painter, color: Color, action: () -> Unit) {
-  Surface(
-    shape = RoundedCornerShape(10.dp),
-    color = Color.Transparent,
-    contentColor = LocalContentColor.current
-  ) {
-    Column(
-      Modifier
-        .defaultMinSize(minWidth = 50.dp)
-        .padding(4.dp),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      IconButton(action) {
-        Icon(icon, text, tint = color, modifier = Modifier.scale(1.75f))
-      }
-      Spacer(Modifier.height(DEFAULT_PADDING))
-      Text(text, style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
-    }
-  }
-}
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

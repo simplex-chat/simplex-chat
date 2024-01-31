@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.core.app.*
 import chat.simplex.app.*
 import chat.simplex.app.TAG
-import chat.simplex.app.views.call.IncomingCallActivity
+import chat.simplex.app.views.call.CallActivity
 import chat.simplex.app.views.call.getKeyguardManager
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
@@ -157,7 +157,7 @@ object NtfManager {
     val screenOff = displayManager.displays.all { it.state != Display.STATE_ON }
     var ntfBuilder =
       if ((keyguardManager.isKeyguardLocked || screenOff) && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
-        val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
+        val fullScreenIntent = Intent(context, CallActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
