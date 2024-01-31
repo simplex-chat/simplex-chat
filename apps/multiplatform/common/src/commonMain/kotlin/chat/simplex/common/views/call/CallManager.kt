@@ -45,11 +45,11 @@ class CallManager(val chatModel: ChatModel) {
     with (chatModel) {
       activeCall.value = Call(
         remoteHostId = invitation.remoteHostId,
+        user = currentUser.value ?: return,
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
         sharedKey = invitation.sharedKey,
-        user = currentUser.value ?: return
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()

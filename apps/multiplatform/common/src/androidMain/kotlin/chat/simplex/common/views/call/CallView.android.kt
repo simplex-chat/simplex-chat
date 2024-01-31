@@ -591,6 +591,7 @@ fun PreviewActiveCallOverlayVideo() {
     ActiveCallOverlayLayout(
       call = Call(
         remoteHostId = null,
+        user = User.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
@@ -598,8 +599,7 @@ fun PreviewActiveCallOverlayVideo() {
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
-        ),
-        user = User.sampleData
+        )
       ),
       speakerCanBeEnabled = true,
       dismiss = {},
@@ -618,6 +618,7 @@ fun PreviewActiveCallOverlayAudio() {
     ActiveCallOverlayLayout(
       call = Call(
         remoteHostId = null,
+        user = User.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
@@ -625,8 +626,7 @@ fun PreviewActiveCallOverlayAudio() {
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "udp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "udp")
-        ),
-        user = User.sampleData
+        )
       ),
       speakerCanBeEnabled = true,
       dismiss = {},

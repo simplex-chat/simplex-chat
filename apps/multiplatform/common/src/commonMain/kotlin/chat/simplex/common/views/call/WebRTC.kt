@@ -12,6 +12,7 @@ import kotlin.collections.ArrayList
 
 data class Call(
   val remoteHostId: Long?,
+  val user: User,
   val contact: Contact,
   val callState: CallState,
   val localMedia: CallMediaType,
@@ -24,7 +25,6 @@ data class Call(
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
   var connectedAt: Instant? = null,
-  val user: User,
 ) {
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
   val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
