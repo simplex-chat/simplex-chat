@@ -28,19 +28,18 @@ import chat.simplex.res.MR
 @Composable
 fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
   var presetServers by remember(rhId) { mutableStateOf(emptyList<String>()) }
-  var servers by remember(rhId) {
-    mutableStateOf(m.userSMPServersUnsaved.value ?: emptyList())
-  }
+  var servers by remember { stateGetOrPut("servers") { emptyList<ServerCfg>() } }
+  var serversAlreadyLoaded by remember { stateGetOrPut("serversAlreadyLoaded") { false } }
   val currServers = remember(rhId) { mutableStateOf(servers) }
   val testing = rememberSaveable(rhId) { mutableStateOf(false) }
-  val serversUnchanged = remember { derivedStateOf { servers == currServers.value || testing.value } }
-  val allServersDisabled = remember { derivedStateOf { servers.all { !it.enabled } } }
-  val saveDisabled = remember {
+  val serversUnchanged = remember(servers) { derivedStateOf { servers == currServers.value || testing.value } }
+  val allServersDisabled = remember { derivedStateOf { servers.none { it.enabled } } }
+  val saveDisabled = remember(servers) {
     derivedStateOf {
       servers.isEmpty() ||
       servers == currServers.value ||
       testing.value ||
-      !servers.all { srv ->
+      servers.none { srv ->
         val address = parseServerAddress(srv.server)
         address != null && uniqueAddress(srv, address, servers)
       } ||
@@ -49,8 +48,8 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
   }
 
   KeyChangeEffect(rhId) {
-    m.userSMPServersUnsaved.value = null
     servers = emptyList()
+    serversAlreadyLoaded = false
   }
 
   LaunchedEffect(rhId) {
@@ -59,8 +58,9 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
       if (res != null) {
         currServers.value = res.protoServers
         presetServers = res.presetServers
-        if (servers.isEmpty()) {
+        if (servers.isEmpty() && !serversAlreadyLoaded) {
           servers = currServers.value
+          serversAlreadyLoaded = true
         }
       }
     }
@@ -80,13 +80,11 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
           newServers.add(index, updated)
           old = updated
           servers = newServers
-          m.userSMPServersUnsaved.value = servers
         },
         onDelete = {
           val newServers = ArrayList(servers)
           newServers.removeAt(index)
           servers = newServers
-          m.userSMPServersUnsaved.value = servers
           close()
         })
     }
@@ -125,7 +123,6 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
                     ScanProtocolServer(rhId) {
                       close()
                       servers = servers + it
-                      m.userSMPServersUnsaved.value = servers
                     }
                   }
                 }
@@ -150,13 +147,11 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
         testServersJob.value = withLongRunningApi {
           testServers(testing, servers, m) {
             servers = it
-            m.userSMPServersUnsaved.value = servers
           }
         }
       },
       resetServers = {
-        servers = currServers.value ?: emptyList()
-        m.userSMPServersUnsaved.value = null
+        servers = currServers.value
       },
       saveSMPServers = {
         saveServers(rhId, serverProtocol, currServers, servers, m)
@@ -355,7 +350,6 @@ private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: Muta
   withBGApi {
     if (m.controller.setUserProtoServers(rhId, protocol, servers)) {
       currServers.value = servers
-      m.userSMPServersUnsaved.value = null
     }
     afterSave()
   }

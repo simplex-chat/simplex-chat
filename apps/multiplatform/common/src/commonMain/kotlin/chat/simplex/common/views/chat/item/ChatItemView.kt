@@ -103,7 +103,7 @@ fun ChatItemView(
               setReaction(cInfo, cItem, !r.userReacted, r.reaction)
             }
           }
-          Row(modifier.padding(2.dp)) {
+          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
@@ -112,7 +112,6 @@ fun ChatItemView(
                 fontSize = 11.5.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-                modifier = if (appPlatform.isAndroid) Modifier else Modifier.padding(top = 4.dp)
               )
             }
           }
@@ -178,7 +177,8 @@ fun ChatItemView(
         fun MsgContentItemDropdownMenu() {
           val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
           when {
-            cItem.content.msgContent != null -> {
+            // cItem.id check is a special case for live message chat item which has negative ID while not sent yet
+            cItem.content.msgContent != null && cItem.id >= 0 -> {
               DefaultDropdownMenu(showMenu) {
                 if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                   MsgReactionsMenu()
@@ -527,8 +527,9 @@ fun DeleteItemAction(
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (range != null) {
             val itemIds: ArrayList<Long> = arrayListOf()
+            val reversedChatItems = chatModel.chatItems.asReversed()
             for (i in range) {
-              itemIds.add(chatModel.chatItems.asReversed()[i].id)
+              itemIds.add(reversedChatItems[i].id)
             }
             deleteMessagesAlertDialog(itemIds, generalGetString(MR.strings.delete_message_mark_deleted_warning), deleteMessages = deleteMessages)
           } else {
@@ -648,6 +649,23 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
       )
       Icon(icon, text, tint = finalColor)
     }
+  }
+}
+
+@Composable
+fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Unit) {
+  val finalColor = if (color == Color.Unspecified) {
+    MenuTextColor
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Text(
+      text,
+      modifier = Modifier
+        .fillMaxWidth()
+        .weight(1F)
+        .padding(end = 15.dp),
+      color = finalColor
+    )
   }
 }
 

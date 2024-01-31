@@ -54,7 +54,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
     },
     inviteMembers = {
       allowModifyMembers = false
-      withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+      withLongRunningApi(slow = 30_000, deadlock = 120_000) {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
@@ -86,7 +86,7 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { it.contactId !in memberContactIds && it.chatViewName.lowercase().contains(s) }
+    .filter { c -> c.ready && c.active && c.contactId !in memberContactIds && c.chatViewName.lowercase().contains(s) }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
