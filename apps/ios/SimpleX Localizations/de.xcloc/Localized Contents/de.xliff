@@ -6700,7 +6700,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="member %@ changed to %@" xml:space="preserve" approved="no">
         <source>member %1$@ changed to %2$@</source>
-        <target state="translated">Der Mitgliedsname wurde von %1$@ auf %2$@ geändert</target>
+        <target state="translated">Der Mitgliedsname von %1$@ wurde auf %2$@ geändert</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
