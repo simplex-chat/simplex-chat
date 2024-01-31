@@ -1706,7 +1706,7 @@
     <string name="v5_5_join_group_conversation">Gruppenunterhaltungen beitreten</string>
     <string name="v5_5_new_interface_languages">Ungarische und türkische Bedienoberfläche</string>
     <string name="profile_update_event_contact_name_changed">Der Kontaktname wurde von %1$s auf %2$s geändert</string>
-    <string name="profile_update_event_member_name_changed">Der Mitgliedsname wurde von %1$s auf %2$s geändert</string>
+    <string name="profile_update_event_member_name_changed">Der Mitgliedsname von %1$s wurde auf %2$s geändert</string>
     <string name="profile_update_event_set_new_address">Es wurde eine neue Kontaktadresse festgelegt</string>
     <string name="profile_update_event_set_new_picture">Es wurde ein neues Profil-Bild festgelegt</string>
     <string name="profile_update_event_updated_profile">Das Profil wurde aktualisiert</string>
