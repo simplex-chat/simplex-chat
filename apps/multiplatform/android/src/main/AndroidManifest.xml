@@ -108,7 +108,7 @@
         android:exported="false"
         android:launchMode="singleInstance"
         android:supportsPictureInPicture="true"
-        android:excludeFromRecents="true"
+        android:autoRemoveFromRecents="true"
         android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"/>
 
     <provider

@@ -156,6 +156,8 @@ actual fun ActiveCallView() {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
             withBGApi { chatModel.callManager.endCall(call) }
             chatModel.showCallView.value = false
+            chatModel.activeCallViewIsCollapsed.value = false
+            chatModel.activeCall.value = null
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
             is WCallCommand.Answer ->
@@ -172,8 +174,11 @@ actual fun ActiveCallView() {
                 chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
               }
             }
-            is WCallCommand.End ->
+            is WCallCommand.End -> {
               chatModel.showCallView.value = false
+              chatModel.activeCallViewIsCollapsed.value = false
+              chatModel.activeCall.value = null
+            }
             else -> {}
           }
           is WCallResponse.Error -> {
@@ -182,7 +187,7 @@ actual fun ActiveCallView() {
         }
       }
     }
-    if (call != null && !chatModel.activeCallViewIsCollapsed.value) {
+    if (call != null && (!chatModel.activeCallViewIsCollapsed.value || !platform.androidPictureInPictureAllowed())) {
       ActiveCallOverlay(call, chatModel, audioViaBluetooth)
     }
   }

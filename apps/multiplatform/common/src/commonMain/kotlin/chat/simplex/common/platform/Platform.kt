@@ -13,6 +13,7 @@ interface PlatformInterface {
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
+  fun androidPictureInPictureAllowed(): Boolean = true
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
 }
 /**

@@ -269,6 +269,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
         context.startActivity(intent)
       }
 
+      override fun androidPictureInPictureAllowed(): Boolean {
+        val appOps = androidAppContext.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        return appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+      }
+
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
         if (SimplexService.isBackgroundRestricted()) {
           val userChoice: CompletableDeferred<Boolean> = CompletableDeferred()

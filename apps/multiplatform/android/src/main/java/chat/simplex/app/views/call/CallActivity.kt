@@ -111,9 +111,14 @@ class CallActivity: ComponentActivity() {
     }
   }
 
+  override fun onPictureInPictureRequested(): Boolean {
+    Log.d(TAG, "Requested picture-in-picture from the system")
+    return super.onPictureInPictureRequested()
+  }
+
   override fun onUserLeaveHint() {
     // On Android 12+ PiP is enabled automatically when a user hides the app
-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && callSupportsVideo()) {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && callSupportsVideo() && platform.androidPictureInPictureAllowed()) {
       enterPictureInPictureMode()
     }
   }
@@ -179,13 +184,17 @@ fun CallActivityView() {
       .collect { collapsed ->
         when {
           collapsed -> {
-            if (chatModel.activeCall.value?.supportsVideo() == true) {
+            if (chatModel.activeCall.value?.supportsVideo() == true && platform.androidPictureInPictureAllowed()) {
               activity.enterPictureInPictureMode()
             } else {
               activity.relaunchingActivity = true
               activity.moveTaskToBack(true)
 //              activity.startActivity(Intent(activity, MainActivity::class.java))
             }
+          }
+          chatModel.activeCall.value?.supportsVideo() == true && !platform.androidPictureInPictureAllowed() -> {
+            // PiP disabled by user
+            platform.androidStartCallActivity(false)
           }
           activity.isInPictureInPictureMode -> {
 //            activity.moveTaskToBack(false)
