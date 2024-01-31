@@ -615,7 +615,7 @@ fun ChatInfoToolbar(
       showSearch = false
     }
   }
-  if (appPlatform.isAndroid && chatModel.activeCallViewIsCollapsed.value) {
+  if (appPlatform.isAndroid) {
     BackHandler(onBack = onBackClicked)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
