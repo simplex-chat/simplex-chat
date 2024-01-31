@@ -5,12 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
@@ -218,11 +220,6 @@ fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
     val showCallArea = call != null && call.callState != CallState.WaitCapabilities
-    if (call != null && showCallArea) {
-      Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT)) {
-        ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
-      }
-    }
     var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
@@ -263,6 +260,17 @@ fun AndroidScreen(settingsState: SettingsViewState) {
     ) Box2@{
       currentChatId?.let {
         ChatView(it, chatModel, onComposed)
+      }
+    }
+    if (call != null && showCallArea) {
+      Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT + 10.dp)) {
+        Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT)) {
+          ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
+        }
+        Box(Modifier.size(50.dp).background(SimplexGreen, CircleShape).align(Alignment.BottomCenter), contentAlignment = Alignment.Center) {
+          val media = call.peerMedia ?: call.localMedia
+          Icon(painterResource(if (media == CallMediaType.Video) MR.images.ic_videocam_filled else MR.images.ic_call_filled), null, Modifier.size(30.dp), tint = Color.White)
+        }
       }
     }
   }

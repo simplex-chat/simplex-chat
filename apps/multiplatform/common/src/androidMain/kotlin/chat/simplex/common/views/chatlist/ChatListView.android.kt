@@ -18,16 +18,12 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Clock
 
 @Composable
 actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>) {
-  val media = call.peerMedia ?: call.localMedia
   Row(
     Modifier
       .fillMaxSize()
@@ -39,14 +35,6 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.Center
   ) {
-    if (chatModel.users.size > 1) {
-      ProfileImage(size = 30.dp, image = call.user.image, color = MaterialTheme.colors.secondaryVariant)
-      Spacer(Modifier.width(4.dp))
-    }
-    if (media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
-    else CallIcon(painterResource(MR.images.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call))
-    Spacer(Modifier.width(4.dp))
-    ProfileImage(size = 30.dp, image = call.contact.profile.image)
     Spacer(Modifier.weight(1f))
     CallDuration(call)
   }
@@ -61,9 +49,6 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
     }
   }
 }
-
-@Composable
-private fun CallIcon(icon: Painter, descr: String) = Icon(icon, descr, Modifier.size(20.dp), tint = Color.White)
 
 @Composable
 private fun CallDuration(call: Call) {
