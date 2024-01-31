@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import android.app.Activity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -8,7 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.durationText
@@ -38,7 +40,7 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
     horizontalArrangement = Arrangement.Center
   ) {
     if (chatModel.users.size > 1) {
-      ProfileImage(size = 30.dp, image = chatModel.activeCallInvitation.value?.user?.profile?.image, color = MaterialTheme.colors.secondaryVariant)
+      ProfileImage(size = 30.dp, image = call.user.image, color = MaterialTheme.colors.secondaryVariant)
       Spacer(Modifier.width(4.dp))
     }
     if (media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
@@ -50,6 +52,13 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
   }
   DisposableEffectOnGone {
     chatModel.activeCallViewIsCollapsed.value = false
+  }
+  val window = (LocalContext.current as Activity).window
+  DisposableEffect(Unit) {
+    window.statusBarColor = SimplexGreen.toArgb()
+    onDispose {
+      window.statusBarColor = Color.Black.toArgb()
+    }
   }
 }
 

@@ -598,7 +598,8 @@ fun PreviewActiveCallOverlayVideo() {
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
-        )
+        ),
+        user = User.sampleData
       ),
       speakerCanBeEnabled = true,
       dismiss = {},
@@ -624,7 +625,8 @@ fun PreviewActiveCallOverlayAudio() {
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "udp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "udp")
-        )
+        ),
+        user = User.sampleData
       ),
       speakerCanBeEnabled = true,
       dismiss = {},

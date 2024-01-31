@@ -23,7 +23,8 @@ data class Call(
   val soundSpeaker: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
-  var connectedAt: Instant? = null
+  var connectedAt: Instant? = null,
+  val user: User,
 ) {
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
   val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false

@@ -301,7 +301,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             withBGApi {
               val cInfo = chat.chatInfo
               if (cInfo is ChatInfo.Direct) {
-                chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+                chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media, user = chatModel.currentUser.value ?: return@withBGApi)
                 chatModel.showCallView.value = true
                 chatModel.callCommand.add(WCallCommand.Capabilities(media))
               }

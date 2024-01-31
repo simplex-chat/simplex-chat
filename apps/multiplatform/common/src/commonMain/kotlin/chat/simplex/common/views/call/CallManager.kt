@@ -1,6 +1,7 @@
 package chat.simplex.common.views.call
 
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.User
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withBGApi
 import kotlinx.datetime.Clock
@@ -48,6 +49,7 @@ class CallManager(val chatModel: ChatModel) {
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
         sharedKey = invitation.sharedKey,
+        user = currentUser.value ?: return
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
