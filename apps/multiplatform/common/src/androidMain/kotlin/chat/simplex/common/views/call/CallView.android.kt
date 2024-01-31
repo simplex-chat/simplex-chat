@@ -187,7 +187,14 @@ actual fun ActiveCallView() {
         }
       }
     }
-    if (call != null && (!chatModel.activeCallViewIsCollapsed.value || !platform.androidPictureInPictureAllowed())) {
+    val showOverlay = when {
+      call == null -> false
+      !platform.androidPictureInPictureAllowed() -> true
+      !call.supportsVideo() -> true
+      !chatModel.activeCallViewIsCollapsed.value -> true
+      else -> false
+    }
+    if (call != null && showOverlay) {
       ActiveCallOverlay(call, chatModel, audioViaBluetooth)
     }
   }

@@ -31,11 +31,6 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
       .fillMaxSize()
       .background(SimplexGreen)
       .combinedClickable(onClick = {
-        // For video this variable will be set when PiP mode changes, it will be a smooth transition.
-        // For audio or when PiP mode disabled - it should be set here
-        if (!call.supportsVideo() || !platform.androidPictureInPictureAllowed()) {
-          chatModel.activeCallViewIsCollapsed.value = false
-        }
         platform.androidStartCallActivity(false)
       })
       .padding(horizontal = DEFAULT_PADDING),
