@@ -220,7 +220,7 @@ val ANDROID_CALL_TOP_PADDING = 30.dp
 fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
-    val showCallArea = call != null && call.callState != CallState.WaitCapabilities
+    val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
     var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
