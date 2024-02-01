@@ -296,53 +296,57 @@ private fun ActiveCallOverlayLayout(
   toggleSound: () -> Unit,
   flipCamera: () -> Unit
 ) {
-  Column(Modifier.padding(DEFAULT_PADDING)) {
-    when (call.peerMedia ?: call.localMedia) {
-      CallMediaType.Video -> {
-        CallInfoView(call, alignment = Alignment.Start)
-        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-          DisabledBackgroundCallsButton()
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-          ToggleAudioButton(call, toggleAudio)
-          Spacer(Modifier.size(40.dp))
-          IconButton(onClick = dismiss) {
-            Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+  Column {
+    CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color.White) {}
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      when (call.peerMedia ?: call.localMedia) {
+        CallMediaType.Video -> {
+          CallInfoView(call, alignment = Alignment.Start)
+          Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+            DisabledBackgroundCallsButton()
           }
-          if (call.videoEnabled) {
-            ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
-            ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
-          } else {
-            Spacer(Modifier.size(48.dp))
-            ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
-          }
-        }
-      }
-      CallMediaType.Audio -> {
-        Spacer(Modifier.fillMaxHeight().weight(1f))
-        Column(
-          Modifier.fillMaxWidth(),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.Center
-        ) {
-          ProfileImage(size = 192.dp, image = call.contact.profile.image)
-          CallInfoView(call, alignment = Alignment.CenterHorizontally)
-        }
-        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-          DisabledBackgroundCallsButton()
-        }
-        Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            ToggleAudioButton(call, toggleAudio)
+            Spacer(Modifier.size(40.dp))
             IconButton(onClick = dismiss) {
               Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
             }
+            if (call.videoEnabled) {
+              ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
+              ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
+            } else {
+              Spacer(Modifier.size(48.dp))
+              ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
+            }
           }
-          Box(Modifier.padding(start = 32.dp)) {
-            ToggleAudioButton(call, toggleAudio)
+        }
+
+        CallMediaType.Audio -> {
+          Spacer(Modifier.fillMaxHeight().weight(1f))
+          Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+          ) {
+            ProfileImage(size = 192.dp, image = call.contact.profile.image)
+            CallInfoView(call, alignment = Alignment.CenterHorizontally)
           }
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            Box(Modifier.padding(end = 32.dp)) {
-              ToggleSoundButton(call, speakerCanBeEnabled, toggleSound)
+          Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+            DisabledBackgroundCallsButton()
+          }
+          Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+              IconButton(onClick = dismiss) {
+                Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+              }
+            }
+            Box(Modifier.padding(start = 32.dp)) {
+              ToggleAudioButton(call, toggleAudio)
+            }
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+              Box(Modifier.padding(end = 32.dp)) {
+                ToggleSoundButton(call, speakerCanBeEnabled, toggleSound)
+              }
             }
           }
         }
