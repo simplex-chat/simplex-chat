@@ -81,10 +81,10 @@ class CallActivity: ComponentActivity() {
 
   private fun isOnLockScreenNow() = getKeyguardManager(this).isKeyguardLocked
 
-  fun setPipParams(video: Boolean, sourceRectHint: Rect? = null) {
+  fun setPipParams(video: Boolean, sourceRectHint: Rect? = null, viewRatio: Rational? = null) {
     // By manually specifying source rect we exclude empty background while toggling PiP
     val builder = PictureInPictureParams.Builder()
-        .setAspectRatio(Rational(100, 133))
+        .setAspectRatio(viewRatio)
         .setSourceRectHint(sourceRectHint)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       builder.setAutoEnterEnabled(video)
@@ -216,7 +216,7 @@ fun CallActivityView() {
         val scope = rememberCoroutineScope()
         LaunchedEffect(Unit) {
           scope.launch {
-            activity.setPipParams(callSupportsVideo())
+            activity.setPipParams(callSupportsVideo(), viewRatio = Rational(view.width, view.height))
             activity.trackPipAnimationHintView(view)
           }
         }

@@ -60,6 +60,14 @@ actual fun ActiveCallView() {
     // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
     if (!ntfModeService) platform.androidServiceStart()
   }
+  val proximityLock = remember {
+    val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
+    if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
+      pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, androidAppContext.packageName + ":proximityLock")
+    } else {
+      null
+    }
+  }
   DisposableEffect(Unit) {
     val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     var btDeviceCount = 0
@@ -88,27 +96,26 @@ actual fun ActiveCallView() {
       }
     }
     am.registerAudioDeviceCallback(audioCallback, null)
-    val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
-    val proximityLock = if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
-      pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, androidAppContext.packageName + ":proximityLock")
-    } else {
-      null
-    }
-    proximityLock?.acquire()
     onDispose {
       // Stop it when call ended
       if (!ntfModeService) platform.androidServiceSafeStop()
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
-      proximityLock?.release()
+      if (proximityLock?.isHeld == true) {
+        proximityLock.release()
+      }
+    }
+  }
+  LaunchedEffect(chatModel.activeCallViewIsCollapsed.value) {
+    if (chatModel.activeCallViewIsCollapsed.value) {
+      if (proximityLock?.isHeld == true) proximityLock.release()
+    } else {
+      if (proximityLock?.isHeld == false) proximityLock.acquire()
     }
   }
   val scope = rememberCoroutineScope()
   val call = chatModel.activeCall.value
-  Box(Modifier
-    .fillMaxSize()
-    /*.offset(if (remember { chatModel.activeCallViewIsCollapsed }.value && call?.supportsVideo() == false) 10000.dp else 0.dp)*/
-  ) {
+  Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
       val call = chatModel.activeCall.value

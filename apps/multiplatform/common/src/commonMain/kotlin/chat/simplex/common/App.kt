@@ -1,16 +1,17 @@
 package chat.simplex.common
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -40,8 +41,6 @@ data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
   val scaffoldState: ScaffoldState
 )
-
-private val CALL_INTERACTIVE_AREA_HEIGHT = 40.dp
 
 @Composable
 fun AppScreen() {
@@ -215,6 +214,8 @@ fun MainScreen() {
   }
 }
 
+val ANDROID_CALL_TOP_PADDING = 30.dp
+
 @Composable
 fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
@@ -227,7 +228,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         .graphicsLayer {
           translationX = -offset.value.dp.toPx()
         }
-        .padding(top = if (showCallArea) CALL_INTERACTIVE_AREA_HEIGHT else 0.dp)
+        .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
       StartPartOfScreen(settingsState)
     }
@@ -256,26 +257,14 @@ fun AndroidScreen(settingsState: SettingsViewState) {
     }
     Box(Modifier
       .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
-      .padding(top = if (showCallArea) CALL_INTERACTIVE_AREA_HEIGHT else 0.dp)
+      .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) Box2@{
       currentChatId?.let {
         ChatView(it, chatModel, onComposed)
       }
     }
     if (call != null && showCallArea) {
-      Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT + 15.dp)) {
-        Box(Modifier.height(CALL_INTERACTIVE_AREA_HEIGHT)) {
-          ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
-        }
-        Box(Modifier.size(60.dp).offset(y = (-5).dp).background(SimplexGreen, CircleShape).align(Alignment.BottomCenter), contentAlignment = Alignment.Center) {
-          val media = call.peerMedia ?: call.localMedia
-          if (media == CallMediaType.Video) {
-            Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(30.dp).offset(x = 2.dp), tint = Color.White)
-          } else {
-            Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(30.dp).offset(x = (-3).dp), tint = Color.White)
-          }
-        }
-      }
+      ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
     }
   }
 }
