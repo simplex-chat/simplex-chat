@@ -2,7 +2,6 @@ package chat.simplex.app
 
 import android.app.*
 import android.content.Context
-import androidx.compose.ui.platform.ClipboardManager
 import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.os.*
@@ -20,6 +19,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.views.call.RcvCallInvitation
+import chat.simplex.common.views.call.activeCallDestroyWebView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -272,6 +272,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidPictureInPictureAllowed(): Boolean {
         val appOps = androidAppContext.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         return appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+      }
+
+      override fun androidCallEnded() {
+        activeCallDestroyWebView()
       }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {

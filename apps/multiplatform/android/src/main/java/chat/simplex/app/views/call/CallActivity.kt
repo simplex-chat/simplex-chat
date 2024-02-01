@@ -1,15 +1,12 @@
 package chat.simplex.app.views.call
 
 import android.app.*
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.res.Configuration
 import android.graphics.Rect
-import android.os.Build
-import android.os.Bundle
+import android.os.*
 import android.util.Rational
-import android.view.View
-import android.view.WindowManager
+import android.view.*
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.trackPipAnimationHintView
@@ -47,7 +44,6 @@ import kotlinx.datetime.Clock
 import java.lang.ref.WeakReference
 
 class CallActivity: ComponentActivity() {
-  var relaunchingActivity = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -128,17 +124,6 @@ class CallActivity: ComponentActivity() {
     chatModel.activeCallViewIsCollapsed.value = false
   }
 
-  override fun onStop() {
-    super.onStop()
-    val call = chatModel.activeCall.value
-    if (call != null && chatModel.activeCallViewIsCollapsed.value && !relaunchingActivity) {
-      withBGApi {
-        chatModel.callManager.endCall(call)
-      }
-    }
-    relaunchingActivity = false
-  }
-
   private fun unlockForIncomingCall() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
       setShowWhenLocked(true)
@@ -192,7 +177,6 @@ fun CallActivityView() {
             if (chatModel.activeCall.value?.supportsVideo() == true && platform.androidPictureInPictureAllowed()) {
               activity.enterPictureInPictureMode()
             } else {
-              activity.relaunchingActivity = true
               activity.moveTaskToBack(true)
 //              activity.startActivity(Intent(activity, MainActivity::class.java))
             }

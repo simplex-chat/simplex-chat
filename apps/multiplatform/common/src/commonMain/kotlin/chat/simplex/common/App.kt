@@ -173,7 +173,11 @@ fun MainScreen() {
       if (chatModel.showCallView.value) {
         if (appPlatform.isAndroid) {
           LaunchedEffect(Unit) {
-            platform.androidStartCallActivity(false)
+            // This if prevents running the activity in the following condition:
+            // - the activity already started before and was destroyed by collapsing active call (start audio call, press back button, go to a launcher)
+            if (!chatModel.activeCallViewIsCollapsed.value) {
+              platform.androidStartCallActivity(false)
+            }
           }
         } else {
           ActiveCallView()
@@ -265,6 +269,11 @@ fun AndroidScreen(settingsState: SettingsViewState) {
     }
     if (call != null && showCallArea) {
       ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
+    }
+    KeyChangeEffect(call) {
+      if (call == null) {
+        platform.androidCallEnded()
+      }
     }
   }
 }

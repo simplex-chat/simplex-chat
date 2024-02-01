@@ -50,6 +50,18 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
+// Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
+@SuppressLint("StaticFieldLeak")
+private var staticWebView: WebView? = null
+fun activeCallDestroyWebView() {
+  staticWebView?.destroy()
+  staticWebView = null
+  val ntfModeService = chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
+  // Stop it when call ended
+  if (!ntfModeService) platform.androidServiceSafeStop()
+  Log.d(TAG, "CallView: webview was destroyed")
+}
+
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
@@ -97,8 +109,6 @@ actual fun ActiveCallView() {
     }
     am.registerAudioDeviceCallback(audioCallback, null)
     onDispose {
-      // Stop it when call ended
-      if (!ntfModeService) platform.androidServiceSafeStop()
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
       if (proximityLock?.isHeld == true) {
@@ -475,7 +485,6 @@ private fun DisabledBackgroundCallsButton() {
 
 @Composable
 fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
-  val scope = rememberCoroutineScope()
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(
     permissions = listOf(
@@ -498,10 +507,10 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
     }
     lifecycleOwner.lifecycle.addObserver(observer)
     onDispose {
-      val wv = webView.value
-      if (wv != null) processCommand(wv, WCallCommand.End)
       lifecycleOwner.lifecycle.removeObserver(observer)
-      webView.value?.destroy()
+//      val wv = webView.value
+//      if (wv != null) processCommand(wv, WCallCommand.End)
+//      webView.value?.destroy()
       webView.value = null
     }
   }
@@ -528,7 +537,7 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
     Box(Modifier.fillMaxSize()) {
       AndroidView(
         factory = { AndroidViewContext ->
-          WebView(AndroidViewContext).apply {
+          (staticWebView ?: WebView(androidAppContext)).apply {
             layoutParams = ViewGroup.LayoutParams(
               ViewGroup.LayoutParams.MATCH_PARENT,
               ViewGroup.LayoutParams.MATCH_PARENT,
@@ -553,7 +562,11 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
             webViewSettings.javaScriptEnabled = true
             webViewSettings.mediaPlaybackRequiresUserGesture = false
             webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-            this.loadUrl("file:android_asset/www/android/call.html")
+            if (staticWebView == null) {
+              this.loadUrl("file:android_asset/www/android/call.html")
+            } else {
+              webView.value = this
+            }
           }
         }
       ) { /* WebView */ }
@@ -589,6 +602,7 @@ private class LocalContentWebViewClient(val webView: MutableState<WebView?>, pri
     super.onPageFinished(view, url)
     view.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
     webView.value = view
+    staticWebView = view
     Log.d(TAG, "WebRTCView: webview ready")
     // for debugging
     // view.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
