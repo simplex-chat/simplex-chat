@@ -15,6 +15,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Protocol (supportedSMPClientVRange)
+import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
 import Test.Hspec
 
@@ -37,7 +38,7 @@ queue =
 connReqData :: ConnReqUriData
 connReqData =
   ConnReqUriData
-    { crScheme = CRSSimplex,
+    { crScheme = SSSimplex,
       crAgentVRange = mkVersionRange 1 1,
       crSmpQueues = [queue],
       crClientData = Nothing

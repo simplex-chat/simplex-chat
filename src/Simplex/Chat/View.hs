@@ -198,15 +198,17 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
-  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" (maybe (Left "") Right ci)
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" (Right ci)
+  CRRcvFileCompleteXFTP u path -> ttyUser u $ receivingFile_' hu testView "completed" (Left path)
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
+  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' hu testView "error" (maybe (Left "") Right ci) <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
   CRSndFileProgressXFTP {} -> []
-  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
+  CRSndFileCompleteXFTP u ci _ Nothing -> ttyUser u $ uploadingFile "completed" ci
+  CRSndFileCompleteXFTP u _ _ (Just uris) -> ttyUser u $ directUploadComplete uris
   CRSndFileCancelledXFTP {} -> []
   CRSndFileError u ci -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
@@ -1557,12 +1559,16 @@ sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
-uploadingFile :: StyledString -> AChatItem -> [StyledString]
-uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
-  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
-  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
-uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
+uploadingFile :: StyledString -> Maybe AChatItem -> [StyledString]
+uploadingFile status = \case
+  Just (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) ->
+    [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
+  Just (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) ->
+    [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+  _ -> [status <> " uploading file"]
+
+directUploadComplete :: [Text] -> [StyledString]
+directUploadComplete uris = "file upload complete. download links:" : map plain uris
 
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
@@ -1594,8 +1600,8 @@ savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource
   ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
-receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
+receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> Either FilePath AChatItem -> [StyledString]
+receivingFile_' hu testView status (Right (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir})) =
   [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
     cfArgsStr (Just cfArgs) = [plain (cryptoFileArgsStr testView cfArgs) | status == "completed"]
@@ -1608,7 +1614,11 @@ receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIF
               highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode RemoteFile {userId, fileId, sent = False, fileSource = f}))
             ]
       _ -> []
-receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+receivingFile_' _ _ status (Left path) | not (null path) =
+  [ plain status <> " receiving file"
+  , plain path
+  ]
+receivingFile_' _ _ status _ = [plain status <> " receiving file"]
 
 viewLocalFile :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of

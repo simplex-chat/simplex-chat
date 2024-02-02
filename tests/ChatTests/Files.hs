@@ -9,6 +9,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Logger.Simple
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -77,6 +78,8 @@ chatFileTests = do
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
+    it "send and receive file without chat items" testXFTPDirect
+    -- TODO: send/receive with cfArgs
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1544,6 +1547,31 @@ testProhibitFiles =
     (cath </)
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPDirect :: HasCallStack => FilePath -> IO ()
+testXFTPDirect = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/fixtures/test.jpg"
+    src <## "ok"
+    threadDelay 250000
+    src <## "file upload complete. download links:"
+    uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/test.jpg"
+    dst ##> ("/_download 1 " <> uri1 <> " " <> dstFile)
+    dst <## "ok"
+    threadDelay 250000
+    dst <## "completed receiving file"
+    getTermLine dst `shouldReturn` dstFile
+    srcBody <- B.readFile "./tests/fixtures/test.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+    logNote "bye"
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
