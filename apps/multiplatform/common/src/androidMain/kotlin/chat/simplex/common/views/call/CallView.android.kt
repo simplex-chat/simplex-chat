@@ -325,7 +325,7 @@ private fun ActiveCallOverlayLayout(
     val media = call.peerMedia ?: call.localMedia
     CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
       if (media == CallMediaType.Video) {
-        Text(call.contact.chatViewName + call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
+        Text(call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
       }
     }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
