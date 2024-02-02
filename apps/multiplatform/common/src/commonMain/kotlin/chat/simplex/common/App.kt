@@ -218,7 +218,7 @@ fun MainScreen() {
   }
 }
 
-val ANDROID_CALL_TOP_PADDING = 30.dp
+val ANDROID_CALL_TOP_PADDING = 40.dp
 
 @Composable
 fun AndroidScreen(settingsState: SettingsViewState) {
