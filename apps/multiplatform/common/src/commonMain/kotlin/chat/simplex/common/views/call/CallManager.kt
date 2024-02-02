@@ -71,6 +71,10 @@ class CallManager(val chatModel: ChatModel) {
 
   suspend fun endCall(call: Call) {
     with (chatModel) {
+      showCallView.value = false
+      activeCall.value = null
+      chatModel.activeCallViewIsCollapsed.value = false
+      platform.androidCallEnded()
       if (call.callState == CallState.Ended) {
         Log.d(TAG, "CallManager.endCall: call ended")
       } else {
@@ -78,10 +82,6 @@ class CallManager(val chatModel: ChatModel) {
         callCommand.add(WCallCommand.End)
         controller.apiEndCall(call.remoteHostId, call.contact)
       }
-      showCallView.value = false
-      activeCall.value = null
-      chatModel.activeCallViewIsCollapsed.value = false
-      platform.androidCallEnded()
     }
   }
 
