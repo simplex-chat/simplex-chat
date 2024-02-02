@@ -6881,9 +6881,9 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>başlatılıyor…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="strike" xml:space="preserve">
+      <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
-        <target>grev</target>
+        <target state="translated">çizik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
@@ -7041,9 +7041,9 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>sen: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="~strike~" xml:space="preserve">
+      <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
-        <target>\~strike~</target>
+        <target state="translated">\~çizik~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
