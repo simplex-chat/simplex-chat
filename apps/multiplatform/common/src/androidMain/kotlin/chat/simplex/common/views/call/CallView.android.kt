@@ -257,6 +257,20 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, audioViaBluetoot
   )
 }
 
+@Composable
+fun ActiveCallOverlayDisabled(call: Call) {
+  ActiveCallOverlayLayout(
+    call = call,
+    speakerCanBeEnabled = false,
+    enabled = false,
+    dismiss = {},
+    toggleAudio = {},
+    toggleVideo = {},
+    toggleSound = {},
+    flipCamera = {}
+  )
+}
+
 private fun setCallSound(speaker: Boolean, audioViaBluetooth: MutableState<Boolean>) {
   val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   Log.d(TAG, "setCallSound: set audio mode, speaker enabled: $speaker")
@@ -299,6 +313,7 @@ private fun dropAudioManagerOverrides() {
 private fun ActiveCallOverlayLayout(
   call: Call,
   speakerCanBeEnabled: Boolean,
+  enabled: Boolean = true,
   dismiss: () -> Unit,
   toggleAudio: () -> Unit,
   toggleVideo: () -> Unit,
@@ -321,17 +336,17 @@ private fun ActiveCallOverlayLayout(
             DisabledBackgroundCallsButton()
           }
           Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            ToggleAudioButton(call, toggleAudio)
+            ToggleAudioButton(call, enabled, toggleAudio)
             Spacer(Modifier.size(40.dp))
-            IconButton(onClick = dismiss) {
-              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+            IconButton(onClick = dismiss, enabled = enabled) {
+              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
             }
             if (call.videoEnabled) {
-              ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
-              ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
+              ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera)
+              ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo)
             } else {
               Spacer(Modifier.size(48.dp))
-              ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
+              ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo)
             }
           }
         }
@@ -351,16 +366,16 @@ private fun ActiveCallOverlayLayout(
           }
           Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-              IconButton(onClick = dismiss) {
-                Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+              IconButton(onClick = dismiss, enabled = enabled) {
+                Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
               }
             }
             Box(Modifier.padding(start = 32.dp)) {
-              ToggleAudioButton(call, toggleAudio)
+              ToggleAudioButton(call, enabled, toggleAudio)
             }
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
               Box(Modifier.padding(end = 32.dp)) {
-                ToggleSoundButton(call, speakerCanBeEnabled, toggleSound)
+                ToggleSoundButton(call, speakerCanBeEnabled && enabled, toggleSound)
               }
             }
           }
@@ -371,7 +386,7 @@ private fun ActiveCallOverlayLayout(
 }
 
 @Composable
-private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, action: () -> Unit, enabled: Boolean = true) {
+private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, enabled: Boolean = true, action: () -> Unit) {
   if (call.hasMedia) {
     IconButton(onClick = action, enabled = enabled) {
       Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else MaterialTheme.colors.secondary, modifier = Modifier.size(40.dp))
@@ -382,20 +397,20 @@ private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, a
 }
 
 @Composable
-private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
+private fun ToggleAudioButton(call: Call, enabled: Boolean = true, toggleAudio: () -> Unit) {
   if (call.audioEnabled) {
-    ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, toggleAudio)
+    ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, enabled, toggleAudio)
   } else {
-    ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, toggleAudio)
+    ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, enabled, toggleAudio)
   }
 }
 
 @Composable
 private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> Unit) {
   if (call.soundSpeaker) {
-    ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, toggleSound, enabled)
+    ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, enabled, toggleSound)
   } else {
-    ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, toggleSound, enabled)
+    ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, enabled, toggleSound)
   }
 }
 

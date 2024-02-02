@@ -27,7 +27,8 @@ class CallManager(val chatModel: ChatModel) {
     val call = chatModel.activeCall.value
     val contactInfo = chatModel.controller.apiContactInfo(invitation.remoteHostId, invitation.contact.contactId)
     val profile = contactInfo?.second ?: invitation.user.profile.toProfile()
-    if (call == null) {
+    // In case the same contact calling while previous call didn't end yet (abnormal ending of call from the other side)
+    if (call == null || (call.remoteHostId == invitation.remoteHostId && call.contact.id == invitation.contact.id)) {
       justAcceptIncomingCall(invitation = invitation, profile)
     } else {
       chatModel.switchingCall.value = true

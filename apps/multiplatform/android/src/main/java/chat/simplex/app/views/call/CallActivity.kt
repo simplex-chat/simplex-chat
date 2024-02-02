@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.trackPipAnimationHintView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -193,27 +194,31 @@ fun CallActivityView() {
       }
   }
   SimpleXTheme {
-    if (chatModel.activeCall.value != null) {
-      val view = LocalView.current
-      ActiveCallView()
-      if (callSupportsVideo()) {
-        val scope = rememberCoroutineScope()
-        LaunchedEffect(Unit) {
-          scope.launch {
-            activity.setPipParams(callSupportsVideo(), viewRatio = Rational(view.width, view.height))
-            activity.trackPipAnimationHintView(view)
-          }
-        }
-        //TrackViewSizeManually()
+    var prevCall by remember { mutableStateOf(chatModel.activeCall.value) }
+    KeyChangeEffect(chatModel.activeCall.value) {
+      if (chatModel.activeCall.value != null) {
+        prevCall = chatModel.activeCall.value
       }
-    } else if (invitation != null) {
-      Surface(
-        Modifier
-          .fillMaxSize(),
-        color = MaterialTheme.colors.background,
-        contentColor = LocalContentColor.current
-      ) {
-        IncomingCallLockScreenAlert(invitation, m)
+    }
+    Box(Modifier.background(Color.Black)) {
+      if (chatModel.activeCall.value != null) {
+        val view = LocalView.current
+        ActiveCallView()
+        if (callSupportsVideo()) {
+          val scope = rememberCoroutineScope()
+          LaunchedEffect(Unit) {
+            scope.launch {
+              activity.setPipParams(callSupportsVideo(), viewRatio = Rational(view.width, view.height))
+              activity.trackPipAnimationHintView(view)
+            }
+          }
+          //TrackViewSizeManually()
+        }
+      } else if (prevCall != null) {
+        prevCall?.let { ActiveCallOverlayDisabled(it) }
+      }
+      if (invitation != null) {
+        IncomingCallAlertView(invitation, chatModel)
       }
     }
   }
