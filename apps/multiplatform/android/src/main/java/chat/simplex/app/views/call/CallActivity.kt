@@ -218,7 +218,18 @@ fun CallActivityView() {
         prevCall?.let { ActiveCallOverlayDisabled(it) }
       }
       if (invitation != null) {
-        IncomingCallAlertView(invitation, chatModel)
+        if (chatModel.activeCall.value == null) {
+          Surface(
+            Modifier
+              .fillMaxSize(),
+            color = MaterialTheme.colors.background,
+            contentColor = LocalContentColor.current
+          ) {
+            IncomingCallLockScreenAlert(invitation, m)
+          }
+        } else {
+          IncomingCallAlertView(invitation, chatModel)
+        }
       }
     }
   }
