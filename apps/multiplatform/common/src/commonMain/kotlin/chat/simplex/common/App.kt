@@ -270,11 +270,6 @@ fun AndroidScreen(settingsState: SettingsViewState) {
     if (call != null && showCallArea) {
       ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
     }
-    KeyChangeEffect(call) {
-      if (call == null) {
-        platform.androidCallEnded()
-      }
-    }
   }
 }
 

@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -53,12 +55,14 @@ import kotlinx.serialization.encodeToString
 // Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
 @SuppressLint("StaticFieldLeak")
 private var staticWebView: WebView? = null
-fun activeCallDestroyWebView() {
-  staticWebView?.destroy()
-  staticWebView = null
+
+// WebView methods must be called on Main thread
+fun activeCallDestroyWebView() = withApi {
   val ntfModeService = chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
   // Stop it when call ended
   if (!ntfModeService) platform.androidServiceSafeStop()
+  staticWebView?.destroy()
+  staticWebView = null
   Log.d(TAG, "CallView: webview was destroyed")
 }
 
@@ -70,7 +74,7 @@ actual fun ActiveCallView() {
   LaunchedEffect(Unit) {
     // Start service when call happening since it's not already started.
     // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
-    if (!ntfModeService) platform.androidServiceStart()
+    if (!ntfModeService) withBGApi { platform.androidServiceStart() }
   }
   val proximityLock = remember {
     val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -172,9 +176,6 @@ actual fun ActiveCallView() {
           is WCallResponse.Ended -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
             withBGApi { chatModel.callManager.endCall(call) }
-            chatModel.showCallView.value = false
-            chatModel.activeCallViewIsCollapsed.value = false
-            chatModel.activeCall.value = null
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
             is WCallCommand.Answer ->
@@ -192,9 +193,7 @@ actual fun ActiveCallView() {
               }
             }
             is WCallCommand.End -> {
-              chatModel.showCallView.value = false
-              chatModel.activeCallViewIsCollapsed.value = false
-              chatModel.activeCall.value = null
+              withBGApi { chatModel.callManager.endCall(call) }
             }
             else -> {}
           }
@@ -307,11 +306,17 @@ private fun ActiveCallOverlayLayout(
   flipCamera: () -> Unit
 ) {
   Column {
-    CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color.White) {}
+    val media = call.peerMedia ?: call.localMedia
+    CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
+      if (media == CallMediaType.Video) {
+        Text(call.contact.chatViewName, Modifier.fillMaxWidth(), color = Color(0xFFFFFFD8), fontWeight = FontWeight.SemiBold,
+          maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
+    }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-      when (call.peerMedia ?: call.localMedia) {
+      when (media) {
         CallMediaType.Video -> {
-          CallInfoView(call, alignment = Alignment.Start)
+          VideoCallInfoView(call)
           Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
             DisabledBackgroundCallsButton()
           }
@@ -339,7 +344,7 @@ private fun ActiveCallOverlayLayout(
             verticalArrangement = Arrangement.Center
           ) {
             ProfileImage(size = 192.dp, image = call.contact.profile.image)
-            CallInfoView(call, alignment = Alignment.CenterHorizontally)
+            AudioCallInfoView(call)
           }
           Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
             DisabledBackgroundCallsButton()
@@ -395,10 +400,8 @@ private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> U
 }
 
 @Composable
-fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
-  @Composable fun InfoText(text: String, style: TextStyle = MaterialTheme.typography.body2) =
-    Text(text, color = Color(0xFFFFFFD8), style = style)
-  Column(horizontalAlignment = alignment) {
+fun AudioCallInfoView(call: Call) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
     InfoText(call.contact.chatViewName, style = MaterialTheme.typography.h2)
     InfoText(call.callState.text)
 
@@ -407,6 +410,21 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
     InfoText(call.encryptionStatus + connInfoText)
   }
 }
+
+@Composable
+fun VideoCallInfoView(call: Call) {
+  Column(horizontalAlignment = Alignment.Start) {
+    InfoText(call.callState.text)
+
+    val connInfo = call.connectionInfo
+    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
+    InfoText(call.encryptionStatus + connInfoText)
+  }
+}
+
+@Composable
+fun InfoText(text: String, modifier: Modifier = Modifier, style: TextStyle = MaterialTheme.typography.body2) =
+  Text(text, modifier, color = Color(0xFFFFFFD8), style = style)
 
 @Composable
 private fun DisabledBackgroundCallsButton() {
@@ -616,7 +634,7 @@ fun PreviewActiveCallOverlayVideo() {
     ActiveCallOverlayLayout(
       call = Call(
         remoteHostId = null,
-        user = User.sampleData,
+        userProfile = Profile.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
@@ -643,7 +661,7 @@ fun PreviewActiveCallOverlayAudio() {
     ActiveCallOverlayLayout(
       call = Call(
         remoteHostId = null,
-        user = User.sampleData,
+        userProfile = Profile.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,

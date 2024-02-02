@@ -2,7 +2,6 @@ package chat.simplex.common.views.call
 
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -12,7 +11,7 @@ import kotlin.collections.ArrayList
 
 data class Call(
   val remoteHostId: Long?,
-  val user: User,
+  val userProfile: Profile,
   val contact: Contact,
   val callState: CallState,
   val localMedia: CallMediaType,

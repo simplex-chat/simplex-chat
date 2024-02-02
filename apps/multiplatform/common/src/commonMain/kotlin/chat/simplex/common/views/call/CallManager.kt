@@ -1,7 +1,6 @@
 package chat.simplex.common.views.call
 
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.User
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withBGApi
 import kotlinx.datetime.Clock
@@ -24,28 +23,28 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun acceptIncomingCall(invitation: RcvCallInvitation) {
+  fun acceptIncomingCall(invitation: RcvCallInvitation) = withBGApi {
     val call = chatModel.activeCall.value
+    val contactInfo = chatModel.controller.apiContactInfo(invitation.remoteHostId, invitation.contact.contactId)
+    val profile = contactInfo?.second ?: invitation.user.profile.toProfile()
     if (call == null) {
-      justAcceptIncomingCall(invitation = invitation)
+      justAcceptIncomingCall(invitation = invitation, profile)
     } else {
-      withBGApi {
-        chatModel.switchingCall.value = true
-        try {
-          endCall(call = call)
-          justAcceptIncomingCall(invitation = invitation)
-        } finally {
-          chatModel.switchingCall.value = false
-        }
+      chatModel.switchingCall.value = true
+      try {
+        endCall(call = call)
+        justAcceptIncomingCall(invitation = invitation, profile)
+      } finally {
+        chatModel.switchingCall.value = false
       }
     }
   }
 
-  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
+  private fun justAcceptIncomingCall(invitation: RcvCallInvitation, userProfile: Profile) {
     with (chatModel) {
       activeCall.value = Call(
         remoteHostId = invitation.remoteHostId,
-        user = currentUser.value ?: return,
+        userProfile = userProfile,
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
@@ -73,15 +72,15 @@ class CallManager(val chatModel: ChatModel) {
     with (chatModel) {
       if (call.callState == CallState.Ended) {
         Log.d(TAG, "CallManager.endCall: call ended")
-        activeCall.value = null
-        showCallView.value = false
       } else {
         Log.d(TAG, "CallManager.endCall: ending call...")
         callCommand.add(WCallCommand.End)
-        showCallView.value = false
         controller.apiEndCall(call.remoteHostId, call.contact)
-        activeCall.value = null
       }
+      showCallView.value = false
+      activeCall.value = null
+      chatModel.activeCallViewIsCollapsed.value = false
+      platform.androidCallEnded()
     }
   }
 

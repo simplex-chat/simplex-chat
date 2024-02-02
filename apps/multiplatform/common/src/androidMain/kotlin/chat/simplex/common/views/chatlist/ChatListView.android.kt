@@ -76,7 +76,7 @@ private fun GreenLine(call: Call) {
     horizontalArrangement = Arrangement.Center
   ) {
     if (chatModel.users.size > 1) {
-      UserName(call.user.displayName)
+      UserName(call.userProfile.displayName)
     }
     Spacer(Modifier.weight(1f))
     CallDuration(call)
