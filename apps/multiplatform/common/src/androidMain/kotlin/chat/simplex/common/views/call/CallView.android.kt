@@ -124,6 +124,7 @@ actual fun ActiveCallView() {
     if (chatModel.activeCallViewIsCollapsed.value) {
       if (proximityLock?.isHeld == true) proximityLock.release()
     } else {
+      delay(1000)
       if (proximityLock?.isHeld == false) proximityLock.acquire()
     }
   }
@@ -324,8 +325,7 @@ private fun ActiveCallOverlayLayout(
     val media = call.peerMedia ?: call.localMedia
     CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
       if (media == CallMediaType.Video) {
-        Text(call.contact.chatViewName, Modifier.fillMaxWidth(), color = Color(0xFFFFFFD8), fontWeight = FontWeight.SemiBold,
-          maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(call.contact.chatViewName, Modifier.fillMaxWidth(), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2)
       }
     }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
