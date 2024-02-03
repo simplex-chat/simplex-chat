@@ -12,6 +12,7 @@ EXPORTS
     chat_parse_server
     chat_password_hash
     chat_valid_name
+    chat_json_length
     chat_encrypt_media
     chat_decrypt_media
     chat_write_file
