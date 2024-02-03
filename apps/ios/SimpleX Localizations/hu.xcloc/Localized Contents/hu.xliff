@@ -99,7 +99,7 @@
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
-        <target state="new"></target>
+        <target state="translated">%1$@ %2$@-kor:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve" approved="no">
@@ -6775,12 +6775,14 @@ A SimpleX szerverek nem látjhatják a profilodat.</target>
    group pref value
    time to disappear</note>
       </trans-unit>
-      <trans-unit id="offered %@" xml:space="preserve">
+      <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
+        <target state="translated">%@ ajánlotta</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="offered %@: %@" xml:space="preserve">
+      <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
+        <target state="translated">ajánlotta %1$@: %2$@-kor</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve" approved="no">
@@ -6878,8 +6880,9 @@ A SimpleX szerverek nem látjhatják a profilodat.</target>
         <target state="translated">indítás…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="strike" xml:space="preserve">
+      <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
+        <target state="translated">áthúzott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve" approved="no">
@@ -7037,8 +7040,9 @@ A SimpleX szerverek nem látjhatják a profilodat.</target>
         <target state="translated">te: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="~strike~" xml:space="preserve">
+      <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
+        <target state="translated">\~áthúzott~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
