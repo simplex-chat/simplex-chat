@@ -20,12 +20,12 @@
     <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
     <string name="about_simplex">A SimpleX-ről</string>
     <string name="color_primary">Kiemelés</string>
-    <string name="callstatus_accepted">elfogadott hívás</string>
+    <string name="callstatus_accepted">fogadott hívás</string>
     <string name="network_enable_socks_info">Kapcsolódás a szerverekhez SOCKS proxy segítségével a %d porton? A proxyt el kell indítani mielőtt bekapcsolnád ezt az opciót.</string>
     <string name="accept_feature">Elfogad</string>
     <string name="accept_call_on_lock_screen">Elfogad</string>
     <string name="above_then_preposition_continuation">fentről, utána:</string>
-    <string name="accept_contact_incognito_button">Elfogadás inkognítóban</string>
+    <string name="accept_contact_incognito_button">Fogadás inkognítóban</string>
     <string name="accept_connection_request__question">Elfogadod a kapcsolatfelvételt?</string>
     <string name="accept_contact_button">Elfogad</string>
     <string name="accept">Elfogad</string>
@@ -38,7 +38,7 @@
     <string name="feature_cancelled_item">megszakítva %s</string>
     <string name="smp_servers_preset_add">Adj hozzá egyedi szervereket</string>
     <string name="calls_prohibited_with_this_contact">A hang- és videóhívások le vannak tiltva.</string>
-    <string name="network_session_mode_entity_description">Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesznek használva <b>minden ismerősre és csoport tagra</b>
+    <string name="network_session_mode_entity_description">Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesznek használva <b>minden ismerősre és csoport tagra</b>.
 \n<b>Tudnivaló</b>: ha sok ismerősöd van, az akkumulátor- és adat használatod jelentősen megnőhet és néhány kapcsolódási kísérlet sikertelen lehet.</string>
     <string name="icon_descr_cancel_link_preview">URL link előnézet megszakítása</string>
     <string name="network_session_mode_user_description"><![CDATA[Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesznek használva <b>minden chat profilodra az appban</b>.]]></string>
@@ -1128,7 +1128,7 @@
     <string name="open_database_folder">Adatbázis mappa megnyitása</string>
     <string name="description_via_one_time_link">egyszer használatos linken keresztül</string>
     <string name="set_group_preferences">Csoportbeállítások megadása</string>
-    <string name="simplex_link_connection">%1$s keresztül</string>
+    <string name="simplex_link_connection">A(z) %1$s-en(-on) keresztül</string>
     <string name="chat_preferences_yes">igen</string>
     <string name="voice_message">Hangüzenet</string>
     <string name="settings_section_title_use_from_desktop">Használat asztali kliensről</string>
