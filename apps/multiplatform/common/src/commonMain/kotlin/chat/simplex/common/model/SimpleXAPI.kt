@@ -1900,10 +1900,8 @@ object ChatController {
         if (invitation != null) {
           chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
         }
-        withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.End)
-          chatModel.activeCall.value = null
-          chatModel.showCallView.value = false
+        withCall(r, r.contact) { call ->
+          withBGApi { chatModel.callManager.endCall(call) }
         }
       }
       is CR.ContactSwitch ->

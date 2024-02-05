@@ -85,7 +85,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
           userPickerState.value = AnimatedViewState.VISIBLE
         }
       }
-      else -> NavigationButtonBack { chatModel.sharedContent.value = null }
+      else -> NavigationButtonBack(onButtonClicked = { chatModel.sharedContent.value = null })
     }
   }
   if (chatModel.chats.size >= 8) {
