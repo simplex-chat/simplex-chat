@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -58,9 +57,8 @@ private var staticWebView: WebView? = null
 
 // WebView methods must be called on Main thread
 fun activeCallDestroyWebView() = withApi {
-  val ntfModeService = chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
   // Stop it when call ended
-  if (!ntfModeService) platform.androidServiceSafeStop()
+  platform.androidCallServiceSafeStop()
   staticWebView?.destroy()
   staticWebView = null
   Log.d(TAG, "CallView: webview was destroyed")
@@ -70,12 +68,6 @@ fun activeCallDestroyWebView() = withApi {
 @Composable
 actual fun ActiveCallView() {
   val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
-  val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE }
-  LaunchedEffect(Unit) {
-    // Start service when call happening since it's not already started.
-    // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
-    if (!ntfModeService) withBGApi { platform.androidServiceStart() }
-  }
   val proximityLock = remember {
     val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
     if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {

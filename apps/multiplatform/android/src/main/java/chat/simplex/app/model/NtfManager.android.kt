@@ -33,6 +33,7 @@ object NtfManager {
   const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_2"
   const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
   const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
+  const val EndCallAction: String = "chat.simplex.app.END_CALL"
   const val CallNotificationId: Int = -1
   private const val UserIdKey: String = "userId"
   private const val ChatIdKey: String = "chatId"

@@ -56,9 +56,9 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
     ) {
       val media = call.peerMedia ?: call.localMedia
       if (media == CallMediaType.Video) {
-        Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(20.dp).offset(x = 3.dp), tint = Color.White)
+        Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(27.dp).offset(x = 3.dp), tint = Color.White)
       } else {
-        Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(23.dp).offset(x = 0.dp), tint = Color.White)
+        Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(30.dp).offset(x = 0.dp), tint = Color.White)
       }
     }
   }
@@ -78,9 +78,6 @@ private fun GreenLine(call: Call) {
     ContactName(call.contact.displayName)
     Spacer(Modifier.weight(1f))
     CallDuration(call)
-  }
-  DisposableEffectOnGone {
-    chatModel.activeCallViewIsCollapsed.value = false
   }
   val window = (LocalContext.current as Activity).window
   DisposableEffect(Unit) {

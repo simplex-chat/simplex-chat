@@ -186,6 +186,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
         SimplexService.safeStopService()
       }
 
+      override fun androidCallServiceSafeStop() {
+        CallService.stopService()
+      }
+
       override fun androidNotificationsModeChanged(mode: NotificationsMode) {
         if (mode.requiresIgnoringBattery && !SimplexService.isBackgroundAllowed()) {
           appPrefs.backgroundServiceNoticeShown.set(false)

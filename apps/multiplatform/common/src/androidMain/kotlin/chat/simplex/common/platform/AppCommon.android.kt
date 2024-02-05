@@ -26,7 +26,7 @@ val defaultLocale: Locale = Locale.getDefault()
 
 @SuppressLint("StaticFieldLeak")
 lateinit var androidAppContext: Context
-lateinit var mainActivity: WeakReference<FragmentActivity>
+var mainActivity: WeakReference<FragmentActivity> = WeakReference(null)
 var callActivity: WeakReference<ComponentActivity> = WeakReference(null)
 
 fun initHaskell() {

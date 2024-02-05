@@ -70,16 +70,22 @@ class CallManager(val chatModel: ChatModel) {
   }
 
   suspend fun endCall(call: Call) {
-    with (chatModel) {
-      showCallView.value = false
-      activeCall.value = null
-      chatModel.activeCallViewIsCollapsed.value = false
-      platform.androidCallEnded()
+    with(chatModel) {
+      // If there is active call currently and it's with other contact, don't interrupt it
+      if (activeCall.value != null && !(activeCall.value?.remoteHostId == call.remoteHostId && activeCall.value?.contact?.id == call.contact.id)) return
+
+      // Don't destroy WebView if you plan to accept next call right after this one
+      if (!switchingCall.value) {
+        showCallView.value = false
+        activeCall.value = null
+        activeCallViewIsCollapsed.value = false
+        platform.androidCallEnded()
+      }
       if (call.callState == CallState.Ended) {
         Log.d(TAG, "CallManager.endCall: call ended")
       } else {
         Log.d(TAG, "CallManager.endCall: ending call...")
-        callCommand.add(WCallCommand.End)
+        //callCommand.add(WCallCommand.End)
         controller.apiEndCall(call.remoteHostId, call.contact)
       }
     }

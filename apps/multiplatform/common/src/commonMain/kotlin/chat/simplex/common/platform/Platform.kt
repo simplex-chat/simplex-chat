@@ -6,6 +6,7 @@ import chat.simplex.common.model.NotificationsMode
 interface PlatformInterface {
   suspend fun androidServiceStart() {}
   fun androidServiceSafeStop() {}
+  fun androidCallServiceSafeStop() {}
   fun androidNotificationsModeChanged(mode: NotificationsMode) {}
   fun androidChatStartedAfterBeingOff() {}
   fun androidChatStopped() {}

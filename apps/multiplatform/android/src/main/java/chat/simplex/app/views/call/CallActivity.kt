@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.TAG
@@ -43,8 +44,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import java.lang.ref.WeakReference
+import chat.simplex.common.platform.chatModel as m
 
-class CallActivity: ComponentActivity() {
+class CallActivity: ComponentActivity(), ServiceConnection {
+
+  var boundService: CallService? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -53,11 +57,11 @@ class CallActivity: ComponentActivity() {
       AcceptCallAction -> {
         val remoteHostId = intent.getLongExtra("remoteHostId", -1).takeIf { it != -1L }
         val chatId = intent.getStringExtra("chatId")
-        val invitation = (chatModel.callInvitations.values + chatModel.activeCallInvitation.value).lastOrNull {
+        val invitation = (m.callInvitations.values + m.activeCallInvitation.value).lastOrNull {
           it?.remoteHostId == remoteHostId && it?.contact?.id == chatId
         }
         if (invitation != null) {
-          chatModel.callManager.acceptIncomingCall(invitation = invitation)
+          m.callManager.acceptIncomingCall(invitation = invitation)
         }
       }
     }
@@ -73,6 +77,11 @@ class CallActivity: ComponentActivity() {
     super.onDestroy()
     if (isOnLockScreenNow()) {
       lockAfterIncomingCall()
+    }
+    try {
+      unbindService(this)
+    } catch (e: Exception) {
+      Log.i(TAG, "Unable to unbind service: " + e.stackTraceToString())
     }
   }
 
@@ -91,20 +100,20 @@ class CallActivity: ComponentActivity() {
 
   override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
     super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-    chatModel.activeCallViewIsCollapsed.value = isInPictureInPictureMode
+    m.activeCallViewIsCollapsed.value = isInPictureInPictureMode
     val layoutType = if (!isInPictureInPictureMode) {
       LayoutType.Default
     } else {
       LayoutType.RemoteVideo
     }
-    chatModel.callCommand.add(WCallCommand.Layout(layoutType))
+    m.callCommand.add(WCallCommand.Layout(layoutType))
   }
 
   override fun onBackPressed() {
     if (isOnLockScreenNow()) {
       super.onBackPressed()
     } else {
-      chatModel.activeCallViewIsCollapsed.value = true
+      m.activeCallViewIsCollapsed.value = true
     }
   }
 
@@ -122,7 +131,7 @@ class CallActivity: ComponentActivity() {
 
   override fun onResume() {
     super.onResume()
-    chatModel.activeCallViewIsCollapsed.value = false
+    m.activeCallViewIsCollapsed.value = false
   }
 
   private fun unlockForIncomingCall() {
@@ -146,6 +155,23 @@ class CallActivity: ComponentActivity() {
     }
   }
 
+  fun startServiceAndBind() {
+    /**
+     * On Android 12 there is a bug that prevents starting activity after pressing back button
+     * (the error says that it denies to start activity in background).
+     * Workaround is to bind to a service
+     * */
+    bindService(CallService.startService(), this, 0)
+  }
+
+  override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+    boundService = (service as CallService.CallServiceBinder).getService()
+  }
+
+  override fun onServiceDisconnected(name: ComponentName?) {
+    boundService = null
+  }
+
   companion object {
     const val activityFlags = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
   }
@@ -154,54 +180,49 @@ class CallActivity: ComponentActivity() {
 fun getKeyguardManager(context: Context): KeyguardManager =
   context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
 
-private fun callSupportsVideo() = chatModel.activeCall.value?.supportsVideo() == true || chatModel.activeCallInvitation.value?.callType?.media == CallMediaType.Video
+private fun callSupportsVideo() = m.activeCall.value?.supportsVideo() == true || m.activeCallInvitation.value?.callType?.media == CallMediaType.Video
 
 @Composable
 fun CallActivityView() {
-  val m = chatModel
   val switchingCall = m.switchingCall.value
   val invitation = m.activeCallInvitation.value
-  val call = m.activeCall.value
+  val call = remember { m.activeCall }.value
   val showCallView = m.showCallView.value
   val activity = LocalContext.current as CallActivity
-  LaunchedEffect(invitation, call, switchingCall, showCallView) {
-    if (!switchingCall && invitation == null && (!showCallView || call == null)) {
-      Log.d(TAG, "CallActivityView: finishing activity")
-      activity.finish()
-    }
-  }
   LaunchedEffect(Unit) {
-    snapshotFlow { chatModel.activeCallViewIsCollapsed.value }
+    snapshotFlow { m.activeCallViewIsCollapsed.value }
       .collect { collapsed ->
         when {
           collapsed -> {
-            if (chatModel.activeCall.value?.supportsVideo() == true && platform.androidPictureInPictureAllowed()) {
-              activity.enterPictureInPictureMode()
-            } else {
+            if (!platform.androidPictureInPictureAllowed() || !callSupportsVideo()) {
               activity.moveTaskToBack(true)
-//              activity.startActivity(Intent(activity, MainActivity::class.java))
+              activity.startActivity(Intent(activity, MainActivity::class.java))
+            } else if (!activity.isInPictureInPictureMode && activity.lifecycle.currentState == Lifecycle.State.RESUMED) {
+              // User pressed back button, show MainActivity
+              activity.startActivity(Intent(activity, MainActivity::class.java))
+              activity.enterPictureInPictureMode()
             }
           }
-          chatModel.activeCall.value?.supportsVideo() == true && !platform.androidPictureInPictureAllowed() -> {
+          callSupportsVideo() && !platform.androidPictureInPictureAllowed() -> {
             // PiP disabled by user
             platform.androidStartCallActivity(false)
           }
           activity.isInPictureInPictureMode -> {
-//            activity.moveTaskToBack(false)
             platform.androidStartCallActivity(false)
           }
         }
       }
   }
   SimpleXTheme {
-    var prevCall by remember { mutableStateOf(chatModel.activeCall.value) }
-    KeyChangeEffect(chatModel.activeCall.value) {
-      if (chatModel.activeCall.value != null) {
-        prevCall = chatModel.activeCall.value
+    var prevCall by remember { mutableStateOf(call) }
+    KeyChangeEffect(m.activeCall.value) {
+      if (m.activeCall.value != null) {
+        prevCall = m.activeCall.value
+        activity.boundService?.updateNotification()
       }
     }
     Box(Modifier.background(Color.Black)) {
-      if (chatModel.activeCall.value != null) {
+      if (call != null) {
         val view = LocalView.current
         ActiveCallView()
         if (callSupportsVideo()) {
@@ -212,13 +233,12 @@ fun CallActivityView() {
               activity.trackPipAnimationHintView(view)
             }
           }
-          //TrackViewSizeManually()
         }
       } else if (prevCall != null) {
         prevCall?.let { ActiveCallOverlayDisabled(it) }
       }
       if (invitation != null) {
-        if (chatModel.activeCall.value == null) {
+        if (call == null) {
           Surface(
             Modifier
               .fillMaxSize(),
@@ -228,30 +248,23 @@ fun CallActivityView() {
             IncomingCallLockScreenAlert(invitation, m)
           }
         } else {
-          IncomingCallAlertView(invitation, chatModel)
+          IncomingCallAlertView(invitation, m)
         }
       }
     }
   }
-}
-
-@Composable
-private fun TrackViewSizeManually() {
-  val activity = LocalContext.current as CallActivity
-  val view = LocalView.current
-  DisposableEffect(Unit) {
-    val listener = View.OnLayoutChangeListener { _: View?, _: Int, _: Int, _: Int, _: Int, _: Int, _: Int, _: Int, _: Int ->
-      val sourceRectHint = Rect()
-      view.getGlobalVisibleRect(sourceRectHint)
-      activity.setPipParams(callSupportsVideo(), sourceRectHint)
+  LaunchedEffect(call == null) {
+    if (call != null) {
+      activity.startServiceAndBind()
     }
-    view.addOnLayoutChangeListener(listener)
-    onDispose {
-      view.removeOnLayoutChangeListener(listener)
+  }
+  LaunchedEffect(invitation, call, switchingCall, showCallView) {
+    if (!switchingCall && invitation == null && (!showCallView || call == null)) {
+      Log.d(TAG, "CallActivityView: finishing activity")
+      activity.finish()
     }
   }
 }
-
 
 /**
 * Related to lockscreen
