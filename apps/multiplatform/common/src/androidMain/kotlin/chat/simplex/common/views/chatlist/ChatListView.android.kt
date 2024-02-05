@@ -58,7 +58,7 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
       if (media == CallMediaType.Video) {
         Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(27.dp).offset(x = 3.dp, y = 2.dp), tint = Color.White)
       } else {
-        Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(30.dp).offset(x = 1.dp), tint = Color.White)
+        Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(27.dp).offset(x = -0.5.dp, y = 2.dp), tint = Color.White)
       }
     }
   }
