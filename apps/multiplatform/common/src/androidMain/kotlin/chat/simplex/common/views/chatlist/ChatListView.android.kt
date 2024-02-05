@@ -56,7 +56,7 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
     ) {
       val media = call.peerMedia ?: call.localMedia
       if (media == CallMediaType.Video) {
-        Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(27.dp).offset(x = 3.dp, y = 2.dp), tint = Color.White)
+        Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(27.dp).offset(x = 2.5.dp, y = 2.dp), tint = Color.White)
       } else {
         Icon(painterResource(MR.images.ic_call_filled), null, Modifier.size(27.dp).offset(x = -0.5.dp, y = 2.dp), tint = Color.White)
       }
