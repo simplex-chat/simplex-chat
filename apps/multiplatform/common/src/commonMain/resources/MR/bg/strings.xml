@@ -1629,4 +1629,8 @@
     <string name="profile_update_event_set_new_address">зададен нов адрес за контакт</string>
     <string name="profile_update_event_updated_profile">актуализиран профил</string>
     <string name="note_folder_local_display_name">Лични бележки</string>
+    <string name="message_too_large">Съобщението е твърде голямо</string>
+    <string name="welcome_message_is_too_long">Съобщението при посрещане е твърде голямо</string>
+    <string name="database_migration_in_progress">Извършва се миграция на базата данни.
+\nМоже да отнеме няколко минути.</string>
 </resources>
