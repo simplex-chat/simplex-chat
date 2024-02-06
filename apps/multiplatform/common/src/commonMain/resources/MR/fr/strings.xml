@@ -1636,4 +1636,7 @@
 \nCela peut prendre quelques minutes.</string>
     <string name="unblock_for_all_question">Débloquer le membre pour tous ?</string>
     <string name="welcome_message_is_too_long">Le message de bienvenue est trop long</string>
+    <string name="call_service_notification_video_call">Appel vidéo</string>
+    <string name="call_service_notification_end_call">Fin de l\'appel</string>
+    <string name="call_service_notification_audio_call">Appel audio</string>
 </resources>
