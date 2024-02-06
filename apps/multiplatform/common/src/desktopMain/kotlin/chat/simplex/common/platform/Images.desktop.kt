@@ -17,14 +17,14 @@ import javax.imageio.stream.MemoryCacheImageOutputStream
 import kotlin.math.sqrt
 
 private fun errorBitmap(): ImageBitmap =
-  ImageIO.read(ByteArrayInputStream(Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
+  ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
   return try {
-    ImageIO.read(ByteArrayInputStream(Base64.getDecoder().decode(imageString))).toComposeImageBitmap()
+    ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode(imageString))).toComposeImageBitmap()
   } catch (e: IOException) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap()
@@ -77,7 +77,7 @@ actual fun compressImageStr(bitmap: ImageBitmap): String {
   return try {
     val encoded  = Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
     "data:image/$ext;base64,$encoded"
-  } catch (e: IOException) {
+  } catch (e: Exception) {
     Log.e(TAG, "resizeImageToStrSize error: $e")
     throw e
   }
