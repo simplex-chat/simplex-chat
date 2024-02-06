@@ -1717,4 +1717,7 @@
 \nDies kann einige Minuten andauern.</string>
     <string name="message_too_large">Die Nachricht ist zu lang</string>
     <string name="welcome_message_is_too_long">Die Begrüßungsmeldung ist zu lang</string>
+    <string name="call_service_notification_audio_call">Audioanruf</string>
+    <string name="call_service_notification_end_call">Anruf beenden</string>
+    <string name="call_service_notification_video_call">Videoanruf</string>
 </resources>
