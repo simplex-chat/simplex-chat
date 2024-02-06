@@ -2790,16 +2790,16 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     withStoreCtx' (Just "receiveViaCompleteFD, updateRcvFileAgentId") $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
 
 receiveViaURI :: ChatMonad m => User -> FileDescriptionURI -> CryptoFile -> m ()
-receiveViaURI user@User {userId} (FileDescriptionURI _ vfd) cf@CryptoFile {cryptoArgs} = do
+receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvDirectFileTransfer db userId cf fileSize chunkSize
-  aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) vfd cryptoArgs
+  aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs
   -- startReceivingFile user fileId
   withStore' $ \db -> do
     updateRcvFileStatus db fileId FSConnected
     updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
     updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
   where
-    ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = vfd
+    ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do
@@ -3283,7 +3283,7 @@ processAgentMsgSndFile _corrId aFileId msg =
           case ci of
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
-              let uris = map (decodeLatin1 . strEncode . FileDescriptionURI SSSimplex) rfds
+              let uris = map (decodeLatin1 . strEncode . FD.fileDescriptionURI) rfds
               toView $ CRSndFileCompleteXFTP user ci ft $ Just uris
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
