@@ -9,6 +9,7 @@ module Simplex.Chat.Archive
     importArchive,
     deleteStorage,
     sqlCipherExport,
+    sqlCipherTestKey,
     archiveFilesFolder,
   )
 where
@@ -149,17 +150,6 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
       withDB f (`SQL.exec` exportSQL) DBErrorExport
       withDB (exported f) (`SQL.exec` testSQL) DBErrorOpen
       where
-        withDB f' a err =
-          liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
-            `catch` checkSQLError
-            `catch` (\(e :: SomeException) -> sqliteError' e)
-            >>= mapM_ (throwDBError . err)
-          where
-            checkSQLError e = case SQL.sqlError e of
-              SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
-              _ -> sqliteError' e
-            sqliteError' :: Show e => e -> m (Maybe SQLiteError)
-            sqliteError' = pure . Just . SQLiteError . show
         exportSQL =
           T.unlines $
             keySQL key
@@ -175,6 +165,36 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
                    "SELECT count(*) FROM sqlite_master;"
                  ]
         keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
+
+sqlCipherTestKey :: forall m. ChatMonad m => DBEncryptionKey -> m ()
+sqlCipherTestKey (DBEncryptionKey key) = do
+  fs <- storageFiles
+  testKey `withDBs` fs
+  where
+    testKey f = do
+      withDB f (`SQL.exec` testSQL) DBErrorOpen
+      where
+        testSQL =
+          T.unlines $
+            keySQL key
+              <> [ "PRAGMA foreign_keys = ON;",
+                   "PRAGMA secure_delete = ON;",
+                   "SELECT count(*) FROM sqlite_master;"
+                 ]
+        keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
+
+withDB :: ChatMonad m => FilePath -> (SQL.Database -> IO a) -> (SQLiteError -> DatabaseError) -> m ()
+withDB f' a err =
+  liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
+    `catch` checkSQLError
+    `catch` (\(e :: SomeException) -> sqliteError' e)
+    >>= mapM_ (throwDBError . err)
+  where
+    checkSQLError e = case SQL.sqlError e of
+      SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
+      _ -> sqliteError' e
+    sqliteError' :: (Show e, Monad m) => e -> m (Maybe SQLiteError)
+    sqliteError' = pure . Just . SQLiteError . show
 
 withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
 action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)
