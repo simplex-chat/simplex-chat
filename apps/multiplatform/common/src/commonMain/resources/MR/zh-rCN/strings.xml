@@ -1636,4 +1636,7 @@
     <string name="database_migration_in_progress">正在进行数据库迁移。
 \n可能需要几分钟时间。</string>
     <string name="message_too_large">消息太大了</string>
+    <string name="call_service_notification_video_call">视频通话</string>
+    <string name="call_service_notification_audio_call">语音通话</string>
+    <string name="call_service_notification_end_call">结束通话</string>
 </resources>
