@@ -14,8 +14,8 @@ data class WindowPositionSize(
 ) {
   fun safeValues(): WindowPositionSize =
     copy(
-      x = x.coerceIn(0, 10000),
-      y = x.coerceIn(0, 10000),
+      x = x.coerceIn(-500, 10000),
+      y = x.coerceIn(-100, 10000),
       width = width.coerceIn(100, 10000),
       height = height.coerceIn(100, 10000)
     )
