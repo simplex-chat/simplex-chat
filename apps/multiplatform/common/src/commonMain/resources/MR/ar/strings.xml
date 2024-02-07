@@ -1634,4 +1634,7 @@
     <string name="welcome_message_is_too_long">رسالة الترحيب طويلة جدًا</string>
     <string name="database_migration_in_progress">ترحيل قاعدة البيانات قيد التقدم.
 \nقد يستغرق بضع دقائق.</string>
+    <string name="call_service_notification_video_call">مكالمة فيديو</string>
+    <string name="call_service_notification_audio_call">مكالمة صوتية</string>
+    <string name="call_service_notification_end_call">أنهيّ المكالمة</string>
 </resources>
