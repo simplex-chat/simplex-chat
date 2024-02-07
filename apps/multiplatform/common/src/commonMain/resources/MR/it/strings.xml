@@ -1636,4 +1636,7 @@
     <string name="message_too_large">Messaggio troppo grande</string>
     <string name="database_migration_in_progress">Migrazione database in corso.
 \nPuò richiedere qualche minuto.</string>
+    <string name="call_service_notification_audio_call">Chiamata audio</string>
+    <string name="call_service_notification_end_call">Termina chiamata</string>
+    <string name="call_service_notification_video_call">Videochiamata</string>
 </resources>
