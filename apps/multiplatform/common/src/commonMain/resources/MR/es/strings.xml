@@ -29,7 +29,7 @@
     <string name="above_then_preposition_continuation">y después:</string>
     <string name="accept_connection_request__question">¿Aceptar solicitud de conexión\?</string>
     <string name="accept_contact_incognito_button">Aceptar incógnito</string>
-    <string name="clear_chat_warning">Se eliminarán todos los mensajes SOLO para tí. ¡No reversible!</string>
+    <string name="clear_chat_warning">Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!</string>
     <string name="smp_servers_add">Añadir servidor…</string>
     <string name="network_enable_socks_info">¿Acceder a los servidores a través del proxy SOCKS en el puerto %d\? El proxy debe iniciarse antes de activar esta opción.</string>
     <string name="all_your_contacts_will_remain_connected">Todos tus contactos permanecerán conectados.</string>
@@ -50,7 +50,7 @@
     <string name="icon_descr_audio_on">Audio activado</string>
     <string name="integrity_msg_bad_id">ID de mensaje erróneo</string>
     <string name="auto_accept_images">Auto aceptar imágenes</string>
-    <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No reversible!</string>
+    <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No podrá deshacerse!</string>
     <string name="accept_feature">Aceptar</string>
     <string name="allow_to_send_disappearing">Se permiten mensajes temporales.</string>
     <string name="keychain_is_storing_securely">Android Keystore se usará para almacenar de forma segura la contraseña - permite que el servicio de notificación funcione.</string>
@@ -137,7 +137,7 @@
     <string name="group_member_status_announced">conectando (anunciado)</string>
     <string name="connection_local_display_name">conexión %1$d</string>
     <string name="connect_via_link_or_qr">Conecta vía enlace / Código QR</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No reversible!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No podrá deshacerse!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
     <string name="status_contact_has_e2e_encryption">el contacto dispone de cifrado de extremo a extremo</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
@@ -318,7 +318,7 @@
     <string name="icon_descr_flip_camera">Voltear la cámara</string>
     <string name="group_invitation_expired">Invitación de grupo caducada</string>
     <string name="alert_message_group_invitation_expired">La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</string>
-    <string name="delete_group_for_self_cannot_undo_warning">El grupo será eliminado para tí. ¡No reversible!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">El grupo será eliminado para tí. ¡No podrá deshacerse!</string>
     <string name="how_to_use_markdown">Cómo usar la sintaxis markdown</string>
     <string name="description_via_one_time_link_incognito">en modo incógnito mediante enlace de un solo uso</string>
     <string name="simplex_link_contact">Dirección de contacto SimpleX</string>
@@ -417,7 +417,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">Ocultar pantalla de aplicaciones en aplicaciones recientes.</string>
     <string name="encrypt_database">Cifrar</string>
     <string name="icon_descr_expand_role">Ampliar la selección de roles</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo será eliminado para todos los miembros. ¡No reversible!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo será eliminado para todos los miembros. ¡No podrá deshacerse!</string>
     <string name="network_option_enable_tcp_keep_alive">Activar TCP keep-alive</string>
     <string name="feature_enabled_for_you">activado para tí</string>
     <string name="server_error">error</string>
@@ -434,7 +434,7 @@
     <string name="icon_descr_help">ayuda</string>
     <string name="share_link">Compartir enlace</string>
     <string name="how_it_works">Cómo funciona</string>
-    <string name="delete_message_cannot_be_undone_warning">El mensaje será eliminado. ¡No reversible!</string>
+    <string name="delete_message_cannot_be_undone_warning">El mensaje será eliminado. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">El modo incógnito protege tu privacidad creando un perfil aleatorio por cada contacto.</string>
     <string name="turn_off_battery_optimization"><![CDATA[Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.]]></string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal de SimpleX Chat</string>
@@ -574,7 +574,7 @@
     <string name="leave_group_button">Salir</string>
     <string name="leave_group_question">¿Salir del grupo\?</string>
     <string name="group_member_role_owner">propietario</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">El miembro será expulsado del grupo. ¡No reversible!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">El miembro será expulsado del grupo. ¡No podrá deshacerse!</string>
     <string name="only_group_owners_can_enable_voice">Sólo los propietarios del grupo pueden activar los mensajes de voz.</string>
     <string name="icon_descr_more_button">Más</string>
     <string name="mark_code_verified">Marcar como verificado</string>
@@ -1589,7 +1589,7 @@
     <string name="remote_ctrl_error_inactive">El ordenador está inactivo</string>
     <string name="remote_ctrl_error_busy">El ordenador está ocupado</string>
     <string name="agent_critical_error_title">Error crítico</string>
-    <string name="clear_note_folder_warning">Todos los mensajes serán borrados. ¡No reversible!</string>
+    <string name="clear_note_folder_warning">Todos los mensajes serán borrados. ¡No podrá deshacerse!</string>
     <string name="start_chat_question">¿Iniciar chat?</string>
     <string name="welcome_message_is_too_long">Mensaje de bienvenida demasiado largo</string>
     <string name="remote_ctrl_error_timeout">Tiempo de espera para conectar con el ordenador agotado</string>
@@ -1637,4 +1637,7 @@
     <string name="profile_update_event_removed_picture">imagen de perfil eliminada</string>
     <string name="profile_update_event_set_new_address">nueva dirección de contacto</string>
     <string name="profile_update_event_set_new_picture">nueva imagen de perfil</string>
+    <string name="call_service_notification_audio_call">Llamada</string>
+    <string name="call_service_notification_end_call">Llamada finalizada</string>
+    <string name="call_service_notification_video_call">Videollamada</string>
 </resources>
