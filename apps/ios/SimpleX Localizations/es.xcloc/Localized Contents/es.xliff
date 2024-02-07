@@ -645,7 +645,7 @@
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target state="translated">Todos los mensajes serán borrados. ¡No reversible!</target>
+        <target state="translated">Todos los mensajes serán borrados. ¡No podrá deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -5246,19 +5246,19 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Se pueden anular en la configuración de contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Esta acción no se puede deshacer. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</target>
+        <target state="translated">Esta acción es irreversible. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target>Esta acción no se puede deshacer. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Puede tardar varios minutos.</target>
+        <target state="translated">Esta acción es irreversible. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Puede tardar varios minutos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target>Esta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</target>
+        <target state="translated">Esta acción es irreversible. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
