@@ -1631,4 +1631,7 @@
     <string name="welcome_message_is_too_long">Az üdvözlő üzenet túl hosszú</string>
     <string name="database_migration_in_progress">Az adatbázis migrációja folyamatban van.
 \nEz eltarthat néhány percig.</string>
+    <string name="call_service_notification_audio_call">Hanghívás</string>
+    <string name="call_service_notification_end_call">A hívás befejeződött</string>
+    <string name="call_service_notification_video_call">Videóhívás</string>
 </resources>
