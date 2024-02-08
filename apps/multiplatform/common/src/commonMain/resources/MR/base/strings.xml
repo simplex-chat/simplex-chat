@@ -807,8 +807,8 @@
   <string name="callstate_ended">ended</string>
 
   <!-- CallView -->
-  <string name="unable_to_open_browser_title">Unable to open web browser</string>
-  <string name="unable_to_open_browser_desc">In order to make a call, the app uses your browser. For some reason, the system unable to open it. Please, contact developers with more information about your case</string>
+  <string name="unable_to_open_browser_title">Error opening browser</string>
+  <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
