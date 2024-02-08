@@ -1336,7 +1336,7 @@
     <string name="in_developing_title">Em breve!</string>
     <string name="delivery">Entrega</string>
     <string name="no_info_on_delivery">Nenhuma informação de entrega</string>
-    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Enviar recibos de entrega será ativado para todos os contatos em todos os perfis de chat visíveis.</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Enviar confirmações de entrega serão ativadas para todos os contatos em todos os perfis visíveis.</string>
     <string name="rcv_group_event_2_members_connected">%s e %s conectados</string>
     <string name="connect_via_member_address_alert_title">Conectar diretamente\?</string>
     <string name="no_selected_chat">Sem chat selecionado</string>
