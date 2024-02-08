@@ -1639,4 +1639,6 @@
     <string name="call_service_notification_video_call">视频通话</string>
     <string name="call_service_notification_audio_call">语音通话</string>
     <string name="call_service_notification_end_call">结束通话</string>
+    <string name="unable_to_open_browser_title">打开浏览器出错</string>
+    <string name="unable_to_open_browser_desc">没有默认网络浏览器无法使用通话功能。请在系统中配置默认浏览器并和开发者分享更多信息。</string>
 </resources>
