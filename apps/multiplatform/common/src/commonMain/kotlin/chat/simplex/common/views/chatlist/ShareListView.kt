@@ -143,7 +143,7 @@ private fun ShareList(chatModel: ChatModel, search: String) {
   }
   val chats by remember(search) {
     derivedStateOf {
-      if (search.isEmpty()) chatModel.chats.filter { it.chatInfo.ready } else chatModel.chats.filter { it.chatInfo.ready }.filter(filter)
+      if (search.isEmpty()) chatModel.chats.toList().filter { it.chatInfo.ready } else chatModel.chats.toList().filter { it.chatInfo.ready }.filter(filter)
     }
   }
   LazyColumn(
