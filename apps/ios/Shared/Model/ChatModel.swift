@@ -89,6 +89,7 @@ final class ChatModel: ObservableObject {
     @Published var activeCall: Call?
     let callCommand: WebRTCCommandProcessor = WebRTCCommandProcessor()
     @Published var showCallView = false
+    @Published var activeCallViewIsCollapsed = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation

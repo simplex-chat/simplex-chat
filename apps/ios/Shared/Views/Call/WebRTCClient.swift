@@ -331,6 +331,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         activeCall.remoteStream?.add(renderer)
     }
 
+    func removeRemoteRenderer(_ activeCall: Call, _ renderer: RTCVideoRenderer) {
+        activeCall.remoteStream?.remove(renderer)
+    }
+
     func startCaptureLocalVideo(_ activeCall: Call) {
 #if targetEnvironment(simulator)
         guard

@@ -21,22 +21,12 @@ struct ActiveCallView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
-                GeometryReader { g in
-                    let width = g.size.width * 0.3
-                    ZStack(alignment: .topTrailing) {
-                        CallViewRemote(client: client, activeCall: $activeCall)
-                        CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
-                            .cornerRadius(10)
-                            .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
-                            .padding([.top, .trailing], 17)
-                    }
-                }
-            }
-            if let call = m.activeCall, let client = client {
-                ActiveCallOverlay(call: call, client: client)
+            if let client = client {
+                CallUI(call: call, activeCall: $activeCall, client: client, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, localRendererAspectRatio: $localRendererAspectRatio)
             }
         }
+        .allowsHitTesting(!m.activeCallViewIsCollapsed)
+        .opacity(m.activeCallViewIsCollapsed ? 0 : 1)
         .onAppear {
             logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase)), canConnectCall \(canConnectCall)")
             AppDelegate.keepScreenOn(true)
@@ -53,7 +43,7 @@ struct ActiveCallView: View {
             AppDelegate.keepScreenOn(false)
             client?.endCall()
         }
-        .background(.black)
+        .background(m.activeCallViewIsCollapsed ? .clear : .black)
         .preferredColorScheme(.dark)
     }
 
