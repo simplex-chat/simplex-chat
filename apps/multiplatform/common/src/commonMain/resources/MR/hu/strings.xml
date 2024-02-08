@@ -1634,4 +1634,6 @@
     <string name="call_service_notification_audio_call">Hanghívás</string>
     <string name="call_service_notification_end_call">A hívás befejeződött</string>
     <string name="call_service_notification_video_call">Videóhívás</string>
+    <string name="unable_to_open_browser_title">Hiba a böngésző megnyitása közben</string>
+    <string name="unable_to_open_browser_desc">A hívásokhoz egy alapértelmezett webböngésző szükséges. Kérjük, állíts be egy alapértelmezett webböngészőt az eszközödön, és ossz meg további információkat a SimpleX Chat fejlesztőivel.</string>
 </resources>
