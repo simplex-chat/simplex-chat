@@ -133,15 +133,15 @@ actual fun ActiveCallView() {
           is WCallResponse.Capabilities -> withBGApi {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
-            chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
+            updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
-            chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
+            updateActiveCall(call) { it.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities) }
           }
           is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
-            chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+            updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
           }
           is WCallResponse.Ice -> withBGApi {
             chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
@@ -150,7 +150,7 @@ actual fun ActiveCallView() {
             try {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
-                chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
+                updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = Clock.System.now()) }
                 setCallSound(call.soundSpeaker, audioViaBluetooth)
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
@@ -158,7 +158,7 @@ actual fun ActiveCallView() {
               Log.d(TAG,"call status ${r.state.connectionState} not used")
             }
           is WCallResponse.Connected -> {
-            chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
+            updateActiveCall(call) { it.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo) }
             scope.launch {
               setCallSound(call.soundSpeaker, audioViaBluetooth)
             }
@@ -167,20 +167,22 @@ actual fun ActiveCallView() {
             withBGApi { chatModel.callManager.endCall(call) }
           }
           is WCallResponse.Ended -> {
-            chatModel.activeCall.value = call.copy(callState = CallState.Ended)
+            updateActiveCall(call) { it.copy(callState = CallState.Ended) }
             withBGApi { chatModel.callManager.endCall(call) }
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
             is WCallCommand.Answer ->
-              chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+              updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
             is WCallCommand.Media -> {
-              when (cmd.media) {
-                CallMediaType.Video -> chatModel.activeCall.value = call.copy(videoEnabled = cmd.enable)
-                CallMediaType.Audio -> chatModel.activeCall.value = call.copy(audioEnabled = cmd.enable)
+              updateActiveCall(call) {
+                when (cmd.media) {
+                  CallMediaType.Video -> it.copy(videoEnabled = cmd.enable)
+                  CallMediaType.Audio -> it.copy(audioEnabled = cmd.enable)
+                }
               }
             }
             is WCallCommand.Camera -> {
-              chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
+              updateActiveCall(call) { it.copy(localCamera = cmd.camera) }
               if (!call.audioEnabled) {
                 chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
               }
@@ -612,6 +614,15 @@ class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
     } catch (e: Exception) {
       Log.e(TAG, "failed parsing WebView message: $message")
     }
+  }
+}
+
+private fun updateActiveCall(initial: Call, transform: (Call) -> Call) {
+  val activeCall = chatModel.activeCall.value
+  if (activeCall != null && activeCall.contact.apiId == initial.contact.apiId) {
+    chatModel.activeCall.value = transform(activeCall)
+  } else {
+    Log.d(TAG, "withActiveCall: ignoring, not in call with the contact ${activeCall?.contact?.id}")
   }
 }
 
