@@ -21,8 +21,20 @@ struct ActiveCallView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if let client = client {
-                CallUI(call: call, activeCall: $activeCall, client: client, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, localRendererAspectRatio: $localRendererAspectRatio)
+            if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
+                GeometryReader { g in
+                    let width = g.size.width * 0.3
+                    ZStack(alignment: .topTrailing) {
+                        CallViewRemote(client: client, activeCall: $activeCall, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed)
+                        CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
+                            .cornerRadius(10)
+                            .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
+                            .padding([.top, .trailing], 17)
+                    }
+                }
+            }
+            if let call = m.activeCall, let client = client {
+                ActiveCallOverlay(call: call, client: client)
             }
         }
         .allowsHitTesting(!m.activeCallViewIsCollapsed)
