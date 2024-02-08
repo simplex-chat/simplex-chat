@@ -806,6 +806,10 @@
   <string name="callstate_connected">connected</string>
   <string name="callstate_ended">ended</string>
 
+  <!-- CallView -->
+  <string name="unable_to_open_browser_title">Error opening browser</string>
+  <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
+
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
