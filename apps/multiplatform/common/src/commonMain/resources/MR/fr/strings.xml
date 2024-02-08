@@ -1639,4 +1639,6 @@
     <string name="call_service_notification_video_call">Appel vidéo</string>
     <string name="call_service_notification_end_call">Fin de l\'appel</string>
     <string name="call_service_notification_audio_call">Appel audio</string>
+    <string name="unable_to_open_browser_desc">Le navigateur web par défaut est requis pour les appels. Veuillez configurer le navigateur par défaut dans le système et partager plus d\'informations avec les développeurs.</string>
+    <string name="unable_to_open_browser_title">Erreur lors de l\'ouverture du navigateur</string>
 </resources>
