@@ -42,6 +42,8 @@ fun withLongRunningApi(slow: Long = Long.MAX_VALUE, deadlock: Long = Long.MAX_VA
     CoroutineScope(Dispatchers.Default).launch(block = { wrapWithLogging(action, it, slow = slow, deadlock = deadlock) })
   }
 
+suspend fun withSingleThreadContext(action: suspend CoroutineScope.() -> Unit) = withContext(singleThreadDispatcher, action)
+
 private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, exception: java.lang.Exception, slow: Long = 10_000, deadlock: Long = 60_000) = coroutineScope {
   val start = System.currentTimeMillis()
   val job = launch {
