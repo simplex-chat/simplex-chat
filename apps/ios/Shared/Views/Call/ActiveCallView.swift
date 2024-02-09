@@ -20,22 +20,30 @@ struct ActiveCallView: View {
     @Binding var canConnectCall: Bool
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
-                GeometryReader { g in
-                    let width = g.size.width * 0.3
-                    ZStack(alignment: .topTrailing) {
-                        CallViewRemote(client: client, activeCall: $activeCall, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed)
-                        CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
-                            .cornerRadius(10)
-                            .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
-                            .padding([.top, .trailing], 17)
+        ZStack(alignment: .topLeading) {
+            ZStack(alignment: .bottom) {
+                if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
+                    GeometryReader { g in
+                        let width = g.size.width * 0.3
+                        ZStack(alignment: .topTrailing) {
+                            CallViewRemote(client: client, activeCall: $activeCall, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed)
+                            CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
+                                .cornerRadius(10)
+                                .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
+                                .padding([.top, .trailing], 17)
+                            ZStack(alignment: .center) {
+                                // For some reason, when the view in GeometryReader and ZStack is visible, it steals clicks on a back button, so showing something on top like this with background color helps (.clear color doesn't work)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.primary.opacity(0.000001))
+                        }
                     }
                 }
+                if let call = m.activeCall, let client = client {
+                    ActiveCallOverlay(call: call, client: client)
+                }
             }
-            if let call = m.activeCall, let client = client {
-                ActiveCallOverlay(call: call, client: client)
-            }
+            backButton { m.activeCallViewIsCollapsed = true }
         }
         .allowsHitTesting(!m.activeCallViewIsCollapsed)
         .opacity(m.activeCallViewIsCollapsed ? 0 : 1)
@@ -127,10 +135,12 @@ struct ActiveCallView: View {
                         ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
                         : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
+                    call.connectedAt = .now
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
                     m.activeCall = nil
+                    m.activeCallViewIsCollapsed = false
                 }
                 Task {
                     do {
@@ -142,6 +152,7 @@ struct ActiveCallView: View {
             case let .connected(connectionInfo):
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
+                call.connectedAt = .now
             case .ended:
                 closeCallView(client)
                 call.callState = .ended
@@ -155,6 +166,7 @@ struct ActiveCallView: View {
                 case .end:
                     closeCallView(client)
                     m.activeCall = nil
+                    m.activeCallViewIsCollapsed = false
                 default: ()
                 }
             case let .error(message):
@@ -172,6 +184,16 @@ struct ActiveCallView: View {
             m.showCallView = false
         }
     }
+
+    private func backButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .resizable()
+                .frame(width: 10, height: 18)
+                .tint(.white)
+        }
+        .offset(x: 9, y: 14)
+    }
 }
 
 struct ActiveCallOverlay: View {
@@ -183,10 +205,10 @@ struct ActiveCallOverlay: View {
         VStack {
             switch call.localMedia {
             case .video:
-                callInfoView(call, .leading)
+                videoCallInfoView(call)
                 .foregroundColor(.white)
                 .opacity(0.8)
-                .padding()
+                .padding(.leading, 9)
 
                 Spacer()
 
@@ -214,7 +236,7 @@ struct ActiveCallOverlay: View {
                     ProfileImage(imageStr: call.contact.profile.image)
                         .scaledToFit()
                         .frame(width: 192, height: 192)
-                    callInfoView(call, .center)
+                    audioCallInfoView(call)
                 }
                 .foregroundColor(.white)
                 .opacity(0.8)
@@ -237,12 +259,12 @@ struct ActiveCallOverlay: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func callInfoView(_ call: Call, _ alignment: Alignment) -> some View {
+    private func audioCallInfoView(_ call: Call) -> some View {
         VStack {
             Text(call.contact.chatViewName)
                 .lineLimit(1)
                 .font(.title)
-                .frame(maxWidth: .infinity, alignment: alignment)
+                .frame(maxWidth: .infinity, alignment: .center)
             Group {
                 Text(call.callState.text)
                 HStack {
@@ -253,7 +275,30 @@ struct ActiveCallOverlay: View {
                 }
             }
             .font(.subheadline)
-            .frame(maxWidth: .infinity, alignment: alignment)
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    private func videoCallInfoView(_ call: Call) -> some View {
+        VStack {
+            Text(call.contact.chatViewName)
+                .lineLimit(1)
+                .font(.title)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 5)
+                .padding(.leading, 34)
+                .padding(.bottom, 1)
+            Group {
+                Text(call.callState.text)
+                HStack {
+                    Text(call.encryptionStatus)
+                    if let connInfo = call.connectionInfo {
+                        Text("(") + Text(connInfo.text) + Text(")")
+                    }
+                }
+            }
+            .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

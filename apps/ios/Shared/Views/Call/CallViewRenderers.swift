@@ -29,10 +29,7 @@ struct CallViewRemote: UIViewRepresentable {
             remoteRenderer.videoContentMode = .scaleAspectFill
             client.addRemoteRenderer(call, remoteRenderer)
             addSubviewAndResize(remoteRenderer, into: view)
-           
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                activeCallViewIsCollapsed = true
-            }
+
             if AVPictureInPictureController.isPictureInPictureSupported() {
                 makeViewWithRTCRenderer(call, remoteRenderer, view, context)
                 //makeViewWithFrameRenderer(call, view, context)
