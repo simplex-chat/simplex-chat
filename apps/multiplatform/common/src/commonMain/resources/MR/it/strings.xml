@@ -1639,4 +1639,6 @@
     <string name="call_service_notification_audio_call">Chiamata audio</string>
     <string name="call_service_notification_end_call">Termina chiamata</string>
     <string name="call_service_notification_video_call">Videochiamata</string>
+    <string name="unable_to_open_browser_title">Errore di apertura del browser</string>
+    <string name="unable_to_open_browser_desc">Il browser predefinito è necessario per le chiamate. Configura il browser predefinito nel sistema, poi condividi più informazioni con gli sviluppatori.</string>
 </resources>
