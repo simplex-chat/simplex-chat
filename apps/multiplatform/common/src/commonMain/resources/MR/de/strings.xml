@@ -1720,4 +1720,6 @@
     <string name="call_service_notification_audio_call">Audioanruf</string>
     <string name="call_service_notification_end_call">Anruf beenden</string>
     <string name="call_service_notification_video_call">Videoanruf</string>
+    <string name="unable_to_open_browser_title">Fehler beim Öffnen des Browsers</string>
+    <string name="unable_to_open_browser_desc">Für Anrufe ist ein Default-Webbrowser erforderlich. Bitte konfigurieren Sie einen Default-Browser für das System und teilen Sie den Entwicklern mehr Informationen dazu mit.</string>
 </resources>
