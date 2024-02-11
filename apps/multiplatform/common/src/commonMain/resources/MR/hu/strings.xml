@@ -93,7 +93,7 @@
     <string name="invite_prohibited">Az ismerősök meghívása le van tiltva!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
     <string name="v4_2_auto_accept_contact_requests">Ismerősnek jelölések automatikus elfogadása</string>
-    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Tudnivaló</b>: NEM fogod tudni helyreállítani vagy megváltoztatni a jelmondatot az esetben ha elveszíted.]]></string>
+    <string name="impossible_to_recover_passphrase"><b>Figyelem</b>: NEM fogod tudni helyreállítani vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíted.</string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos</string>
     <string name="smp_servers_add_to_another_device">Hozzáadás másik eszközhöz</string>
@@ -1348,7 +1348,7 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Kérlek, ellenőrizd, hogy a megfelelő linket használtad-e, vagy kérd meg az ismerősödet, hogy küldjön egy másikat.</string>
     <string name="image_decoding_exception_desc">A kép nem dekódolható. Kérjük, próbálj meg egy másik képet, vagy lépj kapcsolatba a fejlesztőkkel.</string>
     <string name="non_content_uri_alert_text">Érvénytelen fájl elérési útvonalat osztottál meg. Jelentsd a problémát az alkalmazás fejlesztőinek.</string>
-    <string name="failed_to_create_user_duplicate_desc">Már van egy chat-profilod ugyanezzel a megjelenített névvel. Kérjük, válassz másik nevet.</string>
+    <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profilod ugyanezzel a megjelenített névvel. Kérjük, válassz másik nevet.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Csatlakozási kísérlet a kapcsolat üzeneteinek fogadására használt szerverhez ettől az ismerősödtől (hiba: %1$s).</string>
     <string name="stop_rcv_file__message">A fájl fogadása leállt.</string>
     <string name="la_please_remember_to_store_password">Kérjük, jegyezd meg vagy tárold biztonságosan - az elveszett jelszót nem lehet visszaállítani!</string>
@@ -1416,7 +1416,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerőseid engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">A jelmondatot minden alkalommal meg kell adnod, amikor az alkalmazás elindul - az nem tárolódik az eszközön.</string>
     <string name="open_port_in_firewall_desc">Ahhoz, hogy engedélyezd a mobil app csatlakozását a számítógépedhez, nyisd meg ezt a portot a tűzfaladon, ha az engedélyezve van</string>
-    <string name="your_profile_is_stored_on_your_device">A te profilod, ismerőseid és az elküldött üzeneteid a te eszközödön vannak tárolva (a SimpleX chat szerverekről kézbesítés illetve a TTL időkorlát után törlődnek).</string>
+    <string name="your_profile_is_stored_on_your_device">A te profilod, ismerőseid és az elküldött üzeneteid a te eszközödön vannak tárolva (a SimpleX chat szerverekről kézbesítés, illetve a TTL időkorlát után törlődnek).</string>
     <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez kérlek válaszd az <b>App akkumulátor használat</b> / <b>Korlátlan</b> módot az app beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem meghívó link!</string>
     <string name="to_start_a_new_chat_help_header">Új chat kezdése</string>
