@@ -1410,7 +1410,7 @@
     <string name="to_reveal_profile_enter_password">A rejtett profilod felfedéséhez gépeld be a jelszót a kereső mezőbe az \'A te csevegési profiljaid\' menüben!</string>
     <string name="upgrade_and_open_chat">A csevegés frissítése és megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Ahhoz, hogy hangüzeneteket küldhess, engedélyezned kell az ismerőseidnek is azok küldését.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Te kontrollálod, hogy melyik szerveren(-ken) keresztül <b>fogadod</b>az üzeneteket, míg az ismerőseid a szervereket amelyeken át üzensz nekik.]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Te kontrollálod, hogy melyik szervere(ke)n keresztül <b>fogadod</b> az üzeneteket, az ismerőseidtől - a szerver(ek), amelye(ke)t az üzenetek küldésére használsz az ismerőseid számára.</string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoportban vagy.]]></string>
     <string name="snd_conn_event_switch_queue_phase_completed">megváltoztattad az azonosítót</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerőseid engedélyezhetik a teljes üzenet törlést.</string>
