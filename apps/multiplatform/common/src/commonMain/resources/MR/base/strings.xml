@@ -179,6 +179,9 @@
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title">SimpleX Chat service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
+  <string name="call_service_notification_audio_call">Audio call</string>
+  <string name="call_service_notification_video_call">Video call</string>
+  <string name="call_service_notification_end_call">End call</string>
   <string name="hide_notification">Hide</string>
 
   <!-- Notification channels -->
@@ -802,6 +805,10 @@
   <string name="callstate_connecting">connecting…</string>
   <string name="callstate_connected">connected</string>
   <string name="callstate_ended">ended</string>
+
+  <!-- CallView -->
+  <string name="unable_to_open_browser_title">Error opening browser</string>
+  <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>

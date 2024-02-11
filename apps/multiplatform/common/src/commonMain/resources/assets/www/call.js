@@ -11,6 +11,12 @@ var VideoCamera;
     VideoCamera["User"] = "user";
     VideoCamera["Environment"] = "environment";
 })(VideoCamera || (VideoCamera = {}));
+var LayoutType;
+(function (LayoutType) {
+    LayoutType["Default"] = "default";
+    LayoutType["LocalVideo"] = "localVideo";
+    LayoutType["RemoteVideo"] = "remoteVideo";
+})(LayoutType || (LayoutType = {}));
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
@@ -319,6 +325,10 @@ const processCommand = (function () {
                     localizedDescription = command.description;
                     resp = { type: "ok" };
                     break;
+                case "layout":
+                    changeLayout(command.layout);
+                    resp = { type: "ok" };
+                    break;
                 case "end":
                     endCall();
                     resp = { type: "ok" };
@@ -606,6 +616,28 @@ function toggleMedia(s, media) {
         activeCall.cameraEnabled = res;
     }
     return res;
+}
+function changeLayout(layout) {
+    const local = document.getElementById("local-video-stream");
+    const remote = document.getElementById("remote-video-stream");
+    switch (layout) {
+        case LayoutType.Default:
+            local.className = "inline";
+            remote.className = "inline";
+            local.style.visibility = "visible";
+            remote.style.visibility = "visible";
+            break;
+        case LayoutType.LocalVideo:
+            local.className = "fullscreen";
+            local.style.visibility = "visible";
+            remote.style.visibility = "hidden";
+            break;
+        case LayoutType.RemoteVideo:
+            remote.className = "fullscreen";
+            local.style.visibility = "hidden";
+            remote.style.visibility = "visible";
+            break;
+    }
 }
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)
 function callCryptoFunction() {

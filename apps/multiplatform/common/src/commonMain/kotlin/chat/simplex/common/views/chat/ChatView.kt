@@ -301,7 +301,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             withBGApi {
               val cInfo = chat.chatInfo
               if (cInfo is ChatInfo.Direct) {
-                chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+                val contactInfo = chatModel.controller.apiContactInfo(chat.remoteHostId, cInfo.contact.contactId)
+                val profile = contactInfo?.second ?: chatModel.currentUser.value?.profile?.toProfile() ?: return@withBGApi
+                chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media, userProfile = profile)
                 chatModel.showCallView.value = true
                 chatModel.callCommand.add(WCallCommand.Capabilities(media))
               }
@@ -673,7 +675,7 @@ fun ChatInfoToolbar(
           }
         }
       }
-    } else if (activeCall?.contact?.id == chat.id) {
+    } else if (activeCall?.contact?.id == chat.id && appPlatform.isDesktop) {
       barButtons.add {
         val call = remember { chatModel.activeCall }.value
         val connectedAt = call?.connectedAt
