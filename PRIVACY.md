@@ -38,7 +38,7 @@ SimpleX relay servers cannot decrypt or otherwise access the content or even the
 
 Your message history is stored only on your own device and the devices of your contacts. While the recipients' devices are offline, messaging (SMP) relay servers temporarily store end-to-end encrypted messages – you can configure which relay servers are used to receive the messages from the new contacts, and you can manually change them for the existing contacts too.
 
-The messages are permanently removed from the configured relay servers as soon as they are delivered, as long as these servers are not modified from the published code. Undelivered messages are deleted after the time that is configured in the messaging servers you use (21 days for preset messaging servers).
+The messages are permanently removed from the used relay servers as soon as they are delivered, as long as these servers are not modified from the published code. Undelivered messages are deleted after the time that is configured in the messaging servers you use (21 days for preset messaging servers).
 
 The files are stored on file (XFTP) relay servers for the time configured in the relay servers you use (48 hours for preset file servers).
 
@@ -53,6 +53,18 @@ In addition to the AGPLv3 license terms, SimpleX Chat Ltd is committed to the so
 When you create a connection with another user, two messaging queues (you can think about them as about mailboxes) are created on chosen messaging relay servers, that can be the preset servers or the servers that you configured in the app. SimpleX messaging protocol uses separate queues for direct and response messages, that the apps prefer to create on two different relay servers for increased privacy, in case you have more than one relay server configured in the app, which is the default.
 
 SimpleX relay servers do not store information about which queues are linked to your profile on the device, and they do not collect any information that would allow infrastructure owners and providers to establish that these queues are related to your device or your profile - the access to each queue is authorized by two anonymous unique cryptographic keys, different for each queue, and separate for sender and recipient of the messages.
+
+#### Connection links privacy
+
+When you create a connection with another user, the app generate a "link" that can be shared with the user to establish the connection via any connection. This link is safe to share via insecure channels, as long as you can identify the recipient and also trust that this channel did not replace this link (to mitigate the latter risk you can validate the security code via the app).
+
+While the connection "links" contain SimpleX Chat Ltd domain name `simplex.chat`, this site is never accessed by the app, and is only used for these purposes:
+- to direct the new users to the app download instructions,
+- to show connection QR code that can be scanned via the app,
+- and to "namespace" these links,
+- to open links directly in the app when it is clicked outside of the app.
+
+You can always safely replace the initial part of the link `https://simplex.chat/` either with `simplex:/` (which is a URI scheme provisionally registered with IANA) or with any other domain name where you can self-host the app download instructions and show the connection QR code (but in case it is your domain, it will not open in the app). Also, while the page renders QR code, all the information needed to render it is only available to the browser, as the part of the "link" after `#` symbol is not sent to the website server.
 
 #### iOS Push Notifications
 
@@ -103,9 +115,9 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Minimal age**. You must be at least 13 years old to use our Applications. The minimum age to use our Applications without parental approval may be higher in your country.
 
-**Infrastructure**. Our Infrastructure includes preset messaging and file relay servers, and iOS push notification servers provided by SimpleX Chat Ltd for public use. Our infrastructure does not have any modifications from the [published open-source code](https://github.com/simplex-chat/simplexmq) available under AGPLv3 license. Any infrastructure provider is required by the Affero clause (named after Affero Inc. company that pioneered the community-based Q&A sites in early 2000s) to publish any modifications under the same license. The statements in relation to Infrastructure below assume no modifications to the published code.
+**Infrastructure**. Our Infrastructure includes preset messaging and file relay servers, and iOS push notification servers provided by SimpleX Chat Ltd for public use. Our infrastructure does not have any modifications from the [published open-source code](https://github.com/simplex-chat/simplexmq) available under AGPLv3 license. Any infrastructure provider is required by the Affero clause (named after Affero Inc. company that pioneered the community-based Q&A sites in early 2000s) to publish any modifications under the same license. The statements in relation to Infrastructure and relay servers anywhere in this document assume no modifications to the published code, even in the cases when it is not explicitly stated.
 
-**Client applications**. Our client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on our code are required to publish any modifications under the same AGPLv3 license.
+**Client applications**. Our client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on our code are required to publish any modifications under the same AGPLv3 license. Client applications do not include any tracking or analytics code, and does not share any information with SimpleX Chat Ltd or any other third parties.
 
 **Accessing the infrastructure**. For the efficiency of the network access, the client Software by default accesses all queues your app creates on any relay server within one user profile via the same network (TCP/IP) connection. At the cost of additional traffic this configuration can be changed to use different transport session for each connection. Relay servers do not collect information about which queues were created or accessed via the same connection, so the relay servers cannot establish which queues belong to the same user profile. Whoever might observe your network traffic would know which relay servers you use, and how much data you send, but not to whom it is sent - the data that leaves the servers is always different from the data they receive - there are no identifiers or ciphertext in common, even inside TLS encryption layer. Please refer to our [technical design document](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information about our privacy model and known security and privacy risks.
 
