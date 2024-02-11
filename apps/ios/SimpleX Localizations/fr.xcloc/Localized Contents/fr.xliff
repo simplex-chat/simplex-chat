@@ -1413,9 +1413,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Création de groupes via un profil aléatoire.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
+      <trans-unit id="Create an address to let people connect with you." xml:space="preserve" approved="no">
         <source>Create an address to let people connect with you.</source>
-        <target>Créez une adresse pour permettre aux gens de vous contacter.</target>
+        <target state="translated">Vous pouvez créer une adresse pour permettre aux autres utilisateurs de vous contacter.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -2488,9 +2488,9 @@ Cette opération ne peut être annulée !</target>
         <target>Quitter sans enregistrer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Expand" xml:space="preserve">
+      <trans-unit id="Expand" xml:space="preserve" approved="no">
         <source>Expand</source>
-        <target>Développer</target>
+        <target state="translated">Étendre</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -4849,9 +4849,9 @@ Erreur : %@</target>
         <target>Voir les derniers messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show preview" xml:space="preserve">
+      <trans-unit id="Show preview" xml:space="preserve" approved="no">
         <source>Show preview</source>
-        <target>Montrer l'aperçu</target>
+        <target state="translated">Afficher l'aperçu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
@@ -5620,9 +5620,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
         <source>Using SimpleX Chat servers.</source>
-        <target>Utilisation des serveurs SimpleX Chat.</target>
+        <target state="translated">Vous utilisez les serveurs SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
@@ -5765,9 +5765,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Quand disponible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
+      <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve" approved="no">
         <source>When people request to connect, you can accept or reject it.</source>
-        <target>Lorsque des personnes demandent à se connecter, vous pouvez les accepter ou les refuser.</target>
+        <target state="translated">Vous pouvez accepter ou refuser les demandes de contacts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
@@ -5927,9 +5927,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez partager cette adresse avec vos contacts pour leur permettre de se connecter avec **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
+      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve" approved="no">
         <source>You can share your address as a link or QR code - anybody can connect to you.</source>
-        <target>Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous.</target>
+        <target state="translated">Vous pouvez partager votre adresse sous la forme d'un lien ou d'un code QR - tout le monde peut l'utiliser pour vous contacter.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
