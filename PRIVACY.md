@@ -30,7 +30,7 @@ Servers used by SimpleX Chat apps do not create, store or identify user profiles
 
 When you create the local profile, no records are created on any of the relay servers, and infrastructure providers, whether SimpleX Chat Ltd or any other, have no access to any part of your information, and even to the fact that you created a profile - it is a local record stored only on your device. That means that if you delete the app, and have no backup, you will permanently lose all your data and the private connections you created with other users.
 
-You can transfer the profile to another device by creating a backup of the app data and restoring it on the new device, but you cannot use to devices with the copy of the same profile at the same time.
+You can transfer the profile to another device by creating a backup of the app data and restoring it on the new device, but you cannot use more than one device with the copy of the same profile at the same time - it will disrupt any active conversations on either or both devices, as a security property of end-to-end encryption.
 
 #### Messages and Files
 
@@ -56,12 +56,12 @@ SimpleX relay servers do not store information about which queues are linked to 
 
 #### Connection links privacy
 
-When you create a connection with another user, the app generate a "link" that can be shared with the user to establish the connection via any connection. This link is safe to share via insecure channels, as long as you can identify the recipient and also trust that this channel did not replace this link (to mitigate the latter risk you can validate the security code via the app).
+When you create a connection with another user, the app generates a "link"/QR code that can be shared with the user to establish the connection via any channel (email, any other messenger, or a video call). This link is safe to share via insecure channels, as long as you can identify the recipient and also trust that this channel did not replace this link (to mitigate the latter risk you can validate the security code via the app).
 
 While the connection "links" contain SimpleX Chat Ltd domain name `simplex.chat`, this site is never accessed by the app, and is only used for these purposes:
 - to direct the new users to the app download instructions,
 - to show connection QR code that can be scanned via the app,
-- and to "namespace" these links,
+- to "namespace" these links,
 - to open links directly in the app when it is clicked outside of the app.
 
 You can always safely replace the initial part of the link `https://simplex.chat/` either with `simplex:/` (which is a URI scheme provisionally registered with IANA) or with any other domain name where you can self-host the app download instructions and show the connection QR code (but in case it is your domain, it will not open in the app). Also, while the page renders QR code, all the information needed to render it is only available to the browser, as the part of the "link" after `#` symbol is not sent to the website server.
@@ -76,7 +76,7 @@ This design does not allow any servers to observe message content or size, as th
 
 #### Another information stored on the servers
 
-Additional technical information can be stored on our servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX Chat design limits this additional technical information to the minimum required to operate the software and servers. Servers can only store any data that can link to any particular user or device, including IP addresses, geographic location, device identifiers, or any information related the transport sessions, only for the purposes to prevent server overloading and attacks. This information is not stored for the absolute majority of the users, even who use the servers very actively.
+Additional technical information can be stored on our servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX Chat design limits this additional technical information to the minimum required to operate the software and servers. To prevent server overloading or attacks, the servers can store data that can link to particular users or devices, including IP addresses, geographic location, device identifiers, or information related the transport sessions. This information is not stored for the absolute majority of the app users, even who use the servers very actively.
 
 #### SimpleX Directory
 
@@ -117,7 +117,7 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Infrastructure**. Our Infrastructure includes preset messaging and file relay servers, and iOS push notification servers provided by SimpleX Chat Ltd for public use. Our infrastructure does not have any modifications from the [published open-source code](https://github.com/simplex-chat/simplexmq) available under AGPLv3 license. Any infrastructure provider is required by the Affero clause (named after Affero Inc. company that pioneered the community-based Q&A sites in early 2000s) to publish any modifications under the same license. The statements in relation to Infrastructure and relay servers anywhere in this document assume no modifications to the published code, even in the cases when it is not explicitly stated.
 
-**Client applications**. Our client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on our code are required to publish any modifications under the same AGPLv3 license. Client applications do not include any tracking or analytics code, and does not share any information with SimpleX Chat Ltd or any other third parties.
+**Client applications**. Our client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on our code are required to publish any modifications under the same AGPLv3 license. Client applications should not include any tracking or analytics code, and do not share any information with SimpleX Chat Ltd or any other third parties. If you ever discover any tracking or analytics code, please report it to us so we can remove it.
 
 **Accessing the infrastructure**. For the efficiency of the network access, the client Software by default accesses all queues your app creates on any relay server within one user profile via the same network (TCP/IP) connection. At the cost of additional traffic this configuration can be changed to use different transport session for each connection. Relay servers do not collect information about which queues were created or accessed via the same connection, so the relay servers cannot establish which queues belong to the same user profile. Whoever might observe your network traffic would know which relay servers you use, and how much data you send, but not to whom it is sent - the data that leaves the servers is always different from the data they receive - there are no identifiers or ciphertext in common, even inside TLS encryption layer. Please refer to our [technical design document](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information about our privacy model and known security and privacy risks.
 
