@@ -89,6 +89,9 @@ struct NotificationsView: View {
             }
         }
         .disabled(legacyDatabase)
+        .onAppear {
+            (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
+        }
     }
 
     private func notificationAlert(_ alert: NotificationAlert, _ token: DeviceToken) -> Alert {
