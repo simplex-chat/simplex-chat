@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.AppScreen
+import chat.simplex.common.model.clear
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.*
 import androidx.compose.ui.platform.LocalContext as LocalContext1
 import chat.simplex.res.MR

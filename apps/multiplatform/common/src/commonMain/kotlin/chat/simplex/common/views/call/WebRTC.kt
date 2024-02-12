@@ -7,11 +7,11 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URI
-import java.util.*
 import kotlin.collections.ArrayList
 
 data class Call(
   val remoteHostId: Long?,
+  val userProfile: Profile,
   val contact: Contact,
   val callState: CallState,
   val localMedia: CallMediaType,
@@ -23,7 +23,7 @@ data class Call(
   val soundSpeaker: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
-  var connectedAt: Instant? = null
+  var connectedAt: Instant? = null,
 ) {
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
   val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
@@ -36,6 +36,9 @@ data class Call(
   }
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
+
+  fun supportsVideo(): Boolean = peerMedia == CallMediaType.Video || localMedia == CallMediaType.Video
+
 }
 
 enum class CallState {
@@ -75,6 +78,7 @@ sealed class WCallCommand {
   @Serializable @SerialName("media") data class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
   @Serializable @SerialName("camera") data class Camera(val camera: VideoCamera): WCallCommand()
   @Serializable @SerialName("description") data class Description(val state: String, val description: String): WCallCommand()
+  @Serializable @SerialName("layout") data class Layout(val layout: LayoutType): WCallCommand()
   @Serializable @SerialName("end") object End: WCallCommand()
 }
 
@@ -165,6 +169,13 @@ enum class VideoCamera {
   @SerialName("user") User,
   @SerialName("environment") Environment;
   val flipped: VideoCamera get() = if (this == User) Environment else User
+}
+
+@Serializable
+enum class LayoutType {
+  @SerialName("default") Default,
+  @SerialName("localVideo") LocalVideo,
+  @SerialName("remoteVideo") RemoteVideo
 }
 
 @Serializable

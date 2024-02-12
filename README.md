@@ -234,6 +234,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Jan 24, 2024. SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.](./blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
+
 [Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
 
 [Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
@@ -299,7 +301,7 @@ What is already implemented:
 11. Transport isolation - different TCP connections and Tor circuits are used for traffic of different user profiles, optionally - for different contacts and group member connections.
 12. Manual messaging queue rotations to move conversation to another SMP relay.
 13. Sending end-to-end encrypted files using [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
-14. Local files encryption, except videos (to be added later).
+14. Local files encryption.
 
 We plan to add:
 
@@ -371,12 +373,13 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Desktop client.
 - ✅ Encryption of local files stored in the app.
 - ✅ Using mobile profiles from the desktop app.
+- ✅ Private notes.
+- ✅ Improve sending videos (including encryption of locally stored videos).
 - 🏗 Improve experience for the new users.
 - 🏗 Post-quantum resistant key exchange in double ratchet protocol.
 - 🏗 Large groups, communities and public channels.
-- Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
+- 🏗 Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - Privacy & security slider - a simple way to set all settings at once.
-- Improve sending videos (including encryption of locally stored videos).
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).

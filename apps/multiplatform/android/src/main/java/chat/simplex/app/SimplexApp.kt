@@ -1,14 +1,15 @@
 package chat.simplex.app
 
-import android.app.Application
+import android.app.*
 import android.content.Context
-import androidx.compose.ui.platform.ClipboardManager
 import chat.simplex.common.platform.Log
-import android.app.UiModeManager
+import android.content.Intent
 import android.os.*
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
+import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
@@ -18,6 +19,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.views.call.RcvCallInvitation
+import chat.simplex.common.views.call.activeCallDestroyWebView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -97,13 +99,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
-          /**
-           * When the app calls [ClipboardManager.shareText] and a user copies text in clipboard, Android denies
-           * access to clipboard because the app considered in background.
-           * This will ensure that the app will get the event on resume
-           * */
-          val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-          chatModel.clipboardHasText.value = service.hasPrimaryClip()
           if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && chatModel.currentUser.value != null) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
@@ -191,16 +186,28 @@ class SimplexApp: Application(), LifecycleEventObserver {
         SimplexService.safeStopService()
       }
 
+      override fun androidCallServiceSafeStop() {
+        CallService.stopService()
+      }
+
       override fun androidNotificationsModeChanged(mode: NotificationsMode) {
         if (mode.requiresIgnoringBattery && !SimplexService.isBackgroundAllowed()) {
           appPrefs.backgroundServiceNoticeShown.set(false)
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
         CoroutineScope(Dispatchers.Default).launch {
-          if (mode == NotificationsMode.SERVICE)
+          if (mode == NotificationsMode.SERVICE) {
             SimplexService.start()
-          else
+            // Sometimes, when we change modes fast from one to another, system destroys the service after start.
+            // We can wait a little and restart the service, and it will work in 100% of cases
+            delay(2000)
+            if (!SimplexService.isServiceStarted && appPrefs.notificationsMode.get() == NotificationsMode.SERVICE) {
+              Log.i(TAG, "Service tried to start but destroyed by system, repeating once more")
+              SimplexService.start()
+            }
+          } else {
             SimplexService.safeStopService()
+          }
         }
 
         if (mode != NotificationsMode.PERIODIC) {
@@ -251,6 +258,28 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long?, chatId: ChatId?) {
+        val context = mainActivity.get() ?: return
+        val intent = Intent(context, CallActivity::class.java)
+          .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        if (acceptCall) {
+          intent.setAction(AcceptCallAction)
+            .putExtra("remoteHostId", remoteHostId)
+            .putExtra("chatId", chatId)
+        }
+        intent.flags += Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+        context.startActivity(intent)
+      }
+
+      override fun androidPictureInPictureAllowed(): Boolean {
+        val appOps = androidAppContext.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        return appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+      }
+
+      override fun androidCallEnded() {
+        activeCallDestroyWebView()
       }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {

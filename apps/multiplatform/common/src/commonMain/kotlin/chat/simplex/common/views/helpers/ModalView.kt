@@ -29,7 +29,7 @@ fun ModalView(
   }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      CloseSheetBar(close, showClose, endButtons)
+      CloseSheetBar(close, showClose, endButtons = endButtons)
       Box(modifier) { content() }
     }
   }
@@ -61,10 +61,10 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
     }
   }
 

@@ -198,16 +198,16 @@ fun <T> SectionItemWithValue(
 }
 
 @Composable
-fun SectionTextFooter(text: String) {
-  SectionTextFooter(AnnotatedString(text))
+fun SectionTextFooter(text: String, color: Color = MaterialTheme.colors.secondary) {
+  SectionTextFooter(AnnotatedString(text), color = color)
 }
 
 @Composable
-fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start) {
+fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start, color: Color = MaterialTheme.colors.secondary) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
-    color = MaterialTheme.colors.secondary,
+    color = color,
     lineHeight = 18.sp,
     fontSize = 14.sp,
     textAlign = textAlign

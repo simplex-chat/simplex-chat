@@ -1,16 +1,21 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.model.ChatId
 import chat.simplex.common.model.NotificationsMode
 
 interface PlatformInterface {
   suspend fun androidServiceStart() {}
   fun androidServiceSafeStop() {}
+  fun androidCallServiceSafeStop() {}
   fun androidNotificationsModeChanged(mode: NotificationsMode) {}
   fun androidChatStartedAfterBeingOff() {}
   fun androidChatStopped() {}
   fun androidChatInitializedAndStarted() {}
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
+  fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
+  fun androidPictureInPictureAllowed(): Boolean = true
+  fun androidCallEnded() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
 }
 /**

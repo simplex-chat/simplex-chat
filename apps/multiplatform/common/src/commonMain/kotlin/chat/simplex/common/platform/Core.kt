@@ -28,6 +28,7 @@ external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
+external fun chatJsonLength(str: String): Int
 external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
@@ -42,7 +43,7 @@ val appPreferences: AppPreferences
 val chatController: ChatController = ChatController
 
 fun initChatControllerAndRunMigrations() {
-  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+  withLongRunningApi {
     if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
       initChatController(startChat = ::showStartChatAfterRestartAlert)
     } else {
@@ -58,10 +59,23 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
-    val res: DBMigrationResult = kotlin.runCatching {
+    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+    val rerunMigration = res is DBMigrationResult.ErrorMigration && when (res.migrationError) {
+      // we don't allow to run down migrations without confirmation in UI, so currently it won't be YesUpDown
+      is MigrationError.Upgrade -> confirm == MigrationConfirmation.YesUp || confirm == MigrationConfirmation.YesUpDown
+      is MigrationError.Downgrade ->  confirm == MigrationConfirmation.YesUpDown
+      is MigrationError.Error -> false
+    }
+    if (rerunMigration) {
+      chatModel.dbMigrationInProgress.value = true
+      migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      res = runCatching {
+        json.decodeFromString<DBMigrationResult>(migrated[0] as String)
+      }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+    }
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
@@ -119,6 +133,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
   } finally {
     chatModel.ctrlInitInProgress.value = false
+    chatModel.dbMigrationInProgress.value = false
   }
 }
 

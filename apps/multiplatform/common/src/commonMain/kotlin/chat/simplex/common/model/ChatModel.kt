@@ -2,6 +2,7 @@ package chat.simplex.common.model
 
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -48,6 +49,7 @@ object ChatModel {
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val ctrlInitInProgress = mutableStateOf(false)
+  val dbMigrationInProgress = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
@@ -55,7 +57,7 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
-  val chatItems = mutableStateListOf<ChatItem>()
+  val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -63,8 +65,6 @@ object ChatModel {
 
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
-  // Allows to temporary save servers that are being edited on multiple screens
-  val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
@@ -96,6 +96,7 @@ object ChatModel {
   val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val activeCallViewIsVisible = mutableStateOf<Boolean>(false)
+  val activeCallViewIsCollapsed = mutableStateOf<Boolean>(false)
   val callCommand = mutableStateListOf<WCallCommand>()
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
@@ -269,18 +270,15 @@ object ChatModel {
     } else {
       addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
     }
-    Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
     withContext(Dispatchers.Main) {
       // add to current chat
       if (chatId.value == cInfo.id) {
-        Log.d(TAG, "TODOCHAT: addChatItem: chatIds are equal, size ${chatItems.size}")
         // Prevent situation when chat item already in the list received from backend
-        if (chatItems.none { it.id == cItem.id }) {
-          if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-            chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+        if (chatItems.value.none { it.id == cItem.id }) {
+          if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+            chatItems.add(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
           } else {
             chatItems.add(cItem)
-            Log.d(TAG, "TODOCHAT: addChatItem: added to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           }
         }
       }
@@ -307,14 +305,13 @@ object ChatModel {
       addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       res = true
     }
-    Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
     return withContext(Dispatchers.Main) {
       // update current chat
       if (chatId.value == cInfo.id) {
-        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        val items = chatItems.value
+        val itemIndex = items.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
-          chatItems[itemIndex] = cItem
-          Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
+          items[itemIndex] = cItem
           false
         } else {
           val status = chatItemStatuses.remove(cItem.id)
@@ -324,7 +321,6 @@ object ChatModel {
             cItem
           }
           chatItems.add(ci)
-          Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
       } else {
@@ -336,9 +332,10 @@ object ChatModel {
   suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
     withContext(Dispatchers.Main) {
       if (chatId.value == cInfo.id) {
-        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        val items = chatItems.value
+        val itemIndex = items.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
-          chatItems[itemIndex] = cItem
+          items[itemIndex] = cItem
         }
       } else if (status != null) {
         chatItemStatuses[cItem.id] = status
@@ -362,10 +359,10 @@ object ChatModel {
     }
     // remove from current chat
     if (chatId.value == cInfo.id) {
-      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
-      if (itemIndex >= 0) {
-        AudioPlayer.stop(chatItems[itemIndex])
-        chatItems.removeAt(itemIndex)
+      chatItems.removeAll {
+        val remove = it.id == cItem.id
+        if (remove) { AudioPlayer.stop(it) }
+        remove
       }
     }
   }
@@ -406,7 +403,7 @@ object ChatModel {
   }
 
   fun removeLiveDummy() {
-    if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+    if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       chatItems.removeLast()
     }
   }
@@ -438,14 +435,14 @@ object ChatModel {
     var markedRead = 0
     if (chatId.value == cInfo.id) {
       var i = 0
-      Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marking read ${cInfo.id}, current chatId ${chatId.value}, size was ${chatItems.size}")
-      while (i < chatItems.count()) {
-        val item = chatItems[i]
+      val items = chatItems.value
+      while (i < items.size) {
+        val item = items[i]
         if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
           val newItem = item.withStatus(CIStatus.RcvRead())
-          chatItems[i] = newItem
+          items[i] = newItem
           if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
-            chatItems[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
+            items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
               deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
             )
           }
@@ -453,7 +450,6 @@ object ChatModel {
         }
         i += 1
       }
-      Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marked read ${cInfo.id}, current chatId ${chatId.value}, size now ${chatItems.size}")
     }
     return markedRead
   }
@@ -644,7 +640,8 @@ object ChatModel {
   }
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.value.size >= 500) {
+    val maxItems = if (appPreferences.developerTools.get()) 500 else 200
+    if (terminalItems.value.size >= maxItems) {
       terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
     }
     terminalItems.value += item
@@ -969,6 +966,16 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo.chatSettings
       else -> null
     }
+
+  val chatTs: Instant
+    get() = when(this) {
+      is Direct -> contact.chatTs ?: contact.updatedAt
+      is Group -> groupInfo.chatTs ?: groupInfo.updatedAt
+      is Local -> noteFolder.chatTs
+      is ContactRequest -> contactRequest.updatedAt
+      is ContactConnection -> contactConnection.updatedAt
+      is InvalidJSON -> updatedAt
+    }
 }
 
 @Serializable
@@ -1009,6 +1016,7 @@ data class Contact(
   val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
   override val updatedAt: Instant,
+  val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean
 ): SomeChat, NamedChat {
@@ -1077,6 +1085,7 @@ data class Contact(
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
+      chatTs = Clock.System.now(),
       contactGrpInvSent = false
     )
   }
@@ -1204,7 +1213,8 @@ data class GroupInfo (
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
   override val createdAt: Instant,
-  override val updatedAt: Instant
+  override val updatedAt: Instant,
+  val chatTs: Instant?
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1245,7 +1255,8 @@ data class GroupInfo (
       hostConnCustomUserProfileId = null,
       chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
-      updatedAt = Clock.System.now()
+      updatedAt = Clock.System.now(),
+      chatTs = Clock.System.now()
     )
   }
 }
@@ -1507,7 +1518,8 @@ class NoteFolder(
   val favorite: Boolean,
   val unread: Boolean,
   override val createdAt: Instant,
-  override val updatedAt: Instant
+  override val updatedAt: Instant,
+  val chatTs: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Local
   override val id get() = "*$noteFolderId"
@@ -1530,7 +1542,8 @@ class NoteFolder(
       favorite = false,
       unread = false,
       createdAt = Clock.System.now(),
-      updatedAt = Clock.System.now()
+      updatedAt = Clock.System.now(),
+      chatTs = Clock.System.now()
     )
   }
 }
@@ -1989,6 +2002,46 @@ data class ChatItem (
       )
   }
 }
+
+fun MutableState<SnapshotStateList<ChatItem>>.add(index: Int, chatItem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, chatItem) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.add(chatItem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(chatItem) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.addAll(index: Int, chatItems: List<ChatItem>) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(index, chatItems) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.addAll(chatItems: List<ChatItem>) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(chatItems) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.removeAll(block: (ChatItem) -> Boolean) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAll(block) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.removeAt(index: Int) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAt(index) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.removeLast() {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeLast() }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.replaceAll(chatItems: List<ChatItem>) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(chatItems) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.clear() {
+  value = SnapshotStateList<ChatItem>()
+}
+
+fun State<SnapshotStateList<ChatItem>>.asReversed(): MutableList<ChatItem> = value.asReversed()
+
+val State<List<ChatItem>>.size: Int get() = value.size
 
 enum class CIMergeCategory {
   MemberConnected,

@@ -368,7 +368,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
 }
 
 fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, progressIndicator: MutableState<Boolean>? = null) {
-  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+  withLongRunningApi {
     try {
       progressIndicator?.value = true
       if (chatDbChanged.value) {
@@ -581,7 +581,7 @@ private fun importArchive(
   progressIndicator.value = true
   val archivePath = saveArchiveFromURI(importedArchiveURI)
   if (archivePath != null) {
-    withLongRunningApi(slow = 60_000, deadlock = 180_000) {
+    withLongRunningApi {
       try {
         m.controller.apiDeleteStorage()
         try {

@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.chat.item.markedDeletedText
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -170,7 +171,7 @@ fun ChatPreviewView(
         val (text: CharSequence, inlineTextContent) = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
           ci.meta.itemDeleted == null -> ci.text to null
-          else -> generalGetString(MR.strings.marked_deleted_description) to null
+          else -> markedDeletedText(ci.meta) to null
         }
         val formattedText = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> null
@@ -286,7 +287,7 @@ fun ChatPreviewView(
     Box(
       contentAlignment = Alignment.TopEnd
     ) {
-      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
+      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
       Text(
         ts,
         color = MaterialTheme.colors.secondary,

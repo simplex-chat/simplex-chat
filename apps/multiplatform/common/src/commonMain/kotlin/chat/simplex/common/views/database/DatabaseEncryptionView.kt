@@ -62,7 +62,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
       initialRandomDBPassphrase,
       progressIndicator,
       onConfirmEncrypt = {
-        withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+        withLongRunningApi {
           encryptDatabase(currentKey, newKey, confirmNewKey, initialRandomDBPassphrase, useKeychain, storedKey, progressIndicator)
         }
       }

@@ -18,7 +18,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}) {
+fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, endButtons: @Composable RowScope.() -> Unit = {}) {
   Column(
     Modifier
       .fillMaxWidth()
@@ -35,7 +35,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, endButtons: @
           verticalAlignment = Alignment.CenterVertically
         ) {
           if (showClose)  {
-            NavigationButtonBack(onButtonClicked = close)
+            NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
           } else {
             Spacer(Modifier)
           }

@@ -16,6 +16,7 @@
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
+  <string name="database_migration_in_progress">Database migration is in progress.\nIt may take a few minutes.</string>
   <string name="non_content_uri_alert_title">Invalid file path</string>
   <string name="non_content_uri_alert_text">You shared an invalid file path. Report the issue to the app developers.</string>
   <string name="app_was_crashed">View crashed</string>
@@ -178,6 +179,9 @@
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title">SimpleX Chat service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
+  <string name="call_service_notification_audio_call">Audio call</string>
+  <string name="call_service_notification_video_call">Video call</string>
+  <string name="call_service_notification_end_call">End call</string>
   <string name="hide_notification">Hide</string>
 
   <!-- Notification channels -->
@@ -802,6 +806,10 @@
   <string name="callstate_connected">connected</string>
   <string name="callstate_ended">ended</string>
 
+  <!-- CallView -->
+  <string name="unable_to_open_browser_title">Error opening browser</string>
+  <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
+
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
@@ -1377,9 +1385,11 @@
   <!-- GroupWelcomeView.kt -->
   <string name="group_welcome_title">Welcome message</string>
   <string name="save_welcome_message_question">Save welcome message?</string>
+  <string name="welcome_message_is_too_long">Welcome message is too long</string>
   <string name="save_and_update_group_profile">Save and update group profile</string>
   <string name="group_welcome_preview">Preview</string>
   <string name="enter_welcome_message">Enter welcome message…</string>
+  <string name="message_too_large">Message too large</string>
 
   <!-- ConnectionStats -->
   <string name="conn_stats_section_title_servers">SERVERS</string>

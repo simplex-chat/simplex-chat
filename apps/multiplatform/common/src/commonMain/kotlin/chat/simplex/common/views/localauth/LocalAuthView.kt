@@ -49,7 +49,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
 }
 
 private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (LAResult) -> Unit) {
-  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+  withLongRunningApi {
     try {
       /** Waiting until [initChatController] finishes */
       while (m.ctrlInitInProgress.value) {

@@ -50,7 +50,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     confirmNewKey,
     progressIndicator,
     onConfirmEncrypt = {
-      withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+      withLongRunningApi {
         if (m.chatRunning.value == true) {
           // Stop chat if it's started before doing anything
           stopChatAsync(m)
