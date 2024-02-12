@@ -83,8 +83,6 @@ struct NotificationsView: View {
                     Text("Please restart the app and migrate the database to enable push notifications.")
                         .font(.callout)
                         .padding(.top, 1)
-                } else if let server = m.notificationServer {
-                    Text("Notifications server: \(server)")
                 }
             }
         }
@@ -137,12 +135,11 @@ struct NotificationsView: View {
                 }
             default:
                 do {
-                    let (status, server) = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let status = try await apiRegisterToken(token: token, notificationMode: mode)
                     await MainActor.run {
                         m.tokenStatus = status
                         notificationMode = mode
                         m.notificationMode = mode
-                        m.notificationServer = server
                     }
                 } catch let error {
                     await MainActor.run {
