@@ -1204,9 +1204,8 @@ processChatCommand' vr = \case
     pure $ CRConnectionAliasUpdated user conn'
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
-  APIRegisterToken token mode -> withUser $ \_ -> do
-    (status, srv) <- withAgent (\a -> registerNtfToken a token mode)
-    pure $ CRNtfTokenStatus status srv
+  APIRegisterToken token mode -> withUser $ \_ ->
+    CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do

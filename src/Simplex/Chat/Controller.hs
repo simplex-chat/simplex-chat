@@ -671,7 +671,7 @@ data ChatResponse
   | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
   | CRUserContactLinkSubscribed -- TODO delete
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
-  | CRNtfTokenStatus {status :: NtfTknStatus, ntfServer_ :: Maybe NtfServer}
+  | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
