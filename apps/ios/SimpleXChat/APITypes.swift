@@ -612,7 +612,7 @@ public enum ChatResponse: Decodable, Error {
     case callExtraInfo(user: UserRef, contact: Contact, extraInfo: WebRTCExtraInfo)
     case callEnded(user: UserRef, contact: Contact)
     case callInvitations(callInvitations: [RcvCallInvitation])
-    case ntfTokenStatus(status: NtfTknStatus, ntfServer: String?)
+    case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
     case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)

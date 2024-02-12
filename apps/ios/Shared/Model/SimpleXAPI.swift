@@ -423,9 +423,9 @@ func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode, String
     }
 }
 
-func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) async throws -> (NtfTknStatus, String?) {
+func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) async throws -> NtfTknStatus {
     let r = await chatSendCmd(.apiRegisterToken(token: token, notificationMode: notificationMode))
-    if case let .ntfTokenStatus(status, ntfServer) = r { return (status, ntfServer) }
+    if case let .ntfTokenStatus(status) = r { return status }
     throw r
 }
 
@@ -437,11 +437,8 @@ func registerToken(token: DeviceToken) {
         logger.debug("registerToken \(mode.rawValue)")
         Task {
             do {
-                let (status, ntfServer) = try await apiRegisterToken(token: token, notificationMode: mode)
-                await MainActor.run {
-                    m.tokenStatus = status
-                    m.notificationServer = ntfServer
-                }
+                let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                await MainActor.run { m.tokenStatus = status }
             } catch let error {
                 logger.error("registerToken apiRegisterToken error: \(responseError(error))")
             }
