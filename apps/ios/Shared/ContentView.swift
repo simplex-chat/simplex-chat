@@ -34,7 +34,7 @@ struct ContentView: View {
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
 
-    private let callTopPadding: CGFloat = 40
+    private let callTopPadding: CGFloat = 50
 
     private enum ChatListActionSheet: Identifiable {
         case planAndConnectSheet(sheet: PlanAndConnectActionSheet)
@@ -188,7 +188,7 @@ struct ContentView: View {
             CallDuration(call: call)
         }
         .padding(.horizontal, 9)
-        .frame(height: callTopPadding)
+        .frame(height: callTopPadding - 10)
         //.background(Color(uiColor: UIColor(red: 46/255, green: 176/255, blue: 77/255, alpha: 1)))
         .background(Color(uiColor: UIColor(red: 47/255, green: 208/255, blue: 88/255, alpha: 1)))
         .onTapGesture {

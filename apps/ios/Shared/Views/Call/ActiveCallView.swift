@@ -40,10 +40,12 @@ struct ActiveCallView: View {
                     }
                 }
                 if let call = m.activeCall, let client = client {
-                    ActiveCallOverlay(call: call, client: client)
+                    VStack {
+                        BackButtonToolbar(title: call.supportsVideo ? call.contact.chatViewName : nil, onBack: { m.activeCallViewIsCollapsed = true })
+                        ActiveCallOverlay(call: call, client: client)
+                    }
                 }
             }
-            backButton { m.activeCallViewIsCollapsed = true }
         }
         .allowsHitTesting(!m.activeCallViewIsCollapsed)
         .opacity(m.activeCallViewIsCollapsed ? 0 : 1)
@@ -52,10 +54,14 @@ struct ActiveCallView: View {
             AppDelegate.keepScreenOn(true)
             createWebRTCClient()
             dismissAllSheets()
+            hideKeyboard()
         }
         .onChange(of: canConnectCall) { _ in
             logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall)")
             createWebRTCClient()
+        }
+        .onChange(of: m.activeCallViewIsCollapsed) { _ in
+            hideKeyboard()
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
@@ -64,7 +70,8 @@ struct ActiveCallView: View {
             client?.endCall()
         }
         .background(m.activeCallViewIsCollapsed ? .clear : .black)
-        .preferredColorScheme(.dark)
+        // Quite a big delay when opening/closing the view when a scheme changes (globally) this way. It's not needed when CallKit is used since status bar is green with white text on it
+        .preferredColorScheme(m.activeCallViewIsCollapsed || CallController.useCallKit() ? (getUserInterfaceStyleDefault() == .light ? .light : .dark) : .dark)
     }
 
     private func createWebRTCClient() {
@@ -281,13 +288,6 @@ struct ActiveCallOverlay: View {
 
     private func videoCallInfoView(_ call: Call) -> some View {
         VStack {
-            Text(call.contact.chatViewName)
-                .lineLimit(1)
-                .font(.title)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 5)
-                .padding(.leading, 34)
-                .padding(.bottom, 1)
             Group {
                 Text(call.callState.text)
                 HStack {

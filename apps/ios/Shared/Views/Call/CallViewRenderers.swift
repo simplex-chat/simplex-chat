@@ -227,6 +227,74 @@ struct CallViewLocal: UIViewRepresentable {
     }
 }
 
+struct BackButtonToolbar: UIViewRepresentable {
+    @State var title: String?
+    var onBack: () -> Void
+
+    func makeUIView(context: Context) -> UINavigationBar {
+        let bar = UINavigationBar()
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .clear
+        appearance.shadowColor = .clear
+        appearance.titlePositionAdjustment = .init(horizontal: -CGFloat.greatestFiniteMagnitude, vertical: 0)
+        appearance.titleTextAttributes = [
+            .foregroundColor: UIColor.white
+        ]
+        bar.standardAppearance = appearance
+        bar.tintColor = .white
+
+        let back = UINavigationItem()
+        let back2 = UINavigationItem()
+        back.backBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: context.coordinator, action: #selector(context.coordinator.onBackAction))
+
+        bar.items = [back2, back]
+        bar.backItem?.backButtonDisplayMode = .minimal
+        if let title = title {
+//            let label = UILabel()
+//            label.text = title
+//            label.textAlignment = .left
+//            label.textColor = .white
+//            label.numberOfLines = 1
+//            label.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+            //bar.topItem?.leftBarButtonItem = UIBarButtonItem(customView: label)
+            bar.topItem?.title = title
+        }
+
+        //bar.topItem?.titleView = label
+        bar.topItem?.leftItemsSupplementBackButton = true
+
+        // Works even with async {} without delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let ctrl = bar.subviews.first(where: { "\($0.classForCoder)" == "_UINavigationBarContentView" })?.subviews.first(where: { $0 is UIControl }) as? UIControl {
+                ctrl.allTargets.forEach { target in
+                    ctrl.removeTarget(target, action: nil, for: .allEvents)
+                }
+                ctrl.addTarget(context.coordinator, action: #selector(context.coordinator.onBackAction), for: .touchUpInside)
+                // Removes showing menu on long press
+                ctrl.addTarget(context.coordinator, action: #selector(context.coordinator.onBackAction), for: .menuActionTriggered)
+            }
+        }
+
+        return bar
+    }
+
+    func updateUIView(_ view: UINavigationBar, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        let coordinator = Coordinator()
+        coordinator.onBack = onBack
+        return coordinator
+    }
+
+    // MARK: - Coordinator
+    class Coordinator: NSObject {
+        var onBack: () -> Void = {}
+        @objc
+        func onBackAction() { onBack() }
+    }
+}
+
 private func addSubviewAndResize(_ view: UIView, into containerView: UIView) {
     containerView.addSubview(view)
     view.translatesAutoresizingMaskIntoConstraints = false
