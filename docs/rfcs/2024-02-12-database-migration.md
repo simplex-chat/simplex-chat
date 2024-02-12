@@ -50,11 +50,12 @@ Instead we can offer these simple steps:
 
 1. Open Database settings.
 2. Tap "Export database".
-3. Alert will appear saying: "The chat will stop, and you will need to set database passphrase. Continue?".
+3. Alert will appear saying: "The chat will stop, and you will need to set (or verify) database passphrase. Continue?".
 4. Tap "Ok".
-5. Enter passphrase and confirm in the window that appears.
+5. Enter passphrase and confirm in the window that appears (or verify if it was already set, possibly allowing to skip this step).
 7. Choose whether to save file or upload to XFTP and generate link.
-8. Choose file location and save.
+8. File: choose file location and save.
+   Link: show upload progress and then show link to copy.
 9. Alert will appear saying: "Database exported!", exported archive will be automatically removed.
 
 So instead of asking users to understand the required sequence of steps, we will guide them through the required process.
@@ -65,8 +66,7 @@ So instead of asking users to understand the required sequence of steps, we will
 2. Tap "Import database".
 3. Alert will appear saying: "The chat will stop, you will import?".
 4. File: choose file location and tap "Import".
-   Link: paste link and tap "Import".
-   Another device: scan QR code and tap "Import".
+   Link: paste link (or scan QR code) and tap "Import".
 5. Confirm to replace database.
 6. Start chat automatically once imported.
 
