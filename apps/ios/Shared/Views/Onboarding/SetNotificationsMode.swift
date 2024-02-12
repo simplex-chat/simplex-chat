@@ -60,10 +60,11 @@ struct SetNotificationsMode: View {
         default:
             Task {
                 do {
-                    let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let (status, server) = try await apiRegisterToken(token: token, notificationMode: mode)
                     await MainActor.run {
                         m.tokenStatus = status
                         m.notificationMode = mode
+                        m.notificationServer = server
                     }
                 } catch let error {
                     let a = getErrorAlert(error, "Error enabling notifications")
