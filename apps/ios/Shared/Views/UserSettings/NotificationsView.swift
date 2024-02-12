@@ -83,6 +83,8 @@ struct NotificationsView: View {
                     Text("Please restart the app and migrate the database to enable push notifications.")
                         .font(.callout)
                         .padding(.top, 1)
+                } else if let server = m.notificationServer {
+                    Text("Notifications server: \(server)")
                 }
             }
         }
