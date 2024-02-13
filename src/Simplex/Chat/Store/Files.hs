@@ -28,6 +28,7 @@ module Simplex.Chat.Store.Files
     setSndFTPrivateSndDescr,
     updateSndFTDescrXFTP,
     createExtraSndFTDescrs,
+    takeExtraSndFTDescr,
     updateSndFTDeliveryXFTP,
     setSndFTAgentDeleted,
     getXFTPSndFileDBId,
@@ -334,6 +335,13 @@ createExtraSndFTDescrs db User {userId} fileId rfdTexts = do
       db
       "INSERT INTO extra_xftp_file_descriptions (file_id, user_id, file_descr_text, created_at, updated_at) VALUES (?,?,?,?,?)"
       (fileId, userId, rfdText, currentTs, currentTs)
+
+takeExtraSndFTDescr :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO Text
+takeExtraSndFTDescr db User {userId} fileId = do
+  (eId :: Int64, descr) <- ExceptT . firstRow id (SEExtraFileDescrNotFound fileId) $
+    DB.query db "SELECT extra_file_descr_id, file_descr_text FROM extra_xftp_file_descriptions WHERE user_id = ? AND file_id = ?" (userId, fileId)
+  liftIO $ DB.execute db "DELETE FROM extra_xftp_file_descriptions WHERE extra_file_descr_id = ?" (Only eId)
+  pure descr
 
 updateSndFTDeliveryXFTP :: DB.Connection -> SndFileTransfer -> Int64 -> IO ()
 updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeliveryId =

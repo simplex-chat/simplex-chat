@@ -206,9 +206,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
+  CRSndFileStartXFTPDirect {} -> []
   CRSndFileProgressXFTP {} -> []
-  CRSndFileCompleteXFTP u ci _ Nothing -> ttyUser u $ uploadingFile "completed" ci
-  CRSndFileCompleteXFTP u _ _ (Just uris) -> ttyUser u $ directUploadComplete uris
+  CRSndFileCompleteXFTP u Nothing ft uris -> ttyUser u $ directUploadComplete ft uris
+  CRSndFileCompleteXFTP u ci _ _ -> ttyUser u $ uploadingFile "completed" ci
   CRSndFileCancelledXFTP {} -> []
   CRSndFileError u ci -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
@@ -1567,8 +1568,12 @@ uploadingFile status = \case
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
   _ -> [status <> " uploading file"]
 
-directUploadComplete :: [Text] -> [StyledString]
-directUploadComplete uris = "file upload complete. download links:" : map plain uris
+directUploadComplete :: FileTransferMeta -> Maybe [Text] -> [StyledString]
+directUploadComplete FileTransferMeta {fileId, fileName} = \case
+  Nothing -> [fileTransferStr fileId fileName <> " upload complete."]
+  Just uris ->
+    fileTransferStr fileId fileName <> " upload complete. download with:"
+    : map plain uris
 
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName

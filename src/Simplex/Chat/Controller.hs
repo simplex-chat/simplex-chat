@@ -454,6 +454,7 @@ data ChatCommand
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
   | APIXFTPDirectUpload UserId CryptoFile
+  | APIXFTPDescriptionUpload UserId FileTransferId
   | APIXFTPDirectDownload UserId FileDescriptionURI CryptoFile
   | QuitChat
   | ShowVersion
@@ -607,6 +608,7 @@ data ChatResponse
   | CRSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRSndFileStartXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileStartXFTPDirect {user :: User, fileTransferMeta :: FileTransferMeta} -- sent by _upload instead of ok, signalling fileId to expect
   | CRSndFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
   | CRSndFileCompleteXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, rcvURIs :: Maybe [Text]}
   | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}

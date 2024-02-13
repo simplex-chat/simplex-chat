@@ -1553,17 +1553,15 @@ testXFTPDirect = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
     src ##> "/_upload 1 ./tests/fixtures/test.jpg"
-    src <## "ok"
     threadDelay 250000
-    src <## "file upload complete. download links:"
-    uri1 <- getTermLine src
-    _uri2 <- getTermLine src
-    _uri3 <- getTermLine src
-    _uri4 <- getTermLine src
+    src <## "file 1 (test.jpg) upload complete."
+    src ##> "/_upload description 1 1"
+    src <## "file 2 (redirect.yaml) upload complete. download with:"
+    uri <- getTermLine src
 
     logNote "receiving"
     let dstFile = "./tests/tmp/test.jpg"
-    dst ##> ("/_download 1 " <> uri1 <> " " <> dstFile)
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
     dst <## "ok"
     threadDelay 250000
     dst <## "completed receiving file"

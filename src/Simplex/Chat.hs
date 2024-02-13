@@ -2037,7 +2037,19 @@ processChatCommand' vr = \case
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
   APIXFTPDirectUpload userId file -> withUserId userId $ \user -> do
     fileSize <- liftIO $ CF.getFileContentsSize file
-    xftpSndFileTransfer_ user file fileSize 1 Nothing >> ok_
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
+    pure CRSndFileStartXFTPDirect {user, fileTransferMeta}
+  APIXFTPDescriptionUpload userId fileTransferId -> withUserId userId $ \user -> do
+    descr <- withStore $ \db -> takeExtraSndFTDescr db user fileTransferId
+    vfd <- liftEitherWith (ChatError . CEInternalError . ("description yaml decode error: " <>)) . strDecode $ encodeUtf8 descr
+    let fileName = "redirect.yaml"
+        file = CryptoFile fileName Nothing
+        fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+        fInv = xftpFileInvitation fileName (fromIntegral $ T.length descr) fileDescr
+    aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd
+    chSize <- asks $ fileChunkSize . config
+    fileTransferMeta <- withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) chSize
+    pure CRSndFileStartXFTPDirect {user, fileTransferMeta}
   APIXFTPDirectDownload userId uri file -> withUserId userId $ \user -> receiveViaURI user uri file >> ok_
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
@@ -3286,8 +3298,12 @@ processAgentMsgSndFile _corrId aFileId msg =
           case ci of
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
-              let uris = map (decodeLatin1 . strEncode . FD.fileDescriptionURI) rfds
-              toView $ CRSndFileCompleteXFTP user ci ft $ Just uris
+              let uris = L.nonEmpty $ do
+                    vfd@(ValidFileDescription FD.FileDescription {redirect = Just _}) <- rfds -- only generate URIs for redirects
+                    -- XXX: just filter by size?
+                    pure . decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
+              withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
+              toView $ CRSndFileCompleteXFTP user ci ft (L.toList <$> uris)
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
@@ -6750,6 +6766,7 @@ chatCommandP =
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       -- XXX: _xftp/xftp prefix is taken
       "/_upload " *> (APIXFTPDirectUpload <$> A.decimal <* A.space <*> cryptoFileP),
+      "/_upload description " *> (APIXFTPDescriptionUpload <$> A.decimal <* A.space <*> A.decimal), -- TODO: extras (:
       "/_download " *> (APIXFTPDirectDownload <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
