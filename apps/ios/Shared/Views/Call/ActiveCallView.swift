@@ -12,12 +12,14 @@ import SimpleXChat
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme
     @ObservedObject var call: Call
     @Environment(\.scenePhase) var scenePhase
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
     @Binding var canConnectCall: Bool
+    @State var prevColorScheme: ColorScheme = .dark
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -40,10 +42,7 @@ struct ActiveCallView: View {
                     }
                 }
                 if let call = m.activeCall, let client = client {
-                    VStack {
-                        BackButtonToolbar(title: call.supportsVideo ? call.contact.chatViewName : nil, onBack: { m.activeCallViewIsCollapsed = true })
-                        ActiveCallOverlay(call: call, client: client)
-                    }
+                    ActiveCallOverlay(call: call, client: client)
                 }
             }
         }
@@ -55,6 +54,7 @@ struct ActiveCallView: View {
             createWebRTCClient()
             dismissAllSheets()
             hideKeyboard()
+            prevColorScheme = colorScheme
         }
         .onChange(of: canConnectCall) { _ in
             logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall)")
@@ -71,7 +71,7 @@ struct ActiveCallView: View {
         }
         .background(m.activeCallViewIsCollapsed ? .clear : .black)
         // Quite a big delay when opening/closing the view when a scheme changes (globally) this way. It's not needed when CallKit is used since status bar is green with white text on it
-        .preferredColorScheme(m.activeCallViewIsCollapsed || CallController.useCallKit() ? (getUserInterfaceStyleDefault() == .light ? .light : .dark) : .dark)
+        .preferredColorScheme(m.activeCallViewIsCollapsed || CallController.useCallKit() ? prevColorScheme : .dark)
     }
 
     private func createWebRTCClient() {
@@ -86,8 +86,8 @@ struct ActiveCallView: View {
     @MainActor
     private func processRtcMessage(msg: WVAPIMessage) {
         if call == m.activeCall,
-            let call = m.activeCall,
-            let client = client {
+           let call = m.activeCall,
+           let client = client {
             logger.debug("ActiveCallView: response \(msg.resp.respType)")
             switch msg.resp {
             case let .capabilities(capabilities):
@@ -107,7 +107,7 @@ struct ActiveCallView: View {
                 Task {
                     do {
                         try await apiSendCallOffer(call.contact, offer, iceCandidates,
-                                               media: call.localMedia, capabilities: capabilities)
+                                                   media: call.localMedia, capabilities: capabilities)
                     } catch {
                         logger.error("apiSendCallOffer \(responseError(error))")
                     }
@@ -139,8 +139,8 @@ struct ActiveCallView: View {
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
                     call.direction == .outgoing
-                        ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-                        : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
+                    ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+                    : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
                     call.connectedAt = .now
                 }
@@ -190,16 +190,6 @@ struct ActiveCallView: View {
         if m.activeCall != nil {
             m.showCallView = false
         }
-    }
-
-    private func backButton(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "chevron.left")
-                .resizable()
-                .frame(width: 10, height: 18)
-                .tint(.white)
-        }
-        .offset(x: 9, y: 14)
     }
 }
 
@@ -288,6 +278,10 @@ struct ActiveCallOverlay: View {
 
     private func videoCallInfoView(_ call: Call) -> some View {
         VStack {
+            Text(call.contact.chatViewName)
+                .lineLimit(1)
+                .font(.title)
+                .frame(maxWidth: .infinity, alignment: .leading)
             Group {
                 Text(call.callState.text)
                 HStack {
