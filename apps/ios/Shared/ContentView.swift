@@ -185,7 +185,6 @@ struct ContentView: View {
         }
         .padding(.horizontal)
         .frame(height: callTopPadding - 10)
-        //.background(Color(uiColor: UIColor(red: 46/255, green: 176/255, blue: 77/255, alpha: 1)))
         .background(Color(uiColor: UIColor(red: 47/255, green: 208/255, blue: 88/255, alpha: 1)))
         .onTapGesture {
             chatModel.activeCallViewIsCollapsed = false
