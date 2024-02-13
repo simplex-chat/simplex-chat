@@ -6764,9 +6764,8 @@ chatCommandP =
       "/list remote ctrls" $> ListRemoteCtrls,
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
-      -- XXX: _xftp/xftp prefix is taken
       "/_upload " *> (APIXFTPDirectUpload <$> A.decimal <* A.space <*> cryptoFileP),
-      "/_upload description " *> (APIXFTPDescriptionUpload <$> A.decimal <* A.space <*> A.decimal), -- TODO: extras (:
+      "/_upload description " *> (APIXFTPDescriptionUpload <$> A.decimal <* A.space <*> A.decimal),
       "/_download " *> (APIXFTPDirectDownload <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
