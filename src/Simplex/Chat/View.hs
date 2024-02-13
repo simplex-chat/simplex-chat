@@ -1568,10 +1568,10 @@ uploadingFile status = \case
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
   _ -> [status <> " uploading file"]
 
-directUploadComplete :: FileTransferMeta -> Maybe [Text] -> [StyledString]
+directUploadComplete :: FileTransferMeta -> [Text] -> [StyledString]
 directUploadComplete FileTransferMeta {fileId, fileName} = \case
-  Nothing -> [fileTransferStr fileId fileName <> " upload complete."]
-  Just uris ->
+  [] -> [fileTransferStr fileId fileName <> " upload complete."]
+  uris ->
     fileTransferStr fileId fileName <> " upload complete. download with:"
     : map plain uris
 

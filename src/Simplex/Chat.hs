@@ -82,7 +82,7 @@ import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription, gb, kb, mb, pattern ValidFileDescription)
+import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription, gb, kb, mb)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
@@ -2814,7 +2814,7 @@ receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile 
     updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
     updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
   where
-    ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
+    FD.ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do
@@ -3298,12 +3298,8 @@ processAgentMsgSndFile _corrId aFileId msg =
           case ci of
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
-              let uris = L.nonEmpty $ do
-                    vfd@(ValidFileDescription FD.FileDescription {redirect = Just _}) <- rfds -- only generate URIs for redirects
-                    -- XXX: just filter by size?
-                    pure . decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
-              toView $ CRSndFileCompleteXFTP user ci ft (L.toList <$> uris)
+              toView $ CRSndFileCompleteXFTP user ci ft $ mapMaybe fileDescrURI rfds
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
@@ -3326,7 +3322,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         lookupChatItemByFileId db vr user fileId
                       withAgent (`xftpDeleteSndFileInternal` aFileId)
-                      toView $ CRSndFileCompleteXFTP user ci' ft Nothing
+                      toView $ CRSndFileCompleteXFTP user ci' ft []
                       where
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -3354,6 +3350,10 @@ processAgentMsgSndFile _corrId aFileId msg =
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
+        fileDescrURI :: ValidFileDescription 'FRecipient -> Maybe T.Text
+        fileDescrURI vfd = if T.length uri < FD.qrSizeLimit then Just uri else Nothing
+          where
+            uri = decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = fileDescrText rfd
@@ -4793,7 +4793,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case file of
           Just CIFile {fileProtocol = FPXFTP} -> do
             ft <- withStore $ \db -> getFileTransferMeta db user fileId
-            toView $ CRSndFileCompleteXFTP user (Just ci) ft Nothing
+            toView $ CRSndFileCompleteXFTP user (Just ci) ft []
           _ -> toView $ CRSndFileComplete user ci sft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool

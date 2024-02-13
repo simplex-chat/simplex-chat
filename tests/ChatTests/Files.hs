@@ -78,7 +78,9 @@ chatFileTests = do
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
-    it "send and receive file without chat items" testXFTPDirect
+  fdescribe "file transfer over XFTP without chat items" $ do
+    it "directly send and receive file" testXFTPDirect
+    it "directly send and receive file via description" testXFTPDirectDescr
     -- TODO: send/receive with cfArgs
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -1554,7 +1556,35 @@ testXFTPDirect = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
     logNote "sending"
     src ##> "/_upload 1 ./tests/fixtures/test.jpg"
     threadDelay 250000
-    src <## "file 1 (test.jpg) upload complete."
+    src <## "file 1 (test.jpg) upload complete. download with:"
+    -- file description fits, enjoy the direct URIs
+    _uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/test.jpg"
+    dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile)
+    dst <## "ok"
+    threadDelay 250000
+    dst <## "completed receiving file"
+    getTermLine dst `shouldReturn` dstFile
+    srcBody <- B.readFile "./tests/fixtures/test.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPDirectDescr :: HasCallStack => FilePath -> IO ()
+testXFTPDirectDescr = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/fixtures/test.jpg"
+    threadDelay 250000
+    src <## "file 1 (test.jpg) upload complete. download with:"
+    -- ignoring file descriptions
+    _uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
     src ##> "/_upload description 1 1"
     src <## "file 2 (redirect.yaml) upload complete. download with:"
     uri <- getTermLine src
@@ -1568,8 +1598,6 @@ testXFTPDirect = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
     getTermLine dst `shouldReturn` dstFile
     srcBody <- B.readFile "./tests/fixtures/test.jpg"
     B.readFile dstFile `shouldReturn` srcBody
-
-    logNote "bye"
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
