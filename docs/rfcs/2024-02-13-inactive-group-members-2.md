@@ -30,9 +30,9 @@ Groups traffic is higher than necessary due to sending messages to inactive grou
   - count `group_members.skipped_msg_cnt`
   - only count messages of same types/criteria that are included into history
   - track `group_members.skipped_first_shared_msg_id` (only content or including service messages?)
-- Send XGrpMemSkipped before next message
+- Send XGrpMsgSkipped before next message
   - check `skipped_msg_cnt` > 0 and `skipped_first_shared_msg_id` is not null to only send once, reset after sending
 
 ```haskell
-XGrpMemSkipped :: SharedMsgId -> Int64 -> ChatMsgEvent 'Json -- from, count
+XGrpMsgSkipped :: SharedMsgId -> Int64 -> ChatMsgEvent 'Json -- from, count
 ```
