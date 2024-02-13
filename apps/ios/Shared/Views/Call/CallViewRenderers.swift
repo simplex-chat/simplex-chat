@@ -52,6 +52,7 @@ struct CallViewRemote: UIViewRepresentable {
         let pipController = AVPictureInPictureController(contentSource: pipContentSource)
         pipController.canStartPictureInPictureAutomaticallyFromInline = true
         pipController.delegate = context.coordinator
+        context.coordinator.pipController = pipController
         context.coordinator.willShowHide = { show in
             if show {
                 client.addRemoteRenderer(call, pipRemoteRenderer)
@@ -101,6 +102,7 @@ struct CallViewRemote: UIViewRepresentable {
     
     // MARK: - Coordinator
     class Coordinator: NSObject, AVPictureInPictureControllerDelegate {
+        var pipController: AVPictureInPictureController? = nil
         var willShowHide: (Bool) -> Void = { _ in }
         var didShowHide: (Bool) -> Void = { _ in }
         
@@ -122,6 +124,13 @@ struct CallViewRemote: UIViewRepresentable {
         
         func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
             didShowHide(false)
+        }
+
+        deinit {
+            pipController?.canStartPictureInPictureAutomaticallyFromInline = false
+            pipController?.contentSource = nil
+            pipController?.delegate = nil
+            pipController = nil
         }
     }
     
