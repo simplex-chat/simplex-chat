@@ -120,6 +120,9 @@ struct CIVideoView: View {
                         showFullScreenPlayer = urlDecrypted != nil
                     }
                 }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
+                }
                 if !decryptionInProgress {
                     Button {
                         decrypt(file: file) {
@@ -167,6 +170,9 @@ struct CIVideoView: View {
                         }
                     default: ()
                     }
+                }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
                 }
                 if !videoPlaying {
                     Button {

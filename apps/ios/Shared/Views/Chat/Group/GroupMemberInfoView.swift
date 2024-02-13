@@ -168,24 +168,11 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    // revert from this:
-                    Section {
-                        if member.memberSettings.showMessages {
-                            blockMemberButton(member)
-                        } else {
-                            unblockMemberButton(member)
-                        }
-                        if member.canBeRemoved(groupInfo: groupInfo) {
-                            removeMemberButton(member)
-                        }
+                    if groupInfo.membership.memberRole >= .admin {
+                        adminDestructiveSection(member)
+                    } else {
+                        nonAdminBlockSection(member)
                     }
-                    // revert to this: vvv
-//                    if groupInfo.membership.memberRole >= .admin {
-//                        adminDestructiveSection(member)
-//                    } else {
-//                        nonAdminBlockSection(member)
-//                    }
-                    // ^^^
 
                     if developerTools {
                         Section("For console") {

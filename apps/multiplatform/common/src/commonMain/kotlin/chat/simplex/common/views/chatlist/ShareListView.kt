@@ -85,7 +85,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
           userPickerState.value = AnimatedViewState.VISIBLE
         }
       }
-      else -> NavigationButtonBack { chatModel.sharedContent.value = null }
+      else -> NavigationButtonBack(onButtonClicked = { chatModel.sharedContent.value = null })
     }
   }
   if (chatModel.chats.size >= 8) {
@@ -143,7 +143,7 @@ private fun ShareList(chatModel: ChatModel, search: String) {
   }
   val chats by remember(search) {
     derivedStateOf {
-      if (search.isEmpty()) chatModel.chats.filter { it.chatInfo.ready } else chatModel.chats.filter { it.chatInfo.ready }.filter(filter)
+      if (search.isEmpty()) chatModel.chats.toList().filter { it.chatInfo.ready } else chatModel.chats.toList().filter { it.chatInfo.ready }.filter(filter)
     }
   }
   LazyColumn(

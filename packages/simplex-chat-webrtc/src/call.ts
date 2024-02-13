@@ -16,6 +16,7 @@ type WCallCommand =
   | WCEnableMedia
   | WCToggleCamera
   | WCDescription
+  | WCLayout
   | WCEndCall
 
 type WCallResponse =
@@ -31,7 +32,7 @@ type WCallResponse =
   | WRError
   | WCAcceptOffer
 
-type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "description" | "end"
+type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "description" | "layout" | "end"
 
 type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "end" | "ended" | "ok" | "error"
 
@@ -43,6 +44,12 @@ enum CallMediaType {
 enum VideoCamera {
   User = "user",
   Environment = "environment",
+}
+
+enum LayoutType {
+  Default = "default",
+  LocalVideo = "localVideo",
+  RemoteVideo = "remoteVideo",
 }
 
 interface IWCallCommand {
@@ -113,6 +120,11 @@ interface WCDescription extends IWCallCommand {
   type: "description"
   state: string
   description: string
+}
+
+interface WCLayout extends IWCallCommand {
+  type: "layout"
+  layout: LayoutType
 }
 
 interface WRCapabilities extends IWCallResponse {
@@ -515,6 +527,10 @@ const processCommand = (function () {
           localizedDescription = command.description
           resp = {type: "ok"}
           break
+        case "layout":
+          changeLayout(command.layout)
+          resp = {type: "ok"}
+          break
         case "end":
           endCall()
           resp = {type: "ok"}
@@ -822,6 +838,29 @@ function toggleMedia(s: MediaStream, media: CallMediaType): boolean {
     activeCall.cameraEnabled = res
   }
   return res
+}
+
+function changeLayout(layout: LayoutType) {
+  const local = document.getElementById("local-video-stream")!
+  const remote = document.getElementById("remote-video-stream")!
+  switch (layout) {
+    case LayoutType.Default:
+      local.className = "inline"
+      remote.className = "inline"
+      local.style.visibility = "visible"
+      remote.style.visibility = "visible"
+      break
+    case LayoutType.LocalVideo:
+      local.className = "fullscreen"
+      local.style.visibility = "visible"
+      remote.style.visibility = "hidden"
+      break
+    case LayoutType.RemoteVideo:
+      remote.className = "fullscreen"
+      local.style.visibility = "hidden"
+      remote.style.visibility = "visible"
+      break
+  }
 }
 
 type TransformFrameFunc = (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>

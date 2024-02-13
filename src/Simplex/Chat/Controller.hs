@@ -676,7 +676,7 @@ data ChatResponse
   | CRUserContactLinkSubscribed -- TODO delete
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
-  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
+  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
@@ -952,8 +952,8 @@ data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
 ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
 ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
 
-crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
-crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
+crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode, NtfServer) -> ChatResponse
+crNtfToken (token, status, ntfMode, ntfServer) = CRNtfToken {token, status, ntfMode, ntfServer}
 
 data SwitchProgress = SwitchProgress
   { queueDirection :: QueueDirection,
