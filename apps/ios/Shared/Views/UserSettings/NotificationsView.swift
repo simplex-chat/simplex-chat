@@ -85,6 +85,8 @@ struct NotificationsView: View {
                         .padding(.top, 1)
                 } else if let server = m.notificationServer {
                     Text("Notifications server: \(server)")
+                        .font(.callout)
+                        .padding(.top, 1)
                 }
             }
         }
@@ -130,6 +132,7 @@ struct NotificationsView: View {
                         m.tokenStatus = .new
                         notificationMode = .off
                         m.notificationMode = .off
+                        m.notificationServer = nil
                     }
                 } catch let error {
                     await MainActor.run {
@@ -140,11 +143,13 @@ struct NotificationsView: View {
                 }
             default:
                 do {
-                    let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let _ = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let (_, tknStatus, ntfMode, ntfServer) = apiGetNtfToken()
                     await MainActor.run {
-                        m.tokenStatus = status
-                        notificationMode = mode
-                        m.notificationMode = mode
+                        m.tokenStatus = tknStatus
+                        notificationMode = ntfMode
+                        m.notificationMode = ntfMode
+                        m.notificationServer = ntfServer
                     }
                 } catch let error {
                     await MainActor.run {
