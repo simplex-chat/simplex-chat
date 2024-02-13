@@ -109,7 +109,7 @@ class CallService: Service() {
 
     val builder =  NotificationCompat.Builder(this, CALL_NOTIFICATION_CHANNEL_ID)
       .setSmallIcon(R.drawable.ntf_icon)
-      .setLargeIcon(icon)
+      .setLargeIcon(icon.clipToCircle())
       .setColor(0x88FFFF)
       .setContentTitle(title)
       .setContentText(text)
