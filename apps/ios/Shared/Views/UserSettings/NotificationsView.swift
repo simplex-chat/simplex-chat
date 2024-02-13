@@ -76,6 +76,10 @@ struct NotificationsView: View {
                         Text(m.notificationPreview.label)
                     }
                 }
+
+                if let server = m.notificationServer {
+                    smpServers("Push server", [server])
+                }
             } header: {
                 Text("Push notifications")
             } footer: {
@@ -87,6 +91,9 @@ struct NotificationsView: View {
             }
         }
         .disabled(legacyDatabase)
+        .onAppear {
+            (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
+        }
     }
 
     private func notificationAlert(_ alert: NotificationAlert, _ token: DeviceToken) -> Alert {
@@ -125,6 +132,7 @@ struct NotificationsView: View {
                         m.tokenStatus = .new
                         notificationMode = .off
                         m.notificationMode = .off
+                        m.notificationServer = nil
                     }
                 } catch let error {
                     await MainActor.run {
@@ -135,11 +143,13 @@ struct NotificationsView: View {
                 }
             default:
                 do {
-                    let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let _ = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let (_, tknStatus, ntfMode, ntfServer) = apiGetNtfToken()
                     await MainActor.run {
-                        m.tokenStatus = status
-                        notificationMode = mode
-                        m.notificationMode = mode
+                        m.tokenStatus = tknStatus
+                        notificationMode = ntfMode
+                        m.notificationMode = ntfMode
+                        m.notificationServer = ntfServer
                     }
                 } catch let error {
                     await MainActor.run {
