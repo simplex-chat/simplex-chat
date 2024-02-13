@@ -76,15 +76,15 @@ struct NotificationsView: View {
                         Text(m.notificationPreview.label)
                     }
                 }
+
+                if let server = m.notificationServer {
+                    smpServers("Push server", [server])
+                }
             } header: {
                 Text("Push notifications")
             } footer: {
                 if legacyDatabase {
                     Text("Please restart the app and migrate the database to enable push notifications.")
-                        .font(.callout)
-                        .padding(.top, 1)
-                } else if let server = m.notificationServer {
-                    Text("Notifications server: \(server)")
                         .font(.callout)
                         .padding(.top, 1)
                 }
