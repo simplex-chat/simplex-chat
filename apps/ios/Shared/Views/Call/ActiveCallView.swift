@@ -229,16 +229,25 @@ struct ActiveCallOverlay: View {
                 .frame(maxWidth: .infinity, alignment: .center)
 
             case .audio:
-                VStack {
-                    ProfileImage(imageStr: call.contact.profile.image)
-                        .scaledToFit()
-                        .frame(width: 192, height: 192)
-                    audioCallInfoView(call)
+                ZStack(alignment: .topLeading) {
+                    Button {
+                        chatModel.activeCallViewIsCollapsed = true
+                    } label: {
+                        Label("Back", systemImage: "chevron.left")
+                            .padding()
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    VStack {
+                        ProfileImage(imageStr: call.contact.profile.image)
+                            .scaledToFit()
+                            .frame(width: 192, height: 192)
+                        audioCallInfoView(call)
+                    }
+                    .foregroundColor(.white)
+                    .opacity(0.8)
+                    .padding()
+                    .frame(maxHeight: .infinity)
                 }
-                .foregroundColor(.white)
-                .opacity(0.8)
-                .padding()
-                .frame(maxHeight: .infinity)
 
                 Spacer()
 
@@ -278,10 +287,19 @@ struct ActiveCallOverlay: View {
 
     private func videoCallInfoView(_ call: Call) -> some View {
         VStack {
-            Text(call.contact.chatViewName)
-                .lineLimit(1)
-                .font(.title)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                chatModel.activeCallViewIsCollapsed = true
+            } label: {
+                HStack(alignment: .center, spacing: 16) {
+                    Image(systemName: "chevron.left")
+                        .resizable()
+                        .frame(width: 10, height: 18)
+                    Text(call.contact.chatViewName)
+                        .lineLimit(1)
+                        .font(.title)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
             Group {
                 Text(call.callState.text)
                 HStack {
