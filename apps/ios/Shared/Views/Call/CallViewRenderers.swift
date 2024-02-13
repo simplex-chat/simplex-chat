@@ -11,14 +11,15 @@ import AVKit
 struct CallViewRemote: UIViewRepresentable {
     var client: WebRTCClient
     var activeCall: Binding<WebRTCClient.Call?>
-    @State var pipShown: Bool = false
     @State var enablePip: (Bool) -> Void = {_ in }
     @Binding var activeCallViewIsCollapsed: Bool
+    @Binding var pipShown: Bool
 
-    init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, activeCallViewIsCollapsed: Binding<Bool>) {
+    init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, activeCallViewIsCollapsed: Binding<Bool>, pipShown: Binding<Bool>) {
         self.client = client
         self.activeCall = activeCall
         self._activeCallViewIsCollapsed = activeCallViewIsCollapsed
+        self._pipShown = pipShown
     }
 
     func makeUIView(context: Context) -> UIView {
@@ -30,13 +31,13 @@ struct CallViewRemote: UIViewRepresentable {
             addSubviewAndResize(remoteRenderer, into: view)
 
             if AVPictureInPictureController.isPictureInPictureSupported() {
-                makeViewWithRTCRenderer(call, view, context)
+                makeViewWithRTCRenderer(call, remoteRenderer, view, context)
             }
         }
         return view
     }
     
-    func makeViewWithRTCRenderer(_ call: WebRTCClient.Call, _ view: UIView, _ context: Context) {
+    func makeViewWithRTCRenderer(_ call: WebRTCClient.Call, _ remoteRenderer: RTCMTLVideoView, _ view: UIView, _ context: Context) {
         let pipRemoteRenderer = RTCMTLVideoView(frame: view.frame)
         pipRemoteRenderer.videoContentMode = .scaleAspectFill
         
@@ -63,8 +64,10 @@ struct CallViewRemote: UIViewRepresentable {
         context.coordinator.didShowHide = { show in
             if show {
                 activeCallViewIsCollapsed = true
+                remoteRenderer.isHidden = true
             } else {
                 client.removeRemoteRenderer(call, pipRemoteRenderer)
+                remoteRenderer.isHidden = false
             }
             pipShown = show
         }
@@ -76,7 +79,6 @@ struct CallViewRemote: UIViewRepresentable {
                     } else {
                         pipController.stopPictureInPicture()
                     }
-                    pipShown = enable
                 }
             }
         }
@@ -136,11 +138,14 @@ struct CallViewLocal: UIViewRepresentable {
     var client: WebRTCClient
     var activeCall: Binding<WebRTCClient.Call?>
     var localRendererAspectRatio: Binding<CGFloat?>
+    @State var pipStateChanged: (Bool) -> Void = {_ in }
+    @Binding var pipShown: Bool
 
-    init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, localRendererAspectRatio: Binding<CGFloat?>) {
+    init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, localRendererAspectRatio: Binding<CGFloat?>, pipShown: Binding<Bool>) {
         self.client = client
         self.activeCall = activeCall
         self.localRendererAspectRatio = localRendererAspectRatio
+        self._pipShown = pipShown
     }
 
     func makeUIView(context: Context) -> UIView {
@@ -150,12 +155,18 @@ struct CallViewLocal: UIViewRepresentable {
             client.addLocalRenderer(call, localRenderer)
             client.startCaptureLocalVideo(call)
             addSubviewAndResize(localRenderer, into: view)
+            DispatchQueue.main.async {
+                pipStateChanged = { shown in
+                    localRenderer.isHidden = shown
+                }
+            }
         }
         return view
     }
 
     func updateUIView(_ view: UIView, context: Context) {
         logger.debug("CallView.updateUIView local")
+        pipStateChanged(pipShown)
     }
 }
 

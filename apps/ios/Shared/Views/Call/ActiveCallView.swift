@@ -20,6 +20,7 @@ struct ActiveCallView: View {
     @State private var localRendererAspectRatio: CGFloat? = nil
     @Binding var canConnectCall: Bool
     @State var prevColorScheme: ColorScheme = .dark
+    @State var pipShown = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -28,8 +29,8 @@ struct ActiveCallView: View {
                     GeometryReader { g in
                         let width = g.size.width * 0.3
                         ZStack(alignment: .topTrailing) {
-                            CallViewRemote(client: client, activeCall: $activeCall, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed)
-                            CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
+                            CallViewRemote(client: client, activeCall: $activeCall, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, pipShown: $pipShown)
+                            CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio, pipShown: $pipShown)
                                 .cornerRadius(10)
                                 .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
                                 .padding([.top, .trailing], 17)
@@ -41,7 +42,7 @@ struct ActiveCallView: View {
                         }
                     }
                 }
-                if let call = m.activeCall, let client = client {
+                if let call = m.activeCall, let client = client, (!pipShown || !call.supportsVideo) {
                     ActiveCallOverlay(call: call, client: client)
                 }
             }
