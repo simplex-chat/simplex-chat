@@ -23,13 +23,16 @@ Groups traffic is higher than necessary due to sending messages to inactive grou
   - on SMP.QUOTA error agent to notify client with ERR CONN QUOTA (new ConnectionErrorType QUOTA)
   - on receiving QCONT agent to notify client (new event)
   - apart from QCONT, reset on any message or receipt
+- Don't send to member if inactive
+  - don't send only content messages (x.msg.new, etc.) and always send messages altering group state?
+  - or don't send any messages?
 - Track number of skipped messages per member and first skipped message
   - count `group_members.skipped_msg_cnt`
-  - only track messages of same types/criteria that are included into history
+  - only count messages of same types/criteria that are included into history
   - track `group_members.skipped_first_shared_msg_id` (only content or including service messages?)
 - Send XGrpMemSkipped before next message
   - check `skipped_msg_cnt` > 0 and `skipped_first_shared_msg_id` is not null to only send once, reset after sending
 
 ```haskell
-XGrpMemSkipped :: SharedMsgId -> Int64 -> ChatMsgEvent 'Json -- from, to, count
+XGrpMemSkipped :: SharedMsgId -> Int64 -> ChatMsgEvent 'Json -- from, count
 ```
