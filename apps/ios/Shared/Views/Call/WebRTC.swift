@@ -28,6 +28,7 @@ class Call: ObservableObject, Equatable {
     @Published var speakerEnabled = false
     @Published var videoEnabled: Bool
     @Published var connectionInfo: ConnectionInfo?
+    @Published var connectedAt: Date? = nil
 
     init(
         direction: CallDirection,
@@ -59,6 +60,7 @@ class Call: ObservableObject, Equatable {
         }
     }
     var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
+    var supportsVideo: Bool { get { peerMedia == .video || localMedia == .video } }
 }
 
 enum CallDirection {

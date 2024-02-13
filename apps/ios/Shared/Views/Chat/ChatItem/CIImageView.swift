@@ -29,6 +29,9 @@ struct CIImageView: View {
                     FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
                 }
                 .onTapGesture { showFullScreenImage = true }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenImage = false
+                }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
                       let uiImage = UIImage(data: data) {
                 imageView(uiImage)
