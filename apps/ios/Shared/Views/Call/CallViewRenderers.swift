@@ -31,14 +31,14 @@ struct CallViewRemote: UIViewRepresentable {
             addSubviewAndResize(remoteRenderer, into: view)
 
             if AVPictureInPictureController.isPictureInPictureSupported() {
-                makeViewWithRTCRenderer(call, remoteRenderer, view, context)
+                makeViewWithRTCRenderer(call, view, context)
                 //makeViewWithFrameRenderer(call, view, context)
             }
         }
         return view
     }
     
-    func makeViewWithRTCRenderer(_ call: WebRTCClient.Call, _ remoteRenderer: RTCMTLVideoView, _ view: UIView, _ context: Context) {
+    func makeViewWithRTCRenderer(_ call: WebRTCClient.Call, _ view: UIView, _ context: Context) {
         let pipRemoteRenderer = RTCMTLVideoView(frame: view.frame)
         pipRemoteRenderer.videoContentMode = .scaleAspectFill
         
@@ -53,22 +53,20 @@ struct CallViewRemote: UIViewRepresentable {
         let pipController = AVPictureInPictureController(contentSource: pipContentSource)
         pipController.canStartPictureInPictureAutomaticallyFromInline = true
         pipController.delegate = context.coordinator
-        //client.addRemoteRenderer(call, pipRemoteRenderer)
         context.coordinator.willShowHide = { show in
             if show {
                 client.addRemoteRenderer(call, pipRemoteRenderer)
-                remoteRenderer.isHidden = true
-                activeCallViewIsCollapsed = true
             } else {
-                activeCallViewIsCollapsed = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    activeCallViewIsCollapsed = false
+                }
             }
         }
         context.coordinator.didShowHide = { show in
             if show {
-                //
+                activeCallViewIsCollapsed = true
             } else {
                 client.removeRemoteRenderer(call, pipRemoteRenderer)
-                remoteRenderer.isHidden = false
             }
             pipShown = show
         }
@@ -77,7 +75,6 @@ struct CallViewRemote: UIViewRepresentable {
                 if enable != pipShown /* pipController.isPictureInPictureActive */ {
                     if enable {
                         pipController.startPictureInPicture()
-                        logger.debug("LALAL PIP TRY START")
                     } else {
                         pipController.stopPictureInPicture()
                     }
@@ -85,9 +82,8 @@ struct CallViewRemote: UIViewRepresentable {
                 }
             }
         }
-        logger.debug("LALAL PIP possible: \(pipController.isPictureInPicturePossible)")
     }
-    
+
     func makeViewWithFrameRenderer(_ call: WebRTCClient.Call, _ view: UIView, _ context: Context) {
         let pipRemoteRenderer = SampleBufferVideoCallView()
         pipRemoteRenderer.contentMode = .scaleAspectFill
