@@ -87,8 +87,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ and %@" xml:space="preserve">
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
         <source>%@ and %@</source>
+        <target state="translated">%@ 和 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve">
@@ -101,8 +102,9 @@
         <target>@ %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
-      <trans-unit id="%@ connected" xml:space="preserve">
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
         <source>%@ connected</source>
+        <target state="translated">%@ 已连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -130,8 +132,9 @@
         <target>%@ 要连接！</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld members</source>
+        <target state="translated">%@, %@ 和 %lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
@@ -199,8 +202,9 @@
         <target>%lld 总文件大小 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld group events" xml:space="preserve">
+      <trans-unit id="%lld group events" xml:space="preserve" approved="no">
         <source>%lld group events</source>
+        <target state="translated">%lld 群组事件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve">
@@ -208,8 +212,9 @@
         <target>%lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked" xml:space="preserve">
+      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
+        <target state="translated">%lld 条消息已屏蔽</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
