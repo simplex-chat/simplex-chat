@@ -108,3 +108,33 @@ Sending member builds messages history starting starting from requested/remember
 \***
 
 Same XGrpMsgHistory protocol event could be sent by host to new members, after sending introductions.
+
+---
+
+Update 2024-02-12:
+
+### Group "pings"
+
+Alternatively to tracking unanswered messages counts per member, which is complex and in some cases as discussed above ineffective, group members could periodically send group wide pings indicating their active presence.
+
+```haskell
+XGrpPing :: ChatMsgEvent 'Json
+```
+
+Members track:
+
+- inactive flag (as above - set on QUOTA errors as well)
+- last_snd_ts on group
+- last_rcv_ts on group member
+
+Clients run a worker process for checking last_snd_ts in each of their groups, and send pings to groups on a periodic basis.
+
+- part of cleanup manager or separate process?
+- on each worker step, for each group matching criteria to send ping, send ping with a random delay to reduce correlation between groups (spawn a separate thread with a random delay for each group)
+- criteria for sending ping: last_snd_ts earlier than group_ping_interval ago
+- configure group_ping_interval to, for example, 23 hours (so that if user opens app each day at same time client will match criteria to send pings daily)
+
+Clients receiving pings:
+
+- update last_rcv_ts
+- when sending a message to group, check only for timestamp difference (no unanswered snd msg count logic as above)
