@@ -413,8 +413,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     func endCall() {
         guard let call = activeCall.wrappedValue else { return }
         logger.debug("WebRTCClient: ending the call")
-        (activeCall.wrappedValue?.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         activeCall.wrappedValue = nil
+        (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         call.connection.close()
         call.connection.delegate = nil
         call.frameEncryptor?.delegate = nil
