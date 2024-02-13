@@ -6,7 +6,6 @@
 import SwiftUI
 import WebRTC
 import SimpleXChat
-import AVFoundation
 import AVKit
 
 struct CallViewRemote: UIViewRepresentable {
@@ -32,7 +31,6 @@ struct CallViewRemote: UIViewRepresentable {
 
             if AVPictureInPictureController.isPictureInPictureSupported() {
                 makeViewWithRTCRenderer(call, view, context)
-                //makeViewWithFrameRenderer(call, view, context)
             }
         }
         return view
@@ -83,56 +81,6 @@ struct CallViewRemote: UIViewRepresentable {
             }
         }
     }
-
-    func makeViewWithFrameRenderer(_ call: WebRTCClient.Call, _ view: UIView, _ context: Context) {
-        let pipRemoteRenderer = SampleBufferVideoCallView()
-        pipRemoteRenderer.contentMode = .scaleAspectFill
-        let pipVideoCallViewController = AVPictureInPictureVideoCallViewController()
-        pipVideoCallViewController.preferredContentSize = CGSize(width: 1080, height: 1920)
-        addSubviewAndResize(pipRemoteRenderer, into: pipVideoCallViewController.view)
-        
-        let pipContentSource = AVPictureInPictureController.ContentSource(
-            activeVideoCallSourceView: view,
-            contentViewController: pipVideoCallViewController
-        )
-        
-        let pipController = AVPictureInPictureController(contentSource: pipContentSource)
-        pipController.canStartPictureInPictureAutomaticallyFromInline = true
-        pipController.delegate = context.coordinator
-        
-        let frameRenderer = FrameRenderer()
-        context.coordinator.willShowHide = { show in
-            //show ? client.addRemoteRenderer(call, frameRenderer) : client.removeRemoteRenderer(call, frameRenderer)
-        }
-        client.addRemoteRenderer(call, frameRenderer)
-        DispatchQueue.main.async {
-            enablePip = { enable in
-                if enable != pipShown /* pipController.isPictureInPictureActive */ {
-                    if enable {
-                        pipController.startPictureInPicture()
-                        logger.debug("LALAL PIP TRY START")
-                    } else {
-                        pipController.stopPictureInPicture()
-                        client.removeRemoteRenderer(call, frameRenderer)
-                    }
-                    pipShown = enable
-                }
-            }
-        }
-
-        frameRenderer.renderFrame = { frame in
-            DispatchQueue.main.async {
-                logger.debug("LALAL RENDERED")
-                if #available(iOS 17.0, *) {
-                    pipRemoteRenderer.sampleBufferDisplayLayer.sampleBufferRenderer.enqueue(frame)
-                } else {
-                    pipRemoteRenderer.sampleBufferDisplayLayer.enqueue(frame)
-                }
-                enablePip(true)
-            }
-        }
-        logger.debug("LALAL PIP possible: \(pipController.isPictureInPicturePossible)")
-    }
     
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -153,36 +101,24 @@ struct CallViewRemote: UIViewRepresentable {
         var didShowHide: (Bool) -> Void = { _ in }
         
         func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-            logger.error("LALAL PIP WILL START")
             willShowHide(true)
         }
 
         func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
             didShowHide(true)
-            logger.error("LALAL PIP DID START \(pictureInPictureController.isPictureInPictureActive) \(pictureInPictureController.isPictureInPicturePossible) \(pictureInPictureController.isPictureInPictureSuspended) \(pictureInPictureController.debugDescription)")
         }
 
         func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
-            logger.error("LALAL PIP FAILED TO START \(error.localizedDescription)")
+            logger.error("PiP failed to start: \(error.localizedDescription)")
         }
         
         func pictureInPictureControllerWillStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-            logger.error("LALAL PIP WILL STOP")
             willShowHide(false)
         }
         
         func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-            logger.error("LALAL DID STOP")
             didShowHide(false)
         }
-        
-//        func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController) async -> Bool {
-//            await MainActor.run {
-//                renderPip(false)
-//            }
-//            try? await Task.sleep(nanoseconds: 1000_000000)
-//            return true
-//        }
     }
     
     class SampleBufferVideoCallView: UIView {
