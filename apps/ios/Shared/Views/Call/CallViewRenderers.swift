@@ -127,6 +127,7 @@ struct CallViewRemote: UIViewRepresentable {
         }
 
         deinit {
+            pipController?.stopPictureInPicture()
             pipController?.canStartPictureInPictureAutomaticallyFromInline = false
             pipController?.contentSource = nil
             pipController?.delegate = nil
