@@ -69,7 +69,7 @@
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
-        <target state="translated">%@ não foi verificado</target>
+        <target state="translated">%@ não foi verificado(a)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
@@ -84,12 +84,12 @@
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve" approved="no">
         <source>%d days</source>
-        <target state="translated">%d dia(s)</target>
+        <target state="translated">%d dias</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve" approved="no">
         <source>%d hours</source>
-        <target state="translated">%d hora(s)</target>
+        <target state="translated">%d horas</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve" approved="no">
@@ -99,7 +99,7 @@
       </trans-unit>
       <trans-unit id="%d months" xml:space="preserve" approved="no">
         <source>%d months</source>
-        <target state="translated">%d mês(es)</target>
+        <target state="translated">%d meses</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="%d sec" xml:space="preserve" approved="no">
@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve" approved="no">
         <source>%d skipped message(s)</source>
-        <target state="translated">%d mensagem(ns) ignorada(s)</target>
+        <target state="translated">%d mensagem(ns) omitida(s)</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve" approved="no">
@@ -5188,6 +5188,51 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Disappears at: %@</source>
         <target state="translated">Desaparecerá: %@</target>
         <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="# %@" xml:space="preserve" approved="no">
+        <source># %@</source>
+        <target state="translated"># %@</target>
+        <note>copied message info title, # &lt;title&gt;</note>
+      </trans-unit>
+      <trans-unit id="## History" xml:space="preserve" approved="no">
+        <source>## History</source>
+        <target state="translated">## Histórico</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="## In reply to" xml:space="preserve" approved="no">
+        <source>## In reply to</source>
+        <target state="translated">## Em resposta a</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
+        <source>%@ connected</source>
+        <target state="translated">%@ conectado(a)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
+        <source>%@, %@ and %lld members</source>
+        <target state="translated">%@, %@ e %lld membros</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
+        <source>%@ and %@ connected</source>
+        <target state="translated">%@ e %@ conectados</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
+        <source>%@, %@ and %lld other members connected</source>
+        <target state="translated">%@, %@ e %lld e outros membros se conectaram</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
+        <source>%@ and %@</source>
+        <target state="translated">%@ e %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ em %2$@:</target>
+        <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
     </body>
   </file>
