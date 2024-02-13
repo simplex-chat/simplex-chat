@@ -55,6 +55,9 @@ struct CallViewRemote: UIViewRepresentable {
         context.coordinator.willShowHide = { show in
             if show {
                 client.addRemoteRenderer(call, pipRemoteRenderer)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    activeCallViewIsCollapsed = true
+                }
             } else {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     activeCallViewIsCollapsed = false
@@ -63,7 +66,6 @@ struct CallViewRemote: UIViewRepresentable {
         }
         context.coordinator.didShowHide = { show in
             if show {
-                activeCallViewIsCollapsed = true
                 remoteRenderer.isHidden = true
             } else {
                 client.removeRemoteRenderer(call, pipRemoteRenderer)
