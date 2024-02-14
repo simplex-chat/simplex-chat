@@ -1027,7 +1027,7 @@ processChatCommand' vr = \case
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
-        deleteFilesAndConns user filesInfo
+        deleteFilesAndConns user filesInfo -- TODO
         when (memberActive membership && isOwner) . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections user members
@@ -1038,24 +1038,23 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
+        (errs, connIds) <- partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
+        unless (null errs) $ toView $ CRChatErrors (Just user) errs
+        deleteAgentConnectionsAsync user $ concat connIds
         pure $ CRGroupDeletedUser user gInfo
       where
-        deleteUnusedContact :: ContactId -> m [ConnId]
-        deleteUnusedContact contactId =
-          (withStore (\db -> getContact db user contactId) >>= delete)
-            `catchChatError` (\e -> toView (CRChatError (Just user) e) $> [])
-          where
-            delete ct
-              | directOrUsed ct = pure []
-              | otherwise =
-                  withStore' (\db -> checkContactHasGroups db user ct) >>= \case
-                    Just _ -> pure []
-                    Nothing -> do
-                      conns <- withStore' $ \db -> getContactConnections db userId ct
-                      withStore' (\db -> setContactDeleted db user ct)
-                        `catchChatError` (toView . CRChatError (Just user))
-                      pure $ map aConnId conns
+        deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError [ConnId])
+        deleteUnusedContact db contactId = runExceptT $ withExceptT ChatErrorStore $ do
+          ct <- getContact db user contactId
+          if directOrUsed ct
+            then pure []
+            else liftIO $ do
+              checkContactHasGroups db user ct >>= \case
+                Just _ -> pure []
+                Nothing -> do
+                  conns <- getContactConnections db userId ct
+                  setContactDeleted db user ct
+                  pure $ map aConnId conns
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -5882,7 +5881,7 @@ deleteMembersConnections user members = do
         filter (\Connection {connStatus} -> connStatus /= ConnDeleted) $
           mapMaybe (\GroupMember {activeConn} -> activeConn) members
   deleteAgentConnectionsAsync user $ map aConnId memberConns
-  forM_ memberConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+  void . withStoreBatch' $ \db -> map (\conn -> updateConnectionStatus db conn ConnDeleted) memberConns
 
 deleteMemberConnection :: ChatMonad m => User -> GroupMember -> m ()
 deleteMemberConnection user GroupMember {activeConn} = do
