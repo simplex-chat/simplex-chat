@@ -1634,4 +1634,9 @@
     <string name="welcome_message_is_too_long">Welkomstbericht is te lang</string>
     <string name="database_migration_in_progress">De databasemigratie wordt uitgevoerd.
 \nDit kan enkele minuten duren.</string>
+    <string name="call_service_notification_audio_call">Audio oproep</string>
+    <string name="call_service_notification_end_call">Ophangen</string>
+    <string name="call_service_notification_video_call">Video oproep</string>
+    <string name="unable_to_open_browser_title">Fout bij het openen van de browser</string>
+    <string name="unable_to_open_browser_desc">Voor oproepen is de standaard webbrowser vereist. Configureer de standaard browser in het systeem en deel meer informatie met de ontwikkelaars.</string>
 </resources>
