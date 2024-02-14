@@ -2795,13 +2795,15 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
 
 receiveViaURI :: ChatMonad m => User -> FileDescriptionURI -> CryptoFile -> m ()
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
-  fileId <- withStore $ \db -> createRcvDirectFileTransfer db userId cf fileSize chunkSize
+  fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize
   aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs
-  -- startReceivingFile user fileId
-  withStore' $ \db -> do
-    updateRcvFileStatus db fileId FSConnected
-    updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
-    updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
+  ft <- withStore $ \db -> do
+    liftIO $ do
+      updateRcvFileStatus db fileId FSConnected
+      updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
+      updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
+    getRcvFileTransfer db user fileId
+  toView $ CRRcvFileStart user Nothing ft
   where
     FD.ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
 

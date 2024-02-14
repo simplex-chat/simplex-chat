@@ -1549,8 +1549,8 @@ testProhibitFiles =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPDirectSmall :: HasCallStack => FilePath -> IO ()
-testXFTPDirectSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+testXFTPStandaloneSmall :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
     src ##> "/_upload 1 ./tests/fixtures/test.jpg"
@@ -1567,13 +1567,13 @@ testXFTPDirectSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> d
     dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile)
     dst <## "ok"
     threadDelay 250000
-    dst <## "completed receiving file"
-    getTermLine dst `shouldReturn` dstFile
+    dst <## "started receiving file 1 (test.jpg)"
+    dst <## "completed receiving file 1 (test.jpg)"
     srcBody <- B.readFile "./tests/fixtures/test.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
-testXFTPDirectLarge :: HasCallStack => FilePath -> IO ()
-testXFTPDirectLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+testXFTPStandaloneLarge :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
 
@@ -1589,8 +1589,8 @@ testXFTPDirectLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> d
     dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
     dst <## "ok"
     threadDelay 250000
-    dst <## "completed receiving file"
-    getTermLine dst `shouldReturn` dstFile
+    dst <## "started receiving file 1 (testfile.out)"
+    dst <## "completed receiving file 1 (testfile.out)"
     srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody
 

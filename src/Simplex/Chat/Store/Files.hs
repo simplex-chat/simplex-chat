@@ -47,7 +47,7 @@ module Simplex.Chat.Store.Files
     deleteSndFileChunks,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
-    createRcvDirectFileTransfer,
+    createRcvStandaloneFileTransfer,
     appendRcvFD,
     getRcvFileDescrByRcvFileId,
     getRcvFileDescrBySndFileId,
@@ -544,7 +544,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId, cryptoArgs = Nothing}
 
 createRcvStandaloneFileTransfer :: DB.Connection -> UserId -> CryptoFile -> Int64 -> Word32 -> ExceptT StoreError IO Int64
-createRcvDirectFileTransfer db userId (CryptoFile filePath cfArgs_) fileSize chunkSize = do
+createRcvStandaloneFileTransfer db userId (CryptoFile filePath cfArgs_) fileSize chunkSize = do
   currentTs <- liftIO getCurrentTime
   fileId <- liftIO $ do
     DB.execute
@@ -696,7 +696,7 @@ getRcvFileTransfer_ db userId fileId = do
             FSComplete -> ft name . RFSComplete <$> rfi
             FSCancelled -> ft name . RFSCancelled <$> rfi_
       where
-        directName_ = case (connId_, agentRcvFileId, filePath_) of
+        standaloneName_ = case (connId_, agentRcvFileId, filePath_) of
           (Nothing, Just _, Just _) -> Just "direct" -- filePath marks files that are accepted from contact or, in this case, set by createRcvDirectFileTransfer
           _ -> Nothing
         ft senderDisplayName fileStatus =
