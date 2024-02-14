@@ -198,11 +198,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" (maybe (Left "") Right ci)
+  CRRcvFileStart u ci _ -> ttyUser u $ receivingFile_' hu testView "started" (maybe (Left "") Right ci)
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" (Right ci)
-  CRRcvFileCompleteXFTP u path -> ttyUser u $ receivingFile_' hu testView "completed" (Left path)
+  CRRcvFileCompleteXFTP u path _ -> ttyUser u $ receivingFile_' hu testView "completed" (Left path)
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' hu testView "error" (maybe (Left "") Right ci) <> [sShow e]
+  CRRcvFileError u ci e _ -> ttyUser u $ receivingFile_' hu testView "error" (maybe (Left "") Right ci) <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
@@ -211,7 +211,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileCompleteXFTP u Nothing ft uris -> ttyUser u $ directUploadComplete ft uris
   CRSndFileCompleteXFTP u ci _ _ -> ttyUser u $ uploadingFile "completed" ci
   CRSndFileCancelledXFTP {} -> []
-  CRSndFileError u ci -> ttyUser u $ uploadingFile "error" ci
+  CRSndFileError u ci _ -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []

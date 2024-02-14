@@ -2819,11 +2819,13 @@ receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do
   vr <- chatVersionRange
-  ci <- withStoreCtx (Just "startReceivingFile, updateRcvFileStatus ...") $ \db -> do
+  (ci, ft) <- withStoreCtx (Just "startReceivingFile, updateRcvFileStatus ...") $ \db -> do
     liftIO $ updateRcvFileStatus db fileId FSConnected
     liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
-    lookupChatItemByFileId db vr user fileId
-  toView $ CRRcvFileStart user ci
+    ci <- lookupChatItemByFileId db vr user fileId
+    ft <- getRcvFileTransfer db user fileId
+    pure (ci, ft)
+  toView $ CRRcvFileStart user ci ft
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
 getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
@@ -3346,7 +3348,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                 liftIO $ updateFileCancelled db user fileId CIFSSndError
                 lookupChatItemByFileId db vr user fileId
               withAgent (`xftpDeleteSndFileInternal` aFileId)
-              toView $ CRSndFileError user ci
+              toView $ CRSndFileError user ci ft
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -3402,7 +3404,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
           ci <- withStore $ \db -> do
             liftIO $ updateCIFileStatus db user fileId status
             lookupChatItemByFileId db vr user fileId
-          toView $ CRRcvFileProgressXFTP user ci rcvProgress rcvTotal
+          toView $ CRRcvFileProgressXFTP user ci rcvProgress rcvTotal ft
         RFDONE xftpPath ->
           case liveRcvFileTransferPath ft of
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
@@ -3416,7 +3418,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
               case ci_ of
-                Nothing -> toView $ CRRcvFileCompleteXFTP user fsTargetPath
+                Nothing -> toView $ CRRcvFileCompleteXFTP user fsTargetPath ft
                 Just ci -> toView $ CRRcvFileComplete user ci
         RFERR e
           | temporaryAgentError e ->
@@ -3426,7 +3428,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
                 liftIO $ updateFileCancelled db user fileId CIFSRcvError
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
-              toView $ CRRcvFileError user ci e
+              toView $ CRRcvFileError user ci e ft
 
 processAgentMessageConn :: forall m. ChatMonad m => VersionRange -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
