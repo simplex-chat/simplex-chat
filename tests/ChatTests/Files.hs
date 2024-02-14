@@ -78,7 +78,7 @@ chatFileTests = do
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
-  fdescribe "file transfer over XFTP without chat items" $ do
+  describe "file transfer over XFTP without chat items" $ do
     it "directly send and receive file" testXFTPDirect
     it "directly send and receive file via description" testXFTPDirectDescr
     -- TODO: send/receive with cfArgs
