@@ -8,6 +8,6 @@ import Database.SQLite.Simple.QQ (sql)
 m20220302_profile_images :: Query
 m20220302_profile_images =
   [sql|
-    ALTER TABLE contact_profiles ADD COLUMN image TEXT;
-    ALTER TABLE group_profiles ADD COLUMN image TEXT;
+    ALTER TABLE contact_profiles ADD COLUMN image TEXT; -- currently saved as BLOB
+    ALTER TABLE group_profiles ADD COLUMN image TEXT; -- currently saved as BLOB
 |]
