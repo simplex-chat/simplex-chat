@@ -2039,11 +2039,6 @@ processChatCommand' vr = \case
     fileSize <- liftIO $ CF.getFileContentsSize file
     (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
     pure CRSndFileStartXFTPDirect {user, fileTransferMeta}
-  APIXFTPDescriptionUpload userId fileTransferId -> withUserId userId $ \user -> do
-    descr <- withStore $ \db -> takeExtraSndFTDescr db user fileTransferId
-    vfd <- liftEitherWith (ChatError . CEInternalError . ("description yaml decode error: " <>)) . strDecode $ encodeUtf8 descr
-    fileTransferMeta <- xftpSndFileRedirect_ user Nothing vfd
-    pure CRSndFileStartXFTPDirect {user, fileTransferMeta}
   APIXFTPDirectDownload userId uri file -> withUserId userId $ \user -> receiveViaURI user uri file >> ok_
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
@@ -3301,7 +3296,7 @@ processAgentMsgSndFile _corrId aFileId msg =
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case mapMaybe fileDescrURI rfds of
-                [] -> xftpSndFileRedirect_ user (Just fileId) rvfd >>= toView . CRSndFileRedirectXFTP user ft
+                [] -> xftpSndFileRedirect_ user fileId rvfd >>= toView . CRSndFileRedirectXFTP user ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndFileCompleteXFTP user ci ft' uris
@@ -6770,7 +6765,6 @@ chatCommandP =
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       "/_upload " *> (APIXFTPDirectUpload <$> A.decimal <* A.space <*> cryptoFileP),
-      "/_upload description " *> (APIXFTPDescriptionUpload <$> A.decimal <* A.space <*> A.decimal),
       "/_download " *> (APIXFTPDirectDownload <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -6988,12 +6982,12 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
         saveMemberFD _ = pure ()
   pure (fInv, ciFile, ft)
 
-xftpSndFileRedirect_ :: ChatMonad m => User -> Maybe FileTransferId -> ValidFileDescription 'FRecipient -> m FileTransferMeta
-xftpSndFileRedirect_ user ftId_ vfd = do
-  let fileName = maybe "redirect.yaml" (show) ftId_
+xftpSndFileRedirect_ :: ChatMonad m => User -> FileTransferId -> ValidFileDescription 'FRecipient -> m FileTransferMeta
+xftpSndFileRedirect_ user ftId vfd = do
+  let fileName = "redirect.yaml"
       file = CryptoFile fileName Nothing
       fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
       fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) fileDescr
   aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd
   chSize <- asks $ fileChunkSize . config
-  withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) ftId_ chSize
+  withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize

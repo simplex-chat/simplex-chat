@@ -81,8 +81,6 @@ chatFileTests = do
   describe "file transfer over XFTP without chat items" $ do
     it "directly send and receive small file" testXFTPDirectSmall
     it "directly send and receive large file" testXFTPDirectLarge
-    it "directly send and receive file via description" testXFTPDirectDescr
-    -- TODO: send/receive with cfArgs
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1594,32 +1592,6 @@ testXFTPDirectLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> d
     dst <## "completed receiving file"
     getTermLine dst `shouldReturn` dstFile
     srcBody <- B.readFile "./tests/tmp/testfile.in"
-    B.readFile dstFile `shouldReturn` srcBody
-
-testXFTPDirectDescr :: HasCallStack => FilePath -> IO ()
-testXFTPDirectDescr = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
-  withXFTPServer $ do
-    logNote "sending"
-    src ##> "/_upload 1 ./tests/fixtures/test.jpg"
-    threadDelay 250000
-    src <## "file 1 (test.jpg) upload complete. download with:"
-    -- ignoring file descriptions
-    _uri1 <- getTermLine src
-    _uri2 <- getTermLine src
-    _uri3 <- getTermLine src
-    _uri4 <- getTermLine src
-    src ##> "/_upload description 1 1"
-    src <## "file 2 (redirect.yaml) upload complete. download with:"
-    uri <- getTermLine src
-
-    logNote "receiving"
-    let dstFile = "./tests/tmp/test.jpg"
-    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
-    dst <## "ok"
-    threadDelay 250000
-    dst <## "completed receiving file"
-    getTermLine dst `shouldReturn` dstFile
-    srcBody <- B.readFile "./tests/fixtures/test.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()

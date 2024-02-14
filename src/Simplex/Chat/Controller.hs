@@ -454,7 +454,6 @@ data ChatCommand
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
   | APIXFTPDirectUpload UserId CryptoFile
-  | APIXFTPDescriptionUpload UserId FileTransferId
   | APIXFTPDirectDownload UserId FileDescriptionURI CryptoFile
   | QuitChat
   | ShowVersion
