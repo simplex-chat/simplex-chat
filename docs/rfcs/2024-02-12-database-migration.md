@@ -104,7 +104,7 @@ The steps are:
 
 On the source device:
 1. Tap "Migrate to another device".
-2. Confirm in alert that the chat will stop, etc.
+2. The chat will stop showing "Stopping chat" to the user.
 3. If passphrase was:
    - not set: make user set it in a separate screen.
    - set: make user verify it.
@@ -114,14 +114,14 @@ On the source device:
 
 On the receiving device:
 2. Tap "Migrate from another device".
-3. Confirm in alert that the chat will stop, if needed etc. (if not from Onboarding).
+2. The chat will stop (if not from Onboarding) showing "Stopping chat" to the user.
 4. Scan QR code (with option to paste link on desktop only).
 5. Show similar download progress, but probably in reversed direction - design TBC.
 6. Once download is completed, show "Replace the current database" (if not from Onboarding).
 7. Once imported, start chat automatically, and once chat started show "Tap remove database on source device".
 
 On the source device:
-1. Tap "Remove database" on the showing screen.
+1. Tap "Remove database" on the showing screen (this should also remove uploaded file).
 
 #### Implementation considerations
 
