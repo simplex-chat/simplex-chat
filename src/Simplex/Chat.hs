@@ -3283,12 +3283,7 @@ processAgentMsgSndFile _corrId aFileId msg =
             liftIO $ updateCIFileStatus db user fileId status
             lookupChatItemByFileId db vr user fileId
           toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
-        SFDONE sndDescr [] -> do
-          -- should not happen
-          logError "File sent without receiver descriptions"
-          withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
-          withAgent (`xftpDeleteSndFileInternal` aFileId)
-        SFDONE sndDescr rfds@(rvfd : _) -> do
+        SFDONE sndDescr rfds -> do
           withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
           ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
           case ci of
@@ -3296,7 +3291,9 @@ processAgentMsgSndFile _corrId aFileId msg =
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case mapMaybe fileDescrURI rfds of
-                [] -> xftpSndFileRedirect_ user fileId rvfd >>= toView . CRSndFileRedirectXFTP user ft
+                [] -> case rfds of
+                  [] -> logError "File sent without receiver descriptions" -- should not happen
+                  (rfd : _) -> xftpSndFileRedirect_ user fileId rfd >>= toView . CRSndFileRedirectXFTP user ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndFileCompleteXFTP user ci ft' uris
