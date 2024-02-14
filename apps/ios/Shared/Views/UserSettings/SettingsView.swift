@@ -205,6 +205,16 @@ struct SettingsView: View {
                 }
                 .disabled(chatModel.chatRunning != true)
                 
+                Section {
+                    NavigationLink {
+                        MigrateToAnotherDevice()
+                            .navigationTitle("Migrate to another device")
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
+                    }
+                }
+
                 Section("Settings") {
                     NavigationLink {
                         NotificationsView()

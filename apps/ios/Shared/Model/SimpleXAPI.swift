@@ -1701,34 +1701,48 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .rcvFileStart(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
+    case let .rcvFileStart(user, aChatItem, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+        }
     case let .rcvFileComplete(user, aChatItem):
         await chatItemSimpleUpdate(user, aChatItem)
     case let .rcvFileSndCancelled(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupFile(aChatItem) }
-    case let .rcvFileProgressXFTP(user, aChatItem, _, _):
-        await chatItemSimpleUpdate(user, aChatItem)
-    case let .rcvFileError(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
+    case let .rcvFileProgressXFTP(user, aChatItem, _, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+        }
+    case let .rcvFileError(user, aChatItem, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupFile(aChatItem) }
+        }
     case let .sndFileStart(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
     case let .sndFileComplete(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupDirectFile(aChatItem) }
     case let .sndFileRcvCancelled(user, aChatItem, _):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupDirectFile(aChatItem) }
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupDirectFile(aChatItem) }
+        }
     case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
-        await chatItemSimpleUpdate(user, aChatItem)
-    case let .sndFileCompleteXFTP(user, aChatItem, _):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
-    case let .sndFileError(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+        }
+    case let .sndFileCompleteXFTP(user, aChatItem, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupFile(aChatItem) }
+        }
+    case let .sndFileError(user, aChatItem, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupFile(aChatItem) }
+        }
     case let .callInvitation(invitation):
         await MainActor.run {
             m.callInvitations[invitation.contact.id] = invitation

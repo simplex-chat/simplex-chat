@@ -642,10 +642,14 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
         cleanupDirectFile(aChatItem)
         return nil
     case let .sndFileRcvCancelled(_, aChatItem, _):
-        cleanupDirectFile(aChatItem)
+        if let aChatItem = aChatItem {
+            cleanupDirectFile(aChatItem)
+        }
         return nil
-    case let .sndFileCompleteXFTP(_, aChatItem, _):
-        cleanupFile(aChatItem)
+    case let .sndFileCompleteXFTP(_, aChatItem, _, _):
+        if let aChatItem = aChatItem {
+            cleanupFile(aChatItem)
+        }
         return nil
     case let .callInvitation(invitation):
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
