@@ -79,8 +79,8 @@ chatFileTests = do
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
   describe "file transfer over XFTP without chat items" $ do
-    it "directly send and receive small file" testXFTPDirectSmall
-    it "directly send and receive large file" testXFTPDirectLarge
+    it "send and receive small standalone file" testXFTPStandaloneSmall
+    it "send and receive large standalone file" testXFTPStandaloneLarge
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do

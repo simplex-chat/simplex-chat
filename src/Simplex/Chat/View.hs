@@ -1569,12 +1569,12 @@ uploadingFile status = \case
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
   _ -> [status <> " uploading file"]
 
-directUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]
-directUploadRedirect FileTransferMeta {fileId, fileName} FileTransferMeta {fileId = redirectId} =
+standaloneUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]
+standaloneUploadRedirect FileTransferMeta {fileId, fileName} FileTransferMeta {fileId = redirectId} =
   [fileTransferStr fileId fileName <> " uploaded, preparing redirect file " <> sShow redirectId]
 
-directUploadComplete :: FileTransferMeta -> [Text] -> [StyledString]
-directUploadComplete FileTransferMeta {fileId, fileName} = \case
+standaloneUploadComplete :: FileTransferMeta -> [Text] -> [StyledString]
+standaloneUploadComplete FileTransferMeta {fileId, fileName} = \case
   [] -> [fileTransferStr fileId fileName <> " upload complete."]
   uris ->
     fileTransferStr fileId fileName <> " upload complete. download with:"

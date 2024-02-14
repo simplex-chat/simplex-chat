@@ -538,7 +538,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId, cryptoArgs = Nothing}
 
-createRcvDirectFileTransfer :: DB.Connection -> UserId -> CryptoFile -> Int64 -> Word32 -> ExceptT StoreError IO Int64
+createRcvStandaloneFileTransfer :: DB.Connection -> UserId -> CryptoFile -> Int64 -> Word32 -> ExceptT StoreError IO Int64
 createRcvDirectFileTransfer db userId (CryptoFile filePath cfArgs_) fileSize chunkSize = do
   currentTs <- liftIO getCurrentTime
   fileId <- liftIO $ do
@@ -681,7 +681,7 @@ getRcvFileTransfer_ db userId fileId = do
       (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
     rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, agentRcvFileDeleted) :. (connId_, agentConnId_)) =
-      case contactName_ <|> memberName_ <|> directName_ of
+      case contactName_ <|> memberName_ <|> standaloneName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name ->
           case fileStatus' of
