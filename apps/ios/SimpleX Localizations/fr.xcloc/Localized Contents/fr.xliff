@@ -6328,9 +6328,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>annulé %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
-        <target>adresse modifiée pour vous</target>
+        <target state="translated">changement de l'adresse du contact</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
