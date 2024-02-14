@@ -1571,7 +1571,7 @@ uploadingFile status = \case
 
 directUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]
 directUploadRedirect FileTransferMeta {fileId, fileName} FileTransferMeta {fileId = redirectId} =
-  [fileTransferStr fileId fileName <> " upload complete. preparing redirect file " <> sShow redirectId]
+  [fileTransferStr fileId fileName <> " uploaded, preparing redirect file " <> sShow redirectId]
 
 directUploadComplete :: FileTransferMeta -> [Text] -> [StyledString]
 directUploadComplete FileTransferMeta {fileId, fileName} = \case

@@ -1582,8 +1582,8 @@ testXFTPDirectLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> d
     logNote "sending"
     src ##> "/_upload 1 ./tests/tmp/testfile.in"
     threadDelay 250000
-    src <## "file 1 (testfile.in) upload complete. preparing redirect file 2"
-    src <## "file 2 (redirect.yaml) upload complete. download with:"
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
     uri <- getTermLine src
 
     logNote "receiving"
