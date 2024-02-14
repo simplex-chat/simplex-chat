@@ -610,6 +610,7 @@ data ChatResponse
   | CRSndFileStartXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileStartXFTPDirect {user :: User, fileTransferMeta :: FileTransferMeta} -- sent by _upload instead of ok, signalling fileId to expect
   | CRSndFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CRSndFileRedirectXFTP {user :: User, fileTransferMeta :: FileTransferMeta, redirectMeta :: FileTransferMeta}
   | CRSndFileCompleteXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
   | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}

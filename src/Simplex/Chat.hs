@@ -2042,13 +2042,7 @@ processChatCommand' vr = \case
   APIXFTPDescriptionUpload userId fileTransferId -> withUserId userId $ \user -> do
     descr <- withStore $ \db -> takeExtraSndFTDescr db user fileTransferId
     vfd <- liftEitherWith (ChatError . CEInternalError . ("description yaml decode error: " <>)) . strDecode $ encodeUtf8 descr
-    let fileName = "redirect.yaml"
-        file = CryptoFile fileName Nothing
-        fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-        fInv = xftpFileInvitation fileName (fromIntegral $ T.length descr) fileDescr
-    aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd
-    chSize <- asks $ fileChunkSize . config
-    fileTransferMeta <- withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) chSize
+    fileTransferMeta <- xftpSndFileRedirect_ user vfd
     pure CRSndFileStartXFTPDirect {user, fileTransferMeta}
   APIXFTPDirectDownload userId uri file -> withUserId userId $ \user -> receiveViaURI user uri file >> ok_
   QuitChat -> liftIO exitSuccess
@@ -3294,14 +3288,20 @@ processAgentMsgSndFile _corrId aFileId msg =
             liftIO $ updateCIFileStatus db user fileId status
             lookupChatItemByFileId db vr user fileId
           toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
-        SFDONE sndDescr rfds -> do
+        SFDONE sndDescr [] -> do
+          withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
+          withAgent (`xftpDeleteSndFileInternal` aFileId)
+
+        SFDONE sndDescr rfds@(rvfd : _) -> do
           withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
           ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
           case ci of
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
-              toView $ CRSndFileCompleteXFTP user ci ft $ mapMaybe fileDescrURI rfds
+              case mapMaybe fileDescrURI rfds of
+                [] -> xftpSndFileRedirect_ user rvfd >>= toView . CRSndFileRedirectXFTP user ft
+                uris -> toView $ CRSndFileCompleteXFTP user ci ft uris
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
@@ -6984,3 +6984,13 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
               \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
         saveMemberFD _ = pure ()
   pure (fInv, ciFile, ft)
+
+xftpSndFileRedirect_ :: ChatMonad m => User -> ValidFileDescription 'FRecipient -> m FileTransferMeta
+xftpSndFileRedirect_ user vfd = do
+  let fileName = "redirect.yaml"
+      file = CryptoFile fileName Nothing
+      fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+      fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) fileDescr
+  aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd
+  chSize <- asks $ fileChunkSize . config
+  withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) chSize

@@ -208,6 +208,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileStartXFTP {} -> []
   CRSndFileStartXFTPDirect {} -> []
   CRSndFileProgressXFTP {} -> []
+  CRSndFileRedirectXFTP u ft ftRedirect -> ttyUser u $ directUploadRedirect ft ftRedirect
   CRSndFileCompleteXFTP u Nothing ft uris -> ttyUser u $ directUploadComplete ft uris
   CRSndFileCompleteXFTP u ci _ _ -> ttyUser u $ uploadingFile "completed" ci
   CRSndFileCancelledXFTP {} -> []
@@ -1567,6 +1568,10 @@ uploadingFile status = \case
   Just (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
   _ -> [status <> " uploading file"]
+
+directUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]
+directUploadRedirect FileTransferMeta {fileId, fileName} FileTransferMeta {fileId = redirectId} =
+  [fileTransferStr fileId fileName <> " upload complete. preparing redirect file " <> sShow redirectId]
 
 directUploadComplete :: FileTransferMeta -> [Text] -> [StyledString]
 directUploadComplete FileTransferMeta {fileId, fileName} = \case

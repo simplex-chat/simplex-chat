@@ -79,7 +79,8 @@ chatFileTests = do
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
   describe "file transfer over XFTP without chat items" $ do
-    it "directly send and receive file" testXFTPDirect
+    it "directly send and receive small file" testXFTPDirectSmall
+    it "directly send and receive large file" testXFTPDirectLarge
     it "directly send and receive file via description" testXFTPDirectDescr
     -- TODO: send/receive with cfArgs
 
@@ -1550,8 +1551,8 @@ testProhibitFiles =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPDirect :: HasCallStack => FilePath -> IO ()
-testXFTPDirect = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+testXFTPDirectSmall :: HasCallStack => FilePath -> IO ()
+testXFTPDirectSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
     src ##> "/_upload 1 ./tests/fixtures/test.jpg"
@@ -1571,6 +1572,28 @@ testXFTPDirect = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
     dst <## "completed receiving file"
     getTermLine dst `shouldReturn` dstFile
     srcBody <- B.readFile "./tests/fixtures/test.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPDirectLarge :: HasCallStack => FilePath -> IO ()
+testXFTPDirectLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    threadDelay 250000
+    src <## "file 1 (testfile.in) upload complete. preparing redirect file 2"
+    src <## "file 2 (redirect.yaml) upload complete. download with:"
+    uri <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "ok"
+    threadDelay 250000
+    dst <## "completed receiving file"
+    getTermLine dst `shouldReturn` dstFile
+    srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody
 
 testXFTPDirectDescr :: HasCallStack => FilePath -> IO ()
