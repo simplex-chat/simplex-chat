@@ -39,6 +39,7 @@ module Simplex.Chat.Store.Files
     getGroupFileIdBySharedMsgId,
     getDirectFileIdBySharedMsgId,
     getChatRefByFileId,
+    lookupChatRefByFileId,
     updateSndFileStatus,
     createSndFileChunk,
     updateSndFileChunkMsg,
@@ -87,13 +88,14 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Data.Either (rights)
+import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
-import Data.Word (Word32)
 import Data.Text (Text)
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
+import Data.Word (Word32)
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Database.SQLite.Simple.ToField (ToField)
@@ -423,11 +425,14 @@ getDirectFileIdBySharedMsgId db User {userId} Contact {contactId} sharedMsgId =
       (userId, contactId, sharedMsgId)
 
 getChatRefByFileId :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO ChatRef
-getChatRefByFileId db User {userId} fileId =
-  liftIO getChatRef >>= \case
-    [(Just contactId, Nothing)] -> pure $ ChatRef CTDirect contactId
-    [(Nothing, Just groupId)] -> pure $ ChatRef CTGroup groupId
-    _ -> throwError $ SEInternalError "could not retrieve chat ref by file id"
+getChatRefByFileId db user fileId = liftIO (lookupChatRefByFileId db user fileId) >>= maybe (throwError $ SEInternalError "could not retrieve chat ref by file id") pure
+
+lookupChatRefByFileId :: DB.Connection -> User -> Int64 -> IO (Maybe ChatRef)
+lookupChatRefByFileId db User {userId} fileId =
+  getChatRef <&> \case
+    [(Just contactId, Nothing)] -> Just $ ChatRef CTDirect contactId
+    [(Nothing, Just groupId)] -> Just $ ChatRef CTGroup groupId
+    _ -> Nothing
   where
     getChatRef =
       DB.query

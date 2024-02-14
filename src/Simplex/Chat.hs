@@ -1936,16 +1936,16 @@ processChatCommand' vr = \case
           | otherwise -> do
               fileAgentConnIds <- cancelSndFile user ftm fts True
               deleteAgentConnectionsAsync user fileAgentConnIds
-              sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-              withStore (\db -> getChatRefByFileId db user fileId) >>= \case
-                ChatRef CTDirect contactId -> do
-                  contact <- withStore $ \db -> getContact db user contactId
+              withStore (\db -> liftIO $ lookupChatRefByFileId db user fileId) >>= \case
+                Nothing -> pure ()
+                Just (ChatRef CTDirect contactId) -> do
+                  (contact, sharedMsgId) <- withStore $ \db -> (,) <$> getContact db user contactId <*> getSharedMsgIdByFileId db userId fileId
                   void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
-                ChatRef CTGroup groupId -> do
-                  Group gInfo ms <- withStore $ \db -> getGroup db vr user groupId
+                Just (ChatRef CTGroup groupId) -> do
+                  (Group gInfo ms, sharedMsgId) <- withStore $ \db -> (,) <$> getGroup db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
                   void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
-                _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-              ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
+                Just _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
+              ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
               pure $ CRSndFileCancelled user ci ftm fts
           where
             fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
@@ -4102,8 +4102,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
               ci <- withStore $ \db -> do
-                getChatRefByFileId db user fileId >>= \case
-                  ChatRef CTDirect _ -> liftIO $ updateFileCancelled db user fileId CIFSSndCancelled
+                liftIO (lookupChatRefByFileId db user fileId) >>= \case
+                  Just (ChatRef CTDirect _) -> liftIO $ updateFileCancelled db user fileId CIFSSndCancelled
                   _ -> pure ()
                 lookupChatItemByFileId db vr user fileId
               toView $ CRSndFileRcvCancelled user ci ft
