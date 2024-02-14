@@ -855,3 +855,4 @@ CREATE INDEX idx_chat_items_notes_item_status on chat_items(
   note_folder_id,
   item_status
 );
+CREATE INDEX idx_files_redirect_file_id on files(redirect_file_id);
