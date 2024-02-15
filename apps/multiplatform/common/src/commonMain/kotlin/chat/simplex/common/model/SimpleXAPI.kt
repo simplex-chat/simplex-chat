@@ -461,6 +461,7 @@ object ChatController {
                 AlertManager.shared.showAlertMsg(
                   title = generalGetString(MR.strings.possible_slow_function_title),
                   text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  shareText = true
                 )
               }
             }

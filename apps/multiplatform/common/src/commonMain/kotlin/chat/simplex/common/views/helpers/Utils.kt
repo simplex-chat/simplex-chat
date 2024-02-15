@@ -52,6 +52,7 @@ private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, e
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.possible_slow_function_title),
         text = generalGetString(MR.strings.possible_slow_function_desc).format((end - start) / 1000, exception.stackTraceToString()),
+        shareText = true
       )
     }
   }
