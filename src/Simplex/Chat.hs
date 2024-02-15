@@ -6304,11 +6304,16 @@ agentXFTPDeleteRcvFile aFileId fileId = do
 
 agentXFTPDeleteSndFileRemote :: ChatMonad m => User -> XFTPSndFile -> FileTransferId -> m ()
 agentXFTPDeleteSndFileRemote user XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr, agentSndFileDeleted} fileId =
-  unless agentSndFileDeleted $
+  unless agentSndFileDeleted $ do
     forM_ privateSndFileDescr $ \sfdText -> do
       sd <- parseFileDescription sfdText
       withAgent $ \a -> xftpDeleteSndFileRemote a (aUserId user) aFileId sd
       withStore' $ \db -> setSndFTAgentDeleted db user fileId
+    -- the agent doesn't know about redirect, delete explicitly
+    redirect_ <- withStore' $ \db -> lookupFileTransferRedirectMeta db user fileId
+    forM_ redirect_ $ \FileTransferMeta {fileId = fileIdRedirect, xftpSndFile = sndFileRedirect_} ->
+      forM_ sndFileRedirect_ $ \sndFileRedirect ->
+        agentXFTPDeleteSndFileRemote user sndFileRedirect fileIdRedirect
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do

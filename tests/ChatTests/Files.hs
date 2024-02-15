@@ -1587,9 +1587,9 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
     src <## "file 1 (testfile.in) upload complete. download with:"
     uri <- getTermLine src
-    _uri <- getTermLine src
-    _uri <- getTermLine src
-    _uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
 
     logNote "receiving"
     let dstFile = "./tests/tmp/testfile.out"
@@ -1600,6 +1600,36 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     dst <## "completed receiving file 1 (testfile.out)"
     srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneCancelSnd :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "cancelling"
+    src ##> "/fc 1"
+    src <## "cancelled sending file 1 (testfile.in)"
+    threadDelay 1000000
+
+    logNote "trying to receive cancelled"
+    dst ##> ("/_download 1 " <> uri <> " " <> "./tests/tmp/should.not.extist")
+    dst <## "started standalone receiving file 1 (should.not.extist)"
+    threadDelay 100000
+    logWarn "no error?"
+    dst <## "error receiving file 1 (should.not.extist)"
+    dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
