@@ -1554,6 +1554,8 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
   withXFTPServer $ do
     logNote "sending"
     src ##> "/_upload 1 ./tests/fixtures/test.jpg"
+    src <## "started standalone uploading file 1 (test.jpg)"
+    -- silent progress events
     threadDelay 250000
     src <## "file 1 (test.jpg) upload complete. download with:"
     -- file description fits, enjoy the direct URIs
@@ -1565,9 +1567,9 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     logNote "receiving"
     let dstFile = "./tests/tmp/test.jpg"
     dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile)
-    dst <## "ok"
+    dst <## "started standalone receiving file 1 (test.jpg)"
+    -- silent progress events
     threadDelay 250000
-    dst <## "started receiving file 1 (test.jpg)"
     dst <## "completed receiving file 1 (test.jpg)"
     srcBody <- B.readFile "./tests/fixtures/test.jpg"
     B.readFile dstFile `shouldReturn` srcBody
@@ -1579,17 +1581,22 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
 
     logNote "sending"
     src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
     threadDelay 250000
     src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
     src <## "file 1 (testfile.in) upload complete. download with:"
     uri <- getTermLine src
+    _uri <- getTermLine src
+    _uri <- getTermLine src
+    _uri <- getTermLine src
 
     logNote "receiving"
     let dstFile = "./tests/tmp/testfile.out"
     dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
-    dst <## "ok"
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
     threadDelay 250000
-    dst <## "started receiving file 1 (testfile.out)"
     dst <## "completed receiving file 1 (testfile.out)"
     srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody

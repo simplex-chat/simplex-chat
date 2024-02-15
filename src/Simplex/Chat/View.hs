@@ -198,22 +198,22 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvStandaloneFileCreated u ft -> ["TODO"]
-  CRRcvFileStart u ci ft -> ttyUser u $ receivingFile_' hu testView "started" (maybe (Left ft) Right ci)
+  CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFile_' hu testView "started standalone" (Left ft)
+  CRRcvFileStart u ci _ -> ttyUser u $ receivingFile_' hu testView "started" (Right ci)
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" (Right ci)
   CRRcvFileCompleteXFTP u _ ft -> ttyUser u $ receivingFile_' hu testView "completed" (Left ft)
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRRcvFileError u ci e ft -> ttyUser u $ receivingFile_' hu testView "error" (maybe (Left ft) Right ci) <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CRSndStandaloneFileCreated {} -> [] -- TODO
-  CRSndFileStartXFTP {} -> [] -- TODO
-  CRSndFileProgressXFTP {} -> [] -- TODO
+  CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFile "started standalone" (Left ft)
+  CRSndFileStartXFTP {} -> []
+  CRSndFileProgressXFTP {} -> []
   CRSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
   CRSndFileCompleteXFTP u Nothing ft uris -> ttyUser u $ standaloneUploadComplete ft uris
-  CRSndFileCompleteXFTP u ci _ _ -> ttyUser u $ uploadingFile "completed" ci
+  CRSndFileCompleteXFTP u ci ft _ -> ttyUser u $ uploadingFile "completed" (maybe (Left ft) Right ci)
   CRSndFileCancelledXFTP {} -> []
-  CRSndFileError u ci _ -> ttyUser u $ uploadingFile "error" ci
+  CRSndFileError u ci ft -> ttyUser u $ uploadingFile "error" (maybe (Left ft) Right ci)
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []
@@ -1562,12 +1562,13 @@ sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
-uploadingFile :: StyledString -> Maybe AChatItem -> [StyledString]
+uploadingFile :: StyledString -> Either FileTransferMeta AChatItem -> [StyledString]
 uploadingFile status = \case
-  Just (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) ->
+  Right (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-  Just (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) ->
+  Right (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+  Left FileTransferMeta {fileId, fileName} -> [status <> " uploading " <> fileTransferStr fileId fileName]
   _ -> [status <> " uploading file"]
 
 standaloneUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]

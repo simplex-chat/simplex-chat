@@ -2814,7 +2814,7 @@ startReceivingFile user fileId = do
   (ci, ft) <- withStoreCtx (Just "startReceivingFile, updateRcvFileStatus ...") $ \db -> do
     liftIO $ updateRcvFileStatus db fileId FSConnected
     liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
-    ci <- lookupChatItemByFileId db vr user fileId
+    ci <- getChatItemByFileId db vr user fileId
     ft <- getRcvFileTransfer db user fileId
     pure (ci, ft)
   toView $ CRRcvFileStart user ci ft
