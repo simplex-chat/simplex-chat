@@ -3428,9 +3428,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
                   updateCIFileStatus db user fileId CIFSRcvComplete
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
-              case ci_ of
-                Nothing -> toView $ CRRcvFileCompleteXFTP user fsTargetPath ft
-                Just ci -> toView $ CRRcvFileComplete user ci
+              toView $ maybe (CRRcvStandaloneFileComplete user fsTargetPath ft) (CRRcvFileComplete user) ci_
         RFERR e
           | temporaryAgentError e ->
               throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e

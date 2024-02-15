@@ -198,22 +198,24 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFile_' hu testView "started standalone" (Left ft)
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" (Right ci)
-  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" (Right ci)
-  CRRcvFileCompleteXFTP u _ ft -> ttyUser u $ receivingFile_' hu testView "completed" (Left ft)
+  CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFileStandalone "started" ft
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
+  CRRcvStandaloneFileComplete u _ ft -> ttyUser u $ receivingFileStandalone "completed" ft
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e ft -> ttyUser u $ receivingFile_' hu testView "error" (maybe (Left ft) Right ci) <> [sShow e]
+  CRRcvFileError u (Just ci) e _ -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
+  CRRcvFileError u Nothing e ft -> ttyUser u $ receivingFileStandalone "error" ft <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFile "started standalone" (Left ft)
+  CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFileStandalone "started" ft
   CRSndFileStartXFTP {} -> []
   CRSndFileProgressXFTP {} -> []
   CRSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
   CRSndStandaloneFileComplete u ft uris -> ttyUser u $ standaloneUploadComplete ft uris
-  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" (Right ci)
+  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
   CRSndFileCancelledXFTP {} -> []
-  CRSndFileError u ci ft -> ttyUser u $ uploadingFile "error" (maybe (Left ft) Right ci)
+  CRSndFileError u Nothing ft -> ttyUser u $ uploadingFileStandalone "error" ft
+  CRSndFileError u (Just ci) _ -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []
@@ -1562,14 +1564,16 @@ sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
-uploadingFile :: StyledString -> Either FileTransferMeta AChatItem -> [StyledString]
+uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status = \case
-  Right (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) ->
+  AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-  Right (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) ->
+  AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
-  Left FileTransferMeta {fileId, fileName} -> [status <> " uploading " <> fileTransferStr fileId fileName]
   _ -> [status <> " uploading file"]
+
+uploadingFileStandalone :: StyledString -> FileTransferMeta -> [StyledString]
+uploadingFileStandalone status FileTransferMeta {fileId, fileName} = [status <> " standalone uploading " <> fileTransferStr fileId fileName]
 
 standaloneUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]
 standaloneUploadRedirect FileTransferMeta {fileId, fileName} FileTransferMeta {fileId = redirectId} =
@@ -1612,8 +1616,8 @@ savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource
   ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> Either RcvFileTransfer AChatItem -> [StyledString]
-receivingFile_' hu testView status (Right (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir})) =
+receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
+receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
   [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
     cfArgsStr (Just cfArgs) = [plain (cryptoFileArgsStr testView cfArgs) | status == "completed"]
@@ -1626,8 +1630,11 @@ receivingFile_' hu testView status (Right (AChatItem _ _ chat ChatItem {file = J
               highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode RemoteFile {userId, fileId, sent = False, fileSource = f}))
             ]
       _ -> []
-receivingFile_' _ _ status (Left RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}}) = [plain status <> " receiving " <> fileTransferStr fileId fileName]
 receivingFile_' _ _ status _ = [plain status <> " receiving file"]
+
+receivingFileStandalone :: String -> RcvFileTransfer -> [StyledString]
+receivingFileStandalone status RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} =
+  [plain status <> " standalone receiving " <> fileTransferStr fileId fileName]
 
 viewLocalFile :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
