@@ -1637,4 +1637,9 @@
     <string name="message_too_large">Mesaj çok büyük</string>
     <string name="database_migration_in_progress">Veritabanı geçişi devam ediyor.
 \nBu birkaç dakika sürebilir.</string>
+    <string name="unable_to_open_browser_desc">Aramalar için varsayılan web tarayıcısı gereklidir. Lütfen sistemdeki varsayılan tarayıcıyı yapılandırın ve geliştiricilerle daha fazla bilgi paylaşın.</string>
+    <string name="call_service_notification_audio_call">Sesli arama</string>
+    <string name="call_service_notification_video_call">Görüntülü arama</string>
+    <string name="call_service_notification_end_call">Aramayı bitir</string>
+    <string name="unable_to_open_browser_title">Tarayıcıyı açarken hata</string>
 </resources>
