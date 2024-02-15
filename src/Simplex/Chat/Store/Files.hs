@@ -930,7 +930,7 @@ getFileTransferMeta db User {userId} = getFileTransferMeta_ db userId
 
 getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO FileTransferMeta
 getFileTransferMeta_ db userId fileId =
-  ExceptT . firstRow (toFileTransferMeta userId) (SEFileNotFound fileId) $
+  ExceptT . firstRow (toFileTransferMeta fileId) (SEFileNotFound fileId) $
     DB.query
       db
       [sql|
