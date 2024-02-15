@@ -2811,13 +2811,11 @@ receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do
   vr <- chatVersionRange
-  (ci, ft) <- withStoreCtx (Just "startReceivingFile, updateRcvFileStatus ...") $ \db -> do
+  ci <- withStoreCtx (Just "startReceivingFile, updateRcvFileStatus ...") $ \db -> do
     liftIO $ updateRcvFileStatus db fileId FSConnected
     liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
-    ci <- getChatItemByFileId db vr user fileId
-    ft <- getRcvFileTransfer db user fileId
-    pure (ci, ft)
-  toView $ CRRcvFileStart user ci ft
+    getChatItemByFileId db vr user fileId
+  toView $ CRRcvFileStart user ci
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
 getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
@@ -3299,7 +3297,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                   (rfd : _) -> xftpSndFileRedirect_ user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
-                  toView $ CRSndFileCompleteXFTP user ci ft' uris
+                  toView $ CRSndStandaloneFileComplete user ft' uris
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
@@ -3320,9 +3318,9 @@ processAgentMsgSndFile _corrId aFileId msg =
                       forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchChatError` (toView . CRChatError (Just user))
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
-                        lookupChatItemByFileId db vr user fileId
+                        getChatItemByFileId db vr user fileId
                       withAgent (`xftpDeleteSndFileInternal` aFileId)
-                      toView $ CRSndFileCompleteXFTP user ci' ft []
+                      toView $ CRSndFileCompleteXFTP user ci' ft
                       where
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -4793,7 +4791,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case file of
           Just CIFile {fileProtocol = FPXFTP} -> do
             ft <- withStore $ \db -> getFileTransferMeta db user fileId
-            toView $ CRSndFileCompleteXFTP user (Just ci) ft []
+            toView $ CRSndFileCompleteXFTP user ci ft
           _ -> toView $ CRSndFileComplete user ci sft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool

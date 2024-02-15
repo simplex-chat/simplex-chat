@@ -199,7 +199,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
   CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFile_' hu testView "started standalone" (Left ft)
-  CRRcvFileStart u ci _ -> ttyUser u $ receivingFile_' hu testView "started" (Right ci)
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" (Right ci)
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" (Right ci)
   CRRcvFileCompleteXFTP u _ ft -> ttyUser u $ receivingFile_' hu testView "completed" (Left ft)
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
@@ -210,8 +210,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileStartXFTP {} -> []
   CRSndFileProgressXFTP {} -> []
   CRSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
-  CRSndFileCompleteXFTP u Nothing ft uris -> ttyUser u $ standaloneUploadComplete ft uris
-  CRSndFileCompleteXFTP u ci ft _ -> ttyUser u $ uploadingFile "completed" (maybe (Left ft) Right ci)
+  CRSndStandaloneFileComplete u ft uris -> ttyUser u $ standaloneUploadComplete ft uris
+  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" (Right ci)
   CRSndFileCancelledXFTP {} -> []
   CRSndFileError u ci ft -> ttyUser u $ uploadingFile "error" (maybe (Left ft) Right ci)
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
