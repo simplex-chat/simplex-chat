@@ -551,7 +551,7 @@ fun ComposeView(
   }
 
   fun sendMessage(ttl: Int?) {
-    withLongRunningApi(slow = 60_000) {
+    withLongRunningApi(slow = 120_000) {
       sendMessageAsync(null, false, ttl)
     }
   }
