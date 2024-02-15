@@ -198,6 +198,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
+  CRRcvStandaloneFileCreated u ft -> ["TODO"]
   CRRcvFileStart u ci ft -> ttyUser u $ receivingFile_' hu testView "started" (maybe (Left ft) Right ci)
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" (Right ci)
   CRRcvFileCompleteXFTP u _ ft -> ttyUser u $ receivingFile_' hu testView "completed" (Left ft)
@@ -205,10 +206,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRcvFileError u ci e ft -> ttyUser u $ receivingFile_' hu testView "error" (maybe (Left ft) Right ci) <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CRSndFileStartXFTP {} -> []
-  CRSndFileStartXFTPDirect {} -> []
-  CRSndFileProgressXFTP {} -> []
-  CRSndFileRedirectXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
+  CRSndStandaloneFileCreated {} -> [] -- TODO
+  CRSndFileStartXFTP {} -> [] -- TODO
+  CRSndFileProgressXFTP {} -> [] -- TODO
+  CRSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
   CRSndFileCompleteXFTP u Nothing ft uris -> ttyUser u $ standaloneUploadComplete ft uris
   CRSndFileCompleteXFTP u ci _ _ -> ttyUser u $ uploadingFile "completed" ci
   CRSndFileCancelledXFTP {} -> []

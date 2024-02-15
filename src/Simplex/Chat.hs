@@ -2035,11 +2035,13 @@ processChatCommand' vr = \case
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
-  APIXFTPDirectUpload userId file -> withUserId userId $ \user -> do
+  APIUploadStandaloneFile userId file -> withUserId userId $ \user -> do
     fileSize <- liftIO $ CF.getFileContentsSize file
     (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
-    pure CRSndFileStartXFTPDirect {user, fileTransferMeta}
-  APIXFTPDirectDownload userId uri file -> withUserId userId $ \user -> receiveViaURI user uri file >> ok_
+    pure CRSndStandaloneFileCreated {user, fileTransferMeta}
+  APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
+    ft <- receiveViaURI user uri file
+    pure $ CRRcvStandaloneFileCreated user ft
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     -- simplexmqCommitQ makes iOS builds crash m(
@@ -2793,17 +2795,16 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     startReceivingFile user fileId
     withStoreCtx' (Just "receiveViaCompleteFD, updateRcvFileAgentId") $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
 
-receiveViaURI :: ChatMonad m => User -> FileDescriptionURI -> CryptoFile -> m ()
+receiveViaURI :: ChatMonad m => User -> FileDescriptionURI -> CryptoFile -> m RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize
   aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs
-  ft <- withStore $ \db -> do
+  withStore $ \db -> do
     liftIO $ do
       updateRcvFileStatus db fileId FSConnected
       updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
       updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
     getRcvFileTransfer db user fileId
-  toView $ CRRcvFileStart user Nothing ft
   where
     FD.ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
 
@@ -3295,7 +3296,7 @@ processAgentMsgSndFile _corrId aFileId msg =
               case mapMaybe fileDescrURI rfds of
                 [] -> case rfds of
                   [] -> logError "File sent without receiver descriptions" -- should not happen
-                  (rfd : _) -> xftpSndFileRedirect_ user fileId rfd >>= toView . CRSndFileRedirectXFTP user ft
+                  (rfd : _) -> xftpSndFileRedirect_ user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndFileCompleteXFTP user ci ft' uris
@@ -6763,8 +6764,8 @@ chatCommandP =
       "/list remote ctrls" $> ListRemoteCtrls,
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
-      "/_upload " *> (APIXFTPDirectUpload <$> A.decimal <* A.space <*> cryptoFileP),
-      "/_download " *> (APIXFTPDirectDownload <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
+      "/_upload " *> (APIUploadStandaloneFile <$> A.decimal <* A.space <*> cryptoFileP),
+      "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
