@@ -6988,6 +6988,6 @@ xftpSndFileRedirect_ user ftId vfd = do
       file = CryptoFile fileName Nothing
       fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
       fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) fileDescr
-  aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd
+  aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd (roundedFDCount 1)
   chSize <- asks $ fileChunkSize . config
   withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
