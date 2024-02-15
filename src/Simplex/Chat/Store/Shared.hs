@@ -84,7 +84,6 @@ data StoreError
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SESndFileNotFoundXFTP {agentSndFileId :: AgentSndFileId}
   | SERcvFileNotFoundXFTP {agentRcvFileId :: AgentRcvFileId}
-  | SEExtraFileDescrNotFound {fileId :: FileTransferId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEConnectionNotFoundById {connId :: Int64}
   | SEConnectionNotFoundByMemberId {groupMemberId :: GroupMemberId}
