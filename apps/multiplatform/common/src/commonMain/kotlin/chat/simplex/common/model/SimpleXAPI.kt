@@ -451,7 +451,20 @@ object ChatController {
         }
         try {
           val msg = recvMsg(ctrl)
-          if (msg != null) processReceivedMsg(msg)
+          if (msg != null) {
+            val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
+              processReceivedMsg(msg)
+            }
+            if (finishedWithoutTimeout == null) {
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.possible_slow_function_title),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                )
+              }
+            }
+          }
         } catch (e: Exception) {
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
         } catch (e: Throwable) {

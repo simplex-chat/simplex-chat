@@ -41,7 +41,7 @@ fun CIVideoView(
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
-        withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+        withLongRunningApi(slow = 600_000) {
           if (file != null && file.loaded && getLoadedFilePath(file) == null) {
             file.loadRemoteFile(false)
             filePath.value = getLoadedFilePath(file)

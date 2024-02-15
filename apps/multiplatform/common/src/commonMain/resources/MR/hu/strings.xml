@@ -1583,9 +1583,7 @@
     <string name="possible_slow_function_title">Lassú funkció</string>
     <string name="show_slow_api_calls">Lassú API-hívások megjelenítése</string>
     <string name="remote_host_error_inactive"><![CDATA[A(z) <b>%s</b> mobil eszköz inaktív]]></string>
-    <string name="possible_deadlock_title">Elakadt</string>
     <string name="developer_options_section">Fejlesztői beállítások</string>
-    <string name="possible_deadlock_desc">A kód végrehajtása túl sokáig tart: %1$d másodperc. Valószínűleg az alkalmazás lefagyott: %2$s</string>
     <string name="possible_slow_function_desc">A funkció végrehajtása túl sokáig tart: %1$d másodperc: %2$s</string>
     <string name="remote_host_error_busy"><![CDATA[A(z) <b>%s</b> mobil eszköz elfoglalt]]></string>
     <string name="past_member_vName">Legutóbbi tag %1$s</string>
