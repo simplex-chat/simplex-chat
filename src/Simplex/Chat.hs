@@ -677,7 +677,7 @@ processChatCommand' vr = \case
           (fileSize, fileMode) <- checkSndFile mc file 1
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP -> xftpSndFileTransfer_ user file fileSize 1 . Just $ CGContact ct
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ CGContact ct
           where
             smpSndFileTransfer :: CryptoFile -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer (CryptoFile _ (Just _)) _ _ = throwChatError $ CEFileInternal "locally encrypted files can't be sent via SMP" -- can only happen if XFTP is disabled
@@ -742,7 +742,7 @@ processChatCommand' vr = \case
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP -> xftpSndFileTransfer_ user file fileSize n . Just $ CGGroup g
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ CGGroup g
           where
             smpSndFileTransfer :: CryptoFile -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer (CryptoFile _ (Just _)) _ _ = throwChatError $ CEFileInternal "locally encrypted files can't be sent via SMP" -- can only happen if XFTP is disabled
@@ -770,6 +770,21 @@ processChatCommand' vr = \case
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
+      xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+      xftpSndFileTransfer user file fileSize n contactOrGroup = do
+        (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
+        case contactOrGroup of
+          CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
+            withStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
+          CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
+            where
+              -- we are not sending files to pending members, same as with inline files
+              saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
+                when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
+                  withStore' $
+                    \db -> createSndFTDescrXFTP db user (Just m) conn ft dummyFileDescr
+              saveMemberFD _ = pure ()
+        pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
@@ -3294,7 +3309,7 @@ processAgentMsgSndFile _corrId aFileId msg =
               case mapMaybe fileDescrURI rfds of
                 [] -> case rfds of
                   [] -> logError "File sent without receiver descriptions" -- should not happen
-                  (rfd : _) -> xftpSndFileRedirect_ user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
+                  (rfd : _) -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndStandaloneFileComplete user ft' uris
@@ -6955,8 +6970,7 @@ mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0
 xftpSndFileTransfer_ :: ChatMonad m => User -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
 xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ = do
   let fileName = takeFileName filePath
-      fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-      fInv = xftpFileInvitation fileName fileSize fileDescr
+      fInv = xftpFileInvitation fileName fileSize dummyFileDescr
   fsFilePath <- toFSFilePath filePath
   let srcFile = CryptoFile fsFilePath cfArgs
   aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n)
@@ -6965,27 +6979,16 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ file fInv (AgentSndFileId aFileId) Nothing chSize
   let fileSource = Just $ CryptoFile filePath cfArgs
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
-  case contactOrGroup_ of
-    Nothing ->
-      pure ()
-    Just (CGContact Contact {activeConn}) -> forM_ activeConn $ \conn ->
-      withStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft fileDescr
-    Just (CGGroup (Group _ ms)) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
-      where
-        -- we are not sending files to pending members, same as with inline files
-        saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
-          when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
-            withStore' $
-              \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
-        saveMemberFD _ = pure ()
   pure (fInv, ciFile, ft)
 
-xftpSndFileRedirect_ :: ChatMonad m => User -> FileTransferId -> ValidFileDescription 'FRecipient -> m FileTransferMeta
-xftpSndFileRedirect_ user ftId vfd = do
+xftpSndFileRedirect :: ChatMonad m => User -> FileTransferId -> ValidFileDescription 'FRecipient -> m FileTransferMeta
+xftpSndFileRedirect user ftId vfd = do
   let fileName = "redirect.yaml"
       file = CryptoFile fileName Nothing
-      fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-      fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) fileDescr
+      fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) dummyFileDescr
   aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd (roundedFDCount 1)
   chSize <- asks $ fileChunkSize . config
   withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
+
+dummyFileDescr :: FileDescr
+dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
