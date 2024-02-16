@@ -1,1 +1,0 @@
-SimpleX Chat - e2e encrypted messenger without any user IDs - private by design!

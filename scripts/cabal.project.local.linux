@@ -1,6 +1,0 @@
-ignore-project: False
-
-package direct-sqlcipher
-    flags: +openssl
-
-test-show-details: direct

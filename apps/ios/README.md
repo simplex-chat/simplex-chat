@@ -1,1 +1,0 @@
-# SimpleX Chat iOS app
