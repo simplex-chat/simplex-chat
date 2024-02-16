@@ -1966,12 +1966,18 @@ processChatCommand' vr = \case
             fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
               s == FSCancelled || (s == FSComplete && isNothing xftpSndFile)
         FTRcv ftr@RcvFileTransfer {cancelled, fileStatus, xftpRcvFile}
-          | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
-          | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
-          | otherwise -> case xftpRcvFile of
+          | cancelled -> do
+              logWarn "already cancelled FTRcv"
+              throwChatError $ CEFileCancel fileId "file already cancelled"
+          | rcvFileComplete fileStatus -> do
+              logWarn "already complete FTRcv"
+              throwChatError $ CEFileCancel fileId "file transfer is complete"
+          | otherwise -> do
+             logWarn "cancelling FTRcv"
+             case xftpRcvFile of
               Nothing -> do
                 cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-                ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
+                ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
                 pure $ CRRcvFileCancelled user ci ftr
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
@@ -1984,18 +1990,21 @@ processChatCommand' vr = \case
                     updateCIFileStatus db user fileId CIFSRcvInvitation
                     updateRcvFileStatus db fileId FSNew
                     updateRcvFileAgentId db fileId Nothing
-                  getChatItemByFileId db vr user fileId
+                  lookupChatItemByFileId db vr user fileId
                 pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
-    ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> getChatItemByFileId db vr user fileId
-    case file of
-      Just CIFile {fileProtocol = FPLocal} ->
-        throwChatError $ CECommandError "not supported for local files"
-      Just CIFile {fileProtocol = FPXFTP} ->
-        pure $ CRFileTransferStatusXFTP user ci
-      _ -> do
+    withStore (\db -> lookupChatItemByFileId db vr user fileId) >>= \case
+      Nothing -> do
         fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
         pure $ CRFileTransferStatus user fileStatus
+      Just ci@(AChatItem _ _ _ ChatItem {file}) -> case file of
+        Just CIFile {fileProtocol = FPLocal} ->
+          throwChatError $ CECommandError "not supported for local files"
+        Just CIFile {fileProtocol = FPXFTP} ->
+          pure $ CRFileTransferStatusXFTP user ci
+        _ -> do
+          fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
+          pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {displayName = displayName, fullName = fullName}

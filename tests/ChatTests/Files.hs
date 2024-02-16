@@ -81,6 +81,8 @@ chatFileTests = do
   describe "file transfer over XFTP without chat items" $ do
     it "send and receive small standalone file" testXFTPStandaloneSmall
     it "send and receive large standalone file" testXFTPStandaloneLarge
+    xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
+    xit "removes received temporary files" testXFTPStandaloneCancelRcv -- /fc gets sent after download in tests
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1630,6 +1632,33 @@ testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src 
     logWarn "no error?"
     dst <## "error receiving file 1 (should.not.extist)"
     dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
+
+testXFTPStandaloneCancelRcv :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "64mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    logNote "cancelling"
+    dst <## "/fc 1"
+    dst <## "cancelled receiving file 1 (testfile.out)"
+    threadDelay 250000
+    doesFileExist dstFile `shouldReturn` False
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
