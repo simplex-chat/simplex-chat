@@ -1607,7 +1607,7 @@ object ChatController {
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
-  private suspend fun processReceivedMsg(apiResp: APIResponse) {
+  private fun processReceivedMsg(apiResp: APIResponse) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val r = apiResp.resp
     val rhId = apiResp.remoteHostId
@@ -1699,7 +1699,7 @@ object ChatController {
           chatModel.networkStatuses[s.agentConnId] = s.networkStatus
         }
       }
-      is CR.NewChatItem -> {
+      is CR.NewChatItem -> withBGApi {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
@@ -1714,7 +1714,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withBGApi { receiveFile(rhId, r.user, file.fileId, auto = true) }
+          receiveFile(rhId, r.user, file.fileId, auto = true)
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1727,8 +1727,9 @@ object ChatController {
           chatModel.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
         }
       }
-      is CR.ChatItemUpdated ->
+      is CR.ChatItemUpdated -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
+      }
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           chatModel.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
@@ -1758,7 +1759,9 @@ object ChatController {
         if (r.toChatItem == null) {
           chatModel.removeChatItem(rhId, cInfo, cItem)
         } else {
-          chatModel.upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
+          withBGApi {
+            chatModel.upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
+          }
         }
       }
       is CR.ReceivedGroupInvitation -> {
@@ -1843,37 +1846,42 @@ object ChatController {
         if (active(r.user)) {
           chatModel.updateContact(rhId, r.contact)
         }
-      is CR.RcvFileStart ->
+      is CR.RcvFileStart -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      is CR.RcvFileComplete ->
+      }
+      is CR.RcvFileComplete -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      is CR.RcvFileSndCancelled -> {
+      }
+      is CR.RcvFileSndCancelled -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.RcvFileProgressXFTP ->
+      is CR.RcvFileProgressXFTP -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      is CR.RcvFileError -> {
+      }
+      is CR.RcvFileError -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.SndFileStart ->
+      is CR.SndFileStart -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      is CR.SndFileComplete -> {
+      }
+      is CR.SndFileComplete -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileRcvCancelled -> {
+      is CR.SndFileRcvCancelled -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileProgressXFTP ->
+      is CR.SndFileProgressXFTP -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      is CR.SndFileCompleteXFTP -> {
+      }
+      is CR.SndFileCompleteXFTP -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.SndFileError -> {
+      is CR.SndFileError -> withBGApi {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
@@ -1931,7 +1939,7 @@ object ChatController {
       is CR.RemoteHostSessionCode -> {
         chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
-      is CR.RemoteHostConnected -> {
+      is CR.RemoteHostConnected -> withBGApi {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
         switchUIRemoteHost(r.remoteHost.remoteHostId)
@@ -1971,7 +1979,9 @@ object ChatController {
         }
         if (chatModel.remoteHostId() == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
-          switchUIRemoteHost(null)
+          withBGApi {
+            switchUIRemoteHost(null)
+          }
         }
       }
       is CR.RemoteCtrlFound -> {
@@ -2020,7 +2030,9 @@ object ChatController {
           }
 
           if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
-            switchToLocalSession()
+            withBGApi {
+              switchToLocalSession()
+            }
           }
         }
       }
