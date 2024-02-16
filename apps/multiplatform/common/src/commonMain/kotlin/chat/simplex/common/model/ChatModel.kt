@@ -328,15 +328,17 @@ object ChatModel {
     }
   }
 
-  fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
-    if (chatId.value == cInfo.id) {
-      val items = chatItems.value
-      val itemIndex = items.indexOfFirst { it.id == cItem.id }
-      if (itemIndex >= 0) {
-        items[itemIndex] = cItem
+  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
+    withContext(Dispatchers.Main) {
+      if (chatId.value == cInfo.id) {
+        val items = chatItems.value
+        val itemIndex = items.indexOfFirst { it.id == cItem.id }
+        if (itemIndex >= 0) {
+          items[itemIndex] = cItem
+        }
+      } else if (status != null) {
+        chatItemStatuses[cItem.id] = status
       }
-    } else if (status != null) {
-      chatItemStatuses[cItem.id] = status
     }
   }
 

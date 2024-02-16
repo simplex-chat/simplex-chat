@@ -1607,7 +1607,7 @@ object ChatController {
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
-  private fun processReceivedMsg(apiResp: APIResponse) {
+  private suspend fun processReceivedMsg(apiResp: APIResponse) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val r = apiResp.resp
     val rhId = apiResp.remoteHostId
@@ -1729,9 +1729,8 @@ object ChatController {
           chatModel.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
         }
       }
-      is CR.ChatItemUpdated -> withBGApi {
+      is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      }
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           chatModel.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
@@ -1761,9 +1760,7 @@ object ChatController {
         if (r.toChatItem == null) {
           chatModel.removeChatItem(rhId, cInfo, cItem)
         } else {
-          withBGApi {
-            chatModel.upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
-          }
+          chatModel.upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
@@ -1848,42 +1845,37 @@ object ChatController {
         if (active(r.user)) {
           chatModel.updateContact(rhId, r.contact)
         }
-      is CR.RcvFileStart -> withBGApi {
+      is CR.RcvFileStart ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      }
-      is CR.RcvFileComplete -> withBGApi {
+      is CR.RcvFileComplete ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      }
-      is CR.RcvFileSndCancelled -> withBGApi {
+      is CR.RcvFileSndCancelled -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.RcvFileProgressXFTP -> withBGApi {
+      is CR.RcvFileProgressXFTP ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      }
-      is CR.RcvFileError -> withBGApi {
+      is CR.RcvFileError -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.SndFileStart -> withBGApi {
+      is CR.SndFileStart ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      }
-      is CR.SndFileComplete -> withBGApi {
+      is CR.SndFileComplete -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileRcvCancelled -> withBGApi {
+      is CR.SndFileRcvCancelled -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileProgressXFTP -> withBGApi {
+      is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-      }
-      is CR.SndFileCompleteXFTP -> withBGApi {
+      is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.SndFileError -> withBGApi {
+      is CR.SndFileError -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
@@ -1941,7 +1933,7 @@ object ChatController {
       is CR.RemoteHostSessionCode -> {
         chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
-      is CR.RemoteHostConnected -> withBGApi {
+      is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
         switchUIRemoteHost(r.remoteHost.remoteHostId)
@@ -1981,9 +1973,7 @@ object ChatController {
         }
         if (chatModel.remoteHostId() == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
-          withBGApi {
-            switchUIRemoteHost(null)
-          }
+          switchUIRemoteHost(null)
         }
       }
       is CR.RemoteCtrlFound -> {
@@ -2032,9 +2022,7 @@ object ChatController {
           }
 
           if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
-            withBGApi {
-              switchToLocalSession()
-            }
+            switchToLocalSession()
           }
         }
       }
