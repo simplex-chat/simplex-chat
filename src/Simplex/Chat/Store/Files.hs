@@ -930,7 +930,7 @@ getFileTransferMeta db User {userId} = getFileTransferMeta_ db userId
 
 getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO FileTransferMeta
 getFileTransferMeta_ db userId fileId =
-  ExceptT . firstRow (toFileTransferMeta fileId) (SEFileNotFound fileId) $
+  ExceptT . firstRow fileTransferMeta (SEFileNotFound fileId) $
     DB.query
       db
       [sql|
@@ -939,26 +939,17 @@ getFileTransferMeta_ db userId fileId =
         WHERE user_id = ? AND file_id = ?
       |]
       (userId, fileId)
+  where
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool, Maybe FileTransferId) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
+      let cryptoArgs = CFArgs <$> fileKey <*> fileNonce
+          xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
+        in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
-lookupFileTransferRedirectMeta :: DB.Connection -> User -> Int64 -> IO (Maybe FileTransferMeta)
-lookupFileTransferRedirectMeta db User {userId} fileId =
-  maybeFirstRow (\(Only fileIdRedirect :. row) -> toFileTransferMeta fileIdRedirect row) $
-    DB.query
-      db
-      [sql|
-        SELECT
-          file_id,
-          file_name, file_size, chunk_size, file_path, file_crypto_key, file_crypto_nonce, file_inline, agent_snd_file_id, agent_snd_file_deleted, private_snd_file_descr, cancelled, redirect_file_id
-        FROM files
-        WHERE user_id = ? AND redirect_file_id = ?
-      |]
-      (userId, fileId)
-
-toFileTransferMeta :: Int64 -> (String, Integer, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool, Maybe FileTransferId) -> FileTransferMeta
-toFileTransferMeta fileId (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
-  let cryptoArgs = CFArgs <$> fileKey <*> fileNonce
-      xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
-    in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
+lookupFileTransferRedirectMeta :: DB.Connection -> User -> Int64 -> IO [FileTransferMeta]
+lookupFileTransferRedirectMeta db User {userId} fileId = do
+  redirects <- DB.query db "SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?" (userId, fileId)
+  rights <$> mapM (runExceptT . getFileTransferMeta_ db userId . fromOnly) redirects
 
 createLocalFile :: ToField (CIFileStatus d) => CIFileStatus d -> DB.Connection -> User -> NoteFolder -> ChatItemId -> UTCTime -> CryptoFile -> Integer -> Integer -> IO Int64
 createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} chatItemId itemTs CryptoFile {filePath, cryptoArgs} fileSize fileChunkSize = do

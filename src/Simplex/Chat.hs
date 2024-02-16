@@ -6310,17 +6310,20 @@ agentXFTPDeleteRcvFile aFileId fileId = do
   withStore' $ \db -> setRcvFTAgentDeleted db fileId
 
 agentXFTPDeleteSndFileRemote :: ChatMonad m => User -> XFTPSndFile -> FileTransferId -> m ()
-agentXFTPDeleteSndFileRemote user XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr, agentSndFileDeleted} fileId =
-  unless agentSndFileDeleted $ do
-    forM_ privateSndFileDescr $ \sfdText -> do
-      sd <- parseFileDescription sfdText
-      withAgent $ \a -> xftpDeleteSndFileRemote a (aUserId user) aFileId sd
-      withStore' $ \db -> setSndFTAgentDeleted db user fileId
+agentXFTPDeleteSndFileRemote user sndFile fileId = do
     -- the agent doesn't know about redirect, delete explicitly
+  handleError (const $ pure ()) $ do
     redirect_ <- withStore' $ \db -> lookupFileTransferRedirectMeta db user fileId
     forM_ redirect_ $ \FileTransferMeta {fileId = fileIdRedirect, xftpSndFile = sndFileRedirect_} ->
-      forM_ sndFileRedirect_ $ \sndFileRedirect ->
-        agentXFTPDeleteSndFileRemote user sndFileRedirect fileIdRedirect
+      mapM_ (remove fileIdRedirect) sndFileRedirect_
+  remove fileId sndFile
+  where
+    remove fId XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr, agentSndFileDeleted} =
+      unless agentSndFileDeleted $ do
+        forM_ privateSndFileDescr $ \sfdText -> do
+          sd <- parseFileDescription sfdText
+          withAgent $ \a -> xftpDeleteSndFileRemote a (aUserId user) aFileId sd
+          withStore' $ \db -> setSndFTAgentDeleted db user fId
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do

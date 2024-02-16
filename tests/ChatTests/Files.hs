@@ -1572,7 +1572,7 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     dst <## "started standalone receiving file 1 (test.jpg)"
     -- silent progress events
     threadDelay 250000
-    dst <## "completed receiving file 1 (test.jpg)"
+    dst <## "completed standalone receiving file 1 (test.jpg)"
     srcBody <- B.readFile "./tests/fixtures/test.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
@@ -1599,7 +1599,7 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     dst <## "started standalone receiving file 1 (testfile.out)"
     -- silent progress events
     threadDelay 250000
-    dst <## "completed receiving file 1 (testfile.out)"
+    dst <## "completed standalone receiving file 1 (testfile.out)"
     srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody
 
