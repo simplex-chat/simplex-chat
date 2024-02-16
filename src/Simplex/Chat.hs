@@ -2637,7 +2637,7 @@ setAllExpireCIFlags b = do
 cancelFilesInProgress :: forall m. ChatMonad m => User -> [CIFileInfo] -> m ()
 cancelFilesInProgress user filesInfo = do
   let filesInfo' = filter (not . fileEnded) filesInfo
-  (_errs1, fts) <- partitionEithers <$> withStoreBatch (\db -> map (getFTransfer db) filesInfo')
+  (_errs, fts) <- partitionEithers <$> withStoreBatch (\db -> map (getFTransfer db) filesInfo')
   let fts' = filter (not . ftCancelled) fts
   updateFilesCancelled fts'
   let (sndXFTPs, rcvXFTPs, sndSMPs, rcvSMPs) = partitionFTs fts'
