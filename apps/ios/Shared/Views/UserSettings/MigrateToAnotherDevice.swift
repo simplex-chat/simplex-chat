@@ -16,19 +16,23 @@ public enum MigrationState: Equatable {
     case passphraseNotSet
     case passphraseConfirmation
     case uploadConfirmation
-    case uploadProgress(uploadedKb: Int64, totalKb: Int64)
-    case uploadDone(link: String)
+    case archiving
+    case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, archivePath: URL)
+    case linkCreation(totalBytes: Int64, archivePath: URL)
+    case linkShown(link: String, archivePath: URL)
 }
 
 struct MigrateToAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @State private var migrationState: MigrationState = .initial
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToAnotherDeviceViewAlert?
+    @State private var confirmPassphraseAlert: PassphraseConfirmationView.PassphraseConfirmationViewAlert?
     private let chatWasStoppedInitially: Bool = AppChatState.shared.value == .stopped
 
     enum MigrateToAnotherDeviceViewAlert: Identifiable {
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: String = "")
 
         var id: String {
             switch self {
@@ -39,30 +43,32 @@ struct MigrateToAnotherDevice: View {
 
     var body: some View {
         VStack {
-            List {
-                switch migrationState {
-                case .initial: EmptyView()
-                case .chatStopInProgress:
-                    progressView("Stopping chat")
-                case let .chatStopFailed(reason):
-                    chatStopFailedView(reason)
-                case .passphraseNotSet:
-                    passphraseNotSetView()
-                case .passphraseConfirmation:
-                    PassphraseConfirmationView(migrationState: $migrationState)
-                case .uploadConfirmation:
-                    uploadConfirmationView()
-                case let .uploadProgress(uploaded, total):
-                    uploadProgressView(uploaded, totalKb: total)
-                case let .uploadDone(link):
-                    uploadDoneView(link)
-                }
+            switch migrationState {
+            case .initial: EmptyView()
+            case .chatStopInProgress:
+                chatStopInProgressView()
+            case let .chatStopFailed(reason):
+                chatStopFailedView(reason)
+            case .passphraseNotSet:
+                passphraseNotSetView()
+            case .passphraseConfirmation:
+                PassphraseConfirmationView(migrationState: $migrationState, alert: $confirmPassphraseAlert)
+            case .uploadConfirmation:
+                uploadConfirmationView()
+            case .archiving:
+                archivingView()
+            case let .uploadProgress(uploaded, total, archivePath):
+                uploadProgressView(uploaded, totalBytes: total, archivePath)
+            case let .linkCreation(totalBytes, archivePath):
+                linkCreationView(totalBytes, archivePath)
+            case let .linkShown(link, archivePath):
+                linkView(link, archivePath)
             }
         }
         .onAppear {
             if case .initial = migrationState {
                 if AppChatState.shared.value == .stopped {
-                    migrationState = initialRandomDBPassphraseGroupDefault.get() ? .passphraseNotSet : .passphraseConfirmation
+                    migrationState = initialRandomDBPassphrase ? .passphraseNotSet : .passphraseConfirmation
                 } else {
                     migrationState = .chatStopInProgress
                     stopChat()
@@ -70,7 +76,7 @@ struct MigrateToAnotherDevice: View {
             }
         }
         .onDisappear {
-            if !chatWasStoppedInitially {
+            if case .linkShown = migrationState {} else if !chatWasStoppedInitially {
                 Task {
                     try? startChat(refreshInvitations: true)
                 }
@@ -81,6 +87,33 @@ struct MigrateToAnotherDevice: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
+        }
+        .alert(item: $confirmPassphraseAlert) { alert in
+            switch alert {
+            case let .wrongPassphrase(title, message):
+                return Alert(title: Text(title), message: Text(message))
+            case let .invalidConfirmation(title):
+                return Alert(title: Text(title))
+            case let .keychainError(title):
+                return Alert(title: Text(title))
+            case let .databaseError(title, message):
+                return Alert(title: Text(title), message: Text(message))
+            case let .unknownError(title, message):
+                return Alert(title: Text(title), message: Text(message))
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            }
+        }
+    }
+
+    private func chatStopInProgressView() -> some View {
+        ZStack {
+            List {
+                Section {} header: {
+                    Text("Stopping chat")
+                }
+            }
+            progressView()
         }
     }
 
@@ -100,50 +133,80 @@ struct MigrateToAnotherDevice: View {
     }
 
     private func passphraseNotSetView() -> some View {
-        Section {
-            Text("Database is encrypted using a random passphrase. Please set your own password before migrating.")
-            NavigationLink {
-                DatabaseEncryptionView(useKeychain: $useKeychain)
-                    .navigationTitle("Database passphrase")
-            } label: {
-                settingsRow("lock.open", color: .secondary) {
-                    Text("Set passphrase")
+        DatabaseEncryptionView(useKeychain: $useKeychain, migration: true)
+            .onChange(of: initialRandomDBPassphrase) { initial in
+                if !initial {
+                    migrationState = .uploadConfirmation
                 }
             }
-        } header: {
-            Text("Set passphrase to export")
-        }
-        .onAppear {
-            if !initialRandomDBPassphraseGroupDefault.get() {
-                migrationState = .uploadConfirmation
-            }
-        }
     }
 
     private func uploadConfirmationView() -> some View {
-        Section {
-            Button(action: startUploading) {
-                settingsRow("tray.and.arrow.up", color: .secondary) {
-                    Text("Start uploading")
+        List {
+            Section {
+                Text("All your contacts, conversations and files will be archived and uploaded as encrypted file to configured XFTP relays")
+                Button(action: { migrationState = .archiving }) {
+                    settingsRow("tray.and.arrow.up", color: .secondary) {
+                        Text("Archive and upload")
+                    }
                 }
+            } header: {
+                Text("Confirm upload")
             }
-        } header: {
-            Text("Confirm upload")
-        } footer: {
-            Text("Do you want to start uploading now?")
         }
     }
 
-    private func uploadProgressView(_ uploadedKb: Int64, totalKb: Int64) -> some View {
-        progressView("Uploaded \(ByteCountFormatter.string(fromByteCount: uploadedKb, countStyle: .binary)) from \(ByteCountFormatter.string(fromByteCount: totalKb, countStyle: .binary))")
+    private func archivingView() -> some View {
+        ZStack {
+            List {
+                Section {} header: {
+                    Text("Archiving database…")
+                }
+            }
+            progressView()
+        }
+        .onAppear {
+            exportArchive()
+        }
     }
 
-    private func uploadDoneView(_ link: String) -> some View {
-        Section {
-            SimpleXLinkQRCode(uri: link)
-            shareLinkButton(link)
-        } header: {
-            Text("Link to uploaded archive")
+    private func uploadProgressView(_ uploadedBytes: Int64, totalBytes: Int64, _ archivePath: URL) -> some View {
+        ZStack {
+            List {
+                Section {} header: {
+                    Text("Uploading archive…")
+                }
+            }
+            let ratio = Float(uploadedBytes) / Float(totalBytes)
+            largeProgressView(ratio, "\(Int(ratio * 100))%\n\(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary)) uploaded")
+        }
+        .onAppear {
+            startUploading(totalBytes, archivePath)
+        }
+    }
+
+    private func linkCreationView(_ totalBytes: Int64, _ archivePath: URL) -> some View {
+        ZStack {
+            List {
+                Section {} header: {
+                    Text("Creating archive link…")
+                }
+            }
+            largeProgressView(1, "\(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary))")
+        }
+        .onAppear {
+            createLink(archivePath)
+        }
+    }
+
+    private func linkView(_ link: String, _ archivePath: URL) -> some View {
+        List {
+            Section {
+                SimpleXLinkQRCode(uri: link)
+                shareLinkButton(link)
+            } header: {
+                Text("Link to uploaded archive")
+            }
         }
     }
 
@@ -153,6 +216,25 @@ struct MigrateToAnotherDevice: View {
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
+    }
+
+    private func largeProgressView(_ value: Float, _ text: LocalizedStringKey) -> some View {
+        ZStack {
+            Text(text)
+                .font(.title3)
+                .multilineTextAlignment(.center)
+
+            Circle()
+                .trim(from: 0, to: CGFloat(value))
+                .stroke(
+                    Color.accentColor,
+                    style: StrokeStyle(lineWidth: 5)
+                )
+                .rotationEffect(.degrees(-90))
+                .animation(.linear, value: value)
+                .frame(width: 250, height: 250)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
     }
 
     private func stopChat() {
@@ -166,18 +248,48 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func startUploading() {
+    private func exportArchive() {
         Task {
-            for i in 1...10 {
-                try? await Task.sleep(nanoseconds: 100_000000)
+            do {
+                let archivePath = try await exportChatArchive()
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
+                    let totalBytes = attrs[.size] as? Int64 {
+                    await MainActor.run {
+                        migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, archivePath: archivePath)
+                    }
+                } else {
+                    await MainActor.run {
+                        alert = .error(title: "Exported file doesn't exist")
+                        migrationState = .uploadConfirmation
+                    }
+                }
+            } catch let error {
                 await MainActor.run {
-                    migrationState = .uploadProgress(uploadedKb: Int64(100 * i), totalKb: 1000)
-                    if i == 10 {
-                        migrationState = .uploadDone(link: "https://simplex.chat")
+                    alert = .error(title: "Error exporting chat database", error: responseError(error))
+                    migrationState = .uploadConfirmation
+                }
+            }
+        }
+    }
+
+    private func startUploading(_ totalBytes: Int64, _ archivePath: URL) {
+        Task {
+            for i in 1...20 {
+                try? await Task.sleep(nanoseconds: 50_000000)
+                await MainActor.run {
+                    migrationState = .uploadProgress(uploadedBytes: Int64(100_000 * i), totalBytes: 2_000_000, archivePath: archivePath)
+                    if i == 20 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            migrationState = .linkCreation(totalBytes: totalBytes, archivePath: archivePath)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private func createLink(_ archivePath: URL) {
+        migrationState = .linkShown(link: "https://simplex.chat", archivePath: archivePath)
     }
 }
 
@@ -186,9 +298,9 @@ private struct PassphraseConfirmationView: View {
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var currentKey: String = ""
     @State private var verifyingPassphrase: Bool = false
-    @State private var alert: PassphraseConfirmationViewAlert?
+    @Binding var alert: PassphraseConfirmationViewAlert?
 
-    enum PassphraseConfirmationViewAlert: Identifiable {
+    public enum PassphraseConfirmationViewAlert: Identifiable {
         case wrongPassphrase(title: LocalizedStringKey = "Wrong passphrase!", message: LocalizedStringKey = "Enter correct passphrase.")
         case invalidConfirmation(title: LocalizedStringKey = "Invalid migration confirmation")
         case keychainError(_ title: LocalizedStringKey = "Keychain error")
@@ -209,84 +321,74 @@ private struct PassphraseConfirmationView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            VStack {
+        ZStack {
+            List {
+                chatStoppedView()
                 Section {
-                    VStack {
-                        PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
-                        Button(action: { checkDatabasePassphrase(currentKey, $verifyingPassphrase) }) {
-                            settingsRow(useKeychain ? "key" : "lock", color: .secondary) {
-                                Text("Check passphrase")
-                            }
+                    PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+                    Button(action: {
+                        verifyingPassphrase = true
+                        hideKeyboard()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            verifyDatabasePassphrase(currentKey, $verifyingPassphrase)
+                        }
+                    }) {
+                        settingsRow(useKeychain ? "key" : "lock", color: .secondary) {
+                            Text("Verify passphrase")
                         }
                     }
+                    .disabled(currentKey.isEmpty)
                 } header: {
-                    Text("Enter database passphrase")
+                    Text("Verify database passphrase to migrate it")
                 } footer: {
                     Text("Make sure you remember database passphrase before migrating")
                 }
+                .font(.callout)
             }
-            if (verifyingPassphrase) {
-                progressView("Checking passphrase…")
-            }
-        }
-        .alert(item: $alert) { alert in
-            switch alert {
-            case let .wrongPassphrase(title, message):
-                return Alert(title: Text(title), message: Text(message))
-            case let .invalidConfirmation(title):
-                return Alert(title: Text(title))
-            case let .keychainError(title):
-                return Alert(title: Text(title))
-            case let .databaseError(title, message):
-                return Alert(title: Text(title), message: Text(message))
-            case let .unknownError(title, message):
-                return Alert(title: Text(title), message: Text(message))
-            case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+            if verifyingPassphrase {
+                progressView()
             }
         }
     }
 
-    private func checkDatabasePassphrase(_ dbKey: String, _ verifyingPassphrase: Binding<Bool>) {
-        verifyingPassphrase.wrappedValue = true
-        defer {
+    private func verifyDatabasePassphrase(_ dbKey: String, _ verifyingPassphrase: Binding<Bool>) {
+        let m = ChatModel.shared
+        resetChatCtrl()
+        m.ctrlInitInProgress = true
+        defer { 
+            m.ctrlInitInProgress = false
             verifyingPassphrase.wrappedValue = false
         }
-        do {
-            resetChatCtrl()
-            try initializeChat(start: false, confirmStart: false, dbKey: dbKey, confirmMigrations: nil)
-            if let s = ChatModel.shared.chatDbStatus {
-                let am = AlertManager.shared
-                switch s {
-                case .invalidConfirmation:
-                    am.showAlert(Alert(title: Text(String("Invalid migration confirmation"))))
-                case .errorNotADatabase:
-                    alert = .wrongPassphrase()
-                case .errorKeychain:
-                    alert = .keychainError()
-                case let .errorSQL(_, error):
-                    alert = .databaseError(message: error)
-                case let .unknown(error):
-                    alert = .unknownError(message: error)
-                case .errorMigration: ()
-                case .ok:
-                    migrationState = .uploadConfirmation
-                }
-            }
-        } catch let error {
-            logger.error("initializeChat \(responseError(error))")
+        let (_, status) = chatMigrateInit(dbKey, confirmMigrations: .error)
+        switch status {
+        case .invalidConfirmation:
+            alert = .invalidConfirmation()
+        case .errorNotADatabase:
+            alert = .wrongPassphrase()
+        case .errorKeychain:
+            alert = .keychainError()
+        case let .errorSQL(_, error):
+            alert = .databaseError(message: error)
+        case let .unknown(error):
+            alert = .unknownError(message: error)
+        case .errorMigration: ()
+        case .ok:
+            migrationState = .uploadConfirmation
         }
     }
 }
 
-private func progressView(_ text: LocalizedStringKey) -> some View {
+private func progressView() -> some View {
     VStack {
         ProgressView().scaleEffect(2)
-        Text(text)
-            .padding()
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity )
+}
+
+func chatStoppedView() -> some View {
+    settingsRow("exclamationmark.octagon.fill", color: .red) {
+        Text("Chat is stopped")
+    }
 }
 
 struct MigrateToAnotherDevice_Previews: PreviewProvider {

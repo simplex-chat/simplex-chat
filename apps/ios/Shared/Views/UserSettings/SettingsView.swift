@@ -163,49 +163,49 @@ struct SettingsView: View {
         NavigationView {
             List {
                 Section("You") {
-                    if let user = user {
-                        NavigationLink {
-                            UserProfile()
-                                .navigationTitle("Your current profile")
-                        } label: {
-                            ProfilePreview(profileOf: user)
-                                .padding(.leading, -8)
-                        }
-                    }
-
-                    NavigationLink {
-                        UserProfilesView(showSettings: $showSettings)
-                    } label: {
-                        settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
-                    }
-
-
-                    if let user = user {
-                        NavigationLink {
-                            UserAddressView(shareViaProfile: user.addressShared)
-                                .navigationTitle("SimpleX address")
-                                .navigationBarTitleDisplayMode(.large)
-                        } label: {
-                            settingsRow("qrcode") { Text("Your SimpleX address") }
+                    Group {
+                        if let user = user {
+                            NavigationLink {
+                                UserProfile()
+                                    .navigationTitle("Your current profile")
+                            } label: {
+                                ProfilePreview(profileOf: user)
+                                    .padding(.leading, -8)
+                            }
                         }
 
                         NavigationLink {
-                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                                .navigationTitle("Your preferences")
+                            UserProfilesView(showSettings: $showSettings)
                         } label: {
-                            settingsRow("switch.2") { Text("Chat preferences") }
+                            settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
+                        }
+
+
+                        if let user = user {
+                            NavigationLink {
+                                UserAddressView(shareViaProfile: user.addressShared)
+                                    .navigationTitle("SimpleX address")
+                                    .navigationBarTitleDisplayMode(.large)
+                            } label: {
+                                settingsRow("qrcode") { Text("Your SimpleX address") }
+                            }
+
+                            NavigationLink {
+                                PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                                    .navigationTitle("Your preferences")
+                            } label: {
+                                settingsRow("switch.2") { Text("Chat preferences") }
+                            }
+                        }
+
+                        NavigationLink {
+                            ConnectDesktopView(viaSettings: true)
+                        } label: {
+                            settingsRow("desktopcomputer") { Text("Use from desktop") }
                         }
                     }
+                    .disabled(chatModel.chatRunning != true)
 
-                    NavigationLink {
-                        ConnectDesktopView(viaSettings: true)
-                    } label: {
-                        settingsRow("desktopcomputer") { Text("Use from desktop") }
-                    }
-                }
-                .disabled(chatModel.chatRunning != true)
-                
-                Section {
                     NavigationLink {
                         MigrateToAnotherDevice()
                             .navigationTitle("Migrate to another device")
@@ -214,7 +214,6 @@ struct SettingsView: View {
                         settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
                     }
                 }
-
                 Section("Settings") {
                     NavigationLink {
                         NotificationsView()

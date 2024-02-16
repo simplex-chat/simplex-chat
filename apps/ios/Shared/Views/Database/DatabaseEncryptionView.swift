@@ -36,6 +36,7 @@ enum DatabaseEncryptionAlert: Identifiable {
 struct DatabaseEncryptionView: View {
     @EnvironmentObject private var m: ChatModel
     @Binding var useKeychain: Bool
+    var migration: Bool
     @State private var alert: DatabaseEncryptionAlert? = nil
     @State private var progressIndicator = false
     @State private var useKeychainToggle = storeDBPassphraseGroupDefault.get()
@@ -48,7 +49,13 @@ struct DatabaseEncryptionView: View {
 
     var body: some View {
         ZStack {
-            databaseEncryptionView()
+            List {
+                if migration {
+                    chatStoppedView()
+                    Text("Set database passphrase to migrate it")
+                }
+                databaseEncryptionView()
+            }
             if progressIndicator {
                 ProgressView().scaleEffect(2)
             }
@@ -56,72 +63,76 @@ struct DatabaseEncryptionView: View {
     }
 
     private func databaseEncryptionView() -> some View {
-        List {
-            Section {
+        Section {
+            if !migration {
                 settingsRow(storedKey ? "key.fill" : "key", color: storedKey ? .green : .secondary) {
                     Toggle("Save passphrase in Keychain", isOn: $useKeychainToggle)
-                    .onChange(of: useKeychainToggle) { _ in
-                        if useKeychainToggle {
-                            setUseKeychain(true)
-                        } else if storedKey {
-                            alert = .keychainRemoveKey
-                        } else {
-                            setUseKeychain(false)
+                        .onChange(of: useKeychainToggle) { _ in
+                            if useKeychainToggle {
+                                setUseKeychain(true)
+                            } else if storedKey {
+                                alert = .keychainRemoveKey
+                            } else {
+                                setUseKeychain(false)
+                            }
                         }
-                    }
-                    .disabled(initialRandomDBPassphrase)
+                        .disabled(initialRandomDBPassphrase)
                 }
+            }
 
-                if !initialRandomDBPassphrase && m.chatDbEncrypted == true {
-                    PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+            if !initialRandomDBPassphrase && m.chatDbEncrypted == true {
+                PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+            }
+
+            PassphraseField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
+            PassphraseField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
+
+            settingsRow("lock.rotation") {
+                Button(migration ? "Set passphrase" : "Update database passphrase") {
+                    alert = currentKey == ""
+                    ? (useKeychain ? .encryptDatabaseSaved : .encryptDatabase)
+                    : (useKeychain ? .changeDatabaseKeySaved : .changeDatabaseKey)
                 }
-
-                PassphraseField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
-                PassphraseField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
-
-                settingsRow("lock.rotation") {
-                    Button("Update database passphrase") {
-                        alert = currentKey == ""
-                        ? (useKeychain ? .encryptDatabaseSaved : .encryptDatabase)
-                        : (useKeychain ? .changeDatabaseKeySaved : .changeDatabaseKey)
-                    }
-                }
-                .disabled(
-                    (m.chatDbEncrypted == true && currentKey == "") ||
-                    currentKey == newKey ||
-                    newKey != confirmNewKey ||
-                    newKey == "" ||
-                    !validKey(currentKey) ||
-                    !validKey(newKey)
-                )
-            } header: {
+            }
+            .disabled(
+                (m.chatDbEncrypted == true && currentKey == "") ||
+                currentKey == newKey ||
+                newKey != confirmNewKey ||
+                newKey == "" ||
+                !validKey(currentKey) ||
+                !validKey(newKey)
+            )
+        } header: {
+            if !migration {
                 Text("")
-            } footer: {
-                VStack(alignment: .leading, spacing: 16) {
-                    if m.chatDbEncrypted == false {
-                        Text("Your chat database is not encrypted - set passphrase to encrypt it.")
-                    } else if useKeychain {
-                        if storedKey {
-                            Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
+            }
+        } footer: {
+            VStack(alignment: .leading, spacing: 16) {
+                if m.chatDbEncrypted == false {
+                    Text("Your chat database is not encrypted - set passphrase to encrypt it.")
+                } else if useKeychain {
+                    if storedKey {
+                        Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
+                        if !migration {
                             if initialRandomDBPassphrase {
                                 Text("Database is encrypted using a random passphrase, you can change it.")
                             } else {
                                 Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
                             }
-                        } else {
-                            Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
                         }
                     } else {
-                        Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
-                        Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
-                        if  m.notificationMode == .instant && m.notificationPreview != .hidden {
-                            Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
-                        }
+                        Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
+                    }
+                } else {
+                    Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
+                    Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                    if  m.notificationMode == .instant && m.notificationPreview != .hidden {
+                        Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
                     }
                 }
-                .padding(.top, 1)
-                .font(.callout)
             }
+            .padding(.top, 1)
+            .font(.callout)
         }
         .onAppear {
             if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }
@@ -346,6 +357,6 @@ func validKey(_ s: String) -> Bool {
 
 struct DatabaseEncryptionView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseEncryptionView(useKeychain: Binding.constant(true))
+        DatabaseEncryptionView(useKeychain: Binding.constant(true), migration: false)
     }
 }
