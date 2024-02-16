@@ -1653,7 +1653,7 @@ fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
 receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
-  [status <> " receiving " <> rcvFile ft <> " from " <> ttyContact c]
+  [status <> " receiving " <> rcvFile ft <> if c == "" then "" else " from " <> ttyContact c]
 
 rcvFile :: RcvFileTransfer -> StyledString
 rcvFile RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} = fileTransferStr fileId fileName

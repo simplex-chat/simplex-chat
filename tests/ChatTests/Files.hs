@@ -82,7 +82,7 @@ chatFileTests = do
     it "send and receive small standalone file" testXFTPStandaloneSmall
     it "send and receive large standalone file" testXFTPStandaloneLarge
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
-    xit "removes received temporary files" testXFTPStandaloneCancelRcv -- /fc gets sent after download in tests
+    it "removes received temporary files" testXFTPStandaloneCancelRcv
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1636,7 +1636,7 @@ testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src 
 testXFTPStandaloneCancelRcv :: HasCallStack => FilePath -> IO ()
 testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
-    xftpCLI ["rand", "./tests/tmp/testfile.in", "64mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
 
     logNote "sending"
     src ##> "/_upload 1 ./tests/tmp/testfile.in"
@@ -1654,10 +1654,11 @@ testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src 
     let dstFile = "./tests/tmp/testfile.out"
     dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
     dst <## "started standalone receiving file 1 (testfile.out)"
+    threadDelay 25000 -- give workers some time to avoid internal errors from starting tasks
     logNote "cancelling"
-    dst <## "/fc 1"
+    dst ##> "/fc 1"
     dst <## "cancelled receiving file 1 (testfile.out)"
-    threadDelay 250000
+    threadDelay 25000
     doesFileExist dstFile `shouldReturn` False
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()

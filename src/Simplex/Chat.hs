@@ -1966,15 +1966,9 @@ processChatCommand' vr = \case
             fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
               s == FSCancelled || (s == FSComplete && isNothing xftpSndFile)
         FTRcv ftr@RcvFileTransfer {cancelled, fileStatus, xftpRcvFile}
-          | cancelled -> do
-              logWarn "already cancelled FTRcv"
-              throwChatError $ CEFileCancel fileId "file already cancelled"
-          | rcvFileComplete fileStatus -> do
-              logWarn "already complete FTRcv"
-              throwChatError $ CEFileCancel fileId "file transfer is complete"
-          | otherwise -> do
-             logWarn "cancelling FTRcv"
-             case xftpRcvFile of
+          | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
+          | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
+          | otherwise -> case xftpRcvFile of
               Nothing -> do
                 cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
                 ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId

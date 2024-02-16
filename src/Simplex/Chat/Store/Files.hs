@@ -698,7 +698,7 @@ getRcvFileTransfer_ db userId fileId = do
             FSCancelled -> ft name . RFSCancelled <$> rfi_
       where
         standaloneName_ = case (connId_, agentRcvFileId, filePath_) of
-          (Nothing, Just _, Just _) -> Just "direct" -- filePath marks files that are accepted from contact or, in this case, set by createRcvDirectFileTransfer
+          (Nothing, Just _, Just _) -> Just "" -- filePath marks files that are accepted from contact or, in this case, set by createRcvDirectFileTransfer
           _ -> Nothing
         ft senderDisplayName fileStatus =
           let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
