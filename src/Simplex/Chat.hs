@@ -2634,53 +2634,6 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
--- cancelRcvFileTransfer :: ChatMonad m => User -> RcvFileTransfer -> m (Maybe ConnId)
--- cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInline} =
---   cancel' `catchChatError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
---   where
---     cancel' = do
---       closeFileHandle fileId rcvFiles
---       withStore' $ \db -> do
---         updateFileCancelled db user fileId CIFSRcvCancelled
---         updateRcvFileStatus db fileId FSCancelled
---         deleteRcvFileChunks db ft
---       case xftpRcvFile of
---         Just XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId), agentRcvFileDeleted} ->
---           unless agentRcvFileDeleted $ agentXFTPDeleteRcvFile aFileId fileId
---         _ -> pure ()
---       pure fileConnId
---     fileConnId = if isNothing xftpRcvFile && isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
-
--- cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [ConnId]
--- cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
---   withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
---     `catchChatError` (toView . CRChatError (Just user))
---   case xftpSndFile of
---     Nothing ->
---       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
---     Just xsf -> do
---       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
---       agentXFTPDeleteSndFileRemote user xsf fileId `catchChatError` (toView . CRChatError (Just user))
---       pure []
-
--- cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
--- cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
---   if fileStatus == FSCancelled || fileStatus == FSComplete
---     then pure Nothing
---     else cancel' `catchChatError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
---   where
---     cancel' = do
---       withStore' $ \db -> do
---         updateSndFileStatus db ft FSCancelled
---         deleteSndFileChunks db ft
---       when sendCancel $ case fileInline of
---         Just _ -> do
---           (sharedMsgId, conn) <- withStore $ \db -> (,) <$> getSharedMsgIdByFileId db userId fileId <*> getConnectionById db user connId
---           void . sendDirectMessage conn (BFileChunk sharedMsgId FileChunkCancel) $ ConnectionId connId
---         _ -> withAgent $ \a -> void . sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel
---       pure fileConnId
---     fileConnId = if isNothing fileInline then Just acId else Nothing
-
 cancelFilesInProgress :: forall m. ChatMonad m => User -> [CIFileInfo] -> m ()
 cancelFilesInProgress user filesInfo = do
   let filesInfo' = filter (not . fileEnded) filesInfo
