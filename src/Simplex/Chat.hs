@@ -6306,10 +6306,9 @@ agentXFTPDeleteRcvFile aFileId fileId = do
 agentXFTPDeleteSndFileRemote :: ChatMonad m => User -> XFTPSndFile -> FileTransferId -> m ()
 agentXFTPDeleteSndFileRemote user sndFile fileId = do
     -- the agent doesn't know about redirect, delete explicitly
-  handleError (const $ pure ()) $ do
-    redirect_ <- withStore' $ \db -> lookupFileTransferRedirectMeta db user fileId
-    forM_ redirect_ $ \FileTransferMeta {fileId = fileIdRedirect, xftpSndFile = sndFileRedirect_} ->
-      mapM_ (remove fileIdRedirect) sndFileRedirect_
+  redirect_ <- withStore' $ \db -> lookupFileTransferRedirectMeta db user fileId
+  forM_ redirect_ $ \FileTransferMeta {fileId = fileIdRedirect, xftpSndFile = sndFileRedirect_} ->
+    mapM_ (handleError (const $ pure ()) . remove fileIdRedirect) sndFileRedirect_
   remove fileId sndFile
   where
     remove fId XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr, agentSndFileDeleted} =
