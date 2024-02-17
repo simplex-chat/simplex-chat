@@ -102,6 +102,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
@@ -2457,7 +2458,7 @@ processChatCommand' vr = \case
       where
         cReqSchemas :: (ConnReqInvitation, ConnReqInvitation)
         cReqSchemas =
-          ( CRInvitationUri crData {crScheme = CRSSimplex} e2e,
+          ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
             CRInvitationUri crData {crScheme = simplexChat} e2e
           )
     connectPlan user (ACR SCMContact (CRContactUri crData)) = do
@@ -2502,7 +2503,7 @@ processChatCommand' vr = \case
       where
         cReqSchemas :: (ConnReqContact, ConnReqContact)
         cReqSchemas =
-          ( CRContactUri crData {crScheme = CRSSimplex},
+          ( CRContactUri crData {crScheme = SSSimplex},
             CRContactUri crData {crScheme = simplexChat}
           )
         cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
