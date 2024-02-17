@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Không thể giải mã tin nhắn.</string>
-    <string name="moderated_items_description">Tin nhắn đã được kiểm duyệt bởi</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">tin nhắn không thể giải mã.</string>
+    <string name="moderated_items_description">tin nhắn đã bị xóa bởi</string>
     <string name="group_info_section_title_num_members">THÀNH VIÊN</string>
     <string name="learn_more_about_address">Thông tin về địa chỉ SimpleX</string>
     <string name="address_section_title">Địa chỉ</string>
@@ -16,6 +16,6 @@
     <string name="button_add_welcome_message">Thêm lời chào</string>
     <string name="contact_wants_to_connect_via_call">muốn kết nối với bạn qua</string>
     <string name="accept">Chấp nhận</string>
-    <string name="alert_text_decryption_error_too_many_skipped">tin nhắn bị bỏ qua.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">tin nhắn đã bị bỏ qua.</string>
     <string name="users_add">Thêm hồ sơ</string>
 </resources>
