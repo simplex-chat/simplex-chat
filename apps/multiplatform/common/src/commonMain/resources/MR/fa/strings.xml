@@ -150,4 +150,12 @@
     <string name="icon_descr_instant_notifications">اعلان‌های آنی</string>
     <string name="service_notifications_disabled">اعلان‌های آنی غیرفعال شده‌اند!</string>
     <string name="service_notifications">اعلان‌های آنی!</string>
+    <string name="note_folder_local_display_name">یادداشت‌های خصوصی</string>
+    <string name="blocked_by_admin_item_description">مسدود شده توسط مدیر</string>
+    <string name="blocked_by_admin_items_description">%d پیام توسط مدیر مسدود شده</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>به وسیله تنظیمات می‌تواند غیرفعال شود</b> – اعلان‌ها تا زمانی که برنامه در حال اجراست، همچنان نمایش داده می‌شوند.</string>
+    <string name="database_migration_in_progress">جابه‌جایی پایگاه داده در حال جریان است.
+\nممکن است دقایقی زمان ببرد.</string>
+    <string name="turn_off_battery_optimization">برای استفاده از آن، لطفا در دیالوگ بعدی<b>به SimpleX اجازه دهید در پس‌زمینه اجرا شود</b>. در غیر این صورت، اعلان‌ها غیرفعال خواهند شد.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">برای حفاظت از حریم خصوصیتان، به جای اعلان‌های رانشی، برنامه یک <b>سرویس پس‌زمنیه SimpleX</b> دارد – سرویس، هر روز درصد معدودی از باتری را استفاده می‌کند.</string>
 </resources>
