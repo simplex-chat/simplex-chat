@@ -146,9 +146,9 @@ testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = v1Range,
-      e2eEncryptVRange = v1Range,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = v1Range}
+      smpAgentVRange = versionToRange 2, -- duplexHandshakeSMPAgentVersion,
+      e2eEncryptVRange = versionToRange 2, -- kdfX3DHE2EEncryptVersion,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange 4} -- batchCmdsSMPVersion
     }
 
 testCfgVPrev :: ChatConfig
@@ -166,7 +166,7 @@ testCfgV1 =
     }
 
 prevRange :: VersionRange -> VersionRange
-prevRange vr = vr {maxVersion = maxVersion vr - 1}
+prevRange vr = vr {maxVersion = max (minVersion vr) (maxVersion vr - 1)}
 
 v1Range :: VersionRange
 v1Range = mkVersionRange 1 1
