@@ -42,7 +42,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
     }
     var fileSource = getLoadedFileSource(cItem.file)
     if (chatModel.connectedToRemote() && fileSource == null) {
-      withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+      withLongRunningApi(slow = 600_000) {
         cItem.file?.loadRemoteFile(true)
         fileSource = getLoadedFileSource(cItem.file)
         saveIfExists()
@@ -51,7 +51,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   })
 }
 
-actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withLongRunningApi(slow = 600_000) {
   var fileSource = getLoadedFileSource(cItem.file)
   if (chatModel.connectedToRemote() && fileSource == null) {
     cItem.file?.loadRemoteFile(true)
