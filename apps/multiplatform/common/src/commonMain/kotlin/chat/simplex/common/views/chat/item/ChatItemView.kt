@@ -177,7 +177,8 @@ fun ChatItemView(
         fun MsgContentItemDropdownMenu() {
           val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
           when {
-            cItem.content.msgContent != null -> {
+            // cItem.id check is a special case for live message chat item which has negative ID while not sent yet
+            cItem.content.msgContent != null && cItem.id >= 0 -> {
               DefaultDropdownMenu(showMenu) {
                 if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                   MsgReactionsMenu()
@@ -212,7 +213,7 @@ fun ChatItemView(
                       showMenu.value = false
                     }
                     if (chatModel.connectedToRemote() && fileSource == null) {
-                      withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+                      withLongRunningApi(slow = 600_000) {
                         cItem.file?.loadRemoteFile(true)
                         fileSource = getLoadedFileSource(cItem.file)
                         shareIfExists()
@@ -526,8 +527,9 @@ fun DeleteItemAction(
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (range != null) {
             val itemIds: ArrayList<Long> = arrayListOf()
+            val reversedChatItems = chatModel.chatItems.asReversed()
             for (i in range) {
-              itemIds.add(chatModel.chatItems.asReversed()[i].id)
+              itemIds.add(reversedChatItems[i].id)
             }
             deleteMessagesAlertDialog(itemIds, generalGetString(MR.strings.delete_message_mark_deleted_warning), deleteMessages = deleteMessages)
           } else {

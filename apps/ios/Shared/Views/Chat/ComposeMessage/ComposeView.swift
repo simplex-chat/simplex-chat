@@ -978,6 +978,9 @@ struct ComposeView: View {
     }
 
     private func cancelLinkPreview() {
+        if let pendingLink = pendingLinkUrl?.absoluteString {
+            cancelledLinks.insert(pendingLink)
+        }
         if let uri = composeState.linkPreview?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }

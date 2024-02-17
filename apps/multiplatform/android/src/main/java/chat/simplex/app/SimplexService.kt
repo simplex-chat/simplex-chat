@@ -104,7 +104,7 @@ class SimplexService: Service() {
     if (wakeLock != null || isStartingService) return
     val self = this
     isStartingService = true
-    withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+    withLongRunningApi {
       val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {

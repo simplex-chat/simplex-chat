@@ -1,11 +1,12 @@
 package chat.simplex.app
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.*
 import android.view.WindowManager
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.ui.platform.ClipboardManager
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.getUserIdFromIntent
@@ -58,6 +59,17 @@ class MainActivity: FragmentActivity() {
   override fun onResume() {
     super.onResume()
     AppLock.recheckAuthState()
+    withApi {
+      delay(1000)
+      if (!isAppOnForeground) return@withApi
+      /**
+       * When the app calls [ClipboardManager.shareText] and a user copies text in clipboard, Android denies
+       * access to clipboard because the app considered in background.
+       * This will ensure that the app will get the event on resume
+       * */
+      val service = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+      chatModel.clipboardHasText.value = service.hasPrimaryClip()
+    }
   }
 
   override fun onPause() {

@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.AppScreen
+import chat.simplex.common.model.clear
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.*
 import androidx.compose.ui.platform.LocalContext as LocalContext1
 import chat.simplex.res.MR
@@ -112,7 +114,8 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
     Handler(Looper.getMainLooper()).post {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.app_was_crashed),
-        text = e.stackTraceToString()
+        text = e.stackTraceToString(),
+        shareText = true
       )
     }
   }

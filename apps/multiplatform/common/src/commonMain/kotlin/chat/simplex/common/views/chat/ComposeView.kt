@@ -267,7 +267,7 @@ fun ComposeView(
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-      withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+      withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
@@ -551,7 +551,7 @@ fun ComposeView(
   }
 
   fun sendMessage(ttl: Int?) {
-    withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+    withLongRunningApi(slow = 120_000) {
       sendMessageAsync(null, false, ttl)
     }
   }
@@ -583,6 +583,10 @@ fun ComposeView(
   }
 
   fun cancelLinkPreview() {
+    val pendingLink = pendingLinkUrl.value
+    if (pendingLink != null) {
+      cancelledLinks.add(pendingLink)
+    }
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
       cancelledLinks.add(uri)
@@ -661,7 +665,7 @@ fun ComposeView(
 
   fun editPrevMessage() {
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
-    val lastEditable = chatModel.chatItems.findLast { it.meta.editable }
+    val lastEditable = chatModel.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
       composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
     }

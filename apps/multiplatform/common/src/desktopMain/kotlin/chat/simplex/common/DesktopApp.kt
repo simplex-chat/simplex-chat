@@ -14,8 +14,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
-import chat.simplex.common.model.ChatController
-import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -40,7 +39,8 @@ fun showApp() {
           WindowExceptionHandler { e ->
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.app_was_crashed),
-              text = e.stackTraceToString()
+              text = e.stackTraceToString(),
+              shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
             window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
