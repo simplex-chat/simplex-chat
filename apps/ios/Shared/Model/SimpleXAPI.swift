@@ -1861,7 +1861,9 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cItem = aChatItem.chatItem
     if active(user) {
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
-            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            if cItem.showNotification {
+                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            }
         }
     }
 }
