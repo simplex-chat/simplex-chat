@@ -1173,9 +1173,8 @@ processChatCommand' vr = \case
       ok user
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserProtoServers userId serversConfig
-  APITestProtoServer userId srv@(AProtoServerWithAuth p server) -> withUserId userId $ \user ->
-    withServerProtocol p $
-      CRServerTestResult user srv <$> withAgent (\a -> testProtocolServer a (aUserId user) server)
+  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
+    CRServerTestResult user srv <$> withAgent (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
@@ -6486,6 +6485,7 @@ chatCommandP =
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
       "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
+      "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
       "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
       "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
       "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
