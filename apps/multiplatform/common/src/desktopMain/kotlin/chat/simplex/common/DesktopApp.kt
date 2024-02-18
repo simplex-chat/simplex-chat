@@ -39,7 +39,8 @@ fun showApp() {
           WindowExceptionHandler { e ->
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.app_was_crashed),
-              text = e.stackTraceToString()
+              text = e.stackTraceToString(),
+              shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
             window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))

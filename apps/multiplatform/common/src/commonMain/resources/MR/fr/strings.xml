@@ -1559,11 +1559,9 @@
     <string name="remote_host_error_bad_state"><![CDATA[État médiocre de la connexion au mobile <b>%s</b>.]]></string>
     <string name="remote_ctrl_was_disconnected_title">Connexion interrompue</string>
     <string name="remote_ctrl_error_bad_state">État médiocre de la connexion avec le bureau</string>
-    <string name="possible_deadlock_title">Impasse</string>
     <string name="remote_ctrl_error_bad_version">La version de l\'ordinateur de bureau n\'est pas prise en charge. Veillez à utiliser la même version sur les deux appareils.</string>
     <string name="remote_ctrl_error_disconnected">Le bureau a été déconnecté</string>
     <string name="developer_options_section">Options pour les développeurs</string>
-    <string name="possible_deadlock_desc">Le code prend trop de temps à s\'exécuter : %1$d secondes. Il est probable que l\'application soit figée : %2$s</string>
     <string name="agent_internal_error_title">Erreur interne</string>
     <string name="remote_host_error_bad_version"><![CDATA[La version du mobile <b>%s</b> n\'est pas prise en charge. Veillez à utiliser la même version sur les deux appareils.]]></string>
     <string name="show_internal_errors">Afficher les erreurs internes</string>
