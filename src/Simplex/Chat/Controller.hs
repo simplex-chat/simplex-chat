@@ -250,6 +250,7 @@ data ChatCommand
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
+  | TestStorageEncryption DBEncryptionKey
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
