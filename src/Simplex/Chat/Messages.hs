@@ -360,6 +360,24 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
         _ -> False
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
 
+dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
+dummyMeta itemId ts itemText =
+  CIMeta
+    { itemId,
+      itemTs = ts,
+      itemText,
+      itemStatus = CISSndNew,
+      itemSharedMsgId = Nothing,
+      itemDeleted = Nothing,
+      itemEdited = False,
+      itemTimed = Nothing,
+      itemLive = Nothing,
+      editable = False,
+      forwardedByMember = Nothing,
+      createdAt = ts,
+      updatedAt = ts
+    }
+
 data CITimed = CITimed
   { ttl :: Int, -- seconds
     deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
