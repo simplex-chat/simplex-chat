@@ -49,6 +49,7 @@ import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
@@ -715,7 +716,7 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
-  | CRArchiveImported {archiveErrors :: [ArchiveError]}
+  | CRArchiveImported {importResult :: ArchiveImportResult}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
 
@@ -874,7 +875,18 @@ data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (Us
 
 deriving instance Show AUserProtoServers
 
-data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
+data ArchiveConfig = ArchiveConfig
+  { archivePath :: FilePath,
+    disableCompression :: Maybe Bool,
+    parentTempDirectory :: Maybe FilePath,
+    appSettings :: AppSettings
+  }
+  deriving (Show)
+
+data ArchiveImportResult = ArchiveImportResult
+  { archiveErrors :: [ArchiveError],
+    appSettings :: AppSettings
+  }
   deriving (Show)
 
 data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey, keepKey :: Maybe Bool}
@@ -1411,6 +1423,8 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
+
+$(JQ.deriveJSON defaultJSON ''ArchiveImportResult)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
