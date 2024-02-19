@@ -935,7 +935,7 @@ getDirectChatLast_ db user@User {userId} ct@Contact {contactId} count search = d
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getDirectChatItemIdsLast_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadDirectItem db user ct currentTs) chatItemIds
+  chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   pure $ Chat (DirectChat ct) (reverse chatItems) stats
   where
     getDirectChatItemIdsLast_ :: IO [ChatItemId]
@@ -952,13 +952,13 @@ getDirectChatLast_ db user@User {userId} ct@Contact {contactId} count search = d
           |]
           (userId, contactId, search, count)
 
-getMaybeBadDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
-getMaybeBadDirectItem db user ct currentTs itemId =
+safeGetDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
+safeGetDirectItem db user ct currentTs itemId =
   runExceptT (getDirectCIWithReactions db user ct itemId)
-    >>= pure <$> toMaybeBadDirectItem currentTs itemId
+    >>= pure <$> safeToDirectItem currentTs itemId
 
-toMaybeBadDirectItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTDirect) -> CChatItem 'CTDirect
-toMaybeBadDirectItem currentTs itemId = \case
+safeToDirectItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTDirect) -> CChatItem 'CTDirect
+safeToDirectItem currentTs itemId = \case
   Right ci -> ci
   Left e@(SEBadChatItem _ (Just itemTs)) -> badDirectItem itemTs e
   Left e -> badDirectItem currentTs e
@@ -999,7 +999,7 @@ getDirectChatAfter_ db user@User {userId} ct@Contact {contactId} afterChatItemId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getDirectChatItemIdsAfter_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadDirectItem db user ct currentTs) chatItemIds
+  chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   pure $ Chat (DirectChat ct) chatItems stats
   where
     getDirectChatItemIdsAfter_ :: IO [ChatItemId]
@@ -1022,7 +1022,7 @@ getDirectChatBefore_ db user@User {userId} ct@Contact {contactId} beforeChatItem
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getDirectChatItemsIdsBefore_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadDirectItem db user ct currentTs) chatItemIds
+  chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   pure $ Chat (DirectChat ct) (reverse chatItems) stats
   where
     getDirectChatItemsIdsBefore_ :: IO [ChatItemId]
@@ -1054,7 +1054,7 @@ getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getGroupChatItemIdsLast_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadGroupItem db user g currentTs) chatItemIds
+  chatItems <- mapM (safeGetGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
@@ -1071,13 +1071,13 @@ getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
           |]
           (userId, groupId, search, count)
 
-getMaybeBadGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
-getMaybeBadGroupItem db user g currentTs itemId =
+safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
+safeGetGroupItem db user g currentTs itemId =
   runExceptT (getGroupCIWithReactions db user g itemId)
-    >>= pure <$> toMaybeBadGroupItem currentTs itemId
+    >>= pure <$> safeToGroupItem currentTs itemId
 
-toMaybeBadGroupItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
-toMaybeBadGroupItem currentTs itemId = \case
+safeToGroupItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
+safeToGroupItem currentTs itemId = \case
   Right ci -> ci
   Left e@(SEBadChatItem _ (Just itemTs)) -> badGroupItem itemTs e
   Left e -> badGroupItem currentTs e
@@ -1119,7 +1119,7 @@ getGroupChatAfter_ db user@User {userId} g@GroupInfo {groupId} afterChatItemId c
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
   currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (getMaybeBadGroupItem db user g currentTs) chatItemIds
+  chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) chatItems stats
   where
     getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
@@ -1143,7 +1143,7 @@ getGroupChatBefore_ db user@User {userId} g@GroupInfo {groupId} beforeChatItemId
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
   currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (getMaybeBadGroupItem db user g currentTs) chatItemIds
+  chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
@@ -1175,7 +1175,7 @@ getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count searc
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getLocalChatItemIdsLast_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadLocalItem db user nf currentTs) chatItemIds
+  chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsLast_ :: IO [ChatItemId]
@@ -1192,13 +1192,13 @@ getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count searc
           |]
           (userId, noteFolderId, search, count)
 
-getMaybeBadLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
-getMaybeBadLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
+safeGetLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
+safeGetLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
   runExceptT (getLocalChatItem db user noteFolderId itemId)
-    >>= pure <$> toMaybeBadLocalItem currentTs itemId
+    >>= pure <$> safeToLocalItem currentTs itemId
 
-toMaybeBadLocalItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTLocal) -> CChatItem 'CTLocal
-toMaybeBadLocalItem currentTs itemId = \case
+safeToLocalItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTLocal) -> CChatItem 'CTLocal
+safeToLocalItem currentTs itemId = \case
   Right ci -> ci
   Left e@(SEBadChatItem _ (Just itemTs)) -> badLocalItem itemTs e
   Left e -> badLocalItem currentTs e
@@ -1223,7 +1223,7 @@ getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatI
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getLocalChatItemIdsAfter_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadLocalItem db user nf currentTs) chatItemIds
+  chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) chatItems stats
   where
     getLocalChatItemIdsAfter_ :: IO [ChatItemId]
@@ -1246,7 +1246,7 @@ getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeCha
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- getLocalChatItemIdsBefore_
   currentTs <- getCurrentTime
-  chatItems <- mapM (getMaybeBadLocalItem db user nf currentTs) chatItemIds
+  chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsBefore_ :: IO [ChatItemId]
