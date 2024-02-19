@@ -80,6 +80,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenRegistered = false
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
+    @Published var notificationServer: String?
     @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: NTFContactRequest?
@@ -89,6 +90,7 @@ final class ChatModel: ObservableObject {
     @Published var activeCall: Call?
     let callCommand: WebRTCCommandProcessor = WebRTCCommandProcessor()
     @Published var showCallView = false
+    @Published var activeCallViewIsCollapsed = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation

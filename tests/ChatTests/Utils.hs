@@ -83,9 +83,9 @@ versionTestMatrix2 runTest = do
   it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
-  it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
-  it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 runTest
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg runTest
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix3 runTest = do

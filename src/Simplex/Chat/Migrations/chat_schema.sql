@@ -193,7 +193,8 @@ CREATE TABLE files(
   protocol TEXT NOT NULL DEFAULT 'smp',
   file_crypto_key BLOB,
   file_crypto_nonce BLOB,
-  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -854,3 +855,4 @@ CREATE INDEX idx_chat_items_notes_item_status on chat_items(
   note_folder_id,
   item_status
 );
+CREATE INDEX idx_files_redirect_file_id on files(redirect_file_id);

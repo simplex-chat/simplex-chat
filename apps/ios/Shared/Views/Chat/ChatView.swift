@@ -161,11 +161,15 @@ struct ChatView: View {
                     HStack {
                         let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
                         if callsPrefEnabled {
-                            callButton(contact, .audio, imageName: "phone")
-                                .disabled(!contact.ready || !contact.active)
+                            if chatModel.activeCall == nil {
+                                callButton(contact, .audio, imageName: "phone")
+                                    .disabled(!contact.ready || !contact.active)
+                            } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                                endCallButton(call)
+                            }
                         }
                         Menu {
-                            if callsPrefEnabled {
+                            if callsPrefEnabled && chatModel.activeCall == nil {
                                 Button {
                                     CallController.shared.startCall(contact, .video)
                                 } label: {
@@ -422,7 +426,19 @@ struct ChatView: View {
             Image(systemName: imageName)
         }
     }
-    
+
+    private func endCallButton(_ call: Call) -> some View {
+        Button {
+            if let uuid = call.callkitUUID {
+                CallController.shared.endCall(callUUID: uuid)
+            } else {
+                CallController.shared.endCall(call: call) {}
+            }
+        } label: {
+            Image(systemName: "phone.down.fill").tint(.red)
+        }
+    }
+
     private func searchButton() -> some View {
         Button {
             searchMode = true

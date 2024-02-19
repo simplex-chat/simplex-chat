@@ -9,6 +9,7 @@ module Simplex.Chat.Archive
     importArchive,
     deleteStorage,
     sqlCipherExport,
+    sqlCipherTestKey,
     archiveFilesFolder,
   )
 where
@@ -20,6 +21,7 @@ import Control.Monad.Reader
 import qualified Data.ByteArray as BA
 import Data.Functor (($>))
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
@@ -147,19 +149,8 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
       atomically $ writeTVar dbKey $ storeKey key' (fromMaybe False keepKey)
     export f = do
       withDB f (`SQL.exec` exportSQL) DBErrorExport
-      withDB (exported f) (`SQL.exec` testSQL) DBErrorOpen
+      withDB (exported f) (`SQL.exec` testSQL key') DBErrorOpen
       where
-        withDB f' a err =
-          liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
-            `catch` checkSQLError
-            `catch` (\(e :: SomeException) -> sqliteError' e)
-            >>= mapM_ (throwDBError . err)
-          where
-            checkSQLError e = case SQL.sqlError e of
-              SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
-              _ -> sqliteError' e
-            sqliteError' :: Show e => e -> m (Maybe SQLiteError)
-            sqliteError' = pure . Just . SQLiteError . show
         exportSQL =
           T.unlines $
             keySQL key
@@ -167,14 +158,38 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
                    "SELECT sqlcipher_export('exported');",
                    "DETACH DATABASE exported;"
                  ]
-        testSQL =
-          T.unlines $
-            keySQL key'
-              <> [ "PRAGMA foreign_keys = ON;",
-                   "PRAGMA secure_delete = ON;",
-                   "SELECT count(*) FROM sqlite_master;"
-                 ]
-        keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
+
+withDB :: forall a m. ChatMonad m => FilePath -> (SQL.Database -> IO a) -> (SQLiteError -> DatabaseError) -> m ()
+withDB f' a err =
+  liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
+    `catch` checkSQLError
+    `catch` (\(e :: SomeException) -> sqliteError' e)
+    >>= mapM_ (throwDBError . err)
+  where
+    checkSQLError e = case SQL.sqlError e of
+      SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
+      _ -> sqliteError' e
+    sqliteError' :: Show e => e -> m (Maybe SQLiteError)
+    sqliteError' = pure . Just . SQLiteError . show
+
+testSQL :: BA.ScrubbedBytes -> Text
+testSQL k =
+  T.unlines $
+    keySQL k
+      <> [ "PRAGMA foreign_keys = ON;",
+            "PRAGMA secure_delete = ON;",
+            "SELECT count(*) FROM sqlite_master;"
+          ]
+
+keySQL :: BA.ScrubbedBytes -> [Text]
+keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
+
+sqlCipherTestKey :: forall m. ChatMonad m => DBEncryptionKey -> m ()
+sqlCipherTestKey (DBEncryptionKey key) = do
+  fs <- storageFiles
+  testKey `withDBs` fs
+  where
+    testKey f = withDB f (`SQL.exec` testSQL key) DBErrorOpen
 
 withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
 action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)
