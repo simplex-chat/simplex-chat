@@ -11,7 +11,7 @@ import Control.Monad (void, when)
 import qualified Data.ByteString as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
@@ -4344,7 +4344,7 @@ testGroupMsgForwardFile =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testGroupMsgForwardChangeRole :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardChangeRole =
@@ -4614,7 +4614,7 @@ testGroupHistoryHostFile =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testGroupHistoryMemberFile :: HasCallStack => FilePath -> IO ()
 testGroupHistoryMemberFile =
@@ -4655,7 +4655,7 @@ testGroupHistoryMemberFile =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testGroupHistoryLargeFile :: HasCallStack => FilePath -> IO ()
 testGroupHistoryLargeFile =
@@ -4713,7 +4713,7 @@ testGroupHistoryLargeFile =
       destCath <- B.readFile "./tests/tmp/testfile_2"
       destCath `shouldBe` src
   where
-    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryMultipleFiles :: HasCallStack => FilePath -> IO ()
 testGroupHistoryMultipleFiles =
@@ -4795,7 +4795,7 @@ testGroupHistoryMultipleFiles =
                           ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
                         ]
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testGroupHistoryFileCancel :: HasCallStack => FilePath -> IO ()
 testGroupHistoryFileCancel =
@@ -4852,7 +4852,7 @@ testGroupHistoryFileCancel =
             bob <## "#team: new member cath is connected"
         ]
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testGroupHistoryFileCancelNoText :: HasCallStack => FilePath -> IO ()
 testGroupHistoryFileCancelNoText =
@@ -4913,7 +4913,7 @@ testGroupHistoryFileCancelNoText =
             bob <## "#team: new member cath is connected"
         ]
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testGroupHistoryQuotes :: HasCallStack => FilePath -> IO ()
 testGroupHistoryQuotes =

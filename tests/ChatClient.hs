@@ -129,8 +129,7 @@ testCfg =
     { agentConfig = testAgentCfg,
       showReceipts = False,
       testView = True,
-      tbqSize = 16,
-      xftpFileConfig = Nothing
+      tbqSize = 16
     }
 
 testAgentCfgVPrev :: AgentConfig

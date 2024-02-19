@@ -13,7 +13,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Archive (archiveFilesFolder)
-import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..), versionNumber)
+import Simplex.Chat.Controller (ChatConfig (..), versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
@@ -317,7 +317,7 @@ remoteStoreFileTest =
 
       stopMobile mobile desktop
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp/tmp"}
     hostError cc err = do
       r <- getTermLine cc
       r `shouldStartWith` "remote host 1 error"
@@ -393,7 +393,7 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
 
   stopMobile mobile desktop
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp/tmp"}
 
 switchRemoteHostTest :: FilePath -> IO ()
 switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do

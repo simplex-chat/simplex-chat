@@ -14,7 +14,6 @@ module Simplex.Chat.Store.Files
   ( getLiveSndFileTransfers,
     getLiveRcvFileTransfers,
     getPendingSndChunks,
-    createSndDirectFileTransfer,
     createSndDirectFTConnection,
     createSndGroupFileTransfer,
     createSndGroupFileTransferConnection,
@@ -168,23 +167,6 @@ getPendingSndChunks db fileId connId =
         ORDER BY chunk_number
       |]
       (fileId, connId)
-
-createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> SubscriptionMode -> IO FileTransferMeta
-createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize subMode = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-    ((userId, contactId, fileName, filePath, fileSize, chunkSize) :. (fileInline, CIFSSndStored, FPSMP, currentTs, currentTs))
-  fileId <- insertedRowId db
-  forM_ acId_ $ \acId -> do
-    Connection {connId} <- createSndFileConnection_ db userId fileId acId subMode
-    let fileStatus = FSNew
-    DB.execute
-      db
-      "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (fileId, fileStatus, fileInline, connId, currentTs, currentTs)
-  pure FileTransferMeta {fileId, xftpSndFile = Nothing, fileName, filePath, fileSize, fileInline, chunkSize, cancelled = False}
 
 createSndDirectFTConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
 createSndDirectFTConnection db user@User {userId} fileId (cmdId, acId) subMode = do

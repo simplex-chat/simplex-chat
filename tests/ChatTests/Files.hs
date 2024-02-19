@@ -13,7 +13,7 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Simplex.Chat (roundedFDCount)
-import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
@@ -1081,7 +1081,7 @@ testXFTPFileTransfer =
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPFileTransferEncrypted :: HasCallStack => FilePath -> IO ()
 testXFTPFileTransferEncrypted =
@@ -1110,7 +1110,7 @@ testXFTPFileTransferEncrypted =
       LB.length dest `shouldBe` fromIntegral srcLen
       LB.toStrict dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPAcceptAfterUpload :: HasCallStack => FilePath -> IO ()
 testXFTPAcceptAfterUpload =
@@ -1138,7 +1138,7 @@ testXFTPAcceptAfterUpload =
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPGroupFileTransfer :: HasCallStack => FilePath -> IO ()
 testXFTPGroupFileTransfer =
@@ -1179,7 +1179,7 @@ testXFTPGroupFileTransfer =
       dest1 `shouldBe` src
       dest2 `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPDeleteUploadedFile :: HasCallStack => FilePath -> IO ()
 testXFTPDeleteUploadedFile =
@@ -1203,7 +1203,7 @@ testXFTPDeleteUploadedFile =
       bob ##> "/fr 1 ./tests/tmp"
       bob <## "file cancelled: test.pdf"
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPDeleteUploadedFileGroup :: HasCallStack => FilePath -> IO ()
 testXFTPDeleteUploadedFileGroup =
@@ -1258,7 +1258,7 @@ testXFTPDeleteUploadedFileGroup =
       cath ##> "/fr 1 ./tests/tmp"
       cath <## "file cancelled: test.pdf"
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPWithChangedConfig :: HasCallStack => FilePath -> IO ()
 testXFTPWithChangedConfig =
@@ -1295,7 +1295,7 @@ testXFTPWithChangedConfig =
 
 testXFTPWithRelativePaths :: HasCallStack => FilePath -> IO ()
 testXFTPWithRelativePaths =
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
       -- agent is passed xftp work directory only on chat start,
       -- so for test we work around by stopping and starting chat
@@ -1333,8 +1333,6 @@ testXFTPWithRelativePaths =
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
       dest `shouldBe` src
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
 
 testXFTPContinueRcv :: HasCallStack => FilePath -> IO ()
 testXFTPContinueRcv tmp = do
@@ -1373,11 +1371,11 @@ testXFTPContinueRcv tmp = do
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPMarkToReceive :: HasCallStack => FilePath -> IO ()
 testXFTPMarkToReceive = do
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
       connectUsers alice bob
 
@@ -1412,8 +1410,6 @@ testXFTPMarkToReceive = do
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
       dest `shouldBe` src
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
 
 testXFTPRcvError :: HasCallStack => FilePath -> IO ()
 testXFTPRcvError tmp = do
@@ -1444,7 +1440,7 @@ testXFTPRcvError tmp = do
       bob ##> "/fs 1"
       bob <## "receiving file 1 (test.pdf) error"
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 testXFTPCancelRcvRepeat :: HasCallStack => FilePath -> IO ()
 testXFTPCancelRcvRepeat =
@@ -1493,7 +1489,7 @@ testXFTPCancelRcvRepeat =
       dest <- B.readFile "./tests/tmp/testfile_1"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200, tempDir = Just "./tests/tmp"}
 
 testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
 testAutoAcceptFile =
@@ -1518,7 +1514,7 @@ testAutoAcceptFile =
     -- no auto accept for large files
     (bob </)
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
     opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
 
 testProhibitFiles :: HasCallStack => FilePath -> IO ()
@@ -1543,7 +1539,7 @@ testProhibitFiles =
     (bob </)
     (cath </)
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
