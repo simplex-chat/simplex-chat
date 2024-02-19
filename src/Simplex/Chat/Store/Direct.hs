@@ -236,7 +236,14 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
   if isNothing ctMember
     then do
       deleteContactProfile_ db userId contactId
-      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      DB.execute
+        db
+        [sql|
+          DELETE FROM display_names
+          WHERE user_id = ? AND local_display_name = ?
+            AND local_display_name NOT IN (SELECT local_display_name FROM users)
+        |]
+        (userId, localDisplayName)
     else do
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
@@ -250,7 +257,14 @@ deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
 deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   deleteContactProfile_ db userId contactId
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE user_id = ? AND local_display_name = ?
+        AND local_display_name NOT IN (SELECT local_display_name FROM users)
+    |]
+    (userId, localDisplayName)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ? AND is_user = 0" (userId, contactId)
   forM_ activeConn $ \Connection {customUserProfileId} ->
     forM_ customUserProfileId $ \profileId ->
@@ -259,7 +273,7 @@ deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDispla
 setContactDeleted :: DB.Connection -> User -> Contact -> IO ()
 setContactDeleted db User {userId} Contact {contactId} = do
   currentTs <- getCurrentTime
-  DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+  DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ? AND is_user = 0" (currentTs, userId, contactId)
 
 getDeletedContacts :: DB.Connection -> User -> IO [Contact]
 getDeletedContacts db user@User {userId} = do
@@ -501,7 +515,14 @@ updateContactLDN_ db userId contactId displayName newName updatedAt = do
     db
     "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
     (newName, updatedAt, userId, contactId)
-  DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE local_display_name = ? AND user_id = ?
+        AND local_display_name NOT IN (SELECT local_display_name FROM users)
+    |]
+    (displayName, userId)
 
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
 getContactByName db user localDisplayName = do
@@ -614,7 +635,14 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
                 WHERE user_id = ? AND contact_request_id = ?
               |]
               (invId, minV, maxV, ldn, currentTs, userId, cReqId)
-            DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldLdn, userId)
+            DB.execute
+              db
+              [sql|
+                DELETE FROM display_names
+                WHERE local_display_name = ? AND user_id = ?
+                  AND local_display_name NOT IN (SELECT local_display_name FROM users)
+              |]
+              (oldLdn, userId)
       where
         updateProfile currentTs =
           DB.execute
@@ -684,6 +712,7 @@ deleteContactRequest db User {userId} contactRequestId = do
         SELECT local_display_name FROM contact_requests
         WHERE user_id = ? AND contact_request_id = ?
       )
+      AND local_display_name NOT IN (SELECT local_display_name FROM users)
     |]
     (userId, userId, contactRequestId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
