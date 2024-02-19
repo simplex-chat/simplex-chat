@@ -54,7 +54,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
     },
     inviteMembers = {
       allowModifyMembers = false
-      withLongRunningApi(slow = 30_000, deadlock = 120_000) {
+      withLongRunningApi(slow = 120_000) {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {

@@ -98,6 +98,7 @@ import Simplex.Chat.Migrations.M20240102_note_folders
 import Simplex.Chat.Migrations.M20240104_members_profile_update
 import Simplex.Chat.Migrations.M20240115_block_member_for_all
 import Simplex.Chat.Migrations.M20240122_indexes
+import Simplex.Chat.Migrations.M20240214_redirect_file_id
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -195,7 +196,8 @@ schemaMigrations =
     ("20240102_note_folders", m20240102_note_folders, Just down_m20240102_note_folders),
     ("20240104_members_profile_update", m20240104_members_profile_update, Just down_m20240104_members_profile_update),
     ("20240115_block_member_for_all", m20240115_block_member_for_all, Just down_m20240115_block_member_for_all),
-    ("20240122_indexes", m20240122_indexes, Just down_m20240122_indexes)
+    ("20240122_indexes", m20240122_indexes, Just down_m20240122_indexes),
+    ("20240214_redirect_file_id", m20240214_redirect_file_id, Just down_m20240214_redirect_file_id)
   ]
 
 -- | The list of migrations in ascending order by date
