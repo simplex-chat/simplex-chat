@@ -22,7 +22,7 @@ CREATE TABLE contact_profiles(
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE
+  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
   DEFERRABLE INITIALLY DEFERRED,
   local_display_name TEXT NOT NULL UNIQUE,
   active_user INTEGER NOT NULL DEFAULT 0,
@@ -37,7 +37,7 @@ CREATE TABLE users(
   user_member_profile_updated_at TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
-  ON DELETE CASCADE
+  ON DELETE RESTRICT
   ON UPDATE CASCADE
   DEFERRABLE INITIALLY DEFERRED
 );
