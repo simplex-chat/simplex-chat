@@ -1464,7 +1464,7 @@ getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalPro
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         WHERE ct.user_id = ? AND ct.contact_id != ?
-          AND ct.contact_status = ? AND ct.deleted = 0
+          AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
           AND p.display_name = ? AND p.full_name = ?
       |]
 
@@ -1502,7 +1502,7 @@ getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = Loc
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         WHERE ct.user_id = ?
-          AND ct.contact_status = ? AND ct.deleted = 0
+          AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
           AND p.display_name = ? AND p.full_name = ?
       |]
 
