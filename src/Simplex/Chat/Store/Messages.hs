@@ -92,6 +92,7 @@ module Simplex.Chat.Store.Messages
     getLocalChatItemIdByText,
     getLocalChatItemIdByText',
     getChatItemByFileId,
+    lookupChatItemByFileId,
     getChatItemByGroupId,
     updateDirectChatItemStatus,
     getTimedItems,
@@ -2084,6 +2085,12 @@ getChatItemByFileId db vr user@User {userId} fileId = do
           |]
         (userId, fileId)
   getAChatItem db vr user chatRef itemId
+
+lookupChatItemByFileId :: DB.Connection -> VersionRange -> User -> Int64 -> ExceptT StoreError IO (Maybe AChatItem)
+lookupChatItemByFileId db vr user fileId = do
+  fmap Just (getChatItemByFileId db vr user fileId) `catchError` \case
+    SEChatItemNotFoundByFileId {} -> pure Nothing
+    e -> throwError e
 
 getChatItemByGroupId :: DB.Connection -> VersionRange -> User -> GroupId -> ExceptT StoreError IO AChatItem
 getChatItemByGroupId db vr user@User {userId} groupId = do
