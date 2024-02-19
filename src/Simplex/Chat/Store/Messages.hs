@@ -111,15 +111,18 @@ module Simplex.Chat.Store.Messages
     getGroupSndStatuses,
     getGroupSndStatusCounts,
     getGroupHistoryItems,
+    testZstd,
   )
 where
 
+import qualified Codec.Compression.Zstd as Zstd
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
@@ -131,7 +134,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
+import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..), ZstdRow (..))
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
@@ -146,7 +149,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Util (eitherToMaybe, (<$$>))
 import Simplex.Messaging.Version (VersionRange)
 import UnliftIO.STM
 
@@ -2543,3 +2546,16 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
             LIMIT ?
           |]
           (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
+
+testZstd :: DB.Connection -> IO [ZstdRow]
+testZstd db = process <$$> DB.query_ db "SELECT msg_body FROM messages"
+  where
+    process (Only msg_body) =
+      ZstdRow
+        { raw = B.length msg_body,
+          z1 = B.length $ Zstd.compress 1 msg_body,
+          z3 = B.length $ Zstd.compress 3 msg_body,
+          z6 = B.length $ Zstd.compress 6 msg_body,
+          z9 = B.length $ Zstd.compress 9 msg_body,
+          z = B.length $ Zstd.compress Zstd.maxCLevel msg_body
+        }

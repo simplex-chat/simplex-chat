@@ -215,7 +215,8 @@ data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIn
   deriving (Show)
 
 data ChatCommand
-  = ShowActiveUser
+  = TestZstd (Maybe FilePath)
+  | ShowActiveUser
   | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
@@ -717,6 +718,12 @@ data ChatResponse
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
+  | CRZstdTest {zstdRows :: [ZstdRow]}
+  deriving (Show)
+
+data ZstdRow = ZstdRow
+  { raw, z1, z3, z6, z9, z :: !Int
+  }
   deriving (Show)
 
 -- some of these can only be used as command responses
@@ -1411,6 +1418,8 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
+
+$(JQ.deriveJSON defaultJSON ''ZstdRow)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

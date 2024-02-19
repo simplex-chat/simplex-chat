@@ -49,6 +49,7 @@ dependencies:
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
   - zip == 2.0.*
+  - zstd
 
 flags:
   swift:

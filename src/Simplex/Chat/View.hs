@@ -386,6 +386,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
+  CRZstdTest {zstdRows} -> map (\ZstdRow {raw, z1, z3, z6, z9, z} -> plain . T.unwords $ map tshow [raw, z1, z3, z6, z9, z]) zstdRows
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser} ss

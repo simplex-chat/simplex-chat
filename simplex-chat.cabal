@@ -211,6 +211,7 @@ library
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -272,6 +273,7 @@ executable simplex-bot
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -333,6 +335,7 @@ executable simplex-bot-advanced
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -396,6 +399,7 @@ executable simplex-broadcast-bot
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -459,6 +463,7 @@ executable simplex-chat
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -525,6 +530,7 @@ executable simplex-directory-service
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -621,6 +627,7 @@ test-suite simplex-chat-test
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
+    , zstd
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON

@@ -451,6 +451,14 @@ processChatCommand cmd = chatVersionRange >>= (`processChatCommand'` cmd)
 
 processChatCommand' :: forall m. ChatMonad m => VersionRange -> ChatCommand -> m ChatResponse
 processChatCommand' vr = \case
+  TestZstd outfile_ -> do
+    rows <- withStore' testZstd
+    case outfile_ of
+      Nothing -> pure $ CRZstdTest rows
+      Just path -> do
+        liftIO $ LB.writeFile path $ LB.unlines $
+          map (\ZstdRow {raw, z1, z3, z6, z9, z} -> LB.fromStrict . B.unwords $ map bshow [raw, z1, z3, z6, z9, z]) rows
+        ok_
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     forM_ profile $ \Profile {displayName} -> checkValidName displayName
@@ -6496,7 +6504,8 @@ chatVersionRange = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/mute " *> ((`SetShowMessages` MFNone) <$> chatNameP),
+    [ "/zstd" *> (TestZstd <$> optional (A.space *> filePath)),
+      "/mute " *> ((`SetShowMessages` MFNone) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` MFAll) <$> chatNameP),
       "/unmute mentions " *> ((`SetShowMessages` MFMentions) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
