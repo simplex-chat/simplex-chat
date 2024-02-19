@@ -1656,7 +1656,7 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
         ":updated_at" := currentTs
       ]
     deleteContactProfile_ db userId fromContactId
-    DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
+    DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ? AND is_user = 0" (fromContactId, userId)
     deleteUnusedDisplayName_ db userId fromLDN
     when (keepLDN /= toLDN && keepLDN == fromLDN) $
       DB.execute

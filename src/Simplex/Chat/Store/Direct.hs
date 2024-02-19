@@ -240,7 +240,7 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
     else do
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ? AND is_user = 0" (userId, contactId)
   forM_ activeConn $ \Connection {customUserProfileId} ->
     forM_ customUserProfileId $ \profileId ->
       deleteUnusedIncognitoProfileById_ db user profileId
@@ -251,7 +251,7 @@ deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDispla
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   deleteContactProfile_ db userId contactId
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ? AND is_user = 0" (userId, contactId)
   forM_ activeConn $ \Connection {customUserProfileId} ->
     forM_ customUserProfileId $ \profileId ->
       deleteUnusedIncognitoProfileById_ db user profileId
