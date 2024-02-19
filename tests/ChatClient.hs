@@ -129,7 +129,8 @@ testCfg =
     { agentConfig = testAgentCfg,
       showReceipts = False,
       testView = True,
-      tbqSize = 16
+      tbqSize = 16,
+      tempDir = Just "./tests/tmp/tmp"
     }
 
 testAgentCfgVPrev :: AgentConfig
@@ -286,7 +287,10 @@ readTerminalOutput t termQ = do
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
-    (createDirectoryIfMissing False "tests/tmp")
+    ( do
+        createDirectoryIfMissing False "tests/tmp"
+        createDirectoryIfMissing False "tests/tmp/tmp" -- for XFTP temporary files
+    )
     (removeDirectoryRecursive "tests/tmp")
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> FilePath -> IO ()
