@@ -107,32 +107,32 @@ struct DatabaseEncryptionView: View {
                 Text("")
             }
         } footer: {
-            VStack(alignment: .leading, spacing: 16) {
-                if m.chatDbEncrypted == false {
-                    Text("Your chat database is not encrypted - set passphrase to encrypt it.")
-                } else if useKeychain {
-                    if storedKey {
-                        Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
-                        if !migration {
+            if !migration {
+                VStack(alignment: .leading, spacing: 16) {
+                    if m.chatDbEncrypted == false {
+                        Text("Your chat database is not encrypted - set passphrase to encrypt it.")
+                    } else if useKeychain {
+                        if storedKey {
+                            Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
                             if initialRandomDBPassphrase {
                                 Text("Database is encrypted using a random passphrase, you can change it.")
                             } else {
                                 Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
                             }
+                        } else {
+                            Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
                         }
                     } else {
-                        Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
-                    }
-                } else {
-                    Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
-                    Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
-                    if  m.notificationMode == .instant && m.notificationPreview != .hidden {
-                        Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
+                        Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
+                        Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                        if  m.notificationMode == .instant && m.notificationPreview != .hidden {
+                            Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
+                        }
                     }
                 }
+                .padding(.top, 1)
+                .font(.callout)
             }
-            .padding(.top, 1)
-            .font(.callout)
         }
         .onAppear {
             if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }

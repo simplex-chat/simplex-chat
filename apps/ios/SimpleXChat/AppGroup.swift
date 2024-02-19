@@ -36,7 +36,7 @@ let GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL = "networkTCPKeepIntvl"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT = "networkTCPKeepCnt"
 public let GROUP_DEFAULT_INCOGNITO = "incognito"
 let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
-let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
+public let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
 public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
 

@@ -485,6 +485,10 @@ func deleteChatAsync() async throws {
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
     deleteAppDatabaseAndFiles()
+    // Clean state so when creating new user the app will start chat automatically (see CreateProfile:createProfile())
+    DispatchQueue.main.async {
+        ChatModel.shared.users = []
+    }
 }
 
 struct DatabaseView_Previews: PreviewProvider {

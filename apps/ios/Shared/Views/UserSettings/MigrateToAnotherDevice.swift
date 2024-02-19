@@ -18,30 +18,62 @@ public enum MigrationState: Equatable {
     case uploadConfirmation
     case archiving
     case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, archivePath: URL)
-    case linkCreation(totalBytes: Int64, archivePath: URL)
-    case linkShown(link: String, archivePath: URL)
+    case linkCreation(totalBytes: Int64, fileId: Int64, archivePath: URL)
+    case linkShown(fileId: Int64, link: String, archivePath: URL)
+    case finished
+}
+
+enum MigrateToAnotherDeviceViewAlert: Identifiable {
+    case deleteChat(_ title: LocalizedStringKey = "Delete chat profile?", _ text: LocalizedStringKey = "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.")
+    case startChat(_ title: LocalizedStringKey = "Start chat?", _ text: LocalizedStringKey = "Warning: starting chat on multiple devices is not supported and will cause message delivery failures")
+
+    case wrongPassphrase(title: LocalizedStringKey = "Wrong passphrase!", message: LocalizedStringKey = "Enter correct passphrase.")
+    case invalidConfirmation(title: LocalizedStringKey = "Invalid migration confirmation")
+    case keychainError(_ title: LocalizedStringKey = "Keychain error")
+    case databaseError(_ title: LocalizedStringKey = "Database error", message: String)
+    case unknownError(_ title: LocalizedStringKey = "Unknown error", message: String)
+
+    case error(title: LocalizedStringKey, error: String = "")
+
+    var id: String {
+        switch self {
+        case let .deleteChat(title, text): return "\(title) \(text)"
+        case let .startChat(title, text): return "\(title) \(text)"
+
+        case .wrongPassphrase: return "wrongPassphrase"
+        case .invalidConfirmation: return "invalidConfirmation"
+        case .keychainError: return "keychainError"
+        case let .databaseError(title, message): return "\(title) \(message)"
+        case let .unknownError(title, message): return "\(title) \(message)"
+
+        case let .error(title, _): return "error \(title)"
+        }
+    }
 }
 
 struct MigrateToAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @Binding var showSettings: Bool
     @State private var migrationState: MigrationState = .initial
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
-    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
+    @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
     @State private var alert: MigrateToAnotherDeviceViewAlert?
-    @State private var confirmPassphraseAlert: PassphraseConfirmationView.PassphraseConfirmationViewAlert?
+    @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     private let chatWasStoppedInitially: Bool = AppChatState.shared.value == .stopped
 
-    enum MigrateToAnotherDeviceViewAlert: Identifiable {
-        case error(title: LocalizedStringKey, error: String = "")
-
-        var id: String {
-            switch self {
-            case let .error(title, _): return "error \(title)"
-            }
+    var body: some View {
+        if authorized {
+            migrateView()
+        } else {
+            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
+                .onAppear(perform: runAuth)
         }
     }
 
-    var body: some View {
+    private func runAuth() { authorize(NSLocalizedString("Open migration to another device", comment: "authentication reason"), $authorized) }
+
+    func migrateView() -> some View {
         VStack {
             switch migrationState {
             case .initial: EmptyView()
@@ -52,17 +84,19 @@ struct MigrateToAnotherDevice: View {
             case .passphraseNotSet:
                 passphraseNotSetView()
             case .passphraseConfirmation:
-                PassphraseConfirmationView(migrationState: $migrationState, alert: $confirmPassphraseAlert)
+                PassphraseConfirmationView(migrationState: $migrationState, alert: $alert)
             case .uploadConfirmation:
                 uploadConfirmationView()
             case .archiving:
                 archivingView()
             case let .uploadProgress(uploaded, total, archivePath):
                 uploadProgressView(uploaded, totalBytes: total, archivePath)
-            case let .linkCreation(totalBytes, archivePath):
-                linkCreationView(totalBytes, archivePath)
-            case let .linkShown(link, archivePath):
-                linkView(link, archivePath)
+            case let .linkCreation(totalBytes, fileId, archivePath):
+                linkCreationView(totalBytes, fileId, archivePath)
+            case let .linkShown(fileId, link, archivePath):
+                linkView(fileId, link, archivePath)
+            case .finished:
+                finishedView()
             }
         }
         .onAppear {
@@ -76,7 +110,7 @@ struct MigrateToAnotherDevice: View {
             }
         }
         .onDisappear {
-            if case .linkShown = migrationState {} else if !chatWasStoppedInitially {
+            if case .linkShown = migrationState {} else if case .finished = migrationState {} else if !chatWasStoppedInitially {
                 Task {
                     try? startChat(refreshInvitations: true)
                 }
@@ -84,12 +118,24 @@ struct MigrateToAnotherDevice: View {
         }
         .alert(item: $alert) { alert in
             switch alert {
-            case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
-            }
-        }
-        .alert(item: $confirmPassphraseAlert) { alert in
-            switch alert {
+            case let .startChat(title, text):
+                return Alert(
+                    title: Text(title),
+                    message: Text(text),
+                    primaryButton: .destructive(Text("Start chat")) {
+                        startChatAndDismiss()
+                    },
+                    secondaryButton: .cancel()
+                )
+            case let .deleteChat(title, text):
+                return Alert(
+                    title: Text(title),
+                    message: Text(text),
+                    primaryButton: .destructive(Text("Delete")) {
+                        deleteChatAndDismiss()
+                    },
+                    secondaryButton: .cancel()
+                )
             case let .wrongPassphrase(title, message):
                 return Alert(title: Text(title), message: Text(message))
             case let .invalidConfirmation(title):
@@ -121,14 +167,15 @@ struct MigrateToAnotherDevice: View {
         Section {
             Text(reason)
             Button(action: stopChat) {
-                settingsRow("stop.fill", color: .red) {
-                    Text("Stop chat")
+                settingsRow("stop.fill") {
+                    Text("Stop chat").foregroundColor(.red)
                 }
             }
         } header: {
             Text("Error stopping chat")
         } footer: {
             Text("In order to continue, chat should be stopped")
+                .font(.callout)
         }
     }
 
@@ -146,8 +193,8 @@ struct MigrateToAnotherDevice: View {
             Section {
                 Text("All your contacts, conversations and files will be archived and uploaded as encrypted file to configured XFTP relays")
                 Button(action: { migrationState = .archiving }) {
-                    settingsRow("tray.and.arrow.up", color: .secondary) {
-                        Text("Archive and upload")
+                    settingsRow("tray.and.arrow.up") {
+                        Text("Archive and upload").foregroundColor(.accentColor)
                     }
                 }
             } header: {
@@ -178,34 +225,72 @@ struct MigrateToAnotherDevice: View {
                 }
             }
             let ratio = Float(uploadedBytes) / Float(totalBytes)
-            largeProgressView(ratio, "\(Int(ratio * 100))%\n\(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary)) uploaded")
+            largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
         }
         .onAppear {
             startUploading(totalBytes, archivePath)
         }
     }
 
-    private func linkCreationView(_ totalBytes: Int64, _ archivePath: URL) -> some View {
+    private func linkCreationView(_ totalBytes: Int64, _ fileId: Int64, _ archivePath: URL) -> some View {
         ZStack {
             List {
                 Section {} header: {
                     Text("Creating archive link…")
                 }
             }
-            largeProgressView(1, "\(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary))")
+            largeProgressView(1, "100%", "\(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary)) uploaded")
         }
         .onAppear {
-            createLink(archivePath)
+            createLink(fileId, archivePath)
         }
     }
 
-    private func linkView(_ link: String, _ archivePath: URL) -> some View {
+    private func linkView(_ fileId: Int64, _ link: String, _ archivePath: URL) -> some View {
         List {
             Section {
-                SimpleXLinkQRCode(uri: link)
+                Text("Choose Migrate from another device on your new device and scan QR code")
+                HStack {
+                    SimpleXLinkQRCode(uri: link)
+                        .frame(maxWidth: 200, maxHeight: 200)
+                }
+                .frame(maxWidth: .infinity)
                 shareLinkButton(link)
             } header: {
                 Text("Link to uploaded archive")
+            }
+
+            Section {
+                Button(action: { cancelMigration(fileId) }) {
+                    settingsRow("multiply") {
+                        Text("Cancel migration").foregroundColor(.red)
+                    }
+                }
+                Button(action: { finishMigration(fileId) }) {
+                    settingsRow("checkmark") {
+                        Text("Finish migration").foregroundColor(.accentColor)
+                    }
+                }
+            }
+        }
+    }
+
+    private func finishedView() -> some View {
+        List {
+            Section {
+                Text("You should not use the same database on two devices")
+                Button(action: showDeleteChatAlert) {
+                    settingsRow("trash.fill") {
+                        Text("Delete database from this device").foregroundColor(.accentColor)
+                    }
+                }
+                Button(action: showStartChatAlert) {
+                    settingsRow("play.fill") {
+                        Text("Start chat").foregroundColor(.red)
+                    }
+                }
+            } header: {
+                Text("Migration complete")
             }
         }
     }
@@ -214,15 +299,18 @@ struct MigrateToAnotherDevice: View {
         Button {
             showShareSheet(items: [simplexChatLink(link)])
         } label: {
-            Label("Share", systemImage: "square.and.arrow.up")
+            Label("Share link", systemImage: "square.and.arrow.up")
         }
     }
 
-    private func largeProgressView(_ value: Float, _ text: LocalizedStringKey) -> some View {
+    private func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
         ZStack {
-            Text(text)
-                .font(.title3)
-                .multilineTextAlignment(.center)
+            VStack {
+                Text(title)
+                    .font(.title)
+                Text(description)
+                    .font(.title3)
+            }
 
             Circle()
                 .trim(from: 0, to: CGFloat(value))
@@ -230,6 +318,7 @@ struct MigrateToAnotherDevice: View {
                     Color.accentColor,
                     style: StrokeStyle(lineWidth: 5)
                 )
+                .rotation3DEffect(.degrees(180), axis: (x: 1, y: 0, z: 0))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear, value: value)
                 .frame(width: 250, height: 250)
@@ -277,10 +366,11 @@ struct MigrateToAnotherDevice: View {
             for i in 1...20 {
                 try? await Task.sleep(nanoseconds: 50_000000)
                 await MainActor.run {
-                    migrationState = .uploadProgress(uploadedBytes: Int64(100_000 * i), totalBytes: 2_000_000, archivePath: archivePath)
+                    migrationState = .uploadProgress(uploadedBytes: Int64(Int(totalBytes) * i / 20), totalBytes: totalBytes, archivePath: archivePath)
                     if i == 20 {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            migrationState = .linkCreation(totalBytes: totalBytes, archivePath: archivePath)
+                            let fileId = Int64(1)
+                            migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
                         }
                     }
                 }
@@ -288,8 +378,69 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func createLink(_ archivePath: URL) {
-        migrationState = .linkShown(link: "https://simplex.chat", archivePath: archivePath)
+    private func createLink(_ fileId: Int64, _ archivePath: URL) {
+        migrationState = .linkShown(fileId: fileId, link: "https://simplex.chat", archivePath: archivePath)
+    }
+
+    private func cancelUploadedAchive(_ fileId: Int64) {
+        if let user = m.currentUser {
+            Task {
+                await cancelFile(user: user, fileId: fileId)
+            }
+        }
+    }
+
+    private func cancelMigration(_ fileId: Int64) {
+        cancelUploadedAchive(fileId)
+        if !chatWasStoppedInitially {
+            startChatAndDismiss()
+        } else {
+            dismiss()
+        }
+    }
+
+    private func finishMigration(_ fileId: Int64) {
+        cancelUploadedAchive(fileId)
+        migrationState = .finished
+    }
+
+    private func showDeleteChatAlert() {
+        alert = .deleteChat()
+    }
+
+    private func showStartChatAlert() {
+        alert = .startChat()
+    }
+
+    private func deleteChatAndDismiss() {
+        Task {
+            do {
+                try await deleteChatAsync()
+                m.chatDbChanged = true
+                m.chatInitialized = false
+                showSettings = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    resetChatCtrl()
+                    do {
+                        try initializeChat(start: false)
+                        m.chatDbChanged = false
+                        AppChatState.shared.set(.active)
+                    } catch let error {
+                        fatalError("Error starting chat \(responseError(error))")
+                    }
+                }
+                dismiss()
+            } catch let error {
+                alert = .error(title: "Error deleting database", error: responseError(error))
+            }
+        }
+    }
+
+    private func startChatAndDismiss() {
+        Task {
+            try? startChat(refreshInvitations: true)
+            dismiss()
+        }
     }
 }
 
@@ -298,27 +449,7 @@ private struct PassphraseConfirmationView: View {
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var currentKey: String = ""
     @State private var verifyingPassphrase: Bool = false
-    @Binding var alert: PassphraseConfirmationViewAlert?
-
-    public enum PassphraseConfirmationViewAlert: Identifiable {
-        case wrongPassphrase(title: LocalizedStringKey = "Wrong passphrase!", message: LocalizedStringKey = "Enter correct passphrase.")
-        case invalidConfirmation(title: LocalizedStringKey = "Invalid migration confirmation")
-        case keychainError(_ title: LocalizedStringKey = "Keychain error")
-        case databaseError(_ title: LocalizedStringKey = "Database error", message: String)
-        case unknownError(_ title: LocalizedStringKey = "Unknown error", message: String)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
-
-        var id: String {
-            switch self {
-            case .wrongPassphrase: return "wrongPassphrase"
-            case .invalidConfirmation: return "invalidConfirmation"
-            case .keychainError: return "keychainError"
-            case let .databaseError(title, message): return "\(title) \(message)"
-            case let .unknownError(title, message): return "\(title) \(message)"
-            case let .error(title, _): return "error \(title)"
-            }
-        }
-    }
+    @Binding var alert: MigrateToAnotherDeviceViewAlert?
 
     var body: some View {
         ZStack {
@@ -342,8 +473,8 @@ private struct PassphraseConfirmationView: View {
                     Text("Verify database passphrase to migrate it")
                 } footer: {
                     Text("Make sure you remember database passphrase before migrating")
+                        .font(.callout)
                 }
-                .font(.callout)
             }
             if verifyingPassphrase {
                 progressView()
@@ -393,6 +524,6 @@ func chatStoppedView() -> some View {
 
 struct MigrateToAnotherDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateToAnotherDevice()
+        MigrateToAnotherDevice(showSettings: Binding.constant(true))
     }
 }
