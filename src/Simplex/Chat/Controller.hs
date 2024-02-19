@@ -879,13 +879,13 @@ data ArchiveConfig = ArchiveConfig
   { archivePath :: FilePath,
     disableCompression :: Maybe Bool,
     parentTempDirectory :: Maybe FilePath,
-    appSettings :: AppSettings
+    appSettings :: Maybe AppSettings
   }
   deriving (Show)
 
 data ArchiveImportResult = ArchiveImportResult
   { archiveErrors :: [ArchiveError],
-    appSettings :: AppSettings
+    appSettings :: Maybe AppSettings
   }
   deriving (Show)
 

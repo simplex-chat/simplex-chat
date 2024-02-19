@@ -14,6 +14,8 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Text as T
+import Simplex.Chat.AppSettings (defaultAppSettings)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
@@ -21,6 +23,7 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (authErrDisableCount, sameVerificationCode, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
@@ -65,6 +68,7 @@ chatDirectTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
+    it "export/import chat with app settings" testMaintenanceModeWithSettings
     it "encrypt/decrypt database" testDatabaseEncryption
   describe "coordination between app and NSE" $ do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
@@ -1094,6 +1098,29 @@ testMaintenanceModeWithFiles tmp = do
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+    -- works after full restart
+    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
+
+testMaintenanceModeWithSettings :: HasCallStack => FilePath -> IO ()
+testMaintenanceModeWithSettings tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+      alice ##> "/_start"
+      alice <## "chat started"
+      alice ##> "/_files_folder ./tests/tmp/alice_files"
+      alice <## "ok"
+      connectUsers alice bob
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
+      alice ##> ("/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\", \"appSettings\": " <> settings <> "}")
+      alice <## "ok"
+      alice ##> "/_db delete"
+      alice <## "ok"
+      -- cannot start chat after delete
+      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "app settings in archive ignored"
+      alice <## "ok"
     -- works after full restart
     withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
 

@@ -53,7 +53,6 @@ import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nomina
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
-import Simplex.Chat.AppSettings (defaultAppSettings)
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -600,7 +599,7 @@ processChatCommand' vr = \case
   ExportArchive -> do
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
-    processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing defaultAppSettings
+    processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing Nothing
   APIImportArchive cfg -> checkChatStopped $ do
     fileErrs <- importArchive cfg
     setStoreChanged

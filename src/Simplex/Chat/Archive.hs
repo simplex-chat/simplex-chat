@@ -55,7 +55,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression, appSettings} =
     StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
-    liftIO $ J.encodeFile (dir </> archiveAppSettingsFile) appSettings
+    liftIO $ mapM_ (J.encodeFile $ dir </> archiveAppSettingsFile) appSettings
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
@@ -70,7 +70,8 @@ importArchive cfg@ArchiveConfig {archivePath, appSettings = platformDefaults} =
     backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
-    appSettings <- liftIO $ readAppSettings (dir </> archiveAppSettingsFile) platformDefaults
+    let settingsFile = dir </> archiveAppSettingsFile
+    appSettings <- ifM (doesFileExist settingsFile) (liftIO $ Just <$> readAppSettings settingsFile platformDefaults) (pure Nothing)
     archiveErrors <- copyFiles dir filesPath
       `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
     pure ArchiveImportResult {archiveErrors, appSettings}
