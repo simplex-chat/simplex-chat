@@ -388,7 +388,7 @@ deleteUserAddress db user@User {userId} = do
           JOIN user_contact_links uc USING (user_contact_link_id)
           WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
         )
-        AND local_display_name NOT IN (SELECT local_display_name FROM users)
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = :user_id)
     |]
     [":user_id" := userId]
   DB.executeNamed

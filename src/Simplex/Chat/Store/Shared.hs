@@ -411,9 +411,9 @@ checkContactIsUser db User {userContactId} Contact {contactId} = do
       DB.query db "SELECT is_user FROM contacts WHERE contact_id = ?" (Only contactId)
   pure $ fromMaybe False isUser_ || contactId == userContactId
 
-checkLDNIsUser :: DB.Connection -> ContactName -> IO Bool
-checkLDNIsUser db ldn = do
+checkLDNIsUser :: DB.Connection -> User -> ContactName -> IO Bool
+checkLDNIsUser db User {userId} ldn = do
   r :: (Maybe Int64) <-
     maybeFirstRow fromOnly $
-      DB.query db "SELECT 1 FROM users WHERE local_display_name = ? LIMIT 1" (Only ldn)
+      DB.query db "SELECT 1 FROM users WHERE user_id = ? AND local_display_name = ? LIMIT 1" (userId, ldn)
   pure $ isJust r
