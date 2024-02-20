@@ -870,6 +870,26 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
+func uploadStandaloneFile(user: any UserLike, file: CryptoFile) async -> (FileTransferMeta?, String?) {
+    let r = await chatSendCmd(.apiUploadStandaloneFile(userId: user.userId, file: file))
+    if case let .sndStandaloneFileCreated(_, fileTransferMeta) = r {
+        return (fileTransferMeta, nil)
+    } else {
+        logger.error("uploadStandaloneFile error: \(String(describing: r))")
+        return (nil, String(describing: r))
+    }
+}
+
+func downloadStandaloneFile(user: any UserLike, url: String, file: CryptoFile) async -> (RcvFileTransfer?, String?) {
+    let r = await chatSendCmd(.apiDownloadStandaloneFile(userId: user.userId, url: url, file: file))
+    if case let .rcvStandaloneFileCreated(_, rcvFileTransfer) = r {
+        return (rcvFileTransfer, nil)
+    } else {
+        logger.error("downloadStandaloneFile error: \(String(describing: r))")
+        return (nil, String(describing: r))
+    }
+}
+
 func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
     if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)
@@ -1701,10 +1721,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .rcvFileStart(user, aChatItem, _):
-        if let aChatItem = aChatItem {
-            await chatItemSimpleUpdate(user, aChatItem)
-        }
+    case let .rcvFileStart(user, aChatItem):
+        await chatItemSimpleUpdate(user, aChatItem)
     case let .rcvFileComplete(user, aChatItem):
         await chatItemSimpleUpdate(user, aChatItem)
     case let .rcvFileSndCancelled(user, aChatItem, _):
@@ -1733,11 +1751,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
         }
-    case let .sndFileCompleteXFTP(user, aChatItem, _, _):
-        if let aChatItem = aChatItem {
-            await chatItemSimpleUpdate(user, aChatItem)
-            Task { cleanupFile(aChatItem) }
-        }
+    case let .sndFileCompleteXFTP(user, aChatItem, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupFile(aChatItem) }
     case let .sndFileError(user, aChatItem, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)

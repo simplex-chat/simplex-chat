@@ -131,8 +131,8 @@ public enum ChatCommand {
     case listRemoteCtrls
     case stopRemoteCtrl
     case deleteRemoteCtrl(remoteCtrlId: Int64)
-    case apiUploadFileDirectly(userId: Int64, file: CryptoFile)
-    case apiDownloadFileDirectly(userId: Int64, url: String, file: CryptoFile)
+    case apiUploadStandaloneFile(userId: Int64, file: CryptoFile)
+    case apiDownloadStandaloneFile(userId: Int64, url: String, file: CryptoFile)
     // misc
     case showVersion
     case string(String)
@@ -286,8 +286,8 @@ public enum ChatCommand {
             case .listRemoteCtrls: return "/list remote ctrls"
             case .stopRemoteCtrl: return "/stop remote ctrl"
             case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
-            case let .apiUploadFileDirectly(userId, file): return "/_upload \(userId) \(encodeJSON(file))"
-            case let .apiDownloadFileDirectly(userId, link, file): return "/_download \(userId) \(link) \(encodeJSON(file))"
+            case let .apiUploadStandaloneFile(userId, file): return "/_upload \(userId) \(encodeJSON(file))"
+            case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(encodeJSON(file))"
             case .showVersion: return "/version"
             case let .string(str): return str
             }
@@ -413,8 +413,8 @@ public enum ChatCommand {
             case .listRemoteCtrls: return "listRemoteCtrls"
             case .stopRemoteCtrl: return "stopRemoteCtrl"
             case .deleteRemoteCtrl: return "deleteRemoteCtrl"
-            case .apiUploadFileDirectly: return "apiUploadFileDirectly"
-            case .apiDownloadFileDirectly: return "apiDownloadFileDirectly"
+            case .apiUploadStandaloneFile: return "apiUploadStandaloneFile"
+            case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .showVersion: return "showVersion"
             case .string: return "console command"
             }
@@ -597,23 +597,25 @@ public enum ChatResponse: Decodable, Error {
     // receiving file events
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(user: UserRef, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileStart(user: UserRef, chatItem_: AChatItem?, rcvFileTransfer: RcvFileTransfer)
+    case rcvStandaloneFileCreated(user: UserRef, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileStart(user: UserRef, chatItem: AChatItem) // send by chats
     case rcvFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, receivedSize: Int64, totalSize: Int64, rcvFileTransfer: RcvFileTransfer)
     case rcvFileComplete(user: UserRef, chatItem: AChatItem)
-    case rcvFileCompleteXFTP(user: UserRef, targetPath: String, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
+    case rcvStandaloneFileComplete(user: UserRef, targetPath: String, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileCancelled(user: UserRef, chatItem_: AChatItem?, rcvFileTransfer: RcvFileTransfer)
     case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
     case rcvFileError(user: UserRef, chatItem_: AChatItem?, rcvFileTransfer: RcvFileTransfer)
     // sending file events
     case sndFileStart(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
-    case sndFileCancelled(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
     case sndFileRcvCancelled(user: UserRef, chatItem_: AChatItem?, sndFileTransfer: SndFileTransfer)
-    case sndFileStartXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
-    case sndFileStartXFTPDirect(user: UserRef, fileTransferMeta: FileTransferMeta)
+    case sndFileCancelled(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
+    case sndStandaloneFileCreated(user: UserRef, fileTransferMeta: FileTransferMeta) // returned by _upload
+    case sndFileStartXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta) // not used
     case sndFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
-    case sndFileRedirectXFTP(user: UserRef, fileTransferMeta: FileTransferMeta, redirectMeta: FileTransferMeta)
-    case sndFileCompleteXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, rcvURIs: [String])
+    case sndFileRedirectStartXFTP(user: UserRef, fileTransferMeta: FileTransferMeta, redirectMeta: FileTransferMeta)
+    case sndFileCompleteXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
+    case sndStandaloneFileComplete(user: UserRef, fileTransferMeta: FileTransferMeta, rcvURIs: [String])
     case sndFileCancelledFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
     case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
     // call events
@@ -753,22 +755,24 @@ public enum ChatResponse: Decodable, Error {
             case .newMemberContactReceivedInv: return "newMemberContactReceivedInv"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
+            case .rcvStandaloneFileCreated: return "rcvStandaloneFileCreated"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileProgressXFTP: return "rcvFileProgressXFTP"
             case .rcvFileComplete: return "rcvFileComplete"
-            case .rcvFileCompleteXFTP: return "rcvFileCompleteXFTP"
+            case .rcvStandaloneFileComplete: return "rcvStandaloneFileComplete"
             case .rcvFileCancelled: return "rcvFileCancelled"
             case .rcvFileSndCancelled: return "rcvFileSndCancelled"
             case .rcvFileError: return "rcvFileError"
             case .sndFileStart: return "sndFileStart"
             case .sndFileComplete: return "sndFileComplete"
             case .sndFileCancelled: return "sndFileCancelled"
+            case .sndStandaloneFileCreated: return "sndStandaloneFileCreated"
             case .sndFileStartXFTP: return "sndFileStartXFTP"
-            case .sndFileStartXFTPDirect: return "sndFileStartXFTPDirect"
             case .sndFileProgressXFTP: return "sndFileProgressXFTP"
-            case .sndFileRedirectXFTP: return "sndFileRedirectXFTP"
+            case .sndFileRedirectStartXFTP: return "sndFileRedirectStartXFTP"
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
             case .sndFileCompleteXFTP: return "sndFileCompleteXFTP"
+            case .sndStandaloneFileComplete: return "sndStandaloneFileComplete"
             case .sndFileCancelledFTP: return "sndFileCancelledFTP"
             case .sndFileError: return "sndFileError"
             case .callInvitation: return "callInvitation"
@@ -908,22 +912,24 @@ public enum ChatResponse: Decodable, Error {
             case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
-            case let .rcvFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case .rcvStandaloneFileCreated: return noDetails
+            case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .rcvFileProgressXFTP(u, chatItem, receivedSize, totalSize, _): return withUser(u, "chatItem: \(String(describing: chatItem))\nreceivedSize: \(receivedSize)\ntotalSize: \(totalSize)")
+            case let .rcvStandaloneFileComplete(u, targetPath, _): return withUser(u, targetPath)
             case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
-            case let .rcvFileCompleteXFTP(u, targetPath, _): return withUser(u, targetPath)
             case let .rcvFileCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .rcvFileError(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
+            case .sndStandaloneFileCreated: return noDetails
             case let .sndFileStartXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case .sndFileStartXFTPDirect(_, _): return noDetails
             case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
-            case let .sndFileRedirectXFTP(u, _, redirectMeta): return withUser(u, String(describing: redirectMeta))
-            case let .sndFileCompleteXFTP(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileRedirectStartXFTP(u, _, redirectMeta): return withUser(u, String(describing: redirectMeta))
+            case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .sndStandaloneFileComplete(u, _, rcvURIs): return withUser(u, String(rcvURIs.count))
             case let .sndFileCancelledFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileError(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .callInvitation(inv): return String(describing: inv)

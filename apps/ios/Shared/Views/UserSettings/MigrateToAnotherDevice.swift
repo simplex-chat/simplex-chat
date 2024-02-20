@@ -17,7 +17,7 @@ public enum MigrationState: Equatable {
     case passphraseConfirmation
     case uploadConfirmation
     case archiving
-    case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, archivePath: URL)
+    case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, fileId: Int64, archivePath: URL)
     case linkCreation(totalBytes: Int64, fileId: Int64, archivePath: URL)
     case linkShown(fileId: Int64, link: String, archivePath: URL)
     case finished
@@ -89,7 +89,7 @@ struct MigrateToAnotherDevice: View {
                 uploadConfirmationView()
             case .archiving:
                 archivingView()
-            case let .uploadProgress(uploaded, total, archivePath):
+            case let .uploadProgress(uploaded, total, fileId, archivePath):
                 uploadProgressView(uploaded, totalBytes: total, archivePath)
             case let .linkCreation(totalBytes, fileId, archivePath):
                 linkCreationView(totalBytes, fileId, archivePath)
@@ -191,7 +191,6 @@ struct MigrateToAnotherDevice: View {
     private func uploadConfirmationView() -> some View {
         List {
             Section {
-                Text("All your contacts, conversations and files will be archived and uploaded as encrypted file to configured XFTP relays")
                 Button(action: { migrationState = .archiving }) {
                     settingsRow("tray.and.arrow.up") {
                         Text("Archive and upload").foregroundColor(.accentColor)
@@ -199,6 +198,9 @@ struct MigrateToAnotherDevice: View {
                 }
             } header: {
                 Text("Confirm upload")
+            } footer: {
+                Text("All your contacts, conversations and files will be archived and uploaded as encrypted file to configured XFTP relays")
+                    .font(.callout)
             }
         }
     }
@@ -228,7 +230,9 @@ struct MigrateToAnotherDevice: View {
             largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
         }
         .onAppear {
-            startUploading(totalBytes, archivePath)
+            if let user = m.currentUser {
+                startUploading(user, totalBytes, archivePath)
+            }
         }
     }
 
@@ -249,7 +253,21 @@ struct MigrateToAnotherDevice: View {
     private func linkView(_ fileId: Int64, _ link: String, _ archivePath: URL) -> some View {
         List {
             Section {
-                Text("Choose Migrate from another device on your new device and scan QR code")
+                Button(action: { cancelMigration(fileId) }) {
+                    settingsRow("multiply") {
+                        Text("Cancel migration").foregroundColor(.red)
+                    }
+                }
+                Button(action: { finishMigration(fileId) }) {
+                    settingsRow("checkmark") {
+                        Text("Finalize migration").foregroundColor(.accentColor)
+                    }
+                }
+            } footer: {
+                Text("Make sure you made the migration before going forward")
+                    .font(.callout)
+            }
+            Section {
                 HStack {
                     SimpleXLinkQRCode(uri: link)
                         .frame(maxWidth: 200, maxHeight: 200)
@@ -258,19 +276,9 @@ struct MigrateToAnotherDevice: View {
                 shareLinkButton(link)
             } header: {
                 Text("Link to uploaded archive")
-            }
-
-            Section {
-                Button(action: { cancelMigration(fileId) }) {
-                    settingsRow("multiply") {
-                        Text("Cancel migration").foregroundColor(.red)
-                    }
-                }
-                Button(action: { finishMigration(fileId) }) {
-                    settingsRow("checkmark") {
-                        Text("Finish migration").foregroundColor(.accentColor)
-                    }
-                }
+            } footer: {
+                Text("Choose Migrate from another device on your new device and scan QR code")
+                    .font(.callout)
             }
         }
     }
@@ -278,7 +286,6 @@ struct MigrateToAnotherDevice: View {
     private func finishedView() -> some View {
         List {
             Section {
-                Text("You should not use the same database on two devices")
                 Button(action: showDeleteChatAlert) {
                     settingsRow("trash.fill") {
                         Text("Delete database from this device").foregroundColor(.accentColor)
@@ -291,6 +298,9 @@ struct MigrateToAnotherDevice: View {
                 }
             } header: {
                 Text("Migration complete")
+            } footer: {
+                Text("You should not use the same database on two devices")
+                    .font(.callout)
             }
         }
     }
@@ -306,8 +316,14 @@ struct MigrateToAnotherDevice: View {
     private func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
         ZStack {
             VStack {
+                Text(description)
+                    .font(.title3)
+                    .hidden()
+
                 Text(title)
-                    .font(.title)
+                    .font(.system(size: 60))
+                    .foregroundColor(.accentColor)
+
                 Text(description)
                     .font(.title3)
             }
@@ -316,14 +332,15 @@ struct MigrateToAnotherDevice: View {
                 .trim(from: 0, to: CGFloat(value))
                 .stroke(
                     Color.accentColor,
-                    style: StrokeStyle(lineWidth: 5)
+                    style: StrokeStyle(lineWidth: 30)
                 )
-                .rotation3DEffect(.degrees(180), axis: (x: 1, y: 0, z: 0))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear, value: value)
-                .frame(width: 250, height: 250)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal)
+                .padding(.horizontal)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity )
+        .frame(maxWidth: .infinity)
     }
 
     private func stopChat() {
@@ -344,7 +361,7 @@ struct MigrateToAnotherDevice: View {
                 if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
                     let totalBytes = attrs[.size] as? Int64 {
                     await MainActor.run {
-                        migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, archivePath: archivePath)
+                        migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath)
                     }
                 } else {
                     await MainActor.run {
@@ -361,20 +378,16 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func startUploading(_ totalBytes: Int64, _ archivePath: URL) {
+    private func startUploading(_ user: User, _ totalBytes: Int64, _ archivePath: URL) {
         Task {
-            for i in 1...20 {
-                try? await Task.sleep(nanoseconds: 50_000000)
-                await MainActor.run {
-                    migrationState = .uploadProgress(uploadedBytes: Int64(Int(totalBytes) * i / 20), totalBytes: totalBytes, archivePath: archivePath)
-                    if i == 20 {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            let fileId = Int64(1)
-                            migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
-                        }
-                    }
-                }
+            let (res, error) = await uploadStandaloneFile(user: user, file: CryptoFile.plain(archivePath.path))
+            if let res = res {
+                migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: res.fileId, archivePath: archivePath)
+            } else if let error = error {
+                migrationState = .uploadConfirmation
+                alert = .error(title: "Error uploading the archive", error: error)
             }
+            //migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
         }
     }
 
