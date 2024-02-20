@@ -947,7 +947,7 @@ processChatCommand' vr = \case
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
-        withStore' $ \db -> deleteContact db user ct
+        withStore $ \db -> deleteContact db user ct
         pure $ CRContactDeleted user ct
     CTContactConnection -> withChatLock "deleteChat contactConnection" . procCmd $ do
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withStore $ \db -> getPendingContactConnection db userId chatId
@@ -988,7 +988,7 @@ processChatCommand' vr = \case
                     Just _ -> pure []
                     Nothing -> do
                       conns <- withStore' $ \db -> getContactConnections db userId ct
-                      withStore' (\db -> setContactDeleted db user ct)
+                      withStore (\db -> setContactDeleted db user ct)
                         `catchChatError` (toView . CRChatError (Just user))
                       pure $ map aConnId conns
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
@@ -3056,7 +3056,7 @@ cleanupManager = do
     cleanupDeletedContacts user = do
       contacts <- withStore' (`getDeletedContacts` user)
       forM_ contacts $ \ct ->
-        withStore' (\db -> deleteContactWithoutGroups db user ct)
+        withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchChatError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
@@ -4836,7 +4836,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else do
           contactConns <- withStore' $ \db -> getContactConnections db userId c
           deleteAgentConnectionsAsync user $ map aConnId contactConns
-          withStore' $ \db -> deleteContact db user c
+          withStore $ \db -> deleteContact db user c
       where
         brokerTs = metaBrokerTs msgMeta
 

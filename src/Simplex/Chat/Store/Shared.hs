@@ -110,6 +110,8 @@ data StoreError
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
+  | SEProhibitedDeleteUserContact {contactId :: ContactId}
+  | SEProhibitedDeleteUserName {localDisplayName :: ContactName}
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
@@ -401,3 +403,17 @@ createWithRandomBytes' size gVar create = tryCreate 3
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
+
+checkContactIsUser :: DB.Connection -> User -> Contact -> IO Bool
+checkContactIsUser db User {userContactId} Contact {contactId} = do
+  isUser_ <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT is_user FROM contacts WHERE contact_id = ?" (Only contactId)
+  pure $ fromMaybe False isUser_ || contactId == userContactId
+
+checkLDNIsUser :: DB.Connection -> ContactName -> IO Bool
+checkLDNIsUser db ldn = do
+  r :: (Maybe Int64) <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT 1 FROM users WHERE local_display_name = ? LIMIT 1" (Only ldn)
+  pure $ isJust r
