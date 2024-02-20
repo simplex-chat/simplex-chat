@@ -15,7 +15,6 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Except
-import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
@@ -38,6 +37,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Crypto.Memory (LockedBytes)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -92,7 +92,7 @@ testCoreOpts =
       highlyAvailable = False
     }
 
-getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
+getTestOpts :: Bool -> LockedBytes -> ChatOpts
 getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbKey}}
 
 termSettings :: VirtualTerminalSettings

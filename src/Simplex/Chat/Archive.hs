@@ -27,6 +27,7 @@ import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, keyString, sqlString, storeKey)
+import Simplex.Messaging.Crypto.Memory (LockedBytes)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -172,7 +173,7 @@ withDB f' a err =
     sqliteError' :: Show e => e -> m (Maybe SQLiteError)
     sqliteError' = pure . Just . SQLiteError . show
 
-testSQL :: BA.ScrubbedBytes -> Text
+testSQL :: LockedBytes -> Text
 testSQL k =
   T.unlines $
     keySQL k
@@ -181,7 +182,7 @@ testSQL k =
             "SELECT count(*) FROM sqlite_master;"
           ]
 
-keySQL :: BA.ScrubbedBytes -> [Text]
+keySQL :: LockedBytes -> [Text]
 keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
 
 sqlCipherTestKey :: forall m. ChatMonad m => DBEncryptionKey -> m ()

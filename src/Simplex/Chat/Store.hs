@@ -12,13 +12,13 @@ module Simplex.Chat.Store
   )
 where
 
-import Data.ByteArray (ScrubbedBytes)
 import Simplex.Chat.Store.Migrations
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, MigrationError, SQLiteStore (..), createSQLiteStore, withTransaction)
+import Simplex.Messaging.Crypto.Memory (LockedBytes)
 
-createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError SQLiteStore)
+createChatStore :: FilePath -> LockedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError SQLiteStore)
 createChatStore dbPath key keepKey = createSQLiteStore dbPath key keepKey migrations
 
 chatStoreFile :: FilePath -> FilePath

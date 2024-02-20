@@ -19,7 +19,6 @@ where
 
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import Numeric.Natural (Natural)
@@ -27,6 +26,7 @@ import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Crypto.Memory (LockedBytes)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
@@ -51,7 +51,7 @@ data ChatOpts = ChatOpts
 
 data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
-    dbKey :: ScrubbedBytes,
+    dbKey :: LockedBytes,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     networkConfig :: NetworkConfig,

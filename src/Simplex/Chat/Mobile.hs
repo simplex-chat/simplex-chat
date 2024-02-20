@@ -15,7 +15,6 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
-import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
@@ -50,6 +49,7 @@ import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Memory (LockedBytes)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
@@ -227,10 +227,10 @@ defaultMobileConfig =
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
-chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
+chatMigrateInit :: String -> LockedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = chatMigrateInitKey dbFilePrefix dbKey False confirm False
 
-chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey :: String -> LockedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
 chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations

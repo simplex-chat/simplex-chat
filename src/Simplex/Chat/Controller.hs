@@ -29,7 +29,6 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
-import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -71,6 +70,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Crypto.Memory (LockedBytes)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
@@ -880,7 +880,7 @@ data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression 
 data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey, keepKey :: Maybe Bool}
   deriving (Show)
 
-newtype DBEncryptionKey = DBEncryptionKey ScrubbedBytes
+newtype DBEncryptionKey = DBEncryptionKey LockedBytes
   deriving (Show)
 
 instance IsString DBEncryptionKey where fromString = parseString $ parseAll strP
