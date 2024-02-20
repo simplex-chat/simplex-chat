@@ -647,7 +647,7 @@ processChatCommand' vr = \case
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
-          (fInv_, ciFile_) <- unzipMaybe2 <$> setupSndFileTransfer ct
+          (fInv_, ciFile_) <- L.unzip <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct itemTTL
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
@@ -686,7 +686,7 @@ processChatCommand' vr = \case
           | isVoice mc && not (groupFeatureAllowed SGFVoice gInfo) = notAllowedError GFVoice
           | not (isVoice mc) && isJust file_ && not (groupFeatureAllowed SGFFiles gInfo) = notAllowedError GFFiles
           | otherwise = do
-              (fInv_, ciFile_) <- unzipMaybe2 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
+              (fInv_, ciFile_) <- L.unzip <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
               timed_ <- sndGroupCITimed live gInfo itemTTL
               (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ timed_ live
               (msg, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
@@ -731,9 +731,6 @@ processChatCommand' vr = \case
                     \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
               saveMemberFD _ = pure ()
         pure (fInv, ciFile)
-      unzipMaybe2 :: Maybe (a, b) -> (Maybe a, Maybe b)
-      unzipMaybe2 (Just (a, b)) = (Just a, Just b)
-      unzipMaybe2 _ = (Nothing, Nothing)
   APICreateChatItem folderId (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user -> do
     forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
     nf <- withStore $ \db -> getNoteFolder db user folderId
