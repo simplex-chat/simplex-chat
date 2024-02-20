@@ -142,7 +142,6 @@ defaultChatConfig =
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
-      tempDir = Nothing,
       showReactions = False,
       showReceipts = False,
       logLevel = CLLImportant,
@@ -200,7 +199,7 @@ newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Boo
 newChatController
   ChatDatabase {chatStore, agentStore}
   user
-  cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir, deviceNameForRemote}
+  cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, deviceNameForRemote}
   ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable}, deviceName, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
@@ -235,7 +234,7 @@ newChatController
     chatActivated <- newTVarIO True
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
-    tempDirectory <- newTVarIO tempDir
+    tempDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
     pure
       ChatController

@@ -128,7 +128,6 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
-    tempDir :: Maybe FilePath,
     showReactions :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,

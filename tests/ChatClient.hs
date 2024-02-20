@@ -15,6 +15,7 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.Reader
 import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
@@ -22,7 +23,7 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
@@ -129,8 +130,7 @@ testCfg =
     { agentConfig = testAgentCfg,
       showReceipts = False,
       testView = True,
-      tbqSize = 16,
-      tempDir = Just "./tests/tmp/tmp"
+      tbqSize = 16
     }
 
 testAgentCfgVPrev :: AgentConfig
@@ -209,6 +209,7 @@ startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
+  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") `runReaderT` cc
   chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -287,10 +288,7 @@ readTerminalOutput t termQ = do
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
-    ( do
-        createDirectoryIfMissing False "tests/tmp"
-        createDirectoryIfMissing False "tests/tmp/tmp" -- for XFTP temporary files
-    )
+    (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> FilePath -> IO ()
