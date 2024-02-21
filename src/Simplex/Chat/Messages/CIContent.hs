@@ -172,7 +172,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupInvitation {} -> True
     CIRcvDirectEvent rde -> case rde of
       RDEContactDeleted -> False
-      RDEProfileUpdated {} -> True
+      RDEProfileUpdated {} -> False
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
