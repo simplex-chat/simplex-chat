@@ -389,14 +389,12 @@ struct MigrateToAnotherDevice: View {
     private func initDatabaseIfNeeded() -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
-        if let ctrl {
-            do {
-                if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
-                    return (ctrl, user)
-                }
-            } catch let error {
-                logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
+        do {
+            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+                return (ctrl, user)
             }
+        } catch let error {
+            logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
         return nil
     }
