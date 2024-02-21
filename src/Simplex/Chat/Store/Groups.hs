@@ -142,7 +142,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, unlessM, whenM, ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, whenM, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
@@ -587,8 +587,7 @@ deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
   deleteGroupProfile_ db userId groupId
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  unlessM (checkLDNIsUser db user localDisplayName) $
-    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  deleteLDNCheckNotUser db user localDisplayName
   forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
@@ -1053,8 +1052,7 @@ cleanupMemberProfileAndName_ db user@User {userId} GroupMember {groupMemberId, m
     sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
     when (isNothing sameProfileMember) $ do
       DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
-      unlessM (checkLDNIsUser db user localDisplayName) $
-        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      deleteLDNCheckNotUser db user localDisplayName
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
@@ -1364,8 +1362,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         db
         "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
         (ldn, currentTs, userId, groupId)
-      unlessM (checkLDNIsUser db user localDisplayName) $
-        DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+      deleteLDNCheckNotUser db user localDisplayName
 
 getGroupInfo :: DB.Connection -> VersionRange -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db vr User {userId, userContactId} groupId =
@@ -1619,10 +1616,8 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
   let (toCt, fromCt) = toFromContacts to from
       Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
       Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
-  whenM (liftIO $ checkContactIsUser db user toCt) $ throwError (SEProhibitedDeleteUserContact toContactId)
-  whenM (liftIO $ checkLDNIsUser db user toLDN) $ throwError (SEProhibitedDeleteUserName toLDN)
-  whenM (liftIO $ checkContactIsUser db user fromCt) $ throwError (SEProhibitedDeleteUserContact fromContactId)
-  whenM (liftIO $ checkLDNIsUser db user fromLDN) $ throwError (SEProhibitedDeleteUserName fromLDN)
+  whenM (liftIO $ checkContactIsUser db user toCt) $ throwError (SEProhibitedDeleteUser userId)
+  whenM (liftIO $ checkContactIsUser db user fromCt) $ throwError (SEProhibitedDeleteUser userId)
   liftIO $ do
     currentTs <- getCurrentTime
     -- next query fixes incorrect unused contacts deletion
@@ -2038,8 +2033,7 @@ updateMemberProfile db user@User {userId} m p'
           db
           "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
           (ldn, currentTs, userId, groupMemberId)
-        unlessM (checkLDNIsUser db user localDisplayName) $
-          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+        deleteLDNCheckNotUser db user localDisplayName
         pure $ Right m {localDisplayName = ldn, memberProfile = profile}
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m

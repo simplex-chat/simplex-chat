@@ -232,8 +232,7 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
 
 deleteContact :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
 deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = do
-  whenM (liftIO $ checkContactIsUser db user ct) $ throwError (SEProhibitedDeleteUserContact contactId)
-  whenM (liftIO $ checkLDNIsUser db user localDisplayName) $ throwError (SEProhibitedDeleteUserName localDisplayName)
+  whenM (liftIO $ checkContactIsUser db user ct) $ throwError (SEProhibitedDeleteUser userId)
   liftIO $ do
     DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
@@ -252,8 +251,7 @@ deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, act
 -- should only be used if contact is not member of any groups
 deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
 deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = do
-  whenM (liftIO $ checkContactIsUser db user ct) $ throwError (SEProhibitedDeleteUserContact contactId)
-  whenM (liftIO $ checkLDNIsUser db user localDisplayName) $ throwError (SEProhibitedDeleteUserName localDisplayName)
+  whenM (liftIO $ checkContactIsUser db user ct) $ throwError (SEProhibitedDeleteUser userId)
   liftIO $ do
     DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     deleteContactProfile_ db userId contactId
@@ -264,9 +262,8 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
         deleteUnusedIncognitoProfileById_ db user profileId
 
 setContactDeleted :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-setContactDeleted db user@User {userId} ct@Contact {contactId, localDisplayName} = do
-  whenM (liftIO $ checkContactIsUser db user ct) $ throwError (SEProhibitedDeleteUserContact contactId)
-  whenM (liftIO $ checkLDNIsUser db user localDisplayName) $ throwError (SEProhibitedDeleteUserName localDisplayName)
+setContactDeleted db user@User {userId} ct@Contact {contactId} = do
+  whenM (liftIO $ checkContactIsUser db user ct) $ throwError (SEProhibitedDeleteUser userId)
   liftIO $ do
     currentTs <- getCurrentTime
     DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)

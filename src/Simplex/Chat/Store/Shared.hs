@@ -110,8 +110,7 @@ data StoreError
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
-  | SEProhibitedDeleteUserContact {contactId :: ContactId}
-  | SEProhibitedDeleteUserName {localDisplayName :: ContactName}
+  | SEProhibitedDeleteUser {userId :: UserId}
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
@@ -405,15 +404,27 @@ encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
 
 checkContactIsUser :: DB.Connection -> User -> Contact -> IO Bool
-checkContactIsUser db User {userContactId} Contact {contactId} = do
-  isUser_ <-
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT is_user FROM contacts WHERE contact_id = ?" (Only contactId)
-  pure $ fromMaybe False isUser_ || contactId == userContactId
-
-checkLDNIsUser :: DB.Connection -> User -> ContactName -> IO Bool
-checkLDNIsUser db User {userId} ldn = do
+checkContactIsUser db User {userId} Contact {contactId, localDisplayName} = do
   r :: (Maybe Int64) <-
     maybeFirstRow fromOnly $
-      DB.query db "SELECT 1 FROM users WHERE user_id = ? AND local_display_name = ? LIMIT 1" (userId, ldn)
+      DB.query
+        db
+        [sql|
+          SELECT 1 FROM users
+          WHERE (user_id = ? AND local_display_name = ?)
+             OR (contact_id = ?)
+          LIMIT 1
+        |]
+        (userId, localDisplayName, contactId)
   pure $ isJust r
+
+deleteLDNCheckNotUser :: DB.Connection -> User -> ContactName -> IO ()
+deleteLDNCheckNotUser db User {userId} localDisplayName = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE user_id = ? AND local_display_name = ?
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
+    |]
+    (userId, localDisplayName)
