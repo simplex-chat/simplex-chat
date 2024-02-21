@@ -110,7 +110,7 @@ data StoreError
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
-  | SEProhibitedDeleteUser {userId :: UserId}
+  | SEProhibitedDeleteUser {userId :: UserId, contactId_ :: Maybe ContactId}
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
@@ -420,7 +420,7 @@ assertNotUser db User {userId} Contact {contactId, localDisplayName} = do
           LIMIT 1
         |]
         (userId, localDisplayName, contactId)
-  when (isJust r) $ throwError $ SEProhibitedDeleteUser userId
+  when (isJust r) $ throwError $ SEProhibitedDeleteUser userId (Just contactId)
 
 safeDeleteLDN :: DB.Connection -> User -> ContactName -> IO ()
 safeDeleteLDN db User {userId} localDisplayName = do
