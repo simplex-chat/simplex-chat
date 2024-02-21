@@ -2053,8 +2053,9 @@ processChatCommand' vr = \case
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
-  APIUploadStandaloneFile userId file -> withUserId userId $ \user -> do
-    fileSize <- liftIO $ CF.getFileContentsSize file
+  APIUploadStandaloneFile userId file@CryptoFile {filePath} -> withUserId userId $ \user -> do
+    fsFilePath <- toFSFilePath filePath
+    fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do

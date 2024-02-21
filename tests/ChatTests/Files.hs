@@ -81,6 +81,7 @@ chatFileTests = do
   describe "file transfer over XFTP without chat items" $ do
     it "send and receive small standalone file" testXFTPStandaloneSmall
     it "send and receive large standalone file" testXFTPStandaloneLarge
+    it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
     it "removes received temporary files" testXFTPStandaloneCancelRcv
 
@@ -1632,6 +1633,37 @@ testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src 
     logWarn "no error?"
     dst <## "error receiving file 1 (should.not.extist)"
     dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
+
+testXFTPStandaloneRelativePaths :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneRelativePaths = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src #$> ("/_files_folder ./tests/tmp/src_files", id, "ok")
+    src #$> ("/_temp_folder ./tests/tmp/src_xftp_temp", id, "ok")
+
+    xftpCLI ["rand", "./tests/tmp/src_files/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/src_files/testfile.in"]
+
+    src ##> "/_upload 1 testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    dst #$> ("/_files_folder ./tests/tmp/dst_files", id, "ok")
+    dst #$> ("/_temp_folder ./tests/tmp/dst_xftp_temp", id, "ok")
+    dst ##> ("/_download 1 " <> uri <> " testfile.out")
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (testfile.out)"
+    srcBody <- B.readFile "./tests/tmp/src_files/testfile.in"
+    B.readFile "./tests/tmp/dst_files/testfile.out" `shouldReturn` srcBody
 
 testXFTPStandaloneCancelRcv :: HasCallStack => FilePath -> IO ()
 testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
