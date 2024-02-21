@@ -230,38 +230,44 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
   DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
 deleteContact :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = assertNotUser db user ct $ do
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
-  if isNothing ctMember
-    then do
-      deleteContactProfile_ db userId contactId
-      -- user's local display name already checked in assertNotUser
-      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-    else do
-      currentTs <- getCurrentTime
-      DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ activeConn $ \Connection {customUserProfileId} ->
-    forM_ customUserProfileId $ \profileId ->
-      deleteUnusedIncognitoProfileById_ db user profileId
+deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = do
+  assertNotUser db user ct
+  liftIO $ do
+    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+    if isNothing ctMember
+      then do
+        deleteContactProfile_ db userId contactId
+        -- user's local display name already checked in assertNotUser
+        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      else do
+        currentTs <- getCurrentTime
+        DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    forM_ activeConn $ \Connection {customUserProfileId} ->
+      forM_ customUserProfileId $ \profileId ->
+        deleteUnusedIncognitoProfileById_ db user profileId
 
 -- should only be used if contact is not member of any groups
 deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = assertNotUser db user ct $ do
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  deleteContactProfile_ db userId contactId
-  -- user's local display name already checked in assertNotUser
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ activeConn $ \Connection {customUserProfileId} ->
-    forM_ customUserProfileId $ \profileId ->
-      deleteUnusedIncognitoProfileById_ db user profileId
+deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = do
+  assertNotUser db user ct
+  liftIO $ do
+    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    deleteContactProfile_ db userId contactId
+    -- user's local display name already checked in assertNotUser
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    forM_ activeConn $ \Connection {customUserProfileId} ->
+      forM_ customUserProfileId $ \profileId ->
+        deleteUnusedIncognitoProfileById_ db user profileId
 
 setContactDeleted :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-setContactDeleted db user@User {userId} ct@Contact {contactId} = assertNotUser db user ct $ do
-  currentTs <- getCurrentTime
-  DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+setContactDeleted db user@User {userId} ct@Contact {contactId} = do
+  assertNotUser db user ct
+  liftIO $ do
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
 
 getDeletedContacts :: DB.Connection -> User -> IO [Contact]
 getDeletedContacts db user@User {userId} = do

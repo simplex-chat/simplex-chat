@@ -1616,8 +1616,9 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
   let (toCt, fromCt) = toFromContacts to from
       Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
       Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
-  assertNotUser db user toCt $ pure ()
-  assertNotUser db user fromCt $ do
+  assertNotUser db user toCt
+  assertNotUser db user fromCt
+  liftIO $ do
     currentTs <- getCurrentTime
     -- next query fixes incorrect unused contacts deletion
     when (contactDirect toCt && not (contactUsed toCt)) $

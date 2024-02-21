@@ -403,8 +403,8 @@ createWithRandomBytes' size gVar create = tryCreate 3
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
 
-assertNotUser :: DB.Connection -> User -> Contact -> IO a -> ExceptT StoreError IO a
-assertNotUser db User {userId} Contact {contactId, localDisplayName} a = do
+assertNotUser :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
+assertNotUser db User {userId} Contact {contactId, localDisplayName} = do
   r :: (Maybe Int64) <-
     -- This query checks that the foreign keys in the users table
     -- are not referencing the contact about to be deleted.
@@ -421,7 +421,6 @@ assertNotUser db User {userId} Contact {contactId, localDisplayName} a = do
         |]
         (userId, localDisplayName, contactId)
   when (isJust r) $ throwError $ SEProhibitedDeleteUser userId (Just contactId)
-  liftIO a
 
 safeDeleteLDN :: DB.Connection -> User -> ContactName -> IO ()
 safeDeleteLDN db User {userId} localDisplayName = do
