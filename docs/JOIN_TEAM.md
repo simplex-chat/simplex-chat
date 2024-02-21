@@ -70,7 +70,7 @@ Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin J
 
 ## How to join the team
 
-1. [Install the app](../README.md#install-the-app), try using it with the friends and [join some user groups](https://github.com/simplex-chat/simplex-chat#join-user-groups) – you will discover a lot of things that need improvements.
+1. [Install the app](https://github.com/simplex-chat/simplex-chat#install-the-app), try using it with the friends and [join some user groups](https://github.com/simplex-chat/simplex-chat#join-user-groups) – you will discover a lot of things that need improvements.
 
 2. Also look through [GitHub issues](https://github.com/simplex-chat/simplex-chat/issues) submitted by the users to see what would you want to contribute as a test.
 
