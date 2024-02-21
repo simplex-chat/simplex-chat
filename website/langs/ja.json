@@ -150,7 +150,7 @@
     "privacy-matters-2-overlay-1-title": "プライバシーはあなたに力を与えます",
     "simplex-unique-overlay-card-2-p-2": "オプションのユーザー アドレスを使用しても、スパムの連絡先リクエストの送信に使用される可能性がありますが、接続を失うことなく変更または完全に削除できます。",
     "simplex-unique-4-overlay-1-title": "完全に分散化されています &mdash; ユーザーは SimpleX ネットワークを所有します",
-    "simplex-network-overlay-card-1-li-5": "すべての既知の P2P ネットワークは、各ノードが検出可能であり、ネットワーク全体が動作するため、<a href='https://en.wikipedia.org/wiki/Sybil_question'>Sybil 攻撃</a>に対して脆弱である可能性があります。 この問題を軽減する既知の対策には、一元化されたコンポーネントか、高価な<a href='https://en.wikipedia.org/wiki/Proof_of_work'>作業証明</a>が必要です。 SimpleX ネットワークにはサーバーの検出機能がなく、断片化されており、複数の分離されたサブネットワークとして動作するため、ネットワーク全体への攻撃は不可能です。",
+    "simplex-network-overlay-card-1-li-5": "すべての既知の P2P ネットワークは、各ノードが検出可能であり、ネットワーク全体が動作するため、<a href='https://en.wikipedia.org/wiki/Sybil_attack'>Sybil 攻撃</a>に対して脆弱である可能性があります。 この問題を軽減する既知の対策には、一元化されたコンポーネントか、高価な<a href='https://en.wikipedia.org/wiki/Proof_of_work'>作業証明</a>が必要です。 SimpleX ネットワークにはサーバーの検出機能がなく、断片化されており、複数の分離されたサブネットワークとして動作するため、ネットワーク全体への攻撃は不可能です。",
     "simplex-private-2-title": "追加レイヤーの<br>サーバー暗号化",
     "hero-overlay-card-1-p-4": "この設計により、ユーザーの情報の漏洩が防止されます&apos; アプリケーションレベルのメタデータ。 プライバシーをさらに向上させ、IP アドレスを保護するために、Tor 経由でメッセージング サーバーに接続できます。",
     "f-droid-org-repo": "F-Droid.org リポジトリ",
