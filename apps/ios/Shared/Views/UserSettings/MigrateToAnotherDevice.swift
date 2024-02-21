@@ -60,7 +60,9 @@ struct MigrateToAnotherDevice: View {
     @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
     @State private var alert: MigrateToAnotherDeviceViewAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
-    private let chatWasStoppedInitially: Bool = AppChatState.shared.value == .stopped
+    @State private var chatWasStoppedInitially: Bool = true
+    private let tempDatabaseUrl = URL(fileURLWithPath: generateNewFileName(getMigrationTempFilesDirectory().path + "/" + "migration", "db", fullPath: true))
+    @State private var chatReceiver: MigrationChatReceiver? = nil
 
     var body: some View {
         if authorized {
@@ -89,7 +91,7 @@ struct MigrateToAnotherDevice: View {
                 uploadConfirmationView()
             case .archiving:
                 archivingView()
-            case let .uploadProgress(uploaded, total, fileId, archivePath):
+            case let .uploadProgress(uploaded, total, _, archivePath):
                 uploadProgressView(uploaded, totalBytes: total, archivePath)
             case let .linkCreation(totalBytes, fileId, archivePath):
                 linkCreationView(totalBytes, fileId, archivePath)
@@ -101,10 +103,12 @@ struct MigrateToAnotherDevice: View {
         }
         .onAppear {
             if case .initial = migrationState {
-                if AppChatState.shared.value == .stopped {
+                if m.chatRunning == false {
                     migrationState = initialRandomDBPassphrase ? .passphraseNotSet : .passphraseConfirmation
+                    chatWasStoppedInitially = true
                 } else {
                     migrationState = .chatStopInProgress
+                    chatWasStoppedInitially = false
                     stopChat()
                 }
             }
@@ -115,6 +119,7 @@ struct MigrateToAnotherDevice: View {
                     try? startChat(refreshInvitations: true)
                 }
             }
+            try? FileManager.default.removeItem(at: tempDatabaseUrl)
         }
         .alert(item: $alert) { alert in
             switch alert {
@@ -230,9 +235,11 @@ struct MigrateToAnotherDevice: View {
             largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
         }
         .onAppear {
-            if let user = m.currentUser {
-                startUploading(user, totalBytes, archivePath)
-            }
+            startUploading(totalBytes, archivePath)
+        }
+        .onDisappear {
+            try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
+            chatReceiver?.stop()
         }
     }
 
@@ -357,7 +364,8 @@ struct MigrateToAnotherDevice: View {
     private func exportArchive() {
         Task {
             do {
-                let archivePath = try await exportChatArchive()
+                try? FileManager.default.createDirectory(at: getMigrationTempFilesDirectory(), withIntermediateDirectories: true)
+                let archivePath = try await exportChatArchive(getMigrationTempFilesDirectory())
                 if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
                     let totalBytes = attrs[.size] as? Int64 {
                     await MainActor.run {
@@ -378,14 +386,45 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func startUploading(_ user: User, _ totalBytes: Int64, _ archivePath: URL) {
+    private func initDatabaseIfNeeded() -> (chat_ctrl, User)? {
+        let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
+        showErrorOnMigrationIfNeeded(status, $alert)
+        if let ctrl {
+            do {
+                if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+                    return (ctrl, user)
+                }
+            } catch let error {
+                logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
+            }
+        }
+        return nil
+    }
+
+    private func startUploading(_ totalBytes: Int64, _ archivePath: URL) {
         Task {
-            let (res, error) = await uploadStandaloneFile(user: user, file: CryptoFile.plain(archivePath.path))
-            if let res = res {
-                migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: res.fileId, archivePath: archivePath)
-            } else if let error = error {
+            guard let ctrlUser = initDatabaseIfNeeded() else {
+                return migrationState = .uploadConfirmation
+            }
+            let (ctrl, user) = ctrlUser
+            let (res, error) = await uploadStandaloneFile(user: user, file: CryptoFile.plain(archivePath.lastPathComponent), ctrl: ctrl)
+            guard let res = res else {
                 migrationState = .uploadConfirmation
-                alert = .error(title: "Error uploading the archive", error: error)
+                return alert = .error(title: "Error uploading the archive", error: error ?? "")
+            }
+            migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: Int64(res.fileSize), fileId: res.fileId, archivePath: archivePath)
+            chatReceiver = MigrationChatReceiver(ctrl: ctrl) { msg in
+                logger.debug("processReceivedMsg: \(msg.responseType)")
+                switch msg {
+                case let .sndFileProgressXFTP(_, _, _, sentSize, totalSize):
+                    migrationState = .uploadProgress(uploadedBytes: sentSize, totalBytes: totalSize, fileId: res.fileId, archivePath: archivePath)
+                case let .sndStandaloneFileComplete(_, _, rcvURIs):
+                    logger.debug("LALAL URIS \(rcvURIs)")
+                    //migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
+                case .sndFileCancelledXFTP:
+                    migrationState = .uploadConfirmation
+                default: ()
+                }
             }
             //migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
         }
@@ -504,21 +543,28 @@ private struct PassphraseConfirmationView: View {
             verifyingPassphrase.wrappedValue = false
         }
         let (_, status) = chatMigrateInit(dbKey, confirmMigrations: .error)
-        switch status {
-        case .invalidConfirmation:
-            alert = .invalidConfirmation()
-        case .errorNotADatabase:
-            alert = .wrongPassphrase()
-        case .errorKeychain:
-            alert = .keychainError()
-        case let .errorSQL(_, error):
-            alert = .databaseError(message: error)
-        case let .unknown(error):
-            alert = .unknownError(message: error)
-        case .errorMigration: ()
-        case .ok:
+        if case .ok = status {
             migrationState = .uploadConfirmation
+        } else {
+            showErrorOnMigrationIfNeeded(status, $alert)
         }
+    }
+}
+
+private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: Binding<MigrateToAnotherDeviceViewAlert?>) {
+    switch status {
+    case .invalidConfirmation:
+        alert.wrappedValue = .invalidConfirmation()
+    case .errorNotADatabase:
+        alert.wrappedValue = .wrongPassphrase()
+    case .errorKeychain:
+        alert.wrappedValue = .keychainError()
+    case let .errorSQL(_, error):
+        alert.wrappedValue = .databaseError(message: error)
+    case let .unknown(error):
+        alert.wrappedValue = .unknownError(message: error)
+    case .errorMigration: ()
+    case .ok: ()
     }
 }
 
@@ -532,6 +578,43 @@ private func progressView() -> some View {
 func chatStoppedView() -> some View {
     settingsRow("exclamationmark.octagon.fill", color: .red) {
         Text("Chat is stopped")
+    }
+}
+
+class MigrationChatReceiver {
+    let ctrl: chat_ctrl
+    let processReceivedMsg: (ChatResponse) async -> Void
+    private var receiveLoop: Task<Void, Never>?
+    private var receiveMessages = true
+
+    init(ctrl: chat_ctrl, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+        self.ctrl = ctrl
+        self.processReceivedMsg = processReceivedMsg
+    }
+
+    func start() {
+        logger.debug("MigrationChatReceiver.start")
+        receiveMessages = true
+        if receiveLoop != nil { return }
+        receiveLoop = Task { await receiveMsgLoop() }
+    }
+
+    func receiveMsgLoop() async {
+        // TODO use function that has timeout
+        if let msg = await chatRecvMsg(ctrl) {
+            await processReceivedMsg(msg)
+        }
+        if self.receiveMessages {
+            _ = try? await Task.sleep(nanoseconds: 7_500_000)
+            await receiveMsgLoop()
+        }
+    }
+
+    func stop() {
+        logger.debug("MigrationChatReceiver.stop")
+        receiveMessages = false
+        receiveLoop?.cancel()
+        receiveLoop = nil
     }
 }
 

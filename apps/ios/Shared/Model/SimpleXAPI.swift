@@ -90,12 +90,12 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
     let start = Date.now
     let resp = bgTask
-                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
-                : sendSimpleXCmd(cmd)
+                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
+                : sendSimpleXCmd(cmd, ctrl)
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
@@ -106,24 +106,24 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     return resp
 }
 
-func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) async -> ChatResponse {
+func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) async -> ChatResponse {
     await withCheckedContinuation { cont in
-        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay))
+        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl))
     }
 }
 
-func chatRecvMsg() async -> ChatResponse? {
+func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
     await withCheckedContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
-            let resp = recvSimpleXMsg()
+            let resp = recvSimpleXMsg(ctrl)
             cont.resume(returning: resp)
             return resp
         }
     }
 }
 
-func apiGetActiveUser() throws -> User? {
-    let r = chatSendCmdSync(.showActiveUser)
+func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
+    let r = chatSendCmdSync(.showActiveUser, ctrl)
     switch r {
     case let .activeUser(user): return user
     case .chatCmdError(_, .error(.noActiveUser)): return nil
@@ -131,8 +131,8 @@ func apiGetActiveUser() throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp))
+func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -210,8 +210,8 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
     throw r
 }
 
-func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(mainApp: true))
+func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
+    let r = chatSendCmdSync(.startChat(mainApp: true), ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -240,20 +240,20 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
-func apiSetTempFolder(tempFolder: String) throws {
-    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder))
+func apiSetTempFolder(tempFolder: String, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
 
-func apiSetFilesFolder(filesFolder: String) throws {
-    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
+func apiSetFilesFolder(filesFolder: String, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
 
-func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
-    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
+func setXFTPConfig(_ cfg: XFTPFileConfig?, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
@@ -504,8 +504,8 @@ func getNetworkConfig() async throws -> NetCfg? {
     throw r
 }
 
-func setNetworkConfig(_ cfg: NetCfg) throws {
-    let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg))
+func setNetworkConfig(_ cfg: NetCfg, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
@@ -870,8 +870,8 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func uploadStandaloneFile(user: any UserLike, file: CryptoFile) async -> (FileTransferMeta?, String?) {
-    let r = await chatSendCmd(.apiUploadStandaloneFile(userId: user.userId, file: file))
+func uploadStandaloneFile(user: any UserLike, file: CryptoFile, ctrl: chat_ctrl? = nil) async -> (FileTransferMeta?, String?) {
+    let r = await chatSendCmd(.apiUploadStandaloneFile(userId: user.userId, file: file), ctrl)
     if case let .sndStandaloneFileCreated(_, fileTransferMeta) = r {
         return (fileTransferMeta, nil)
     } else {
@@ -1348,6 +1348,17 @@ func startChat(refreshInvitations: Bool = true) throws {
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+}
+
+func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
+    logger.debug("startChatWithTemporaryDatabase")
+    let migrationActiveUser = try? apiGetActiveUser(ctrl: ctrl) ?? apiCreateActiveUser(Profile(displayName: "Temp", fullName: ""), ctrl: ctrl)
+    try setNetworkConfig(getNetCfg(), ctrl: ctrl)
+    try apiSetTempFolder(tempFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
+    try apiSetFilesFolder(filesFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
+    try setXFTPConfig(getXFTPCfg(), ctrl: ctrl)
+    _ = try apiStartChat(ctrl: ctrl)
+    return migrationActiveUser
 }
 
 func changeActiveUser(_ userId: Int64, viewPwd: String?) {

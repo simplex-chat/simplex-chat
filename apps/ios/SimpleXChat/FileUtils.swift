@@ -83,6 +83,7 @@ public func deleteAppDatabaseAndFiles() {
     try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
     try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
     try? fm.removeItem(at: getTempFilesDirectory())
+    try? fm.removeItem(at: getMigrationTempFilesDirectory())
     try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
     deleteAppFiles()
     _ = kcDatabasePassword.remove()
@@ -181,6 +182,10 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
 
 public func getTempFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("temp_files", isDirectory: true)
+}
+
+public func getMigrationTempFilesDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("migration_temp_files", isDirectory: true)
 }
 
 public func getAppFilesDirectory() -> URL {

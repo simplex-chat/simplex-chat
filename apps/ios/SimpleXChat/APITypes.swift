@@ -286,8 +286,8 @@ public enum ChatCommand {
             case .listRemoteCtrls: return "/list remote ctrls"
             case .stopRemoteCtrl: return "/stop remote ctrl"
             case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
-            case let .apiUploadStandaloneFile(userId, file): return "/_upload \(userId) \(encodeJSON(file))"
-            case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(encodeJSON(file))"
+            case let .apiUploadStandaloneFile(userId, file): return "/_upload \(userId) \(file.filePath)"
+            case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case .showVersion: return "/version"
             case let .string(str): return str
             }
@@ -616,7 +616,7 @@ public enum ChatResponse: Decodable, Error {
     case sndFileRedirectStartXFTP(user: UserRef, fileTransferMeta: FileTransferMeta, redirectMeta: FileTransferMeta)
     case sndFileCompleteXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
     case sndStandaloneFileComplete(user: UserRef, fileTransferMeta: FileTransferMeta, rcvURIs: [String])
-    case sndFileCancelledFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
+    case sndFileCancelledXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
     case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
     // call events
     case callInvitation(callInvitation: RcvCallInvitation)
@@ -773,7 +773,7 @@ public enum ChatResponse: Decodable, Error {
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
             case .sndFileCompleteXFTP: return "sndFileCompleteXFTP"
             case .sndStandaloneFileComplete: return "sndStandaloneFileComplete"
-            case .sndFileCancelledFTP: return "sndFileCancelledFTP"
+            case .sndFileCancelledXFTP: return "sndFileCancelledXFTP"
             case .sndFileError: return "sndFileError"
             case .callInvitation: return "callInvitation"
             case .callOffer: return "callOffer"
@@ -930,7 +930,7 @@ public enum ChatResponse: Decodable, Error {
             case let .sndFileRedirectStartXFTP(u, _, redirectMeta): return withUser(u, String(describing: redirectMeta))
             case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndStandaloneFileComplete(u, _, rcvURIs): return withUser(u, String(rcvURIs.count))
-            case let .sndFileCancelledFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileCancelledXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileError(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")

@@ -216,16 +216,18 @@ struct MigrateToAppGroupView: View {
     }
 }
 
-func exportChatArchive() async throws -> URL {
+func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
     let archiveTime = Date.now
     let ts = archiveTime.ISO8601Format(Date.ISO8601FormatStyle(timeSeparator: .omitted))
     let archiveName = "simplex-chat.\(ts).zip"
-    let archivePath = getDocumentsDirectory().appendingPathComponent(archiveName)
+    let archivePath = (storagePath ?? getDocumentsDirectory()).appendingPathComponent(archiveName)
     let config = ArchiveConfig(archivePath: archivePath.path)
     try await apiExportArchive(config: config)
-    deleteOldArchive()
-    UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
-    chatArchiveTimeDefault.set(archiveTime)
+    if storagePath == nil {
+        deleteOldArchive()
+        UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
+        chatArchiveTimeDefault.set(archiveTime)
+    }
     return archivePath
 }
 
