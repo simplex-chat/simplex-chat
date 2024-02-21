@@ -133,6 +133,7 @@ library
       Simplex.Chat.Migrations.M20240104_members_profile_update
       Simplex.Chat.Migrations.M20240115_block_member_for_all
       Simplex.Chat.Migrations.M20240122_indexes
+      Simplex.Chat.Migrations.M20240214_redirect_file_id
       Simplex.Chat.Migrations.M20240219_users_restrict
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File

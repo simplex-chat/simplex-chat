@@ -98,6 +98,7 @@ import Simplex.Chat.Migrations.M20240102_note_folders
 import Simplex.Chat.Migrations.M20240104_members_profile_update
 import Simplex.Chat.Migrations.M20240115_block_member_for_all
 import Simplex.Chat.Migrations.M20240122_indexes
+import Simplex.Chat.Migrations.M20240214_redirect_file_id
 import Simplex.Chat.Migrations.M20240219_users_restrict
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
@@ -197,6 +198,7 @@ schemaMigrations =
     ("20240104_members_profile_update", m20240104_members_profile_update, Just down_m20240104_members_profile_update),
     ("20240115_block_member_for_all", m20240115_block_member_for_all, Just down_m20240115_block_member_for_all),
     ("20240122_indexes", m20240122_indexes, Just down_m20240122_indexes),
+    ("20240214_redirect_file_id", m20240214_redirect_file_id, Just down_m20240214_redirect_file_id),
     ("20240219_users_restrict", m20240219_users_restrict, Just down_m20240219_users_restrict)
   ]
 
