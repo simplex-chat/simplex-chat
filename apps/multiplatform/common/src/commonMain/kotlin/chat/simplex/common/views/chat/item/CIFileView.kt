@@ -94,7 +94,7 @@ fun CIFileView(
             FileProtocol.LOCAL -> {}
           }
         file.fileStatus is CIFileStatus.RcvComplete || (file.fileStatus is CIFileStatus.SndStored && file.fileProtocol == FileProtocol.LOCAL) -> {
-          withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+          withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
             if (chatModel.connectedToRemote() && filePath == null) {
               file.loadRemoteFile(true)

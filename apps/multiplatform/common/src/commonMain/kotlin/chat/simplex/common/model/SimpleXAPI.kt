@@ -451,7 +451,21 @@ object ChatController {
         }
         try {
           val msg = recvMsg(ctrl)
-          if (msg != null) processReceivedMsg(msg)
+          if (msg != null) {
+            val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
+              processReceivedMsg(msg)
+            }
+            if (finishedWithoutTimeout == null) {
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.possible_slow_function_title),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  shareText = true
+                )
+              }
+            }
+          }
         } catch (e: Exception) {
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
         } catch (e: Throwable) {
@@ -1685,7 +1699,7 @@ object ChatController {
           chatModel.networkStatuses[s.agentConnId] = s.networkStatus
         }
       }
-      is CR.NewChatItem -> {
+      is CR.NewChatItem -> withBGApi {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
@@ -1700,7 +1714,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withBGApi { receiveFile(rhId, r.user, file.fileId, auto = true) }
+          receiveFile(rhId, r.user, file.fileId, auto = true)
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
