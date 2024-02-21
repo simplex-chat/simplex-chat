@@ -318,8 +318,7 @@ getTermLine cc =
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) = do
-  maybe "no current user" (\User {localDisplayName = ldn} -> T.unpack ldn) <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) = maybe "no current user" (T.unpack . localDisplayName) <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
