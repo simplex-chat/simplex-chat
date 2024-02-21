@@ -427,4 +427,4 @@ deleteLDNCheckNotUser db User {userId} localDisplayName = do
       WHERE user_id = ? AND local_display_name = ?
         AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
     |]
-    (userId, localDisplayName)
+    (userId, localDisplayName, userId)
