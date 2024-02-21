@@ -267,7 +267,7 @@ updateUserProfile db user p'
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
         updateContactProfile_' db userId profileId p' currentTs
-        updateContactLDN_ db userId userContactId localDisplayName newName currentTs
+        updateContactLDN_ db user userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs

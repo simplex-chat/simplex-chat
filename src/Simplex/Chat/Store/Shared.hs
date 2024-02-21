@@ -110,7 +110,7 @@ data StoreError
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
-  | SEProhibitedDeleteUser {userId :: UserId}
+  | SEProhibitedDeleteUser {userId :: UserId, contactId_ :: Maybe ContactId}
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
@@ -403,23 +403,28 @@ createWithRandomBytes' size gVar create = tryCreate 3
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
 
-checkContactIsUser :: DB.Connection -> User -> Contact -> IO Bool
-checkContactIsUser db User {userId} Contact {contactId, localDisplayName} = do
+assertNotUser :: DB.Connection -> User -> Contact -> IO a -> ExceptT StoreError IO a
+assertNotUser db User {userId} Contact {contactId, localDisplayName} a = do
   r :: (Maybe Int64) <-
-    maybeFirstRow fromOnly $
+    -- This query checks that the foreign keys in the users table
+    -- are not referencing the contact about to be deleted.
+    -- With the current schema it would cause cascade delete of user,
+    -- with mofified schema (in v5.6.0-beta.0) it would cause foreign key violation error.
+    liftIO . maybeFirstRow fromOnly $
       DB.query
         db
         [sql|
           SELECT 1 FROM users
           WHERE (user_id = ? AND local_display_name = ?)
-             OR (contact_id = ?)
+             OR contact_id = ?
           LIMIT 1
         |]
         (userId, localDisplayName, contactId)
-  pure $ isJust r
+  when (isJust r) $ throwError $ SEProhibitedDeleteUser userId (Just contactId)
+  liftIO a
 
-deleteLDNCheckNotUser :: DB.Connection -> User -> ContactName -> IO ()
-deleteLDNCheckNotUser db User {userId} localDisplayName = do
+safeDeleteLDN :: DB.Connection -> User -> ContactName -> IO ()
+safeDeleteLDN db User {userId} localDisplayName = do
   DB.execute
     db
     [sql|

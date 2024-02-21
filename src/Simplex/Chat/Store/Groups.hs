@@ -142,7 +142,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, whenM, ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
@@ -587,7 +587,7 @@ deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
   deleteGroupProfile_ db userId groupId
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  deleteLDNCheckNotUser db user localDisplayName
+  safeDeleteLDN db user localDisplayName
   forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
@@ -1052,7 +1052,7 @@ cleanupMemberProfileAndName_ db user@User {userId} GroupMember {groupMemberId, m
     sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
     when (isNothing sameProfileMember) $ do
       DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
-      deleteLDNCheckNotUser db user localDisplayName
+      safeDeleteLDN db user localDisplayName
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
@@ -1362,7 +1362,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         db
         "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
         (ldn, currentTs, userId, groupId)
-      deleteLDNCheckNotUser db user localDisplayName
+      safeDeleteLDN db user localDisplayName
 
 getGroupInfo :: DB.Connection -> VersionRange -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db vr User {userId, userContactId} groupId =
@@ -1616,9 +1616,8 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
   let (toCt, fromCt) = toFromContacts to from
       Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
       Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
-  whenM (liftIO $ checkContactIsUser db user toCt) $ throwError (SEProhibitedDeleteUser userId)
-  whenM (liftIO $ checkContactIsUser db user fromCt) $ throwError (SEProhibitedDeleteUser userId)
-  liftIO $ do
+  assertNotUser db user toCt $ pure ()
+  assertNotUser db user fromCt $ do
     currentTs <- getCurrentTime
     -- next query fixes incorrect unused contacts deletion
     when (contactDirect toCt && not (contactUsed toCt)) $
@@ -2033,7 +2032,7 @@ updateMemberProfile db user@User {userId} m p'
           db
           "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
           (ldn, currentTs, userId, groupMemberId)
-        deleteLDNCheckNotUser db user localDisplayName
+        safeDeleteLDN db user localDisplayName
         pure $ Right m {localDisplayName = ldn, memberProfile = profile}
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
@@ -2041,7 +2040,7 @@ updateMemberProfile db user@User {userId} m p'
     profile = toLocalProfile profileId p' localAlias
 
 updateContactMemberProfile :: DB.Connection -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
-updateContactMemberProfile db User {userId} m ct@Contact {contactId} p'
+updateContactMemberProfile db user@User {userId} m ct@Contact {contactId} p'
   | displayName == newName = do
       liftIO $ updateMemberContactProfile_ db userId profileId p'
       pure (m {memberProfile = profile}, ct {profile} :: Contact)
@@ -2049,7 +2048,7 @@ updateContactMemberProfile db User {userId} m ct@Contact {contactId} p'
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
         updateMemberContactProfile_' db userId profileId p' currentTs
-        updateContactLDN_ db userId contactId localDisplayName ldn currentTs
+        updateContactLDN_ db user contactId localDisplayName ldn currentTs
         pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
