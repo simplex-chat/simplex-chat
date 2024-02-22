@@ -1113,6 +1113,10 @@ testMaintenanceModeWithSettings tmp = do
       alice ##> "/_stop"
       alice <## "chat stopped"
       let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
+      alice ##> ("/_save app settings " <> settings)
+      alice <## "ok"
+      alice ##> "/_get app settings"
+      alice <## ("app settings: " <> settings)
       alice ##> ("/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\", \"appSettings\": " <> settings <> "}")
       alice <## "ok"
       alice ##> "/_db delete"

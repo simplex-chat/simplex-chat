@@ -387,6 +387,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRArchiveImported ArchiveImportResult {archiveErrors = errs, appSettings} ->
     ["app settings in archive ignored" | isJust appSettings]
       <> [if null errs then "ok" else "archive import errors: " <> plain (show errs)]
+  CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
   where
     ttyUser :: User -> [StyledString] -> [StyledString]

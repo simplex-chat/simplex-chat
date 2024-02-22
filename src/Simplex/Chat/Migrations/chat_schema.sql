@@ -562,6 +562,7 @@ CREATE TABLE note_folders(
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE app_settings(app_settings BLOB NOT NULL);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name

@@ -68,6 +68,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
+import Simplex.Chat.Store.AppSettings
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
@@ -604,6 +605,8 @@ processChatCommand' vr = \case
     fileErrs <- importArchive cfg
     setStoreChanged
     pure $ CRArchiveImported fileErrs
+  APISaveAppSettings as -> withStore' (`saveAppSettings` as) >> ok_
+  APIGetAppSettings -> CRAppSettings <$> withStore getAppSettings
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   TestStorageEncryption key -> withStoreChanged $ sqlCipherTestKey key
@@ -6546,6 +6549,8 @@ chatCommandP =
       "/db key " *> (APIStorageEncryption <$> (dbEncryptionConfig <$> dbKeyP <* A.space <*> dbKeyP)),
       "/db decrypt " *> (APIStorageEncryption . (`dbEncryptionConfig` "") <$> dbKeyP),
       "/db test key " *> (TestStorageEncryption <$> dbKeyP),
+      "/_save app settings" *> (APISaveAppSettings <$> jsonP),
+      "/_get app settings" $> APIGetAppSettings,
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
