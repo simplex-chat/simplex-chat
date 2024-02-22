@@ -267,7 +267,7 @@ updateUserProfile db user p'
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
         updateContactProfile_' db userId profileId p' currentTs
-        updateContactLDN_ db userId userContactId localDisplayName newName currentTs
+        updateContactLDN_ db user userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
@@ -388,6 +388,7 @@ deleteUserAddress db user@User {userId} = do
           JOIN user_contact_links uc USING (user_contact_link_id)
           WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
         )
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = :user_id)
     |]
     [":user_id" := userId]
   DB.executeNamed
