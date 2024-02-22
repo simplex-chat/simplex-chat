@@ -606,7 +606,7 @@ processChatCommand' vr = \case
     setStoreChanged
     pure $ CRArchiveImported fileErrs
   APISaveAppSettings as -> withStore' (`saveAppSettings` as) >> ok_
-  APIGetAppSettings -> CRAppSettings <$> withStore getAppSettings
+  APIGetAppSettings platformDefaults -> CRAppSettings <$> withStore' (`getAppSettings` platformDefaults)
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   TestStorageEncryption key -> withStoreChanged $ sqlCipherTestKey key
@@ -6550,7 +6550,7 @@ chatCommandP =
       "/db decrypt " *> (APIStorageEncryption . (`dbEncryptionConfig` "") <$> dbKeyP),
       "/db test key " *> (TestStorageEncryption <$> dbKeyP),
       "/_save app settings" *> (APISaveAppSettings <$> jsonP),
-      "/_get app settings" $> APIGetAppSettings,
+      "/_get app settings" *> (APIGetAppSettings <$> optional (A.space *> jsonP)),
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,

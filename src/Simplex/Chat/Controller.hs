@@ -251,7 +251,7 @@ data ChatCommand
   | ExportArchive
   | APIImportArchive ArchiveConfig
   | APISaveAppSettings AppSettings
-  | APIGetAppSettings
+  | APIGetAppSettings (Maybe AppSettings)
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
   | TestStorageEncryption DBEncryptionKey

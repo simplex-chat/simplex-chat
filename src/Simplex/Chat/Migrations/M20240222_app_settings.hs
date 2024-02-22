@@ -9,7 +9,7 @@ m20240222_app_settings :: Query
 m20240222_app_settings =
   [sql|
 CREATE TABLE app_settings (
-  app_settings BLOB NOT NULL
+  app_settings TEXT NOT NULL
 );
 |]
 
