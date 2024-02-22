@@ -185,7 +185,7 @@ public func getTempFilesDirectory() -> URL {
 }
 
 public func getMigrationTempFilesDirectory() -> URL {
-    getAppDirectory().appendingPathComponent("migration_temp_files", isDirectory: true)
+    getDocumentsDirectory().appendingPathComponent("migration_temp_files", isDirectory: true)
 }
 
 public func getAppFilesDirectory() -> URL {
