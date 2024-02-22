@@ -599,7 +599,7 @@ processChatCommand' vr = \case
     pure $ CRArchiveImported fileErrs
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
-  TestStorageEncryption key -> withStoreChanged $ sqlCipherTestKey key
+  TestStorageEncryption key -> sqlCipherTestKey key
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   SlowSQLQueries -> do
