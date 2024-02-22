@@ -62,7 +62,7 @@ struct MigrateToAnotherDevice: View {
     @State private var alert: MigrateToAnotherDeviceViewAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var chatWasStoppedInitially: Bool = true
-    @State private var tempDatabaseUrl = urlForTemporaryDatabase()
+    private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     @State private var backDisabled: Bool = false
 
@@ -140,7 +140,8 @@ struct MigrateToAnotherDevice: View {
                     await cancelUploadedAchive(fileId, ctrl)
                 }
                 chatReceiver?.stop()
-                try? FileManager.default.removeItem(at: tempDatabaseUrl)
+                try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
+                try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_agent.db")
                 try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             }
         }
@@ -282,6 +283,8 @@ struct MigrateToAnotherDevice: View {
         }
         .onAppear {
             chatReceiver?.stop()
+            try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
+            try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_agent.db")
         }
     }
 
@@ -426,10 +429,7 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func initDatabaseIfNeeded() -> (chat_ctrl, User)? {
-        // Remove previous one if this isn't a first try
-        try? FileManager.default.removeItem(at: tempDatabaseUrl)
-        tempDatabaseUrl = MigrateToAnotherDevice.urlForTemporaryDatabase()
+    private func initTemporaryDatabase() -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
         do {
@@ -444,7 +444,7 @@ struct MigrateToAnotherDevice: View {
 
     private func startUploading(_ totalBytes: Int64, _ archivePath: URL) {
         Task {
-            guard let ctrlAndUser = initDatabaseIfNeeded() else {
+            guard let ctrlAndUser = initTemporaryDatabase() else {
                 return migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
             }
             let (ctrl, user) = ctrlAndUser
@@ -657,7 +657,7 @@ class MigrationChatReceiver {
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
-        //chat_close_store(ctrl)
+        chat_close_store(ctrl)
     }
 }
 
