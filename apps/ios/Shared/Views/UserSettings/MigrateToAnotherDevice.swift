@@ -462,7 +462,9 @@ struct MigrateToAnotherDevice: View {
                     case let .sndFileRedirectStartXFTP(_, fileTransferMeta, _):
                         migrationState = .linkCreation(totalBytes: fileTransferMeta.fileSize)
                     case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
-                        migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: rcvURIs[0], archivePath: archivePath, ctrl: ctrl)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: rcvURIs[0], archivePath: archivePath, ctrl: ctrl)
+                        }
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
                     }
