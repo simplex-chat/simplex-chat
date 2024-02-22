@@ -52,7 +52,6 @@ struct DatabaseEncryptionView: View {
             List {
                 if migration {
                     chatStoppedView()
-                    Text("Set database passphrase to migrate it")
                 }
                 databaseEncryptionView()
             }
@@ -103,9 +102,7 @@ struct DatabaseEncryptionView: View {
                 !validKey(newKey)
             )
         } header: {
-            if !migration {
-                Text("")
-            }
+            Text(migration ? "Database passphrase" : "")
         } footer: {
             if !migration {
                 VStack(alignment: .leading, spacing: 16) {
@@ -130,6 +127,10 @@ struct DatabaseEncryptionView: View {
                         }
                     }
                 }
+                .padding(.top, 1)
+                .font(.callout)
+            } else {
+                Text("Set database passphrase to migrate it")
                 .padding(.top, 1)
                 .font(.callout)
             }

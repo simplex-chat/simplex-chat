@@ -37,6 +37,7 @@ public enum ChatCommand {
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
     case apiStorageEncryption(config: DBEncryptionConfig)
+    case testStorageEncryption(key: String)
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
@@ -174,6 +175,7 @@ public enum ChatCommand {
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
             case let .apiStorageEncryption(cfg): return "/_db encryption \(encodeJSON(cfg))"
+            case let .testStorageEncryption(key): return "/db test key \(key)"
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
@@ -321,6 +323,7 @@ public enum ChatCommand {
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
             case .apiStorageEncryption: return "apiStorageEncryption"
+            case .testStorageEncryption: return "testStorageEncryption"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
@@ -449,6 +452,8 @@ public enum ChatCommand {
             return .apiUnhideUser(userId: userId, viewPwd: obfuscate(viewPwd))
         case let .apiDeleteUser(userId, delSMPQueues, viewPwd):
             return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
+        case let .testStorageEncryption(key):
+            return .testStorageEncryption(key: obfuscate(key))
         default: return self
         }
     }

@@ -17,9 +17,10 @@ public enum MigrationState: Equatable {
     case passphraseConfirmation
     case uploadConfirmation
     case archiving
-    case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, fileId: Int64, archivePath: URL)
-    case linkCreation(totalBytes: Int64, fileId: Int64, archivePath: URL)
-    case linkShown(fileId: Int64, link: String, archivePath: URL)
+    case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, fileId: Int64, archivePath: URL, ctrl: chat_ctrl?)
+    case uploadFailed(totalBytes: Int64, archivePath: URL)
+    case linkCreation(totalBytes: Int64)
+    case linkShown(fileId: Int64, link: String, archivePath: URL, ctrl: chat_ctrl)
     case finished
 }
 
@@ -61,8 +62,9 @@ struct MigrateToAnotherDevice: View {
     @State private var alert: MigrateToAnotherDeviceViewAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var chatWasStoppedInitially: Bool = true
-    private let tempDatabaseUrl = URL(fileURLWithPath: generateNewFileName(getMigrationTempFilesDirectory().path + "/" + "migration", "db", fullPath: true))
+    @State private var tempDatabaseUrl = URL(fileURLWithPath: generateNewFileName(getMigrationTempFilesDirectory().path + "/" + "migration", "db", fullPath: true))
     @State private var chatReceiver: MigrationChatReceiver? = nil
+    @State private var backDisabled: Bool = false
 
     var body: some View {
         if authorized {
@@ -91,14 +93,28 @@ struct MigrateToAnotherDevice: View {
                 uploadConfirmationView()
             case .archiving:
                 archivingView()
-            case let .uploadProgress(uploaded, total, _, archivePath):
+            case let .uploadProgress(uploaded, total, _, archivePath, _):
                 uploadProgressView(uploaded, totalBytes: total, archivePath)
-            case let .linkCreation(totalBytes, fileId, archivePath):
-                linkCreationView(totalBytes, fileId, archivePath)
-            case let .linkShown(fileId, link, archivePath):
-                linkView(fileId, link, archivePath)
+            case let .uploadFailed(total, archivePath):
+                uploadFailedView(totalBytes: total, archivePath)
+            case let .linkCreation(totalBytes):
+                linkCreationView(totalBytes)
+            case let .linkShown(fileId, link, archivePath, ctrl):
+                linkView(fileId, link, archivePath, ctrl)
             case .finished:
                 finishedView()
+            }
+        }
+        .modifier(BackButton(label: "Back") {
+            if !backDisabled {
+                dismiss()
+            }
+        })
+        .onChange(of: migrationState) { state in
+            backDisabled = switch migrationState {
+            case .linkCreation: true
+            case .linkShown: true
+            default: false
             }
         }
         .onAppear {
@@ -119,7 +135,14 @@ struct MigrateToAnotherDevice: View {
                     try? startChat(refreshInvitations: true)
                 }
             }
-            try? FileManager.default.removeItem(at: tempDatabaseUrl)
+            Task {
+                if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
+                    await cancelUploadedAchive(fileId, ctrl)
+                }
+                chatReceiver?.stop()
+                try? FileManager.default.removeItem(at: tempDatabaseUrl)
+                try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
+            }
         }
         .alert(item: $alert) { alert in
             switch alert {
@@ -155,6 +178,7 @@ struct MigrateToAnotherDevice: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+        .interactiveDismissDisabled(backDisabled)
     }
 
     private func chatStopInProgressView() -> some View {
@@ -237,35 +261,50 @@ struct MigrateToAnotherDevice: View {
         .onAppear {
             startUploading(totalBytes, archivePath)
         }
-        .onDisappear {
-            try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
+    }
+
+    private func uploadFailedView(totalBytes: Int64, _ archivePath: URL) -> some View {
+        List {
+            Section {
+                Button(action: {
+                    migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
+                }) {
+                    settingsRow("tray.and.arrow.up") {
+                        Text("Repeat upload").foregroundColor(.accentColor)
+                    }
+                }
+            } header: {
+                Text("Upload failed")
+            } footer: {
+                Text("You can give another try")
+                    .font(.callout)
+            }
+        }
+        .onAppear {
             chatReceiver?.stop()
         }
     }
 
-    private func linkCreationView(_ totalBytes: Int64, _ fileId: Int64, _ archivePath: URL) -> some View {
+    private func linkCreationView(_ totalBytes: Int64) -> some View {
         ZStack {
             List {
                 Section {} header: {
                     Text("Creating archive link…")
                 }
             }
-            largeProgressView(1, "100%", "\(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary)) uploaded")
-        }
-        .onAppear {
-            createLink(fileId, archivePath)
+            progressView()
         }
     }
 
-    private func linkView(_ fileId: Int64, _ link: String, _ archivePath: URL) -> some View {
+    private func linkView(_ fileId: Int64, _ link: String, _ archivePath: URL, _ ctrl: chat_ctrl) -> some View {
         List {
             Section {
-                Button(action: { cancelMigration(fileId) }) {
+                Button(action: { cancelMigration(fileId, ctrl) }) {
                     settingsRow("multiply") {
                         Text("Cancel migration").foregroundColor(.red)
                     }
                 }
-                Button(action: { finishMigration(fileId) }) {
+                Button(action: { finishMigration(fileId, ctrl) }) {
                     settingsRow("checkmark") {
                         Text("Finalize migration").foregroundColor(.accentColor)
                     }
@@ -275,11 +314,8 @@ struct MigrateToAnotherDevice: View {
                     .font(.callout)
             }
             Section {
-                HStack {
-                    SimpleXLinkQRCode(uri: link)
-                        .frame(maxWidth: 200, maxHeight: 200)
-                }
-                .frame(maxWidth: .infinity)
+                SimpleXLinkQRCode(uri: link)
+                    .frame(maxWidth: .infinity)
                 shareLinkButton(link)
             } header: {
                 Text("Link to uploaded archive")
@@ -293,12 +329,12 @@ struct MigrateToAnotherDevice: View {
     private func finishedView() -> some View {
         List {
             Section {
-                Button(action: showDeleteChatAlert) {
+                Button(action: { alert = .deleteChat() }) {
                     settingsRow("trash.fill") {
                         Text("Delete database from this device").foregroundColor(.accentColor)
                     }
                 }
-                Button(action: showStartChatAlert) {
+                Button(action: { alert = .startChat() }) {
                     settingsRow("play.fill") {
                         Text("Start chat").foregroundColor(.red)
                     }
@@ -369,7 +405,7 @@ struct MigrateToAnotherDevice: View {
                 if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
                     let totalBytes = attrs[.size] as? Int64 {
                     await MainActor.run {
-                        migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath)
+                        migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
                     }
                 } else {
                     await MainActor.run {
@@ -387,6 +423,9 @@ struct MigrateToAnotherDevice: View {
     }
 
     private func initDatabaseIfNeeded() -> (chat_ctrl, User)? {
+        // Remove previous one if this isn't a first try
+        try? FileManager.default.removeItem(at: tempDatabaseUrl)
+        tempDatabaseUrl = URL(fileURLWithPath: generateNewFileName(getMigrationTempFilesDirectory().path + "/" + "migration", "db", fullPath: true))
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
         do {
@@ -402,64 +441,64 @@ struct MigrateToAnotherDevice: View {
     private func startUploading(_ totalBytes: Int64, _ archivePath: URL) {
         Task {
             guard let ctrlUser = initDatabaseIfNeeded() else {
-                return migrationState = .uploadConfirmation
+                return migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
             }
             let (ctrl, user) = ctrlUser
-            let (res, error) = await uploadStandaloneFile(user: user, file: CryptoFile.plain(archivePath.lastPathComponent), ctrl: ctrl)
-            guard let res = res else {
-                migrationState = .uploadConfirmation
-                return alert = .error(title: "Error uploading the archive", error: error ?? "")
-            }
-            migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: Int64(res.fileSize), fileId: res.fileId, archivePath: archivePath)
             chatReceiver = MigrationChatReceiver(ctrl: ctrl) { msg in
+                Task {
+                    await TerminalItems.shared.add(.resp(.now, msg))
+                }
                 logger.debug("processReceivedMsg: \(msg.responseType)")
-                switch msg {
-                case let .sndFileProgressXFTP(_, _, _, sentSize, totalSize):
-                    migrationState = .uploadProgress(uploadedBytes: sentSize, totalBytes: totalSize, fileId: res.fileId, archivePath: archivePath)
-                case let .sndStandaloneFileComplete(_, _, rcvURIs):
-                    logger.debug("LALAL URIS \(rcvURIs)")
-                    //migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
-                case .sndFileCancelledXFTP:
-                    migrationState = .uploadConfirmation
-                default: ()
+                await MainActor.run {
+                    switch msg {
+                    case let .sndFileProgressXFTP(_, _, fileTransferMeta, sentSize, totalSize):
+                        if case .uploadProgress = migrationState {
+                            migrationState = .uploadProgress(uploadedBytes: sentSize, totalBytes: totalSize, fileId: fileTransferMeta.fileId, archivePath: archivePath, ctrl: ctrl)
+                        }
+                    case let .sndFileRedirectStartXFTP(_, fileTransferMeta, _):
+                        migrationState = .linkCreation(totalBytes: fileTransferMeta.fileSize)
+                    case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
+                        migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: rcvURIs[0], archivePath: archivePath, ctrl: ctrl)
+                    default:
+                        logger.debug("unsupported event: \(msg.responseType)")
+                    }
                 }
             }
-            //migrationState = .linkCreation(totalBytes: totalBytes, fileId: fileId, archivePath: archivePath)
+            chatReceiver?.start()
+
+            let (res, error) = await uploadStandaloneFile(user: user, file: CryptoFile.plain(archivePath.lastPathComponent), ctrl: ctrl)
+            guard let res = res else {
+                migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
+                return alert = .error(title: "Error uploading the archive", error: error ?? "")
+            }
+            migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: res.fileSize, fileId: res.fileId, archivePath: archivePath, ctrl: ctrl)
         }
     }
 
-    private func createLink(_ fileId: Int64, _ archivePath: URL) {
-        migrationState = .linkShown(fileId: fileId, link: "https://simplex.chat", archivePath: archivePath)
+    private func cancelUploadedAchive(_ fileId: Int64, _ ctrl: chat_ctrl) async {
+        _ = await apiCancelFile(fileId: fileId, ctrl: ctrl)
     }
 
-    private func cancelUploadedAchive(_ fileId: Int64) {
-        if let user = m.currentUser {
-            Task {
-                await cancelFile(user: user, fileId: fileId)
+    private func cancelMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
+        Task {
+            await cancelUploadedAchive(fileId, ctrl)
+            await MainActor.run {
+                if !chatWasStoppedInitially {
+                    startChatAndDismiss()
+                } else {
+                    dismiss()
+                }
             }
         }
     }
 
-    private func cancelMigration(_ fileId: Int64) {
-        cancelUploadedAchive(fileId)
-        if !chatWasStoppedInitially {
-            startChatAndDismiss()
-        } else {
-            dismiss()
+    private func finishMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
+        Task {
+            await cancelUploadedAchive(fileId, ctrl)
+            await MainActor.run {
+                migrationState = .finished
+            }
         }
-    }
-
-    private func finishMigration(_ fileId: Int64) {
-        cancelUploadedAchive(fileId)
-        migrationState = .finished
-    }
-
-    private func showDeleteChatAlert() {
-        alert = .deleteChat()
-    }
-
-    private func showStartChatAlert() {
-        alert = .startChat()
     }
 
     private func deleteChatAndDismiss() {
@@ -510,15 +549,15 @@ private struct PassphraseConfirmationView: View {
                     Button(action: {
                         verifyingPassphrase = true
                         hideKeyboard()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            verifyDatabasePassphrase(currentKey, $verifyingPassphrase)
+                        Task {
+                            await verifyDatabasePassphrase(currentKey)
+                            verifyingPassphrase = false
                         }
                     }) {
                         settingsRow(useKeychain ? "key" : "lock", color: .secondary) {
                             Text("Verify passphrase")
                         }
                     }
-                    .disabled(currentKey.isEmpty)
                 } header: {
                     Text("Verify database passphrase to migrate it")
                 } footer: {
@@ -532,19 +571,12 @@ private struct PassphraseConfirmationView: View {
         }
     }
 
-    private func verifyDatabasePassphrase(_ dbKey: String, _ verifyingPassphrase: Binding<Bool>) {
-        let m = ChatModel.shared
-        resetChatCtrl()
-        m.ctrlInitInProgress = true
-        defer { 
-            m.ctrlInitInProgress = false
-            verifyingPassphrase.wrappedValue = false
-        }
-        let (_, status) = chatMigrateInit(dbKey, confirmMigrations: .error)
-        if case .ok = status {
+    private func verifyDatabasePassphrase(_ dbKey: String) async {
+        do {
+            try await testStorageEncryption(key: dbKey)
             migrationState = .uploadConfirmation
-        } else {
-            showErrorOnMigrationIfNeeded(status, $alert)
+        } catch {
+            showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
         }
     }
 }
@@ -613,6 +645,7 @@ class MigrationChatReceiver {
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
+        //chat_close_store(ctrl)
     }
 }
 

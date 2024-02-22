@@ -282,6 +282,10 @@ func apiStorageEncryption(currentKey: String = "", newKey: String = "") async th
     try await sendCommandOkResp(.apiStorageEncryption(config: DBEncryptionConfig(currentKey: currentKey, newKey: newKey)))
 }
 
+func testStorageEncryption(key: String) async throws {
+    try await sendCommandOkResp(.testStorageEncryption(key: key))
+}
+
 func apiGetChats() throws -> [ChatData] {
     let userId = try currentUserId("apiGetChats")
     return try apiChatsResponse(chatSendCmdSync(.apiGetChats(userId: userId)))
@@ -935,8 +939,8 @@ func cancelFile(user: User, fileId: Int64) async {
     }
 }
 
-func apiCancelFile(fileId: Int64) async -> AChatItem? {
-    let r = await chatSendCmd(.cancelFile(fileId: fileId))
+func apiCancelFile(fileId: Int64, ctrl: chat_ctrl? = nil) async -> AChatItem? {
+    let r = await chatSendCmd(.cancelFile(fileId: fileId), ctrl)
     switch r {
     case let .sndFileCancelled(_, chatItem, _, _) : return chatItem
     case let .rcvFileCancelled(_, chatItem, _) : return chatItem
