@@ -585,7 +585,9 @@ private struct PassphraseConfirmationView: View {
 
     private func verifyDatabasePassphrase(_ dbKey: String) async {
         do {
+            chatCloseStore()
             try await testStorageEncryption(key: dbKey)
+            chatReopenStore()
             migrationState = .uploadConfirmation
         } catch {
             showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
