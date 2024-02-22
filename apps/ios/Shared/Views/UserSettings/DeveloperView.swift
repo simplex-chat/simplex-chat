@@ -42,25 +42,6 @@ struct DeveloperView: View {
                 } footer: {
                     (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
                 }
-
-//                Section {
-//                    settingsRow("arrow.up.doc") {
-//                        Toggle("Send videos and files via XFTP", isOn: $xftpSendEnabled)
-//                            .onChange(of: xftpSendEnabled) { _ in
-//                                do {
-//                                    try setXFTPConfig(getXFTPCfg())
-//                                } catch {
-//                                    logger.error("setXFTPConfig: cannot set XFTP config \(responseError(error))")
-//                                }
-//                            }
-//                    }
-//                } header: {
-//                    Text("Experimental")
-//                } footer: {
-//                    if xftpSendEnabled {
-//                        Text("v4.6.1+ is required to receive via XFTP.")
-//                    }
-//                }
             }
         }
     }

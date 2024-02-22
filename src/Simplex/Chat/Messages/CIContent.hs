@@ -139,7 +139,7 @@ data CIContent (d :: MsgDirection) where
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
-  CIInvalidJSON :: Text -> CIContent d
+  CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
@@ -172,7 +172,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupInvitation {} -> True
     CIRcvDirectEvent rde -> case rde of
       RDEContactDeleted -> False
-      RDEProfileUpdated {} -> True
+      RDEProfileUpdated {} -> False
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False

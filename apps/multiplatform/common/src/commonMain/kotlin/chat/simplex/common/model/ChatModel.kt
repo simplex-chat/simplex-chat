@@ -1822,7 +1822,7 @@ data class ChatItem (
       is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
         is RcvDirectEvent.ContactDeleted -> false
-        is RcvDirectEvent.ProfileUpdated -> true
+        is RcvDirectEvent.ProfileUpdated -> false
       }
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false

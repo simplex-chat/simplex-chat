@@ -229,37 +229,45 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
     (userId, contactId)
   DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-deleteContact :: DB.Connection -> User -> Contact -> IO ()
-deleteContact db user@User {userId} Contact {contactId, localDisplayName, activeConn} = do
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
-  if isNothing ctMember
-    then do
-      deleteContactProfile_ db userId contactId
-      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-    else do
-      currentTs <- getCurrentTime
-      DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ activeConn $ \Connection {customUserProfileId} ->
-    forM_ customUserProfileId $ \profileId ->
-      deleteUnusedIncognitoProfileById_ db user profileId
+deleteContact :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
+deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = do
+  assertNotUser db user ct
+  liftIO $ do
+    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+    if isNothing ctMember
+      then do
+        deleteContactProfile_ db userId contactId
+        -- user's local display name already checked in assertNotUser
+        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      else do
+        currentTs <- getCurrentTime
+        DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    forM_ activeConn $ \Connection {customUserProfileId} ->
+      forM_ customUserProfileId $ \profileId ->
+        deleteUnusedIncognitoProfileById_ db user profileId
 
 -- should only be used if contact is not member of any groups
-deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
-deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn} = do
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  deleteContactProfile_ db userId contactId
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ activeConn $ \Connection {customUserProfileId} ->
-    forM_ customUserProfileId $ \profileId ->
-      deleteUnusedIncognitoProfileById_ db user profileId
+deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
+deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDisplayName, activeConn} = do
+  assertNotUser db user ct
+  liftIO $ do
+    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    deleteContactProfile_ db userId contactId
+    -- user's local display name already checked in assertNotUser
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    forM_ activeConn $ \Connection {customUserProfileId} ->
+      forM_ customUserProfileId $ \profileId ->
+        deleteUnusedIncognitoProfileById_ db user profileId
 
-setContactDeleted :: DB.Connection -> User -> Contact -> IO ()
-setContactDeleted db User {userId} Contact {contactId} = do
-  currentTs <- getCurrentTime
-  DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+setContactDeleted :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
+setContactDeleted db user@User {userId} ct@Contact {contactId} = do
+  assertNotUser db user ct
+  liftIO $ do
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
 
 getDeletedContacts :: DB.Connection -> User -> IO [Contact]
 getDeletedContacts db user@User {userId} = do
@@ -320,7 +328,7 @@ updateContactProfile db user@User {userId} c p'
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
         updateContactProfile_' db userId profileId p' currentTs
-        updateContactLDN_ db userId contactId localDisplayName ldn currentTs
+        updateContactLDN_ db user contactId localDisplayName ldn currentTs
         pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
   where
     Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
@@ -491,8 +499,8 @@ updateMemberContactProfile_' db userId profileId Profile {displayName, fullName,
     |]
     (displayName, fullName, image, updatedAt, userId, profileId)
 
-updateContactLDN_ :: DB.Connection -> UserId -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
-updateContactLDN_ db userId contactId displayName newName updatedAt = do
+updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
+updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do
   DB.execute
     db
     "UPDATE contacts SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
@@ -501,7 +509,7 @@ updateContactLDN_ db userId contactId displayName newName updatedAt = do
     db
     "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
     (newName, updatedAt, userId, contactId)
-  DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
+  safeDeleteLDN db user displayName
 
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
 getContactByName db user localDisplayName = do
@@ -614,7 +622,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
                 WHERE user_id = ? AND contact_request_id = ?
               |]
               (invId, minV, maxV, ldn, currentTs, userId, cReqId)
-            DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldLdn, userId)
+            safeDeleteLDN db user oldLdn
       where
         updateProfile currentTs =
           DB.execute
@@ -684,8 +692,9 @@ deleteContactRequest db User {userId} contactRequestId = do
         SELECT local_display_name FROM contact_requests
         WHERE user_id = ? AND contact_request_id = ?
       )
+      AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
     |]
-    (userId, userId, contactRequestId)
+    (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
 createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionRange -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> Bool -> IO Contact
