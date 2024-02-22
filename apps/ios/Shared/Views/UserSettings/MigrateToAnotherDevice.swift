@@ -456,11 +456,13 @@ struct MigrateToAnotherDevice: View {
                 await MainActor.run {
                     switch msg {
                     case let .sndFileProgressXFTP(_, _, fileTransferMeta, sentSize, totalSize):
-                        if case .uploadProgress = migrationState {
+                        if case let .uploadProgress(uploaded, total, _, _, _) = migrationState, uploaded != total {
                             migrationState = .uploadProgress(uploadedBytes: sentSize, totalBytes: totalSize, fileId: fileTransferMeta.fileId, archivePath: archivePath, ctrl: ctrl)
                         }
                     case let .sndFileRedirectStartXFTP(_, fileTransferMeta, _):
-                        migrationState = .linkCreation(totalBytes: fileTransferMeta.fileSize)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            migrationState = .linkCreation(totalBytes: fileTransferMeta.fileSize)
+                        }
                     case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: rcvURIs[0], archivePath: archivePath, ctrl: ctrl)
