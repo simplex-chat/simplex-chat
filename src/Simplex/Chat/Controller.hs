@@ -129,8 +129,6 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
-    xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
-    tempDir :: Maybe FilePath,
     showReactions :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
@@ -205,7 +203,6 @@ data ChatController = ChatController
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
-    userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
@@ -243,7 +240,6 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetRemoteHostsFolder FilePath
-  | APISetXFTPConfig (Maybe XFTPFileConfig)
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
@@ -477,7 +473,6 @@ allowRemoteCommand = \case
   SetTempFolder _ -> False
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
-  APISetXFTPConfig _ -> False
   APISetEncryptLocalFiles _ -> False
   APIExportArchive _ -> False
   APIImportArchive _ -> False
@@ -943,14 +938,6 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
-data XFTPFileConfig = XFTPFileConfig
-  { minFileSize :: Integer
-  }
-  deriving (Show)
-
-defaultXFTPFileConfig :: XFTPFileConfig
-defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
-
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
@@ -1008,11 +995,6 @@ data CoreVersionInfo = CoreVersionInfo
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
-  deriving (Show)
-
-data SendFileMode
-  = SendFileSMP (Maybe InlineFileMode)
-  | SendFileXFTP
   deriving (Show)
 
 data SlowSQLQuery = SlowSQLQuery
@@ -1417,7 +1399,5 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
-
-$(JQ.deriveJSON defaultJSON ''XFTPFileConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)

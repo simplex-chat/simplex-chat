@@ -2268,7 +2268,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
             switch rcvDirectEvent {
             case .contactDeleted: return false
-            case .profileUpdated: return true
+            case .profileUpdated: return false
             }
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
             switch rcvGroupEvent {

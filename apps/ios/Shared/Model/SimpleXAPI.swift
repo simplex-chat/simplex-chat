@@ -252,12 +252,6 @@ func apiSetFilesFolder(filesFolder: String, ctrl: chat_ctrl? = nil) throws {
     throw r
 }
 
-func setXFTPConfig(_ cfg: XFTPFileConfig?, ctrl: chat_ctrl? = nil) throws {
-    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg), ctrl)
-    if case .cmdOk = r { return }
-    throw r
-}
-
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
     if case .cmdOk = r { return }
@@ -1273,7 +1267,6 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     }
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-    try setXFTPConfig(getXFTPCfg())
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1360,7 +1353,6 @@ func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
     try setNetworkConfig(getNetCfg(), ctrl: ctrl)
     try apiSetTempFolder(tempFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
     try apiSetFilesFolder(filesFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
-    try setXFTPConfig(getXFTPCfg(), ctrl: ctrl)
     _ = try apiStartChat(ctrl: ctrl)
     return migrationActiveUser
 }

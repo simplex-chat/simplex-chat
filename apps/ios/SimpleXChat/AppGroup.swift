@@ -265,10 +265,6 @@ public class Default<T> {
     }
 }
 
-public func getXFTPCfg() -> XFTPFileConfig {
-    return XFTPFileConfig(minFileSize: 0)
-}
-
 public func getNetCfg() -> NetCfg {
     let onionHosts = networkUseOnionHostsGroupDefault.get()
     let (hostMode, requiredHostMode) = onionHosts.hostMode
