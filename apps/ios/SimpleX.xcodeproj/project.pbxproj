@@ -90,11 +90,11 @@
 		5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */; };
 		5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA91282713FD00B3292C /* CreateProfile.swift */; };
 		5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA992827FD8800B3292C /* HowItWorks.swift */; };
-		5CB1CE882B8259EB00963938 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE832B8259EB00963938 /* libgmpxx.a */; };
-		5CB1CE892B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE842B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE.a */; };
-		5CB1CE8A2B8259EB00963938 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE852B8259EB00963938 /* libffi.a */; };
-		5CB1CE8B2B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE862B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE-ghc9.6.3.a */; };
-		5CB1CE8C2B8259EB00963938 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE872B8259EB00963938 /* libgmp.a */; };
+		5CB1CE9C2B8771DB00963938 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE972B8771DB00963938 /* libffi.a */; };
+		5CB1CE9D2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE982B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI.a */; };
+		5CB1CE9E2B8771DB00963938 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE992B8771DB00963938 /* libgmpxx.a */; };
+		5CB1CE9F2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE9A2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI-ghc9.6.3.a */; };
+		5CB1CEA02B8771DB00963938 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB1CE9B2B8771DB00963938 /* libgmp.a */; };
 		5CB2084F28DA4B4800D024EC /* RTCServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB2084E28DA4B4800D024EC /* RTCServers.swift */; };
 		5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E42868AA7F001FD2EF /* SuspendChat.swift */; };
 		5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E62868D76D001FD2EF /* NotificationsView.swift */; };
@@ -373,11 +373,11 @@
 		5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXInfo.swift; sourceTree = "<group>"; };
 		5CB0BA91282713FD00B3292C /* CreateProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProfile.swift; sourceTree = "<group>"; };
 		5CB0BA992827FD8800B3292C /* HowItWorks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowItWorks.swift; sourceTree = "<group>"; };
-		5CB1CE832B8259EB00963938 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		5CB1CE842B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE.a"; sourceTree = "<group>"; };
-		5CB1CE852B8259EB00963938 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		5CB1CE862B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE-ghc9.6.3.a"; sourceTree = "<group>"; };
-		5CB1CE872B8259EB00963938 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5CB1CE972B8771DB00963938 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		5CB1CE982B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI.a"; sourceTree = "<group>"; };
+		5CB1CE992B8771DB00963938 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5CB1CE9A2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI-ghc9.6.3.a"; sourceTree = "<group>"; };
+		5CB1CE9B2B8771DB00963938 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5CB2084E28DA4B4800D024EC /* RTCServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTCServers.swift; sourceTree = "<group>"; };
 		5CB2085428DE647400D024EC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CB346E42868AA7F001FD2EF /* SuspendChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendChat.swift; sourceTree = "<group>"; };
@@ -516,13 +516,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5CB1CE882B8259EB00963938 /* libgmpxx.a in Frameworks */,
-				5CB1CE8C2B8259EB00963938 /* libgmp.a in Frameworks */,
 				5CE2BA93284534B000EC33A6 /* libiconv.tbd in Frameworks */,
+				5CB1CEA02B8771DB00963938 /* libgmp.a in Frameworks */,
+				5CB1CE9E2B8771DB00963938 /* libgmpxx.a in Frameworks */,
+				5CB1CE9C2B8771DB00963938 /* libffi.a in Frameworks */,
 				5CE2BA94284534BB00EC33A6 /* libz.tbd in Frameworks */,
-				5CB1CE8A2B8259EB00963938 /* libffi.a in Frameworks */,
-				5CB1CE892B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE.a in Frameworks */,
-				5CB1CE8B2B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE-ghc9.6.3.a in Frameworks */,
+				5CB1CE9D2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI.a in Frameworks */,
+				5CB1CE9F2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI-ghc9.6.3.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -584,11 +584,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				5CB1CE852B8259EB00963938 /* libffi.a */,
-				5CB1CE872B8259EB00963938 /* libgmp.a */,
-				5CB1CE832B8259EB00963938 /* libgmpxx.a */,
-				5CB1CE862B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE-ghc9.6.3.a */,
-				5CB1CE842B8259EB00963938 /* libHSsimplex-chat-5.5.3.0-1R6yZC1upSP6aXGrPWvhZE.a */,
+				5CB1CE972B8771DB00963938 /* libffi.a */,
+				5CB1CE9B2B8771DB00963938 /* libgmp.a */,
+				5CB1CE992B8771DB00963938 /* libgmpxx.a */,
+				5CB1CE9A2B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI-ghc9.6.3.a */,
+				5CB1CE982B8771DB00963938 /* libHSsimplex-chat-5.5.5.0-4Xh8aGOq2uNGBj7gMJTaKI.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
