@@ -12,7 +12,6 @@ export type ChatCommand =
   | APIStopChat
   | SetTempFolder
   | SetFilesFolder
-  | APISetXFTPConfig
   | SetIncognito
   | APIExportArchive
   | APIImportArchive
@@ -112,7 +111,6 @@ type ChatCommandTag =
   | "apiStopChat"
   | "setTempFolder"
   | "setFilesFolder"
-  | "apiSetXFTPConfig"
   | "setIncognito"
   | "apiExportArchive"
   | "apiImportArchive"
@@ -240,15 +238,6 @@ export interface SetTempFolder extends IChatCommand {
 export interface SetFilesFolder extends IChatCommand {
   type: "setFilesFolder"
   filePath: string
-}
-
-export interface APISetXFTPConfig extends IChatCommand {
-  type: "apiSetXFTPConfig"
-  config?: XFTPFileConfig
-}
-
-export interface XFTPFileConfig {
-  minFileSize: number
 }
 
 export interface SetIncognito extends IChatCommand {
@@ -707,8 +696,6 @@ export function cmdString(cmd: ChatCommand): string {
       return `/_temp_folder ${cmd.tempFolder}`
     case "setFilesFolder":
       return `/_files_folder ${cmd.filePath}`
-    case "apiSetXFTPConfig":
-      return `/_xftp ${onOff(cmd.config)}${maybeJSON(cmd.config)}`
     case "setIncognito":
       return `/incognito ${onOff(cmd.incognito)}`
     case "apiExportArchive":

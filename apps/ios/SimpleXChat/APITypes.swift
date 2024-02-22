@@ -31,7 +31,6 @@ public enum ChatCommand {
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
-    case apiSetXFTPConfig(config: XFTPFileConfig?)
     case apiSetEncryptLocalFiles(enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
@@ -162,11 +161,6 @@ public enum ChatCommand {
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
-            case let .apiSetXFTPConfig(cfg): if let cfg = cfg {
-                return "/_xftp on \(encodeJSON(cfg))"
-            } else {
-                return "/_xftp off"
-            }
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -311,7 +305,6 @@ public enum ChatCommand {
             case .apiSuspendChat: return "apiSuspendChat"
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
-            case .apiSetXFTPConfig: return "apiSetXFTPConfig"
             case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
@@ -1003,10 +996,6 @@ struct ComposedMessage: Encodable {
     var fileSource: CryptoFile?
     var quotedItemId: Int64?
     var msgContent: MsgContent
-}
-
-public struct XFTPFileConfig: Encodable {
-    var minFileSize: Int64
 }
 
 public struct ArchiveConfig: Encodable {
