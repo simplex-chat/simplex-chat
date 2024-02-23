@@ -6302,7 +6302,7 @@ agentXFTPDeleteRcvFiles rcvFiles = do
   let rcvFiles' = filter (not . agentRcvFileDeleted . fst) rcvFiles
       rfIds = mapMaybe fileIds rcvFiles'
   withAgent $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
-  void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db) (map snd rfIds)
+  void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db . snd) rfIds
   where
     fileIds :: (XFTPRcvFile, FileTransferId) -> Maybe (RcvFileId, FileTransferId)
     fileIds (XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId)}, fileId) = Just (aFileId, fileId)
