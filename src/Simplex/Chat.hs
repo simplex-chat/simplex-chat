@@ -6300,12 +6300,13 @@ agentXFTPDeleteRcvFile aFileId fileId = do
 agentXFTPDeleteRcvFiles :: ChatMonad m => [(XFTPRcvFile, FileTransferId)] -> m ()
 agentXFTPDeleteRcvFiles rcvFiles = do
   let rcvFiles' = filter (not . agentRcvFileDeleted . fst) rcvFiles
-  fileIds' <- forM rcvFiles' $ \case
-    (XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId)}, fileId) -> do
-      withAgent (`xftpDeleteRcvFile` aFileId)
-      pure $ Just fileId
-    _ -> pure Nothing
-  void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db) (catMaybes fileIds')
+      rfIds = mapMaybe fileIds rcvFiles'
+  withAgent $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
+  void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db) (map snd rfIds)
+  where
+    fileIds :: (XFTPRcvFile, FileTransferId) -> Maybe (RcvFileId, FileTransferId)
+    fileIds (XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId)}, fileId) = Just (aFileId, fileId)
+    fileIds _ = Nothing
 
 agentXFTPDeleteSndFileRemote :: ChatMonad m => User -> XFTPSndFile -> FileTransferId -> m ()
 agentXFTPDeleteSndFileRemote user xsf fileId =
@@ -6318,8 +6319,8 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
       sndFilesAll = redirects' <> sndFiles
       sndFilesAll' = filter (not . agentSndFileDeleted . fst) sndFilesAll
   sndFilesAll'' <- catMaybes <$> mapM sndFileDescr sndFilesAll'
-  forM_ sndFilesAll'' $ \(XFTPSndFile {agentSndFileId = AgentSndFileId aFileId}, sd, _) ->
-    withAgent $ \a -> xftpDeleteSndFileRemote a (aUserId user) aFileId sd
+  let sfs = map (\(XFTPSndFile {agentSndFileId = AgentSndFileId aFileId}, sfd, _) -> (aFileId, sfd)) sndFilesAll''
+  withAgent $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfs
   void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . (\(_, _, fId) -> fId)) sndFilesAll''
   where
     mapRedirectMeta :: FileTransferMeta -> Maybe (XFTPSndFile, FileTransferId)
