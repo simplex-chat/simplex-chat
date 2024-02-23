@@ -16,6 +16,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Text as T
 import Simplex.Chat.AppSettings (defaultAppSettings)
+import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
@@ -1113,18 +1114,19 @@ testMaintenanceModeWithSettings tmp = do
       alice ##> "/_stop"
       alice <## "chat stopped"
       let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
+          settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
       -- app-provided defaults
-      alice ##> ("/_get app settings " <> settings)
-      alice <## ("app settings: " <> settings)
+      alice ##> ("/_get app settings " <> settingsApp)
+      alice <## ("app settings: " <> settingsApp)
       -- parser defaults fallback
       alice ##> "/_get app settings"
       alice <## ("app settings: " <> settings)
       -- store
-      alice ##> ("/_save app settings " <> settings)
+      alice ##> ("/_save app settings " <> settingsApp)
       alice <## "ok"
       -- read back
       alice ##> "/_get app settings"
-      alice <## ("app settings: " <> settings)
+      alice <## ("app settings: " <> settingsApp)
       -- files
       alice ##> ("/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\", \"appSettings\": " <> settings <> "}")
       alice <## "ok"
