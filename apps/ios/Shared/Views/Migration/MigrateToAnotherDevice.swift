@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-public enum MigrationState: Equatable {
+private enum MigrationState: Equatable {
     case initial
     case chatStopInProgress
     case chatStopFailed(reason: String)
@@ -24,7 +24,7 @@ public enum MigrationState: Equatable {
     case finished
 }
 
-enum MigrateToAnotherDeviceViewAlert: Identifiable {
+private enum MigrateToAnotherDeviceViewAlert: Identifiable {
     case deleteChat(_ title: LocalizedStringKey = "Delete chat profile?", _ text: LocalizedStringKey = "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.")
     case startChat(_ title: LocalizedStringKey = "Start chat?", _ text: LocalizedStringKey = "Warning: starting chat on multiple devices is not supported and will cause message delivery failures")
 
@@ -132,6 +132,7 @@ struct MigrateToAnotherDevice: View {
         .onDisappear {
             if case .linkShown = migrationState {} else if case .finished = migrationState {} else if !chatWasStoppedInitially {
                 Task {
+                    AppChatState.shared.set(.active)
                     try? startChat(refreshInvitations: true)
                 }
             }
@@ -535,6 +536,7 @@ struct MigrateToAnotherDevice: View {
 
     private func startChatAndDismiss() {
         Task {
+            AppChatState.shared.set(.active)
             try? startChat(refreshInvitations: true)
             dismiss()
         }
@@ -623,7 +625,7 @@ func chatStoppedView() -> some View {
     }
 }
 
-class MigrationChatReceiver {
+private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let processReceivedMsg: (ChatResponse) async -> Void
     private var receiveLoop: Task<Void, Never>?

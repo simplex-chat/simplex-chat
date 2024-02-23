@@ -276,8 +276,8 @@ func apiStorageEncryption(currentKey: String = "", newKey: String = "") async th
     try await sendCommandOkResp(.apiStorageEncryption(config: DBEncryptionConfig(currentKey: currentKey, newKey: newKey)))
 }
 
-func testStorageEncryption(key: String) async throws {
-    try await sendCommandOkResp(.testStorageEncryption(key: key))
+func testStorageEncryption(key: String, _ ctrl: chat_ctrl? = nil) async throws {
+    try await sendCommandOkResp(.testStorageEncryption(key: key), ctrl)
 }
 
 func apiGetChats() throws -> [ChatData] {
@@ -878,8 +878,8 @@ func uploadStandaloneFile(user: any UserLike, file: CryptoFile, ctrl: chat_ctrl?
     }
 }
 
-func downloadStandaloneFile(user: any UserLike, url: String, file: CryptoFile) async -> (RcvFileTransfer?, String?) {
-    let r = await chatSendCmd(.apiDownloadStandaloneFile(userId: user.userId, url: url, file: file))
+func downloadStandaloneFile(user: any UserLike, url: String, file: CryptoFile, ctrl: chat_ctrl? = nil) async -> (RcvFileTransfer?, String?) {
+    let r = await chatSendCmd(.apiDownloadStandaloneFile(userId: user.userId, url: url, file: file), ctrl)
     if case let .rcvStandaloneFileCreated(_, rcvFileTransfer) = r {
         return (rcvFileTransfer, nil)
     } else {
@@ -1106,8 +1106,8 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     }
 }
 
-private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
-    let r = await chatSendCmd(cmd)
+private func sendCommandOkResp(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) async throws {
+    let r = await chatSendCmd(cmd, ctrl)
     if case .cmdOk = r { return }
     throw r
 }

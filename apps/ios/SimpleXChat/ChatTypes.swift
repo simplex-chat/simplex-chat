@@ -3378,7 +3378,7 @@ public struct SndFileTransfer: Decodable {
 }
 
 public struct RcvFileTransfer: Decodable {
-
+    public let fileId: Int64
 }
 
 public struct FileTransferMeta: Decodable {

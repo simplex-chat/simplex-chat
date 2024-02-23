@@ -42,7 +42,7 @@ struct SimpleXInfo: View {
 
                     Spacer()
                     if onboarding {
-                        OnboardingActionButton()
+                        OnboardingActionButton(hideMigrate: false)
                         Spacer()
                     }
 
@@ -87,10 +87,28 @@ struct SimpleXInfo: View {
 
 struct OnboardingActionButton: View {
     @EnvironmentObject var m: ChatModel
+    let hideMigrate: Bool
+    @State private var migrateFromAnotherDevice: Bool = false
 
     var body: some View {
         if m.currentUser == nil {
             actionButton("Create your profile", onboarding: .step2_CreateProfile)
+
+            if !hideMigrate {
+                actionButton("Migrate from another device") {
+                    migrateFromAnotherDevice = true
+                }
+                .sheet(isPresented: $migrateFromAnotherDevice) {
+                    VStack(alignment: .leading) {
+                        Text("Migrate here")
+                            .font(.largeTitle)
+                            .padding([.leading, .top, .trailing])
+                            .padding(.top)
+                        MigrateFromAnotherDevice()
+                    }
+                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                }
+            }
         } else {
             actionButton("Make a private connection", onboarding: .onboardingComplete)
         }
@@ -101,6 +119,21 @@ struct OnboardingActionButton: View {
             withAnimation {
                 onboardingStageDefault.set(onboarding)
                 m.onboardingStage = onboarding
+            }
+        } label: {
+            HStack {
+                Text(label).font(.title2)
+                Image(systemName: "greaterthan")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom)
+    }
+
+    private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation {
+                action()
             }
         } label: {
             HStack {
