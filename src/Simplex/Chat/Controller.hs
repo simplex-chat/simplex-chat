@@ -250,6 +250,8 @@ data ChatCommand
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
+  | APISaveAppSettings AppSettings
+  | APIGetAppSettings (Maybe AppSettings)
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
   | TestStorageEncryption DBEncryptionKey
@@ -717,6 +719,7 @@ data ChatResponse
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRArchiveImported {importResult :: ArchiveImportResult}
+  | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
 

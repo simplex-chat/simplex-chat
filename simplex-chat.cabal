@@ -135,6 +135,7 @@ library
       Simplex.Chat.Migrations.M20240115_block_member_for_all
       Simplex.Chat.Migrations.M20240122_indexes
       Simplex.Chat.Migrations.M20240214_redirect_file_id
+      Simplex.Chat.Migrations.M20240222_app_settings
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -150,6 +151,7 @@ library
       Simplex.Chat.Remote.Transport
       Simplex.Chat.Remote.Types
       Simplex.Chat.Store
+      Simplex.Chat.Store.AppSettings
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.Direct
       Simplex.Chat.Store.Files
