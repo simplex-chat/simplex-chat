@@ -14,6 +14,9 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Text as T
+import Simplex.Chat.AppSettings (defaultAppSettings)
+import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
@@ -21,6 +24,7 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (authErrDisableCount, sameVerificationCode, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
@@ -84,8 +88,9 @@ chatDirectTests = do
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
-  describe "chat item expiration" $ do
-    it "set chat item TTL" testSetChatItemTTL
+  describe "settings" $ do
+    it "set chat item expiration TTL" testSetChatItemTTL
+    it "save/get app settings" testAppSettings
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
@@ -2194,6 +2199,24 @@ testSetChatItemTTL =
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
+
+testAppSettings :: HasCallStack => FilePath -> IO ()
+testAppSettings tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
+        settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
+    -- app-provided defaults
+    alice ##> ("/_get app settings " <> settingsApp)
+    alice <## ("app settings: " <> settingsApp)
+    -- parser defaults fallback
+    alice ##> "/_get app settings"
+    alice <## ("app settings: " <> settings)
+    -- store
+    alice ##> ("/_save app settings " <> settingsApp)
+    alice <## "ok"
+    -- read back
+    alice ##> "/_get app settings"
+    alice <## ("app settings: " <> settingsApp)
 
 testSwitchContact :: HasCallStack => FilePath -> IO ()
 testSwitchContact =

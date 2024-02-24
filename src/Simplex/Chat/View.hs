@@ -385,6 +385,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
+  CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
