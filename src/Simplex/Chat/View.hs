@@ -384,9 +384,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
-  CRArchiveImported ArchiveImportResult {archiveErrors = errs, appSettings} ->
-    ["app settings in archive ignored" | isJust appSettings]
-      <> [if null errs then "ok" else "archive import errors: " <> plain (show errs)]
+  CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
   where

@@ -718,7 +718,7 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
-  | CRArchiveImported {importResult :: ArchiveImportResult}
+  | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
@@ -878,18 +878,7 @@ data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (Us
 
 deriving instance Show AUserProtoServers
 
-data ArchiveConfig = ArchiveConfig
-  { archivePath :: FilePath,
-    disableCompression :: Maybe Bool,
-    parentTempDirectory :: Maybe FilePath,
-    appSettings :: Maybe AppSettings
-  }
-  deriving (Show)
-
-data ArchiveImportResult = ArchiveImportResult
-  { archiveErrors :: [ArchiveError],
-    appSettings :: Maybe AppSettings
-  }
+data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show)
 
 data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey, keepKey :: Maybe Bool}
@@ -1426,8 +1415,6 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
-
-$(JQ.deriveJSON defaultJSON ''ArchiveImportResult)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

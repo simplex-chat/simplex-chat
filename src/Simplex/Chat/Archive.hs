@@ -18,14 +18,12 @@ import qualified Codec.Archive.Zip as Z
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import qualified Data.Aeson as J
 import qualified Data.ByteArray as BA
 import Data.Functor (($>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
-import Simplex.Chat.AppSettings
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, keyString, sqlString, storeKey)
@@ -43,26 +41,22 @@ archiveAgentDbFile = "simplex_v1_agent.db"
 archiveChatDbFile :: String
 archiveChatDbFile = "simplex_v1_chat.db"
 
-archiveAppSettingsFile :: String
-archiveAppSettingsFile = "simplex_v1_settings.json"
-
 archiveFilesFolder :: String
 archiveFilesFolder = "simplex_v1_files"
 
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
-exportArchive cfg@ArchiveConfig {archivePath, disableCompression, appSettings} =
+exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
-    liftIO $ mapM_ (J.encodeFile $ dir </> archiveAppSettingsFile) appSettings
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
 
-importArchive :: ChatMonad m => ArchiveConfig -> m ArchiveImportResult
-importArchive cfg@ArchiveConfig {archivePath, appSettings = platformDefaults} =
+importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
+importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
     fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
@@ -70,11 +64,8 @@ importArchive cfg@ArchiveConfig {archivePath, appSettings = platformDefaults} =
     backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
-    let settingsFile = dir </> archiveAppSettingsFile
-    appSettings <- ifM (doesFileExist settingsFile) (liftIO $ Just <$> readAppSettings settingsFile platformDefaults) (pure Nothing)
-    archiveErrors <- copyFiles dir filesPath
+    copyFiles dir filesPath
       `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
-    pure ArchiveImportResult {archiveErrors, appSettings}
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
     copyFiles dir filesPath = do
