@@ -932,7 +932,7 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;ul&gt;
 &lt;li&gt;Privacy Guides added SimpleX Chat to &lt;a href=&quot;https://www.privacyguides.org/real-time-communication/#simplex-chat&quot;&gt;the recommended private and secure messengers&lt;/a&gt;.&lt;/li&gt;
 &lt;li&gt;Mike Kuketz – a well-known security expert – published &lt;a href=&quot;https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/&quot;&gt;the review of SimpleX Chat&lt;/a&gt; and added it to &lt;a href=&quot;https://www.messenger-matrix.de/&quot;&gt;the messenger matrix&lt;/a&gt;.&lt;/li&gt;
-&lt;li&gt;Supernova published &lt;a href=&quot;https://supernova.tilde.team/detailed_reviews.html#simplex&quot;&gt;the review&lt;/a&gt; and increased &lt;a href=&quot;https://supernova.tilde.team/messengers.html&quot;&gt;SimpleX Chat recommendation ratings&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Supernova published &lt;a href=&quot;https://supernovas.space/detailed_reviews.html#simplex&quot;&gt;the review&lt;/a&gt; and increased &lt;a href=&quot;https://supernovas.space/messengers.html&quot;&gt;SimpleX Chat recommendation ratings&lt;/a&gt;.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&quot;whats-new-in-v43&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v4.3&lt;/h2&gt;
 &lt;ul&gt;
@@ -1193,7 +1193,7 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;You can run SimpleX Chat CLI as a local WebSockets server on any port, we use 5225 here:&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;simplex-chat -p 5225
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Then you can create a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js&quot;&gt;sample bot&lt;/a&gt; and &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/ep/blog-v4/packages/simplex-chat-client/typescript&quot;&gt;README page&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Then you can create a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js&quot;&gt;sample bot&lt;/a&gt; and README page.&lt;/p&gt;
 &lt;p&gt;SimpleX Chat API allows you to:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;create and change user profile (although in most cases you would do it manually, via SimpleX Chat terminal app).&lt;/li&gt;
@@ -1948,7 +1948,7 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
                 <link>https://simplex.chat/blog/20210512-simplex-chat-terminal-ui.html</link>
                 <description>&lt;h1 id=&quot;announcing-simplex-chat-prototype&quot; tabindex=&quot;-1&quot;&gt;Announcing SimpleX Chat Prototype!&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 12, 2021&lt;/p&gt;
-&lt;p&gt;For the last six months &lt;a href=&quot;https://github.com/epoberezkin&quot;&gt;me&lt;/a&gt; and my son &lt;a href=&quot;https://github.com/efim-poberezkin&quot;&gt;Efim&lt;/a&gt; have been working to bring you a working prototype of SimpleX Chat. We&#39;re excited to announce SimpleX Chat terminal client is now available &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;here&lt;/a&gt; on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).&lt;/p&gt;
+&lt;p&gt;For the last six months &lt;a href=&quot;https://github.com/epoberezkin&quot;&gt;me&lt;/a&gt; and my son Efim have been working to bring you a working prototype of SimpleX Chat. We&#39;re excited to announce SimpleX Chat terminal client is now available &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;here&lt;/a&gt; on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).&lt;/p&gt;
 &lt;p&gt;We’ve been using the terminal client between us and a few other people for a couple of months now, eating our own “dog food”, and have developed up to version 0.3.1, with most of the messaging protocol features we originally planned&lt;/p&gt;
 &lt;h2 id=&quot;features&quot; tabindex=&quot;-1&quot;&gt;Features&lt;/h2&gt;
 &lt;ul&gt;
