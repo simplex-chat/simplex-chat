@@ -451,7 +451,21 @@ object ChatController {
         }
         try {
           val msg = recvMsg(ctrl)
-          if (msg != null) processReceivedMsg(msg)
+          if (msg != null) {
+            val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
+              processReceivedMsg(msg)
+            }
+            if (finishedWithoutTimeout == null) {
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.possible_slow_function_title),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  shareText = true
+                )
+              }
+            }
+          }
         } catch (e: Exception) {
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
         } catch (e: Throwable) {
@@ -615,12 +629,6 @@ object ChatController {
     val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
-    val r = sendCmd(null, CC.ApiSetXFTPConfig(cfg))
-    if (r is CR.CmdOk) return
-    throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
@@ -1685,7 +1693,7 @@ object ChatController {
           chatModel.networkStatuses[s.agentConnId] = s.networkStatus
         }
       }
-      is CR.NewChatItem -> {
+      is CR.NewChatItem -> withBGApi {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
@@ -1700,7 +1708,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withBGApi { receiveFile(rhId, r.user, file.fileId, auto = true) }
+          receiveFile(rhId, r.user, file.fileId, auto = true)
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -2159,10 +2167,6 @@ object ChatController {
     }
   }
 
-  fun getXFTPCfg(): XFTPFileConfig {
-    return XFTPFileConfig(minFileSize = 0)
-  }
-
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val proxyHostPort  = appPrefs.networkProxyHostPort.get()
@@ -2271,7 +2275,6 @@ sealed class CC {
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
-  class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
@@ -2401,7 +2404,6 @@ sealed class CC {
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
-    is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
@@ -2536,7 +2538,6 @@ sealed class CC {
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
     is SetRemoteHostsFolder -> "setRemoteHostsFolder"
-    is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
@@ -2701,9 +2702,6 @@ sealed class ChatPagination {
 
 @Serializable
 class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
-
-@Serializable
-class XFTPFileConfig(val minFileSize: Long)
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)

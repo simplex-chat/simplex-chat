@@ -78,7 +78,7 @@ You can run SimpleX Chat CLI as a local WebSockets server on any port, we use 52
 simplex-chat -p 5225
 ```
 
-Then you can create a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this [sample bot](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js) and [README page](https://github.com/simplex-chat/simplex-chat/tree/ep/blog-v4/packages/simplex-chat-client/typescript).
+Then you can create a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this [sample bot](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js) and README page.
 
 SimpleX Chat API allows you to:
 

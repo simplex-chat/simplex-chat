@@ -26,7 +26,7 @@ Critiques de novembre :
 - Recommandations de [Privacy Guides](https://www.privacyguides.org/real-time-communication/#simplex-chat).
 - [Revue par Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/).
 - [La matrice des messageries](https://www.messenger-matrix.de).
-- [Revue de Supernova](https://supernova.tilde.team/detailed_reviews.html#simplex) et [évaluations des messageries](https://supernova.tilde.team/messengers.html).
+- [Revue de Supernova](https://supernovas.space/detailed_reviews.html#simplex) et [évaluations des messageries](https://supernovas.space/messengers.html).
 
 Sortie de la v4.3 :
 
