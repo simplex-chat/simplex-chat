@@ -69,7 +69,6 @@ chatDirectTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
-    it "export/import chat with app settings" testMaintenanceModeWithSettings
     it "encrypt/decrypt database" testDatabaseEncryption
   describe "coordination between app and NSE" $ do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
@@ -89,8 +88,9 @@ chatDirectTests = do
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
-  describe "chat item expiration" $ do
-    it "set chat item TTL" testSetChatItemTTL
+  describe "settings" $ do
+    it "set chat item expiration TTL" testSetChatItemTTL
+    it "save/get app settings" testAppSettings
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
@@ -1099,43 +1099,6 @@ testMaintenanceModeWithFiles tmp = do
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
-    -- works after full restart
-    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
-
-testMaintenanceModeWithSettings :: HasCallStack => FilePath -> IO ()
-testMaintenanceModeWithSettings tmp = do
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
-      alice ##> "/_start"
-      alice <## "chat started"
-      alice ##> "/_files_folder ./tests/tmp/alice_files"
-      alice <## "ok"
-      connectUsers alice bob
-      alice ##> "/_stop"
-      alice <## "chat stopped"
-      let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
-          settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
-      -- app-provided defaults
-      alice ##> ("/_get app settings " <> settingsApp)
-      alice <## ("app settings: " <> settingsApp)
-      -- parser defaults fallback
-      alice ##> "/_get app settings"
-      alice <## ("app settings: " <> settings)
-      -- store
-      alice ##> ("/_save app settings " <> settingsApp)
-      alice <## "ok"
-      -- read back
-      alice ##> "/_get app settings"
-      alice <## ("app settings: " <> settingsApp)
-      -- files
-      alice ##> ("/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\", \"appSettings\": " <> settings <> "}")
-      alice <## "ok"
-      alice ##> "/_db delete"
-      alice <## "ok"
-      -- cannot start chat after delete
-      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
-      alice <## "app settings in archive ignored"
-      alice <## "ok"
     -- works after full restart
     withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
 
@@ -2222,6 +2185,24 @@ testSetChatItemTTL =
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
+
+testAppSettings :: HasCallStack => FilePath -> IO ()
+testAppSettings tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
+        settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
+    -- app-provided defaults
+    alice ##> ("/_get app settings " <> settingsApp)
+    alice <## ("app settings: " <> settingsApp)
+    -- parser defaults fallback
+    alice ##> "/_get app settings"
+    alice <## ("app settings: " <> settings)
+    -- store
+    alice ##> ("/_save app settings " <> settingsApp)
+    alice <## "ok"
+    -- read back
+    alice ##> "/_get app settings"
+    alice <## ("app settings: " <> settingsApp)
 
 testSwitchContact :: HasCallStack => FilePath -> IO ()
 testSwitchContact =

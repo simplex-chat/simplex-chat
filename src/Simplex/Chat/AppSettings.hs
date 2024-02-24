@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.AppSettings where
@@ -14,8 +15,13 @@ import Simplex.Messaging.Client (NetworkConfig, defaultNetworkConfig)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (catchAll_)
 
-data AppPlatform = APIOS | APAndroid | APDesktop
-  deriving (Show)
+data AppPlatform = APIOS | APAndroid | APDesktop deriving (Show)
+
+data NotificationMode = NMOff | NMPeriodic | NMInstant deriving (Show)
+
+data NotificationPreviewMode = NPMHidden | NPMContact | NPMMessage deriving (Show)
+
+data LockScreenCalls = LSCDisable | LSCShow | LSCAccept deriving (Show)
 
 data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
@@ -26,13 +32,18 @@ data AppSettings = AppSettings
     privacyShowChatPreviews :: Maybe Bool,
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
+    notificationMode :: Maybe NotificationMode,
+    notificationPreviewMode :: Maybe NotificationPreviewMode,
     webrtcPolicyRelay :: Maybe Bool,
     webrtcICEServers :: Maybe [Text],
-    callKitCallsInRecents :: Maybe Bool, -- iOS only
     confirmRemoteSessions :: Maybe Bool,
     connectRemoteViaMulticast :: Maybe Bool,
     connectRemoteViaMulticastAuto :: Maybe Bool,
-    developerTools :: Maybe Bool
+    developerTools :: Maybe Bool,
+    confirmDBUpgrades :: Maybe Bool,
+    androidCallOnLockScreen :: Maybe LockScreenCalls,
+    iosCallKitEnabled :: Maybe Bool,
+    iosCallKitCallsInRecents :: Maybe Bool
   }
   deriving (Show)
 
@@ -47,13 +58,18 @@ defaultAppSettings =
       privacyShowChatPreviews = Just True,
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
+      notificationMode = Just NMInstant,
+      notificationPreviewMode = Just NPMMessage,
       webrtcPolicyRelay = Just True,
       webrtcICEServers = Just [],
-      callKitCallsInRecents = Nothing,
       confirmRemoteSessions = Just False,
       connectRemoteViaMulticast = Just True,
       connectRemoteViaMulticastAuto = Just True,
-      developerTools = Just False
+      developerTools = Just False,
+      confirmDBUpgrades = Just False,
+      androidCallOnLockScreen = Just LSCShow,
+      iosCallKitEnabled = Just True,
+      iosCallKitCallsInRecents = Just False
     }
 
 defaultParseAppSettings :: AppSettings
@@ -67,13 +83,18 @@ defaultParseAppSettings =
       privacyShowChatPreviews = Nothing,
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
+      notificationMode = Nothing,
+      notificationPreviewMode = Nothing,
       webrtcPolicyRelay = Nothing,
       webrtcICEServers = Nothing,
-      callKitCallsInRecents = Nothing,
       confirmRemoteSessions = Nothing,
       connectRemoteViaMulticast = Nothing,
       connectRemoteViaMulticastAuto = Nothing,
-      developerTools = Nothing
+      developerTools = Nothing,
+      confirmDBUpgrades = Nothing,
+      androidCallOnLockScreen = Nothing,
+      iosCallKitEnabled = Nothing,
+      iosCallKitCallsInRecents = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -87,19 +108,30 @@ combineAppSettings platformDefaults storedSettings =
       privacyShowChatPreviews = p privacyShowChatPreviews,
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
+      notificationMode = p notificationMode,
+      notificationPreviewMode = p notificationPreviewMode,
       webrtcPolicyRelay = p webrtcPolicyRelay,
       webrtcICEServers = p webrtcICEServers,
-      callKitCallsInRecents = p callKitCallsInRecents,
       confirmRemoteSessions = p confirmRemoteSessions,
       connectRemoteViaMulticast = p connectRemoteViaMulticast,
       connectRemoteViaMulticastAuto = p connectRemoteViaMulticastAuto,
-      developerTools = p developerTools
+      developerTools = p developerTools,
+      confirmDBUpgrades = p confirmDBUpgrades,
+      iosCallKitEnabled = p iosCallKitEnabled,
+      iosCallKitCallsInRecents = p iosCallKitCallsInRecents,
+      androidCallOnLockScreen = p androidCallOnLockScreen
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
     p sel = sel storedSettings <|> sel platformDefaults <|> sel defaultAppSettings
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "AP") ''AppPlatform)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NM") ''NotificationMode)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NPM") ''NotificationPreviewMode)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "LSC") ''LockScreenCalls)
 
 $(JQ.deriveToJSON defaultJSON ''AppSettings)
 
@@ -113,13 +145,18 @@ instance FromJSON AppSettings where
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
+    notificationMode <- p "notificationMode"
+    notificationPreviewMode <- p "notificationPreviewMode"
     webrtcPolicyRelay <- p "webrtcPolicyRelay"
     webrtcICEServers <- p "webrtcICEServers"
-    callKitCallsInRecents <- p "callKitCallsInRecents"
     confirmRemoteSessions <- p "confirmRemoteSessions"
     connectRemoteViaMulticast <- p "connectRemoteViaMulticast"
     connectRemoteViaMulticastAuto <- p "connectRemoteViaMulticastAuto"
     developerTools <- p "developerTools"
+    confirmDBUpgrades <- p "confirmDBUpgrades"
+    iosCallKitEnabled <- p "iosCallKitEnabled"
+    iosCallKitCallsInRecents <- p "iosCallKitCallsInRecents"
+    androidCallOnLockScreen <- p "androidCallOnLockScreen"
     pure
       AppSettings
         { appPlatform,
@@ -130,13 +167,18 @@ instance FromJSON AppSettings where
           privacyShowChatPreviews,
           privacySaveLastDraft,
           privacyProtectScreen,
+          notificationMode,
+          notificationPreviewMode,
           webrtcPolicyRelay,
           webrtcICEServers,
-          callKitCallsInRecents,
           confirmRemoteSessions,
           connectRemoteViaMulticast,
           connectRemoteViaMulticastAuto,
-          developerTools
+          developerTools,
+          confirmDBUpgrades,
+          iosCallKitEnabled,
+          iosCallKitCallsInRecents,
+          androidCallOnLockScreen
         }
     where
       p key = v .:? key <|> pure Nothing
