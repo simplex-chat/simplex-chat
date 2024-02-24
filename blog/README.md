@@ -146,7 +146,7 @@ November reviews:
 - [Privacy Guides](https://www.privacyguides.org/real-time-communication/#simplex-chat) recommendations.
 - [Review by Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/).
 - [The messenger matrix](https://www.messenger-matrix.de).
-- [Supernova review](https://supernova.tilde.team/detailed_reviews.html#simplex) and [messenger ratings](https://supernova.tilde.team/messengers.html).
+- [Supernova review](https://supernovas.space/detailed_reviews.html#simplex) and [messenger ratings](https://supernovas.space/messengers.html).
 
 ---
 

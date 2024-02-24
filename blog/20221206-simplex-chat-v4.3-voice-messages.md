@@ -18,7 +18,7 @@ Since we published [the security assessment of SimpleX Chat](https://simplex.cha
 
 - Privacy Guides added SimpleX Chat to [the recommended private and secure messengers](https://www.privacyguides.org/real-time-communication/#simplex-chat).
 - Mike Kuketz – a well-known security expert – published [the review of SimpleX Chat](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) and added it to [the messenger matrix](https://www.messenger-matrix.de).
-- Supernova published [the review](https://supernova.tilde.team/detailed_reviews.html#simplex) and increased [SimpleX Chat recommendation ratings](https://supernova.tilde.team/messengers.html).
+- Supernova published [the review](https://supernovas.space/detailed_reviews.html#simplex) and increased [SimpleX Chat recommendation ratings](https://supernovas.space/messengers.html).
 
 ## What's new in v4.3
 
