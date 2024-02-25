@@ -937,7 +937,7 @@ processChatCommand' vr = \case
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       withChatLock "deleteChat direct" . procCmd $ do
         cancelFilesInProgress user filesInfo
-        deleteFilesFilesystem user filesInfo
+        deleteFilesLocally filesInfo
         when (contactReady ct && contactActive ct && notify) $
           void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
         contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db userId ct)
@@ -961,7 +961,7 @@ processChatCommand' vr = \case
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         cancelFilesInProgress user filesInfo
-        deleteFilesFilesystem user filesInfo
+        deleteFilesLocally filesInfo
         when (memberActive membership && isOwner) . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections user members
@@ -972,23 +972,25 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        (errs, connIds) <- partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
+        (errs1, (errs2, connIds)) <- second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
+        let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
         unless (null errs) $ toView $ CRChatErrors (Just user) errs
         deleteAgentConnectionsAsync user $ concat connIds
         pure $ CRGroupDeletedUser user gInfo
       where
-        deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError [ConnId])
-        deleteUnusedContact db contactId = runExceptT $ withExceptT ChatErrorStore $ do
+        deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
+        deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
           ct <- getContact db user contactId
-          if directOrUsed ct
-            then pure []
-            else
-              liftIO (checkContactHasGroups db user ct) >>= \case
-                Just _ -> pure []
-                Nothing -> do
-                  conns <- liftIO $ getContactConnections db userId ct
-                  setContactDeleted db user ct
-                  pure $ map aConnId conns
+          ifM
+            ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct))
+            (pure (Nothing, []))
+            (getConnections ct)
+          where
+            getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, [ConnId])
+            getConnections ct = do
+              conns <- liftIO $ getContactConnections db userId ct
+              e_ <- (setContactDeleted db user ct $> Nothing) `catchStoreError` (pure . Just)
+              pure (e_, map aConnId conns)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -996,14 +998,14 @@ processChatCommand' vr = \case
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       cancelFilesInProgress user filesInfo
-      deleteFilesFilesystem user filesInfo
+      deleteFilesLocally filesInfo
       withStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db vr user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       cancelFilesInProgress user filesInfo
-      deleteFilesFilesystem user filesInfo
+      deleteFilesLocally filesInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -1012,7 +1014,7 @@ processChatCommand' vr = \case
       nf <- withStore $ \db -> getNoteFolder db user chatId
       filesInfo <- withStore' $ \db -> getNoteFolderFileInfo db user nf
       withChatLock "clearChat local" . procCmd $ do
-        deleteFilesFilesystem user filesInfo
+        deleteFilesLocally filesInfo
         withStore' $ \db -> deleteNoteFolderFiles db userId nf
         withStore' $ \db -> deleteNoteFolderCIs db user nf
         pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
@@ -2354,7 +2356,7 @@ processChatCommand' vr = \case
     deleteChatUser user delSMPQueues = do
       filesInfo <- withStore' (`getUserFileInfo` user)
       cancelFilesInProgress user filesInfo
-      deleteFilesFilesystem user filesInfo
+      deleteFilesLocally filesInfo
       withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
       withStore' (`deleteUserRecord` user)
       when (activeUser user) $ chatWriteVar currentUser Nothing
@@ -2652,19 +2654,16 @@ data CancelSndSMPFile = CancelSndSMPFile FileTransferMeta [SndFileTransfer]
 
 newtype CancelRcvSMPFile = CancelRcvSMPFile RcvFileTransfer
 
-deleteFilesFilesystem :: ChatMonad m => User -> [CIFileInfo] -> m ()
-deleteFilesFilesystem user filesInfo =
-  forM_ filesInfo $ \CIFileInfo {filePath} ->
-    forM_ filePath $ \fPath ->
-      deleteFileLocally fPath `catchChatError` (toView . CRChatError (Just user))
-
-deleteFileLocally :: forall m. ChatMonad m => FilePath -> m ()
-deleteFileLocally fPath =
-  withFilesFolder $ \filesFolder -> liftIO $ do
-    let fsFilePath = filesFolder </> fPath
-    removeFile fsFilePath `catchAll` \_ ->
-      removePathForcibly fsFilePath `catchAll_` pure ()
+deleteFilesLocally :: forall m. ChatMonad m => [CIFileInfo] -> m ()
+deleteFilesLocally files =
+  withFilesFolder $ \filesFolder ->
+    liftIO . forM_ files $ \CIFileInfo {filePath} ->
+      mapM_ (delete . (filesFolder </>)) filePath
   where
+    delete :: FilePath -> IO ()
+    delete fPath =
+      removeFile fPath `catchAll` \_ ->
+        removePathForcibly fPath `catchAll_` pure ()
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
@@ -3233,14 +3232,14 @@ expireChatItems user@User {userId} ttl sync = do
       waitChatStartedAndActivated
       filesInfo <- withStoreCtx' (Just "processContact, getContactExpiredFileInfo") $ \db -> getContactExpiredFileInfo db user ct expirationDate
       cancelFilesInProgress user filesInfo
-      deleteFilesFilesystem user filesInfo
+      deleteFilesLocally filesInfo
       withStoreCtx' (Just "processContact, deleteContactExpiredCIs") $ \db -> deleteContactExpiredCIs db user ct expirationDate
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       waitChatStartedAndActivated
       filesInfo <- withStoreCtx' (Just "processGroup, getGroupExpiredFileInfo") $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
       cancelFilesInProgress user filesInfo
-      deleteFilesFilesystem user filesInfo
+      deleteFilesLocally filesInfo
       withStoreCtx' (Just "processGroup, deleteGroupExpiredCIs") $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStoreCtx' (Just "processGroup, getGroupMembersForExpiration") $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStoreCtx' (Just "processGroup, deleteGroupMember") $ \db -> deleteGroupMember db user m
@@ -6224,7 +6223,7 @@ deleteLocalCI :: (ChatMonad m, MsgDirectionI d) => User -> NoteFolder -> ChatIte
 deleteLocalCI user nf ci@ChatItem {file = file_} byUser timed = do
   forM_ file_ $ \file -> do
     let filesInfo = [mkCIFileInfo file]
-    deleteFilesFilesystem user filesInfo
+    deleteFilesLocally filesInfo
   withStore' $ \db -> deleteLocalChatItem db user nf ci
   pure $ CRChatItemDeleted user (AChatItem SCTLocal msgDirection (LocalChat nf) ci) Nothing byUser timed
 
@@ -6233,7 +6232,7 @@ deleteCIFile user file_ =
   forM_ file_ $ \file -> do
     let filesInfo = [mkCIFileInfo file]
     cancelFilesInProgress user filesInfo
-    deleteFilesFilesystem user filesInfo
+    deleteFilesLocally filesInfo
 
 markDirectCIDeleted :: (ChatMonad m, MsgDirectionI d) => User -> Contact -> ChatItem 'CTDirect d -> MessageId -> Bool -> UTCTime -> m ChatResponse
 markDirectCIDeleted user ct ci@ChatItem {file} msgId byUser deletedTs = do
