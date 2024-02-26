@@ -20,7 +20,6 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import Test.Hspec hiding (it)
 

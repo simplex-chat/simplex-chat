@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20240219_users_restrict where
+module Simplex.Chat.Migrations.M20240226_users_restrict where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20240219_users_restrict :: Query
-m20240219_users_restrict =
+m20240226_users_restrict :: Query
+m20240226_users_restrict =
   [sql|
 PRAGMA writable_schema=1;
 
@@ -17,8 +17,8 @@ WHERE name = 'users' AND type = 'table';
 PRAGMA writable_schema=0;
 |]
 
-down_m20240219_users_restrict :: Query
-down_m20240219_users_restrict =
+down_m20240226_users_restrict :: Query
+down_m20240226_users_restrict =
   [sql|
 PRAGMA writable_schema=1;
 

@@ -49,6 +49,7 @@ import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
@@ -245,6 +246,8 @@ data ChatCommand
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
+  | APISaveAppSettings AppSettings
+  | APIGetAppSettings (Maybe AppSettings)
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
   | TestStorageEncryption DBEncryptionKey
@@ -711,6 +714,7 @@ data ChatResponse
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
+  | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
 
@@ -1247,6 +1251,14 @@ a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
 mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show
 {-# INLINE mkChatError #-}
+
+catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError IO a) -> ExceptT StoreError IO a
+catchStoreError = catchAllErrors mkStoreError
+{-# INLINE catchStoreError #-}
+
+mkStoreError :: SomeException -> StoreError
+mkStoreError = SEInternalError . show
+{-# INLINE mkStoreError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
