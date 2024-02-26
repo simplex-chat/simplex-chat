@@ -2567,92 +2567,54 @@ setAllExpireCIFlags b = do
 cancelFilesInProgress :: forall m. ChatMonad m => User -> [CIFileInfo] -> m ()
 cancelFilesInProgress user filesInfo = do
   let filesInfo' = filter (not . fileEnded) filesInfo
-  (_errs, fts) <- partitionEithers <$> withStoreBatch (\db -> map (getFTransfer db) filesInfo')
-  let fts' = filter (not . ftCancelled) fts
-  updateFilesCancelled fts'
-  let (sndXFTPs, rcvXFTPs, sndSMPs, rcvSMPs) = partitionFTs fts'
-  cancelSndXFTPs sndXFTPs
-  cancelRcvXFTPs rcvXFTPs
-  let sndSMPConnIds = sndSMPConns sndSMPs
-  rcvSMPConnIds <- cancelRcvSMPs rcvSMPs
-  deleteAgentConnectionsAsync user $ sndSMPConnIds <> rcvSMPConnIds
+  (sfs, rfs) <- splitFTTypes <$> withStoreBatch (\db -> map (getFT db) filesInfo')
+  forM_ rfs $ \RcvFileTransfer {fileId} -> closeFileHandle fileId rcvFiles `catchChatError` \_ -> pure ()
+  void . withStoreBatch' $ \db -> map (updateSndFileCancelled db) sfs
+  void . withStoreBatch' $ \db -> map (updateRcvFileCancelled db) rfs
+  let xsfIds = mapMaybe (\(FileTransferMeta {fileId, xftpSndFile}, _) -> (,fileId) <$> xftpSndFile) sfs
+      xrfIds = mapMaybe (\RcvFileTransfer {fileId, xftpRcvFile} -> (,fileId) <$> xftpRcvFile) rfs
+  agentXFTPDeleteSndFilesRemote user xsfIds
+  agentXFTPDeleteRcvFiles xrfIds
+  let smpSFConnIds = concatMap (\(ft, sfts) -> mapMaybe (smpSndFileConnId ft) sfts) sfs
+      smpRFConnIds = mapMaybe smpRcvFileConnId rfs
+  deleteAgentConnectionsAsync user smpSFConnIds
+  deleteAgentConnectionsAsync user smpRFConnIds
   where
     fileEnded CIFileInfo {fileStatus} = case fileStatus of
       Just (AFS _ status) -> ciFileEnded status
       Nothing -> True
-    getFTransfer :: DB.Connection -> CIFileInfo -> IO (Either ChatError FileTransfer)
-    getFTransfer db CIFileInfo {fileId} =
-      runExceptT $
-        withExceptT ChatErrorStore $
-          getFileTransfer db user fileId
-    ftCancelled = \case
-      FTSnd FileTransferMeta {cancelled} _ -> cancelled
-      FTRcv RcvFileTransfer {cancelled} -> cancelled
-    updateFilesCancelled :: [FileTransfer] -> m ()
-    updateFilesCancelled fts =
-      void . withStoreBatch' $ \db -> map (updateFTCancelled db) fts
+    getFT :: DB.Connection -> CIFileInfo -> IO (Either ChatError FileTransfer)
+    getFT db CIFileInfo {fileId} = runExceptT . withExceptT ChatErrorStore $ getFileTransfer db user fileId
+    updateSndFileCancelled :: DB.Connection -> (FileTransferMeta, [SndFileTransfer]) -> IO ()
+    updateSndFileCancelled db (FileTransferMeta {fileId}, sfts) = do
+      updateFileCancelled db user fileId CIFSSndCancelled
+      forM_ sfts updateSndFTCancelled
       where
-        updateFTCancelled :: DB.Connection -> FileTransfer -> IO ()
-        updateFTCancelled db = \case
-          FTSnd FileTransferMeta {fileId} sfts -> do
-            updateFileCancelled db user fileId CIFSSndCancelled
-            forM_ sfts updateSndFTCancelled
-            where
-              updateSndFTCancelled :: SndFileTransfer -> IO ()
-              updateSndFTCancelled ft@SndFileTransfer {fileStatus}
-                | fileStatus == FSCancelled || fileStatus == FSComplete = pure ()
-                | otherwise = do
-                    updateSndFileStatus db ft FSCancelled
-                    deleteSndFileChunks db ft
-          FTRcv ft@RcvFileTransfer {fileId} -> do
-            updateFileCancelled db user fileId CIFSRcvCancelled
-            updateRcvFileStatus db fileId FSCancelled
-            deleteRcvFileChunks db ft
-    partitionFTs :: [FileTransfer] -> ([CancelSndXFTPFile], [CancelRcvXFTPFile], [CancelSndSMPFile], [CancelRcvSMPFile])
-    partitionFTs = foldr partitionHelper ([], [], [], [])
+        updateSndFTCancelled :: SndFileTransfer -> IO ()
+        updateSndFTCancelled ft = unless (sndFTEnded ft) $ do
+          updateSndFileStatus db ft FSCancelled
+          deleteSndFileChunks db ft
+    updateRcvFileCancelled :: DB.Connection -> RcvFileTransfer -> IO ()
+    updateRcvFileCancelled db ft@RcvFileTransfer {fileId} = do
+      updateFileCancelled db user fileId CIFSRcvCancelled
+      updateRcvFileStatus db fileId FSCancelled
+      deleteRcvFileChunks db ft
+    splitFTTypes :: [Either ChatError FileTransfer] -> ([(FileTransferMeta, [SndFileTransfer])], [RcvFileTransfer])
+    splitFTTypes = foldr addFT ([], []) . rights
       where
-        partitionHelper x (sndXFTPs, rcvXFTPs, sndSMPs, rcvSMPs) = case x of
-          FTSnd ftm@FileTransferMeta {xftpSndFile} sfts -> case xftpSndFile of
-            Just xsf -> (CancelSndXFTPFile ftm sfts xsf : sndXFTPs, rcvXFTPs, sndSMPs, rcvSMPs)
-            Nothing -> (sndXFTPs, rcvXFTPs, CancelSndSMPFile ftm sfts : sndSMPs, rcvSMPs)
-          FTRcv ft@RcvFileTransfer {xftpRcvFile} -> case xftpRcvFile of
-            Just xrf -> (sndXFTPs, CancelRcvXFTPFile ft xrf : rcvXFTPs, sndSMPs, rcvSMPs)
-            Nothing -> (sndXFTPs, rcvXFTPs, sndSMPs, CancelRcvSMPFile ft : rcvSMPs)
-    cancelSndXFTPs :: [CancelSndXFTPFile] -> m ()
-    cancelSndXFTPs sndXFTPs = do
-      let xsfIds = map (\(CancelSndXFTPFile FileTransferMeta {fileId} _ xsf) -> (xsf, fileId)) sndXFTPs
-      agentXFTPDeleteSndFilesRemote user xsfIds
-    cancelRcvXFTPs :: [CancelRcvXFTPFile] -> m ()
-    cancelRcvXFTPs rcvXFTPs = do
-      forM_ rcvXFTPs $ \(CancelRcvXFTPFile RcvFileTransfer {fileId} _) ->
-        closeFileHandle fileId rcvFiles `catchChatError` \_ -> pure ()
-      let xrfIds = map (\(CancelRcvXFTPFile RcvFileTransfer {fileId} xrf) -> (xrf, fileId)) rcvXFTPs
-      agentXFTPDeleteRcvFiles xrfIds
-    sndSMPConns :: [CancelSndSMPFile] -> [ConnId]
-    sndSMPConns sndSMPs =
-      join $ forM sndSMPs $ \(CancelSndSMPFile _ sfts) ->
-        mapMaybe fileConnId sfts
-      where
-        fileConnId SndFileTransfer {agentConnId = AgentConnId acId, fileStatus, fileInline}
-          | fileStatus == FSCancelled || fileStatus == FSComplete = Nothing
-          | isNothing fileInline = Just acId
-          | otherwise = Nothing
-    cancelRcvSMPs :: [CancelRcvSMPFile] -> m [ConnId]
-    cancelRcvSMPs rcvSMPs = do
-      forM_ rcvSMPs $ \(CancelRcvSMPFile RcvFileTransfer {fileId}) ->
-        closeFileHandle fileId rcvFiles `catchChatError` \_ -> pure ()
-      pure $ mapMaybe fileConnId rcvSMPs
-      where
-        fileConnId (CancelRcvSMPFile ft@RcvFileTransfer {xftpRcvFile, rcvFileInline}) =
-          if isNothing xftpRcvFile && isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
-
-data CancelSndXFTPFile = CancelSndXFTPFile FileTransferMeta [SndFileTransfer] XFTPSndFile
-
-data CancelRcvXFTPFile = CancelRcvXFTPFile RcvFileTransfer XFTPRcvFile
-
-data CancelSndSMPFile = CancelSndSMPFile FileTransferMeta [SndFileTransfer]
-
-newtype CancelRcvSMPFile = CancelRcvSMPFile RcvFileTransfer
+        addFT f (sfs, rfs) = case f of
+          FTSnd ft@FileTransferMeta {cancelled} sfts | not cancelled -> ((ft, sfts) : sfs, rfs)
+          FTRcv ft@RcvFileTransfer {cancelled} | not cancelled -> (sfs, ft : rfs)
+          _ -> (sfs, rfs)
+    smpSndFileConnId :: FileTransferMeta -> SndFileTransfer -> Maybe ConnId
+    smpSndFileConnId FileTransferMeta {xftpSndFile} sft@SndFileTransfer {agentConnId = AgentConnId acId, fileInline}
+      | isNothing xftpSndFile && isNothing fileInline && not (sndFTEnded sft) = Just acId
+      | otherwise = Nothing
+    smpRcvFileConnId :: RcvFileTransfer -> Maybe ConnId
+    smpRcvFileConnId ft@RcvFileTransfer {xftpRcvFile, rcvFileInline}
+      | isNothing xftpRcvFile && isNothing rcvFileInline = liveRcvFileTransferConnId ft
+      | otherwise = Nothing
+    sndFTEnded SndFileTransfer {fileStatus} = fileStatus == FSCancelled || fileStatus == FSComplete
 
 deleteFilesLocally :: forall m. ChatMonad m => [CIFileInfo] -> m ()
 deleteFilesLocally files =
