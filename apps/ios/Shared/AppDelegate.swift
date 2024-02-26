@@ -16,6 +16,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         application.registerForRemoteNotifications()
         if #available(iOS 17.0, *) { trackKeyboard() }
         NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
+        removePasswordsIfReinstalled()
         return true
     }
 
@@ -125,6 +126,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         BGManager.shared.receiveMessages(complete)
+    }
+
+    private func removePasswordsIfReinstalled() {
+        // check for database existence is needed because app password and self destruct password will be saved and restored
+        // by iOS when a user deletes the app and installs it again. In this case database will be deleted but passwords are not.
+        // This check ensures that the user will not stack on "Opening app..." screen
+        if (kcAppPassword.get() != nil || kcSelfDestructPassword.get() != nil) && !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA) && !(hasDatabase() || hasLegacyDatabase()) {
+            _ = kcAppPassword.remove()
+            _ = kcSelfDestructPassword.remove()
+            _ = kcDatabasePassword.remove()
+        }
     }
 
     static func keepScreenOn(_ on: Bool) {
