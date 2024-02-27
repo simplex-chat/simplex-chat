@@ -152,6 +152,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe, (<$$>))
 import Simplex.Messaging.Version (VersionRange)
 import UnliftIO.STM
+import Debug.Trace
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
 deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
@@ -2548,14 +2549,21 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
           (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
 
 testZstd :: DB.Connection -> IO [ZstdRow]
-testZstd db = process <$$> DB.query_ db "SELECT msg_body FROM messages"
+testZstd db = do
+  samples <- fromOnly <$$> DB.query_ db "SELECT msg_body FROM messages"
+  let totalSize = sum $ map B.length samples
+      minDictSize = totalSize `div` 100
+  dict100k <- either fail pure $ Zstd.trainFromSamples (1024 * 100) samples
+  -- dictMin <- either fail pure $ Zstd.trainFromSamples minDictSize samples
+  traceShowM ('D', Zstd.getDictID dict100k, (totalSize, minDictSize))
+  pure $ map (process dict100k) samples
   where
-    process (Only msg_body) =
+    process dict msg_body =
       ZstdRow
         { raw = B.length msg_body,
           z1 = B.length $ Zstd.compress 1 msg_body,
-          z3 = B.length $ Zstd.compress 3 msg_body,
-          z6 = B.length $ Zstd.compress 6 msg_body,
-          z9 = B.length $ Zstd.compress 9 msg_body,
+          z3 = B.length $ Zstd.compressUsingDict dict 1 msg_body,
+          z6 = B.length $ Zstd.compress 9 msg_body,
+          z9 = B.length $ Zstd.compressUsingDict dict 9 msg_body,
           z = B.length $ Zstd.compress Zstd.maxCLevel msg_body
         }
