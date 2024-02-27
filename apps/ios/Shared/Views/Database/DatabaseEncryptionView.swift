@@ -130,7 +130,10 @@ struct DatabaseEncryptionView: View {
                 .padding(.top, 1)
                 .font(.callout)
             } else {
-                Text("Set database passphrase to migrate it")
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Set and database passphrase to migrate it.")
+                    Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                }
                 .padding(.top, 1)
                 .font(.callout)
             }

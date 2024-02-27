@@ -126,10 +126,7 @@ struct MigrateFromAnotherDevice: View {
     private func pasteOrScanLinkView(_ link: String) -> some View {
         ZStack {
             List {
-                Section("Paste link to an archive") {
-                    pasteLinkView()
-                }
-                Section("Or scan QR code") {
+                Section("Scan QR code") {
                     ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
                         switch resp {
                         case let .success(r):
@@ -144,6 +141,9 @@ struct MigrateFromAnotherDevice: View {
                             alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
                         }
                     }
+                }
+                Section("Or paste archive link") {
+                    pasteLinkView()
                 }
             }
         }
@@ -405,7 +405,7 @@ struct MigrateFromAnotherDevice: View {
                 await MainActor.run {
                     appSettings.importIntoApp()
                     hideView()
-                    AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Notify another device")
+                    AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
                 }
             } catch let error {
                 hideView()
@@ -471,7 +471,7 @@ private struct PassphraseEnteringView: View {
                 } header: {
                     Text("Enter passphrase")
                 } footer: {
-                    Text("Passphrase will be stored on device in Keychain. It's required for notifications to work. You can change it later in settings")
+                    Text("Passphrase will be stored on device in Keychain. It's required for notifications to work. You can change it later in settings.")
                         .font(.callout)
                 }
             }

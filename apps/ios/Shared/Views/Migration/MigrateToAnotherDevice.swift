@@ -230,7 +230,7 @@ struct MigrateToAnotherDevice: View {
             } header: {
                 Text("Confirm upload")
             } footer: {
-                Text("All your contacts, conversations and files will be archived and uploaded as encrypted file to configured XFTP relays")
+                Text("All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.")
                     .font(.callout)
             }
         }
@@ -314,18 +314,15 @@ struct MigrateToAnotherDevice: View {
                     }
                 }
             } footer: {
-                Text("Make sure you made the migration before going forward")
-                    .font(.callout)
+                Text("Choose _Migrate from another device_ on the new device and scan QR code.")
+                .font(.callout)
             }
-            Section {
+            Section("Show QR code") {
                 SimpleXLinkQRCode(uri: link)
                     .frame(maxWidth: .infinity)
+            }
+            Section("Or securely share this file link") {
                 shareLinkButton(link)
-            } header: {
-                Text("Link to uploaded archive")
-            } footer: {
-                Text("Choose Migrate from another device on your new device and scan QR code")
-                    .font(.callout)
             }
         }
     }
@@ -346,8 +343,11 @@ struct MigrateToAnotherDevice: View {
             } header: {
                 Text("Migration complete")
             } footer: {
-                Text("You should not use the same database on two devices")
-                    .font(.callout)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("You **must not** use the same database on two devices.")
+                    Text("**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.")
+                }
+                .font(.callout)
             }
         }
     }
@@ -575,9 +575,9 @@ private struct PassphraseConfirmationView: View {
                         }
                     }
                 } header: {
-                    Text("Verify database passphrase to migrate it")
+                    Text("Verify database passphrase")
                 } footer: {
-                    Text("Make sure you remember database passphrase before migrating")
+                    Text("Confirm that you remember database passphrase to migrate it.")
                         .font(.callout)
                 }
             }
