@@ -19,6 +19,7 @@ public let GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN = "chatLastBackgroundRun"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
 public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
+// This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
 public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
@@ -167,6 +168,7 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
 
+// This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
 public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)

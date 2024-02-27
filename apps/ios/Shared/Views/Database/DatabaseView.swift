@@ -358,6 +358,10 @@ struct DatabaseView: View {
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         let archiveErrors = try await apiImportArchive(config: config)
+                        let appSettings = try apiGetAppSettings(settings: AppSettings.current)
+                        await MainActor.run {
+                            appSettings.importIntoApp()
+                        }
                         _ = kcDatabasePassword.remove()
                         if archiveErrors.isEmpty {
                             await operationEnded(.archiveImported)

@@ -188,6 +188,7 @@ struct MigrateToAppGroupView: View {
         let config = ArchiveConfig(archivePath: getDocumentsDirectory().appendingPathComponent(archiveName).path)
         Task {
             do {
+                try apiSaveAppSettings(settings: AppSettings.current)
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
@@ -204,7 +205,11 @@ struct MigrateToAppGroupView: View {
                 resetChatCtrl()
                 try await MainActor.run { try initializeChat(start: false) }
                 let _ = try await apiImportArchive(config: config)
-                await MainActor.run { setV3DBMigration(.migrated) }
+                let appSettings = try apiGetAppSettings(settings: AppSettings.current)
+                await MainActor.run {
+                    appSettings.importIntoApp()
+                    setV3DBMigration(.migrated)
+                }
             } catch let error {
                 dbContainerGroupDefault.set(.documents)
                 await MainActor.run {
@@ -222,6 +227,7 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
     let archiveName = "simplex-chat.\(ts).zip"
     let archivePath = (storagePath ?? getDocumentsDirectory()).appendingPathComponent(archiveName)
     let config = ArchiveConfig(archivePath: archivePath.path)
+    try apiSaveAppSettings(settings: AppSettings.current)
     try await apiExportArchive(config: config)
     if storagePath == nil {
         deleteOldArchive()

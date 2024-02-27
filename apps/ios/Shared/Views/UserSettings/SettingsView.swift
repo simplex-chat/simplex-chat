@@ -27,7 +27,7 @@ let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
-let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
@@ -57,6 +57,8 @@ let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+
+let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -93,6 +95,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
+    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: LockScreenCalls.show.rawValue
 ]
 
 // not used anymore

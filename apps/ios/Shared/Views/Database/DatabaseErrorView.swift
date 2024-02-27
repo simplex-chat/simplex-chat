@@ -174,7 +174,9 @@ struct DatabaseErrorView: View {
                         message: Text(error)
                     ))
                 case .errorMigration: ()
-                case .ok: ()
+                case .ok:
+                    let appSettings = try apiGetAppSettings(settings: AppSettings.current)
+                    appSettings.importIntoApp()
                 }
             }
         } catch let error {

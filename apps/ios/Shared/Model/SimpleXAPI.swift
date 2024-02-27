@@ -258,6 +258,18 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     throw r
 }
 
+func apiSaveAppSettings(settings: AppSettings) throws {
+    let r = chatSendCmdSync(.apiSaveSettings(settings: settings))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiGetAppSettings(settings: AppSettings) throws -> AppSettings {
+    let r = chatSendCmdSync(.apiGetSettings(settings: settings))
+    if case let .appSettings(settings) = r { return settings }
+    throw r
+}
+
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }

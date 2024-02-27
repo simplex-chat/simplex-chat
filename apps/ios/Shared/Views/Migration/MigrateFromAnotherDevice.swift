@@ -15,6 +15,7 @@ private enum MigrationState: Equatable {
     case downloadProgress(downloadedBytes: Int64, totalBytes: Int64, fileId: Int64, link: String, archivePath: URL, ctrl: chat_ctrl?)
     case downloadFailed(totalBytes: Int64, link: String, archivePath: URL)
     case archiveImport(archivePath: String)
+    case archiveImportFailed(archivePath: String)
     case passphraseEntering(passphrase: String)
     case migration(passphrase: String)
 }
@@ -70,6 +71,8 @@ struct MigrateFromAnotherDevice: View {
                 downloadFailedView(totalBytes: total, link, archivePath)
             case let .archiveImport(archivePath):
                 archiveImportView(archivePath)
+            case let .archiveImportFailed(archivePath):
+                archiveImportFailedView(archivePath)
             case let .passphraseEntering(passphrase):
                 PassphraseEnteringView(migrationState: $migrationState, currentKey: passphrase, alert: $alert)
             case let .migration(passphrase):
@@ -226,6 +229,25 @@ struct MigrateFromAnotherDevice: View {
         }
     }
 
+    private func archiveImportFailedView(_ archivePath: String) -> some View {
+        List {
+            Section {
+                Button(action: {
+                    migrationState = .archiveImport(archivePath: archivePath)
+                }) {
+                    settingsRow("square.and.arrow.down") {
+                        Text("Repeat import").foregroundColor(.accentColor)
+                    }
+                }
+            } header: {
+                Text("Import failed")
+            } footer: {
+                Text("You can give another try")
+                    .font(.callout)
+            }
+        }
+    }
+
     private func migrationView(_ passphrase: String) -> some View {
         ZStack {
             List {
@@ -338,9 +360,15 @@ struct MigrateFromAnotherDevice: View {
                     }
                     migrationState = .passphraseEntering(passphrase: "")
                 } catch let error {
+                    await MainActor.run {
+                        migrationState = .archiveImportFailed(archivePath: archivePath)
+                    }
                     alert = .error(title: "Error importing chat database", error: responseError(error))
                 }
             } catch let error {
+                await MainActor.run {
+                    migrationState = .archiveImportFailed(archivePath: archivePath)
+                }
                 alert = .error(title: "Error deleting chat database", error: responseError(error))
             }
         }
@@ -369,7 +397,9 @@ struct MigrateFromAnotherDevice: View {
             do {
 //                resetChatCtrl()
                 try initializeChat(start: true, confirmStart: false, dbKey: passphrase, refreshInvitations: true)
+                let appSettings = try apiGetAppSettings(settings: AppSettings.current)
                 await MainActor.run {
+                    appSettings.importIntoApp()
                     hideView()
                     AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Notify another device")
                 }

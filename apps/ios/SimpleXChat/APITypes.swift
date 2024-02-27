@@ -37,6 +37,8 @@ public enum ChatCommand {
     case apiDeleteStorage
     case apiStorageEncryption(config: DBEncryptionConfig)
     case testStorageEncryption(key: String)
+    case apiSaveSettings(settings: AppSettings)
+    case apiGetSettings(settings: AppSettings)
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
@@ -170,6 +172,8 @@ public enum ChatCommand {
             case .apiDeleteStorage: return "/_db delete"
             case let .apiStorageEncryption(cfg): return "/_db encryption \(encodeJSON(cfg))"
             case let .testStorageEncryption(key): return "/db test key \(key)"
+            case let .apiSaveSettings(settings): return "/_save app settings \(encodeJSON(settings))"
+            case let .apiGetSettings(settings): return "/_get app settings \(encodeJSON(settings))"
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
@@ -317,6 +321,8 @@ public enum ChatCommand {
             case .apiDeleteStorage: return "apiDeleteStorage"
             case .apiStorageEncryption: return "apiStorageEncryption"
             case .testStorageEncryption: return "testStorageEncryption"
+            case .apiSaveSettings: return "apiSaveSettings"
+            case .apiGetSettings: return "apiGetSettings"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
@@ -641,6 +647,7 @@ public enum ChatResponse: Decodable, Error {
     case chatCmdError(user_: UserRef?, chatError: ChatError)
     case chatError(user_: UserRef?, chatError: ChatError)
     case archiveImported(archiveErrors: [ArchiveError])
+    case appSettings(appSettings: AppSettings)
 
     public var responseType: String {
         get {
@@ -795,6 +802,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
             case .archiveImported: return "archiveImported"
+            case .appSettings: return "appSettings"
             }
         }
     }
@@ -952,6 +960,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
+            case let .appSettings(appSettings): return String(describing: appSettings)
             }
         }
     }
@@ -1553,7 +1562,7 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
     public static var values: [NotificationsMode] = [.instant, .periodic, .off]
 }
 
-public enum NotificationPreviewMode: String, SelectableItem {
+public enum NotificationPreviewMode: String, SelectableItem, Codable {
     case hidden
     case contact
     case message
@@ -1914,4 +1923,110 @@ public enum RemoteCtrlError: Decodable {
     case badInvitation
     case badVersion(appVersion: String)
 //    case protocolError(protocolError: RemoteProtocolError)
+}
+
+
+public struct AppSettings: Codable {
+    public var networkConfig: NetCfg? = nil
+    public var privacyEncryptLocalFiles: Bool? = nil
+    public var privacyAcceptImages: Bool? = nil
+    public var privacyLinkPreviews: Bool? = nil
+    public var privacyShowChatPreviews: Bool? = nil
+    public var privacySaveLastDraft: Bool? = nil
+    public var privacyProtectScreen: Bool? = nil
+    public var notificationMode: NotificationMode? = nil
+    public var notificationPreviewMode: NotificationPreviewMode? = nil
+    public var webrtcPolicyRelay: Bool? = nil
+    public var webrtcICEServers: [String]? = nil
+    public var confirmRemoteSessions: Bool? = nil
+    public var connectRemoteViaMulticast: Bool? = nil
+    public var connectRemoteViaMulticastAuto: Bool? = nil
+    public var developerTools: Bool? = nil
+    public var confirmDBUpgrades: Bool? = nil
+    public var androidCallOnLockScreen: LockScreenCalls? = nil
+    public var iosCallKitEnabled: Bool? = nil
+    public var iosCallKitCallsInRecents: Bool? = nil
+
+    public static var defaults: AppSettings {
+        AppSettings (
+            networkConfig: NetCfg.defaults,
+            privacyEncryptLocalFiles: true,
+            privacyAcceptImages: true,
+            privacyLinkPreviews: true,
+            privacyShowChatPreviews: true,
+            privacySaveLastDraft: true,
+            privacyProtectScreen: false,
+            notificationMode: NotificationMode.instant,
+            notificationPreviewMode: NotificationPreviewMode.message,
+            webrtcPolicyRelay: true,
+            webrtcICEServers: [],
+            confirmRemoteSessions: false,
+            connectRemoteViaMulticast: true,
+            connectRemoteViaMulticastAuto: true,
+            developerTools: false,
+            confirmDBUpgrades: false,
+            androidCallOnLockScreen: LockScreenCalls.show,
+            iosCallKitEnabled: true,
+            iosCallKitCallsInRecents: false
+        )
+    }
+
+    public func prepareForExport() -> AppSettings {
+        var empty = AppSettings()
+        let def = AppSettings.defaults
+        if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
+        if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+        if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
+        if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
+        if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
+        if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
+        if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
+        if notificationMode != def.notificationMode { empty.notificationMode = notificationMode }
+        if notificationPreviewMode != def.notificationPreviewMode { empty.notificationPreviewMode = notificationPreviewMode }
+        if webrtcPolicyRelay != def.webrtcPolicyRelay { empty.webrtcPolicyRelay = webrtcPolicyRelay }
+        if webrtcICEServers != def.webrtcICEServers { empty.webrtcICEServers = webrtcICEServers }
+        if confirmRemoteSessions != def.confirmRemoteSessions { empty.confirmRemoteSessions = confirmRemoteSessions }
+        if connectRemoteViaMulticast != def.connectRemoteViaMulticast {empty.connectRemoteViaMulticast = connectRemoteViaMulticast }
+        if connectRemoteViaMulticastAuto != def.connectRemoteViaMulticastAuto { empty.connectRemoteViaMulticastAuto = connectRemoteViaMulticastAuto }
+        if developerTools != def.developerTools { empty.developerTools = developerTools }
+        if confirmDBUpgrades != def.confirmDBUpgrades { empty.confirmDBUpgrades = confirmDBUpgrades }
+        if androidCallOnLockScreen != def.androidCallOnLockScreen { empty.androidCallOnLockScreen = androidCallOnLockScreen }
+        if iosCallKitEnabled != def.iosCallKitEnabled { empty.iosCallKitEnabled = iosCallKitEnabled }
+        if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+        return empty
+    }
+}
+
+public enum NotificationMode: String, Codable {
+    case off
+    case periodic
+    case instant
+
+    public func toNotificationsMode() -> NotificationsMode {
+        switch self {
+        case .instant: .instant
+        case .periodic: .periodic
+        case .off: .off
+        }
+    }
+
+    public static func from(_ mode: NotificationsMode) -> NotificationMode {
+        switch mode {
+        case .instant: .instant
+        case .periodic: .periodic
+        case .off: .off
+        }
+    }
+}
+
+//public enum NotificationPreviewMode: Codable {
+//    case hidden
+//    case contact
+//    case message
+//}
+
+public enum LockScreenCalls: String, Codable {
+    case disable
+    case show
+    case accept
 }

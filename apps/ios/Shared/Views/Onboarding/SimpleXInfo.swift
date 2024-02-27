@@ -87,6 +87,7 @@ struct SimpleXInfo: View {
 
 struct OnboardingActionButton: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme
     let hideMigrate: Bool
     @State private var migrateFromAnotherDevice: Bool = false
 
@@ -106,7 +107,7 @@ struct OnboardingActionButton: View {
                             .padding(.top)
                         MigrateFromAnotherDevice()
                     }
-                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                    .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
                 }
             }
         } else {

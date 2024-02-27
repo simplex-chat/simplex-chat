@@ -395,7 +395,7 @@ struct MigrateToAnotherDevice: View {
             do {
                 try await stopChatAsync()
                 await MainActor.run {
-                    migrationState = initialRandomDBPassphraseGroupDefault.get() ? .passphraseNotSet : .passphraseConfirmation
+                    migrationState = initialRandomDBPassphraseGroupDefault.get() ? .passphraseNotSet :  .passphraseConfirmation
                 }
             } catch let e {
                 await MainActor.run {
