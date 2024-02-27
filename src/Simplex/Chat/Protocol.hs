@@ -30,6 +30,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
@@ -44,6 +45,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
+import Simplex.Messaging.Compression (batchUnpackZstd)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -87,6 +89,10 @@ groupHistoryIncludeWelcomeVRange = mkVersionRange 6 currentChatVersion
 -- version range that supports sending member profile updates to groups
 memberProfileUpdateVRange :: VersionRange
 memberProfileUpdateVRange = mkVersionRange 7 currentChatVersion
+
+-- version range that supports sending member profile updates to groups
+compressedBatchingVRange :: VersionRange
+compressedBatchingVRange = mkVersionRange (currentChatVersion + 1) currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -529,10 +535,15 @@ parseChatMessages s = case B.head s of
   '[' -> case J.eitherDecodeStrict' s of
     Right v -> map parseItem v
     Left e -> [Left e]
+  'X' -> decodeCompressed (B.drop 1 s)
   _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
   where
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
+    decodeCompressed :: ByteString -> [Either String AChatMessage]
+    decodeCompressed s' = case smpDecode s' of
+      Left e -> [Left e]
+      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ batchUnpackZstd maxChatMsgSize compressed
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
