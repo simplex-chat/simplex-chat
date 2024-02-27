@@ -125,7 +125,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
-import Data.List (sortBy)
+import Data.List (sortBy, sortOn)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
@@ -152,6 +152,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe, (<$$>))
 import Simplex.Messaging.Version (VersionRange)
 import UnliftIO.STM
+import Debug.Trace
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
 deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
@@ -2548,14 +2549,22 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
           (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
 
 testZstd :: DB.Connection -> IO [ZstdRow]
-testZstd db = process <$$> DB.query_ db "SELECT msg_body FROM messages"
+testZstd db = do
+  samples <- fromOnly <$$> DB.query_ db "SELECT msg_body FROM messages"
+  let totalSize = sum $ map B.length samples
+      maxDictSize = totalSize `div` 100
+  dict16k <- either fail pure $ Zstd.trainFromSamples (1024 * 16) samples
+  dict100k <- either fail pure $ Zstd.trainFromSamples (1024 * 100) samples
+  dictMax <- either fail pure $ Zstd.trainFromSamples maxDictSize samples
+  traceShowM ('D', Zstd.getDictID dict100k, (totalSize, maxDictSize))
+  pure $ sortOn raw $ map (process dict16k dict100k dictMax) samples
   where
-    process (Only msg_body) =
+    process dict1 dict2 dict3 msg_body =
       ZstdRow
         { raw = B.length msg_body,
           z1 = B.length $ Zstd.compress 1 msg_body,
-          z3 = B.length $ Zstd.compress 3 msg_body,
-          z6 = B.length $ Zstd.compress 6 msg_body,
-          z9 = B.length $ Zstd.compress 9 msg_body,
+          z3 = B.length $ Zstd.compressUsingDict dict1 1 msg_body,
+          z6 = B.length $ Zstd.compressUsingDict dict2 1 msg_body,
+          z9 = B.length $ Zstd.compressUsingDict dict3 1 msg_body,
           z = B.length $ Zstd.compress Zstd.maxCLevel msg_body
         }
