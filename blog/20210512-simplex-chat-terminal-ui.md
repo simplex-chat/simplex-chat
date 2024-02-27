@@ -10,7 +10,7 @@ permalink: "/blog/20210512-simplex-chat-terminal-ui.html"
 
 **Published:** May 12, 2021
 
-For the last six months [me](https://github.com/epoberezkin) and my son [Efim](https://github.com/efim-poberezkin) have been working to bring you a working prototype of SimpleX Chat. We're excited to announce SimpleX Chat terminal client is now available [here](https://github.com/simplex-chat/simplex-chat) on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).
+For the last six months [me](https://github.com/epoberezkin) and my son Efim have been working to bring you a working prototype of SimpleX Chat. We're excited to announce SimpleX Chat terminal client is now available [here](https://github.com/simplex-chat/simplex-chat) on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).
 
 We’ve been using the terminal client between us and a few other people for a couple of months now, eating our own “dog food”, and have developed up to version 0.3.1, with most of the messaging protocol features we originally planned
 
