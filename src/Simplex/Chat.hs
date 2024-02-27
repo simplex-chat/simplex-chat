@@ -941,10 +941,10 @@ processChatCommand' vr = \case
       withChatLock "deleteChat direct" . procCmd $ do
         cancelFilesInProgress user filesInfo
         deleteFilesLocally filesInfo
-        let sendDel = contactReady ct && contactActive ct && notify
-        when sendDel $ void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
+        let doSendDel = contactReady ct && contactActive ct && notify
+        when doSendDel $ void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
         contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db userId ct)
-        deleteAgentConnectionsAsync user sendDel contactConnIds
+        deleteAgentConnectionsAsync user doSendDel contactConnIds
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
@@ -965,9 +965,10 @@ processChatCommand' vr = \case
       withChatLock "deleteChat group" . procCmd $ do
         cancelFilesInProgress user filesInfo
         deleteFilesLocally filesInfo
-        when (memberActive membership && isOwner) . void $ sendGroupMessage' user gInfo members XGrpDel
+        let doSendDel = memberActive membership && isOwner
+        when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
-        deleteMembersConnections user True members
+        deleteMembersConnections user doSendDel members
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
