@@ -476,11 +476,13 @@ struct MigrateToAnotherDevice: View {
             chatReceiver?.start()
 
             let (res, error) = await uploadStandaloneFile(user: user, file: CryptoFile.plain(archivePath.lastPathComponent), ctrl: ctrl)
-            guard let res = res else {
-                migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
-                return alert = .error(title: "Error uploading the archive", error: error ?? "")
+            await MainActor.run {
+                guard let res = res else {
+                    migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
+                    return alert = .error(title: "Error uploading the archive", error: error ?? "")
+                }
+                migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: res.fileSize, fileId: res.fileId, archivePath: archivePath, ctrl: ctrl)
             }
-            migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: res.fileSize, fileId: res.fileId, archivePath: archivePath, ctrl: ctrl)
         }
     }
 
@@ -588,7 +590,9 @@ private struct PassphraseConfirmationView: View {
     private func verifyDatabasePassphrase(_ dbKey: String) async {
         do {
             try await testStorageEncryption(key: dbKey)
-            migrationState = .uploadConfirmation
+            await MainActor.run {
+                migrationState = .uploadConfirmation
+            }
         } catch {
             showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
         }

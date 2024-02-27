@@ -342,7 +342,9 @@ struct MigrateFromAnotherDevice: View {
 
             let (res, error) = await downloadStandaloneFile(user: user, url: link, file: CryptoFile.plain(archivePath.lastPathComponent), ctrl: ctrl)
             if res == nil {
-                migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
+                await MainActor.run {
+                    migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
+                }
                 return alert = .error(title: "Error downloading the archive", error: error ?? "")
             }
         }
@@ -358,7 +360,9 @@ struct MigrateFromAnotherDevice: View {
                     if !archiveErrors.isEmpty {
                         alert = .chatImportedWithErrors()
                     }
-                    migrationState = .passphraseEntering(passphrase: "")
+                    await MainActor.run {
+                        migrationState = .passphraseEntering(passphrase: "")
+                    }
                 } catch let error {
                     await MainActor.run {
                         migrationState = .archiveImportFailed(archivePath: archivePath)
@@ -451,7 +455,9 @@ private struct PassphraseEnteringView: View {
 //                                    chat_close_store(ctrl)
 //                                }
                                 applyChatCtrl(ctrl: ctrl, result: (currentKey != "", status))
-                                migrationState = .migration(passphrase: currentKey)
+                                await MainActor.run {
+                                    migrationState = .migration(passphrase: currentKey)
+                                }
                             } else {
                                 showErrorOnMigrationIfNeeded(status, $alert)
                             }
