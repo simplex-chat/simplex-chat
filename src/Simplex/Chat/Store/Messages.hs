@@ -2499,16 +2499,20 @@ updateGroupSndStatus db itemId memberId status = do
     |]
     (status, currentTs, itemId, memberId)
 
-getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [(GroupMemberId, CIStatus 'MDSnd)]
+getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [MemberDeliveryStatus]
 getGroupSndStatuses db itemId =
-  DB.query
-    db
-    [sql|
-      SELECT group_member_id, group_snd_item_status
-      FROM group_snd_item_statuses
-      WHERE chat_item_id = ?
-    |]
-    (Only itemId)
+  map toResult
+    <$> DB.query
+      db
+      [sql|
+        SELECT group_member_id, group_snd_item_status, group_snd_item_statuses
+        FROM group_snd_item_statuses
+        WHERE chat_item_id = ?
+      |]
+      (Only itemId)
+  where
+    toResult :: (GroupMemberId, CIStatus 'MDSnd, Maybe Bool) -> MemberDeliveryStatus
+    toResult (gmId, status, pqEncrypted) = MemberDeliveryStatus gmId status (fromMaybe False pqEncrypted)
 
 getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
 getGroupSndStatusCounts db itemId =

@@ -94,6 +94,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
+  CRPQSetting u pqAllowed -> ttyUser u $ viewPQSetting pqAllowed
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
@@ -1155,6 +1156,11 @@ viewChatItemTTL = \case
   where
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
+viewPQSetting :: Bool -> [StyledString]
+viewPQSetting pqAllowed
+  | pqAllowed = ["Post-quantum encryption allowed. It will be enabled with connections who also support and allow it."]
+  | otherwise = ["Post-quantum encryption disabled."] -- "user /pq on to allow it" - if we add terminal commands
+
 viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
@@ -1173,6 +1179,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
+    <> ["post-quantum encryption enabled" | contactPQEnabled ct]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
@@ -1190,6 +1197,7 @@ viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProf
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
+    <> ["post-quantum encryption enabled" | memberPQEnabled m]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewConnectionVerified :: Maybe SecurityCode -> StyledString

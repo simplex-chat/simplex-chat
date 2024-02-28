@@ -295,6 +295,9 @@ rcvConnEventToText = \case
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
   RCEVerificationCodeReset -> "security code changed"
+  RCEPQEnabled enabled
+    | enabled -> "post-quantum encryption enabled"
+    | otherwise -> "post-quantum encryption disabled"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case

@@ -211,6 +211,11 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
+contactPQEnabled :: Contact -> Bool
+contactPQEnabled Contact {activeConn} = case activeConn of
+  Just Connection {pqEnabled} -> pqEnabled
+  Nothing -> False
+
 data ContactStatus
   = CSActive
   | CSDeleted -- contact deleted by contact
@@ -722,6 +727,11 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
+
+memberPQEnabled :: GroupMember -> Bool
+memberPQEnabled GroupMember {activeConn} = case activeConn of
+  Just Connection {pqEnabled} -> pqEnabled
+  Nothing -> False
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
@@ -1293,6 +1303,7 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
+    pqEnabled :: Bool,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }

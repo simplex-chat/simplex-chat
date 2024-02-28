@@ -338,6 +338,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemPQEncrypted :: Maybe Bool, -- always Nothing for group snd items
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
@@ -358,7 +359,22 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
             SCTLocal -> isNothing itemDeleted
             _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
+   in CIMeta
+        { itemId,
+          itemTs,
+          itemText,
+          itemStatus,
+          itemPQEncrypted = Nothing, -- TODO [pq]
+          itemSharedMsgId,
+          itemDeleted,
+          itemEdited,
+          itemTimed,
+          itemLive,
+          editable,
+          forwardedByMember,
+          createdAt,
+          updatedAt
+        }
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -367,6 +383,7 @@ dummyMeta itemId ts itemText =
       itemTs = ts,
       itemText,
       itemStatus = CISSndNew,
+      itemPQEncrypted = Nothing,
       itemSharedMsgId = Nothing,
       itemDeleted = Nothing,
       itemEdited = False,
@@ -1012,7 +1029,8 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    memberDeliveryStatus :: CIStatus 'MDSnd
+    memberDeliveryStatus :: CIStatus 'MDSnd,
+    pqEncrypted :: Bool
   }
   deriving (Eq, Show)
 

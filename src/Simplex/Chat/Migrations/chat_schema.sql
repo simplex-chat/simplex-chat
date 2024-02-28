@@ -277,6 +277,7 @@ CREATE TABLE connections(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
   contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
+  pq_enabled INTEGER,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -374,7 +375,8 @@ CREATE TABLE chat_items(
   item_deleted_ts TEXT,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   item_content_tag TEXT,
-  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  pq_encryption INTEGER
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -411,6 +413,8 @@ CREATE TABLE settings(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  pq INTEGER
 );
 CREATE TABLE IF NOT EXISTS "protocol_servers"(
   smp_server_id INTEGER PRIMARY KEY,
@@ -485,6 +489,8 @@ CREATE TABLE group_snd_item_statuses(
   group_snd_item_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  group_snd_pq_encryption INTEGER
 );
 CREATE TABLE IF NOT EXISTS "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,

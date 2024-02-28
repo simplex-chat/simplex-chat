@@ -236,6 +236,7 @@ newChatController
     chatStoreChanged <- newTVarIO False
     expireCIThreads <- newTVarIO M.empty
     expireCIFlags <- newTVarIO M.empty
+    pqAllowedFlags <- newTVarIO M.empty
     cleanupManagerAsync <- newTVarIO Nothing
     timedItemThreads <- atomically TM.empty
     chatActivated <- newTVarIO True
@@ -271,6 +272,7 @@ newChatController
           filesFolder,
           expireCIThreads,
           expireCIFlags,
+          pqAllowedFlags,
           cleanupManagerAsync,
           timedItemThreads,
           chatActivated,
@@ -322,6 +324,7 @@ startChatController mainApp = do
   unless mainApp $
     chatWriteVar subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStoreCtx' (Just "startChatController, getUsers") getUsers)
+  -- TODO [pq] get and populate pqAllowedFlags
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -645,7 +648,7 @@ processChatCommand' vr = \case
       (SCTGroup, SMDSnd) -> do
         withStore' (`getGroupSndStatuses` itemId) >>= \case
           [] -> pure Nothing
-          memStatuses -> pure $ Just $ map (uncurry MemberDeliveryStatus) memStatuses
+          memStatuses -> pure $ Just memStatuses
       _ -> pure Nothing
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user -> withChatLock "sendMessage" $ case cType of
@@ -1205,6 +1208,15 @@ processChatCommand' vr = \case
     pure $ CRChatItemTTL user ttl
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand $ APIGetChatItemTTL userId
+  APISetPQSetting userId _pqAllowed -> withUserId userId $ \user -> do
+    -- TODO [pq]
+    -- withStore $ \db -> setPQ db user pqAllowed
+    -- set user pq (pqAllowedFlags)
+    ok user
+  APIGetPQSetting userId -> withUserId' userId $ \user -> do
+    -- TODO [pq]
+    -- pqAllowed <- withStore (`getPQ` user)
+    pure $ CRPQSetting user False
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
     CRNetworkConfig <$> withAgent getNetworkConfig
@@ -6600,6 +6612,8 @@ chatCommandP =
       "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
       "/ttl" $> GetChatItemTTL,
+      "/_pq " *> (APISetPQSetting <$> A.decimal <* A.space <*> onOffP),
+      "/_pq " *> (APIGetPQSetting <$> A.decimal),
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
