@@ -52,3 +52,9 @@ or
     - also will not update (as conversation progresses and it will scroll far up anyway) even if group size changes and it's disabled
     - flag in groups table "e2e_info_created" to only create it once? and state is only reflected by RCEPQEnabled items?
     - or create new such item if group size increases and PQ is off / decreases and PQ is on?
+
+- Save PQ encryption on chat items?
+  - in meta for direct + group rcv
+  - in group_snd_item_statuses for group snd?
+  - display in chat item details (info)
+  - may be overkill if aggressive upgrade strategy is planned
