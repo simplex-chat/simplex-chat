@@ -22,9 +22,9 @@ ALTER TABLE group_snd_item_statuses ADD COLUMN group_snd_pq_encryption INTEGER;
 down_m20240228_pq :: Query
 down_m20240228_pq =
   [sql|
-ALTER TABLE group_snd_item_statuses DROP COLUMN pq_encryption;
+ALTER TABLE group_snd_item_statuses DROP COLUMN group_snd_pq_encryption;
 
-ALTER TABLE chat_items DROP COLUMN group_snd_pq_encryption;
+ALTER TABLE chat_items DROP COLUMN pq_encryption;
 
 ALTER TABLE connections DROP COLUMN pq_enabled;
 
