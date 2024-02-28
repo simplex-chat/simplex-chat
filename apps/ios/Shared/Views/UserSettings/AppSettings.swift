@@ -8,11 +8,20 @@
 
 import Foundation
 import SimpleXChat
+import SwiftUI
 
 extension AppSettings {
     public func importIntoApp() {
         let def = UserDefaults.standard
-        if let val = networkConfig { setNetCfg(val) }
+        if var val = networkConfig {
+            // migrating from Android/desktop BUT shouldn't be here ever because it should be changed in migration stage
+            if case .onionViaSocks = val.hostMode {
+                val.hostMode = .publicHost
+                val.requiredHostMode = true
+            }
+            val.socksProxy = nil
+            setNetCfg(val)
+        }
         if let val = privacyEncryptLocalFiles { privacyEncryptLocalFilesGroupDefault.set(val) }
         if let val = privacyAcceptImages {
             privacyAcceptImagesGroupDefault.set(val)

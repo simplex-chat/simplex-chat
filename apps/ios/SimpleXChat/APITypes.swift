@@ -1926,7 +1926,7 @@ public enum RemoteCtrlError: Decodable {
 }
 
 
-public struct AppSettings: Codable {
+public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
     public var privacyAcceptImages: Bool? = nil

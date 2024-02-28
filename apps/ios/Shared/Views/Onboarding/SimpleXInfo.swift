@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
@@ -92,26 +93,32 @@ struct OnboardingActionButton: View {
     @State private var migrateFromAnotherDevice: Bool = false
 
     var body: some View {
-        if m.currentUser == nil {
-            actionButton("Create your profile", onboarding: .step2_CreateProfile)
+        Group {
+            if m.currentUser == nil {
+                actionButton("Create your profile", onboarding: .step2_CreateProfile)
 
-            if !hideMigrate {
-                actionButton("Migrate from another device") {
-                    migrateFromAnotherDevice = true
-                }
-                .sheet(isPresented: $migrateFromAnotherDevice) {
-                    VStack(alignment: .leading) {
-                        Text("Migrate here")
-                            .font(.largeTitle)
-                            .padding([.leading, .top, .trailing])
-                            .padding(.top)
-                        MigrateFromAnotherDevice()
+                if !hideMigrate {
+                    actionButton("Migrate from another device") {
+                        migrateFromAnotherDevice = true
                     }
-                    .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
                 }
+            } else {
+                actionButton("Make a private connection", onboarding: .onboardingComplete)
             }
-        } else {
-            actionButton("Make a private connection", onboarding: .onboardingComplete)
+        }.onAppear {
+            if !hideMigrate, m.migrationState != nil {
+                migrateFromAnotherDevice = true
+            }
+        }
+        .sheet(isPresented: $migrateFromAnotherDevice) {
+            VStack(alignment: .leading) {
+                Text("Migrate here")
+                    .font(.largeTitle)
+                    .padding([.leading, .top, .trailing])
+                    .padding(.top)
+                MigrateFromAnotherDevice(state: m.migrationState)
+            }
+            .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
         }
     }
 

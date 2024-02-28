@@ -44,7 +44,11 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    if kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil {
+                    // Present screen for continue migration if it wasn't finished yet
+                    if chatModel.migrationState != nil {
+                        chatModel.onboardingStage = onboardingStageDefault.get()
+                    }
+                    if (kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil) && chatModel.migrationState == nil {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             initChatAndMigrate()
                         }

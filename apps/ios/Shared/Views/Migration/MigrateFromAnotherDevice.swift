@@ -9,15 +9,22 @@
 import SwiftUI
 import SimpleXChat
 
+enum MigrationFromAnotherDeviceState: Codable, Equatable {
+    case downloadProgress(link: String, archiveName: String)
+    case archiveImport(archiveName: String)
+    case passphrase
+}
+
 private enum MigrationState: Equatable {
     case pasteOrScanLink(link: String)
     case linkDownloading(link: String)
-    case downloadProgress(downloadedBytes: Int64, totalBytes: Int64, fileId: Int64, link: String, archivePath: URL, ctrl: chat_ctrl?)
-    case downloadFailed(totalBytes: Int64, link: String, archivePath: URL)
+    case downloadProgress(downloadedBytes: Int64, totalBytes: Int64, fileId: Int64, link: String, archivePath: String, ctrl: chat_ctrl?)
+    case downloadFailed(totalBytes: Int64, link: String, archivePath: String)
     case archiveImport(archivePath: String)
     case archiveImportFailed(archivePath: String)
-    case passphraseEntering(passphrase: String)
+    case passphrase(passphrase: String)
     case migration(passphrase: String)
+    case onion(appSettings: AppSettings)
 }
 
 private enum MigrateFromAnotherDeviceViewAlert: Identifiable {
@@ -50,13 +57,41 @@ private enum MigrateFromAnotherDeviceViewAlert: Identifiable {
 struct MigrateFromAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
-    @State private var migrationState: MigrationState = .pasteOrScanLink(link: "")
+    @State private var migrationState: MigrationState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateFromAnotherDeviceViewAlert?
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
+
+    init(state: MigrationFromAnotherDeviceState? = nil) {
+        guard let state else {
+            self._migrationState = State(initialValue: .pasteOrScanLink(link: ""))
+            return
+        }
+
+        // Prevent from hiding the view until migration is finished or app deleted
+        self._backDisabled = State(initialValue: true)
+
+        var initial: MigrationState = .pasteOrScanLink(link: "")
+//        logger.debug("Inited with migrationState: \(String(describing: state))")
+        switch state {
+        case let .downloadProgress(link, archiveName):
+            // iOS changes absolute directory every launch, check this way
+            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
+            try? FileManager.default.removeItem(atPath: archivePath)
+            // SHOULDN'T BE HERE because the app checks this before opening migration screen and will not open it in this case.
+            // See analyzeMigrationState()
+            initial = .downloadFailed(totalBytes: 0, link: link, archivePath: archivePath)
+        case let .archiveImport(archiveName):
+                let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
+                initial = .archiveImport(archivePath: archivePath)
+        case .passphrase:
+                initial = .passphrase(passphrase: "")
+        }
+        self._migrationState = State(initialValue: initial)
+    }
 
     var body: some View {
         VStack {
@@ -73,10 +108,12 @@ struct MigrateFromAnotherDevice: View {
                 archiveImportView(archivePath)
             case let .archiveImportFailed(archivePath):
                 archiveImportFailedView(archivePath)
-            case let .passphraseEntering(passphrase):
+            case let .passphrase(passphrase):
                 PassphraseEnteringView(migrationState: $migrationState, currentKey: passphrase, alert: $alert)
             case let .migration(passphrase):
                 migrationView(passphrase)
+            case let .onion(appSettings):
+                OnionView(appSettings: appSettings, finishMigration: finishMigration)
             }
         }
         .modifier(BackButton(label: "Back") {
@@ -85,21 +122,18 @@ struct MigrateFromAnotherDevice: View {
             }
         })
         .onChange(of: migrationState) { state in
-            backDisabled = switch migrationState {
-            case .passphraseEntering: true
-            case .migration: true
-            default: false
-            }
+            backDisabled = m.migrationState != nil
         }
         .onDisappear {
             Task {
                 if case let .downloadProgress(_, _, fileId, _, _, ctrl) = migrationState, let ctrl {
                     await stopArchiveDownloading(fileId, ctrl)
                 }
-                chatReceiver?.stop()
-                try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
-                try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_agent.db")
-                try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
+                chatReceiver?.stopAndCleanUp()
+                if !backDisabled {
+                    try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
+                    MigrateFromAnotherDevice.saveMigrationState(nil)
+                }
             }
         }
         .alert(item: $alert) { alert in
@@ -179,23 +213,24 @@ struct MigrateFromAnotherDevice: View {
         }
     }
 
-    private func downloadProgressView(_ downloadedBytes: Int64, totalBytes: Int64, _ link: String, _ archivePath: URL) -> some View {
+    private func downloadProgressView(_ downloadedBytes: Int64, totalBytes: Int64, _ link: String, _ archivePath: String) -> some View {
         ZStack {
             List {
                 Section {} header: {
                     Text("Downloading archive…")
                 }
             }
-            let ratio = Float(downloadedBytes) / Float(totalBytes)
+            let ratio = Float(downloadedBytes) / Float(max(totalBytes, 1))
             largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded")
         }
     }
 
-    private func downloadFailedView(totalBytes: Int64, _ link: String, _ archivePath: URL) -> some View {
+    private func downloadFailedView(totalBytes: Int64, _ link: String, _ archivePath: String) -> some View {
         List {
             Section {
                 Button(action: {
-                    migrationState = .downloadProgress(downloadedBytes: 0, totalBytes: totalBytes, fileId: 0, link: link, archivePath: archivePath, ctrl: nil)
+                    try? FileManager.default.removeItem(atPath: archivePath)
+                    migrationState = .linkDownloading(link: link)
                 }) {
                     settingsRow("tray.and.arrow.down") {
                         Text("Repeat download").foregroundColor(.accentColor)
@@ -209,9 +244,9 @@ struct MigrateFromAnotherDevice: View {
             }
         }
         .onAppear {
-            chatReceiver?.stop()
-            try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
-            try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_agent.db")
+            chatReceiver?.stopAndCleanUp()
+            try? FileManager.default.removeItem(atPath: archivePath)
+            MigrateFromAnotherDevice.saveMigrationState(nil)
         }
     }
 
@@ -262,6 +297,53 @@ struct MigrateFromAnotherDevice: View {
         }
     }
 
+    struct OnionView: View {
+        @State var appSettings: AppSettings
+        @State private var onionHosts: OnionHosts = .no
+        var finishMigration: (AppSettings) -> Void
+
+        var body: some View {
+            List {
+                Section {
+                    Button(action: {
+                        var updated = appSettings.networkConfig!
+                        let (hostMode, requiredHostMode) = onionHosts.hostMode
+                        updated.hostMode = hostMode
+                        updated.requiredHostMode = requiredHostMode
+                        appSettings.networkConfig = updated
+                        finishMigration(appSettings)
+                    }) {
+                        settingsRow("checkmark") {
+                            Text("Apply").foregroundColor(.accentColor)
+                        }
+                    }
+                } header: {
+                    Text("Review .onion settings")
+                } footer: {
+                    Text("Since you migrated the database between platforms, make sure settings for .onion hosts are correct")
+                        .font(.callout)
+                }
+
+                Section {
+                    Picker("Use .onion hosts", selection: $onionHosts) {
+                        ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
+                } footer: {
+                    let text: LocalizedStringKey = switch onionHosts {
+                    case .no:
+                        "Selected No"
+                    case .prefer:
+                        "Selected Prefer"
+                    case .require:
+                        "Selected Require"
+                    }
+                    Text(text).font(.callout)
+                }
+            }
+        }
+    }
+
     private func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
         ZStack {
             VStack {
@@ -298,7 +380,7 @@ struct MigrateFromAnotherDevice: View {
         let archiveName = "simplex-chat.\(ts).zip"
         let archivePath = getMigrationTempFilesDirectory().appendingPathComponent(archiveName)
 
-        startDownloading(0, link, archivePath)
+        startDownloading(0, link, archivePath.path)
     }
 
     private func initTemporaryDatabase() -> (chat_ctrl, User)? {
@@ -314,13 +396,13 @@ struct MigrateFromAnotherDevice: View {
         return nil
     }
 
-    private func startDownloading(_ totalBytes: Int64, _ link: String, _ archivePath: URL) {
+    private func startDownloading(_ totalBytes: Int64, _ link: String, _ archivePath: String) {
         Task {
             guard let ctrlAndUser = initTemporaryDatabase() else {
                 return migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
             }
             let (ctrl, user) = ctrlAndUser
-            chatReceiver = MigrationChatReceiver(ctrl: ctrl) { msg in
+            chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
                 Task {
                     await TerminalItems.shared.add(.resp(.now, msg))
                 }
@@ -329,9 +411,11 @@ struct MigrateFromAnotherDevice: View {
                     switch msg {
                     case let .rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer):
                         migrationState = .downloadProgress(downloadedBytes: receivedSize, totalBytes: totalSize, fileId: rcvFileTransfer.fileId, link: link, archivePath: archivePath, ctrl: ctrl)
+                        MigrateFromAnotherDevice.saveMigrationState(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                     case .rcvStandaloneFileComplete:
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            migrationState = .archiveImport(archivePath: archivePath.path)
+                            migrationState = .archiveImport(archivePath: archivePath)
+                            MigrateFromAnotherDevice.saveMigrationState(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                         }
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
@@ -340,7 +424,7 @@ struct MigrateFromAnotherDevice: View {
             }
             chatReceiver?.start()
 
-            let (res, error) = await downloadStandaloneFile(user: user, url: link, file: CryptoFile.plain(archivePath.lastPathComponent), ctrl: ctrl)
+            let (res, error) = await downloadStandaloneFile(user: user, url: link, file: CryptoFile.plain(URL(fileURLWithPath: archivePath).lastPathComponent), ctrl: ctrl)
             if res == nil {
                 await MainActor.run {
                     migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
@@ -361,7 +445,8 @@ struct MigrateFromAnotherDevice: View {
                         alert = .chatImportedWithErrors()
                     }
                     await MainActor.run {
-                        migrationState = .passphraseEntering(passphrase: "")
+                        migrationState = .passphrase(passphrase: "")
+                        MigrateFromAnotherDevice.saveMigrationState(.passphrase)
                     }
                 } catch let error {
                     await MainActor.run {
@@ -400,18 +485,62 @@ struct MigrateFromAnotherDevice: View {
         Task {
             do {
 //                resetChatCtrl()
-                try initializeChat(start: true, confirmStart: false, dbKey: passphrase, refreshInvitations: true)
-                let appSettings = try apiGetAppSettings(settings: AppSettings.current)
+                try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true)
+                var appSettings = try apiGetAppSettings(settings: AppSettings.current)
                 await MainActor.run {
-                    appSettings.importIntoApp()
-                    hideView()
-                    AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+                    // LALAL
+                    if true/*appSettings.networkConfig?.socksProxy != nil*/ {
+                        appSettings.networkConfig?.socksProxy = nil
+                        appSettings.networkConfig?.hostMode = .publicHost
+                        appSettings.networkConfig?.requiredHostMode = true
+                        migrationState = .onion(appSettings: appSettings)
+                    } else {
+                        finishMigration(appSettings)
+                    }
                 }
             } catch let error {
                 hideView()
                 AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
             }
         }
+    }
+
+    // Here we check whether it's needed to show migration process after app restart or not
+    // It's important to NOT show the process when archive was corrupted/not fully downloaded
+    static func analyzeMigrationState() -> MigrationFromAnotherDeviceState? {
+        let state: MigrationFromAnotherDeviceState? = UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE) != nil ? decodeJSON(UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE)!) : nil
+
+        if case let .downloadProgress(_, archiveName) = state {
+            // iOS changes absolute directory every launch, check this way
+            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
+            try? FileManager.default.removeItem(atPath: archivePath)
+            // No migration happens at the moment actually since archive were not downloaded fully
+            logger.debug("MigrateFromDevice: archive wasn't fully downloaded, removed broken file")
+            return nil
+        }
+        return state
+    }
+
+    private static func saveMigrationState(_ state: MigrationFromAnotherDeviceState?) {
+        if let state {
+            UserDefaults.standard.setValue(encodeJSON(state), forKey: DEFAULT_MIGRATION_STAGE)
+        } else {
+            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
+        }
+        ChatModel.shared.migrationState = state
+    }
+
+    private func finishMigration(_ appSettings: AppSettings) {
+        do {
+            try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
+            MigrateFromAnotherDevice.saveMigrationState(nil)
+            try SimpleX.startChat(refreshInvitations: true)
+            appSettings.importIntoApp()
+            AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+        } catch let error {
+            AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+        }
+        hideView()
     }
 
     private func hideView() {
@@ -508,12 +637,14 @@ private func progressView() -> some View {
 
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
+    let databaseUrl: URL
     let processReceivedMsg: (ChatResponse) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
         self.ctrl = ctrl
+        self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
     }
 
@@ -535,12 +666,14 @@ private class MigrationChatReceiver {
         }
     }
 
-    func stop() {
+    func stopAndCleanUp() {
         logger.debug("MigrationChatReceiver.stop")
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
         chat_close_store(ctrl)
+        try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_chat.db")
+        try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
     }
 }
 
