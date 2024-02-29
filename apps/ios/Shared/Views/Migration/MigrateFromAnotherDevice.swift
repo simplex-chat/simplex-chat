@@ -116,11 +116,6 @@ struct MigrateFromAnotherDevice: View {
                 OnionView(appSettings: appSettings, finishMigration: finishMigration)
             }
         }
-        .modifier(BackButton(label: "Back") {
-            if !backDisabled {
-                dismiss()
-            }
-        })
         .onChange(of: migrationState) { state in
             backDisabled = m.migrationState != nil
         }

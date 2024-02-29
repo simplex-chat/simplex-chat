@@ -47,7 +47,7 @@ struct UserAddressView: View {
                 userAddressScrollView()
             } else {
                 userAddressScrollView()
-                    .modifier(BackButton {
+                    .modifier(BackButton(disabled: Binding.constant(false)) {
                         if savedAAS == aas {
                             dismiss()
                         } else {

@@ -105,15 +105,14 @@ struct MigrateToAnotherDevice: View {
                 finishedView(chatDeletion)
             }
         }
-        .modifier(BackButton(label: "Back") {
-            if !backDisabled {
-                dismiss()
-            }
+        .modifier(BackButton(label: "Back", disabled: $backDisabled) {
+            dismiss()
         })
         .onChange(of: migrationState) { state in
             backDisabled = switch migrationState {
             case .linkCreation: true
             case .linkShown: true
+            case .finished: true
             default: false
             }
         }

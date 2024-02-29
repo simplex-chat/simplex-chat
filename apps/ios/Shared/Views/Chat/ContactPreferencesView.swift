@@ -35,7 +35,7 @@ struct ContactPreferencesView: View {
                 .disabled(currentFeaturesAllowed == featuresAllowed)
             }
         }
-        .modifier(BackButton {
+        .modifier(BackButton(disabled: Binding.constant(false)) {
             if currentFeaturesAllowed == featuresAllowed {
                 dismiss()
             } else {

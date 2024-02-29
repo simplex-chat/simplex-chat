@@ -31,7 +31,7 @@ struct ProtocolServerView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .modifier(BackButton(label: "Your \(proto) servers") {
+        .modifier(BackButton(label: "Your \(proto) servers", disabled: Binding.constant(false)) {
             server = serverToEdit
             dismiss()
         })
@@ -117,6 +117,7 @@ struct ProtocolServerView: View {
 
 struct BackButton: ViewModifier {
     var label: LocalizedStringKey = "Back"
+    @Binding var disabled: Bool
     var action: () -> Void
 
     func body(content: Content) -> some View {
@@ -130,6 +131,7 @@ struct BackButton: ViewModifier {
                         Text(label)
                     }
                 }
+                .disabled(disabled)
             }
         }
     }
