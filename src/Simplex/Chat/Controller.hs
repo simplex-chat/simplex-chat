@@ -199,7 +199,6 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
-    pqAllowedFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
@@ -207,7 +206,8 @@ data ChatController = ChatController
     encryptLocalFiles :: TVar Bool,
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool
+    contactMergeEnabled :: TVar Bool,
+    pqExperimentalEnabled :: TVar Bool -- TODO remove in 5.7
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -244,6 +244,7 @@ data ChatCommand
   | SetRemoteHostsFolder FilePath
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
+  | APISetPQEnabled Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
@@ -317,8 +318,6 @@ data ChatCommand
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
   | GetChatItemTTL
-  | APISetPQSetting UserId Bool
-  | APIGetPQSetting UserId
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
   | ReconnectAllServers
@@ -524,7 +523,6 @@ data ChatResponse
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
-  | CRPQSetting {user :: User, pqAllowed :: Bool}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}

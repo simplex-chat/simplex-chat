@@ -236,7 +236,6 @@ newChatController
     chatStoreChanged <- newTVarIO False
     expireCIThreads <- newTVarIO M.empty
     expireCIFlags <- newTVarIO M.empty
-    pqAllowedFlags <- newTVarIO M.empty
     cleanupManagerAsync <- newTVarIO Nothing
     timedItemThreads <- atomically TM.empty
     chatActivated <- newTVarIO True
@@ -244,6 +243,7 @@ newChatController
     encryptLocalFiles <- newTVarIO False
     tempDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
+    pqExperimentalEnabled <- newTVarIO False
     pure
       ChatController
         { firstTime,
@@ -272,7 +272,6 @@ newChatController
           filesFolder,
           expireCIThreads,
           expireCIFlags,
-          pqAllowedFlags,
           cleanupManagerAsync,
           timedItemThreads,
           chatActivated,
@@ -280,7 +279,8 @@ newChatController
           encryptLocalFiles,
           tempDirectory,
           logFilePath = logFile,
-          contactMergeEnabled
+          contactMergeEnabled,
+          pqExperimentalEnabled
         }
     where
       configServers :: DefaultAgentServers
@@ -324,7 +324,6 @@ startChatController mainApp = do
   unless mainApp $
     chatWriteVar subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStoreCtx' (Just "startChatController, getUsers") getUsers)
-  -- TODO [pq] get and populate pqAllowedFlags
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -591,6 +590,9 @@ processChatCommand' vr = \case
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> do
     asks contactMergeEnabled >>= atomically . (`writeTVar` onOff)
+    ok_
+  APISetPQEnabled onOff -> do
+    asks pqExperimentalEnabled >>= atomically . (`writeTVar` onOff)
     ok_
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
@@ -1208,15 +1210,6 @@ processChatCommand' vr = \case
     pure $ CRChatItemTTL user ttl
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand $ APIGetChatItemTTL userId
-  APISetPQSetting userId _pqAllowed -> withUserId userId $ \user -> do
-    -- TODO [pq]
-    -- withStore $ \db -> setPQ db user pqAllowed
-    -- set user pq (pqAllowedFlags)
-    ok user
-  APIGetPQSetting userId -> withUserId' userId $ \user -> do
-    -- TODO [pq]
-    -- pqAllowed <- withStore (`getPQ` user)
-    pure $ CRPQSetting user False
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
     CRNetworkConfig <$> withAgent getNetworkConfig
@@ -6531,6 +6524,7 @@ chatCommandP =
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
+      "/_pq " *> (APISetPQEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -6612,8 +6606,6 @@ chatCommandP =
       "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
       "/ttl" $> GetChatItemTTL,
-      "/_pq " *> (APISetPQSetting <$> A.decimal <* A.space <*> onOffP),
-      "/_pq " *> (APIGetPQSetting <$> A.decimal),
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,

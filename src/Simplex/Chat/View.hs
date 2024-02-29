@@ -94,7 +94,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
-  CRPQSetting u pqAllowed -> ttyUser u $ viewPQSetting pqAllowed
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
@@ -1155,11 +1154,6 @@ viewChatItemTTL = \case
     | otherwise -> deletedAfter $ sShow ttl <> " second(s)"
   where
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
-
-viewPQSetting :: Bool -> [StyledString]
-viewPQSetting pqAllowed
-  | pqAllowed = ["Post-quantum encryption allowed. It will be enabled with connections who also support and allow it."]
-  | otherwise = ["Post-quantum encryption disabled."] -- "user /pq on to allow it" - if we add terminal commands
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
