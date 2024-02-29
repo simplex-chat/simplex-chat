@@ -78,6 +78,7 @@ struct SimpleXInfo: View {
                 VStack(alignment: .leading) {
                     Text("Migrate here")
                         .font(.largeTitle)
+                        .fontWeight(.bold)
                         .padding([.leading, .top, .trailing])
                         .padding(.top)
                     MigrateFromAnotherDevice(state: m.migrationState)
