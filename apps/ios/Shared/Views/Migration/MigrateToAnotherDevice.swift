@@ -307,9 +307,11 @@ struct MigrateToAnotherDevice: View {
                 SimpleXLinkQRCode(uri: link)
                     .frame(maxWidth: .infinity)
             }
+
             Section("Or securely share this file link") {
-                shareLinkButton(link)
+                shareLinkView(link)
             }
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
         }
     }
 
@@ -343,12 +345,24 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func shareLinkButton(_ link: String) -> some View {
-        Button {
-            showShareSheet(items: [simplexChatLink(link)])
-        } label: {
-            Label("Share link", systemImage: "square.and.arrow.up")
+    private func shareLinkView(_ link: String) -> some View {
+        HStack {
+            linkTextView(link)
+            Button {
+                showShareSheet(items: [link])
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .padding(.top, -7)
+            }
         }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func linkTextView(_ link: String) -> some View {
+        Text(link)
+            .lineLimit(1)
+            .font(.caption)
+            .truncationMode(.middle)
     }
 
     private func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {

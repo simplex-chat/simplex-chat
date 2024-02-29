@@ -57,6 +57,7 @@ private enum MigrateFromAnotherDeviceViewAlert: Identifiable {
 struct MigrateFromAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var migrationState: MigrationState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateFromAnotherDeviceViewAlert?
@@ -171,8 +172,10 @@ struct MigrateFromAnotherDevice: View {
                         }
                     }
                 }
-                Section("Or paste archive link") {
-                    pasteLinkView()
+                if developerTools {
+                    Section("Or paste archive link") {
+                        pasteLinkView()
+                    }
                 }
             }
         }
