@@ -317,8 +317,9 @@
         <target>)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve">
+      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
         <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+        <target state="translated">**Додати контакт**: створити нове посилання-запрошення або підключитися за отриманим посиланням.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
@@ -326,8 +327,9 @@
         <target>**Додати новий контакт**: щоб створити одноразовий QR-код або посилання для свого контакту.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
         <source>**Create group**: to create a new group.</source>
+        <target state="translated">**Створити групу**: створити нову групу.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
@@ -566,8 +568,9 @@
         <target>Додайте адресу до свого профілю, щоб ваші контакти могли поділитися нею з іншими людьми. Повідомлення про оновлення профілю буде надіслано вашим контактам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add contact" xml:space="preserve">
+      <trans-unit id="Add contact" xml:space="preserve" approved="no">
         <source>Add contact</source>
+        <target state="translated">Додати контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add preset servers" xml:space="preserve">
@@ -640,8 +643,9 @@
         <target>Всі учасники групи залишаться на зв'язку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone!</source>
+        <target state="translated">Усі повідомлення будуть видалені - цю дію не можна скасувати!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -919,8 +923,9 @@
         <target>Блокувати</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve">
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
         <source>Block for all</source>
+        <target state="translated">Заблокувати для всіх</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
@@ -933,8 +938,9 @@
         <target>Заблокувати користувача</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member for all?" xml:space="preserve">
+      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
         <source>Block member for all?</source>
+        <target state="translated">Заблокувати учасника для всіх?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
@@ -942,8 +948,9 @@
         <target>Заблокувати користувача?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve">
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
         <source>Blocked by admin</source>
+        <target state="translated">Заблокований адміністратором</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -991,8 +998,9 @@
         <target>Дзвінки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Camera not available" xml:space="preserve">
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
         <source>Camera not available</source>
+        <target state="translated">Камера недоступна</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1106,8 +1114,9 @@
         <target>Чат зупинено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <target state="translated">Чат зупинено. Якщо ви вже використовували цю базу даних на іншому пристрої, перенесіть її назад перед запуском чату.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
