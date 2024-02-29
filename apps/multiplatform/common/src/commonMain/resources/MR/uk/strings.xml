@@ -649,7 +649,7 @@
     <string name="you_can_create_it_later">Ви можете створити його пізніше</string>
     <string name="your_current_profile">Ваш поточний профіль</string>
     <string name="delete_image">Видалити зображення</string>
-    <string name="save_preferences_question">Зберегти налаштування\?</string>
+    <string name="save_preferences_question">Зберегти уподобання?</string>
     <string name="save_and_notify_contact">Зберегти і повідомити контакт</string>
     <string name="save_profile_password">Зберегти пароль профілю</string>
     <string name="hidden_profile_password">Пароль схованого профілю</string>
@@ -761,7 +761,7 @@
     <string name="disappearing_messages_are_prohibited">Самознищувальні повідомлення заборонені в цій групі.</string>
     <string name="group_members_can_send_dms">Учасники групи можуть надсилати приватні повідомлення.</string>
     <string name="direct_messages_are_prohibited_in_chat">Приватні повідомлення між учасниками заборонені в цій групі.</string>
-    <string name="group_members_can_delete">Учасники групи можуть назавжди видаляти відправлені повідомлення.</string>
+    <string name="group_members_can_delete">Учасники групи можуть назавжди видаляти відправлені повідомлення. (24 години)</string>
     <string name="message_deletion_prohibited_in_chat">Назавжди видалення повідомлень заборонене в цій групі.</string>
     <string name="voice_messages_are_prohibited">Голосові повідомлення заборонені в цій групі.</string>
     <string name="group_members_can_add_message_reactions">Учасники групи можуть додавати реакції на повідомлення.</string>
@@ -1634,4 +1634,9 @@
     <string name="profile_update_event_updated_profile">оновлений профіль</string>
     <string name="profile_update_event_removed_address">вилучено адресу контакту</string>
     <string name="past_member_vName">Колишній учасник %1$s</string>
+    <string name="call_service_notification_end_call">Кінець дзвінка</string>
+    <string name="call_service_notification_video_call">Відеодзвінок</string>
+    <string name="call_service_notification_audio_call">Аудіодзвінок</string>
+    <string name="unable_to_open_browser_title">Помилка відкриття браузера</string>
+    <string name="unable_to_open_browser_desc">Для використання дзвінків потрібен браузер за замовчуванням. Будь ласка, налаштуйте браузер за замовчуванням в системі та надайте більше інформації розробникам.</string>
 </resources>
