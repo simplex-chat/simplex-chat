@@ -21,7 +21,7 @@ private enum MigrationState: Equatable {
     case uploadFailed(totalBytes: Int64, archivePath: URL)
     case linkCreation(totalBytes: Int64)
     case linkShown(fileId: Int64, link: String, archivePath: URL, ctrl: chat_ctrl)
-    case finished
+    case finished(chatDeletion: Bool)
 }
 
 private enum MigrateToAnotherDeviceViewAlert: Identifiable {
@@ -101,8 +101,8 @@ struct MigrateToAnotherDevice: View {
                 linkCreationView(totalBytes)
             case let .linkShown(fileId, link, archivePath, ctrl):
                 linkView(fileId, link, archivePath, ctrl)
-            case .finished:
-                finishedView()
+            case let .finished(chatDeletion):
+                finishedView(chatDeletion)
             }
         }
         .modifier(BackButton(label: "Back") {
@@ -120,7 +120,13 @@ struct MigrateToAnotherDevice: View {
         .onAppear {
             if case .initial = migrationState {
                 if m.chatRunning == false {
-                    migrationState = initialRandomDBPassphrase ? .passphraseNotSet : .passphraseConfirmation
+                    do {
+                        try apiSaveAppSettings(settings: AppSettings.current)
+                        migrationState = initialRandomDBPassphrase ? .passphraseNotSet : .passphraseConfirmation
+                    } catch let error {
+                        alert = .error(title: "Error saving settings", error: error.localizedDescription)
+                        migrationState = .chatStopFailed(reason: NSLocalizedString("Error saving settings", comment: "when migrating"))
+                    }
                     chatWasStoppedInitially = true
                 } else {
                     migrationState = .chatStopInProgress
@@ -195,18 +201,20 @@ struct MigrateToAnotherDevice: View {
     }
 
     private func chatStopFailedView(_ reason: String) -> some View {
-        Section {
-            Text(reason)
-            Button(action: stopChat) {
-                settingsRow("stop.fill") {
-                    Text("Stop chat").foregroundColor(.red)
+        List {
+            Section {
+                Text(reason)
+                Button(action: stopChat) {
+                    settingsRow("stop.fill") {
+                        Text("Stop chat").foregroundColor(.red)
+                    }
                 }
+            } header: {
+                Text("Error stopping chat")
+            } footer: {
+                Text("In order to continue, chat should be stopped")
+                    .font(.callout)
             }
-        } header: {
-            Text("Error stopping chat")
-        } footer: {
-            Text("In order to continue, chat should be stopped")
-                .font(.callout)
         }
     }
 
@@ -327,7 +335,7 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func finishedView() -> some View {
+    private func finishedView(_ chatDeletion: Bool) -> some View {
         ZStack {
             List {
                 Section {
@@ -351,7 +359,7 @@ struct MigrateToAnotherDevice: View {
                     .font(.callout)
                 }
             }
-            if !m.chatInitialized {
+            if chatDeletion {
                 progressView()
             }
         }
@@ -399,8 +407,14 @@ struct MigrateToAnotherDevice: View {
         Task {
             do {
                 try await stopChatAsync()
-                await MainActor.run {
-                    migrationState = initialRandomDBPassphraseGroupDefault.get() ? .passphraseNotSet :  .passphraseConfirmation
+                do {
+                    try apiSaveAppSettings(settings: AppSettings.current)
+                    await MainActor.run {
+                        migrationState = initialRandomDBPassphraseGroupDefault.get() ? .passphraseNotSet :  .passphraseConfirmation
+                    }
+                } catch let error {
+                    alert = .error(title: "Error saving settings", error: error.localizedDescription)
+                    migrationState = .chatStopFailed(reason: NSLocalizedString("Error saving settings", comment: "when migrating"))
                 }
             } catch let e {
                 await MainActor.run {
@@ -512,7 +526,7 @@ struct MigrateToAnotherDevice: View {
         Task {
             await cancelUploadedAchive(fileId, ctrl)
             await MainActor.run {
-                migrationState = .finished
+                migrationState = .finished(chatDeletion: false)
             }
         }
     }
@@ -523,6 +537,7 @@ struct MigrateToAnotherDevice: View {
                 try await deleteChatAsync()
                 m.chatDbChanged = true
                 m.chatInitialized = false
+                migrationState = .finished(chatDeletion: true)
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
                     resetChatCtrl()
                     do {

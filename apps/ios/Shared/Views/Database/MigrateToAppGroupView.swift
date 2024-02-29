@@ -227,7 +227,10 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
     let archiveName = "simplex-chat.\(ts).zip"
     let archivePath = (storagePath ?? getDocumentsDirectory()).appendingPathComponent(archiveName)
     let config = ArchiveConfig(archivePath: archivePath.path)
-    try apiSaveAppSettings(settings: AppSettings.current)
+    // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
+    if !ChatModel.shared.chatDbChanged {
+        try apiSaveAppSettings(settings: AppSettings.current)
+    }
     try await apiExportArchive(config: config)
     if storagePath == nil {
         deleteOldArchive()
