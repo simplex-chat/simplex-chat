@@ -52,8 +52,40 @@ or
     - also will not update (as conversation progresses and it will scroll far up anyway) even if group size changes and it's disabled
     - flag in groups table "e2e_info_created" to only create it once? and state is only reflected by RCEPQEnabled items?
     - or create new such item if group size increases and PQ is off / decreases and PQ is on?
+    - "large group" thresholds have to different for group size increasing (e.g. 20) and decreases (e.g. 15), to avoid constant switching on the border.
 
-- Save PQ encryption on chat items?
+- Example texts for "e2e encryption info" chat items:
+  - for direct conversations:
+    - with PQ (and also forward a couple releases when more clients have upgraded):
+      ```
+      Messages in this conversation are end-to-end encrypted.
+      Post-quantum encryption is enabled.
+      ```
+    - no PQ:
+      ```
+      -//- (e2ee)
+      Post-quantum encryption will be enabled when your contact upgrades.
+      ```
+      "upgrades" / "supports it" / "starts to support it"
+    - can be of different color, but seems unnecessary
+    - created once at the start of conversation
+    - created once for old contacts when PQ is enabled?
+  - for groups:
+    - with PQ (small group; toggle enabled or later, as above):
+      ```
+      -//-
+      Post-quantum encryption will be enabled for members who support it.
+      ```
+    - no PQ (large group):
+      ```
+      -//-
+      Post-quantum encryption is not enabled (group is too large).
+      ```
+    - created each time group changes between small/large, or once?
+    - created for old groups when experimental toggle is first turned on, and first message is received?
+
+
+- Save PQ encryption on chat items (messages)?
   - in meta for direct + group rcv
   - in group_snd_item_statuses for group snd?
   - display in chat item details (info)
