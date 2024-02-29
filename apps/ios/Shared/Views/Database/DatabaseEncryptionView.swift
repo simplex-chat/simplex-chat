@@ -63,20 +63,19 @@ struct DatabaseEncryptionView: View {
 
     private func databaseEncryptionView() -> some View {
         Section {
-            if !migration {
-                settingsRow(storedKey ? "key.fill" : "key", color: storedKey ? .green : .secondary) {
-                    Toggle("Save passphrase in Keychain", isOn: $useKeychainToggle)
-                        .onChange(of: useKeychainToggle) { _ in
-                            if useKeychainToggle {
-                                setUseKeychain(true)
-                            } else if storedKey {
-                                alert = .keychainRemoveKey
-                            } else {
-                                setUseKeychain(false)
-                            }
+            settingsRow(storedKey ? "key.fill" : "key", color: storedKey ? .green : .secondary) {
+                Toggle("Save passphrase in Keychain", isOn: $useKeychainToggle)
+                    .onChange(of: useKeychainToggle) { _ in
+                        if useKeychainToggle {
+                            setUseKeychain(true)
+                        } else if storedKey && !migration {
+                            // Don't show in migration process since it will remove the key after successfull encryption
+                            alert = .keychainRemoveKey
+                        } else {
+                            setUseKeychain(false)
                         }
-                        .disabled(initialRandomDBPassphrase)
-                }
+                    }
+                    .disabled(initialRandomDBPassphrase && !migration)
             }
 
             if !initialRandomDBPassphrase && m.chatDbEncrypted == true {
@@ -104,39 +103,30 @@ struct DatabaseEncryptionView: View {
         } header: {
             Text(migration ? "Database passphrase" : "")
         } footer: {
-            if !migration {
-                VStack(alignment: .leading, spacing: 16) {
-                    if m.chatDbEncrypted == false {
-                        Text("Your chat database is not encrypted - set passphrase to encrypt it.")
-                    } else if useKeychain {
-                        if storedKey {
-                            Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
-                            if initialRandomDBPassphrase {
-                                Text("Database is encrypted using a random passphrase, you can change it.")
-                            } else {
-                                Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
-                            }
+            VStack(alignment: .leading, spacing: 16) {
+                if m.chatDbEncrypted == false {
+                    Text("Your chat database is not encrypted - set passphrase to encrypt it.")
+                } else if useKeychain {
+                    if storedKey {
+                        Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
+                        if initialRandomDBPassphrase && !migration {
+                            Text("Database is encrypted using a random passphrase, you can change it.")
                         } else {
-                            Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
+                            Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
                         }
                     } else {
-                        Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
-                        Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
-                        if  m.notificationMode == .instant && m.notificationPreview != .hidden {
-                            Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
-                        }
+                        Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
+                    }
+                } else {
+                    Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
+                    Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                    if  m.notificationMode == .instant && m.notificationPreview != .hidden && !migration {
+                        Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
                     }
                 }
-                .padding(.top, 1)
-                .font(.callout)
-            } else {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Set and database passphrase to migrate it.")
-                    Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
-                }
-                .padding(.top, 1)
-                .font(.callout)
             }
+            .padding(.top, 1)
+            .font(.callout)
         }
         .onAppear {
             if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }
@@ -154,6 +144,9 @@ struct DatabaseEncryptionView: View {
                 try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
                 encryptionStartedDefault.set(false)
                 initialRandomDBPassphraseGroupDefault.set(false)
+                if migration {
+                    storeDBPassphraseGroupDefault.set(useKeychain)
+                }
                 if useKeychain {
                     if kcDatabasePassword.set(newKey) {
                         await resetFormAfterEncryption(true)
@@ -163,6 +156,9 @@ struct DatabaseEncryptionView: View {
                         await operationEnded(.error(title: "Keychain error", error: "Error saving passphrase to keychain"))
                     }
                 } else {
+                    if migration {
+                        removePassphraseFromKeyChain()
+                    }
                     await resetFormAfterEncryption()
                     await operationEnded(.databaseEncrypted)
                 }
@@ -189,7 +185,10 @@ struct DatabaseEncryptionView: View {
 
     private func setUseKeychain(_ value: Bool) {
         useKeychain = value
-        storeDBPassphraseGroupDefault.set(value)
+        // Postpone it when migrating to the end of encryption process
+        if !migration {
+            storeDBPassphraseGroupDefault.set(value)
+        }
     }
 
     private func databaseEncryptionAlert(_ alertItem: DatabaseEncryptionAlert) -> Alert {
@@ -199,13 +198,7 @@ struct DatabaseEncryptionView: View {
                 title: Text("Remove passphrase from keychain?"),
                 message: Text("Instant push notifications will be hidden!\n") + storeSecurelyDanger(),
                 primaryButton: .destructive(Text("Remove")) {
-                    if kcDatabasePassword.remove() {
-                        logger.debug("passphrase removed from keychain")
-                        setUseKeychain(false)
-                        storedKey = false
-                    } else {
-                        alert = .error(title: "Keychain error", error: "Failed to remove passphrase")
-                    }
+                    removePassphraseFromKeyChain()
                 },
                 secondaryButton: .cancel() {
                     withAnimation { useKeychainToggle = true }
@@ -248,6 +241,16 @@ struct DatabaseEncryptionView: View {
             )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text(error))
+        }
+    }
+
+    private func removePassphraseFromKeyChain() {
+        if kcDatabasePassword.remove() {
+            logger.debug("passphrase removed from keychain")
+            setUseKeychain(false)
+            storedKey = false
+        } else {
+            alert = .error(title: "Keychain error", error: "Failed to remove passphrase")
         }
     }
 
