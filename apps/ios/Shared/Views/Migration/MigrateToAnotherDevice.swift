@@ -328,26 +328,31 @@ struct MigrateToAnotherDevice: View {
     }
 
     private func finishedView() -> some View {
-        List {
-            Section {
-                Button(action: { alert = .deleteChat() }) {
-                    settingsRow("trash.fill") {
-                        Text("Delete database from this device").foregroundColor(.accentColor)
+        ZStack {
+            List {
+                Section {
+                    Button(action: { alert = .deleteChat() }) {
+                        settingsRow("trash.fill") {
+                            Text("Delete database from this device").foregroundColor(.accentColor)
+                        }
                     }
-                }
-                Button(action: { alert = .startChat() }) {
-                    settingsRow("play.fill") {
-                        Text("Start chat").foregroundColor(.red)
+                    Button(action: { alert = .startChat() }) {
+                        settingsRow("play.fill") {
+                            Text("Start chat").foregroundColor(.red)
+                        }
                     }
+                } header: {
+                    Text("Migration complete")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("You **must not** use the same database on two devices.")
+                        Text("**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.")
+                    }
+                    .font(.callout)
                 }
-            } header: {
-                Text("Migration complete")
-            } footer: {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("You **must not** use the same database on two devices.")
-                    Text("**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.")
-                }
-                .font(.callout)
+            }
+            if !m.chatInitialized {
+                progressView()
             }
         }
     }
@@ -518,8 +523,7 @@ struct MigrateToAnotherDevice: View {
                 try await deleteChatAsync()
                 m.chatDbChanged = true
                 m.chatInitialized = false
-                showSettings = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                DispatchQueue.main.asyncAfter(deadline: .now()) {
                     resetChatCtrl()
                     do {
                         try initializeChat(start: false)
@@ -528,8 +532,8 @@ struct MigrateToAnotherDevice: View {
                     } catch let error {
                         fatalError("Error starting chat \(responseError(error))")
                     }
+                    showSettings = false
                 }
-                dismiss()
             } catch let error {
                 alert = .error(title: "Error deleting database", error: responseError(error))
             }
