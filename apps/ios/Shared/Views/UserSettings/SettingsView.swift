@@ -152,10 +152,14 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
+    @State private var showProgress: Bool = false
 
     var body: some View {
         ZStack {
             settingsView()
+            if showProgress {
+                progressView()
+            }
             if let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
             }
@@ -208,7 +212,7 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        MigrateToAnotherDevice(showSettings: $showSettings)
+                        MigrateToAnotherDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
@@ -359,6 +363,13 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private func progressView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
     }
 
     private enum NotificationAlert {

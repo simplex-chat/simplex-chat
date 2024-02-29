@@ -55,6 +55,7 @@ struct MigrateToAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
+    @Binding var showProgressOnSettings: Bool
     @State private var migrationState: MigrationState = .chatStopInProgress
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
@@ -117,10 +118,16 @@ struct MigrateToAnotherDevice: View {
             stopChat()
         }
         .onDisappear {
-            if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
-                startChatAndDismiss(false)
-            }
             Task {
+                if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
+                    await MainActor.run {
+                        showProgressOnSettings = true
+                    }
+                    await startChatAndDismiss(false)
+                    await MainActor.run {
+                        showProgressOnSettings = false
+                    }
+                }
                 if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
                     await cancelUploadedAchive(fileId, ctrl)
                 }
@@ -137,7 +144,9 @@ struct MigrateToAnotherDevice: View {
                     title: Text(title),
                     message: Text(text),
                     primaryButton: .destructive(Text("Start chat")) {
-                        startChatAndDismiss()
+                        Task {
+                            await startChatAndDismiss()
+                        }
                     },
                     secondaryButton: .cancel()
                 )
@@ -504,7 +513,7 @@ struct MigrateToAnotherDevice: View {
     private func cancelMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
         Task {
             await cancelUploadedAchive(fileId, ctrl)
-            startChatAndDismiss()
+            await startChatAndDismiss()
         }
     }
 
@@ -541,25 +550,23 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func startChatAndDismiss(_ dismiss: Bool = true) {
-        Task {
-            AppChatState.shared.set(.active)
-            do {
-                if m.chatDbChanged {
-                    resetChatCtrl()
-                    try initializeChat(start: true)
-                    m.chatDbChanged = false
-                } else {
-                    try startChat(refreshInvitations: true)
-                }
-            } catch let error {
-                alert = .error(title: "Error starting chat", error: responseError(error))
+    private func startChatAndDismiss(_ dismiss: Bool = true) async {
+        AppChatState.shared.set(.active)
+        do {
+            if m.chatDbChanged {
+                resetChatCtrl()
+                try initializeChat(start: true)
+                m.chatDbChanged = false
+            } else {
+                try startChat(refreshInvitations: true)
             }
-            // Hide settings anyway if chatDbStatus is not ok, probably passphrase needs to be entered
-            if dismiss || m.chatDbStatus != .ok {
-                await MainActor.run {
-                    showSettings = false
-                }
+        } catch let error {
+            alert = .error(title: "Error starting chat", error: responseError(error))
+        }
+        // Hide settings anyway if chatDbStatus is not ok, probably passphrase needs to be entered
+        if dismiss || m.chatDbStatus != .ok {
+            await MainActor.run {
+                showSettings = false
             }
         }
     }
@@ -689,6 +696,6 @@ private class MigrationChatReceiver {
 
 struct MigrateToAnotherDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateToAnotherDevice(showSettings: Binding.constant(true))
+        MigrateToAnotherDevice(showSettings: Binding.constant(true), showProgressOnSettings: Binding.constant(false))
     }
 }
