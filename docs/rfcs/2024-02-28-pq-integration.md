@@ -81,6 +81,7 @@ or
       -//-
       Post-quantum encryption will be enabled for members who support it.
       ```
+      can remove qualification later when most clients have upgraded
     - no PQ (large group):
       ```
       -//-
