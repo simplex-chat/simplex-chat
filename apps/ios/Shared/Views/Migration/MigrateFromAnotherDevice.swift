@@ -86,10 +86,11 @@ struct MigrateFromAnotherDevice: View {
             // See analyzeMigrationState()
             initial = .downloadFailed(totalBytes: 0, link: link, archivePath: archivePath)
         case let .archiveImport(archiveName):
-                let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
-                initial = .archiveImport(archivePath: archivePath)
+            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
+            self._backDisabled = State(initialValue: false)
+            initial = .archiveImportFailed(archivePath: archivePath)
         case .passphrase:
-                initial = .passphrase(passphrase: "")
+            initial = .passphrase(passphrase: "")
         }
         self._migrationState = State(initialValue: initial)
     }
@@ -118,11 +119,18 @@ struct MigrateFromAnotherDevice: View {
             }
         }
         .onChange(of: migrationState) { state in
-            backDisabled = m.migrationState != nil
+            backDisabled = switch state {
+            case .archiveImportFailed: false
+            default: m.migrationState != nil
+            }
         }
         .onDisappear {
             Task {
-                if case let .downloadProgress(_, _, fileId, _, _, ctrl) = migrationState, let ctrl {
+                if case .archiveImportFailed = migrationState {
+                    // Original database is not exist, nothing is setup correctly for showing to a user yet. Return to clean state
+                    deleteAppDatabaseAndFiles()
+                    initChatAndMigrate()
+                } else if case let .downloadProgress(_, _, fileId, _, _, ctrl) = migrationState, let ctrl {
                     await stopArchiveDownloading(fileId, ctrl)
                 }
                 chatReceiver?.stopAndCleanUp()
@@ -415,6 +423,9 @@ struct MigrateFromAnotherDevice: View {
                             migrationState = .archiveImport(archivePath: archivePath)
                             MigrateFromAnotherDevice.saveMigrationState(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                         }
+                    case .rcvFileError:
+                        alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
+                        migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
                     }
@@ -435,6 +446,9 @@ struct MigrateFromAnotherDevice: View {
     private func importArchive(_ archivePath: String) {
         Task {
             do {
+                if !hasChatCtrl() {
+                    chatInitControllerRemovingDatabases()
+                }
                 try await apiDeleteStorage()
                 do {
                     let config = ArchiveConfig(archivePath: archivePath)

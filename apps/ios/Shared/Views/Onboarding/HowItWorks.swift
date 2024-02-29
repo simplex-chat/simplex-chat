@@ -37,7 +37,7 @@ struct HowItWorks: View {
             Spacer()
 
             if onboarding {
-                OnboardingActionButton(hideMigrate: true)
+                OnboardingActionButton()
                     .padding(.bottom, 8)
             }
         }

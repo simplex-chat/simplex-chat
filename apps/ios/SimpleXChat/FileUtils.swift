@@ -28,9 +28,9 @@ public let MAX_FILE_SIZE_SMP: Int64 = 8000000
 
 public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300)
 
-private let CHAT_DB: String = "_chat.db"
+let CHAT_DB: String = "_chat.db"
 
-private let AGENT_DB: String = "_agent.db"
+let AGENT_DB: String = "_agent.db"
 
 private let CHAT_DB_BAK: String = "_chat.db.bak"
 

@@ -46,6 +46,8 @@ struct SimpleXApp: App {
                 .onAppear() {
                     // Present screen for continue migration if it wasn't finished yet
                     if chatModel.migrationState != nil {
+                        // It's important, otherwise, user may be locked in undefined state
+                        onboardingStageDefault.set(.step1_SimpleXInfo)
                         chatModel.onboardingStage = onboardingStageDefault.get()
                     }
                     if (kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil) && chatModel.migrationState == nil {

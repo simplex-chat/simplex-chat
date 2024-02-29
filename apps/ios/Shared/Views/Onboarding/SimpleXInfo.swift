@@ -13,6 +13,7 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
+    @State private var migrateFromAnotherDevice: Bool = false
     var onboarding: Bool
 
     var body: some View {
@@ -43,8 +44,17 @@ struct SimpleXInfo: View {
 
                     Spacer()
                     if onboarding {
-                        OnboardingActionButton(hideMigrate: false)
+                        OnboardingActionButton()
                         Spacer()
+
+                        Button {
+                            migrateFromAnotherDevice = true
+                        } label: {
+                            Label("Migrate from another device", systemImage: "tray.and.arrow.down")
+                                .font(.subheadline)
+                        }
+                        .padding(.bottom, 8)
+                        .frame(maxWidth: .infinity)
                     }
 
                     Button {
@@ -55,8 +65,24 @@ struct SimpleXInfo: View {
                     }
                     .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
+
                 }
                 .frame(minHeight: g.size.height)
+            }
+            .onAppear {
+                if m.migrationState != nil {
+                    migrateFromAnotherDevice = true
+                }
+            }
+            .sheet(isPresented: $migrateFromAnotherDevice) {
+                VStack(alignment: .leading) {
+                    Text("Migrate here")
+                        .font(.largeTitle)
+                        .padding([.leading, .top, .trailing])
+                        .padding(.top)
+                    MigrateFromAnotherDevice(state: m.migrationState)
+                }
+                .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
             }
             .sheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)
@@ -89,36 +115,12 @@ struct SimpleXInfo: View {
 struct OnboardingActionButton: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
-    let hideMigrate: Bool
-    @State private var migrateFromAnotherDevice: Bool = false
 
     var body: some View {
-        Group {
-            if m.currentUser == nil {
-                actionButton("Create your profile", onboarding: .step2_CreateProfile)
-
-                if !hideMigrate {
-                    actionButton("Migrate from another device") {
-                        migrateFromAnotherDevice = true
-                    }
-                }
-            } else {
-                actionButton("Make a private connection", onboarding: .onboardingComplete)
-            }
-        }.onAppear {
-            if !hideMigrate, m.migrationState != nil {
-                migrateFromAnotherDevice = true
-            }
-        }
-        .sheet(isPresented: $migrateFromAnotherDevice) {
-            VStack(alignment: .leading) {
-                Text("Migrate here")
-                    .font(.largeTitle)
-                    .padding([.leading, .top, .trailing])
-                    .padding(.top)
-                MigrateFromAnotherDevice(state: m.migrationState)
-            }
-            .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
+        if m.currentUser == nil {
+            actionButton("Create your profile", onboarding: .step2_CreateProfile)
+        } else {
+            actionButton("Make a private connection", onboarding: .onboardingComplete)
         }
     }
 
