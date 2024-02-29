@@ -167,48 +167,45 @@ struct SettingsView: View {
         NavigationView {
             List {
                 Section("You") {
-                    Group {
-                        if let user = user {
-                            NavigationLink {
-                                UserProfile()
-                                    .navigationTitle("Your current profile")
-                            } label: {
-                                ProfilePreview(profileOf: user)
-                                    .padding(.leading, -8)
-                            }
-                        }
-
+                    if let user = user {
                         NavigationLink {
-                            UserProfilesView(showSettings: $showSettings)
+                            UserProfile()
+                                .navigationTitle("Your current profile")
                         } label: {
-                            settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
-                        }
-
-
-                        if let user = user {
-                            NavigationLink {
-                                UserAddressView(shareViaProfile: user.addressShared)
-                                    .navigationTitle("SimpleX address")
-                                    .navigationBarTitleDisplayMode(.large)
-                            } label: {
-                                settingsRow("qrcode") { Text("Your SimpleX address") }
-                            }
-
-                            NavigationLink {
-                                PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                                    .navigationTitle("Your preferences")
-                            } label: {
-                                settingsRow("switch.2") { Text("Chat preferences") }
-                            }
-                        }
-
-                        NavigationLink {
-                            ConnectDesktopView(viaSettings: true)
-                        } label: {
-                            settingsRow("desktopcomputer") { Text("Use from desktop") }
+                            ProfilePreview(profileOf: user)
+                                .padding(.leading, -8)
                         }
                     }
-                    .disabled(chatModel.chatRunning != true)
+
+                    NavigationLink {
+                        UserProfilesView(showSettings: $showSettings)
+                    } label: {
+                        settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
+                    }
+
+
+                    if let user = user {
+                        NavigationLink {
+                            UserAddressView(shareViaProfile: user.addressShared)
+                                .navigationTitle("SimpleX address")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("qrcode") { Text("Your SimpleX address") }
+                        }
+
+                        NavigationLink {
+                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                                .navigationTitle("Your preferences")
+                        } label: {
+                            settingsRow("switch.2") { Text("Chat preferences") }
+                        }
+                    }
+
+                    NavigationLink {
+                        ConnectDesktopView(viaSettings: true)
+                    } label: {
+                        settingsRow("desktopcomputer") { Text("Use from desktop") }
+                    }
 
                     NavigationLink {
                         MigrateToAnotherDevice(showSettings: $showSettings)
@@ -218,6 +215,8 @@ struct SettingsView: View {
                         settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
                     }
                 }
+                .disabled(chatModel.chatRunning != true)
+
                 Section("Settings") {
                     NavigationLink {
                         NotificationsView()

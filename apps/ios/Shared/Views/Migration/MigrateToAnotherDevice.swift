@@ -10,7 +10,6 @@ import SwiftUI
 import SimpleXChat
 
 private enum MigrationState: Equatable {
-    case initial
     case chatStopInProgress
     case chatStopFailed(reason: String)
     case passphraseNotSet
@@ -56,12 +55,11 @@ struct MigrateToAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
-    @State private var migrationState: MigrationState = .initial
+    @State private var migrationState: MigrationState = .chatStopInProgress
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
     @State private var alert: MigrateToAnotherDeviceViewAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
-    @State private var chatWasStoppedInitially: Bool = true
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     @State private var backDisabled: Bool = false
@@ -80,7 +78,6 @@ struct MigrateToAnotherDevice: View {
     func migrateView() -> some View {
         VStack {
             switch migrationState {
-            case .initial: EmptyView()
             case .chatStopInProgress:
                 chatStopInProgressView()
             case let .chatStopFailed(reason):
@@ -117,29 +114,11 @@ struct MigrateToAnotherDevice: View {
             }
         }
         .onAppear {
-            if case .initial = migrationState {
-                if m.chatRunning == false {
-                    do {
-                        try apiSaveAppSettings(settings: AppSettings.current)
-                        migrationState = initialRandomDBPassphrase ? .passphraseNotSet : .passphraseConfirmation
-                    } catch let error {
-                        alert = .error(title: "Error saving settings", error: error.localizedDescription)
-                        migrationState = .chatStopFailed(reason: NSLocalizedString("Error saving settings", comment: "when migrating"))
-                    }
-                    chatWasStoppedInitially = true
-                } else {
-                    migrationState = .chatStopInProgress
-                    chatWasStoppedInitially = false
-                    stopChat()
-                }
-            }
+            stopChat()
         }
         .onDisappear {
-            if case .linkShown = migrationState {} else if case .finished = migrationState {} else if !chatWasStoppedInitially {
-                Task {
-                    AppChatState.shared.set(.active)
-                    try? startChat(refreshInvitations: true)
-                }
+            if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
+                startChatAndDismiss(false)
             }
             Task {
                 if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
@@ -511,13 +490,7 @@ struct MigrateToAnotherDevice: View {
     private func cancelMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
         Task {
             await cancelUploadedAchive(fileId, ctrl)
-            await MainActor.run {
-                if !chatWasStoppedInitially {
-                    startChatAndDismiss()
-                } else {
-                    dismiss()
-                }
-            }
+            startChatAndDismiss()
         }
     }
 
@@ -554,11 +527,26 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func startChatAndDismiss() {
+    private func startChatAndDismiss(_ dismiss: Bool = true) {
         Task {
             AppChatState.shared.set(.active)
-            try? startChat(refreshInvitations: true)
-            dismiss()
+            do {
+                if m.chatDbChanged {
+                    resetChatCtrl()
+                    try initializeChat(start: true)
+                    m.chatDbChanged = false
+                } else {
+                    try startChat(refreshInvitations: true)
+                }
+            } catch let error {
+                alert = .error(title: "Error starting chat", error: responseError(error))
+            }
+            // Hide settings anyway if chatDbStatus is not ok, probably passphrase needs to be entered
+            if dismiss || m.chatDbStatus != .ok {
+                await MainActor.run {
+                    showSettings = false
+                }
+            }
         }
     }
 
