@@ -61,9 +61,14 @@ or
       Messages in this conversation are end-to-end encrypted.
       Post-quantum encryption is enabled.
       ```
-    - no PQ:
+    - no PQ (experimental toggle disabled):
       ```
       -//- (e2ee)
+      Post-quantum encryption is not enabled. [Also possibly:] Enabling post-quantum encryption in experimental settings will enable it in this conversation if your contact supports it.
+      ```
+    - no PQ (experimental toggle enabled):
+      ```
+      -//-
       Post-quantum encryption will be enabled when your contact upgrades.
       ```
       "upgrades" / "supports it" / "starts to support it"
