@@ -341,8 +341,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
   CRRemoteCtrlStopped {} -> ["remote controller stopped"]
   CRContactPQEnabled u c pqOn -> ttyUser u [ttyContact' c <> ": post-quantum encryption " <> (if pqOn then "enabled" else "disabled")]
-  CRGroupMemberPQEnabled u g m pqOn -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> ": post-quantum encryption " <> (if pqOn then "enabled" else "disabled")]
-  CRGroupPQAllowed u g pqOn -> ttyUser u [ttyGroup' g <> ": post-quantum encryption " <> (if pqOn then "allowed" else "not allowed")]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =

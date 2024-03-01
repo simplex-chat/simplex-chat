@@ -700,8 +700,6 @@ data ChatResponse
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: Bool}
-  | CRGroupMemberPQEnabled {user :: User, groupInfo :: GroupInfo, member :: GroupMember, pqEnabled :: Bool}
-  | CRGroupPQAllowed {user :: User, groupInfo :: GroupInfo, pqAllowed :: Bool}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}

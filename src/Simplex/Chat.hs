@@ -650,7 +650,7 @@ processChatCommand' vr = \case
       (SCTGroup, SMDSnd) -> do
         withStore' (`getGroupSndStatuses` itemId) >>= \case
           [] -> pure Nothing
-          memStatuses -> pure $ Just memStatuses
+          memStatuses -> pure $ Just $ map (uncurry MemberDeliveryStatus) memStatuses
       _ -> pure Nothing
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user -> withChatLock "sendMessage" $ case cType of
@@ -1585,8 +1585,7 @@ processChatCommand' vr = \case
     gVar <- asks random
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    pqExperimental <- readTVarIO =<< asks pqExperimentalEnabled
-    groupInfo <- withStore $ \db -> createNewGroup db vr gVar user gProfile pqExperimental incognitoProfile
+    groupInfo <- withStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
     pure $ CRGroupCreated user groupInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand $ APINewGroup userId incognito gProfile
@@ -1706,9 +1705,7 @@ processChatCommand' vr = \case
               deleteMemberConnection' user m True
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user m
-          -- TODO [pq] + on other events, e.g. XGrpMemDel
-          gInfo' <- updateGroupPQAllowedMemberRemoved user gInfo
-          pure $ CRUserDeletedMember user gInfo' m {memberStatus = GSMemRemoved}
+          pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
     filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
@@ -3730,8 +3727,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpAcpt memId
                 | sameMemberId memId m -> do
                     withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    -- TODO [pq] + on other events, e.g. XGrpMemIntro
-                    _gInfo' <- updateGroupPQAllowedMemberAdded user gInfo
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
@@ -3925,15 +3920,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ sendDirectMessage imConn pqDummyFlag (XGrpMemCon memberId) (GroupId groupId)
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
-        -- TODO [pq] see SENT
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
-        -- TODO [pq] on XGrpMemIntro
-        -- TODO      + where member is accepted (becomes current), see GSMemAccepted - e.g. CONF
-        -- TODO      continue to work with gInfo'
-        -- _gInfo' <- updateGroupPQAllowedMemberAdded user gInfo
-        -- TODO [pq] on XGrpMemDel
-        -- TODO      + where member is removed (becomes inactive), e.g. APIRemoveMember
-        -- _gInfo' <- updateGroupPQAllowedMemberRemoved user gInfo
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
         withAckMessage agentConnId cmdId msgMeta $ do
@@ -4014,13 +4001,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId -> do
-        -- TODO [pq] + for other member connection events
-        -- TODO [pq] + update pq on item?
-        let pqAgentDummy = False -- TODO [pq] this would be returned in agent event
-        (m', conn') <- updateMemberPQ gInfo m conn pqAgentDummy
-        sentMsgDeliveryEvent conn' msgId
-        checkSndInlineFTComplete conn' msgId
-        updateGroupItemStatus gInfo m' conn' msgId $ CISSndSent SSPComplete
+        sentMsgDeliveryEvent conn msgId
+        checkSndInlineFTComplete conn msgId
+        updateGroupItemStatus gInfo m conn msgId $ CISSndSent SSPComplete
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -5735,56 +5718,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (ct', conn')
           else pure (ct, conn)
 
-    updateMemberPQ :: GroupInfo -> GroupMember -> Connection -> PQFlag -> m (GroupMember, Connection)
-    updateMemberPQ gInfo m conn@Connection {connId = _connId, pqEnabled} pqEnabled' =
-      flip catchChatError (const $ pure (m, conn)) $
-        if pqEnabled' /= pqEnabled
-          then do
-            -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
-            let conn' = conn {pqEnabled = pqEnabled'} :: Connection
-                m' = m {activeConn = Just conn'} :: GroupMember
-            createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
-            toView $ CRGroupMemberPQEnabled user gInfo m' pqEnabled'
-            pure (m', conn')
-          else pure (m, conn)
-
--- TODO [pq] perhaps both kinds of events (member PQ enabled, group PQ allowed)
--- TODO      would produce too much noise in conversation,
--- TODO      and it's better to only send a single event for the group when its setting changes
-updateGroupPQAllowedMemberAdded :: ChatMonad m => User -> GroupInfo -> m GroupInfo
-updateGroupPQAllowedMemberAdded user gInfo@GroupInfo {groupId = _groupId, pqAllowed} =
-  flip catchChatError (const $ pure gInfo) $
-    if pqAllowed
-      then do
-        currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-        if currentMemCount > largeGroupDisablePQMemThreshold
-          then do
-            let pqAllowed' = False
-                gInfo' = gInfo {pqAllowed = pqAllowed'} :: GroupInfo
-            -- TODO [pq] db: withStore' $ \db -> updateGroupPQAllowed db groupId pqAllowed'
-            createInternalChatItem user (CDGroupSnd gInfo') (CISndGroupE2EEInfo $ GroupE2EEInfo pqAllowed') Nothing
-            toView $ CRGroupPQAllowed user gInfo' pqAllowed'
-            pure gInfo'
-          else pure gInfo
-      else pure gInfo
-
-updateGroupPQAllowedMemberRemoved :: ChatMonad m => User -> GroupInfo -> m GroupInfo
-updateGroupPQAllowedMemberRemoved user gInfo@GroupInfo {groupId = _groupId, pqAllowed} =
-  flip catchChatError (const $ pure gInfo) $
-    if not pqAllowed
-      then do
-        currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-        if currentMemCount < smallGroupAllowPQMemThreshold
-          then do
-            let pqAllowed' = True
-                gInfo' = gInfo {pqAllowed = pqAllowed'} :: GroupInfo
-            -- TODO [pq] db: withStore' $ \db -> updateGroupPQAllowed db groupId pqAllowed'
-            createInternalChatItem user (CDGroupSnd gInfo') (CISndGroupE2EEInfo $ GroupE2EEInfo pqAllowed') Nothing
-            toView $ CRGroupPQAllowed user gInfo' pqAllowed'
-            pure gInfo'
-          else pure gInfo
-      else pure gInfo
-
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 
@@ -6098,9 +6031,13 @@ type MsgReq = (Connection, PQFlag, MsgFlags, MsgBody, MessageId)
 
 type PQFlag = Bool
 
--- TODO [pq] remove, replace in all places with actual flag
+-- TODO [pq] remove, replace in all places with actual flag / pqOff in groups
 pqDummyFlag :: PQFlag
 pqDummyFlag = False
+
+-- TODO remove in 5.7 (used for groups)
+pqOff :: PQFlag
+pqOff = False
 
 deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
 deliverMessages = deliverMessagesB . map Right
@@ -6120,13 +6057,6 @@ deliverMessagesB msgReqs = do
     createDelivery :: DB.Connection -> (MsgReq, AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
-
--- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis;
--- if member already had PQ enabled, it overrides flag;
--- group setting overrides both member setting and flag
-memberPQFlag :: GroupInfo -> Connection -> Bool -> PQFlag
-memberPQFlag GroupInfo {pqAllowed} Connection {pqEnabled} pqExperimentalEnabled =
-  pqAllowed && (pqEnabled || pqExperimentalEnabled)
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user gInfo members chatMsgEvent = do
@@ -6151,13 +6081,12 @@ sendGroupMessage user gInfo members chatMsgEvent = do
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
 sendGroupMessage' :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
-sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
+sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
-  pqExperimental <- readTVarIO =<< asks pqExperimentalEnabled
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending) = foldr addMember ([], []) recipientMembers
-      msgReqs = map (\(_, conn) -> (conn, memberPQFlag gInfo conn pqExperimental, msgFlags, msgBody, msgId)) toSend
+      msgReqs = map (\(_, conn) -> (conn, pqOff, msgFlags, msgBody, msgId)) toSend
   delivered <- deliverMessages msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors

@@ -120,8 +120,7 @@ CREATE TABLE groups(
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
-  user_member_profile_sent_at TEXT,
-  pq_allowed INTEGER, -- received
+  user_member_profile_sent_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -376,8 +375,7 @@ CREATE TABLE chat_items(
   item_deleted_ts TEXT,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   item_content_tag TEXT,
-  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
-  pq_encryption INTEGER
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -488,8 +486,6 @@ CREATE TABLE group_snd_item_statuses(
   group_snd_item_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-  ,
-  group_snd_pq_encryption INTEGER
 );
 CREATE TABLE IF NOT EXISTS "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,

@@ -1029,8 +1029,7 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    memberDeliveryStatus :: CIStatus 'MDSnd,
-    pqEncrypted :: Bool
+    memberDeliveryStatus :: CIStatus 'MDSnd
   }
   deriving (Eq, Show)
 

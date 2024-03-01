@@ -98,7 +98,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             SELECT
               -- GroupInfo
               g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-              g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.pq_allowed,
+              g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
               g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,

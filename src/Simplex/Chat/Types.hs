@@ -354,9 +354,7 @@ data GroupInfo = GroupInfo
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    userMemberProfileSentAt :: Maybe UTCTime,
-    -- whether PQ cryptography is supported in the group, based on group size
-    pqAllowed :: Bool
+    userMemberProfileSentAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
