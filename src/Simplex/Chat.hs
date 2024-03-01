@@ -1586,6 +1586,7 @@ processChatCommand' vr = \case
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     groupInfo <- withStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
+    -- TODO [pq] create CISndGroupE2EEInfo (would affect tests)
     pure $ CRGroupCreated user groupInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand $ APINewGroup userId incognito gProfile
@@ -3512,7 +3513,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          -- TODO [pq] see SENT
+          -- TODO [pq] same for other direct connection events;
+          -- TODO      use ct', conn' downstream;
+          -- TODO      pqAgentDummy - would be returned in agent event
+          let pqAgentDummy = False
+          (_ct', _conn') <- updateContactPQ ct conn pqAgentDummy
           checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId msgMeta $ do
@@ -3611,13 +3616,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
         SENT msgId -> do
-          -- TODO [pq] + for other direct connection events
-          -- TODO [pq] + update pq on item?
-          let pqAgentDummy = False -- TODO [pq] this would be returned in agent event
-          (ct', conn') <- updateContactPQ ct conn pqAgentDummy
-          sentMsgDeliveryEvent conn' msgId
-          checkSndInlineFTComplete conn' msgId
-          updateDirectItemStatus ct' conn' msgId $ CISSndSent SSPComplete
+          sentMsgDeliveryEvent conn msgId
+          checkSndInlineFTComplete conn msgId
+          updateDirectItemStatus ct conn msgId $ CISSndSent SSPComplete
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -3765,6 +3766,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case memberCategory m of
           GCHostMember -> do
             toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
+            -- TODO [pq] create CIRcvGroupE2EEInfo (would affect tests)
             createGroupFeatureItems gInfo m
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
@@ -5293,7 +5295,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         XInfo p -> do
           let contactUsed = connDirect activeConn
           ct <- withStore $ \db -> createDirectContact db user conn' p contactUsed
-          -- TODO [pq] create CIRcvDirectE2EEInfo somewhere here
+          -- TODO [pq] create CIRcvDirectE2EEInfo here?
           toView $ CRContactConnecting user ct
           pure conn'
         XGrpLinkInv glInv -> do
@@ -5705,11 +5707,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure ()
 
     updateContactPQ :: Contact -> Connection -> PQFlag -> m (Contact, Connection)
-    updateContactPQ ct conn@Connection {connId = _connId, pqEnabled} pqEnabled' =
+    updateContactPQ ct conn@Connection {connId, pqEnabled} pqEnabled' =
       flip catchChatError (const $ pure (ct, conn)) $
         if pqEnabled' /= pqEnabled
           then do
-            -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
+            withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
             let conn' = conn {pqEnabled = pqEnabled'} :: Connection
                 ct' = ct {activeConn = Just conn'} :: Contact
             createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing

@@ -268,7 +268,6 @@ ciContentToText = \case
   CIRcvGroupE2EEInfo e2eeInfo -> groupE2EEInfoToText e2eeInfo
   CIInvalidJSON _ -> "invalid content JSON"
 
--- TODO [pq] describe experimental toggle?
 directE2EEInfoToText :: E2EEInfo -> Text
 directE2EEInfoToText E2EEInfo {pqEnabled}
   | pqEnabled = "This conversation is protected by end-to-end encryption with quantum computer resistant perfect forward secrecy, repudiation and break-in recovery."

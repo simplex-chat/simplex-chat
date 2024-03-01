@@ -730,11 +730,6 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
 
-memberPQEnabled :: GroupMember -> Bool
-memberPQEnabled GroupMember {activeConn} = case activeConn of
-  Just Connection {pqEnabled} -> pqEnabled
-  Nothing -> False
-
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,

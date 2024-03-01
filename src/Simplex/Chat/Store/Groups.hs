@@ -389,9 +389,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                    created_at, updated_at, chat_ts, user_member_profile_sent_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?)
               |]
-              ( (profileId, localDisplayName, connRequest, customUserProfileId, userId, True)
-                  :. (currentTs, currentTs, currentTs, currentTs)
-              )
+              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
             insertedRowId db
           let JVersionRange hostVRange = peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange

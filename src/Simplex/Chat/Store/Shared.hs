@@ -241,6 +241,17 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
     (displayName, fullName, image, userId, Just True, createdAt, createdAt)
   insertedRowId db
 
+updateConnPQEnabled :: DB.Connection -> Int64 -> Bool -> IO ()
+updateConnPQEnabled db connId pqEnabled =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET pq_enabled = ?
+      WHERE connection_id = ?
+    |]
+    (pqEnabled, connId)
+
 setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
 setPeerChatVRange db connId (VersionRange minVer maxVer) =
   DB.execute
