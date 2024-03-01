@@ -153,7 +153,7 @@ type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe 
 type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Bool, Maybe Int, Maybe Version, Maybe Version)
 
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqEnabled_, authErrCounter, minVer, maxVer)) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqEnabled, authErrCounter, minVer, maxVer)) =
   Connection
     { connId,
       agentConnId = AgentConnId acId,
@@ -170,7 +170,7 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
       localAlias,
       entityId = entityId_ connType,
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_,
-      pqEnabled = fromMaybe False pqEnabled_,
+      pqEnabled,
       authErrCounter,
       createdAt
     }
@@ -224,7 +224,7 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
         localAlias = "",
         createdAt = currentTs,
         connectionCode = Nothing,
-        pqEnabled = False,
+        pqEnabled = Nothing,
         authErrCounter = 0
       }
   where

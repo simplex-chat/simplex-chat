@@ -213,7 +213,7 @@ contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
 contactPQEnabled :: Contact -> Bool
 contactPQEnabled Contact {activeConn} = case activeConn of
-  Just Connection {pqEnabled} -> pqEnabled
+  Just Connection {pqEnabled} -> pqEnabled == Just True
   Nothing -> False
 
 data ContactStatus
@@ -1284,6 +1284,8 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
+type PQFlag = Bool
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
@@ -1300,7 +1302,7 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
-    pqEnabled :: Bool,
+    pqEnabled :: Maybe PQFlag,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }

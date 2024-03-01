@@ -5708,16 +5708,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     updateContactPQ :: Contact -> Connection -> PQFlag -> m (Contact, Connection)
     updateContactPQ ct conn@Connection {connId, pqEnabled} pqEnabled' =
-      flip catchChatError (const $ pure (ct, conn)) $
-        if pqEnabled' /= pqEnabled
-          then do
-            withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
-            let conn' = conn {pqEnabled = pqEnabled'} :: Connection
-                ct' = ct {activeConn = Just conn'} :: Contact
-            createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
-            toView $ CRContactPQEnabled user ct' pqEnabled'
-            pure (ct', conn')
-          else pure (ct, conn)
+      flip catchChatError (const $ pure (ct, conn)) $ case (pqEnabled, pqEnabled') of
+        (Nothing, False) -> pure (ct, conn)
+        (Nothing, True) -> do
+          withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
+          let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
+              ct' = ct {activeConn = Just conn'} :: Contact
+          createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+          toView $ CRContactPQEnabled user ct' pqEnabled'
+          pure (ct', conn')
+        (Just b, b') -> do
+          if b' /= b
+            then do
+              withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
+              let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
+                  ct' = ct {activeConn = Just conn'} :: Contact
+              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+              toView $ CRContactPQEnabled user ct' pqEnabled'
+              pure (ct', conn')
+            else pure (ct, conn)
 
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
@@ -5956,7 +5965,8 @@ sendDirectContactMessage ct chatMsgEvent = do
 -- if contact already had PQ enabled, it overrides flag
 contactPQFlag :: ChatMonad m => Connection -> m PQFlag
 contactPQFlag Connection {pqEnabled} =
-  (pqEnabled ||) <$> (readTVarIO =<< asks pqExperimentalEnabled)
+  pure False
+  -- (pqEnabled ||) <$> (readTVarIO =<< asks pqExperimentalEnabled)
 
 contactSendConn_ :: Contact -> Either ChatError Connection
 contactSendConn_ ct@Contact {activeConn} = case activeConn of
@@ -6029,8 +6039,6 @@ deliverMessage' conn pq msgFlags msgBody msgId =
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
 type MsgReq = (Connection, PQFlag, MsgFlags, MsgBody, MessageId)
-
-type PQFlag = Bool
 
 -- TODO [pq] remove, replace in all places with actual flag / pqOff in groups
 pqDummyFlag :: PQFlag

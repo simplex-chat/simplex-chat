@@ -1931,7 +1931,7 @@ createMemberContact
               localAlias = "",
               createdAt = currentTs,
               connectionCode = Nothing,
-              pqEnabled = False,
+              pqEnabled = Nothing,
               authErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
@@ -2060,7 +2060,7 @@ createMemberContactConn_
           localAlias = "",
           createdAt = currentTs,
           connectionCode = Nothing,
-          pqEnabled = False,
+          pqEnabled = Nothing,
           authErrCounter = 0
         }
 
