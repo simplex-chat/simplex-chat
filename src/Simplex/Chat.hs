@@ -1706,7 +1706,9 @@ processChatCommand' vr = \case
               deleteMemberConnection' user m True
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user m
-          pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
+          -- TODO [pq] + on other events, e.g. XGrpMemDel
+          gInfo' <- updateGroupPQAllowedMemberRemoved user gInfo
+          pure $ CRUserDeletedMember user gInfo' m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
     filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
@@ -3616,10 +3618,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO [pq] + for other direct connection events
           -- TODO [pq] + update pq on item?
           let pqAgentDummy = False -- TODO [pq] this would be returned in agent event
-          updateContactPQ ct conn pqAgentDummy
-          sentMsgDeliveryEvent conn msgId
-          checkSndInlineFTComplete conn msgId
-          updateDirectItemStatus ct conn msgId $ CISSndSent SSPComplete
+          (ct', conn') <- updateContactPQ ct conn pqAgentDummy
+          sentMsgDeliveryEvent conn' msgId
+          checkSndInlineFTComplete conn' msgId
+          updateDirectItemStatus ct' conn' msgId $ CISSndSent SSPComplete
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -3728,6 +3730,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpAcpt memId
                 | sameMemberId memId m -> do
                     withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                    -- TODO [pq] + on other events, e.g. XGrpMemIntro
+                    _gInfo' <- updateGroupPQAllowedMemberAdded user gInfo
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
@@ -3923,6 +3927,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       MSG msgMeta _msgFlags msgBody -> do
         -- TODO [pq] see SENT
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
+        -- TODO [pq] on XGrpMemIntro
+        -- TODO      + where member is accepted (becomes current), see GSMemAccepted - e.g. CONF
+        -- TODO      continue to work with gInfo'
+        -- _gInfo' <- updateGroupPQAllowedMemberAdded user gInfo
+        -- TODO [pq] on XGrpMemDel
+        -- TODO      + where member is removed (becomes inactive), e.g. APIRemoveMember
+        -- _gInfo' <- updateGroupPQAllowedMemberRemoved user gInfo
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
         withAckMessage agentConnId cmdId msgMeta $ do
@@ -4006,10 +4017,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO [pq] + for other member connection events
         -- TODO [pq] + update pq on item?
         let pqAgentDummy = False -- TODO [pq] this would be returned in agent event
-        updateMemberPQ gInfo m conn pqAgentDummy
-        sentMsgDeliveryEvent conn msgId
-        checkSndInlineFTComplete conn msgId
-        updateGroupItemStatus gInfo m conn msgId $ CISSndSent SSPComplete
+        (m', conn') <- updateMemberPQ gInfo m conn pqAgentDummy
+        sentMsgDeliveryEvent conn' msgId
+        checkSndInlineFTComplete conn' msgId
+        updateGroupItemStatus gInfo m' conn' msgId $ CISSndSent SSPComplete
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -5711,23 +5722,65 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
-    updateContactPQ :: Contact -> Connection -> PQFlag -> m ()
+    updateContactPQ :: Contact -> Connection -> PQFlag -> m (Contact, Connection)
     updateContactPQ ct conn@Connection {connId = _connId, pqEnabled} pqEnabled' =
-      flip catchChatError (toView . CRChatError (Just user)) $
-        unless (pqEnabled == pqEnabled') $ do
-          -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
-          let ct' = ct {activeConn = Just $ conn {pqEnabled = pqEnabled'}} :: Contact
-          createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
-          toView $ CRContactPQEnabled user ct' pqEnabled'
+      flip catchChatError (const $ pure (ct, conn)) $
+        if pqEnabled' /= pqEnabled
+          then do
+            -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
+            let conn' = conn {pqEnabled = pqEnabled'} :: Connection
+                ct' = ct {activeConn = Just conn'} :: Contact
+            createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+            toView $ CRContactPQEnabled user ct' pqEnabled'
+            pure (ct', conn')
+          else pure (ct, conn)
 
-    updateMemberPQ :: GroupInfo -> GroupMember -> Connection -> PQFlag -> m ()
+    updateMemberPQ :: GroupInfo -> GroupMember -> Connection -> PQFlag -> m (GroupMember, Connection)
     updateMemberPQ gInfo m conn@Connection {connId = _connId, pqEnabled} pqEnabled' =
-      flip catchChatError (toView . CRChatError (Just user)) $
-        unless (pqEnabled == pqEnabled') $ do
-          -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
-          let m' = m {activeConn = Just $ conn {pqEnabled = pqEnabled'}} :: GroupMember
-          createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
-          toView $ CRGroupMemberPQEnabled user gInfo m' pqEnabled'
+      flip catchChatError (const $ pure (m, conn)) $
+        if pqEnabled' /= pqEnabled
+          then do
+            -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
+            let conn' = conn {pqEnabled = pqEnabled'} :: Connection
+                m' = m {activeConn = Just conn'} :: GroupMember
+            createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+            toView $ CRGroupMemberPQEnabled user gInfo m' pqEnabled'
+            pure (m', conn')
+          else pure (m, conn)
+
+updateGroupPQAllowedMemberAdded :: ChatMonad m => User -> GroupInfo -> m GroupInfo
+updateGroupPQAllowedMemberAdded user gInfo@GroupInfo {groupId = _groupId, pqAllowed} =
+  flip catchChatError (const $ pure gInfo) $
+    if pqAllowed
+      then do
+        currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
+        if currentMemCount > largeGroupDisablePQMemThreshold
+          then do
+            let pqAllowed' = False
+                gInfo' = gInfo {pqAllowed = pqAllowed'} :: GroupInfo
+            -- TODO [pq] db: withStore' $ \db -> updateGroupPQAllowed db groupId pqAllowed'
+            createInternalChatItem user (CDGroupSnd gInfo') (CISndGroupE2EEInfo $ GroupE2EEInfo pqAllowed') Nothing
+            toView $ CRGroupPQAllowed user gInfo' pqAllowed'
+            pure gInfo'
+          else pure gInfo
+      else pure gInfo
+
+updateGroupPQAllowedMemberRemoved :: ChatMonad m => User -> GroupInfo -> m GroupInfo
+updateGroupPQAllowedMemberRemoved user gInfo@GroupInfo {groupId = _groupId, pqAllowed} =
+  flip catchChatError (const $ pure gInfo) $
+    if not pqAllowed
+      then do
+        currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
+        if currentMemCount < smallGroupAllowPQMemThreshold
+          then do
+            let pqAllowed' = True
+                gInfo' = gInfo {pqAllowed = pqAllowed'} :: GroupInfo
+            -- TODO [pq] db: withStore' $ \db -> updateGroupPQAllowed db groupId pqAllowed'
+            createInternalChatItem user (CDGroupSnd gInfo') (CISndGroupE2EEInfo $ GroupE2EEInfo pqAllowed') Nothing
+            toView $ CRGroupPQAllowed user gInfo' pqAllowed'
+            pure gInfo'
+          else pure gInfo
+      else pure gInfo
 
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs

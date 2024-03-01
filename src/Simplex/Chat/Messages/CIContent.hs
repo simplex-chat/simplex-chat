@@ -140,7 +140,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
   CIRcvDirectE2EEInfo :: DirectE2EEInfo -> CIContent 'MDRcv
-  CIRcvGroupE2EEInfo :: GroupE2EEInfo -> CIContent 'MDRcv
+  CISndGroupE2EEInfo :: GroupE2EEInfo -> CIContent 'MDSnd -- snd because CDGroupRcv direction requires member
   CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
 
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
@@ -209,7 +209,6 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvModerated -> True
     CIRcvBlocked -> False
     CIRcvDirectE2EEInfo _ -> False
-    CIRcvGroupE2EEInfo _ -> False
     CIInvalidJSON _ -> False
 
 newtype DBMsgErrorType = DBME MsgErrorType
@@ -266,7 +265,7 @@ ciContentToText = \case
   CIRcvModerated -> ciModeratedText
   CIRcvBlocked -> "blocked"
   CIRcvDirectE2EEInfo di -> directE2EEInfoToText di
-  CIRcvGroupE2EEInfo gi -> groupE2EEInfoToText gi
+  CISndGroupE2EEInfo gi -> groupE2EEInfoToText gi
   CIInvalidJSON _ -> "invalid content JSON"
 
 -- TODO [pq] describe experimental toggle?
@@ -416,7 +415,7 @@ data JSONCIContent
   | JCIRcvModerated
   | JCIRcvBlocked
   | JCIRcvDirectE2EEInfo {directE2EEInfo :: DirectE2EEInfo}
-  | JCIRcvGroupE2EEInfo {groupE2EEInfo :: GroupE2EEInfo}
+  | JCISndGroupE2EEInfo {groupE2EEInfo :: GroupE2EEInfo}
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -448,7 +447,7 @@ jsonCIContent = \case
   CIRcvModerated -> JCIRcvModerated
   CIRcvBlocked -> JCIRcvBlocked
   CIRcvDirectE2EEInfo di -> JCIRcvDirectE2EEInfo di
-  CIRcvGroupE2EEInfo gi -> JCIRcvGroupE2EEInfo gi
+  CISndGroupE2EEInfo gi -> JCISndGroupE2EEInfo gi
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -480,7 +479,7 @@ aciContentJSON = \case
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
   JCIRcvDirectE2EEInfo {directE2EEInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo directE2EEInfo
-  JCIRcvGroupE2EEInfo {groupE2EEInfo} -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo groupE2EEInfo
+  JCISndGroupE2EEInfo {groupE2EEInfo} -> ACIContent SMDSnd $ CISndGroupE2EEInfo groupE2EEInfo
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -513,7 +512,7 @@ data DBJSONCIContent
   | DBJCIRcvModerated
   | DBJCIRcvBlocked
   | DBJCIRcvDirectE2EEInfo {directE2EEInfo :: DirectE2EEInfo}
-  | DBJCIRcvGroupE2EEInfo {groupE2EEInfo :: GroupE2EEInfo}
+  | DBJCISndGroupE2EEInfo {groupE2EEInfo :: GroupE2EEInfo}
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -545,7 +544,7 @@ dbJsonCIContent = \case
   CIRcvModerated -> DBJCIRcvModerated
   CIRcvBlocked -> DBJCIRcvBlocked
   CIRcvDirectE2EEInfo di -> DBJCIRcvDirectE2EEInfo di
-  CIRcvGroupE2EEInfo gi -> DBJCIRcvGroupE2EEInfo gi
+  CISndGroupE2EEInfo gi -> DBJCISndGroupE2EEInfo gi
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -577,7 +576,7 @@ aciContentDBJSON = \case
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
   DBJCIRcvDirectE2EEInfo di -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo di
-  DBJCIRcvGroupE2EEInfo gi -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo gi
+  DBJCISndGroupE2EEInfo gi -> ACIContent SMDSnd $ CISndGroupE2EEInfo gi
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -676,5 +675,5 @@ toCIContentTag ciContent = case ciContent of
   CIRcvModerated -> "rcvModerated"
   CIRcvBlocked -> "rcvBlocked"
   CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
-  CIRcvGroupE2EEInfo _ -> "rcvGroupE2EEInfo"
+  CISndGroupE2EEInfo _ -> "sndGroupE2EEInfo"
   CIInvalidJSON _ -> "invalidJSON"

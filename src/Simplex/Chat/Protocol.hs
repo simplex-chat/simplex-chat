@@ -94,8 +94,8 @@ largeGroupDisablePQMemThreshold :: Int
 largeGroupDisablePQMemThreshold = 20
 
 -- TODO [pq] check on removing members, update groups.pq_allowed
-smallGroupEnablePQMemThreshold :: Int
-smallGroupEnablePQMemThreshold = 15
+smallGroupAllowPQMemThreshold :: Int
+smallGroupAllowPQMemThreshold = 15
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

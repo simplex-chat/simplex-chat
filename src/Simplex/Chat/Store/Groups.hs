@@ -374,7 +374,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
-          pqAllowed = maybe False (<= largeGroupDisablePQMemThreshold) groupSize
+          -- "<" (not "<=") because user would be the "threshold" member
+          pqAllowed = maybe False (< largeGroupDisablePQMemThreshold) groupSize
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           currentTs <- liftIO getCurrentTime
@@ -504,7 +505,8 @@ createGroupInvitedViaLink
     where
       insertGroup_ currentTs = ExceptT $ do
         let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
-            pqAllowed = maybe False (<= largeGroupDisablePQMemThreshold) groupSize
+            -- "<" (not "<=") because user would be the "threshold" member
+            pqAllowed = maybe False (< largeGroupDisablePQMemThreshold) groupSize
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           liftIO $ do
             DB.execute
