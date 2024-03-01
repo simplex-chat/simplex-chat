@@ -358,21 +358,7 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
             SCTLocal -> isNothing itemDeleted
             _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta
-        { itemId,
-          itemTs,
-          itemText,
-          itemStatus,
-          itemSharedMsgId,
-          itemDeleted,
-          itemEdited,
-          itemTimed,
-          itemLive,
-          editable,
-          forwardedByMember,
-          createdAt,
-          updatedAt
-        }
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
