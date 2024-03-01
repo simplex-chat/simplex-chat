@@ -5300,6 +5300,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         XInfo p -> do
           let contactUsed = connDirect activeConn
           ct <- withStore $ \db -> createDirectContact db user conn' p contactUsed
+          -- TODO [pq] create CIRcvDirectE2EEInfo somewhere here
           toView $ CRContactConnecting user ct
           pure conn'
         XGrpLinkInv glInv -> do
