@@ -5957,7 +5957,7 @@ deleteOrUpdateMemberRecord user@User {userId} member =
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage ct chatMsgEvent = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
-  -- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis;
+  -- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis
   pq <- readTVarIO =<< asks pqExperimentalEnabled
   sendDirectMessage conn pq chatMsgEvent (ConnectionId connId)
 
