@@ -132,7 +132,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (groupForwardVRange)
+import Simplex.Chat.Protocol (groupForwardVRange, largeGroupDisablePQMemThreshold)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -350,7 +350,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile pqExperimentalEnabled 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> VersionRange -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, groupSize} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -374,7 +374,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
-          pqAllowed = True -- TODO [pq] based on group size from invitation
+          pqAllowed = maybe False (<= largeGroupDisablePQMemThreshold) groupSize
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           currentTs <- liftIO getCurrentTime
@@ -492,7 +492,7 @@ createGroupInvitedViaLink
   vr
   user@User {userId, userContactId}
   Connection {connId, customUserProfileId}
-  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile} = do
+  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, groupSize} = do
     currentTs <- liftIO getCurrentTime
     groupId <- insertGroup_ currentTs
     hostMemberId <- insertHost_ currentTs groupId
@@ -504,7 +504,7 @@ createGroupInvitedViaLink
     where
       insertGroup_ currentTs = ExceptT $ do
         let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
-            pqAllowed = True -- TODO [pq] based on group size from invitation
+            pqAllowed = maybe False (<= largeGroupDisablePQMemThreshold) groupSize
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           liftIO $ do
             DB.execute

@@ -193,15 +193,6 @@ fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEA
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
 
--- TODO may have to move to config for tests
--- TODO [pq] check on adding members, update groups.pq_allowed
-largeGroupDisablePQMemThreshold :: Int
-largeGroupDisablePQMemThreshold = 20
-
--- TODO [pq] check on removing members, update groups.pq_allowed
-smallGroupEnablePQMemThreshold :: Int
-smallGroupEnablePQMemThreshold = 15
-
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
@@ -3523,8 +3514,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          -- TODO [pq] update contact's connections.pq_enabled, create event item
-          -- TODO      + for other events, + for groups
+          -- TODO [pq] see SENT
           checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId msgMeta $ do
@@ -3623,8 +3613,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
         SENT msgId -> do
-          -- TODO [pq] update contact's connections.pq_enabled, create event item
-          -- TODO      + for other events, + for groups
+          -- TODO [pq] + for other direct connection events
+          -- TODO [pq] + update pq on item?
+          let pqAgentDummy = False -- TODO [pq] this would be returned in agent event
+          updateContactPQ ct conn pqAgentDummy
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           updateDirectItemStatus ct conn msgId $ CISSndSent SSPComplete
@@ -3929,6 +3921,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ sendDirectMessage imConn pqDummyFlag (XGrpMemCon memberId) (GroupId groupId)
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
+        -- TODO [pq] see SENT
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
@@ -4010,6 +4003,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId -> do
+        -- TODO [pq] + for other member connection events
+        -- TODO [pq] + update pq on item?
+        let pqAgentDummy = False -- TODO [pq] this would be returned in agent event
+        updateMemberPQ gInfo m conn pqAgentDummy
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemStatus gInfo m conn msgId $ CISSndSent SSPComplete
@@ -5713,6 +5710,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
+    updateContactPQ :: Contact -> Connection -> PQFlag -> m ()
+    updateContactPQ ct conn@Connection {connId = _connId, pqEnabled} pqEnabled' =
+      flip catchChatError (toView . CRChatError (Just user)) $
+        unless (pqEnabled == pqEnabled') $ do
+          -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
+          let ct' = ct {activeConn = Just $ conn {pqEnabled = pqEnabled'}} :: Contact
+          createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+          toView $ CRContactPQEnabled user ct' pqEnabled'
+
+    updateMemberPQ :: GroupInfo -> GroupMember -> Connection -> PQFlag -> m ()
+    updateMemberPQ gInfo m conn@Connection {connId = _connId, pqEnabled} pqEnabled' =
+      flip catchChatError (toView . CRChatError (Just user)) $
+        unless (pqEnabled == pqEnabled') $ do
+          -- TODO [pq] db: withStore' $ \db -> updateConnectionPQEnabled db connId pqEnabled'
+          let m' = m {activeConn = Just $ conn {pqEnabled = pqEnabled'}} :: GroupMember
+          createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+          toView $ CRGroupMemberPQEnabled user gInfo m' pqEnabled'
+
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 
@@ -5948,7 +5963,7 @@ sendDirectContactMessage ct chatMsgEvent = do
 -- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis;
 -- TODO      same logic has to be applied to other sending apis, not only sendMessages
 -- if contact already had PQ enabled, it overrides flag
-contactPQFlag :: ChatMonad m => Connection -> m Bool
+contactPQFlag :: ChatMonad m => Connection -> m PQFlag
 contactPQFlag Connection {pqEnabled} =
   (pqEnabled ||) <$> (readTVarIO =<< asks pqExperimentalEnabled)
 
@@ -6027,7 +6042,7 @@ type MsgReq = (Connection, PQFlag, MsgFlags, MsgBody, MessageId)
 type PQFlag = Bool
 
 -- TODO [pq] remove, replace in all places with actual flag
-pqDummyFlag :: Bool
+pqDummyFlag :: PQFlag
 pqDummyFlag = False
 
 deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
@@ -6052,10 +6067,9 @@ deliverMessagesB msgReqs = do
 -- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis;
 -- if member already had PQ enabled, it overrides flag;
 -- group setting overrides both member setting and flag
-memberPQFlag :: ChatMonad m => GroupInfo -> Connection -> m Bool
-memberPQFlag GroupInfo {pqAllowed} Connection {pqEnabled} = do
-  enabled <- (pqEnabled ||) <$> (readTVarIO =<< asks pqExperimentalEnabled)
-  pure $ pqAllowed && enabled
+memberPQFlag :: GroupInfo -> Connection -> Bool -> PQFlag
+memberPQFlag GroupInfo {pqAllowed} Connection {pqEnabled} pqExperimentalEnabled =
+  pqAllowed && (pqEnabled || pqExperimentalEnabled)
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user gInfo members chatMsgEvent = do
@@ -6080,12 +6094,13 @@ sendGroupMessage user gInfo members chatMsgEvent = do
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
 sendGroupMessage' :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
-sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
+sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
+  pqExperimental <- readTVarIO =<< asks pqExperimentalEnabled
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending) = foldr addMember ([], []) recipientMembers
-      msgReqs = map (\(_, conn) -> (conn, pqDummyFlag, msgFlags, msgBody, msgId)) toSend
+      msgReqs = map (\(_, conn) -> (conn, memberPQFlag gInfo conn pqExperimental, msgFlags, msgBody, msgId)) toSend
   delivered <- deliverMessages msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors

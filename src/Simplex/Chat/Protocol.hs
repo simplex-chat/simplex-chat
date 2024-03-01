@@ -88,6 +88,15 @@ groupHistoryIncludeWelcomeVRange = mkVersionRange 6 currentChatVersion
 memberProfileUpdateVRange :: VersionRange
 memberProfileUpdateVRange = mkVersionRange 7 currentChatVersion
 
+-- TODO may have to move to config for tests
+-- TODO [pq] check on adding members, update groups.pq_allowed
+largeGroupDisablePQMemThreshold :: Int
+largeGroupDisablePQMemThreshold = 20
+
+-- TODO [pq] check on removing members, update groups.pq_allowed
+smallGroupEnablePQMemThreshold :: Int
+smallGroupEnablePQMemThreshold = 15
+
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
