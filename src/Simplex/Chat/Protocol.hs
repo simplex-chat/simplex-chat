@@ -45,11 +45,12 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
-import Simplex.Messaging.Compression (batchUnpackZstd)
+import Simplex.Messaging.Compression (CompressCtx, compress, decompressBatch)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$$>), (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
@@ -543,7 +544,17 @@ parseChatMessages s = case B.head s of
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
-      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ batchUnpackZstd maxChatMsgSize compressed
+      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxChatMsgSize compressed
+
+shouldCompressMsgBody :: VersionRange -> Bool -> Bool
+shouldCompressMsgBody peerChatVRange toggle = toggle || isCompatibleRange peerChatVRange compressedBatchingVRange
+
+compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
+compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . L.singleton <$$> compress ctx msgBody
+
+markCompressedBatch :: ByteString -> ByteString
+markCompressedBatch = B.cons 'X'
+{-# INLINE markCompressedBatch #-}
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =

@@ -97,7 +97,7 @@ import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
-import Simplex.Messaging.Compression (batchPackZstd)
+import Simplex.Messaging.Compression (compress, withCompressCtx)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -108,6 +108,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
@@ -2177,14 +2178,17 @@ processChatCommand' vr = \case
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
-            let changedCts = foldr (addChangedProfileContact user') [] contacts
-                idsEvts = map ctSndMsg changedCts
-            msgReqs_ <- zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
-            (errs, cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
-            unless (null errs) $ toView $ CRChatErrors (Just user) errs
-            let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
-            createContactsSndFeatureItems user' changedCts'
-            let summary =
+            let changedCts_ = L.nonEmpty $ foldr (addChangedProfileContact user') [] contacts
+            summary <- case changedCts_ of
+              Nothing -> pure $ UserProfileUpdateSummary 0 0 []
+              Just changedCts -> do
+                let idsEvts = L.map ctSndMsg changedCts
+                msgReqs_ <- L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+                (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+                unless (null errs) $ toView $ CRChatErrors (Just user) errs
+                let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
+                createContactsSndFeatureItems user' changedCts'
+                pure
                   UserProfileUpdateSummary
                     { updateSuccesses = length cts,
                       updateFailures = length errs,
@@ -5904,11 +5908,10 @@ contactSendConn_ ct@Contact {activeConn} = case activeConn of
     err = Left . ChatError
 
 sendDirectMessage :: (MsgEncodingI e, ChatMonad m) => Connection -> ChatMsgEvent e -> ConnOrGroupId -> m (SndMessage, Int64)
-sendDirectMessage conn@Connection {peerChatVRange = todo} chatMsgEvent connOrGroupId = do
+sendDirectMessage conn chatMsgEvent connOrGroupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent connOrGroupId -- TODO: consult peerChatVRange and pick compressed encoding
-  -- TODO: compress with batchSndMessagesBinary, then use processSndMessageBatch
-  (msg,) <$> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId -- XXX: that's why processSndMessageBatch should use deliverMessagesB
+  msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent connOrGroupId
+  (msg,) <$> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
 
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
 createSndMessage chatMsgEvent connOrGroupId =
@@ -5932,17 +5935,12 @@ sendGroupMemberMessages user conn events groupId = do
   (errs, msgs) <- partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    toggle <- pure False -- TODO: get from controller toggles
-    let (errs', msgBatches) = partitionEithers $ batchFun conn toggle msgs'
+    batched <- ifM (shouldCompressMsgBody (fromJVersionRange $ peerChatVRange conn) <$> pure True) (batchSndMessagesBinary msgs') (pure $ batchSndMessagesJSON msgs')
+    let (errs', msgBatches) = partitionEithers batched
     -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
     unless (null errs') $ toView $ CRChatErrors (Just user) errs'
     forM_ msgBatches $ \batch ->
-      -- TODO: replace with deliverMessagesB ?
       processSndMessageBatch conn batch `catchChatError` (toView . CRChatError (Just user))
-  where
-    batchFun Connection {peerChatVRange} toggle
-      | toggle && isCompatibleRange (fromJVersionRange peerChatVRange) compressedBatchingVRange = batchSndMessagesBinary
-      | otherwise = batchSndMessagesJSON
 
 processSndMessageBatch :: ChatMonad m => Connection -> MsgBatch -> m ()
 processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = do
@@ -5953,42 +5951,31 @@ processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = d
 batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
 batchSndMessagesJSON = batchMessages maxChatMsgSize . L.toList
 
-batchSndMessagesBinary :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
-batchSndMessagesBinary msgs = map toMsgBatch batched
+batchSndMessagesBinary :: forall m. ChatMonad m => NonEmpty SndMessage -> m [Either ChatError MsgBatch]
+batchSndMessagesBinary msgs = do
+  compressed <- liftIO $ withCompressCtx maxChatMsgSize $ \cctx -> mapM (compressForBatch cctx) msgs
+  pure . map toMsgBatch . SMP.batchTransmissions_ maxChatMsgSize $ L.zip compressed msgs
   where
+    compressForBatch cctx SndMessage {msgBody} = bimap (const TELargeMsg) smpEncode <$> compress cctx msgBody
     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
     toMsgBatch = \case
-      SMP.TBTransmissions combined _n sms -> Right $ encodeBatch combined sms
-      SMP.TBError tbe SndMessage {msgId} -> Left $ ChatError $ CEInternalError (show tbe <> " " <> show msgId)
-      SMP.TBTransmission{} -> Left $ ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
-      where
-        -- | Add binary batch marker. The transmission is already length-prefixed.
-        -- Paired with `parseChatMessages` for decodeing.
-        encodeBatch = MsgBatch . B.cons 'X'
-    batched :: [SMP.TransportBatch SndMessage]
-    batched = SMP.batchTransmissions_ maxChatMsgSize $ L.zipWith (\c m -> (Right c, m)) compressed msgs
-    compressed :: NonEmpty ByteString
-    compressed = L.map smpEncode . batchPackZstd maxChatMsgSize $ L.map (\SndMessage {msgBody} -> msgBody) msgs
+      SMP.TBTransmissions combined _n sms -> Right $ MsgBatch (markCompressedBatch combined) sms
+      SMP.TBError tbe SndMessage {msgId} -> Left . ChatError $ CEInternalError (show tbe <> " " <> show msgId)
+      SMP.TBTransmission {} -> Left . ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => VersionRange -> ChatMsgEvent e -> m ByteString
 directMessage peerChatVRange chatMsgEvent = do
   chatVRange <- chatVersionRange
   let r = encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
-    ECMEncoded encodedBody -> do
-      toggle <- pure True
-      encodeFun toggle encodedBody
+    ECMEncoded encodedBody ->
+      ifM
+        (shouldCompressMsgBody peerChatVRange <$> pure True)
+        (compressedBatchMsgBody encodedBody)
+        (pure encodedBody)
     ECMLarge -> throwChatError $ CEException "large message"
   where
-    encodeFun toggle cme
-      | toggle || isCompatibleRange peerChatVRange compressedBatchingVRange = do
-          let batched = SMP.batchTransmissions_ maxChatMsgSize . L.map (\c -> (Right $ smpEncode c, ())) . batchPackZstd maxChatMsgSize $ L.singleton cme
-          case batched of
-            [SMP.TBTransmissions combined _ _] -> pure $ B.cons 'X' combined
-            [SMP.TBError tbe _] -> throwChatError . traceShowId $ CEInternalError (show tbe)
-            [SMP.TBTransmission {}] -> throwChatError . traceShowId $ CEInternalError "batchTransmissions_ didn't produce a batch"
-            _ -> throwChatError . traceShowId $ CEInternalError "batchTransmissions_ didn't produce a single element"
-      | otherwise = pure cme
+    compressedBatchMsgBody msgBody = liftEitherError (ChatError . CEException . mappend "compressedBatchMsgBody: ") $ withCompressCtx maxChatMsgSize (`compressedBatchMsgBody_` msgBody)
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -5997,20 +5984,28 @@ deliverMessage conn cmEventTag msgBody msgId = do
 
 deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> MsgBody -> MessageId -> m Int64
 deliverMessage' conn msgFlags msgBody msgId =
-  deliverMessages [(conn, msgFlags, msgBody, msgId)] >>= \case
-    [r] -> liftEither r
+  deliverMessages (L.singleton (conn, msgFlags, msgBody, msgId)) >>= \case
+    r :| [] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
 type MsgReq = (Connection, MsgFlags, MsgBody, MessageId)
 
-deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
-deliverMessages = deliverMessagesB . map Right
+deliverMessages :: ChatMonad' m => NonEmpty MsgReq -> m (NonEmpty (Either ChatError Int64))
+deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
-deliverMessagesB :: ChatMonad' m => [Either ChatError MsgReq] -> m [Either ChatError Int64]
-deliverMessagesB msgReqs = do
-  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessagesB` map toAgent msgReqs)
-  withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
+deliverMessagesB :: ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError Int64))
+deliverMessagesB msgReqs' = do
+  msgReqs <- ifM (pure True) compressBodies (pure msgReqs')
+  sent <- L.zipWith prepareBatch msgReqs <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs)
+  withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
+    compressBodies = liftIO $ withCompressCtx maxChatMsgSize $ \cctx ->
+      forM msgReqs' $ \case
+        mr@(Right (conn@Connection {peerChatVRange}, msgFlags, msgBody, msgId))
+          | shouldCompressMsgBody (fromJVersionRange peerChatVRange) True -> do
+              bimap (ChatError . CEException) (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
+          | otherwise -> pure mr
+        skip -> pure skip
     toAgent = \case
       Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
@@ -6050,7 +6045,7 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending) = foldr addMember ([], []) recipientMembers
       msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
-  delivered <- deliverMessages msgReqs
+  delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
   stored <- withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
