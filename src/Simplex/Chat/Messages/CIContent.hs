@@ -139,25 +139,24 @@ data CIContent (d :: MsgDirection) where
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
-  CIRcvE2EEInfo :: E2EEInfo -> CIContent 'MDRcv
+  CIRcvDirectE2EEInfo :: DirectE2EEInfo -> CIContent 'MDRcv
+  CIRcvGroupE2EEInfo :: GroupE2EEInfo -> CIContent 'MDRcv
   CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
+
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
 
-data E2EEInfo = E2EEInfo {
-    pqEnabled :: E2EEInfoPQ
+data DirectE2EEInfo = DirectE2EEInfo
+  { pqEnabled :: Bool
   }
   deriving (Eq, Show)
 
--- TODO [pq] differentiate contact and group items?
--- TODO      differentiate experimental toggle?
-data E2EEInfoPQ
-  = E2EEInfoPQEnabled {enabled :: Bool} -- direct conversation
-  | E2EEInfoPQAllowed -- small group
-  | E2EEInfoPQNotAllowed -- large group
+data GroupE2EEInfo = GroupE2EEInfo
+  { pqAllowed :: Bool
+  }
   deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
@@ -209,6 +208,8 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
     CIRcvBlocked -> False
+    CIRcvDirectE2EEInfo _ -> False
+    CIRcvGroupE2EEInfo _ -> False
     CIInvalidJSON _ -> False
 
 newtype DBMsgErrorType = DBME MsgErrorType
@@ -264,7 +265,22 @@ ciContentToText = \case
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
   CIRcvBlocked -> "blocked"
+  CIRcvDirectE2EEInfo di -> directE2EEInfoToText di
+  CIRcvGroupE2EEInfo gi -> groupE2EEInfoToText gi
   CIInvalidJSON _ -> "invalid content JSON"
+
+-- TODO [pq] describe experimental toggle?
+directE2EEInfoToText :: DirectE2EEInfo -> Text
+directE2EEInfoToText DirectE2EEInfo {pqEnabled} =
+  "messages in this conversation are end-to-end encrypted, "
+    <> ("post-quantum encryption is " <> if pqEnabled then "enabled" else "not enabled")
+
+groupE2EEInfoToText :: GroupE2EEInfo -> Text
+groupE2EEInfoToText GroupE2EEInfo {pqAllowed} =
+  "messages in this conversation are end-to-end encrypted, "
+    <> if pqAllowed
+      then "post-quantum encryption will be enabled for members who support it"
+      else "post-quantum encryption is not enabled (group is too large)"
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
@@ -399,6 +415,8 @@ data JSONCIContent
   | JCISndModerated
   | JCIRcvModerated
   | JCIRcvBlocked
+  | JCIRcvDirectE2EEInfo {directE2EEInfo :: DirectE2EEInfo}
+  | JCIRcvGroupE2EEInfo {groupE2EEInfo :: GroupE2EEInfo}
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -429,6 +447,8 @@ jsonCIContent = \case
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
   CIRcvBlocked -> JCIRcvBlocked
+  CIRcvDirectE2EEInfo di -> JCIRcvDirectE2EEInfo di
+  CIRcvGroupE2EEInfo gi -> JCIRcvGroupE2EEInfo gi
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -459,6 +479,8 @@ aciContentJSON = \case
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
+  JCIRcvDirectE2EEInfo {directE2EEInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo directE2EEInfo
+  JCIRcvGroupE2EEInfo {groupE2EEInfo} -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo groupE2EEInfo
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -490,6 +512,8 @@ data DBJSONCIContent
   | DBJCISndModerated
   | DBJCIRcvModerated
   | DBJCIRcvBlocked
+  | DBJCIRcvDirectE2EEInfo {directE2EEInfo :: DirectE2EEInfo}
+  | DBJCIRcvGroupE2EEInfo {groupE2EEInfo :: GroupE2EEInfo}
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -520,6 +544,8 @@ dbJsonCIContent = \case
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
   CIRcvBlocked -> DBJCIRcvBlocked
+  CIRcvDirectE2EEInfo di -> DBJCIRcvDirectE2EEInfo di
+  CIRcvGroupE2EEInfo gi -> DBJCIRcvGroupE2EEInfo gi
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -550,6 +576,8 @@ aciContentDBJSON = \case
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
+  DBJCIRcvDirectE2EEInfo di -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo di
+  DBJCIRcvGroupE2EEInfo gi -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo gi
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -574,6 +602,10 @@ ciCallInfoText status duration = case status of
   CISCallProgress -> "in progress " <> durationText duration
   CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
+
+$(JQ.deriveJSON defaultJSON ''DirectE2EEInfo)
+
+$(JQ.deriveJSON defaultJSON ''GroupE2EEInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
 
@@ -643,4 +675,6 @@ toCIContentTag ciContent = case ciContent of
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
   CIRcvBlocked -> "rcvBlocked"
+  CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
+  CIRcvGroupE2EEInfo _ -> "rcvGroupE2EEInfo"
   CIInvalidJSON _ -> "invalidJSON"
