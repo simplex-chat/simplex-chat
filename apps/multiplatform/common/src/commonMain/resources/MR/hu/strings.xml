@@ -27,7 +27,7 @@
     <string name="above_then_preposition_continuation">fentről, utána:</string>
     <string name="accept_contact_incognito_button">Fogadás inkognítóban</string>
     <string name="accept_connection_request__question">Elfogadja a kapcsolatfelvételt?</string>
-    <string name="accept_contact_button">Elfogad</string>
+    <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
     <string name="add_address_to_your_profile">Adjon hozzá címet profiljához, hogy ismerősei megoszthassák másokkal. A profilfrissítés elküldésre kerül névjegyei számára.</string>
     <string name="color_primary_variant">További kiemelés</string>
@@ -56,11 +56,11 @@
     <string name="app_version_code">Az alkalmazás build száma: %s</string>
     <string name="audio_video_calls">Hang-/videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
-    <string name="allow_your_contacts_to_send_voice_messages">Ismerőseid küldhetnek hangüzeneteket.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Névjegyek küldhetnek hangüzeneteket.</string>
     <string name="settings_audio_video_calls">Hang- és videóhívások</string>
     <string name="v5_3_encrypt_local_files_descr">Az alkalmazás titkosítja a helyi fájlokat (a videók kivételével).</string>
     <string name="answer_call">Hívás fogadása</string>
-    <string name="allow_your_contacts_to_send_disappearing_messages">Ismerőseid küldhetnek eltűnő üzeneteket.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Névjegyek küldhetnek eltűnő üzeneteket.</string>
     <string name="connect_plan_already_connecting">Már kapcsolódik!</string>
     <string name="cannot_receive_file">Nem tud fájlt fogadni</string>
     <string name="auth_unavailable">Hitelesítés elérhetetlen</string>
@@ -120,7 +120,7 @@
     <string name="chat_preferences_always">mindig</string>
     <string name="call_already_ended">A hívás már befejeződött!</string>
     <string name="turn_off_battery_optimization_button">Engedélyez</string>
-    <string name="all_your_contacts_will_remain_connected">A kapcsolat megmarad az összes Ismerősöddel.</string>
+    <string name="all_your_contacts_will_remain_connected">Az összes névjegy kapcsolatban marad.</string>
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet megszakítása</string>
     <string name="allow_irreversible_message_deletion_only_if">Üzenet végleges törlésének engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
@@ -135,7 +135,7 @@
     <string name="callstatus_ended">a(z) %1$s hívás befejeződött</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. A háttérszolgáltatás ellenőrzi az új üzeneteket 10 percenként. Hívásokról és fontos üzenetekről maradhatsz le.]]></string>
     <string name="group_member_role_author">szerző</string>
-    <string name="allow_your_contacts_irreversibly_delete">Engedélyezed az ismerőseidnek, hogy visszafordíthatatlanul törölhessék az elküldött üzeneteket. (24 óra)</string>
+    <string name="allow_your_contacts_irreversibly_delete">Engedélyezze névjegyeinek, hogy visszafordíthatatlanul törölhessék az elküldött üzeneteket. (24 óra)</string>
     <string name="cancel_verb">Megszakítás</string>
     <string name="notifications_mode_off_desc">Az alkalmazás csak akkor tud értesítéseket fogadni amikor fut, a héttérszolgáltatás nem kerül elindításra.</string>
     <string name="v5_1_better_messages">Jobb üzenetek</string>
