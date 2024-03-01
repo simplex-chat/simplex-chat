@@ -338,7 +338,6 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
-    itemPQEncrypted :: Maybe Bool, -- always Nothing for group snd items
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
@@ -364,7 +363,6 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
           itemTs,
           itemText,
           itemStatus,
-          itemPQEncrypted = Nothing, -- TODO [pq]
           itemSharedMsgId,
           itemDeleted,
           itemEdited,
@@ -383,7 +381,6 @@ dummyMeta itemId ts itemText =
       itemTs = ts,
       itemText,
       itemStatus = CISSndNew,
-      itemPQEncrypted = Nothing,
       itemSharedMsgId = Nothing,
       itemDeleted = Nothing,
       itemEdited = False,
