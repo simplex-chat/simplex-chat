@@ -5748,6 +5748,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (m', conn')
           else pure (m, conn)
 
+-- TODO [pq] perhaps both kinds of events (member PQ enabled, group PQ allowed)
+-- TODO      would produce too much noise in conversation,
+-- TODO      and it's better to only send a single event for the group when its setting changes
 updateGroupPQAllowedMemberAdded :: ChatMonad m => User -> GroupInfo -> m GroupInfo
 updateGroupPQAllowedMemberAdded user gInfo@GroupInfo {groupId = _groupId, pqAllowed} =
   flip catchChatError (const $ pure gInfo) $
