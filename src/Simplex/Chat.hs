@@ -5706,6 +5706,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
+    -- TODO [pq] refactor
     updateContactPQ :: Contact -> Connection -> PQFlag -> m (Contact, Connection)
     updateContactPQ ct conn@Connection {connId, pqEnabled} pqEnabled' =
       flip catchChatError (const $ pure (ct, conn)) $ case (pqEnabled, pqEnabled') of
@@ -5714,19 +5715,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
           let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
               ct' = ct {activeConn = Just conn'} :: Contact
-          createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
+          createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EEInfo pqEnabled') Nothing
           toView $ CRContactPQEnabled user ct' pqEnabled'
           pure (ct', conn')
-        (Just b, b') -> do
-          if b' /= b
-            then do
+        (Just b, b')
+          | b' /= b -> do
               withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
               let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
                   ct' = ct {activeConn = Just conn'} :: Contact
               createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
               toView $ CRContactPQEnabled user ct' pqEnabled'
               pure (ct', conn')
-            else pure (ct, conn)
+          | otherwise -> pure (ct, conn)
 
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
@@ -5957,17 +5957,9 @@ deleteOrUpdateMemberRecord user@User {userId} member =
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage ct chatMsgEvent = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
-  pq <- contactPQFlag conn
+  -- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis;
+  pq <- readTVarIO =<< asks pqExperimentalEnabled
   sendDirectMessage conn pq chatMsgEvent (ConnectionId connId)
-
--- TODO [pq] look up pqExperimentalEnabled on every send to pass flag to agent apis;
--- TODO      same logic has to be applied to other sending apis, not only sendMessages
--- if contact already had PQ enabled, it overrides flag
-contactPQFlag :: ChatMonad m => Connection -> m PQFlag
-contactPQFlag Connection {pqEnabled} =
-  pure False
-  -- TODO
-  -- (pqEnabled ||) <$> (readTVarIO =<< asks pqExperimentalEnabled)
 
 contactSendConn_ :: Contact -> Either ChatError Connection
 contactSendConn_ ct@Contact {activeConn} = case activeConn of
