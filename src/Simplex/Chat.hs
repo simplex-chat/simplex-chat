@@ -5966,6 +5966,7 @@ sendDirectContactMessage ct chatMsgEvent = do
 contactPQFlag :: ChatMonad m => Connection -> m PQFlag
 contactPQFlag Connection {pqEnabled} =
   pure False
+  -- TODO
   -- (pqEnabled ||) <$> (readTVarIO =<< asks pqExperimentalEnabled)
 
 contactSendConn_ :: Contact -> Either ChatError Connection
