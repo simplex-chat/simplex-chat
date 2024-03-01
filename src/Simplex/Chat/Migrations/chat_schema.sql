@@ -120,7 +120,8 @@ CREATE TABLE groups(
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
-  user_member_profile_sent_at TEXT, -- received
+  user_member_profile_sent_at TEXT,
+  pq_allowed INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

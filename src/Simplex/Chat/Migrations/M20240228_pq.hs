@@ -5,10 +5,13 @@ module Simplex.Chat.Migrations.M20240228_pq where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
+-- TODO [pq] update groups.pq_allowed based on current group size in migration?
 m20240228_pq :: Query
 m20240228_pq =
   [sql|
 ALTER TABLE connections ADD COLUMN pq_enabled INTEGER;
+
+ALTER TABLE groups ADD COLUMN pq_allowed INTEGER;
 
 ALTER TABLE chat_items ADD COLUMN pq_encryption INTEGER;
 
@@ -21,6 +24,8 @@ down_m20240228_pq =
 ALTER TABLE group_snd_item_statuses DROP COLUMN group_snd_pq_encryption;
 
 ALTER TABLE chat_items DROP COLUMN pq_encryption;
+
+ALTER TABLE groups DROP COLUMN pq_allowed;
 
 ALTER TABLE connections DROP COLUMN pq_enabled;
 |]

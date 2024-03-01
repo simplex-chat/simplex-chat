@@ -354,7 +354,9 @@ data GroupInfo = GroupInfo
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    userMemberProfileSentAt :: Maybe UTCTime
+    userMemberProfileSentAt :: Maybe UTCTime,
+    -- whether PQ cryptography is supported in the group, based on group size
+    pqAllowed :: Bool
   }
   deriving (Eq, Show)
 
@@ -568,7 +570,8 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
-    groupLinkId :: Maybe GroupLinkId
+    groupLinkId :: Maybe GroupLinkId,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -576,7 +579,8 @@ data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 

@@ -139,12 +139,26 @@ data CIContent (d :: MsgDirection) where
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
+  CIRcvE2EEInfo :: E2EEInfo -> CIContent 'MDRcv
   CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
+
+data E2EEInfo = E2EEInfo {
+    pqEnabled :: E2EEInfoPQ
+  }
+  deriving (Eq, Show)
+
+-- TODO [pq] differentiate contact and group items?
+-- TODO      differentiate experimental toggle?
+data E2EEInfoPQ
+  = E2EEInfoPQEnabled {enabled :: Bool} -- direct conversation
+  | E2EEInfoPQAllowed -- small group
+  | E2EEInfoPQNotAllowed -- large group
+  deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
 ciMsgContent = \case

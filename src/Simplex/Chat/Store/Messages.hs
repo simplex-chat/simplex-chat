@@ -2505,7 +2505,7 @@ getGroupSndStatuses db itemId =
     <$> DB.query
       db
       [sql|
-        SELECT group_member_id, group_snd_item_status, group_snd_item_statuses
+        SELECT group_member_id, group_snd_item_status, group_snd_pq_encryption
         FROM group_snd_item_statuses
         WHERE chat_item_id = ?
       |]

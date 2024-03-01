@@ -146,19 +146,20 @@ import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (Maybe Bool, UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. GroupMemberRow
 
 type GroupMemberRow = ((Int64, Int64, MemberId, Version, Version, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe Version, Maybe Version, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
 
 toGroupInfo :: VersionRange -> Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. userMemberRow) =
+toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (pqAllowed_, createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = JVersionRange vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
-   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt}
+      pqAllowed = fromMaybe False pqAllowed_
+   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, pqAllowed, createdAt, updatedAt, chatTs, userMemberProfileSentAt}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
@@ -268,7 +269,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr =
         SELECT
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.pq_allowed,
           g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -304,8 +305,8 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr =
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> VersionRange -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
-createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
+createNewGroup :: DB.Connection -> VersionRange -> TVar ChaChaDRG -> User -> GroupProfile -> Bool -> Maybe Profile -> ExceptT StoreError IO GroupInfo
+createNewGroup db vr gVar user@User {userId} groupProfile pqExperimentalEnabled incognitoProfile = ExceptT $ do
   let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
@@ -321,11 +322,11 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         db
         [sql|
           INSERT INTO groups
-            (local_display_name, user_id, group_profile_id, enable_ntfs,
+            (local_display_name, user_id, group_profile_id, enable_ntfs, pq_allowed,
              created_at, updated_at, chat_ts, user_member_profile_sent_at)
-          VALUES (?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        (ldn, userId, profileId, True, currentTs, currentTs, currentTs, currentTs)
+        (ldn, userId, profileId, True, pqExperimentalEnabled, currentTs, currentTs, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser customUserProfileId currentTs vr
@@ -342,7 +343,8 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           createdAt = currentTs,
           updatedAt = currentTs,
           chatTs = Just currentTs,
-          userMemberProfileSentAt = Just currentTs
+          userMemberProfileSentAt = Just currentTs,
+          pqAllowed = pqExperimentalEnabled
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -372,6 +374,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
+          pqAllowed = True -- TODO [pq] based on group size from invitation
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           currentTs <- liftIO getCurrentTime
@@ -385,11 +388,13 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               db
               [sql|
                 INSERT INTO groups
-                  (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+                  (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, pq_allowed,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
               |]
-              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
+              ( (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, pqAllowed)
+                  :. (currentTs, currentTs, currentTs, currentTs)
+              )
             insertedRowId db
           let JVersionRange hostVRange = peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
@@ -407,7 +412,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   createdAt = currentTs,
                   updatedAt = currentTs,
                   chatTs = Just currentTs,
-                  userMemberProfileSentAt = Just currentTs
+                  userMemberProfileSentAt = Just currentTs,
+                  pqAllowed
                 },
               groupMemberId
             )
@@ -498,6 +504,7 @@ createGroupInvitedViaLink
     where
       insertGroup_ currentTs = ExceptT $ do
         let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+            pqAllowed = True -- TODO [pq] based on group size from invitation
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           liftIO $ do
             DB.execute
@@ -509,11 +516,13 @@ createGroupInvitedViaLink
               db
               [sql|
                 INSERT INTO groups
-                  (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+                  (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs, pq_allowed,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
               |]
-              (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
+              ( (profileId, localDisplayName, customUserProfileId, userId, True, pqAllowed)
+                  :. (currentTs, currentTs, currentTs, currentTs)
+              )
             insertedRowId db
       insertHost_ currentTs groupId = do
         let fromMemberProfile = profileFromName fromMemberName
@@ -619,7 +628,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
       [sql|
         SELECT
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.pq_allowed,
           g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
           mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
           mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
@@ -1281,7 +1290,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
         SELECT
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.pq_allowed,
           g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -1377,7 +1386,7 @@ getGroupInfo db vr User {userId, userContactId} groupId =
         SELECT
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.pq_allowed,
           g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
