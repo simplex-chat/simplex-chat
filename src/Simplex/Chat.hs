@@ -5957,9 +5957,9 @@ batchSndMessagesBinary msgs = map toMsgBatch batched
   where
     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
     toMsgBatch = \case
-      SMP.TBError tbe SndMessage {msgId} -> Left $ ChatError $ CEInternalError (show tbe <> " " <> show msgId)
       SMP.TBTransmissions combined _n sms -> Right $ encodeBatch combined sms
-      SMP.TBTransmission single sm -> Right $ encodeBatch single [sm]
+      SMP.TBError tbe SndMessage {msgId} -> Left $ ChatError $ CEInternalError (show tbe <> " " <> show msgId)
+      SMP.TBTransmission{} -> Left $ ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
       where
         -- | Add binary batch marker. The transmission is already length-prefixed.
         -- Paired with `parseChatMessages` for decodeing.
