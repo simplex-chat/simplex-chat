@@ -90,9 +90,9 @@ groupHistoryIncludeWelcomeVRange = mkVersionRange 6 currentChatVersion
 memberProfileUpdateVRange :: VersionRange
 memberProfileUpdateVRange = mkVersionRange 7 currentChatVersion
 
--- version range that supports sending member profile updates to groups
+-- version range that supports compressing messages
 compressedBatchingVRange :: VersionRange
-compressedBatchingVRange = mkVersionRange (currentChatVersion + 1) currentChatVersion
+compressedBatchingVRange = mkVersionRange 8 8
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
