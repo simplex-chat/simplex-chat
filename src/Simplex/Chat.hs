@@ -81,7 +81,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, shuffle)
-import Simplex.FileTransfer.Client.Main (maxFileSize)
+import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
@@ -2005,7 +2005,7 @@ processChatCommand' vr = \case
   APIUploadStandaloneFile userId file@CryptoFile {filePath} -> withUserId userId $ \user -> do
     fsFilePath <- toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
-    when (fileSize > maxFileSizeStandalone) $ throwChatError $ CEFileSize filePath
+    when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
     (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
@@ -6963,9 +6963,6 @@ mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0
           | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
           | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
         validFirstChar = isLetter c || isNumber c || isSymbol c
-
-maxFileSizeStandalone :: Integer
-maxFileSizeStandalone = FD.gb 5
 
 xftpSndFileTransfer_ :: ChatMonad m => User -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
 xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ = do
