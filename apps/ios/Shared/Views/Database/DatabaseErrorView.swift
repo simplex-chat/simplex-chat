@@ -174,10 +174,7 @@ struct DatabaseErrorView: View {
                         message: Text(error)
                     ))
                 case .errorMigration: ()
-                case .ok:
-                    let appSettings = try apiGetAppSettings(settings: AppSettings.current)
-                    appSettings.importIntoApp()
-                }
+                case .ok: ()
             }
         } catch let error {
             logger.error("initializeChat \(responseError(error))")

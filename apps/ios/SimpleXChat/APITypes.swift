@@ -1934,7 +1934,7 @@ public struct AppSettings: Codable, Equatable {
     public var privacyShowChatPreviews: Bool? = nil
     public var privacySaveLastDraft: Bool? = nil
     public var privacyProtectScreen: Bool? = nil
-    public var notificationMode: NotificationMode? = nil
+    public var notificationMode: AppSettingsNotificationMode? = nil
     public var notificationPreviewMode: NotificationPreviewMode? = nil
     public var webrtcPolicyRelay: Bool? = nil
     public var webrtcICEServers: [String]? = nil
@@ -1943,33 +1943,9 @@ public struct AppSettings: Codable, Equatable {
     public var connectRemoteViaMulticastAuto: Bool? = nil
     public var developerTools: Bool? = nil
     public var confirmDBUpgrades: Bool? = nil
-    public var androidCallOnLockScreen: LockScreenCalls? = nil
+    public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
-
-    public static var defaults: AppSettings {
-        AppSettings (
-            networkConfig: NetCfg.defaults,
-            privacyEncryptLocalFiles: true,
-            privacyAcceptImages: true,
-            privacyLinkPreviews: true,
-            privacyShowChatPreviews: true,
-            privacySaveLastDraft: true,
-            privacyProtectScreen: false,
-            notificationMode: NotificationMode.instant,
-            notificationPreviewMode: NotificationPreviewMode.message,
-            webrtcPolicyRelay: true,
-            webrtcICEServers: [],
-            confirmRemoteSessions: false,
-            connectRemoteViaMulticast: true,
-            connectRemoteViaMulticastAuto: true,
-            developerTools: false,
-            confirmDBUpgrades: false,
-            androidCallOnLockScreen: LockScreenCalls.show,
-            iosCallKitEnabled: true,
-            iosCallKitCallsInRecents: false
-        )
-    }
 
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -1995,9 +1971,33 @@ public struct AppSettings: Codable, Equatable {
         if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
         return empty
     }
+
+    public static var defaults: AppSettings {
+        AppSettings (
+            networkConfig: NetCfg.defaults,
+            privacyEncryptLocalFiles: true,
+            privacyAcceptImages: true,
+            privacyLinkPreviews: true,
+            privacyShowChatPreviews: true,
+            privacySaveLastDraft: true,
+            privacyProtectScreen: false,
+            notificationMode: AppSettingsNotificationMode.instant,
+            notificationPreviewMode: NotificationPreviewMode.message,
+            webrtcPolicyRelay: true,
+            webrtcICEServers: [],
+            confirmRemoteSessions: false,
+            connectRemoteViaMulticast: true,
+            connectRemoteViaMulticastAuto: true,
+            developerTools: false,
+            confirmDBUpgrades: false,
+            androidCallOnLockScreen: AppSettingsLockScreenCalls.show,
+            iosCallKitEnabled: true,
+            iosCallKitCallsInRecents: false
+        )
+    }
 }
 
-public enum NotificationMode: String, Codable {
+public enum AppSettingsNotificationMode: String, Codable {
     case off
     case periodic
     case instant
@@ -2010,7 +2010,7 @@ public enum NotificationMode: String, Codable {
         }
     }
 
-    public static func from(_ mode: NotificationsMode) -> NotificationMode {
+    public static func from(_ mode: NotificationsMode) -> AppSettingsNotificationMode {
         switch mode {
         case .instant: .instant
         case .periodic: .periodic
@@ -2025,7 +2025,7 @@ public enum NotificationMode: String, Codable {
 //    case message
 //}
 
-public enum LockScreenCalls: String, Codable {
+public enum AppSettingsLockScreenCalls: String, Codable {
     case disable
     case show
     case accept

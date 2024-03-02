@@ -49,8 +49,7 @@ struct SimpleXApp: App {
                         // It's important, otherwise, user may be locked in undefined state
                         onboardingStageDefault.set(.step1_SimpleXInfo)
                         chatModel.onboardingStage = onboardingStageDefault.get()
-                    }
-                    if (kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil) && chatModel.migrationState == nil {
+                    } else kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             initChatAndMigrate()
                         }
