@@ -81,7 +81,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, shuffle)
-import Simplex.FileTransfer.Client.Main (maxFileSize)
+import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
@@ -2005,6 +2005,7 @@ processChatCommand' vr = \case
   APIUploadStandaloneFile userId file@CryptoFile {filePath} -> withUserId userId $ \user -> do
     fsFilePath <- toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
+    when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
     (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
