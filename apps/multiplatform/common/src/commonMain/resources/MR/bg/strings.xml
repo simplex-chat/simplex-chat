@@ -1633,4 +1633,9 @@
     <string name="welcome_message_is_too_long">Съобщението при посрещане е твърде голямо</string>
     <string name="database_migration_in_progress">Извършва се миграция на базата данни.
 \nМоже да отнеме няколко минути.</string>
+    <string name="call_service_notification_audio_call">Аудио разговор</string>
+    <string name="unable_to_open_browser_title">Грешка при отваряне на браузъра</string>
+    <string name="unable_to_open_browser_desc">За разговори е необходим уеб браузър по подразбиране. Моля, конфигурирайте браузъра по подразбиране в системните настройки и споделете повече информация с разработчиците.</string>
+    <string name="call_service_notification_video_call">Видео разговор</string>
+    <string name="call_service_notification_end_call">Край на разговора</string>
 </resources>
