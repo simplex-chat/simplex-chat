@@ -55,7 +55,7 @@ extension AppSettings {
         c.privacyShowChatPreviews = def.bool(forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS)
         c.privacySaveLastDraft = def.bool(forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT)
         c.privacyProtectScreen = def.bool(forKey: DEFAULT_PRIVACY_PROTECT_SCREEN)
-        c.notificationMode = NotificationMode.from(ChatModel.shared.notificationMode)
+        c.notificationMode = AppSettingsNotificationMode.from(ChatModel.shared.notificationMode)
         c.notificationPreviewMode = ntfPreviewModeGroupDefault.get()
         c.webrtcPolicyRelay = def.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
         c.webrtcICEServers = def.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS)
@@ -64,7 +64,7 @@ extension AppSettings {
         c.connectRemoteViaMulticastAuto = def.bool(forKey: DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO)
         c.developerTools = def.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
         c.confirmDBUpgrades = confirmDBUpgradesGroupDefault.get()
-        c.androidCallOnLockScreen = LockScreenCalls(rawValue: def.string(forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN)!)
+        c.androidCallOnLockScreen = AppSettingsLockScreenCalls(rawValue: def.string(forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN)!)
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
         c.iosCallKitCallsInRecents = callKitEnabledGroupDefault.get()
         return c
