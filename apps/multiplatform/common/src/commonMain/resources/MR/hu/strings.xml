@@ -941,7 +941,7 @@
     <string name="button_welcome_message">Üdvözlő üzenet</string>
     <string name="rcv_group_event_n_members_connected">%s, %s és %d további tag csatlakozott</string>
     <string name="only_your_contact_can_make_calls">Csak a névjegye tud hívást indítani.</string>
-    <string name="settings_section_title_themes">SZÍNSÉMÁK</string>
+    <string name="settings_section_title_themes">TÉMÁK</string>
     <string name="videos_limit_title">Túl sok videó!</string>
     <string name="stop_chat_to_enable_database_actions">Csevegési szolgáltatás megállítása az adatbázis műveletek elvégzéséhez.</string>
     <string name="welcome">Üdvözöllek!</string>
@@ -1021,7 +1021,7 @@
     <string name="this_device">Ez az eszköz</string>
     <string name="share_address_with_contacts_question">Megosztja az azonosítót a névjegyekkel?</string>
     <string name="profile_password">Profil jelszó</string>
-    <string name="theme">Színséma</string>
+    <string name="theme">Téma</string>
     <string name="remove_passphrase_from_settings">Jelmondat eltávolítása a beállításokból?</string>
     <string name="simplex_link_group">SimpleX csoport link</string>
     <string name="icon_descr_waiting_for_image">Képre várakozás</string>
@@ -1097,7 +1097,7 @@
     <string name="simplex_link_invitation">SimpleX egyszer használatos meghívó</string>
     <string name="your_calls">A te hívásaid</string>
     <string name="icon_descr_sent_msg_status_send_failed">küldés sikertelen</string>
-    <string name="theme_colors_section_title">SZÍNSÉMA SZÍNEK</string>
+    <string name="theme_colors_section_title">TÉMA SZÍNEK</string>
     <string name="network_options_revert">Visszaállít</string>
     <string name="restore_database_alert_desc">Előző jelszó megadása az adatbázis biztonsági mentésének visszaállítása után. Ez a művelet nem visszavonható.</string>
     <string name="color_secondary">Másodlagos</string>
@@ -1346,7 +1346,7 @@
     <string name="you_can_turn_on_lock">A SimpleX Zár-at a Beállításokon keresztül kapcsolhatod be.</string>
     <string name="app_was_crashed">Az alkalmazás összeomlott</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Ellenőrizze, hogy a megfelelő linket használta-e, vagy kérje meg névjegyét, hogy küldjön egy másikat.</string>
-    <string name="image_decoding_exception_desc">A kép nem dekódolható. Kérjük, próbálj meg egy másik képet, vagy lépj kapcsolatba a fejlesztőkkel.</string>
+    <string name="image_decoding_exception_desc">A kép nem dekódolható. Kérjük, próbálja ki egy másik képpel, vagy lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="non_content_uri_alert_text">Érvénytelen fájl elérési útvonalat osztottál meg. Jelentsd a problémát az alkalmazás fejlesztőinek.</string>
     <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profilod ugyanezzel a megjelenített névvel. Kérjük, válassz másik nevet.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Csatlakozási kísérlet a kapcsolat üzeneteinek fogadására használt szerverhez ettől az ismerősödtől (hiba: %1$s).</string>
