@@ -31,13 +31,13 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
         return state
     }
 
-    static func save(_ state: MigrationFromAnotherDeviceState?, save: (MigrationFromAnotherDeviceState?) -> Void) {
+    static func save(_ state: MigrationFromAnotherDeviceState?, apply: (MigrationFromAnotherDeviceState?) -> Void) {
         if let state {
             UserDefaults.standard.setValue(encodeJSON(state), forKey: DEFAULT_MIGRATION_STAGE)
         } else {
             UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
         }
-        save(state)
+        apply(state)
     }
 }
 
