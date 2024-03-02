@@ -175,6 +175,7 @@ struct DatabaseErrorView: View {
                     ))
                 case .errorMigration: ()
                 case .ok: ()
+                }
             }
         } catch let error {
             logger.error("initializeChat \(responseError(error))")
