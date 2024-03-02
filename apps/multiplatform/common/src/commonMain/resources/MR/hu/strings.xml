@@ -678,7 +678,7 @@
     <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő szerverek látni fogják az Ön IP-címét és a szolgáltatóját – azt, hogy mely szerverekhez csatlakozik.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor az ismerősöd befejezi a feltöltést.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>]]></string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ha megkapta a SimpleX Chat meghívó linkjét, megnyithatja a böngészőben:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Kapott SimpleX Chat meghívó linkjét megnyithatja böngészőjében:</string>
     <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:</string>
     <string name="found_desktop">Megtalált asztali számítógép</string>
     <string name="desktop_devices">Számítógépek</string>
