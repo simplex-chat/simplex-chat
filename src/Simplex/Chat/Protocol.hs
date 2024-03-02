@@ -550,7 +550,7 @@ shouldCompressMsgBody :: VersionRange -> Bool -> Bool
 shouldCompressMsgBody peerChatVRange toggle = toggle || isCompatibleRange peerChatVRange compressedBatchingVRange
 
 compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
-compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . L.singleton <$$> compress ctx msgBody
+compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$$> compress ctx msgBody
 
 markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'

@@ -5991,7 +5991,7 @@ deliverMessage conn cmEventTag msgBody msgId = do
 
 deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> MsgBody -> MessageId -> m Int64
 deliverMessage' conn msgFlags msgBody msgId =
-  deliverMessages (L.singleton (conn, msgFlags, msgBody, msgId)) >>= \case
+  deliverMessages ((conn, msgFlags, msgBody, msgId) :| []) >>= \case
     r :| [] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
