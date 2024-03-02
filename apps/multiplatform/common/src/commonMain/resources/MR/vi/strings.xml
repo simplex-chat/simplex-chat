@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">tin nhắn không thể giải mã.</string>
-    <string name="moderated_items_description">tin nhắn đã bị xóa bởi</string>
-    <string name="group_info_section_title_num_members">THÀNH VIÊN</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d tin nhắn không thể giải mã.</string>
+    <string name="moderated_items_description">%1$d tin nhắn đã bị xóa bởi %2$s</string>
+    <string name="group_info_section_title_num_members">%1$s THÀNH VIÊN</string>
     <string name="learn_more_about_address">Thông tin về địa chỉ SimpleX</string>
     <string name="address_section_title">Địa chỉ</string>
     <string name="abort_switch_receiving_address_confirm">Hủy bỏ</string>
@@ -14,8 +14,32 @@
     <string name="about_simplex">Thông tin về SimpleX</string>
     <string name="group_member_role_admin">quản trị viên</string>
     <string name="button_add_welcome_message">Thêm lời chào</string>
-    <string name="contact_wants_to_connect_via_call">muốn kết nối với bạn qua</string>
+    <string name="contact_wants_to_connect_via_call">%1$s muốn kết nối với bạn qua</string>
     <string name="accept">Chấp nhận</string>
-    <string name="alert_text_decryption_error_too_many_skipped">tin nhắn đã bị bỏ qua.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d tin nhắn đã bị bỏ qua.</string>
     <string name="users_add">Thêm hồ sơ</string>
+    <string name="integrity_msg_skipped">%1$d tin nhắn bị bỏ qua</string>
+    <string name="send_disappearing_message_1_minute">1 phút</string>
+    <string name="send_disappearing_message_5_minutes">5 phút</string>
+    <string name="accept_feature">Chấp nhận</string>
+    <string name="v4_3_improved_server_configuration_desc">Thêm máy chủ bằng cách quét mã QR.</string>
+    <string name="network_settings">Cài đặt mạng nâng cao</string>
+    <string name="users_delete_all_chats_deleted">Tất cả các cuộc hội thoại và tin nhắn sẽ bị xóa - quá trình này không thể được hoàn tác!</string>
+    <string name="abort_switch_receiving_address_question">Hủy bỏ việc đổi địa chỉ?</string>
+    <string name="abort_switch_receiving_address_desc">Việc thay đổi địa chỉ sẽ bị hủy bỏ. Địa chỉ nhận cũ tiếp tục được sử dụng.</string>
+    <string name="send_disappearing_message_30_seconds">30 giây</string>
+    <string name="accept_connection_request__question">Chấp nhận yêu cầu kết nối?</string>
+    <string name="accept_contact_incognito_button">Chấp nhận bằng hồ sơ ẩn danh</string>
+    <string name="smp_servers_preset_add">Thêm các máy chủ được cài sẵn</string>
+    <string name="smp_servers_add_to_another_device">Thêm vào một thiết bị khác</string>
+    <string name="callstatus_accepted">cuộc gọi được chấp nhận</string>
+    <string name="conn_event_ratchet_sync_started">đồng ý mã hóa…</string>
+    <string name="snd_conn_event_ratchet_sync_started">đồng ý mã hóa cho %s</string>
+    <string name="v5_2_more_things">Một vài điều nữa</string>
+    <string name="accept_call_on_lock_screen">Chấp nhận</string>
+    <string name="all_app_data_will_be_cleared">Tất cả dữ liệu đã bị xóa.</string>
+    <string name="chat_item_ttl_month">1 tháng</string>
+    <string name="chat_item_ttl_week">1 tuần</string>
+    <string name="abort_switch_receiving_address">Hủy bỏ việc đổi địa chỉ</string>
+    <string name="v4_2_group_links_desc">Các quản trị viên có thể tạo liên kết để tham gia nhóm.</string>
 </resources>
