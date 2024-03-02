@@ -623,7 +623,7 @@
     <string name="conn_event_ratchet_sync_required">titkosítás újra egyeztetés szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
     <string name="files_and_media_section">Fájlok és média</string>
-    <string name="image_saved">Fotók elmentve a fotóalbumba</string>
+    <string name="image_saved">A kép mentve a Galériába</string>
     <string name="hide_notification">Elrejt</string>
     <string name="la_immediately">Azonnal</string>
     <string name="files_and_media_prohibited">A fájlok- és a médiatartalom küldése le van tiltva!</string>
@@ -672,14 +672,14 @@
     <string name="error_creating_member_contact">Hiba a névjeggyel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy névjegye megoszthat egy meghívó linket.</string>
-    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadod ezt a jelkódot, az alkalmazás minden adata véglegesen törlődik!</string>
+    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelszót, az összes alkalmazásadat visszafordíthatatlanul törlődik!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a linket.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a linket.</string>
-    <string name="network_disable_socks_info">Ha megerősíted, az üzenetküldő szerverek láthatják az IP-címedet és a szolgáltatódat, vagyis azt, hogy mely szerverekhez csatlakozol.</string>
+    <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő szerverek látni fogják az Ön IP-címét és a szolgáltatóját – azt, hogy mely szerverekhez csatlakozik.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor az ismerősöd befejezi a feltöltést.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>]]></string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ha kaptál egy SimpleX Chat meghívó linket, akkor megnyithatod azt a böngészőben:</string>
-    <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor megadod az önmegsemmisítő jelkódot:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ha megkapta a SimpleX Chat meghívó linkjét, megnyithatja a böngészőben:</string>
+    <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:</string>
     <string name="found_desktop">Megtalált asztali számítógép</string>
     <string name="desktop_devices">Számítógépek</string>
     <string name="how_to_use_markdown">A markdown használata</string>
