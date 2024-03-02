@@ -772,7 +772,7 @@
     <string name="v5_2_disappear_one_message">Egy üzenet eltüntetése</string>
     <string name="v4_3_irreversible_message_deletion">Visszafordíthatatlan üzenettörlés</string>
     <string name="videos_limit_desc">Egyszerre csak 10 videó küldhető el</string>
-    <string name="only_you_can_add_message_reactions">Csak te adhatsz hozzá üzenetreakciókat.</string>
+    <string name="only_you_can_add_message_reactions">Csak Ön adhat hozzá üzenetreakciókat.</string>
     <string name="group_member_status_left">elhagyta</string>
     <string name="message_deletion_prohibited">Ebben a csevegésben az üzenetek visszafordíthatatlan törlése le van tiltva.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
@@ -808,7 +808,7 @@
     <string name="link_a_mobile">Egy mobil összekapcsolása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
     <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Csak a te eszközeid tárolják a felhasználói profilodat, névjegyeidet, csoportjaidat és a <b>2 rétegű végponttól-végpontig titkosítással</b> küldött üzeneteidet.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Csak a kliensek tárolják a felhasználói profilokat, névjegyeket, csoportokat és a <b>2 rétegű végponttól-végpontig titkosítással</b> küldött üzeneteket.</string>
     <string name="invalid_migration_confirmation">Érvénytelen migrációs visszaigazolás</string>
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
@@ -894,7 +894,7 @@
     <string name="onboarding_notifications_mode_periodic">Rendszeres</string>
     <string name="feature_received_prohibited">fogadott, tiltott</string>
     <string name="connect_plan_repeat_connection_request">Kapcsolódási kérés megismétlése?</string>
-    <string name="only_you_can_delete_messages">Kizárólag csak te tudsz véglegesen törölni üzeneteket (az ismerősöd csak megjelölheti azokat törlendőként). (24 óra)</string>
+    <string name="only_you_can_delete_messages">Üzeneteket csak Ön törölhet visszafordíthatatlanul (névjegye csak megjelölheti őket törlésre). (24 óra)</string>
     <string name="role_in_group">Szerepkör</string>
     <string name="simplex_link_contact">SimpleX ismerős azonosítója</string>
     <string name="stop_file__confirm">Megállítás</string>
@@ -917,7 +917,7 @@
     <string name="alert_text_fragment_please_report_to_developers">Kérlek jelentsd a fejlesztőknek!</string>
     <string name="people_can_connect_only_via_links_you_share">Az emberek kizárólag az általad megosztott linkek alapján kapcsolódhatnak hozzád.</string>
     <string name="prohibit_sending_disappearing">Az eltűnő üzenetek küldése le van tiltva.</string>
-    <string name="only_you_can_send_voice">Kizárólag te tudsz hangüzeneteket küldeni.</string>
+    <string name="only_you_can_send_voice">Csak Ön tud hangüzeneteket küldeni.</string>
     <string name="update_network_settings_confirmation">Frissítés</string>
     <string name="icon_descr_video_snd_complete">Videó elküldve</string>
     <string name="update_database_passphrase">Adatbázis jelmondat megváltoztatása</string>
@@ -925,7 +925,7 @@
     <string name="passcode_not_changed">A jelkód nem változott!</string>
     <string name="refresh_qr_code">Frissítés</string>
     <string name="custom_time_picker_select">Választás</string>
-    <string name="only_you_can_make_calls">Kizárólag te tudsz hívásokat indítani.</string>
+    <string name="only_you_can_make_calls">Csak Ön tud hívásokat indítani.</string>
     <string name="smp_server_test_secure_queue">Biztonságos várólista</string>
     <string name="rate_the_app">Értékeld az alkalmazást</string>
     <string name="share_invitation_link">Egyszer használatos link megosztása</string>
@@ -1185,7 +1185,7 @@
     <string name="alert_title_skipped_messages">Kihagyott üzenetek</string>
     <string name="prohibit_sending_voice_messages">A hangüzenetek küldése le van tiltva.</string>
     <string name="set_contact_name">Ismerős nevének beállítása...</string>
-    <string name="only_you_can_send_disappearing">Kizárólag te tudsz eltűnő üzeneteket küldeni.</string>
+    <string name="only_you_can_send_disappearing">Csak Ön tud eltűnő üzeneteket küldeni.</string>
     <string name="share_image">Kép/videó megoszása…</string>
     <string name="group_info_member_you">te: %1$s</string>
     <string name="your_preferences">Beállítások</string>
