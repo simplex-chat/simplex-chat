@@ -42,4 +42,5 @@
     <string name="chat_item_ttl_week">1 tuần</string>
     <string name="abort_switch_receiving_address">Hủy bỏ việc đổi địa chỉ</string>
     <string name="v4_2_group_links_desc">Các quản trị viên có thể tạo liên kết để tham gia nhóm.</string>
+    <string name="chat_item_ttl_day">Một ngày</string>
 </resources>
