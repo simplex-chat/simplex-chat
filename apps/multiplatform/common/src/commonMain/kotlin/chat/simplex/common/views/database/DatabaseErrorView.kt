@@ -206,6 +206,14 @@ private fun runChat(
     is DBMigrationResult.OK -> {
       platform.androidChatStartedAfterBeingOff()
     }
+    null -> {}
+    else -> showErrorOnMigrationIfNeeded(status)
+  }
+}
+
+fun showErrorOnMigrationIfNeeded(status: DBMigrationResult) =
+  when (status) {
+    is DBMigrationResult.OK -> {}
     is DBMigrationResult.ErrorNotADatabase ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.wrong_passphrase_title), generalGetString(MR.strings.enter_correct_passphrase))
     is DBMigrationResult.ErrorSQL ->
@@ -217,9 +225,7 @@ private fun runChat(
     is DBMigrationResult.InvalidConfirmation ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.invalid_migration_confirmation))
     is DBMigrationResult.ErrorMigration -> {}
-    null -> {}
   }
-}
 
 private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
   val startedAt = prefs.encryptionStartedAt.get() ?: return false

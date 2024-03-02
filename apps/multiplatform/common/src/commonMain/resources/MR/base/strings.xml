@@ -818,6 +818,7 @@
   <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol and code – anybody can run the servers.</string>
   <string name="create_your_profile">Create your profile</string>
   <string name="make_private_connection">Make a private connection</string>
+  <string name="migrate_from_another_device">Migrate from another device</string>
   <string name="how_it_works">How it works</string>
 
   <!-- How SimpleX Works -->
@@ -1835,4 +1836,27 @@
   <string name="agent_internal_error_title">Internal error</string>
   <string name="agent_internal_error_desc">Please report it to the developers: \n%s</string>
   <string name="restart_chat_button">Restart chat</string>
+
+
+  <!--  MigrateFromAnotherDevice.kt -->
+  <string name="migrate_here">Migrate here</string>
+  <string name="or_paste_archive_link">Or paste archive link</string>
+  <string name="paste_archive_link">Paste archive link</string>
+  <string name="invalid_file_link">Invalid link</string>
+  <string name="migration_from_device_migrating">Migrating…</string>
+  <string name="migration_from_device_downloading_details">Downloading link details…</string>
+  <string name="migration_from_device_downloading_archive">Downloading archive…</string>
+  <string name="migration_from_device_bytes_downloaded">%s downloaded</string>
+  <string name="migration_from_device_download_failed">Download failed</string>
+  <string name="migration_from_device_repeat_download">Repeat download</string>
+  <string name="migration_from_device_try_again">You can give another try</string>
+  <string name="migration_from_device_importing_archive">Importing archive…</string>
+  <string name="migration_from_device_import_failed">Import failed</string>
+  <string name="migration_from_device_enter_passphrase">Enter passphrase</string>
+  <string name="migration_from_device_passphrase_will_be_stored">Passphrase will be stored on device in KeyStore. It's required for notifications to work. You can change it later in settings.</string>
+  <string name="migration_from_device_file_delete_or_link_invalid">File was deleted or link is invalid</string>
+  <string name="migration_from_device_error_downloading_archive">Error downloading the archive</string>
+  <string name="migration_from_device_chat_migrated">Chat migrated!</string>
+  <string name="migration_from_device_finalize_migration">Finalize migration on another device.</string>
+
 </resources>

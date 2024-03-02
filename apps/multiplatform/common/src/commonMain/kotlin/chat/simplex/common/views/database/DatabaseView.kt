@@ -486,6 +486,7 @@ fun deleteChatDatabaseFilesAndState() {
   filesDir.mkdir()
   remoteHostsDir.deleteRecursively()
   tmpDir.deleteRecursively()
+  getMigrationTempFilesDirectory().deleteRecursively()
   tmpDir.mkdir()
   DatabaseUtils.ksDatabasePassword.remove()
   controller.appPrefs.storeDBPassphrase.set(true)

@@ -366,7 +366,7 @@ fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null,
 }
 
 @Composable
-fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
+fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = MaterialTheme.colors.secondary, textColor: Color = MaterialTheme.colors.onBackground, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
   SectionItemView(
     click,
     extraPadding = extraPadding,
@@ -382,7 +382,7 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     }
     if (text != null) {
       val padding = with(LocalDensity.current) { 6.sp.toDp() }
-      Text(text, Modifier.weight(1f).padding(vertical = padding), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
+      Text(text, Modifier.weight(1f).padding(vertical = padding), color = if (disabled) MaterialTheme.colors.secondary else textColor)
       Spacer(Modifier.width(DEFAULT_PADDING))
       Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
         content()

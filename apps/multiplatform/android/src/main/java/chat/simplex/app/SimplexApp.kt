@@ -65,7 +65,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+    // Present screen for continue migration if it wasn't finished yet
+    if (chatModel.migrationState.value != null) {
+      // It's important, otherwise, user may be locked in undefined state
+      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+    } else if (DatabaseUtils.ksAppPassword.get() == null || DatabaseUtils.ksSelfDestructPassword.get() == null) {
       initChatControllerAndRunMigrations()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
