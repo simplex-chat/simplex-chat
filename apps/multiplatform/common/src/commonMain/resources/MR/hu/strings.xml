@@ -940,7 +940,7 @@
     <string name="received_message">Fogadott üzenet</string>
     <string name="button_welcome_message">Üdvözlő üzenet</string>
     <string name="rcv_group_event_n_members_connected">%s, %s és %d további tag csatlakozott</string>
-    <string name="only_your_contact_can_make_calls">Kizárólag az ismerősöd tud hívást indítani.</string>
+    <string name="only_your_contact_can_make_calls">Csak a névjegye tud hívást indítani.</string>
     <string name="settings_section_title_themes">SZÍNSÉMÁK</string>
     <string name="videos_limit_title">Túl sok videó!</string>
     <string name="stop_chat_to_enable_database_actions">Chat szolgáltatás megállítása az adatbázis műveletek elvégzéséhez.</string>
@@ -960,7 +960,7 @@
     <string name="icon_descr_speaker_on">Hangszóró bekapcsolva</string>
     <string name="restart_the_app_to_use_imported_chat_database">Indítsd újra az appot, hogy importált chat adatbázist használj.</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">jogosulatlan küldés</string>
-    <string name="only_your_contact_can_send_voice">Kizárólag az ismerősöd tud hangüzeneteket küldeni.</string>
+    <string name="only_your_contact_can_send_voice">Csak a névjegye tud hangüzeneteket küldeni.</string>
     <string name="icon_descr_settings">Beállítások</string>
     <string name="scan_qr_to_connect_to_contact">Kapcsolat létrehozásához az ismerősöd beolvassa a QR-kódodat vagy a linket használja az appban.</string>
     <string name="callstate_received_confirmation">visszaigazolás fogadása…</string>
@@ -1116,7 +1116,7 @@
     <string name="la_mode_passcode">Jelkód</string>
     <string name="unknown_error">Ismeretlen hiba</string>
     <string name="smp_servers_your_server_address">A te szerver címed</string>
-    <string name="auth_open_chat_console">Chat konzol megnyitása</string>
+    <string name="auth_open_chat_console">Csevegés konzol megnyitása</string>
     <string name="remove_member_button">Tag eltávolítása</string>
     <string name="set_database_passphrase">Beállított adatbázis jelmondat</string>
     <string name="view_security_code">Biztonsági kód megtekintése</string>
@@ -1139,7 +1139,7 @@
     <string name="smp_servers_scan_qr">Szerver QR-kód beolvasása</string>
     <string name="stop_chat_confirmation">Megállítás</string>
     <string name="stop_sharing_address">Leállítod a cím megosztását?</string>
-    <string name="auth_open_chat_profiles">Chat profilok megnyitása</string>
+    <string name="auth_open_chat_profiles">Csevegés profilok megnyitása</string>
     <string name="connect_plan_repeat_join_request">Csatlakozási kérés megismétlése?</string>
     <string name="waiting_for_image">Képre várakozás</string>
     <string name="v4_3_voice_messages">Hangüzenetek</string>
@@ -1243,13 +1243,13 @@
     <string name="la_lock_mode_system">Rendszer hitelesítés</string>
     <string name="simplex_link_mode_browser">Böngészőn keresztül</string>
     <string name="v4_6_hidden_chat_profiles_descr">A csevegési profiljaid védelme jelszóval!</string>
-    <string name="only_your_contact_can_send_disappearing">Kizárólag az ismerősöd tud eltűnő üzeneteket küldeni.</string>
+    <string name="only_your_contact_can_send_disappearing">Csak a névjegye tud eltűnő üzeneteket küldeni.</string>
     <string name="your_ICE_servers">ICE szerverek</string>
     <string name="scan_qr_code_from_desktop">QR-kód beolvasása asztali kliensről</string>
     <string name="image_descr_simplex_logo">SimpleX Logo</string>
     <string name="unblock_member_confirmation">Feloldás</string>
     <string name="unmute_chat">Némítás feloldása</string>
-    <string name="open_simplex_chat_to_accept_call">SimpleX chat megnyitása a hívás fogadásához</string>
+    <string name="open_simplex_chat_to_accept_call">SimpleX Chat megnyitása a hívás fogadásához</string>
     <string name="stop_rcv_file__title">Fájl fogadás megszakítása?</string>
     <string name="v5_4_more_things_descr">- opcionális értesítés a törölt ismerősök számára 
 \n- profil nevek szóközökkel
@@ -1260,7 +1260,7 @@
     <string name="la_notice_title_simplex_lock">SimpleX Zár</string>
     <string name="save_and_notify_group_members">Mentés és a csoporttagok értesítése</string>
     <string name="reset_verb">Alaphelyzetbe állítás</string>
-    <string name="only_your_contact_can_add_message_reactions">Kizárólag az ismerősöd tud emoji reakciókat adni az üzenetekre.</string>
+    <string name="only_your_contact_can_add_message_reactions">Csak a névjegye tud üzeneteakciókat adni.</string>
     <string name="voice_messages">Hangüzenetek</string>
     <string name="snd_group_event_user_left">te távoztál</string>
     <string name="icon_descr_record_voice_message">Hangüzenet rögzítése</string>
@@ -1284,7 +1284,7 @@
     <string name="accept_feature_set_1_day">Beállítva 1 nap</string>
     <string name="user_unhide">Felfedés</string>
     <string name="color_received_message">Fogadott üzenet</string>
-    <string name="only_your_contact_can_delete">Kizárólag az ismerősöd tud véglegesen törölni üzeneteket (te csak törlendőként tudod megjelölni azokat). (24 óra)</string>
+    <string name="only_your_contact_can_delete">Csak a névjegye tudja visszafordíthatatlanul törölni az üzeneteket (megjelölheti őket törlésre). (24 óra)</string>
     <string name="self_destruct_passcode_changed">Az önmegsemmisítési jelkód megváltozott!</string>
     <string name="using_simplex_chat_servers">SimpleX Chat szerverek használatban.</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat szerverek használata?</string>
@@ -1386,7 +1386,7 @@
     <string name="v5_1_better_messages_descr">- hangüzenetek 5 percig.
 \n- egyedi eltűnési időhatár
 \n- előzmény szerkesztése</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Kattints a <i>Használd a számítógépről</i> gombra a mobil appban és olvasd be a QR-kódot!]]></string>
+    <string name="open_on_mobile_and_scan_qr_code">Megnyitás a <i>Használat számítógépről</i> gombra a mobil appban és olvassa be a QR-kódot!</string>
     <string name="sender_at_ts">%s at %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Csatlakoztok amikor az ismerősöd eszköze online lesz. Kérlek várj vagy nézz vissza később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
