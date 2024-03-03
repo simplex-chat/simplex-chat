@@ -270,7 +270,7 @@ ciContentToText = \case
 
 directE2EEInfoToText :: E2EEInfo -> Text
 directE2EEInfoToText E2EEInfo {pqEnabled}
-  | pqEnabled = "This conversation is protected by end-to-end encryption with quantum computer resistant perfect forward secrecy, repudiation and break-in recovery."
+  | pqEnabled = "This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery."
   | otherwise = e2eeInfoNoPQText
 
 groupE2EEInfoToText :: E2EEInfo -> Text
