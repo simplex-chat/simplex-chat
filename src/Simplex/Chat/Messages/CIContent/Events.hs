@@ -42,6 +42,7 @@ data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
   | RCERatchetSync {syncStatus :: RatchetSyncState}
   | RCEVerificationCodeReset
+  | RCEPQEnabled {enabled :: Bool}
   deriving (Show)
 
 data SndConnEvent

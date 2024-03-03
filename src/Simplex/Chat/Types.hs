@@ -211,6 +211,11 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
+contactPQEnabled :: Contact -> Bool
+contactPQEnabled Contact {activeConn} = case activeConn of
+  Just Connection {pqEnabled} -> pqEnabled == Just True
+  Nothing -> False
+
 data ContactStatus
   = CSActive
   | CSDeleted -- contact deleted by contact
@@ -563,7 +568,8 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
-    groupLinkId :: Maybe GroupLinkId
+    groupLinkId :: Maybe GroupLinkId,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -571,7 +577,8 @@ data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -1277,6 +1284,8 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
+type PQFlag = Bool
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
@@ -1293,6 +1302,7 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
+    pqEnabled :: Maybe PQFlag,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }
