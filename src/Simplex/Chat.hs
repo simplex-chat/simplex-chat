@@ -5706,27 +5706,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
-    -- TODO [pq] refactor
+    -- TODO [pq] track rcv and snd flags separately
     updateContactPQ :: Contact -> Connection -> PQFlag -> m (Contact, Connection)
     updateContactPQ ct conn@Connection {connId, pqEnabled} pqEnabled' =
       flip catchChatError (const $ pure (ct, conn)) $ case (pqEnabled, pqEnabled') of
         (Nothing, False) -> pure (ct, conn)
-        (Nothing, True) -> do
+        (Nothing, True) -> updatePQ $ CIRcvDirectE2EEInfo (E2EEInfo pqEnabled')
+        (Just b, b')
+          | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPQEnabled pqEnabled')
+          | otherwise -> pure (ct, conn)
+      where
+        updatePQ ciContent = do
           withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
           let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
               ct' = ct {activeConn = Just conn'} :: Contact
-          createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EEInfo pqEnabled') Nothing
+          createInternalChatItem user (CDDirectRcv ct') ciContent Nothing
           toView $ CRContactPQEnabled user ct' pqEnabled'
           pure (ct', conn')
-        (Just b, b')
-          | b' /= b -> do
-              withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
-              let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
-                  ct' = ct {activeConn = Just conn'} :: Contact
-              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCEPQEnabled pqEnabled') Nothing
-              toView $ CRContactPQEnabled user ct' pqEnabled'
-              pure (ct', conn')
-          | otherwise -> pure (ct, conn)
 
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
