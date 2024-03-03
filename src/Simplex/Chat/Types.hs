@@ -173,7 +173,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
@@ -267,7 +267,7 @@ data UserContact = UserContact
     connReqContact :: ConnReqContact,
     groupId :: Maybe GroupId
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 userContactGroupId :: UserContact -> Maybe GroupId
 userContactGroupId UserContact {groupId} = groupId
@@ -285,7 +285,7 @@ data UserContactRequest = UserContactRequest
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 newtype XContactId = XContactId ByteString
   deriving (Eq, Show)
@@ -339,7 +339,7 @@ optionalFullName displayName fullName
   | otherwise = " (" <> fullName <> ")"
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
-  deriving (Eq, Show)
+  deriving (Show)
 
 type GroupId = Int64
 
@@ -356,7 +356,7 @@ data GroupInfo = GroupInfo
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -476,7 +476,7 @@ data Profile = Profile
     -- - incognito
     -- - local_alias
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
@@ -506,7 +506,7 @@ data LocalProfile = LocalProfile
     preferences :: Maybe Preferences,
     localAlias :: LocalAlias
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
@@ -571,7 +571,7 @@ data GroupInvitation = GroupInvitation
     groupLinkId :: Maybe GroupLinkId,
     groupSize :: Maybe Int
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
@@ -592,7 +592,7 @@ data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInvitation,
     directConnReq :: Maybe ConnReqInvitation
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
@@ -600,7 +600,7 @@ data MemberInfo = MemberInfo
     v :: Maybe ChatVersionRange,
     profile :: Profile
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
@@ -659,7 +659,7 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
     connRequest :: ConnReqInvitation,
     groupInfo :: GroupInfo
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 type GroupMemberId = Int64
 
@@ -691,10 +691,10 @@ data GroupMember = GroupMember
     -- but it's correctly set on read (see toGroupInfo)
     memberChatVRange :: JVersionRange
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
-  deriving (Eq, Show)
+  deriving (Show)
 
 groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
@@ -1016,7 +1016,7 @@ data FileInvitation = FileInvitation
     fileInline :: Maybe InlineFileMode,
     fileDescr :: Maybe FileDescr
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data FileDescr = FileDescr {fileDescrText :: Text, fileDescrPartNo :: Int, fileDescrComplete :: Bool}
   deriving (Eq, Show)
@@ -1071,7 +1071,7 @@ data RcvFileTransfer = RcvFileTransfer
     -- SMP files are encrypted after all chunks are received
     cryptoArgs :: Maybe CryptoFileArgs
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
@@ -1350,7 +1350,7 @@ data PendingContactConnection = PendingContactConnection
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 aConnId' :: PendingContactConnection -> ConnId
 aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId

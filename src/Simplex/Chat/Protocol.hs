@@ -94,7 +94,7 @@ data ConnectionEntity
   | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
   | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
-  deriving (Eq, Show)
+  deriving (Show)
 
 $(JQ.deriveJSON (sumTypeJSON fstToLower) ''ConnectionEntity)
 
@@ -221,7 +221,7 @@ data ChatMessage e = ChatMessage
     msgId :: Maybe SharedMsgId,
     chatMsgEvent :: ChatMsgEvent e
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
@@ -269,8 +269,6 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XOk :: ChatMsgEvent 'Json
   XUnknown :: {event :: Text, params :: J.Object} -> ChatMsgEvent 'Json
   BFileChunk :: SharedMsgId -> FileChunk -> ChatMsgEvent 'Binary
-
-deriving instance Eq (ChatMsgEvent e)
 
 deriving instance Show (ChatMsgEvent e)
 
@@ -426,7 +424,7 @@ data MsgContainer
   = MCSimple ExtMsgContent
   | MCQuote QuotedMsg ExtMsgContent
   | MCForward ExtMsgContent
-  deriving (Eq, Show)
+  deriving (Show)
 
 mcExtMsgContent :: MsgContainer -> ExtMsgContent
 mcExtMsgContent = \case
@@ -501,7 +499,7 @@ msgContentTag = \case
   MCUnknown {tag} -> MCUnknown_ tag
 
 data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
-  deriving (Eq, Show)
+  deriving (Show)
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
