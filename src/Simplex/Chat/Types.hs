@@ -54,6 +54,11 @@ import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 
+-- TODO PQ replace with actual instances
+instance Eq (ConnectionRequestUri m) where _ == _ = True
+
+instance Eq (APartyCmdTag p) where _ == _ = True
+
 class IsContact a where
   contactId' :: a -> ContactId
   profile' :: a -> LocalProfile
