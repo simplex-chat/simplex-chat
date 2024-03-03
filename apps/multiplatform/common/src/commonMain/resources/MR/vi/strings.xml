@@ -43,4 +43,21 @@
     <string name="abort_switch_receiving_address">Hủy bỏ việc đổi địa chỉ</string>
     <string name="v4_2_group_links_desc">Các quản trị viên có thể tạo liên kết để tham gia nhóm.</string>
     <string name="chat_item_ttl_day">Một ngày</string>
+    <string name="color_secondary_variant">Biến thể của màu thứ cấp</string>
+    <string name="all_group_members_will_remain_connected">Tất cả các thành viên trong nhóm vẫn sẽ được giữ kết nối.</string>
+    <string name="clear_note_folder_warning">Tất cả tin nhắn sẽ bị xóa - Quá trình này không thể hoàn tác được!</string>
+    <string name="block_member_desc">Tất cả các tin nhắn mới từ %s sẽ bị ẩn!</string>
+    <string name="turn_off_battery_optimization_button">Cho phép</string>
+    <string name="color_primary">Màu sơ cấp</string>
+    <string name="network_enable_socks_info">Truy cập các máy chủ thông qua SOCKS proxy tại cổng %d? Proxy phải được khởi động trước khi bật cài đặt này.</string>
+    <string name="add_address_to_your_profile">Thêm địa chỉ vào hồ sơ để các liên hệ của bạn có thể dễ dàng chia sẻ với mọi người. Bản cập nhật hồ sơ cũng sẽ được gửi tới các liên hệ hiện thời.</string>
+    <string name="allow_disappearing_messages_only_if">Cho phép nhắn tin nhắn tự xóa chỉ khi liên hệ của bạn cũng cho phép</string>
+    <string name="allow_verb">Cho phép</string>
+    <string name="above_then_preposition_continuation">theo như ở trên, thì:</string>
+    <string name="clear_chat_warning">Tất cả tin nhắn sẽ bị xóa - Quá trình này không thể hoàn tác được! Tin nhắn sẽ CHỈ bị xóa ở phía bạn.</string>
+    <string name="color_primary_variant">Biến thể của màu sơ cấp</string>
+    <string name="color_secondary">Màu thứ cấp</string>
+    <string name="allow_calls_only_if">Cho phép gọi điện chỉ khi liên hệ của bạn cũng cho phép.</string>
+    <string name="v5_3_new_interface_languages">6 ngôn ngữ giao diện mới</string>
+    <string name="v5_1_self_destruct_passcode_descr">Tất cả dữ liệu sẽ bị xóa khi nó được nhập vào.</string>
 </resources>
