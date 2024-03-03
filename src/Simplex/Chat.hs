@@ -1453,7 +1453,7 @@ processChatCommand' vr = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId -> withUserId userId $ \user -> withChatLock "createMyAddress" . procCmd $ do
     subMode <- chatReadVar subscriptionMode
-    -- TODO PQ IKNoPQ PQEncryption False or True
+    -- TODO PQ IKNoPQ, use flag for PQEncryption? or False?
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing pqInitKeysDummy subMode
     withStore $ \db -> createUserContactLink db user connId cReq subMode
     pure $ CRUserContactLinkCreated user cReq
@@ -1799,7 +1799,7 @@ processChatCommand' vr = \case
         unless (isCompatibleRange (fromJVersionRange peerChatVRange) xGrpDirectInvVRange) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
-        -- TODO PQ CR.IKUsePQ?
+        -- TODO PQ flag True -> IKUsePQ, False -> IKNoPQ PQEncryption False?
         (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing pqInitKeysDummy subMode
         -- [incognito] reuse membership incognito profile
         ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
