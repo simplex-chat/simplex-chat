@@ -72,7 +72,7 @@ fun SimpleXInfoLayout(
           .padding(bottom = DEFAULT_PADDING.times(1.5f), top = DEFAULT_PADDING), contentAlignment = Alignment.Center
       ) {
         SimpleButtonDecorated(text = stringResource(MR.strings.migrate_from_another_device), icon = painterResource(MR.images.ic_download),
-          click = { ModalManager.fullscreen.showCustomModal { close -> MigrateFromAnotherDeviceView(null, close) } })
+          click = { ModalManager.fullscreen.showCustomModal { close -> MigrateFromAnotherDeviceView(chatModel.migrationState.value, close) } })
       }
     }
 

@@ -138,8 +138,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   }
 }
 
-fun chatInitTemporaryDatabase(dir: File, key: String? = null): Pair<DBMigrationResult, ChatCtrl?> {
-  val dbPath = dir.absolutePath
+fun chatInitTemporaryDatabase(dbPath: String, key: String? = null): Pair<DBMigrationResult, ChatCtrl?> {
   val dbKey = key ?: randomDatabasePassword()
   Log.d(TAG, "chatInitTemporaryDatabase path: $dbPath")
   val migrated = chatMigrateInit(dbPath, dbKey, MigrationConfirmation.Error.value)

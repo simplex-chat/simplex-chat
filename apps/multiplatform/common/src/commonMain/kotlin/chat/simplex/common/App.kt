@@ -57,10 +57,10 @@ fun AppScreen() {
 fun MainScreen() {
   val chatModel = ChatModel
   var showChatDatabaseError by rememberSaveable {
-    mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
+    mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null && chatModel.migrationState.value == null)
   }
   LaunchedEffect(chatModel.chatDbStatus.value) {
-    showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
+    showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null && chatModel.migrationState.value == null
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
   LaunchedEffect(showAdvertiseLAAlert) {
@@ -110,7 +110,7 @@ fun MainScreen() {
     val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
-      chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
+      chatModel.dbMigrationInProgress.value && chatModel.migrationState.value == null -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
       chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
       showChatDatabaseError -> {
         // Prevent showing keyboard on Android when: passcode enabled and database password not saved
@@ -118,7 +118,7 @@ fun MainScreen() {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
-      remember { chatModel.chatDbEncrypted }.value == null || localUserCreated == null -> SplashView()
+      (remember { chatModel.chatDbEncrypted }.value == null || localUserCreated == null) && chatModel.migrationState.value == null -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete -> {
         Box {
           showAdvertiseLAAlert = true

@@ -30,7 +30,7 @@ fun ModalView(
   }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      CloseSheetBar(close, showClose, endButtons = endButtons)
+      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
       Box(modifier) { content() }
     }
   }

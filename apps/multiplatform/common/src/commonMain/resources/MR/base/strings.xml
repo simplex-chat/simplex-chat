@@ -1852,11 +1852,17 @@
   <string name="migration_from_device_try_again">You can give another try</string>
   <string name="migration_from_device_importing_archive">Importing archive…</string>
   <string name="migration_from_device_import_failed">Import failed</string>
+  <string name="migration_from_device_repeat_import">Repeat import</string>
   <string name="migration_from_device_enter_passphrase">Enter passphrase</string>
-  <string name="migration_from_device_passphrase_will_be_stored">Passphrase will be stored on device in KeyStore. It's required for notifications to work. You can change it later in settings.</string>
+  <string name="migration_from_device_passphrase_will_be_stored">Passphrase will be stored on device in KeyStore. It\'s required for notifications to work. You can change it later in settings.</string>
   <string name="migration_from_device_file_delete_or_link_invalid">File was deleted or link is invalid</string>
   <string name="migration_from_device_error_downloading_archive">Error downloading the archive</string>
   <string name="migration_from_device_chat_migrated">Chat migrated!</string>
   <string name="migration_from_device_finalize_migration">Finalize migration on another device.</string>
-
+  <string name="migration_from_device_review_onion_settings">Review .onion settings</string>
+  <string name="migration_from_device_review_onion_settings_footer">Since you migrated the database between platforms, make sure settings for .onion hosts are correct.</string>
+  <string name="migration_from_device_onion_hosts_never">Selected Never</string>
+  <string name="migration_from_device_onion_hosts_prefer">Selected Prefer</string>
+  <string name="migration_from_device_onion_hosts_require">Selected Require</string>
+  <string name="migration_from_device_apply_onion">Apply</string>
 </resources>

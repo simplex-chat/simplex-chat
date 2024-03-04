@@ -412,10 +412,10 @@ object ChatController {
     }
   }
 
-  suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl): User? {
+  suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
-    apiSetNetworkConfig(getNetCfg(), ctrl)
+    apiSetNetworkConfig(netCfg, ctrl)
     apiSetTempFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
     apiSetFilesFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
     apiStartChat(ctrl)
