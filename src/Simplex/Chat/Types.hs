@@ -263,9 +263,7 @@ contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
 contactPQEnabled :: Contact -> Bool
-contactPQEnabled Contact {activeConn} = case activeConn of
-  Just Connection {pqSndEnabled, pqRcvEnabled} -> pqSndEnabled == Just True && pqRcvEnabled == Just True
-  Nothing -> False
+contactPQEnabled Contact {activeConn} = maybe False connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
@@ -1389,6 +1387,10 @@ aConnId Connection {agentConnId = AgentConnId cId} = cId
 
 connIncognito :: Connection -> Bool
 connIncognito Connection {customUserProfileId} = isJust customUserProfileId
+
+connPQEnabled :: Connection -> Bool
+connPQEnabled Connection {pqSndEnabled, pqRcvEnabled} =
+  pqSndEnabled == Just True && pqRcvEnabled == Just True
 
 data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,

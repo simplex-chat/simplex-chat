@@ -245,8 +245,19 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
     (displayName, fullName, image, userId, Just True, createdAt, createdAt)
   insertedRowId db
 
-updateConnPQEnabled :: DB.Connection -> Int64 -> Bool -> IO ()
-updateConnPQEnabled db connId pqEnabled =
+updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQFlag -> IO ()
+updateConnPQSndEnabled db connId pqSndEnabled =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET pq_snd_enabled = ?
+      WHERE connection_id = ?
+    |]
+    (pqSndEnabled, connId)
+
+updateConnPQRcvEnabled :: DB.Connection -> Int64 -> PQFlag -> IO ()
+updateConnPQRcvEnabled db connId pqRcvEnabled =
   DB.execute
     db
     [sql|
@@ -254,7 +265,18 @@ updateConnPQEnabled db connId pqEnabled =
       SET pq_rcv_enabled = ?
       WHERE connection_id = ?
     |]
-    (pqEnabled, connId)
+    (pqRcvEnabled, connId)
+
+updateConnPQEnabledCON :: DB.Connection -> Int64 -> PQFlag -> IO ()
+updateConnPQEnabledCON db connId pqEnabled =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET pq_snd_enabled = ?, pq_rcv_enabled = ?
+      WHERE connection_id = ?
+    |]
+    (pqEnabled, pqEnabled, connId)
 
 setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
 setPeerChatVRange db connId (VersionRange minVer maxVer) =

@@ -343,6 +343,9 @@ sndConnEventToText = \case
     SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
   SCERatchetSync syncStatus m -> ratchetSyncStatusToText syncStatus <> forMember m
+  SCEPQEnabled enabled
+    | enabled -> "post-quantum encryption enabled"
+    | otherwise -> "post-quantum encryption disabled"
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
