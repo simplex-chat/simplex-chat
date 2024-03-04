@@ -33,7 +33,7 @@ import chat.simplex.common.views.helpers.annotatedStringResource
 import chat.simplex.res.MR
 
 @Composable
-fun NetworkAndServersView(migration: Boolean) {
+fun NetworkAndServersView() {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
