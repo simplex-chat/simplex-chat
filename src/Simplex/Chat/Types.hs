@@ -1308,6 +1308,7 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
+    enablePQ :: PQFlag,
     pqSndEnabled :: Maybe PQFlag,
     pqRcvEnabled :: Maybe PQFlag,
     authErrCounter :: Int,
