@@ -207,7 +207,7 @@ data ChatController = ChatController
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool,
-    pqExperimentalEnabled :: TVar Bool -- TODO remove in 5.7
+    pqExperimentalEnabled :: TVar PQFlag -- TODO remove in 5.7
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase

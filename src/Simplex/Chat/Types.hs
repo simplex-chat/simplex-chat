@@ -216,10 +216,9 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
--- TODO PQ check both snd and rcv flags
 contactPQEnabled :: Contact -> Bool
 contactPQEnabled Contact {activeConn} = case activeConn of
-  Just Connection {pqRcvEnabled} -> pqRcvEnabled == Just True
+  Just Connection {pqSndEnabled, pqRcvEnabled} -> pqSndEnabled == Just True && pqRcvEnabled == Just True
   Nothing -> False
 
 data ContactStatus

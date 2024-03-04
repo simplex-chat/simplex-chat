@@ -189,8 +189,8 @@ toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, v
   Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, enablePQ_, pqSndEnabled_, pqRcvEnabled_, authErrCounter, minVer, maxVer))
 toMaybeConnection _ = Nothing
 
-createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRange -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> IO Connection
-createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode = do
+createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRange -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQFlag -> IO Connection
+createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode enablePQ = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
     maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   let viaGroupLink = isJust viaLinkGroupId
@@ -200,12 +200,12 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at,
-        peer_chat_min_version, peer_chat_max_version, to_subscribe
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        peer_chat_min_version, peer_chat_max_version, to_subscribe, enable_pq
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, customUserProfileId, ConnNew, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
-        :. (minV, maxV, subMode == SMOnlyCreate)
+        :. (minV, maxV, subMode == SMOnlyCreate, enablePQ)
     )
   connId <- insertedRowId db
   pure
@@ -226,7 +226,7 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
         localAlias = "",
         createdAt = currentTs,
         connectionCode = Nothing,
-        enablePQ = False, -- TODO PQ set based on flag
+        enablePQ,
         pqSndEnabled = Nothing,
         pqRcvEnabled = Nothing,
         authErrCounter = 0
