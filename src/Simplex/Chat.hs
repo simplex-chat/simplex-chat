@@ -5718,10 +5718,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
-    -- TODO PQ track rcv and snd flags separately
+    -- TODO PQ track rcv and snd flags separately; check both
     updateContactPQ :: Contact -> Connection -> PQFlag -> m (Contact, Connection)
-    updateContactPQ ct conn@Connection {connId, pqEnabled} pqEnabled' =
-      flip catchChatError (const $ pure (ct, conn)) $ case (pqEnabled, pqEnabled') of
+    updateContactPQ ct conn@Connection {connId, pqRcvEnabled} pqEnabled' =
+      flip catchChatError (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqEnabled') of
         (Nothing, False) -> pure (ct, conn)
         (Nothing, True) -> updatePQ $ CIRcvDirectE2EEInfo (E2EEInfo pqEnabled')
         (Just b, b')
@@ -5730,7 +5730,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         updatePQ ciContent = do
           withStore' $ \db -> updateConnPQEnabled db connId pqEnabled'
-          let conn' = conn {pqEnabled = Just pqEnabled'} :: Connection
+          let conn' = conn {pqRcvEnabled = Just pqEnabled'} :: Connection
               ct' = ct {activeConn = Just conn'} :: Contact
           createInternalChatItem user (CDDirectRcv ct') ciContent Nothing
           toView $ CRContactPQEnabled user ct' pqEnabled'

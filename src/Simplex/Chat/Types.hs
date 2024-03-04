@@ -216,9 +216,10 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
+-- TODO PQ check both snd and rcv flags
 contactPQEnabled :: Contact -> Bool
 contactPQEnabled Contact {activeConn} = case activeConn of
-  Just Connection {pqEnabled} -> pqEnabled == Just True
+  Just Connection {pqRcvEnabled} -> pqRcvEnabled == Just True
   Nothing -> False
 
 data ContactStatus
@@ -1307,7 +1308,8 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
-    pqEnabled :: Maybe PQFlag,
+    pqSndEnabled :: Maybe PQFlag,
+    pqRcvEnabled :: Maybe PQFlag,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }
