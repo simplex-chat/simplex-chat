@@ -42,6 +42,8 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Crypto.Ratchet (pattern VersionE2E)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -140,9 +142,9 @@ testCfg =
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
   testAgentCfg
-    { smpAgentVRange = prevRange $ smpAgentVRange testAgentCfg,
-      smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
-      e2eEncryptVRange = prevRange $ e2eEncryptVRange testAgentCfg,
+    { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
+      smpAgentVRange = \_ -> prevRange $ supportedSMPAgentVRange CR.PQEncOff,
+      e2eEncryptVRange = \_ -> prevRange $ CR.supportedE2EEncryptVRange CR.PQEncOff,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
@@ -150,8 +152,8 @@ testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = versionToRange (VersionSMPA 2), -- duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = versionToRange (VersionE2E 2), -- kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = \_ -> versionToRange (VersionSMPA 2), -- duplexHandshakeSMPAgentVersion,
+      e2eEncryptVRange = \_ -> versionToRange (VersionE2E 2), -- kdfX3DHE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange batchCmdsSMPVersion}
     }
 

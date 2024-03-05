@@ -14,6 +14,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -48,7 +49,7 @@ testDhPubKey :: C.PublicKeyX448
 testDhPubKey = "MEIwBQYDK2VvAzkAmKuSYeQ/m0SixPDS8Wq8VBaTS1cW+Lp0n0h4Diu+kUpR+qXx4SDJ32YGEFoGFGSbGPry5Ychr6U="
 
 testE2ERatchetParams :: RcvE2ERatchetParamsUri 'C.X448
-testE2ERatchetParams = E2ERatchetParamsUri supportedE2EEncryptVRange testDhPubKey testDhPubKey Nothing
+testE2ERatchetParams = E2ERatchetParamsUri (supportedE2EEncryptVRange CR.PQEncOn) testDhPubKey testDhPubKey Nothing
 
 testConnReq :: ConnectionRequestUri 'CMInvitation
 testConnReq = CRInvitationUri connReqData testE2ERatchetParams
