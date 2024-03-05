@@ -1298,7 +1298,7 @@ processChatCommand' vr = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do
-        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId pqEncOff force
+        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId CR.PQEncOff force
         createInternalChatItem user (CDGroupSnd g) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
         pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive
@@ -1453,7 +1453,7 @@ processChatCommand' vr = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId -> withUserId userId $ \user -> withChatLock "createMyAddress" . procCmd $ do
     subMode <- chatReadVar subscriptionMode
-    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing pqInitKeysPQOff subMode
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing ikPQOff subMode
     withStore $ \db -> createUserContactLink db user connId cReq subMode
     pure $ CRUserContactLinkCreated user cReq
   CreateMyAddress -> withUser $ \User {userId} ->
@@ -1610,7 +1610,7 @@ processChatCommand' vr = \case
       Nothing -> do
         gVar <- asks random
         subMode <- chatReadVar subscriptionMode
-        (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing pqInitKeysPQOff subMode
+        (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing ikPQOff subMode
         member <- withStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -1635,7 +1635,7 @@ processChatCommand' vr = \case
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
           dm <- directMessage $ XGrpAcpt membershipMemId
-          agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm pqEncOff subMode
+          agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm CR.PQEncOff subMode
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -1771,7 +1771,7 @@ processChatCommand' vr = \case
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
-    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact (Just crClientData) pqInitKeysPQOff subMode
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact (Just crClientData) ikPQOff subMode
     withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo cReq mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withChatLock "groupLinkMemberRole " $ do
@@ -1798,7 +1798,7 @@ processChatCommand' vr = \case
         unless (isCompatibleRange (fromJVersionRange peerChatVRange) xGrpDirectInvVRange) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
-        (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing pqInitKeysPQOff subMode
+        (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing ikPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         -- TODO not sure it is correct to set connections status here?
@@ -1811,7 +1811,7 @@ processChatCommand' vr = \case
     case memberConn m of
       Just mConn -> do
         let msg = XGrpDirectInv cReq msgContent_
-        (sndMsg, _, _) <- sendDirectMessage mConn pqEncOff msg $ GroupId groupId
+        (sndMsg, _, _) <- sendDirectMessage mConn CR.PQEncOff msg $ GroupId groupId
         withStore' $ \db -> setContactGrpInvSent db ct True
         let ct' = ct {contactGrpInvSent = True}
         forM_ msgContent_ $ \mc -> do
@@ -2756,7 +2756,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
           GroupMember {activeConn} <- withStoreCtx (Just "acceptFileReceive, getGroupMember") $ \db -> getGroupMember db user groupId memId
           case activeConn of
             Just conn -> do
-              acceptFile CFCreateConnFileInvGroup $ \msg -> void $ sendDirectMessage conn pqEncOff msg $ GroupId groupId
+              acceptFile CFCreateConnFileInvGroup $ \msg -> void $ sendDirectMessage conn CR.PQEncOff msg $ GroupId groupId
             _ -> throwChatError $ CEFileInternal "member connection not active"
         _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
   where
@@ -3347,7 +3347,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                         sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
                         sendToMember (rfd, (conn, sft)) =
                           void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> do
-                            (sndMsg, msgDeliveryId, _) <- sendDirectMessage conn pqEncOff msg' $ GroupId groupId
+                            (sndMsg, msgDeliveryId, _) <- sendDirectMessage conn CR.PQEncOff msg' $ GroupId groupId
                             pure (sndMsg, msgDeliveryId)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
@@ -3802,7 +3802,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     profileToSend = profileToSendOnAccept user profileMode True
-                void $ sendDirectMessage conn pqEncOff (XGrpLinkMem profileToSend) (GroupId groupId)
+                void $ sendDirectMessage conn CR.PQEncOff (XGrpLinkMem profileToSend) (GroupId groupId)
               sendIntroductions members = do
                 intros <- withStore' $ \db -> createIntroductions db (maxVersion vr) members m
                 shuffledIntros <- liftIO $ shuffleIntros intros
@@ -3828,7 +3828,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   isAdmin GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole >= GRAdmin
                   hasPicture GroupMemberIntro {reMember = GroupMember {memberProfile = LocalProfile {image}}} = isJust image
               processIntro intro@GroupMemberIntro {introId} = do
-                void $ sendDirectMessage conn pqEncOff (memberIntro $ reMember intro) (GroupId groupId)
+                void $ sendDirectMessage conn CR.PQEncOff (memberIntro $ reMember intro) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
               sendHistory =
                 when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
@@ -3927,12 +3927,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   forM_ (invitedByGroupMemberId membership) $ \hostId -> do
                     host <- withStore $ \db -> getGroupMember db user groupId hostId
                     forM_ (memberConn host) $ \hostConn ->
-                      void $ sendDirectMessage hostConn pqEncOff (XGrpMemCon memberId) (GroupId groupId)
+                      void $ sendDirectMessage hostConn CR.PQEncOff (XGrpMemCon memberId) (GroupId groupId)
                 GCPostMember ->
                   forM_ (invitedByGroupMemberId m) $ \invitingMemberId -> do
                     im <- withStore $ \db -> getGroupMember db user groupId invitingMemberId
                     forM_ (memberConn im) $ \imConn ->
-                      void $ sendDirectMessage imConn pqEncOff (XGrpMemCon memberId) (GroupId groupId)
+                      void $ sendDirectMessage imConn CR.PQEncOff (XGrpMemCon memberId) (GroupId groupId)
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
@@ -4165,7 +4165,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     case activeConn of
                       Just gMemberConn -> do
                         sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-                        void $ sendDirectMessage gMemberConn pqEncOff (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName) $ GroupId groupId
+                        void $ sendDirectMessage gMemberConn CR.PQEncOff (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName) $ GroupId groupId
                       _ -> throwChatError $ CECommandError "no GroupMember activeConn"
                   _ -> throwChatError $ CECommandError "no grpMemberId"
                 _ -> throwChatError $ CECommandError "unexpected cmdFunction"
@@ -4410,7 +4410,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
         sendProbe :: Probe -> m ()
-        sendProbe probe = void $ sendDirectMessage conn pqEncOff (XInfoProbe probe) (GroupId groupId)
+        sendProbe probe = void $ sendDirectMessage conn CR.PQEncOff (XInfoProbe probe) (GroupId groupId)
 
     sendProbeHashes :: [ContactOrMember] -> Probe -> Int64 -> m ()
     sendProbeHashes cgms probe probeId =
@@ -4424,7 +4424,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sendProbeHash (COMGroupMember GroupMember {activeConn = Nothing}) = pure ()
         sendProbeHash cgm@(COMGroupMember m@GroupMember {groupId, activeConn = Just conn}) =
           when (memberCurrent m) $ do
-            void $ sendDirectMessage conn pqEncOff (XInfoProbeCheck probeHash) (GroupId groupId)
+            void $ sendDirectMessage conn CR.PQEncOff (XInfoProbeCheck probeHash) (GroupId groupId)
             withStore' $ \db -> createSentProbeHash db userId probeId cgm
 
     messageWarning :: Text -> m ()
@@ -5109,7 +5109,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case cgm2 of
             COMContact c2@Contact {profile = p2}
               | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 -> do
-                  void $ sendDirectMessage conn pqEncOff (XInfoProbeOk probe) (GroupId groupId)
+                  void $ sendDirectMessage conn CR.PQEncOff (XInfoProbeOk probe) (GroupId groupId)
                   COMContact <$$> associateMemberAndContact c2 m1
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
@@ -5365,7 +5365,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
       hostConn <- withStore $ \db -> getConnectionById db user hostConnId
       let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
-      void $ sendDirectMessage hostConn pqEncOff msg (GroupId groupId)
+      void $ sendDirectMessage hostConn CR.PQEncOff msg (GroupId groupId)
       withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
@@ -5799,7 +5799,7 @@ sendDirectFileInline user ct ft sharedMsgId = do
 sendMemberFileInline :: ChatMonad m => GroupMember -> Connection -> FileTransferMeta -> SharedMsgId -> m ()
 sendMemberFileInline m@GroupMember {groupId} conn ft sharedMsgId = do
   msgDeliveryId <- sendFileInline_ ft sharedMsgId $ \msg -> do
-    (sndMsg, msgDeliveryId, _) <- sendDirectMessage conn pqEncOff msg $ GroupId groupId
+    (sndMsg, msgDeliveryId, _) <- sendDirectMessage conn CR.PQEncOff msg $ GroupId groupId
     pure (sndMsg, msgDeliveryId)
   withStore' $ \db -> updateSndGroupFTDelivery db m conn ft msgDeliveryId
 
@@ -5842,7 +5842,7 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentCo
 sendFileChunkNo :: ChatMonad m => SndFileTransfer -> Integer -> m ()
 sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
   chunkBytes <- readFileChunk ft chunkNo
-  (msgId, _) <- withAgent $ \a -> sendMessage a acId pqEncOff SMP.noMsgFlags $ smpEncode FileChunk {chunkNo, chunkBytes}
+  (msgId, _) <- withAgent $ \a -> sendMessage a acId CR.PQEncOff SMP.noMsgFlags $ smpEncode FileChunk {chunkNo, chunkBytes}
   withStore' $ \db -> updateSndFileChunkMsg db ft chunkNo msgId
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
@@ -5950,8 +5950,8 @@ cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, age
       when sendCancel $ case fileInline of
         Just _ -> do
           (sharedMsgId, conn) <- withStore $ \db -> (,) <$> getSharedMsgIdByFileId db userId fileId <*> getConnectionById db user connId
-          void . sendDirectMessage conn pqEncOff (BFileChunk sharedMsgId FileChunkCancel) $ ConnectionId connId
-        _ -> withAgent $ \a -> void . sendMessage a acId pqEncOff SMP.noMsgFlags $ smpEncode FileChunkCancel
+          void . sendDirectMessage conn CR.PQEncOff (BFileChunk sharedMsgId FileChunkCancel) $ ConnectionId connId
+        _ -> withAgent $ \a -> void . sendMessage a acId CR.PQEncOff SMP.noMsgFlags $ smpEncode FileChunkCancel
       pure fileConnId
     fileConnId = if isNothing fileInline then Just acId else Nothing
 
@@ -6046,7 +6046,7 @@ sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   where
     processBatch :: MsgBatch -> m ()
     processBatch (MsgBatch batchBody sndMsgs) = do
-      (agentMsgId, _pqEnc) <- withAgent $ \a -> sendMessage a (aConnId conn) pqEncOff MsgFlags {notification = True} batchBody
+      (agentMsgId, _pqEnc) <- withAgent $ \a -> sendMessage a (aConnId conn) CR.PQEncOff MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
 
@@ -6072,12 +6072,8 @@ deliverMessage' conn pqEnc msgFlags msgBody msgId =
 type MsgReq = (Connection, CR.PQEncryption, MsgFlags, MsgBody, MessageId)
 
 -- TODO remove in 5.7 (used for groups)
-pqEncOff :: CR.PQEncryption
-pqEncOff = CR.PQEncryption False
-
--- TODO remove in 5.7 (used for groups)
-pqInitKeysPQOff :: CR.InitialKeys
-pqInitKeysPQOff = CR.IKNoPQ pqEncOff
+ikPQOff :: CR.InitialKeys
+ikPQOff = CR.IKNoPQ CR.PQEncOff
 
 contactPQEnc :: ChatMonad m => Connection -> m CR.PQEncryption
 contactPQEnc Connection {enablePQ = enablePQConn} = do
@@ -6141,7 +6137,7 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending) = foldr addMember ([], []) recipientMembers
-      msgReqs = map (\(_, conn) -> (conn, pqEncOff, msgFlags, msgBody, msgId)) toSend
+      msgReqs = map (\(_, conn) -> (conn, CR.PQEncOff, msgFlags, msgBody, msgId)) toSend
   delivered <- deliverMessages msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
@@ -6200,7 +6196,7 @@ sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId i
   where
     messageMember :: SndMessage -> m ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction chatMsgEvent [m] m) $ \case
-      MSASend conn -> deliverMessage conn pqEncOff (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
+      MSASend conn -> deliverMessage conn CR.PQEncOff (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
 
 sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
@@ -6211,7 +6207,7 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
     processPendingMessage pgm `catchChatError` (toView . CRChatError (Just user))
   where
     processPendingMessage PendingGroupMessage {msgId, cmEventTag = ACMEventTag _ tag, msgBody, introId_} = do
-      void $ deliverMessage conn pqEncOff tag msgBody msgId
+      void $ deliverMessage conn CR.PQEncOff tag msgBody msgId
       withStore' $ \db -> deletePendingGroupMessage db groupMemberId msgId
       case tag of
         XGrpMemFwd_ -> case introId_ of
@@ -6245,7 +6241,7 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
         ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
           fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
           forM_ (memberConn fm) $ \fmConn ->
-            void $ sendDirectMessage fmConn pqEncOff (XGrpMemCon amMemId) (GroupId groupId)
+            void $ sendDirectMessage fmConn CR.PQEncOff (XGrpMemCon amMemId) (GroupId groupId)
           throwError e
         _ -> throwError e
   pure (am', conn', msg)
@@ -6261,7 +6257,7 @@ saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember@GroupMember {me
         am@GroupMember {memberId = amMemberId} <- withStore $ \db -> getGroupMember db user groupId authorGroupMemberId
         if sameMemberId refMemberId am
           then forM_ (memberConn forwardingMember) $ \fmConn ->
-            void $ sendDirectMessage fmConn pqEncOff (XGrpMemCon amMemberId) (GroupId groupId)
+            void $ sendDirectMessage fmConn CR.PQEncOff (XGrpMemCon amMemberId) (GroupId groupId)
           else toView $ CRMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
         throwError e
       _ -> throwError e
@@ -6357,13 +6353,13 @@ cancelCIFile user file_ =
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> m (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
-  connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode pqInitKeysPQOff subMode
+  connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode ikPQOff subMode
   pure (cmdId, connId)
 
 joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> m (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo pqEncOff subMode
+  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo CR.PQEncOff subMode
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
