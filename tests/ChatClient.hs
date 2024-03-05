@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -30,20 +31,25 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
+import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.Protocol (pattern VersionSMPA)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Crypto.Ratchet (pattern VersionE2E)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
 import Simplex.Messaging.Version
+import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
 import qualified System.Terminal as C
@@ -136,9 +142,9 @@ testCfg =
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
   testAgentCfg
-    { smpAgentVRange = prevRange $ smpAgentVRange testAgentCfg,
-      smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
-      e2eEncryptVRange = prevRange $ e2eEncryptVRange testAgentCfg,
+    { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
+      smpAgentVRange = \_ -> prevRange $ supportedSMPAgentVRange CR.PQEncOff,
+      e2eEncryptVRange = \_ -> prevRange $ CR.supportedE2EEncryptVRange CR.PQEncOff,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
@@ -146,9 +152,9 @@ testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = versionToRange 2, -- duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = versionToRange 2, -- kdfX3DHE2EEncryptVersion,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange 4} -- batchCmdsSMPVersion
+      smpAgentVRange = \_ -> versionToRange (VersionSMPA 2), -- duplexHandshakeSMPAgentVersion,
+      e2eEncryptVRange = \_ -> versionToRange (VersionE2E 2), -- kdfX3DHE2EEncryptVersion,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange batchCmdsSMPVersion}
     }
 
 testCfgVPrev :: ChatConfig
@@ -165,11 +171,14 @@ testCfgV1 =
       agentConfig = testAgentCfgV1
     }
 
-prevRange :: VersionRange -> VersionRange
-prevRange vr = vr {maxVersion = max (minVersion vr) (maxVersion vr - 1)}
+prevRange :: VersionRange v -> VersionRange v
+prevRange vr = vr {maxVersion = max (minVersion vr) (prevVersion $ maxVersion vr)}
 
-v1Range :: VersionRange
-v1Range = mkVersionRange 1 1
+v1Range :: VersionRange v
+v1Range = mkVersionRange (Version 1) (Version 1)
+
+prevVersion :: Version v -> Version v
+prevVersion (Version v) = Version (v - 1)
 
 testCfgCreateGroupDirect :: ChatConfig
 testCfgCreateGroupDirect =
@@ -178,8 +187,8 @@ testCfgCreateGroupDirect =
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
 mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
 
-groupCreateDirectVRange :: VersionRange
-groupCreateDirectVRange = mkVersionRange 1 1
+groupCreateDirectVRange :: VersionRangeChat
+groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
 
 testCfgGroupLinkViaContact :: ChatConfig
 testCfgGroupLinkViaContact =
@@ -188,8 +197,8 @@ testCfgGroupLinkViaContact =
 mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
 mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
 
-groupLinkViaContactVRange :: VersionRange
-groupLinkViaContactVRange = mkVersionRange 1 2
+groupLinkViaContactVRange :: VersionRangeChat
+groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
@@ -318,7 +327,8 @@ getTermLine cc =
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) = maybe "no current user" (T.unpack . localDisplayName) <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) =
+  maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts

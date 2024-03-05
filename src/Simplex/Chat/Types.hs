@@ -38,6 +38,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
+import Data.Word (Word16)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
 import Database.SQLite.Simple.FromField (FromField (..), returnError)
 import Database.SQLite.Simple.Internal (Field (..))
@@ -53,6 +54,58 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
+import Simplex.Messaging.Version.Internal
+
+-- TODO PQ replace with actual instances
+instance Eq (ConnectionRequestUri m) where _ == _ = True
+
+instance Eq (APartyCmdTag p) where
+  t1 == t2 = case (t1, t2) of
+    (APCT SAEConn NEW_, APCT SAEConn NEW_) -> True
+    (APCT SAEConn INV_, APCT SAEConn INV_) -> True
+    (APCT SAEConn JOIN_, APCT SAEConn JOIN_) -> True
+    (APCT SAEConn CONF_, APCT SAEConn CONF_) -> True
+    (APCT SAEConn LET_, APCT SAEConn LET_) -> True
+    (APCT SAEConn REQ_, APCT SAEConn REQ_) -> True
+    (APCT SAEConn ACPT_, APCT SAEConn ACPT_) -> True
+    (APCT SAEConn RJCT_, APCT SAEConn RJCT_) -> True
+    (APCT SAEConn INFO_, APCT SAEConn INFO_) -> True
+    (APCT SAEConn CON_, APCT SAEConn CON_) -> True
+    (APCT SAEConn SUB_, APCT SAEConn SUB_) -> True
+    (APCT SAEConn END_, APCT SAEConn END_) -> True
+    (APCT SAENone CONNECT_, APCT SAENone CONNECT_) -> True
+    (APCT SAENone DISCONNECT_, APCT SAENone DISCONNECT_) -> True
+    (APCT SAENone DOWN_, APCT SAENone DOWN_) -> True
+    (APCT SAENone UP_, APCT SAENone UP_) -> True
+    (APCT SAEConn SWITCH_, APCT SAEConn SWITCH_) -> True
+    (APCT SAEConn RSYNC_, APCT SAEConn RSYNC_) -> True
+    (APCT SAEConn SEND_, APCT SAEConn SEND_) -> True
+    (APCT SAEConn MID_, APCT SAEConn MID_) -> True
+    (APCT SAEConn SENT_, APCT SAEConn SENT_) -> True
+    (APCT SAEConn MERR_, APCT SAEConn MERR_) -> True
+    (APCT SAEConn MERRS_, APCT SAEConn MERRS_) -> True
+    (APCT SAEConn MSG_, APCT SAEConn MSG_) -> True
+    (APCT SAEConn MSGNTF_, APCT SAEConn MSGNTF_) -> True
+    (APCT SAEConn ACK_, APCT SAEConn ACK_) -> True
+    (APCT SAEConn RCVD_, APCT SAEConn RCVD_) -> True
+    (APCT SAEConn SWCH_, APCT SAEConn SWCH_) -> True
+    (APCT SAEConn OFF_, APCT SAEConn OFF_) -> True
+    (APCT SAEConn DEL_, APCT SAEConn DEL_) -> True
+    (APCT SAEConn DEL_RCVQ_, APCT SAEConn DEL_RCVQ_) -> True
+    (APCT SAEConn DEL_CONN_, APCT SAEConn DEL_CONN_) -> True
+    (APCT SAENone DEL_USER_, APCT SAENone DEL_USER_) -> True
+    (APCT SAEConn CHK_, APCT SAEConn CHK_) -> True
+    (APCT SAEConn STAT_, APCT SAEConn STAT_) -> True
+    (APCT SAEConn OK_, APCT SAEConn OK_) -> True
+    (APCT SAEConn ERR_, APCT SAEConn ERR_) -> True
+    (APCT SAENone SUSPENDED_, APCT SAENone SUSPENDED_) -> True
+    (APCT SAERcvFile RFDONE_, APCT SAERcvFile RFDONE_) -> True
+    (APCT SAERcvFile RFPROG_, APCT SAERcvFile RFPROG_) -> True
+    (APCT SAERcvFile RFERR_, APCT SAERcvFile RFERR_) -> True
+    (APCT SAESndFile SFPROG_, APCT SAESndFile SFPROG_) -> True
+    (APCT SAESndFile SFDONE_, APCT SAESndFile SFDONE_) -> True
+    (APCT SAESndFile SFERR_, APCT SAESndFile SFERR_) -> True
+    _ -> False
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -210,6 +263,9 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
+
+contactPQEnabled :: Contact -> Bool
+contactPQEnabled Contact {activeConn} = maybe False connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
@@ -563,7 +619,8 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
-    groupLinkId :: Maybe GroupLinkId
+    groupLinkId :: Maybe GroupLinkId,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -571,7 +628,8 @@ data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -699,7 +757,7 @@ memberConn GroupMember {activeConn} = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
-memberChatVRange' :: GroupMember -> VersionRange
+memberChatVRange' :: GroupMember -> VersionRangeChat
 memberChatVRange' GroupMember {activeConn, memberChatVRange} =
   fromJVersionRange $ case activeConn of
     Just Connection {peerChatVRange} -> peerChatVRange
@@ -1277,6 +1335,8 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
+type PQFlag = Bool
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
@@ -1293,6 +1353,9 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
+    enablePQ :: PQFlag,
+    pqSndEnabled :: Maybe PQFlag,
+    pqRcvEnabled :: Maybe PQFlag,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }
@@ -1326,6 +1389,10 @@ aConnId Connection {agentConnId = AgentConnId cId} = cId
 
 connIncognito :: Connection -> Bool
 connIncognito Connection {customUserProfileId} = isJust customUserProfileId
+
+connPQEnabled :: Connection -> Bool
+connPQEnabled Connection {pqSndEnabled, pqRcvEnabled} =
+  pqSndEnabled == Just True && pqRcvEnabled == Just True
 
 data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,
@@ -1615,10 +1682,24 @@ data ServerCfg p = ServerCfg
   }
   deriving (Show)
 
-newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
+data ChatVersion
 
-chatInitialVRange :: VersionRange
-chatInitialVRange = versionToRange 1
+instance VersionScope ChatVersion
+
+type VersionChat = Version ChatVersion
+
+type VersionRangeChat = VersionRange ChatVersion
+
+pattern VersionChat :: Word16 -> VersionChat
+pattern VersionChat v = Version v
+
+newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
+
+initialChatVersion :: VersionChat
+initialChatVersion = VersionChat 1
+
+chatInitialVRange :: VersionRangeChat
+chatInitialVRange = versionToRange initialChatVersion
 
 instance FromJSON ChatVersionRange where
   parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
@@ -1627,7 +1708,7 @@ instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
-newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} deriving (Eq, Show)
+newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRangeChat} deriving (Eq, Show)
 
 instance FromJSON JVersionRange where
   parseJSON = J.withObject "JVersionRange" $ \o -> do

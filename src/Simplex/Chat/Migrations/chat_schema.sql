@@ -277,6 +277,9 @@ CREATE TABLE connections(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
   contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
+  enable_pq INTEGER,
+  pq_snd_enabled INTEGER,
+  pq_rcv_enabled INTEGER,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
