@@ -8,13 +8,34 @@ void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
+    // setup static arena for bump allocation and passing to RTS
+    char *argv[32] = {NULL,};
+    int argc = 0; // number of arguments used so far, always stands at the first NULL in argv
+    // common args
+    argv[argc++] = "simplex"; // fake program name
+    argv[argc++] = "+RTS"; // start adding RTS options
+    argv[argc++] = "-T"; // make GC counters available from inside the program
+    argv[argc++] = "-A16m"; // chunk size for new allocations (less frequent GC)
+    argv[argc++] = "-H64m"; // larger heap size on start (faster boot)
+    argv[argc++] = "-M8G"; // keep memory usage under 8G, collecting more aggressively when approaching it (and crashing sooner rather than taking down the whole system)
+    int eventlog = 1; // TODO: geto option flag from app (pointer for -ol?)
+    if (eventlog) {
+        argv[argc++] = "-olsimplex.eeventlog"; // produce simplex.eventlog in "current" directory
+        argv[argc++] = "-l-agu"; // collect GC and user events
+    }
+    int profiling = 1; // TODO: get option flag from app (pointer for -po?)
+    if (profiling) {
+        argv[argc++] = "-posimplex"; // produce simplex.hp in "current" directory
+        argv[argc++] = "-hT"; // emit heap profile by closure type
+    }
+    int non_moving_gc = !profiling;
 #ifdef _WIN32
-    int argc = 4;
-    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", NULL}; // non-moving GC is broken on windows with GHC 9.4-9.6.3
-#else
-    int argc = 5;
-    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", "-xn", NULL}; // see android/simplex-api.c for details
+    // non-moving GC is broken on windows with GHC 9.4-9.6.3
+    non_moving_gc = 0;
 #endif
+    if (non_moving_gc)
+        argv[argc++] = "-xn";
+    // wrap args as expected by RTS
     char **pargv = argv;
     hs_init_with_rtsopts(&argc, &pargv);
 }
