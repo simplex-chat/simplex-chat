@@ -612,7 +612,7 @@
           '';
         }; in
 	pkgs.mkShell {
-          buildInputs = [ updateCmd ];
+          buildInputs = [ updateCmd pkgs.haskell.compiler.ghc810 pkgs.cabal-install pkgs.zlib pkgs.gmp ];
           shellHook = ''
             echo "welcome to the shell!"
           '';
