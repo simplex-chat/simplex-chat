@@ -20,7 +20,7 @@ Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
     argv[argc++] = "-M8G"; // keep memory usage under 8G, collecting more aggressively when approaching it (and crashing sooner rather than taking down the whole system)
     int eventlog = 1; // TODO: geto option flag from app (pointer for -ol?)
     if (eventlog) {
-        argv[argc++] = "-olsimplex.eeventlog"; // produce simplex.eventlog in "current" directory
+        argv[argc++] = "-olsimplex.eventlog"; // produce simplex.eventlog in "current" directory
         argv[argc++] = "-l-agu"; // collect GC and user events
     }
     int profiling = 1; // TODO: get option flag from app (pointer for -po?)
