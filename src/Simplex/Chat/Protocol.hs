@@ -53,40 +53,40 @@ import Simplex.Messaging.Version hiding (version)
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
-currentChatVersion :: Version
-currentChatVersion = 7
+currentChatVersion :: VersionChat
+currentChatVersion = VersionChat 7
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
-supportedChatVRange :: VersionRange
-supportedChatVRange = mkVersionRange 1 currentChatVersion
+supportedChatVRange :: VersionRangeChat
+supportedChatVRange = mkVersionRange (VersionChat 1) currentChatVersion
 
 -- version range that supports skipping establishing direct connections in a group
-groupNoDirectVRange :: VersionRange
-groupNoDirectVRange = mkVersionRange 2 currentChatVersion
+groupNoDirectVRange :: VersionRangeChat
+groupNoDirectVRange = mkVersionRange (VersionChat 2) currentChatVersion
 
 -- version range that supports establishing direct connection via x.grp.direct.inv with a group member
-xGrpDirectInvVRange :: VersionRange
-xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
+xGrpDirectInvVRange :: VersionRangeChat
+xGrpDirectInvVRange = mkVersionRange (VersionChat 2) currentChatVersion
 
 -- version range that supports joining group via group link without creating direct contact
-groupLinkNoContactVRange :: VersionRange
-groupLinkNoContactVRange = mkVersionRange 3 currentChatVersion
+groupLinkNoContactVRange :: VersionRangeChat
+groupLinkNoContactVRange = mkVersionRange (VersionChat 3) currentChatVersion
 
 -- version range that supports group forwarding
-groupForwardVRange :: VersionRange
-groupForwardVRange = mkVersionRange 4 currentChatVersion
+groupForwardVRange :: VersionRangeChat
+groupForwardVRange = mkVersionRange (VersionChat 4) currentChatVersion
 
 -- version range that supports batch sending in groups
-batchSendVRange :: VersionRange
-batchSendVRange = mkVersionRange 5 currentChatVersion
+batchSendVRange :: VersionRangeChat
+batchSendVRange = mkVersionRange (VersionChat 5) currentChatVersion
 
 -- version range that supports sending group welcome message in group history
-groupHistoryIncludeWelcomeVRange :: VersionRange
-groupHistoryIncludeWelcomeVRange = mkVersionRange 6 currentChatVersion
+groupHistoryIncludeWelcomeVRange :: VersionRangeChat
+groupHistoryIncludeWelcomeVRange = mkVersionRange (VersionChat 6) currentChatVersion
 
 -- version range that supports sending member profile updates to groups
-memberProfileUpdateVRange :: VersionRange
-memberProfileUpdateVRange = mkVersionRange 7 currentChatVersion
+memberProfileUpdateVRange :: VersionRangeChat
+memberProfileUpdateVRange = mkVersionRange (VersionChat 7) currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -217,7 +217,7 @@ instance ToJSON LinkContent where
 $(JQ.deriveJSON defaultJSON ''LinkPreview)
 
 data ChatMessage e = ChatMessage
-  { chatVRange :: VersionRange,
+  { chatVRange :: VersionRangeChat,
     msgId :: Maybe SharedMsgId,
     chatMsgEvent :: ChatMsgEvent e
   }

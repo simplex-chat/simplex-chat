@@ -48,6 +48,7 @@ data RcvConnEvent
 data SndConnEvent
   = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
   | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
+  | SCEPQEnabled {enabled :: Bool}
   deriving (Show)
 
 data RcvDirectEvent

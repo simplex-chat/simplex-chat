@@ -80,7 +80,6 @@ import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
-import Simplex.Messaging.Version
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -122,7 +121,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    chatVRange :: VersionRange,
+    chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
@@ -207,7 +206,7 @@ data ChatController = ChatController
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool,
-    pqExperimentalEnabled :: TVar Bool -- TODO remove in 5.7
+    pqExperimentalEnabled :: TVar PQFlag -- TODO remove in 5.7
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
