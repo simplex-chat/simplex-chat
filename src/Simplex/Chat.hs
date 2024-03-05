@@ -5722,7 +5722,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
 createContactPQSndItem :: ChatMonad m => User -> Contact -> Connection -> PQFlag -> m (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
-  -- TODO PQ refactor check for pqSndEnabled change with updatePQSndEnabled in deliverMessagesB
+  -- TODO PQ refactor (?) check for pqSndEnabled change with updatePQSndEnabled in deliverMessagesB
   flip catchChatError (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Nothing, False) -> pure (ct, conn)
     (Nothing, True) -> createPQItem $ CISndDirectE2EEInfo (E2EEInfo pqSndEnabled')
