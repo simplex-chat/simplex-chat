@@ -498,9 +498,10 @@ testGroup2 =
       dan <##> cath
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 8"
+      alice ##> "/t #club 9"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
-        <##? [ "#club bob> connected",
+        <##? [ ConsoleString ("#club " <> e2eeInfoNoPQStr),
+               "#club bob> connected",
                "#club cath> connected",
                "#club bob> added dan (Daniel)",
                "#club dan> connected",
