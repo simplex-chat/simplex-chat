@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.AppPreferences.Companion.SHARED_PREFS_MIGRATION_STAGE
@@ -53,18 +54,20 @@ sealed class MigrationFromAnotherDeviceState {
     // It's important to NOT show the process when archive was corrupted/not fully downloaded
     fun transform(): MigrationFromAnotherDeviceState? {
       val stage = settings.getStringOrNull(SHARED_PREFS_MIGRATION_STAGE)
-      val state: MigrationFromAnotherDeviceState? = if (stage != null) json.decodeFromString(stage) else null
+      var state: MigrationFromAnotherDeviceState? = if (stage != null) json.decodeFromString(stage) else null
       if (state is DownloadProgress) {
-        // iOS changes absolute directory every launch, check this way
-        val archivePath = File(getMigrationTempFilesDirectory(), state.archiveName)
-        archivePath.delete()
-        settings.remove(SHARED_PREFS_MIGRATION_STAGE)
         // No migration happens at the moment actually since archive were not downloaded fully
         Log.e(TAG, "MigrateFromDevice: archive wasn't fully downloaded, removed broken file")
-        return null
+        state = null
       } else if (state is Onion) {
+        state = null
+      } else if (state is ArchiveImport && !File(getMigrationTempFilesDirectory(), state.archiveName).exists()) {
+        Log.e(TAG, "MigrateFromDevice: archive was removed unintentionally or state is broken, dropping migration")
+        state = null
+      }
+      if (state == null) {
         settings.remove(SHARED_PREFS_MIGRATION_STAGE)
-        return null
+        getMigrationTempFilesDirectory().deleteRecursively()
       }
       return state
     }
@@ -82,15 +85,16 @@ sealed class MigrationFromAnotherDeviceState {
 
 @Serializable
 private sealed class MigrationState {
-  object PasteOrScanLink: MigrationState()
-  data class Onion(val link: String): MigrationState()
-  data class LinkDownloading(val link: String, val netCfg: NetCfg): MigrationState()
-  data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long, val fileId: Long, val link: String, val archivePath: String, val netCfg: NetCfg, val ctrl: ChatCtrl?): MigrationState()
-  data class DownloadFailed(val totalBytes: Long, val link: String, val archivePath: String, val netCfg: NetCfg): MigrationState()
-  data class ArchiveImport(val archivePath: String, val netCfg: NetCfg): MigrationState()
-  data class ArchiveImportFailed(val archivePath: String, val netCfg: NetCfg): MigrationState()
-  data class Passphrase(val passphrase: String, val netCfg: NetCfg): MigrationState()
-  data class Migration(val passphrase: String, val netCfg: NetCfg): MigrationState()
+  @Serializable object PasteOrScanLink: MigrationState()
+  @Serializable data class Onion(val link: String): MigrationState()
+  @Serializable data class DatabaseInit(val link: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class LinkDownloading(val link: String, val ctrl: ChatCtrl, val user: User, val archivePath: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long, val fileId: Long, val link: String, val archivePath: String, val netCfg: NetCfg, val ctrl: ChatCtrl?): MigrationState()
+  @Serializable data class DownloadFailed(val totalBytes: Long, val link: String, val archivePath: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class ArchiveImport(val archivePath: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class ArchiveImportFailed(val archivePath: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class Passphrase(val passphrase: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class Migration(val passphrase: String, val netCfg: NetCfg): MigrationState()
 }
 
 private var MutableState<MigrationState>.state: MigrationState
@@ -99,12 +103,6 @@ private var MutableState<MigrationState>.state: MigrationState
 
 @Composable
 fun ModalData.MigrateFromAnotherDeviceView(state: MigrationFromAnotherDeviceState? = null, close: () -> Unit) {
-  // Prevent from hiding the view until migration is finished or app deleted
-  val backDisabled = remember {
-    mutableStateOf(
-      state != null && state !is MigrationFromAnotherDeviceState.ArchiveImport && state !is MigrationFromAnotherDeviceState.Onion
-    )
-  }
   val migrationState = rememberSaveable(stateSaver = serializableSaver()) {
     mutableStateOf(
       when (state) {
@@ -129,17 +127,27 @@ fun ModalData.MigrateFromAnotherDeviceView(state: MigrationFromAnotherDeviceStat
       }
     )
   }
+  // Prevent from hiding the view until migration is finished or app deleted
+  val backDisabled = remember {
+    derivedStateOf {
+      val state = chatModel.migrationState.value
+      state is MigrationFromAnotherDeviceState.ArchiveImport ||
+          state is MigrationFromAnotherDeviceState.Passphrase ||
+          migrationState.value is MigrationState.DatabaseInit
+    }
+  }
   val chatReceiver = remember { mutableStateOf(null as MigrationChatReceiver?) }
   ModalView(
     enableClose = !backDisabled.value,
     close = {
-      migrationState.cleanUpOnBack(backDisabled, chatReceiver.value)
-      close()
+      withBGApi {
+        migrationState.cleanUpOnBack(chatReceiver.value)
+        close()
+      }
     },
   ) {
     MigrateFromAnotherDeviceLayout(
       migrationState = migrationState,
-      backDisabled = backDisabled,
       chatReceiver = chatReceiver,
       close = close,
     )
@@ -149,7 +157,6 @@ fun ModalData.MigrateFromAnotherDeviceView(state: MigrationFromAnotherDeviceStat
 @Composable
 private fun ModalData.MigrateFromAnotherDeviceLayout(
   migrationState: MutableState<MigrationState>,
-  backDisabled: MutableState<Boolean>,
   chatReceiver: MutableState<MigrationChatReceiver?>,
   close: () -> Unit,
 ) {
@@ -159,22 +166,23 @@ private fun ModalData.MigrateFromAnotherDeviceLayout(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).height(IntrinsicSize.Max),
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_here))
-    SectionByState(migrationState, tempDatabaseFile.value, backDisabled, chatReceiver, close)
+    SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)
   }
+  platform.androidLockPortraitOrientation()
 }
 
 @Composable
 private fun ModalData.SectionByState(
   migrationState: MutableState<MigrationState>,
   tempDatabaseFile: File,
-  backDisabled: MutableState<Boolean>,
   chatReceiver: MutableState<MigrationChatReceiver?>,
   close: () -> Unit
 ) {
   when (val s = migrationState.value) {
     is MigrationState.PasteOrScanLink -> migrationState.PasteOrScanLinkView()
     is MigrationState.Onion -> OnionView(s.link, migrationState, close)
-    is MigrationState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, tempDatabaseFile, chatReceiver, s.netCfg)
+    is MigrationState.DatabaseInit -> migrationState.DatabaseInitView(s.link, tempDatabaseFile, chatReceiver, s.netCfg)
+    is MigrationState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg)
     is MigrationState.DownloadProgress -> migrationState.DownloadProgressView(s.downloadedBytes, totalBytes = s.totalBytes, chatReceiver.value, s.netCfg)
     is MigrationState.DownloadFailed -> migrationState.DownloadFailedView(totalBytes = s.totalBytes, s.link, s.archivePath, s.netCfg)
     is MigrationState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg)
@@ -182,23 +190,23 @@ private fun ModalData.SectionByState(
     is MigrationState.Passphrase -> migrationState.PassphraseEnteringView(currentKey = s.passphrase, s.netCfg)
     is MigrationState.Migration -> migrationState.MigrationView(s.passphrase, s.netCfg, close)
   }
-  KeyChangeEffect(migrationState.value) {
-    backDisabled.value = migrationState.value !is MigrationState.ArchiveImportFailed && chatModel.migrationState.value != null
-  }
 }
 
 @Composable
 private fun MutableState<MigrationState>.PasteOrScanLinkView() {
   if (appPlatform.isAndroid) {
-    SectionView(stringResource(MR.strings.scan_QR_code).uppercase()) {
+    SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
       QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
         checkUserLink(text)
       }
     }
+    SectionSpacer()
   }
 
-  SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
-    PasteLinkView()
+  if (appPlatform.isDesktop || appPreferences.developerTools.get()) {
+    SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
+      PasteLinkView()
+    }
   }
 }
 
@@ -231,12 +239,14 @@ private fun ModalData.OnionView(link: String, state: MutableState<MigrationState
       text = stringResource(MR.strings.migration_from_device_apply_onion),
       textColor = MaterialTheme.colors.primary,
       click = {
-        val updated = netCfg.value.withOnionHosts(onionHosts.value).copy(
-          socksProxy = if (networkUseSocksProxy.value) networkProxyHostPort.value else null,
-          sessionMode = sessionMode.value,
-        )
+        val updated = netCfg.value
+          .withOnionHosts(onionHosts.value)
+          .withHostPort(if (networkUseSocksProxy.value) networkProxyHostPort.value else null, null)
+          .copy(
+            sessionMode = sessionMode.value
+          )
         withBGApi {
-          state.value = MigrationState.LinkDownloading(link, updated)
+          state.value = MigrationState.DatabaseInit(link, updated)
         }
       }
     ){}
@@ -279,18 +289,32 @@ private fun ModalData.OnionView(link: String, state: MutableState<MigrationState
 }
 
 @Composable
-private fun MutableState<MigrationState>.LinkDownloadingView(link: String, tempDatabaseFile: File, chatReceiver: MutableState<MigrationChatReceiver?>, netCfg: NetCfg) {
+private fun MutableState<MigrationState>.DatabaseInitView(link: String, tempDatabaseFile: File, chatReceiver: MutableState<MigrationChatReceiver?>, netCfg: NetCfg) {
+  Box {
+    SectionView(stringResource(MR.strings.migration_from_device_database_init).uppercase()) {}
+    ProgressView()
+  }
+  LaunchedEffect(Unit) {
+    prepareDatabase(link, tempDatabaseFile, netCfg)
+  }
+}
+
+@Composable
+private fun MutableState<MigrationState>.LinkDownloadingView(
+  link: String,
+  ctrl: ChatCtrl,
+  user: User,
+  archivePath: String,
+  tempDatabaseFile: File,
+  chatReceiver: MutableState<MigrationChatReceiver?>,
+  netCfg: NetCfg
+) {
   Box {
     SectionView(stringResource(MR.strings.migration_from_device_downloading_details).uppercase()) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
-    downloadLinkDetails(link, tempDatabaseFile, chatReceiver, netCfg)
-  }
-  DisposableEffectOnGone {
-    if (state !is MigrationState.DownloadProgress) {
-      chatReceiver.value?.stopAndCleanUp()
-    }
+    startDownloading(0, ctrl, user, tempDatabaseFile, chatReceiver, link, archivePath, netCfg)
   }
 }
 
@@ -302,9 +326,6 @@ private fun MutableState<MigrationState>.DownloadProgressView(downloadedBytes: L
       LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migration_from_device_bytes_downloaded).format(formatBytes(downloadedBytes)))
     }
   }
-  DisposableEffectOnGone {
-    chatReceiver?.stopAndCleanUp()
-  }
 }
 
 @Composable
@@ -315,7 +336,7 @@ private fun MutableState<MigrationState>.DownloadFailedView(totalBytes: Long, li
       text = stringResource(MR.strings.migration_from_device_repeat_download),
       textColor = MaterialTheme.colors.primary,
       click = {
-        state = MigrationState.LinkDownloading(link, netCfg)
+        state = MigrationState.DatabaseInit(link, netCfg)
       }
     ) {}
     SectionTextFooter(stringResource(MR.strings.migration_from_device_try_again))
@@ -407,19 +428,16 @@ private fun ProgressView() {
 
 @Composable
 private fun LargeProgressView(value: Float, title: String, description: String) {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-      CircularProgressIndicator(
-        progress = value,
-        Modifier
-          .padding(bottom = DEFAULT_PADDING)
-          .size(DEFAULT_START_MODAL_WIDTH)
-          .align(Alignment.TopCenter),
-        color = MaterialTheme.colors.primary,
-        strokeWidth = 25.dp
-      )
-    Column(Modifier.size(DEFAULT_START_MODAL_WIDTH), horizontalAlignment = Alignment.CenterHorizontally) {
+  Box(Modifier.fillMaxSize().padding(DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+    CircularProgressIndicator(
+      progress = value,
+      if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth()),
+      color = MaterialTheme.colors.primary,
+      strokeWidth = 25.dp
+    )
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
       Text(description, color = Color.Transparent)
-      Text(title, style = MaterialTheme.typography.h1, color = MaterialTheme.colors.primary)
+      Text(title, style = MaterialTheme.typography.h1, fontWeight = FontWeight.Bold, color = MaterialTheme.colors.primary)
       Text(description, style = MaterialTheme.typography.subtitle1)
     }
   }
@@ -432,7 +450,7 @@ private fun MutableState<MigrationState>.checkUserLink(link: String) {
       state = MigrationState.Onion(link.trim())
       MigrationFromAnotherDeviceState.save(MigrationFromAnotherDeviceState.Onion(link.trim()))
     } else {
-      state = MigrationState.LinkDownloading(link.trim(), getNetCfg())
+      state = MigrationState.DatabaseInit(link.trim(), getNetCfg())
     }
   } else {
     AlertManager.shared.showAlertMsg(
@@ -442,19 +460,21 @@ private fun MutableState<MigrationState>.checkUserLink(link: String) {
   }
 }
 
-
-private fun MutableState<MigrationState>.downloadLinkDetails(
+private fun MutableState<MigrationState>.prepareDatabase(
   link: String,
   tempDatabaseFile: File,
-  chatReceiver: MutableState<MigrationChatReceiver?>,
   netCfg: NetCfg,
 ) {
-  val archiveTime = Clock.System.now()
-  val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
-  val archiveName = "simplex-chat.$ts.zip"
-  val archivePath = File(getMigrationTempFilesDirectory(), archiveName)
+  withBGApi {
+    val ctrlAndUser = initTemporaryDatabase(tempDatabaseFile, netCfg)
+    if (ctrlAndUser == null) {
+      state = MigrationState.DownloadFailed(0, link, archivePath(), netCfg)
+      return@withBGApi
+    }
 
-  startDownloading(0, tempDatabaseFile, chatReceiver, link, archivePath.absolutePath, netCfg)
+    val (ctrl, user) = ctrlAndUser
+    state = MigrationState.LinkDownloading(link, ctrl, user, archivePath(), netCfg)
+  }
 }
 
 private suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
@@ -473,6 +493,8 @@ private suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg
 
 private fun MutableState<MigrationState>.startDownloading(
   totalBytes: Long,
+  ctrl: ChatCtrl,
+  user: User,
   tempDatabaseFile: File,
   chatReceiver: MutableState<MigrationChatReceiver?>,
   link: String,
@@ -480,13 +502,6 @@ private fun MutableState<MigrationState>.startDownloading(
   netCfg: NetCfg,
 ) {
   withBGApi {
-    val ctrlAndUser = initTemporaryDatabase(tempDatabaseFile, netCfg)
-    if (ctrlAndUser == null) {
-      state = MigrationState.DownloadFailed(totalBytes, link, archivePath, netCfg)
-      return@withBGApi
-    }
-
-    val (ctrl, user) = ctrlAndUser
     chatReceiver.value = MigrationChatReceiver(ctrl, tempDatabaseFile) { msg ->
         when (msg) {
           is CR.RcvFileProgressXFTP -> {
@@ -550,19 +565,11 @@ private fun MutableState<MigrationState>.importArchive(archivePath: String, netC
   }
 }
 
-
 private suspend fun stopArchiveDownloading(fileId: Long, ctrl: ChatCtrl) {
   controller.apiCancelFile(null, fileId, ctrl)
 }
 
-private fun cancelMigration(fileId: Long, ctrl: ChatCtrl, close: () -> Unit) {
-  withBGApi {
-    stopArchiveDownloading(fileId, ctrl)
-    close()
-  }
-}
-
-private fun MutableState<MigrationState>.startChat(passphrase: String, netCfg: NetCfg, close: () -> Unit) {
+private fun startChat(passphrase: String, netCfg: NetCfg, close: () -> Unit) {
   ksDatabasePassword.set(passphrase)
   appPreferences.storeDBPassphrase.set(true)
   appPreferences.initialRandomDBPassphrase.set(false)
@@ -601,22 +608,18 @@ private fun hideView(close: () -> Unit) {
   close()
 }
 
-private fun MutableState<MigrationState>.cleanUpOnBack(backDisabled: MutableState<Boolean>, chatReceiver: MigrationChatReceiver?) {
+private suspend fun MutableState<MigrationState>.cleanUpOnBack(chatReceiver: MigrationChatReceiver?) {
   val state = state
   if (state is MigrationState.ArchiveImportFailed) {
     // Original database is not exist, nothing is set up correctly for showing to a user yet. Return to clean state
     deleteChatDatabaseFilesAndState()
     initChatControllerAndRunMigrations()
   } else if (state is MigrationState.DownloadProgress && state.ctrl != null) {
-    withBGApi {
-      stopArchiveDownloading(state.fileId, state.ctrl)
-    }
+    stopArchiveDownloading(state.fileId, state.ctrl)
   }
-  if (!backDisabled.value) {
-    chatReceiver?.stopAndCleanUp()
-    getMigrationTempFilesDirectory().deleteRecursively()
-    MigrationFromAnotherDeviceState.save(null)
-  }
+  chatReceiver?.stopAndCleanUp()
+  getMigrationTempFilesDirectory().deleteRecursively()
+  MigrationFromAnotherDeviceState.save(null)
 }
 
 private fun strHasSimplexFileLink(text: String): Boolean =
@@ -625,18 +628,27 @@ private fun strHasSimplexFileLink(text: String): Boolean =
 private fun fileForTemporaryDatabase(): File =
   File(getMigrationTempFilesDirectory(), generateNewFileName("migration", "db", getMigrationTempFilesDirectory()))
 
+private fun archivePath(): String {
+  val archiveTime = Clock.System.now()
+  val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
+  val archiveName = "simplex-chat.$ts.zip"
+  val archivePath = File(getMigrationTempFilesDirectory(), archiveName)
+  return archivePath.absolutePath
+}
+
 private class MigrationChatReceiver(
   val ctrl: ChatCtrl,
   val databaseUrl: File,
-  val processReceivedMsg: suspend (CR) -> Unit,
+  var receiveMessages: Boolean = true,
+  val processReceivedMsg: suspend (CR) -> Unit
 ) {
   fun start() {
     Log.d(TAG, "MigrationChatReceiver startReceiver")
     CoroutineScope(Dispatchers.IO).launch {
-      while (true) {
+      while (receiveMessages) {
         try {
           val msg = ChatController.recvMsg(ctrl)
-          if (msg != null) {
+          if (msg != null && receiveMessages) {
             val r = msg.resp
             val rhId = msg.remoteHostId
             Log.d(TAG, "processReceivedMsg: ${r.responseType}")
@@ -667,6 +679,7 @@ private class MigrationChatReceiver(
 
   fun stopAndCleanUp() {
     Log.d(TAG, "MigrationChatReceiver.stop")
+    receiveMessages = false
     chatCloseStore(ctrl)
     File(databaseUrl.absolutePath + "_chat.db").delete()
     File(databaseUrl.absolutePath + "_agent.db").delete()

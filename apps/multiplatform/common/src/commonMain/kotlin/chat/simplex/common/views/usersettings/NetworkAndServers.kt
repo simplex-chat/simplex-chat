@@ -219,7 +219,7 @@ fun UseSocksProxySwitch(
   toggleSocksProxy: (Boolean) -> Unit,
   showModal: (@Composable ModalData.() -> Unit) -> Unit,
   networkProxyHostPort: SharedPreference<String?> = chatModel.controller.appPrefs.networkProxyHostPort,
-  confirmWithAlert: Boolean = true,
+  migration: Boolean = false,
 ) {
   Row(
     Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING),
@@ -239,8 +239,11 @@ fun UseSocksProxySwitch(
       val text = buildAnnotatedString {
         append(generalGetString(MR.strings.network_socks_toggle_use_socks_proxy) + " (")
         val style = SpanStyle(color = MaterialTheme.colors.primary)
+        val disabledStyle = SpanStyle(color = MaterialTheme.colors.onBackground)
         withAnnotation(tag = "PORT", annotation = generalGetString(MR.strings.network_proxy_port).format(proxyPort.value)) {
-          withStyle(style) { append(generalGetString(MR.strings.network_proxy_port).format(proxyPort.value)) }
+          withStyle(if (networkUseSocksProxy.value || !migration) style else disabledStyle) {
+            append(generalGetString(MR.strings.network_proxy_port).format(proxyPort.value))
+          }
         }
         append(")")
       }
@@ -250,7 +253,9 @@ fun UseSocksProxySwitch(
         onClick = { offset ->
           text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
             .firstOrNull()?.let { _ ->
-              showModal { SockProxySettings(chatModel, networkProxyHostPort, confirmWithAlert) }
+              if (networkUseSocksProxy.value || !migration) {
+                showModal { SockProxySettings(chatModel, networkProxyHostPort, !migration) }
+              }
             }
         },
         shouldConsumeEvent = { offset ->

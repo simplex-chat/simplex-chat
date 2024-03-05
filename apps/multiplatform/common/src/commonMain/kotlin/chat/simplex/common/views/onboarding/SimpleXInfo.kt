@@ -5,8 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -86,8 +85,8 @@ fun SimpleXInfoLayout(
     }
   }
   LaunchedEffect(Unit) {
-    if (chatModel.migrationState.value != null) {
-      ModalManager.fullscreen.showCustomModal { close -> MigrateFromAnotherDeviceView(chatModel.migrationState.value, close) }
+    if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
+      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateFromAnotherDeviceView(chatModel.migrationState.value, close) }
     }
   }
 }

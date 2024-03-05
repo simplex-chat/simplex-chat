@@ -2303,21 +2303,13 @@ object ChatController {
 
 class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   val set: (T) -> Unit
-  private val _state: MutableState<T> by lazy { mutableStateOf(get()) }
-  val state: State<T> by lazy { _state }
+  private val _state: MutableState<T> = mutableStateOf(get())
+  val state: State<T> = _state
 
   init {
     this.set = { value ->
       set(value)
-      try {
-        _state.value = value
-      } catch (e: IllegalStateException) {
-        // Can be `Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied`
-        Log.i(TAG, e.stackTraceToString())
-        withApi {
-          _state.value = value
-        }
-      }
+      _state.value = value
     }
   }
 }

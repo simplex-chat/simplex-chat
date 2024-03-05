@@ -158,9 +158,7 @@ fun chatInitControllerRemovingDatabases() {
     json.decodeFromString<DBMigrationResult>(migrated[0] as String)
   }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
 
-  val ctrl = if (res is DBMigrationResult.OK) {
-    migrated[1] as Long
-  } else null
+  val ctrl = migrated[1] as Long
   chatController.ctrl = ctrl
   // We need only controller, not databases
   File(dbPath + "_chat.db").delete()

@@ -105,7 +105,7 @@ object ChatModel {
   // currently showing invitation
   val showingInvitation = mutableStateOf(null as ShowingInvitation?)
 
-  var migrationState: MutableState<MigrationFromAnotherDeviceState?> = mutableStateOf(MigrationFromAnotherDeviceState.transform())
+  val migrationState: MutableState<MigrationFromAnotherDeviceState?> by lazy { mutableStateOf(MigrationFromAnotherDeviceState.transform()) }
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
