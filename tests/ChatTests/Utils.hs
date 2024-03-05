@@ -20,6 +20,7 @@ import Data.String
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Messages.CIContent (e2eeInfoNoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
@@ -189,12 +190,16 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' =
-  [ ((0, "Disappearing messages: allowed"), Nothing, Nothing),
+  [ ((0, e2eeInfoNoPQStr), Nothing, Nothing),
+    ((0, "Disappearing messages: allowed"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
     ((0, "Voice messages: enabled"), Nothing, Nothing),
     ((0, "Audio/video calls: enabled"), Nothing, Nothing)
   ]
+
+e2eeInfoNoPQStr :: String
+e2eeInfoNoPQStr = T.unpack e2eeInfoNoPQText
 
 lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
@@ -204,7 +209,8 @@ groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures'' =
-  [ ((0, "Disappearing messages: off"), Nothing, Nothing),
+  [ ((0, e2eeInfoNoPQStr), Nothing, Nothing),
+    ((0, "Disappearing messages: off"), Nothing, Nothing),
     ((0, "Direct messages: on"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),

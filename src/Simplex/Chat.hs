@@ -1590,7 +1590,7 @@ processChatCommand' vr = \case
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     groupInfo <- withStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
-    -- TODO PQ create CISndGroupE2EEInfo (would affect tests)
+    createInternalChatItem user (CDGroupSnd groupInfo) (CISndGroupE2EEInfo $ E2EEInfo {pqEnabled = False}) Nothing
     pure $ CRGroupCreated user groupInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand $ APINewGroup userId incognito gProfile
@@ -3603,7 +3603,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               setContactNetworkStatus ct' NSConnected
               toView $ CRContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct') $ do
-                -- TODO PQ create CIRcvDirectE2EEInfo
+                createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EEInfo pqEnabled) Nothing
                 createFeatureEnabledItems ct'
               when (contactConnInitiated conn') $ do
                 let Connection {groupLinkId} = conn'
@@ -3780,7 +3780,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case memberCategory m of
           GCHostMember -> do
             toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
-            -- TODO PQ create CIRcvGroupE2EEInfo (would affect tests)
+            createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvGroupE2EEInfo $ E2EEInfo {pqEnabled = False}) Nothing
             createGroupFeatureItems gInfo m
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
@@ -5994,7 +5994,7 @@ sendDirectContactMessage user ct chatMsgEvent = do
   pqEnc <- contactPQEnc conn
   r <- sendDirectMessage conn pqEnc chatMsgEvent (ConnectionId connId)
   let (sndMessage, msgDeliveryId, CR.PQEncryption pqEnabled') = r
-  -- TODO PQ use update ct' and conn'? check downstream if it may affect something, maybe it's not necessary
+  -- TODO PQ use updated ct' and conn'? check downstream if it may affect something, maybe it's not necessary
   (_ct', _conn') <- createContactPQSndItem user ct conn pqEnabled'
   pure (sndMessage, msgDeliveryId)
 

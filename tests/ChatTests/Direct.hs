@@ -634,13 +634,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/6] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/7] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/7]"
+    bob <# "alice> [LIVE started] use /show [on/off/8]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -2084,15 +2084,16 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items count=10"
       alice <##? chatHistory
-      alice ##> "/_get items before=11 count=10"
+      alice ##> "/_get items before=13 count=10"
       alice
-        <##? [ "bob> Disappearing messages: allowed",
+        <##? [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+               "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items after=10 count=10"
+      alice ##> "/_get items after=12 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -2156,7 +2157,8 @@ testUserPrivacy =
       alice <## "messages are shown"
       alice <## "profile is visible"
     chatHistory =
-      [ "bob> Disappearing messages: allowed",
+      [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+        "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
@@ -2270,7 +2272,7 @@ testSwitchGroupMember =
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
@@ -2301,7 +2303,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
@@ -2454,6 +2456,10 @@ testSyncRatchet tmp =
 
       alice #> "@bob hello again"
       bob <# "alice> hello again"
+      -- TODO PQ this test sporadically fails
+      -- even though flag wasn't enabled, there's this extra output:
+      -- bob: alice: post-quantum encryption enabled
+      -- might be bug in re-synchronization
       bob #> "@alice received!"
       alice <# "bob> received!"
 
