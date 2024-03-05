@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -22,7 +23,7 @@ import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (authErrDisableCount, sameVerificationCode, verificationCode)
+import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
@@ -2654,7 +2655,7 @@ testConfigureDeliveryReceipts tmp =
       cc2 <# (name1 <> "> " <> msg)
       cc1 <// 50000
 
-testConnInvChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnInvChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnInvChatVRange ct1VRange ct2VRange tmp =
   withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
@@ -2666,7 +2667,7 @@ testConnInvChatVRange ct1VRange ct2VRange tmp =
       bob ##> "/i alice"
       contactInfoChatVRange bob ct1VRange
 
-testConnReqChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnReqChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnReqChatVRange ct1VRange ct2VRange tmp =
   withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
@@ -2738,10 +2739,10 @@ testGetNetworkStatuses tmp = do
   where
     cfg = testCfg {coreApi = True}
 
-vr11 :: VersionRange
-vr11 = mkVersionRange 1 1
+vr11 :: VersionRangeChat
+vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)
 
-contactInfoChatVRange :: TestCC -> VersionRange -> IO ()
+contactInfoChatVRange :: TestCC -> VersionRangeChat -> IO ()
 contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "contact ID: 2"
   cc <## "receiving messages via: localhost"

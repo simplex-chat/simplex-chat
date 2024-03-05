@@ -368,7 +368,7 @@ subscribeUsers onlyNeeded users = do
   subscribe vr us
   subscribe vr us'
   where
-    subscribe :: VersionRange -> [User] -> m ()
+    subscribe :: VersionRangeChat -> [User] -> m ()
     subscribe vr = mapM_ $ runExceptT . subscribeUserConnections vr onlyNeeded Agent.subscribeConnections
 
 startFilesToReceive :: forall m. ChatMonad' m => [User] -> m ()
@@ -449,7 +449,7 @@ processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand cmd = chatVersionRange >>= (`processChatCommand'` cmd)
 {-# INLINE processChatCommand #-}
 
-processChatCommand' :: forall m. ChatMonad m => VersionRange -> ChatCommand -> m ChatResponse
+processChatCommand' :: forall m. ChatMonad m => VersionRangeChat -> ChatCommand -> m ChatResponse
 processChatCommand' vr = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
@@ -2192,10 +2192,9 @@ processChatCommand' vr = \case
           withChatLock "updateProfile" . procCmd $ do
             let changedCts = foldr (addChangedProfileContact user') [] contacts
                 idsEvts = map ctSndMsg changedCts
-            msgReqs_ <- zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
-            -- TODO PQ contactPQEnc should be applied to each connection (requires sendMessagesB to accept flag per connection)
             enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-            (errs, cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB (toPQE enablePQ) msgReqs_
+            msgReqs_ <- zipWith (ctMsgReq enablePQ) changedCts <$> createSndMessages idsEvts
+            (errs, cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
             unless (null errs) $ toView $ CRChatErrors (Just user) errs
             let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
             createContactsSndFeatureItems user' changedCts'
@@ -2220,9 +2219,10 @@ processChatCommand' vr = \case
             mergedProfile' = userProfileToSend user' Nothing (Just ct') False
         ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
         ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
-        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
-        ctMsgReq ChangedProfileContact {conn} = fmap $ \SndMessage {msgId, msgBody} ->
-          (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
+        ctMsgReq :: PQFlag -> ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
+        ctMsgReq enablePQ ChangedProfileContact {conn = conn@Connection {enablePQ = enablePQConn}} =
+          fmap $ \SndMessage {msgId, msgBody} ->
+            (conn, toPQE $ enablePQ && enablePQConn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -2941,7 +2941,7 @@ agentSubscriber = do
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
-subscribeUserConnections :: forall m. ChatMonad m => VersionRange -> Bool -> AgentBatchSubscribe m -> User -> m ()
+subscribeUserConnections :: forall m. ChatMonad m => VersionRangeChat -> Bool -> AgentBatchSubscribe m -> User -> m ()
 subscribeUserConnections vr onlyNeeded agentBatchSubscribe user@User {userId} = do
   -- get user connections
   ce <- asks $ subscriptionEvents . config
@@ -3439,7 +3439,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
 
-processAgentMessageConn :: forall m. ChatMonad m => VersionRange -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
+processAgentMessageConn :: forall m. ChatMonad m => VersionRangeChat -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
   entity <- withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
@@ -4250,7 +4250,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRange -> Profile -> Maybe XContactId -> m ()
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> m ()
         profileContactRequest invId chatVRange p xContactId_ = do
           withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId chatVRange p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
@@ -5766,7 +5766,7 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 sameMemberId :: MemberId -> GroupMember -> Bool
 sameMemberId memId GroupMember {memberId} = memId == memberId
 
-updatePeerChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
+updatePeerChatVRange :: ChatMonad m => Connection -> VersionRangeChat -> m Connection
 updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
   let jMsgChatVRange = JVersionRange msgChatVRange
   if jMsgChatVRange /= peerChatVRange
@@ -5775,7 +5775,7 @@ updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
       pure conn {peerChatVRange = jMsgChatVRange}
     else pure conn
 
-updateMemberChatVRange :: ChatMonad m => GroupMember -> Connection -> VersionRange -> m (GroupMember, Connection)
+updateMemberChatVRange :: ChatMonad m => GroupMember -> Connection -> VersionRangeChat -> m (GroupMember, Connection)
 updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, peerChatVRange} msgChatVRange = do
   let jMsgChatVRange = JVersionRange msgChatVRange
   if jMsgChatVRange /= peerChatVRange
@@ -6065,11 +6065,11 @@ deliverMessage conn pqEnc cmEventTag msgBody msgId = do
 
 deliverMessage' :: ChatMonad m => Connection -> CR.PQEncryption -> MsgFlags -> MsgBody -> MessageId -> m (Int64, CR.PQEncryption)
 deliverMessage' conn pqEnc msgFlags msgBody msgId =
-  deliverMessages pqEnc [(conn, msgFlags, msgBody, msgId)] >>= \case
+  deliverMessages [(conn, pqEnc, msgFlags, msgBody, msgId)] >>= \case
     [r] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-type MsgReq = (Connection, MsgFlags, MsgBody, MessageId)
+type MsgReq = (Connection, CR.PQEncryption, MsgFlags, MsgBody, MessageId)
 
 -- TODO remove in 5.7 (used for groups)
 pqEncOff :: CR.PQEncryption
@@ -6087,26 +6087,26 @@ contactPQEnc Connection {enablePQ = enablePQConn} = do
   enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
   pure $ toPQE $ enablePQ && enablePQConn
 
-deliverMessages :: ChatMonad' m => CR.PQEncryption -> [MsgReq] -> m [Either ChatError (Int64, CR.PQEncryption)]
-deliverMessages pqEnc = deliverMessagesB pqEnc . map Right
+deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError (Int64, CR.PQEncryption)]
+deliverMessages = deliverMessagesB . map Right
 
-deliverMessagesB :: ChatMonad' m => CR.PQEncryption -> [Either ChatError MsgReq] -> m [Either ChatError (Int64, CR.PQEncryption)]
-deliverMessagesB pqEnc msgReqs = do
-  sent <- zipWith prepareBatch msgReqs <$> withAgent' (\a -> sendMessagesB a pqEnc $ map toAgent msgReqs)
+deliverMessagesB :: ChatMonad' m => [Either ChatError MsgReq] -> m [Either ChatError (Int64, CR.PQEncryption)]
+deliverMessagesB msgReqs = do
+  sent <- zipWith prepareBatch msgReqs <$> withAgent' (\a -> sendMessagesB a $ map toAgent msgReqs)
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights sent)
   withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
     toAgent = \case
-      Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, msgBody)
+      Right (conn, pqEnc, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEnc, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
     prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
     createDelivery :: DB.Connection -> (MsgReq, (AgentMsgId, CR.PQEncryption)) -> IO (Either ChatError (Int64, CR.PQEncryption))
-    createDelivery db ((Connection {connId}, _, _, msgId), (agentMsgId, pqEnc')) =
+    createDelivery db ((Connection {connId}, _, _, _, msgId), (agentMsgId, pqEnc')) =
       Right . (,pqEnc') <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
     updatePQSndEnabled :: DB.Connection -> (MsgReq, (AgentMsgId, CR.PQEncryption)) -> IO ()
-    updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _, _, _), (_, CR.PQEncryption pqSndEnabled')) =
+    updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _, _, _, _), (_, CR.PQEncryption pqSndEnabled')) =
       case (pqSndEnabled, pqSndEnabled') of
         (Nothing, False) -> pure ()
         (Nothing, True) -> updatePQ
@@ -6144,8 +6144,8 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending) = foldr addMember ([], []) recipientMembers
-      msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
-  delivered <- deliverMessages pqEncOff msgReqs
+      msgReqs = map (\(_, conn) -> (conn, pqEncOff, msgFlags, msgBody, msgId)) toSend
+  delivered <- deliverMessages msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
   stored <- withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
@@ -6614,7 +6614,7 @@ waitChatStartedAndActivated = do
     activated <- readTVar chatActivated
     unless (isJust started && activated) retry
 
-chatVersionRange :: ChatMonad' m => m VersionRange
+chatVersionRange :: ChatMonad' m => m VersionRangeChat
 chatVersionRange = do
   ChatConfig {chatVRange} <- asks config
   pure chatVRange

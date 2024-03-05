@@ -147,7 +147,6 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
-import Simplex.Messaging.Version (VersionRange)
 import UnliftIO.STM
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
@@ -482,7 +481,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: DB.Connection -> VersionRange -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
+getChatPreviews :: DB.Connection -> VersionRangeChat -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
 getChatPreviews db vr user withPCC pagination query = do
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
@@ -715,7 +714,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           )
           ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
 
-getGroupChatPreview_ :: DB.Connection -> VersionRange -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
+getGroupChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
 getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
   groupInfo <- getGroupInfo db vr user groupId
   lastItem <- case lastItemId_ of
@@ -1040,7 +1039,7 @@ getDirectChatBefore_ db user@User {userId} ct@Contact {contactId} beforeChatItem
           |]
           (userId, contactId, search, beforeChatItemId, count)
 
-getGroupChat :: DB.Connection -> VersionRange -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChat db vr user groupId pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
@@ -1506,7 +1505,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
-getAllChatItems :: DB.Connection -> VersionRange -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
+getAllChatItems :: DB.Connection -> VersionRangeChat -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db vr user@User {userId} pagination search_ = do
   itemRefs <-
     rights . map toChatItemRef <$> case pagination of
@@ -2150,7 +2149,7 @@ deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
     |]
     (userId, noteFolderId, itemId)
 
-getChatItemByFileId :: DB.Connection -> VersionRange -> User -> Int64 -> ExceptT StoreError IO AChatItem
+getChatItemByFileId :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO AChatItem
 getChatItemByFileId db vr user@User {userId} fileId = do
   (chatRef, itemId) <-
     ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByFileId fileId) $
@@ -2166,13 +2165,13 @@ getChatItemByFileId db vr user@User {userId} fileId = do
         (userId, fileId)
   getAChatItem db vr user chatRef itemId
 
-lookupChatItemByFileId :: DB.Connection -> VersionRange -> User -> Int64 -> ExceptT StoreError IO (Maybe AChatItem)
+lookupChatItemByFileId :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO (Maybe AChatItem)
 lookupChatItemByFileId db vr user fileId = do
   fmap Just (getChatItemByFileId db vr user fileId) `catchError` \case
     SEChatItemNotFoundByFileId {} -> pure Nothing
     e -> throwError e
 
-getChatItemByGroupId :: DB.Connection -> VersionRange -> User -> GroupId -> ExceptT StoreError IO AChatItem
+getChatItemByGroupId :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO AChatItem
 getChatItemByGroupId db vr user@User {userId} groupId = do
   (chatRef, itemId) <-
     ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByGroupId groupId) $
@@ -2198,7 +2197,7 @@ getChatRefViaItemId db User {userId} itemId = do
       (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
       (_, _) -> Left $ SEBadChatItem itemId Nothing
 
-getAChatItem :: DB.Connection -> VersionRange -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem :: DB.Connection -> VersionRangeChat -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
 getAChatItem db vr user chatRef itemId = case chatRef of
   ChatRef CTDirect contactId -> do
     ct <- getContact db user contactId

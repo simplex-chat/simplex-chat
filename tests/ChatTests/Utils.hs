@@ -575,7 +575,7 @@ currentChatVRangeInfo :: String
 currentChatVRangeInfo =
   "peer chat protocol version range: " <> vRangeStr supportedChatVRange
 
-vRangeStr :: VersionRange -> String
+vRangeStr :: VersionRange v -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"
 
 linkAnotherSchema :: String -> String

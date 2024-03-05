@@ -38,6 +38,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
+import Data.Word (Word16)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
 import Database.SQLite.Simple.FromField (FromField (..), returnError)
 import Database.SQLite.Simple.Internal (Field (..))
@@ -53,6 +54,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
+import Simplex.Messaging.Version.Internal
 
 -- TODO PQ replace with actual instances
 instance Eq (ConnectionRequestUri m) where _ == _ = True
@@ -755,7 +757,7 @@ memberConn GroupMember {activeConn} = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
-memberChatVRange' :: GroupMember -> VersionRange
+memberChatVRange' :: GroupMember -> VersionRangeChat
 memberChatVRange' GroupMember {activeConn, memberChatVRange} =
   fromJVersionRange $ case activeConn of
     Just Connection {peerChatVRange} -> peerChatVRange
@@ -1680,10 +1682,24 @@ data ServerCfg p = ServerCfg
   }
   deriving (Show)
 
-newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
+data ChatVersion
 
-chatInitialVRange :: VersionRange
-chatInitialVRange = versionToRange 1
+instance VersionScope ChatVersion
+
+type VersionChat = Version ChatVersion
+
+type VersionRangeChat = VersionRange ChatVersion
+
+pattern VersionChat :: Word16 -> VersionChat
+pattern VersionChat v = Version v
+
+newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
+
+initialChatVersion :: VersionChat
+initialChatVersion = VersionChat 1
+
+chatInitialVRange :: VersionRangeChat
+chatInitialVRange = versionToRange initialChatVersion
 
 instance FromJSON ChatVersionRange where
   parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
@@ -1692,7 +1708,7 @@ instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
-newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} deriving (Eq, Show)
+newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRangeChat} deriving (Eq, Show)
 
 instance FromJSON JVersionRange where
   parseJSON = J.withObject "JVersionRange" $ \o -> do

@@ -14,9 +14,8 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (GroupMemberRole (..))
+import Simplex.Chat.Types (GroupMemberRole (..), VersionRangeChat)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -3579,7 +3578,7 @@ testConfigureGroupDeliveryReceipts tmp =
       cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
       cc1 <// 50000
 
-testNoGroupDirectConns :: HasCallStack => VersionRange -> VersionRange -> VersionRange -> Bool -> FilePath -> IO ()
+testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> FilePath -> IO ()
 testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
   withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do

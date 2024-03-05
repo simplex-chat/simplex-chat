@@ -39,7 +39,7 @@ connReqData :: ConnReqUriData
 connReqData =
   ConnReqUriData
     { crScheme = SSSimplex,
-      crAgentVRange = mkVersionRange 1 1,
+      crAgentVRange = mkVersionRange (VersionSMPA 1) (VersionSMPA 1),
       crSmpQueues = [queue],
       crClientData = Nothing
     }
