@@ -171,13 +171,13 @@ struct ChatInfoView: View {
                    let conn = contact.activeConn {
                     Section {
                         infoRow("PQ encryption", conn.connPQEnabled ? "Enabled" : "Disabled")
-                        if !conn.connPQEnabled {
+                        if !conn.enablePQ {
                             allowPQButton()
                         }
                     } header: {
                         Text("Post-quantum encryption")
                     } footer: {
-                        if !conn.connPQEnabled {
+                        if !conn.enablePQ {
                             Text("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it.")
                         }
                     }
