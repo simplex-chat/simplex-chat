@@ -1294,9 +1294,8 @@ processChatCommand' vr = \case
   APISyncContactRatchet contactId force -> withUser $ \user -> withChatLock "syncContactRatchet" $ do
     ct <- withStore $ \db -> getContact db user contactId
     case contactConn ct of
-      Just conn -> do
-        enablePQ <- contactPQEnc conn
-        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (aConnId conn) enablePQ force
+      Just conn@Connection {enablePQ} -> do
+        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (aConnId conn) (CR.PQEncryption enablePQ) force
         createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss Nothing) Nothing
         pure $ CRContactRatchetSyncStarted user ct cStats
       Nothing -> throwChatError $ CEContactNotActive ct
@@ -2201,8 +2200,7 @@ processChatCommand' vr = \case
               Nothing -> pure $ UserProfileUpdateSummary 0 0 []
               Just changedCts -> do
                 let idsEvts = L.map ctSndMsg changedCts
-                enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-                msgReqs_ <- L.zipWith (ctMsgReq enablePQ) changedCts <$> createSndMessages idsEvts
+                msgReqs_ <- L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
@@ -2227,11 +2225,11 @@ processChatCommand' vr = \case
             ct' = updateMergedPreferences user' ct
             mergedProfile' = userProfileToSend user' Nothing (Just ct') False
         ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, PQEncryption, ChatMsgEvent 'Json)
-        ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId, enablePQ = enablePQConn}} = (ConnectionId connId, CR.PQEncryption enablePQConn, XInfo mergedProfile')
-        ctMsgReq :: PQFlag -> ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
-        ctMsgReq enablePQ ChangedProfileContact {conn = conn@Connection {enablePQ = enablePQConn}} =
+        ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId, enablePQ}} = (ConnectionId connId, CR.PQEncryption enablePQ, XInfo mergedProfile')
+        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
+        ctMsgReq ChangedProfileContact {conn = conn@Connection {enablePQ}} =
           fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, CR.PQEncryption $ enablePQ && enablePQConn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
+            (conn, CR.PQEncryption enablePQ, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -6007,9 +6005,8 @@ deleteOrUpdateMemberRecord user@User {userId} member =
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => User -> Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do
-  conn@Connection {connId} <- liftEither $ contactSendConn_ ct
-  pqEnc <- contactPQEnc conn
-  r <- sendDirectMessage conn pqEnc chatMsgEvent (ConnectionId connId)
+  conn@Connection {connId, enablePQ} <- liftEither $ contactSendConn_ ct
+  r <- sendDirectMessage conn (CR.PQEncryption enablePQ) chatMsgEvent (ConnectionId connId)
   let (sndMessage, msgDeliveryId, CR.PQEncryption pqEnabled') = r
   -- TODO PQ use updated ct' and conn'? check downstream if it may affect something, maybe it's not necessary
   (_ct', _conn') <- createContactPQSndItem user ct conn pqEnabled'
@@ -6119,11 +6116,6 @@ deliverMessage' conn pqEnc msgFlags msgBody msgId =
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
 type MsgReq = (Connection, CR.PQEncryption, MsgFlags, MsgBody, MessageId)
-
-contactPQEnc :: ChatMonad m => Connection -> m CR.PQEncryption
-contactPQEnc Connection {enablePQ = enablePQConn} = do
-  enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-  pure $ CR.PQEncryption $ enablePQ && enablePQConn
 
 deliverMessages :: ChatMonad' m => NonEmpty MsgReq -> m (NonEmpty (Either ChatError (Int64, CR.PQEncryption)))
 deliverMessages msgs = deliverMessagesB $ L.map Right msgs
