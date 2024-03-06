@@ -6090,7 +6090,7 @@ batchSndMessagesJSON = batchMessages (maxEncodedMsgLength PQEncOff) . L.toList
 --   compressed <- liftIO $ withCompressCtx maxChatMsgSize $ \cctx -> mapM (compressForBatch cctx) msgs
 --   pure . map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength PQEncOff) $ L.zip compressed msgs
 --   where
---     compressForBatch cctx SndMessage {msgBody} = bimap (const TELargeMsg) smpEncode <$> compress cctx msgBody
+--     compressForBatch cctx SndMessage {msgBody} = smpEncode <$> compress cctx msgBody
 --     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
 --     toMsgBatch = \case
 --       SMP.TBTransmissions combined _n sms -> Right $ MsgBatch (markCompressedBatch combined) sms
@@ -6112,9 +6112,7 @@ directMessagePQ pqEnc maxMsgSize chatMsgEvent = do
       | otherwise -> pure encodedBody
     ECMLarge -> throwChatError $ CEException "large message"
   where
-    compressedBatchMsgBody msgBody =
-      liftEitherError (ChatError . CEException . mappend "compressedBatchMsgBody: ") $
-        withCompressCtx (B.length msgBody) (`compressedBatchMsgBody_` msgBody)
+    compressedBatchMsgBody msgBody = liftIO $ withCompressCtx (fromIntegral $ B.length msgBody) (`compressedBatchMsgBody_` msgBody)
 
 deliverMessage :: ChatMonad m => Connection -> CR.PQEncryption -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, CR.PQEncryption)
 deliverMessage conn pqEnc cmEventTag msgBody msgId = do
@@ -6139,11 +6137,10 @@ deliverMessagesB msgReqs = do
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx maxRawMsgLength $ \cctx ->
+    compressBodies = liftIO $ withCompressCtx (fromIntegral maxRawMsgLength) $ \cctx ->
       forM msgReqs $ \case
         mr@(Right (conn, pqEnc, msgFlags, msgBody, msgId))
-          | pqEnc == CR.PQEncOn -> do
-              bimap (ChatError . CEException) (\cBody -> (conn, pqEnc, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
+          | pqEnc == CR.PQEncOn -> compressedBatchMsgBody_ cctx msgBody >>= \msgBodyC -> pure $ Right (conn, pqEnc, msgFlags, msgBodyC, msgId)
           | otherwise -> pure mr
         skip -> pure skip
     toAgent = \case

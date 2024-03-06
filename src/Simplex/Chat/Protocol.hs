@@ -52,7 +52,7 @@ import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$$>), (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
@@ -561,8 +561,8 @@ parseChatMessages s = case B.head s of
       Left e -> [Left e]
       Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxRawMsgLength compressed
 
-compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
-compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$$> compress ctx msgBody
+compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO MsgBody
+compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$> compress ctx msgBody
 
 markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
