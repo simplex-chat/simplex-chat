@@ -224,6 +224,11 @@ expect fun DatabaseEncryptionFooter(
   initialRandomDBPassphrase: MutableState<Boolean>,
 )
 
+@Composable
+fun ChatStoppedView() {
+
+}
+
 fun resetFormAfterEncryption(
   m: ChatModel,
   initialRandomDBPassphrase: MutableState<Boolean>,

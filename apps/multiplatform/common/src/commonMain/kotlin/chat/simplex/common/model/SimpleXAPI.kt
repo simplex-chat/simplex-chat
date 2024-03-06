@@ -692,8 +692,10 @@ object ChatController {
     throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
   }
 
-  suspend fun testStorageEncryption(key: String, ctrl: ChatCtrl? = null): Boolean =
-      sendCommandOkResp(null, CC.TestStorageEncryption(key), ctrl)
+  suspend fun testStorageEncryption(key: String, ctrl: ChatCtrl? = null): Boolean {
+    val r = sendCmd(null, CC.TestStorageEncryption(key), ctrl)
+    return r is CR.CmdOk
+  }
 
   suspend fun apiGetChats(rh: Long?): List<Chat> {
     val userId = kotlin.runCatching { currentUserId("apiGetChats") }.getOrElse { return emptyList() }
@@ -2473,7 +2475,7 @@ sealed class CC {
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
     is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
-    is TestStorageEncryption -> "/db test key $key)"
+    is TestStorageEncryption -> "/db test key $key"
     is ApiSaveSettings -> "/_save app settings ${json.encodeToString(settings)}"
     is ApiGetSettings -> "/_get app settings ${json.encodeToString(settings)}"
     is ApiGetChats -> "/_get chats $userId pcc=on"

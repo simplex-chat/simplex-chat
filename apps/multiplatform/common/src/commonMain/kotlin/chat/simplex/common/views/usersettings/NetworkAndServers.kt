@@ -164,7 +164,7 @@ fun NetworkAndServersView() {
 
         if (currentRemoteHost == null) {
           val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
-          UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, true)
+          UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, false)
           UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
           if (developerTools) {
             SessionModePicker(sessionMode, showModal, updateSessionMode)
@@ -205,7 +205,7 @@ fun NetworkAndServersView() {
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
-  UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, networkProxyHostPort, false)
+  UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, networkProxyHostPort, true)
   UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)
@@ -254,7 +254,7 @@ fun UseSocksProxySwitch(
           text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
             .firstOrNull()?.let { _ ->
               if (networkUseSocksProxy.value || !migration) {
-                showModal { SockProxySettings(chatModel, networkProxyHostPort, !migration) }
+                showModal { SockProxySettings(chatModel, networkProxyHostPort, migration) }
               }
             }
         },
@@ -274,7 +274,7 @@ fun UseSocksProxySwitch(
 fun SockProxySettings(
   m: ChatModel,
   networkProxyHostPort: SharedPreference<String?> = m.controller.appPrefs.networkProxyHostPort,
-  confirmWithAlert: Boolean = true,
+  migration: Boolean,
 ) {
   Column(
     Modifier
@@ -293,7 +293,7 @@ fun SockProxySettings(
     val save = {
       withBGApi {
         networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
-        if (m.controller.appPrefs.networkUseSocksProxy.get() && confirmWithAlert) {
+        if (m.controller.appPrefs.networkUseSocksProxy.get() && !migration) {
           m.controller.apiSetNetworkConfig(m.controller.getNetCfg())
         }
       }
@@ -309,7 +309,7 @@ fun SockProxySettings(
             portUnsaved.value = portUnsaved.value.copy(newPort, TextRange(newPort.length))
             save()
           }
-          if (m.controller.appPrefs.networkUseSocksProxy.get() && confirmWithAlert) {
+          if (m.controller.appPrefs.networkUseSocksProxy.get() && !migration) {
             showUpdateNetworkSettingsDialog {
               reset()
             }
@@ -347,7 +347,7 @@ fun SockProxySettings(
           hostUnsaved.value = hostUnsaved.value.copy(prevHost, TextRange(prevHost.length))
           portUnsaved.value = portUnsaved.value.copy(prevPort, TextRange(prevPort.length))
         },
-        save = { if (m.controller.appPrefs.networkUseSocksProxy.get() && confirmWithAlert) showUpdateNetworkSettingsDialog { save() } else save() },
+        save = { if (m.controller.appPrefs.networkUseSocksProxy.get() && !migration) showUpdateNetworkSettingsDialog { save() } else save() },
         revertDisabled = hostPortSaved == (hostUnsaved.value.text + ":" + portUnsaved.value.text),
         saveDisabled = hostPortSaved == (hostUnsaved.value.text + ":" + portUnsaved.value.text) ||
             remember { derivedStateOf { !validHost(hostUnsaved.value.text) } }.value ||
