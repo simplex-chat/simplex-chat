@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -46,6 +47,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Compression (CompressCtx, compress, decompressBatch)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -60,8 +62,11 @@ currentChatVersion :: VersionChat
 currentChatVersion = VersionChat 7
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
-supportedChatVRange :: VersionRangeChat
-supportedChatVRange = mkVersionRange (VersionChat 1) currentChatVersion
+-- TODO remove parameterization in 5.7
+supportedChatVRange :: PQEncryption -> VersionRangeChat
+supportedChatVRange pq = mkVersionRange (VersionChat 1) $ case pq of
+  PQEncOn -> compressedBatchingVersion
+  PQEncOff -> currentChatVersion
 
 -- version range that supports skipping establishing direct connections in a group
 groupNoDirectVRange :: VersionRangeChat
@@ -514,17 +519,27 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxChatMsgSize :: Int
-maxChatMsgSize = 15610
+maxRawMsgLength :: Int
+maxRawMsgLength = 15610
+
+maxEncodedMsgLength :: PQEncryption -> Int
+maxEncodedMsgLength = \case
+  PQEncOn -> 13410 -- reduced by 2200 (original message should be compressed)
+  PQEncOff -> maxRawMsgLength
+
+maxConnInfoLength :: PQEncryption -> Int
+maxConnInfoLength = \case
+  PQEncOn -> 10902 -- reduced by 3700
+  PQEncOff -> 14602 -- 15610 - delta in agent between MSG and INFO
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
-encodeChatMessage :: MsgEncodingI e => ChatMessage e -> EncodedChatMessage
-encodeChatMessage msg = do
+encodeChatMessage :: MsgEncodingI e => (PQEncryption -> Int) -> ChatMessage e -> EncodedChatMessage
+encodeChatMessage getMaxSize msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = LB.toStrict $ J.encode m
-      if B.length body > maxChatMsgSize
+      if B.length body > getMaxSize PQEncOff
         then ECMLarge
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
@@ -544,7 +559,7 @@ parseChatMessages s = case B.head s of
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
-      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxChatMsgSize compressed
+      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxRawMsgLength compressed
 
 compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
 compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$$> compress ctx msgBody

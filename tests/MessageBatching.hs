@@ -17,7 +17,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
-import Simplex.Chat.Protocol (SharedMsgId (..), maxChatMsgSize)
+import Simplex.Chat.Protocol (SharedMsgId (..), maxRawMsgLength)
 import Test.Hspec
 
 batchingTests :: Spec
@@ -99,7 +99,7 @@ testImageFitsSingleBatch = do
       msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
-  runBatcherTest' maxChatMsgSize [msg xMsgNewStr, msg descrStr] [] [batched]
+  runBatcherTest' maxRawMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
 
 runBatcherTest :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
 runBatcherTest maxLen msgs expectedErrors expectedBatches =
