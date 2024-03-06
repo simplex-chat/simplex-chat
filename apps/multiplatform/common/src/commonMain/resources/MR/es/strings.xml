@@ -1081,12 +1081,12 @@
     <string name="la_mode_system">Sistema</string>
     <string name="decryption_error">Error descifrado</string>
     <string name="alert_text_msg_bad_id">El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
-\nPuede ocurrir por algún bug o cuando la conexión está comprometida.</string>
+\nPuede ocurrir por algún error o si la conexión está comprometida.</string>
     <string name="alert_text_fragment_please_report_to_developers">Por favor, informa a los desarrolladores.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d mensaje(s) omitido(s).</string>
     <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
     <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir si tu contacto o tu usáis una copia de seguridad antigua de la base de datos.</string>
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensaje(s) no ha(n) podido ser descifrado(s).</string>
     <string name="stop_file__action">Detener archivo</string>
@@ -1640,4 +1640,6 @@
     <string name="call_service_notification_audio_call">Llamada</string>
     <string name="call_service_notification_end_call">Llamada finalizada</string>
     <string name="call_service_notification_video_call">Videollamada</string>
+    <string name="unable_to_open_browser_title">Error al abrir el navegador</string>
+    <string name="unable_to_open_browser_desc">Para llamadas se requiere el navegador web predeterminado. Por favor, configura el navegador predeterminado en el sistema y comparte más información con los desarrolladores.</string>
 </resources>
