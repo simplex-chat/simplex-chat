@@ -601,6 +601,18 @@ processChatCommand' vr = \case
   APISetPQEnabled onOff -> do
     asks pqExperimentalEnabled >>= atomically . (`writeTVar` onOff)
     ok_
+  APIAllowContactPQ contactId -> withUser $ \user -> do
+    ct@Contact {activeConn} <- withStore $ \db -> getContact db user contactId
+    -- TODO PQ check different flag?
+    case activeConn of
+      Just conn@Connection {connId, enablePQ}
+        | enablePQ -> pure $ chatCmdError (Just user) "already allowed"
+        | otherwise -> do
+          withStore' $ \db -> allowConnEnablePQ db connId
+          let conn' = conn {enablePQ = True} :: Connection
+              ct' = ct {activeConn = Just conn'} :: Contact
+          pure $ CRContactPQAllowed user ct'
+      Nothing -> throwChatError $ CEContactNotActive ct
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -6700,6 +6712,7 @@ chatCommandP =
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_pq " *> (APISetPQEnabled <$> onOffP),
+      "/_pq allow " *> (APIAllowContactPQ <$> A.decimal),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),

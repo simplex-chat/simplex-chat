@@ -245,6 +245,17 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
     (displayName, fullName, image, userId, Just True, createdAt, createdAt)
   insertedRowId db
 
+allowConnEnablePQ :: DB.Connection -> Int64 -> IO ()
+allowConnEnablePQ db connId =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET enable_pq = 1
+      WHERE connection_id = ?
+    |]
+    (Only connId)
+
 updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQFlag -> IO ()
 updateConnPQSndEnabled db connId pqSndEnabled =
   DB.execute
