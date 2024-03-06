@@ -551,13 +551,13 @@ parseChatMessages s = case B.head s of
   '[' -> case J.eitherDecodeStrict' s of
     Right v -> map parseItem v
     Left e -> [Left e]
-  'X' -> decodeCompressed (B.drop 1 s)
+  'X' -> decodeCompressedBatch (B.drop 1 s)
   _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
   where
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
-    decodeCompressed :: ByteString -> [Either String AChatMessage]
-    decodeCompressed s' = case smpDecode s' of
+    decodeCompressedBatch :: ByteString -> [Either String AChatMessage]
+    decodeCompressedBatch s' = case smpDecode s' of
       Left e -> [Left e]
       Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxRawMsgLength compressed
 
