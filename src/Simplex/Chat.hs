@@ -1423,7 +1423,7 @@ processChatCommand' vr = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
     enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-    dm <- directMessage (CR.PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
+    dm <- directMessagePQ (CR.PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
     connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm (CR.PQEncryption enablePQ) subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode enablePQ
     pure $ CRSentConfirmation user conn
@@ -1640,7 +1640,7 @@ processChatCommand' vr = \case
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- directMessage PQEncOff maxConnInfoLength $ XGrpAcpt membershipMemId
+          dm <- directMessage $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm CR.PQEncOff subMode
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
@@ -2169,7 +2169,7 @@ processChatCommand' vr = \case
       -- [incognito] generate profile to send
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- directMessage pqEnc maxConnInfoLength (XContact profileToSend $ Just xContactId)
+      dm <- directMessagePQ pqEnc maxConnInfoLength (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
       connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqEnc subMode
       pure (connId, incognitoProfile, subMode)
@@ -2740,7 +2740,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     -- direct file protocol
     (Nothing, Just connReq) -> do
       subMode <- chatReadVar subscriptionMode
-      dm <- directMessage PQEncOff maxConnInfoLength $ XFileAcpt fName
+      dm <- directMessage $ XFileAcpt fName
       connIds <- joinAgentConnectionAsync user True connReq dm subMode
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStoreCtx (Just "acceptFileReceive, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db vr user fileId connIds ConnJoined filePath subMode
@@ -2869,7 +2869,7 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-  dm <- directMessage (CR.PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
+  dm <- directMessagePQ (CR.PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm (CR.PQEncryption enablePQ) subMode
   withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode enablePQ contactUsed
 
@@ -4798,7 +4798,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- receiving via a separate connection
           Just fileConnReq -> do
             subMode <- chatReadVar subscriptionMode
-            dm <- directMessage PQEncOff maxConnInfoLength XOk
+            dm <- directMessage XOk
             connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
             withStore' $ \db -> createSndDirectFTConnection db user fileId connIds subMode
           -- receiving inline
@@ -4895,7 +4895,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             subMode <- chatReadVar subscriptionMode
             -- receiving via a separate connection
             -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-            dm <- directMessage PQEncOff maxConnInfoLength XOk
+            dm <- directMessage XOk
             connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
             withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m subMode
           (_, Just conn) -> do
@@ -4929,7 +4929,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
             subMode <- chatReadVar subscriptionMode
-            dm <- directMessage PQEncOff maxConnInfoLength $ XGrpAcpt membershipMemId
+            dm <- directMessage $ XGrpAcpt membershipMemId
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkHash db groupId connId
@@ -5414,7 +5414,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
       let membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
-      dm <- directMessage PQEncOff maxConnInfoLength $ XGrpMemInfo membershipMemId membershipProfile
+      dm <- directMessage $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
@@ -5618,7 +5618,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         joinConn subMode = do
           -- [incognito] send membership incognito profile
           let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing False
-          dm <- directMessage PQEncOff maxConnInfoLength $ XInfo p
+          dm <- directMessage $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
           createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
@@ -6088,9 +6088,12 @@ batchSndMessagesJSON = batchMessages (maxEncodedMsgLength PQEncOff) . L.toList
 --       SMP.TBError tbe SndMessage {msgId} -> Left . ChatError $ CEInternalError (show tbe <> " " <> show msgId)
 --       SMP.TBTransmission {} -> Left . ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
 
+directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
+directMessage = directMessagePQ PQEncOff maxConnInfoLength
+
 -- TODO PQ check size after compression (in compressedBatchMsgBody_ ?)
-directMessage :: (MsgEncodingI e, ChatMonad m) => CR.PQEncryption -> (CR.PQEncryption -> Int) -> ChatMsgEvent e -> m ByteString
-directMessage pqEnc maxMsgSize chatMsgEvent = do
+directMessagePQ :: (MsgEncodingI e, ChatMonad m) => CR.PQEncryption -> (CR.PQEncryption -> Int) -> ChatMsgEvent e -> m ByteString
+directMessagePQ pqEnc maxMsgSize chatMsgEvent = do
   chatVRange <- chatVersionRange pqEnc
   let shouldCompress = maxVersion chatVRange >= compressedBatchingVersion
       r = encodeChatMessage maxMsgSize ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
@@ -6415,14 +6418,14 @@ joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
 allowAgentConnectionAsync user conn@Connection {connId, enablePQ} confId msg = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
-  dm <- directMessage (CR.PQEncryption enablePQ) maxConnInfoLength msg
+  dm <- directMessagePQ (CR.PQEncryption enablePQ) maxConnInfoLength msg
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
 agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> CR.PQEncryption -> m (CommandId, ConnId)
 agentAcceptContactAsync user enableNtfs invId msg subMode pqEnc = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  dm <- directMessage pqEnc maxConnInfoLength msg
+  dm <- directMessagePQ pqEnc maxConnInfoLength msg
   connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqEnc subMode
   pure (cmdId, connId)
 
