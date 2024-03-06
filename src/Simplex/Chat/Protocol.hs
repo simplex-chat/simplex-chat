@@ -546,9 +546,6 @@ parseChatMessages s = case B.head s of
       Left e -> [Left e]
       Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxChatMsgSize compressed
 
-shouldCompressMsgBody :: VersionRangeChat -> Bool -> Bool
-shouldCompressMsgBody peerChatVRange toggle = toggle || isCompatible compressedBatchingVersion peerChatVRange
-
 compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
 compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$$> compress ctx msgBody
 

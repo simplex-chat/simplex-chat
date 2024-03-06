@@ -1418,8 +1418,8 @@ processChatCommand' vr = \case
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
-    dm <- directMessage supportedChatVRange $ XInfo profileToSend
     enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
+    dm <- directMessage enablePQ $ XInfo profileToSend
     connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm (CR.PQEncryption enablePQ) subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode enablePQ
     pure $ CRSentConfirmation user conn
@@ -1636,7 +1636,7 @@ processChatCommand' vr = \case
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- directMessage (fromJVersionRange peerChatVRange) $ XGrpAcpt membershipMemId
+          dm <- directMessage False $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm CR.PQEncOff subMode
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
@@ -2165,7 +2165,7 @@ processChatCommand' vr = \case
       -- [incognito] generate profile to send
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- directMessage supportedChatVRange (XContact profileToSend $ Just xContactId)
+      dm <- directMessage enablePQ (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
       connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm (CR.PQEncryption enablePQ) subMode
       pure (connId, incognitoProfile, subMode)
@@ -2735,7 +2735,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     -- direct file protocol
     (Nothing, Just connReq) -> do
       subMode <- chatReadVar subscriptionMode
-      dm <- directMessage supportedChatVRange $ XFileAcpt fName
+      dm <- directMessage False $ XFileAcpt fName
       connIds <- joinAgentConnectionAsync user True connReq dm subMode
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStoreCtx (Just "acceptFileReceive, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db vr user fileId connIds ConnJoined filePath subMode
@@ -2861,8 +2861,8 @@ acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe Incog
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile contactUsed = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
-  dm <- directMessage (fromJVersionRange cReqChatVRange) $ XInfo profileToSend
   enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
+  dm <- directMessage enablePQ $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm (CR.PQEncryption enablePQ) subMode
   withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode enablePQ contactUsed
 
@@ -2870,7 +2870,7 @@ acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe 
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqEnabled = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
-  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) (fromJVersionRange cReqChatVRange) subMode (CR.PQEncryption pqEnabled)
+  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) pqEnabled subMode (CR.PQEncryption pqEnabled)
   withStore' $ \db -> do
     ct@Contact {activeConn} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode pqEnabled contactUsed
     forM_ activeConn $ \Connection {connId} -> setCommandConnId db user cmdId connId
@@ -2880,7 +2880,7 @@ acceptGroupJoinRequestAsync :: ChatMonad m => User -> GroupInfo -> UserContactRe
 acceptGroupJoinRequestAsync
   user
   gInfo@GroupInfo {groupProfile, membership}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId}
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
@@ -2898,7 +2898,7 @@ acceptGroupJoinRequestAsync
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
-    connIds <- agentAcceptContactAsync user True invId msg (fromJVersionRange cReqChatVRange) subMode (CR.PQEncryption False)
+    connIds <- agentAcceptContactAsync user True invId msg False subMode (CR.PQEncryption False)
     withStore $ \db -> do
       liftIO $ createAcceptedMemberConnection db user connIds ucr groupMemberId subMode
       getGroupMemberById db user groupMemberId
@@ -4786,7 +4786,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- receiving via a separate connection
           Just fileConnReq -> do
             subMode <- chatReadVar subscriptionMode
-            dm <- directMessage supportedChatVRange XOk
+            dm <- directMessage False XOk
             connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
             withStore' $ \db -> createSndDirectFTConnection db user fileId connIds subMode
           -- receiving inline
@@ -4871,7 +4871,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe ConnReqInvitation -> String -> m ()
-    xFileAcptInvGroup GroupInfo {groupId} m@GroupMember {activeConn, memberChatVRange} sharedMsgId fileConnReq_ fName = do
+    xFileAcptInvGroup GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName = do
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
       (AChatItem _ _ _ ci) <- withStore $ \db -> getChatItemByFileId db vr user fileId
       assertSMPAcceptNotProhibited ci
@@ -4883,7 +4883,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             subMode <- chatReadVar subscriptionMode
             -- receiving via a separate connection
             -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-            dm <- directMessage (fromJVersionRange memberChatVRange) XOk
+            dm <- directMessage False XOk
             connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
             withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m subMode
           (_, Just conn) -> do
@@ -4916,13 +4916,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
-            let peerVR = fromJVersionRange peerChatVRange
             subMode <- chatReadVar subscriptionMode
-            dm <- directMessage peerVR $ XGrpAcpt membershipMemId
+            dm <- directMessage False $ XGrpAcpt membershipMemId
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkHash db groupId connId
-              createMemberConnectionAsync db user hostId connIds peerVR subMode
+              createMemberConnectionAsync db user hostId connIds (fromJVersionRange peerChatVRange) subMode
               updateGroupMemberStatusById db userId hostId GSMemAccepted
               updateGroupMemberStatus db userId membership GSMemAccepted
             toView $ CRUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
@@ -5403,12 +5402,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
       let membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
-          mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
-      dm <- directMessage mcvr $ XGrpMemInfo membershipMemId membershipProfile
+      dm <- directMessage False $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
+          mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
@@ -5607,7 +5606,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         joinConn subMode = do
           -- [incognito] send membership incognito profile
           let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing False
-          dm <- directMessage (fromJVersionRange $ memberChatVRange m) $ XInfo p
+          dm <- directMessage False $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
           createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
@@ -6044,7 +6043,10 @@ sendGroupMemberMessages user conn events groupId = do
   (errs, msgs) <- partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    batched <- ifM (shouldCompressMsgBody (fromJVersionRange $ peerChatVRange conn) <$> pure True) (batchSndMessagesBinary msgs') (pure $ batchSndMessagesJSON msgs')
+    -- TODO PQ based on version (?)
+    -- let shouldCompress = False
+    -- batched <- if shouldCompress then batchSndMessagesBinary msgs' else pure $ batchSndMessagesJSON msgs'
+    let batched = batchSndMessagesJSON msgs'
     let (errs', msgBatches) = partitionEithers batched
     -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
     unless (null errs') $ toView $ CRChatErrors (Just user) errs'
@@ -6072,18 +6074,15 @@ batchSndMessagesBinary msgs = do
       SMP.TBError tbe SndMessage {msgId} -> Left . ChatError $ CEInternalError (show tbe <> " " <> show msgId)
       SMP.TBTransmission {} -> Left . ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
 
--- TODO PQ should accept flag instead of version, there are cases where version is not known yet
--- in current code supportedChatVRange is passed as dummy
-directMessage :: (MsgEncodingI e, ChatMonad m) => VersionRangeChat -> ChatMsgEvent e -> m ByteString
-directMessage peerChatVRange chatMsgEvent = do
+-- TODO PQ shouldCompress should be passed based on version (?) - currently it's passed only based on PQ flag
+directMessage :: (MsgEncodingI e, ChatMonad m) => Bool -> ChatMsgEvent e -> m ByteString
+directMessage shouldCompress chatMsgEvent = do
   chatVRange <- chatVersionRange
   let r = encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
-    ECMEncoded encodedBody ->
-      ifM
-        (shouldCompressMsgBody peerChatVRange <$> pure True)
-        (compressedBatchMsgBody encodedBody)
-        (pure encodedBody)
+    ECMEncoded encodedBody
+      | shouldCompress -> compressedBatchMsgBody encodedBody
+      | otherwise -> pure encodedBody
     ECMLarge -> throwChatError $ CEException "large message"
   where
     compressedBatchMsgBody msgBody = liftEitherError (ChatError . CEException . mappend "compressedBatchMsgBody: ") $ withCompressCtx maxChatMsgSize (`compressedBatchMsgBody_` msgBody)
@@ -6118,8 +6117,8 @@ deliverMessagesB msgReqs' = do
   where
     compressBodies = liftIO $ withCompressCtx maxChatMsgSize $ \cctx ->
       forM msgReqs' $ \case
-        mr@(Right (conn@Connection {peerChatVRange}, pqEnc, msgFlags, msgBody, msgId))
-          | shouldCompressMsgBody (fromJVersionRange peerChatVRange) True -> do
+        mr@(Right (conn, pqEnc, msgFlags, msgBody, msgId))
+          | pqEnc == CR.PQEncOn -> do
               bimap (ChatError . CEException) (\cBody -> (conn, pqEnc, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
           | otherwise -> pure mr
         skip -> pure skip
@@ -6397,16 +6396,16 @@ joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
-allowAgentConnectionAsync user conn@Connection {connId, peerChatVRange} confId msg = do
+allowAgentConnectionAsync user conn@Connection {connId, enablePQ} confId msg = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
-  dm <- directMessage (fromJVersionRange peerChatVRange) msg
+  dm <- directMessage enablePQ msg
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> VersionRangeChat -> SubscriptionMode -> CR.PQEncryption -> m (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs invId msg peerVR subMode pqEnc = do
+agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> Bool -> SubscriptionMode -> CR.PQEncryption -> m (CommandId, ConnId)
+agentAcceptContactAsync user enableNtfs invId msg shouldComporess subMode pqEnc = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  dm <- directMessage peerVR msg
+  dm <- directMessage shouldComporess msg
   connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqEnc subMode
   pure (cmdId, connId)
 
