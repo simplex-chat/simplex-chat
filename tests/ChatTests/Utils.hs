@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 
 module ChatTests.Utils where
@@ -29,6 +30,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -83,23 +85,21 @@ skip = before_ . pendingWith
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile runTest
-  skip "TODO PQ versioning" $ describe "TODO fails with previous version" $ do
-    it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
-    it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
-    it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
-    it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-    it "old to curr" $ runTestCfg2 testCfg testCfgV1 runTest
-    it "curr to old" $ runTestCfg2 testCfgV1 testCfg runTest
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 runTest
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg runTest
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix3 runTest = do
   it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
-  skip "TODO PQ versioning" $ describe "TODO fails with previous version" $ do
-    it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
-    it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
-    it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
-    it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
-    it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
+  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
+  it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
+  it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
 
 runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 runTestCfg2 aliceCfg bobCfg runTest tmp =
@@ -584,7 +584,7 @@ checkActionDeletesFile file action = do
 
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
-  "peer chat protocol version range: " <> vRangeStr supportedChatVRange
+  "peer chat protocol version range: " <> vRangeStr (supportedChatVRange PQEncOff)
 
 vRangeStr :: VersionRange v -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"

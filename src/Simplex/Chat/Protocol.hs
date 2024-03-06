@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -30,6 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
@@ -44,10 +46,13 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
+import Simplex.Messaging.Compression (CompressCtx, compress, decompressBatch)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$$>), (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
@@ -57,8 +62,11 @@ currentChatVersion :: VersionChat
 currentChatVersion = VersionChat 7
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
-supportedChatVRange :: VersionRangeChat
-supportedChatVRange = mkVersionRange (VersionChat 1) currentChatVersion
+-- TODO remove parameterization in 5.7
+supportedChatVRange :: PQEncryption -> VersionRangeChat
+supportedChatVRange pq = mkVersionRange (VersionChat 1) $ case pq of
+  PQEncOn -> compressedBatchingVersion
+  PQEncOff -> currentChatVersion
 
 -- version range that supports skipping establishing direct connections in a group
 groupNoDirectVRange :: VersionRangeChat
@@ -87,6 +95,10 @@ groupHistoryIncludeWelcomeVRange = mkVersionRange (VersionChat 6) currentChatVer
 -- version range that supports sending member profile updates to groups
 memberProfileUpdateVRange :: VersionRangeChat
 memberProfileUpdateVRange = mkVersionRange (VersionChat 7) currentChatVersion
+
+-- version range that supports compressing messages
+compressedBatchingVersion :: VersionChat
+compressedBatchingVersion = VersionChat 8
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -507,17 +519,27 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxChatMsgSize :: Int
-maxChatMsgSize = 15610
+maxRawMsgLength :: Int
+maxRawMsgLength = 15610
+
+maxEncodedMsgLength :: PQEncryption -> Int
+maxEncodedMsgLength = \case
+  PQEncOn -> 13410 -- reduced by 2200 (original message should be compressed)
+  PQEncOff -> maxRawMsgLength
+
+maxConnInfoLength :: PQEncryption -> Int
+maxConnInfoLength = \case
+  PQEncOn -> 10902 -- reduced by 3700
+  PQEncOff -> 14602 -- 15610 - delta in agent between MSG and INFO
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
-encodeChatMessage :: MsgEncodingI e => ChatMessage e -> EncodedChatMessage
-encodeChatMessage msg = do
+encodeChatMessage :: MsgEncodingI e => (PQEncryption -> Int) -> ChatMessage e -> EncodedChatMessage
+encodeChatMessage getMaxSize msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = LB.toStrict $ J.encode m
-      if B.length body > maxChatMsgSize
+      if B.length body > getMaxSize PQEncOff
         then ECMLarge
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
@@ -529,10 +551,22 @@ parseChatMessages s = case B.head s of
   '[' -> case J.eitherDecodeStrict' s of
     Right v -> map parseItem v
     Left e -> [Left e]
+  'X' -> decodeCompressed (B.drop 1 s)
   _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
   where
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
+    decodeCompressed :: ByteString -> [Either String AChatMessage]
+    decodeCompressed s' = case smpDecode s' of
+      Left e -> [Left e]
+      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxRawMsgLength compressed
+
+compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
+compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$$> compress ctx msgBody
+
+markCompressedBatch :: ByteString -> ByteString
+markCompressedBatch = B.cons 'X'
+{-# INLINE markCompressedBatch #-}
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =

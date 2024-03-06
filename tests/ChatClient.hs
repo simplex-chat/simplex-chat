@@ -36,14 +36,13 @@ import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (pattern VersionSMPA)
+import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange, pattern VersionSMPA)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Crypto.Ratchet (pattern VersionE2E)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -160,14 +159,14 @@ testAgentCfgV1 =
 testCfgVPrev :: ChatConfig
 testCfgVPrev =
   testCfg
-    { chatVRange = prevRange $ chatVRange testCfg,
+    { chatVRange = prevRange . chatVRange testCfg,
       agentConfig = testAgentCfgVPrev
     }
 
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = v1Range,
+    { chatVRange = const v1Range,
       agentConfig = testAgentCfgV1
     }
 
@@ -185,7 +184,7 @@ testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+mkCfgCreateGroupDirect cfg = cfg {chatVRange = const groupCreateDirectVRange}
 
 groupCreateDirectVRange :: VersionRangeChat
 groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
@@ -195,7 +194,7 @@ testCfgGroupLinkViaContact =
   mkCfgGroupLinkViaContact testCfg
 
 mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
-mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
+mkCfgGroupLinkViaContact cfg = cfg {chatVRange = const groupLinkViaContactVRange}
 
 groupLinkViaContactVRange :: VersionRangeChat
 groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)
