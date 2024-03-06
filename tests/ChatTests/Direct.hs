@@ -106,10 +106,8 @@ chatDirectTests = do
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
     it "show message decryption error" testMsgDecryptError
-    skip "TODO PQ ratchet synchronization" $
-      describe "TODO sporadically fail with unexpected \"post-quantum encryption enabled\" output" $ do
-        it "should report ratchet de-synchronization, synchronize ratchets" testSyncRatchet
-        it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
+    it "should report ratchet de-synchronization, synchronize ratchets" testSyncRatchet
+    it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
   describe "message reactions" $ do
     it "set message reactions" testSetMessageReactions
   describe "delivery receipts" $ do
