@@ -265,7 +265,7 @@ func apiSetPQEnabled(_ enable: Bool) throws {
 }
 
 func apiAllowContactPQ(_ contactId: Int64) async throws -> Contact {
-    let r = chatSendCmdSync(.apiAllowContactPQ(contactId: contactId))
+    let r = await chatSendCmd(.apiAllowContactPQ(contactId: contactId))
     if case let .contactPQAllowed(_, contact) = r { return contact }
     throw r
 }
