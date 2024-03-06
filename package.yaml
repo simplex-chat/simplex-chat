@@ -86,6 +86,7 @@ executables:
       - websockets == 0.12.*
     ghc-options:
       - -threaded
+      - -rtsopts
 
   simplex-bot:
     source-dirs: apps/simplex-bot

@@ -423,7 +423,7 @@ executable simplex-chat
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded -rtsopts
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12

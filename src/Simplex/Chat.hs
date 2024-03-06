@@ -359,7 +359,7 @@ startChatController mainApp = do
           setExpireCIFlag user True
 
 subscribeUsers :: forall m. ChatMonad' m => Bool -> [User] -> m ()
-subscribeUsers onlyNeeded users = do
+subscribeUsers onlyNeeded users = traceSection "subscribeUsers" $ do
   let (us, us') = partition activeUser users
   vr <- chatVersionRange
   subscribe vr us
@@ -4128,7 +4128,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XOk -> allowAgentConnectionAsync user conn' confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
             _ -> pure ()
         CON -> startReceivingFile user fileId
-        MSG meta _ msgBody -> do
+        MSG meta _ msgBody -> traceSection "MSG-FileChunk" $ do
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
           -- [async agent commands] continuation on receiving OK
@@ -4280,7 +4280,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- 1) retry processing several times
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
-      tryChatError action >>= \case
+      traceSlow "withAckMessage" 30 (tryChatError action) >>= \case
         Right withRcpt -> ackMsg cId cmdId msgMeta $ if withRcpt then Just "" else Nothing
         Left e -> ackMsg cId cmdId msgMeta Nothing >> throwError e
 
