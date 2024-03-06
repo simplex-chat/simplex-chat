@@ -32,6 +32,8 @@ public enum ChatCommand {
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetEncryptLocalFiles(enable: Bool)
+    case apiSetPQEnabled(enable: Bool)
+    case apiAllowContactPQ(contactId: Int64)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -162,6 +164,8 @@ public enum ChatCommand {
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
+            case let .apiSetPQEnabled(enable): return "/_pq \(onOff(enable))"
+            case let .apiAllowContactPQ(contactId): return "/_pq allow \(contactId)"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -306,6 +310,8 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
+            case .apiSetPQEnabled: return "apiSetPQEnabled"
+            case .apiAllowContactPQ: return "apiAllowContactPQ"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -617,6 +623,9 @@ public enum ChatResponse: Decodable, Error {
     case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
+    // pq
+    case contactPQAllowed(user: UserRef, contact: Contact)
+    case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
@@ -765,6 +774,8 @@ public enum ChatResponse: Decodable, Error {
             case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
             case .remoteCtrlConnected: return "remoteCtrlConnected"
             case .remoteCtrlStopped: return "remoteCtrlStopped"
+            case .contactPQAllowed: return "contactPQAllowed"
+            case .contactPQEnabled: return "contactPQAllowed"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
@@ -915,6 +926,8 @@ public enum ChatResponse: Decodable, Error {
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
+            case let .contactPQAllowed(u, contact): return withUser(u, "contact: \(String(describing: contact))")
+            case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))

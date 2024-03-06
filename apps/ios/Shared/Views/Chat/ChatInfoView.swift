@@ -110,6 +110,7 @@ struct ChatInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
+        case allowContactPQEncryptionAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -119,6 +120,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
+            case .allowContactPQEncryptionAlert: return "allowContactPQEncryptionAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -164,6 +166,22 @@ struct ChatInfoView: View {
 //                    }
                 }
                 .disabled(!contact.ready || !contact.active)
+
+                if developerTools,
+                   let conn = contact.activeConn {
+                    Section {
+                        infoRow("PQ encryption", conn.connPQEnabled ? "Enabled" : "Disabled")
+                        if !conn.connPQEnabled {
+                            allowPQButton()
+                        }
+                    } header: {
+                        Text("Post-quantum encryption")
+                    } footer: {
+                        if !conn.connPQEnabled {
+                            Text("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it.")
+                        }
+                    }
+                }
 
                 if let contactLink = contact.contactLink {
                     Section {
@@ -237,6 +255,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
+            case .allowContactPQEncryptionAlert: return allowContactPQEncryptionAlert()
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -410,6 +429,15 @@ struct ChatInfoView: View {
         }
     }
 
+    private func allowPQButton() -> some View {
+        Button {
+            alert = .allowContactPQEncryptionAlert
+        } label: {
+            Label("Allow PQ encryption", systemImage: "exclamationmark.triangle")
+                .foregroundColor(.orange)
+        }
+    }
+
     private func networkStatusRow() -> some View {
         HStack {
             Text("Network status")
@@ -542,6 +570,34 @@ struct ChatInfoView: View {
                 }
             }
         }
+    }
+
+    private func allowContactPQEncryption() {
+        Task {
+            do {
+                let ct = try await apiAllowContactPQ(contact.apiId)
+                contact = ct
+                await MainActor.run {
+                    chatModel.updateContact(contact)
+                    dismiss()
+                }
+            } catch let error {
+                logger.error("allowContactPQEncryption apiAllowContactPQ error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error allowing contact PQ encryption")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    func allowContactPQEncryptionAlert() -> Alert {
+        Alert(
+            title: Text("Allow post-quantum encryption?"),
+            message: Text("This is an experimental feature, it is not recommended to enable it for high importance communications. It may result in connection errors!"),
+            primaryButton: .destructive(Text("Allow"), action: allowContactPQEncryption),
+            secondaryButton: .cancel()
+        )
     }
 }
 
