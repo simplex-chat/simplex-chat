@@ -3329,9 +3329,9 @@ processAgentMsgSndFile _corrId aFileId msg =
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
         fileDescrURI :: ValidFileDescription 'FRecipient -> Maybe T.Text
-        fileDescrURI vfd = if T.length uri < FD.qrSizeLimit then Just uri else Nothing
-          where
-            uri = decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
+        fileDescrURI vfd = case vfd of
+          FD.ValidFileDescription FD.FileDescription {chunks = [_]} -> Just $ decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
+          _ -> Nothing
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = fileDescrText rfd
