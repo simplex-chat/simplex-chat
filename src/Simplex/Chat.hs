@@ -3273,8 +3273,13 @@ processAgentMsgSndFile _corrId aFileId msg =
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case mapMaybe fileDescrURI rfds of
                 [] -> case rfds of
-                  [] -> logError "File sent without receiver descriptions" -- should not happen
-                  (rfd : _) -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
+                  rfd@(FD.ValidFileDescription FD.FileDescription {redirect = Nothing}) : _ -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
+                  [] -> do
+                    logError "File sent without receiver descriptions"
+                    sendFileError fileId vr ft
+                  _ -> do
+                    logError "Refusing to chain redirects"
+                    sendFileError fileId vr ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndStandaloneFileComplete user ft' uris
@@ -3319,12 +3324,8 @@ processAgentMsgSndFile _corrId aFileId msg =
         SFERR e
           | temporaryAgentError e ->
               throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
-          | otherwise -> do
-              ci <- withStore $ \db -> do
-                liftIO $ updateFileCancelled db user fileId CIFSSndError
-                lookupChatItemByFileId db vr user fileId
-              withAgent (`xftpDeleteSndFileInternal` aFileId)
-              toView $ CRSndFileError user ci ft
+          | otherwise ->
+              sendFileError fileId vr ft
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -3346,6 +3347,12 @@ processAgentMsgSndFile _corrId aFileId msg =
               case L.nonEmpty fds of
                 Just fds' -> loopSend fds'
                 Nothing -> pure msgDeliveryId
+        sendFileError fileId vr ft = do
+          ci <- withStore $ \db -> do
+            liftIO $ updateFileCancelled db user fileId CIFSSndError
+            lookupChatItemByFileId db vr user fileId
+          withAgent (`xftpDeleteSndFileInternal` aFileId)
+          toView $ CRSndFileError user ci ft
 
 splitFileDescr :: ChatMonad m => RcvFileDescrText -> m (NonEmpty FileDescr)
 splitFileDescr rfdText = do
