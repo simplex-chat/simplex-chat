@@ -17,7 +17,7 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..), VersionRangeChat)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -149,19 +149,19 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   where
-    _0 = supportedChatVRange PQEncOff -- don't create direct connections
+    _0 = supportedChatVRange PQSupportOff -- don't create direct connections
     _1 = groupCreateDirectVRange
     -- having host configured with older version doesn't have effect in tests
     -- because host uses current code and sends version in MemberInfo
     testNoDirect vrMem2 vrMem3 noConns =
       it
         ( "host "
-            <> vRangeStr (supportedChatVRange PQEncOff)
+            <> vRangeStr (supportedChatVRange PQSupportOff)
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
-        $ testNoGroupDirectConns (supportedChatVRange PQEncOff) vrMem2 vrMem3 noConns
+        $ testNoGroupDirectConns (supportedChatVRange PQSupportOff) vrMem2 vrMem3 noConns
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
