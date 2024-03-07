@@ -453,8 +453,10 @@ data ChatCommand
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
-  | APIUploadStandaloneFile UserId CryptoFile
+  -- | APIUploadStandaloneFile UserId CryptoFile
+  | APIUploadStandaloneFile UserId StandaloneFile
   | APIDownloadStandaloneFile UserId FileDescriptionURI CryptoFile
+  | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -594,6 +596,7 @@ data ChatResponse
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
+  | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
   | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
   | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
   | CRRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
@@ -926,6 +929,12 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent
+  }
+  deriving (Show)
+
+data StandaloneFile = StandaloneFile
+  { fileInfo :: Maybe J.Value,
+    fileSource :: CryptoFile
   }
   deriving (Show)
 
@@ -1413,3 +1422,6 @@ $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
+
+$(JQ.deriveFromJSON defaultJSON ''StandaloneFile)
+$(JQ.deriveToJSON defaultJSON ''StandaloneFile)

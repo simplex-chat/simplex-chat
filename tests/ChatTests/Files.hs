@@ -14,7 +14,7 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Simplex.Chat (roundedFDCount)
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), StandaloneFile (..))
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
@@ -54,6 +54,7 @@ chatFileTests = do
     it "send and receive small standalone file" testXFTPStandaloneSmall
     it "send and receive large standalone file" testXFTPStandaloneLarge
     it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
+    it "send and receive small standalone file with extra information" testXFTPStandaloneSmallInfo
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
     it "removes received temporary files" testXFTPStandaloneCancelRcv
 
@@ -867,6 +868,37 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     threadDelay 250000
     dst <## "completed standalone receiving file 1 (test.jpg)"
     srcBody <- B.readFile "./tests/fixtures/test.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneSmallInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    let info = J.object ["secret" J..= J.String "*********"]
+    let sf = StandaloneFile {fileInfo = Just info, fileSource = CryptoFile "./tests/fixtures/logo.jpg" Nothing}
+    src ##> ("/_upload 1 " <> LB.unpack (J.encode sf))
+    src <## "started standalone uploading file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (logo.jpg) upload complete. download with:"
+    -- file description fits, enjoy the direct URIs
+    _uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "info"
+    dst ##> ("/_download info " <> uri3)
+    dst <## "{\"secret\":\"*********\"}"
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/logo.jpg"
+    dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile) -- download sucessfully discarded extra info
+    dst <## "started standalone receiving file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (logo.jpg)"
+    srcBody <- B.readFile "./tests/fixtures/logo.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
 testXFTPStandaloneLarge :: HasCallStack => FilePath -> IO ()

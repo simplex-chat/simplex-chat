@@ -137,6 +137,7 @@ library
       Simplex.Chat.Migrations.M20240214_redirect_file_id
       Simplex.Chat.Migrations.M20240222_app_settings
       Simplex.Chat.Migrations.M20240226_users_restrict
+      Simplex.Chat.Migrations.M20240307_file_info
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

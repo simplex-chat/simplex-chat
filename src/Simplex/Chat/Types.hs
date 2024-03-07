@@ -1211,6 +1211,7 @@ data FileTransferMeta = FileTransferMeta
   { fileId :: FileTransferId,
     xftpSndFile :: Maybe XFTPSndFile,
     xftpRedirectFor :: Maybe FileTransferId,
+    fileInfo :: Maybe Text,
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,

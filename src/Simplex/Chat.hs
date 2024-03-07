@@ -47,7 +47,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, decodeUtf8, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (systemToUTCTime)
@@ -717,7 +717,7 @@ processChatCommand' vr = \case
     where
       xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd)
       xftpSndFileTransfer user file fileSize n contactOrGroup = do
-        (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
+        (fInv, ciFile, ft) <- xftpSndFileTransfer_ user Nothing file fileSize n $ Just contactOrGroup
         case contactOrGroup of
           CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
             withStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
@@ -2002,12 +2002,13 @@ processChatCommand' vr = \case
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
-  APIUploadStandaloneFile userId file@CryptoFile {filePath} -> withUserId userId $ \user -> do
+  APIUploadStandaloneFile userId StandaloneFile {fileInfo, fileSource=file@CryptoFile {filePath}} -> withUserId userId $ \user -> do
     fsFilePath <- toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
-    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user (decodeUtf8 . LB.toStrict . J.encode <$> fileInfo) file fileSize 1 Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
+  APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
     ft <- receiveViaURI user uri file
     pure $ CRRcvStandaloneFileCreated user ft
@@ -3253,7 +3254,7 @@ processAgentMsgSndFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      (ft@FileTransferMeta {fileId, xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> do
+      (ft@FileTransferMeta {fileId, xftpRedirectFor, fileInfo, cancelled}, sfts) <- withStore $ \db -> do
         fileId <- getXFTPSndFileDBId db user $ AgentSndFileId aFileId
         getSndFileTransfer db user fileId
       vr <- chatVersionRange
@@ -3271,10 +3272,10 @@ processAgentMsgSndFile _corrId aFileId msg =
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
-              case mapMaybe fileDescrURI rfds of
+              case mapMaybe (fileDescrURI fileInfo) rfds of
                 [] -> case rfds of
                   [] -> logError "File sent without receiver descriptions" -- should not happen
-                  (rfd : _) -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
+                  (rfd : _) -> xftpSndFileRedirect user fileId rfd fileInfo >>= toView . CRSndFileRedirectStartXFTP user ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndStandaloneFileComplete user ft' uris
@@ -3328,10 +3329,10 @@ processAgentMsgSndFile _corrId aFileId msg =
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        fileDescrURI :: ValidFileDescription 'FRecipient -> Maybe T.Text
-        fileDescrURI vfd = if T.length uri < FD.qrSizeLimit then Just uri else Nothing
+        fileDescrURI :: Maybe Text -> ValidFileDescription 'FRecipient -> Maybe T.Text
+        fileDescrURI clientData_ vfd = if T.length uri < FD.qrSizeLimit then Just uri else Nothing
           where
-            uri = decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
+            uri = decodeLatin1 . strEncode $ (FD.fileDescriptionURI vfd) {FD.clientData = clientData_}
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = fileDescrText rfd
@@ -6782,7 +6783,8 @@ chatCommandP =
       "/list remote ctrls" $> ListRemoteCtrls,
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
-      "/_upload " *> (APIUploadStandaloneFile <$> A.decimal <* A.space <*> cryptoFileP),
+      "/_upload " *> (APIUploadStandaloneFile <$> A.decimal <* A.space <*> (jsonP <|> (StandaloneFile Nothing <$> cryptoFileP))),
+      "/_download info " *> (APIStandaloneFileInfo <$> strP),
       "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -6964,8 +6966,8 @@ mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0
           | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
         validFirstChar = isLetter c || isNumber c || isSymbol c
 
-xftpSndFileTransfer_ :: ChatMonad m => User -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ = do
+xftpSndFileTransfer_ :: ChatMonad m => User -> Maybe Text -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+xftpSndFileTransfer_ user fileInfo_ file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ = do
   let fileName = takeFileName filePath
       fInv = xftpFileInvitation fileName fileSize dummyFileDescr
   fsFilePath <- toFSFilePath filePath
@@ -6973,19 +6975,19 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n)
   -- TODO CRSndFileStart event for XFTP
   chSize <- asks $ fileChunkSize . config
-  ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ file fInv (AgentSndFileId aFileId) Nothing chSize
+  ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ fileInfo_ file fInv (AgentSndFileId aFileId) Nothing chSize
   let fileSource = Just $ CryptoFile filePath cfArgs
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
   pure (fInv, ciFile, ft)
 
-xftpSndFileRedirect :: ChatMonad m => User -> FileTransferId -> ValidFileDescription 'FRecipient -> m FileTransferMeta
-xftpSndFileRedirect user ftId vfd = do
+xftpSndFileRedirect :: ChatMonad m => User -> FileTransferId -> ValidFileDescription 'FRecipient -> Maybe Text -> m FileTransferMeta
+xftpSndFileRedirect user ftId vfd fileInfo_ = do
   let fileName = "redirect.yaml"
       file = CryptoFile fileName Nothing
       fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) dummyFileDescr
   aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd (roundedFDCount 1)
   chSize <- asks $ fileChunkSize . config
-  withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
+  withStore' $ \db -> createSndFileTransferXFTP db user Nothing fileInfo_ file fInv (AgentSndFileId aFileId) (Just ftId) chSize
 
 dummyFileDescr :: FileDescr
 dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}

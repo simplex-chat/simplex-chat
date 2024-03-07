@@ -16,6 +16,7 @@ where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -56,6 +57,10 @@ class StyledFormat a where
 instance StyledFormat String where
   styled = Styled . sgr
   plain = Styled []
+
+instance StyledFormat LB.ByteString where
+  styled f = styled f . LB.unpack
+  plain = Styled [] . LB.unpack
 
 instance StyledFormat ByteString where
   styled f = styled f . B.unpack
