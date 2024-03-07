@@ -14,6 +14,23 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
     case archiveImport(archiveName: String)
     case passphrase
 
+    func makeMigrationState() -> MigrationFromState {
+        var initial: MigrationFromState = .pasteOrScanLink
+        logger.debug("Inited with migrationState: \(String(describing: self))")
+        switch self {
+        case let .downloadProgress(link, archiveName):
+            // iOS changes absolute directory every launch, check this way
+            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
+            initial = .downloadFailed(totalBytes: 0, link: link, archivePath: archivePath)
+        case let .archiveImport(archiveName):
+            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
+            initial = .archiveImportFailed(archivePath: archivePath)
+        case .passphrase:
+            initial = .passphrase(passphrase: "")
+        }
+        return initial
+    }
+
     // Here we check whether it's needed to show migration process after app restart or not
     // It's important to NOT show the process when archive was corrupted/not fully downloaded
     static func transform() -> MigrationFromAnotherDeviceState? {
@@ -41,15 +58,16 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
     }
 }
 
-private enum MigrationState: Equatable {
-    case pasteOrScanLink(link: String)
+enum MigrationFromState: Equatable {
+    case pasteOrScanLink
     case linkDownloading(link: String)
     case downloadProgress(downloadedBytes: Int64, totalBytes: Int64, fileId: Int64, link: String, archivePath: String, ctrl: chat_ctrl?)
     case downloadFailed(totalBytes: Int64, link: String, archivePath: String)
     case archiveImport(archivePath: String)
     case archiveImportFailed(archivePath: String)
     case passphrase(passphrase: String)
-    case migration(passphrase: String)
+    case migrationConfirmation(status: DBMigrationResult, passphrase: String)
+    case migration(passphrase: String, confirmation: MigrationConfirmation)
     case onion(appSettings: AppSettings)
 }
 
@@ -84,52 +102,24 @@ struct MigrateFromAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State private var migrationState: MigrationState
+    @State var migrationState: MigrationFromState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateFromAnotherDeviceViewAlert?
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
+    // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
-
-    init(state: MigrationFromAnotherDeviceState? = nil) {
-        guard let state else {
-            self._migrationState = State(initialValue: .pasteOrScanLink(link: ""))
-            return
-        }
-
-        // Prevent from hiding the view until migration is finished or app deleted
-        self._backDisabled = State(initialValue: true)
-
-        var initial: MigrationState = .pasteOrScanLink(link: "")
-//        logger.debug("Inited with migrationState: \(String(describing: state))")
-        switch state {
-        case let .downloadProgress(link, archiveName):
-            // iOS changes absolute directory every launch, check this way
-            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
-            try? FileManager.default.removeItem(atPath: archivePath)
-            // SHOULDN'T BE HERE because the app checks this before opening migration screen and will not open it in this case.
-            // See MigrationFromAnotherDeviceState.transform()
-            initial = .downloadFailed(totalBytes: 0, link: link, archivePath: archivePath)
-        case let .archiveImport(archiveName):
-            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
-            self._backDisabled = State(initialValue: false)
-            initial = .archiveImportFailed(archivePath: archivePath)
-        case .passphrase:
-            initial = .passphrase(passphrase: "")
-        }
-        self._migrationState = State(initialValue: initial)
-    }
 
     var body: some View {
         VStack {
             switch migrationState {
-            case let .pasteOrScanLink(link):
-                pasteOrScanLinkView(link)
+            case .pasteOrScanLink:
+                pasteOrScanLinkView()
             case let .linkDownloading(link):
                 linkDownloadingView(link)
-            case let .downloadProgress(downloaded, total, _, link, archivePath, _):
-                downloadProgressView(downloaded, totalBytes: total, link, archivePath)
+            case let .downloadProgress(downloaded, total, _, _, _, _):
+                downloadProgressView(downloaded, totalBytes: total)
             case let .downloadFailed(total, link, archivePath):
                 downloadFailedView(totalBytes: total, link, archivePath)
             case let .archiveImport(archivePath):
@@ -138,10 +128,18 @@ struct MigrateFromAnotherDevice: View {
                 archiveImportFailedView(archivePath)
             case let .passphrase(passphrase):
                 PassphraseEnteringView(migrationState: $migrationState, currentKey: passphrase, alert: $alert)
-            case let .migration(passphrase):
-                migrationView(passphrase)
+            case let .migrationConfirmation(status, passphrase):
+                migrationConfirmationView(status, passphrase)
+            case let .migration(passphrase, confirmation):
+                migrationView(passphrase, confirmation)
             case let .onion(appSettings):
                 OnionView(appSettings: appSettings, finishMigration: finishMigration)
+            }
+        }
+        .onAppear {
+            backDisabled = switch migrationState {
+            case .archiveImportFailed: false
+            default: m.migrationState != nil
             }
         }
         .onChange(of: migrationState) { state in
@@ -187,7 +185,7 @@ struct MigrateFromAnotherDevice: View {
         .interactiveDismissDisabled(backDisabled)
     }
 
-    private func pasteOrScanLinkView(_ link: String) -> some View {
+    private func pasteOrScanLinkView() -> some View {
         ZStack {
             List {
                 Section("Scan QR code") {
@@ -235,7 +233,7 @@ struct MigrateFromAnotherDevice: View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Downloading link details…")
+                    Text("Downloading link details")
                 }
             }
             progressView()
@@ -245,15 +243,15 @@ struct MigrateFromAnotherDevice: View {
         }
     }
 
-    private func downloadProgressView(_ downloadedBytes: Int64, totalBytes: Int64, _ link: String, _ archivePath: String) -> some View {
+    private func downloadProgressView(_ downloadedBytes: Int64, totalBytes: Int64) -> some View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Downloading archive…")
+                    Text("Downloading archive")
                 }
             }
             let ratio = Float(downloadedBytes) / Float(max(totalBytes, 1))
-            largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded")
+            MigrateToAnotherDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded")
         }
     }
 
@@ -271,7 +269,7 @@ struct MigrateFromAnotherDevice: View {
             } header: {
                 Text("Download failed")
             } footer: {
-                Text("You can give another try")
+                Text("You can give another try.")
                     .font(.callout)
             }
         }
@@ -286,7 +284,7 @@ struct MigrateFromAnotherDevice: View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Importing archive…")
+                    Text("Importing archive")
                 }
             }
             progressView()
@@ -309,23 +307,67 @@ struct MigrateFromAnotherDevice: View {
             } header: {
                 Text("Import failed")
             } footer: {
-                Text("You can give another try")
+                Text("You can give another try.")
                     .font(.callout)
             }
         }
     }
 
-    private func migrationView(_ passphrase: String) -> some View {
+    private func migrationConfirmationView(_ status: DBMigrationResult, _ passphrase: String) -> some View {
+        List {
+            let (header, button, footer, confirmation): (LocalizedStringKey, LocalizedStringKey?, String, MigrationConfirmation?) = switch status {
+            case let .errorMigration(_, migrationError):
+                switch migrationError {
+                case .upgrade:
+                    ("Database upgrade",
+                    "Upgrade and open chat",
+                     "",
+                     .yesUp)
+                case .downgrade:
+                    ("Database downgrade",
+                    "Downgrade and open chat",
+                     NSLocalizedString("Warning: you may lose some data!", comment: ""),
+                    .yesUpDown)
+                case let .migrationError(mtrError):
+                    ("Incompatible database version",
+                     nil,
+                     "\(NSLocalizedString("Error: ", comment: "")) \(DatabaseErrorView.mtrErrorDescription(mtrError))",
+                     nil)
+                }
+            default: ("Error", nil, "Unknown error", nil)
+            }
+            Section {
+                if let button, let confirmation {
+                    Button(action: {
+                        migrationState = .migration(passphrase: passphrase, confirmation: confirmation)
+                    }) {
+                        settingsRow("square.and.arrow.down") {
+                            Text(button).foregroundColor(.accentColor)
+                        }
+                    }
+                } else {
+                    EmptyView()
+                }
+            } header: {
+                Text(header)
+            } footer: {
+                Text(footer)
+                    .font(.callout)
+            }
+        }
+    }
+
+    private func migrationView(_ passphrase: String, _ confirmation: MigrationConfirmation) -> some View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Migrating…")
+                    Text("Migrating")
                 }
             }
             progressView()
         }
         .onAppear {
-            startChat(passphrase)
+            startChat(passphrase, confirmation)
         }
     }
 
@@ -342,6 +384,7 @@ struct MigrateFromAnotherDevice: View {
                         let (hostMode, requiredHostMode) = onionHosts.hostMode
                         updated.hostMode = hostMode
                         updated.requiredHostMode = requiredHostMode
+                        updated.socksProxy = nil
                         appSettings.networkConfig = updated
                         finishMigration(appSettings)
                     }) {
@@ -352,7 +395,7 @@ struct MigrateFromAnotherDevice: View {
                 } header: {
                     Text("Review .onion settings")
                 } footer: {
-                    Text("Since you migrated the database between platforms, make sure settings for .onion hosts are correct")
+                    Text("Since you migrated the database between platforms, make sure settings for .onion hosts are correct.")
                         .font(.callout)
                 }
 
@@ -374,36 +417,6 @@ struct MigrateFromAnotherDevice: View {
                 }
             }
         }
-    }
-
-    private func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
-        ZStack {
-            VStack {
-                Text(description)
-                    .font(.title3)
-                    .hidden()
-
-                Text(title)
-                    .font(.system(size: 60))
-                    .foregroundColor(.accentColor)
-
-                Text(description)
-                    .font(.title3)
-            }
-
-            Circle()
-                .trim(from: 0, to: CGFloat(value))
-                .stroke(
-                    Color.accentColor,
-                    style: StrokeStyle(lineWidth: 30)
-                )
-                .rotationEffect(.degrees(-90))
-                .animation(.linear, value: value)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal)
-                .padding(.horizontal)
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private func downloadLinkDetails(_ link: String) {
@@ -506,24 +519,15 @@ struct MigrateFromAnotherDevice: View {
         _ = await apiCancelFile(fileId: fileId, ctrl: ctrl)
     }
 
-    private func cancelMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
-        Task {
-            await stopArchiveDownloading(fileId, ctrl)
-            await MainActor.run {
-                dismiss()
-            }
-        }
-    }
-
-    private func startChat(_ passphrase: String) {
+    private func startChat(_ passphrase: String, _ confirmation: MigrationConfirmation) {
         _ = kcDatabasePassword.set(passphrase)
         storeDBPassphraseGroupDefault.set(true)
         initialRandomDBPassphraseGroupDefault.set(false)
         AppChatState.shared.set(.active)
         Task {
             do {
-//                resetChatCtrl()
-                try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true)
+                resetChatCtrl()
+                try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current)
                 await MainActor.run {
                     // LALAL
@@ -547,8 +551,8 @@ struct MigrateFromAnotherDevice: View {
         do {
             try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             MigrationFromAnotherDeviceState.save(nil) { m.migrationState = $0 }
-            try SimpleX.startChat(refreshInvitations: true)
             appSettings.importIntoApp()
+            try SimpleX.startChat(refreshInvitations: true)
             AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
         } catch let error {
             AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
@@ -572,7 +576,7 @@ struct MigrateFromAnotherDevice: View {
 }
 
 private struct PassphraseEnteringView: View {
-    @Binding var migrationState: MigrationState
+    @Binding var migrationState: MigrationFromState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State var currentKey: String
     @State private var verifyingPassphrase: Bool = false
@@ -587,18 +591,18 @@ private struct PassphraseEnteringView: View {
                         verifyingPassphrase = true
                         hideKeyboard()
                         Task {
-                            let (status, ctrl) = chatInitTemporaryDatabase(url: getAppDatabasePath(), key: currentKey)
+                            let (status, _) = chatInitTemporaryDatabase(url: getAppDatabasePath(), key: currentKey, confirmation: .yesUp)
                             let success = switch status {
                             case .ok, .invalidConfirmation: true
                             default: false
                             }
                             if success {
-//                                if let ctrl {
-//                                    chat_close_store(ctrl)
-//                                }
-                                applyChatCtrl(ctrl: ctrl, result: (currentKey != "", status))
                                 await MainActor.run {
-                                    migrationState = .migration(passphrase: currentKey)
+                                    migrationState = .migration(passphrase: currentKey, confirmation: .yesUp)
+                                }
+                            } else if case .errorMigration = status {
+                                await MainActor.run {
+                                    migrationState = .migrationConfirmation(status: status, passphrase: currentKey)
                                 }
                             } else {
                                 showErrorOnMigrationIfNeeded(status, $alert)
@@ -692,6 +696,6 @@ private class MigrationChatReceiver {
 
 struct MigrateFromAnotherDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateFromAnotherDevice()
+        MigrateFromAnotherDevice(migrationState: .pasteOrScanLink)
     }
 }

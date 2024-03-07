@@ -13,6 +13,7 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
+    @State private var migrationState: MigrationFromState? = nil
     @State private var migrateFromAnotherDevice: Bool = false
     var onboarding: Bool
 
@@ -48,6 +49,7 @@ struct SimpleXInfo: View {
                         Spacer()
 
                         Button {
+                            migrationState = nil
                             migrateFromAnotherDevice = true
                         } label: {
                             Label("Migrate from another device", systemImage: "tray.and.arrow.down")
@@ -71,6 +73,7 @@ struct SimpleXInfo: View {
             }
             .onAppear {
                 if m.migrationState != nil {
+                    migrationState = m.migrationState?.makeMigrationState()
                     migrateFromAnotherDevice = true
                 }
             }
@@ -81,7 +84,7 @@ struct SimpleXInfo: View {
                         .fontWeight(.bold)
                         .padding([.leading, .top, .trailing])
                         .padding(.top)
-                    MigrateFromAnotherDevice(state: m.migrationState)
+                    MigrateFromAnotherDevice(migrationState: migrationState ?? .pasteOrScanLink)
                 }
                 .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
             }

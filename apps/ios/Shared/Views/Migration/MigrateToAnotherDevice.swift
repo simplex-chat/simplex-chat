@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private enum MigrationState: Equatable {
+private enum MigrationToState: Equatable {
     case chatStopInProgress
     case chatStopFailed(reason: String)
     case passphraseNotSet
@@ -56,7 +56,7 @@ struct MigrateToAnotherDevice: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
     @Binding var showProgressOnSettings: Bool
-    @State private var migrationState: MigrationState = .chatStopInProgress
+    @State private var migrationState: MigrationToState = .chatStopInProgress
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
     @State private var alert: MigrateToAnotherDeviceViewAlert?
@@ -129,7 +129,7 @@ struct MigrateToAnotherDevice: View {
                     }
                 }
                 if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
-                    await cancelUploadedAchive(fileId, ctrl)
+                    await cancelUploadedArchive(fileId, ctrl)
                 }
                 chatReceiver?.stop()
                 try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
@@ -199,7 +199,7 @@ struct MigrateToAnotherDevice: View {
             } header: {
                 Text("Error stopping chat")
             } footer: {
-                Text("In order to continue, chat should be stopped")
+                Text("In order to continue, chat should be stopped.")
                     .font(.callout)
             }
         }
@@ -235,7 +235,7 @@ struct MigrateToAnotherDevice: View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Archiving database…")
+                    Text("Archiving database")
                 }
             }
             progressView()
@@ -249,11 +249,11 @@ struct MigrateToAnotherDevice: View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Uploading archive…")
+                    Text("Uploading archive")
                 }
             }
             let ratio = Float(uploadedBytes) / Float(totalBytes)
-            largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
+            MigrateToAnotherDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
         }
         .onAppear {
             startUploading(totalBytes, archivePath)
@@ -273,7 +273,7 @@ struct MigrateToAnotherDevice: View {
             } header: {
                 Text("Upload failed")
             } footer: {
-                Text("You can give another try")
+                Text("You can give another try.")
                     .font(.callout)
             }
         }
@@ -288,7 +288,7 @@ struct MigrateToAnotherDevice: View {
         ZStack {
             List {
                 Section {} header: {
-                    Text("Creating archive link…")
+                    Text("Creating archive link")
                 }
             }
             progressView()
@@ -374,7 +374,7 @@ struct MigrateToAnotherDevice: View {
             .truncationMode(.middle)
     }
 
-    private func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
+    static func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
         ZStack {
             VStack {
                 Text(description)
@@ -506,20 +506,20 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func cancelUploadedAchive(_ fileId: Int64, _ ctrl: chat_ctrl) async {
+    private func cancelUploadedArchive(_ fileId: Int64, _ ctrl: chat_ctrl) async {
         _ = await apiCancelFile(fileId: fileId, ctrl: ctrl)
     }
 
     private func cancelMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
         Task {
-            await cancelUploadedAchive(fileId, ctrl)
+            await cancelUploadedArchive(fileId, ctrl)
             await startChatAndDismiss()
         }
     }
 
     private func finishMigration(_ fileId: Int64, _ ctrl: chat_ctrl) {
         Task {
-            await cancelUploadedAchive(fileId, ctrl)
+            await cancelUploadedArchive(fileId, ctrl)
             await MainActor.run {
                 migrationState = .finished(chatDeletion: false)
             }
@@ -577,7 +577,7 @@ struct MigrateToAnotherDevice: View {
 }
 
 private struct PassphraseConfirmationView: View {
-    @Binding var migrationState: MigrationState
+    @Binding var migrationState: MigrationToState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var currentKey: String = ""
     @State private var verifyingPassphrase: Bool = false

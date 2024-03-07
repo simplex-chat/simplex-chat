@@ -54,14 +54,14 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     return result
 }
 
-public func chatInitTemporaryDatabase(url: URL, key: String? = nil) -> (DBMigrationResult, chat_ctrl?) {
+public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation: MigrationConfirmation = .error) -> (DBMigrationResult, chat_ctrl?) {
     let dbPath = url.path
     let dbKey = key ?? randomDatabasePassword()
     logger.debug("chatInitTemporaryDatabase path: \(dbPath)")
     var temporaryController: chat_ctrl? = nil
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
-    var cConfirm = MigrationConfirmation.error.rawValue.cString(using: .utf8)!
+    var cConfirm = confirmation.rawValue.cString(using: .utf8)!
     let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &temporaryController)!
     return (dbMigrationResult(fromCString(cjson)), temporaryController)
 }
@@ -98,11 +98,6 @@ public func chatReopenStore() {
 public func resetChatCtrl() {
     chatController = nil
     migrationResult = nil
-}
-
-public func applyChatCtrl(ctrl: chat_ctrl?, result: (Bool, DBMigrationResult)) {
-    chatController = ctrl
-    migrationResult = result
 }
 
 public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
