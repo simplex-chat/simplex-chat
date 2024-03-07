@@ -22,8 +22,8 @@ actual fun SavePassphraseSetting(
   useKeychain: Boolean,
   initialRandomDBPassphrase: Boolean,
   storedKey: Boolean,
-  progressIndicator: Boolean,
   minHeight: Dp,
+  enabled: Boolean,
   onCheckedChange: (Boolean) -> Unit,
 ) {
   SectionItemView(minHeight = minHeight) {
@@ -43,7 +43,7 @@ actual fun SavePassphraseSetting(
       DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
-        enabled = !initialRandomDBPassphrase && !progressIndicator
+        enabled = enabled
       )
     }
   }
@@ -55,13 +55,14 @@ actual fun DatabaseEncryptionFooter(
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
   initialRandomDBPassphrase: MutableState<Boolean>,
+  migration: Boolean,
 ) {
   if (chatDbEncrypted == false) {
     SectionTextFooter(generalGetString(MR.strings.database_is_not_encrypted))
   } else if (useKeychain.value) {
     if (storedKey.value) {
       SectionTextFooter(generalGetString(MR.strings.keychain_is_storing_securely))
-      if (initialRandomDBPassphrase.value) {
+      if (initialRandomDBPassphrase.value && !migration) {
         SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
       } else {
         SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))

@@ -1078,6 +1078,7 @@
   <string name="confirm_new_passphrase">Confirm new passphrase…</string>
   <string name="update_database_passphrase">Update database passphrase</string>
   <string name="set_database_passphrase">Set database passphrase</string>
+  <string name="set_passphrase">Set passphrase</string>
   <string name="enter_correct_current_passphrase">Please enter correct current passphrase.</string>
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
   <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>

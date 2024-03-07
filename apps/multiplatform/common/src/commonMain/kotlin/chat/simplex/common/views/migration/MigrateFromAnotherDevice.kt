@@ -93,7 +93,8 @@ private sealed class MigrationState {
   @Serializable data class ArchiveImport(val archivePath: String, val netCfg: NetCfg): MigrationState()
   @Serializable data class ArchiveImportFailed(val archivePath: String, val netCfg: NetCfg): MigrationState()
   @Serializable data class Passphrase(val passphrase: String, val netCfg: NetCfg): MigrationState()
-  @Serializable data class Migration(val passphrase: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class MigrationConfirmation(val status: DBMigrationResult, val passphrase: String, val netCfg: NetCfg): MigrationState()
+  @Serializable data class Migration(val passphrase: String, val confirmation: chat.simplex.common.views.helpers.MigrationConfirmation, val netCfg: NetCfg): MigrationState()
 }
 
 private var MutableState<MigrationState>.state: MigrationState
@@ -111,7 +112,6 @@ fun ModalData.MigrateFromAnotherDeviceView(state: MigrationFromAnotherDeviceStat
         }
         is MigrationFromAnotherDeviceState.DownloadProgress -> {
           val archivePath = File(getMigrationTempFilesDirectory(), state.archiveName)
-          archivePath.delete()
           // SHOULDN'T BE HERE because the app checks this before opening migration screen and will not open it in this case.
           // See analyzeMigrationState()
           MigrationState.DownloadFailed(totalBytes = 0, link = state.link, archivePath = archivePath.absolutePath, state.netCfg)
@@ -187,7 +187,8 @@ private fun ModalData.SectionByState(
     is MigrationState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg)
     is MigrationState.ArchiveImportFailed -> migrationState.ArchiveImportFailedView(s.archivePath, s.netCfg)
     is MigrationState.Passphrase -> migrationState.PassphraseEnteringView(currentKey = s.passphrase, s.netCfg)
-    is MigrationState.Migration -> migrationState.MigrationView(s.passphrase, s.netCfg, close)
+    is MigrationState.MigrationConfirmation -> migrationState.MigrationConfirmationView(s.status, s.passphrase, s.netCfg)
+    is MigrationState.Migration -> MigrationView(s.passphrase, s.confirmation, s.netCfg, close)
   }
 }
 
@@ -390,11 +391,12 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
           verifyingPassphrase.value = true
           hideKeyboard(view)
           withBGApi {
-            val (status, ctrl) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value)
-            val success = status == DBMigrationResult.OK || status == DBMigrationResult.InvalidConfirmation || status is DBMigrationResult.ErrorMigration
+            val (status, ctrl) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
+            val success = status == DBMigrationResult.OK || status == DBMigrationResult.InvalidConfirmation
             if (success) {
-              ChatController.ctrl = ctrl
-              state = MigrationState.Migration(currentKey.value, netCfg)
+              state = MigrationState.Migration(currentKey.value, MigrationConfirmation.YesUp, netCfg)
+            } else if (status is DBMigrationResult.ErrorMigration) {
+              state = MigrationState.MigrationConfirmation(status, currentKey.value, netCfg)
             } else {
               showErrorOnMigrationIfNeeded(status)
             }
@@ -411,13 +413,57 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
 }
 
 @Composable
-private fun MutableState<MigrationState>.MigrationView(passphrase: String, netCfg: NetCfg, close: () -> Unit) {
+private fun MutableState<MigrationState>.MigrationConfirmationView(status: DBMigrationResult, passphrase: String, netCfg: NetCfg) {
+  data class Tuple4<A,B,C,D>(val a: A, val b: B, val c: C, val d: D)
+  val (header: String, button: String?, footer: String, confirmation: MigrationConfirmation?) = when (status) {
+    is DBMigrationResult.ErrorMigration -> when (val err = status.migrationError) {
+      is MigrationError.Upgrade ->
+        Tuple4(
+          generalGetString(MR.strings.database_upgrade),
+          generalGetString(MR.strings.upgrade_and_open_chat),
+          "",
+          MigrationConfirmation.YesUp
+        )
+      is MigrationError.Downgrade ->
+        Tuple4(
+          generalGetString(MR.strings.database_downgrade),
+          generalGetString(MR.strings.downgrade_and_open_chat),
+          generalGetString(MR.strings.database_downgrade_warning),
+          MigrationConfirmation.YesUpDown
+        )
+      is MigrationError.Error ->
+        Tuple4(
+          generalGetString(MR.strings.incompatible_database_version),
+          null,
+          mtrErrorDescription(err.mtrError),
+          null
+        )
+    }
+    else -> Tuple4(generalGetString(MR.strings.error), null, generalGetString(MR.strings.unknown_error), null)
+  }
+  SectionView(header.uppercase()) {
+    if (button != null && confirmation != null) {
+      SettingsActionItemWithContent(
+        icon = painterResource(MR.images.ic_download),
+        text = button,
+        textColor = MaterialTheme.colors.primary,
+        click = {
+          state = MigrationState.Migration(passphrase, confirmation, netCfg)
+        }
+      ) {}
+    }
+    SectionTextFooter(footer)
+  }
+}
+
+@Composable
+private fun MigrationView(passphrase: String, confirmation: MigrationConfirmation, netCfg: NetCfg, close: () -> Unit) {
   Box {
     SectionView(stringResource(MR.strings.migration_from_device_migrating).uppercase()) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
-    startChat(passphrase, netCfg, close)
+    startChat(passphrase, confirmation, netCfg, close)
   }
 }
 
@@ -555,13 +601,13 @@ private suspend fun stopArchiveDownloading(fileId: Long, ctrl: ChatCtrl) {
   controller.apiCancelFile(null, fileId, ctrl)
 }
 
-private fun startChat(passphrase: String, netCfg: NetCfg, close: () -> Unit) {
+private fun startChat(passphrase: String, confirmation: MigrationConfirmation, netCfg: NetCfg, close: () -> Unit) {
   ksDatabasePassword.set(passphrase)
   appPreferences.storeDBPassphrase.set(true)
   appPreferences.initialRandomDBPassphrase.set(false)
   withBGApi {
     try {
-      initChatController(useKey = passphrase) { CompletableDeferred(false) }
+      initChatController(useKey = passphrase, confirmMigrations = confirmation) { CompletableDeferred(false) }
       val appSettings = controller.apiGetAppSettings(AppSettings.current).copy(
         networkConfig = netCfg
       )

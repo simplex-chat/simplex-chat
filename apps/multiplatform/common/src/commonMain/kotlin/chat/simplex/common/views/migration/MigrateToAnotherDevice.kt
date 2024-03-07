@@ -61,6 +61,7 @@ fun MigrateToAnotherDeviceView(close: () -> Unit) {
   // Prevent from hiding the view until migration is finished or app deleted
   val backDisabled = remember {
     derivedStateOf {
+      migrationState.value is MigrationToState.DatabaseInit ||
       migrationState.value is MigrationToState.LinkCreation ||
           migrationState.value is MigrationToState.LinkShown ||
           migrationState.value is MigrationToState.Finished
@@ -72,8 +73,8 @@ fun MigrateToAnotherDeviceView(close: () -> Unit) {
     close = {
       withBGApi {
         migrationState.cleanUpOnBack(chatReceiver.value)
-        close()
       }
+      close()
     },
   ) {
     MigrateToAnotherDeviceLayout(
@@ -149,8 +150,8 @@ private fun MutableState<MigrationToState>.ChatStopFailedView(reason: String) {
 
 @Composable
 private fun MutableState<MigrationToState>.PassphraseNotSetView() {
-  DatabaseEncryptionView(chatModel)
-  KeyChangeEffect(appPreferences.initialRandomDBPassphrase.state) {
+  DatabaseEncryptionView(chatModel, true)
+  KeyChangeEffect(appPreferences.initialRandomDBPassphrase.state.value) {
     if (!appPreferences.initialRandomDBPassphrase.get()) {
       state = MigrationToState.UploadConfirmation
     }
@@ -164,26 +165,28 @@ private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
   val verifyingPassphrase = rememberSaveable { mutableStateOf(false) }
   Box {
     val view = LocalMultiplatformView()
-    SectionView {
+    Column {
       ChatStoppedView()
-    }
-    SectionView(stringResource(MR.strings.migration_to_device_verify_database_passphrase).uppercase()) {
-      PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey)
+      SectionSpacer()
 
-      SettingsActionItemWithContent(
-        icon = painterResource(if (useKeychain) MR.images.ic_vpn_key_filled else MR.images.ic_lock),
-        text = stringResource(MR.strings.migration_to_device_verify_passphrase),
-        textColor = MaterialTheme.colors.primary,
-        click = {
-          verifyingPassphrase.value = true
-          hideKeyboard(view)
-          withBGApi {
-            verifyDatabasePassphrase(currentKey.value)
-            verifyingPassphrase.value = false
+      SectionView(stringResource(MR.strings.migration_to_device_verify_database_passphrase).uppercase()) {
+        PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey)
+
+        SettingsActionItemWithContent(
+          icon = painterResource(if (useKeychain) MR.images.ic_vpn_key_filled else MR.images.ic_lock),
+          text = stringResource(MR.strings.migration_to_device_verify_passphrase),
+          textColor = MaterialTheme.colors.primary,
+          click = {
+            verifyingPassphrase.value = true
+            hideKeyboard(view)
+            withBGApi {
+              verifyDatabasePassphrase(currentKey.value)
+              verifyingPassphrase.value = false
+            }
           }
-        }
-      ) {}
-      SectionTextFooter(stringResource(MR.strings.migration_to_device_confirm_you_remember_passphrase))
+        ) {}
+        SectionTextFooter(stringResource(MR.strings.migration_to_device_confirm_you_remember_passphrase))
+      }
     }
     if (verifyingPassphrase.value) {
       ProgressView()

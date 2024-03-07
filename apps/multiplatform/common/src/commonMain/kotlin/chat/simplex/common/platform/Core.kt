@@ -138,10 +138,10 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   }
 }
 
-fun chatInitTemporaryDatabase(dbPath: String, key: String? = null): Pair<DBMigrationResult, ChatCtrl?> {
+fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation: MigrationConfirmation = MigrationConfirmation.Error): Pair<DBMigrationResult, ChatCtrl?> {
   val dbKey = key ?: randomDatabasePassword()
   Log.d(TAG, "chatInitTemporaryDatabase path: $dbPath")
-  val migrated = chatMigrateInit(dbPath, dbKey, MigrationConfirmation.Error.value)
+  val migrated = chatMigrateInit(dbPath, dbKey, confirmation.value)
   val res = runCatching {
     json.decodeFromString<DBMigrationResult>(migrated[0] as String)
   }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }

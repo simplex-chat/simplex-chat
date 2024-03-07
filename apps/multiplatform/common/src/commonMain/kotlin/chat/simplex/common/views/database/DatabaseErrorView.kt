@@ -252,7 +252,7 @@ private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPref
   }
 }
 
-private fun mtrErrorDescription(err: MTRError): String =
+fun mtrErrorDescription(err: MTRError): String =
   when (err) {
     is MTRError.NoDown ->
       String.format(generalGetString(MR.strings.mtr_error_no_down_migration), err.dbMigrations.joinToString(", "))
