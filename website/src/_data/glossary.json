@@ -68,6 +68,10 @@
         "definition": "Message padding"
     },
     {
+        "term": "Non-repudiation",
+        "definition": "Non-repudiation"
+    },
+    {
         "term": "Onion routing",
         "definition": "Onion routing"
     },
@@ -102,6 +106,10 @@
     {
         "term": "Recovery from compromise",
         "definition": "Post-compromise security"
+    },
+    {
+        "term": "Repudiation",
+        "definition": "Repudiation"
     },
     {
         "term": "User identity",
