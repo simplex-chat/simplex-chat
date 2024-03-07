@@ -18,7 +18,7 @@ private enum MigrationToState: Equatable {
     case archiving
     case uploadProgress(uploadedBytes: Int64, totalBytes: Int64, fileId: Int64, archivePath: URL, ctrl: chat_ctrl?)
     case uploadFailed(totalBytes: Int64, archivePath: URL)
-    case linkCreation(totalBytes: Int64)
+    case linkCreation
     case linkShown(fileId: Int64, link: String, archivePath: URL, ctrl: chat_ctrl)
     case finished(chatDeletion: Bool)
 }
@@ -95,8 +95,8 @@ struct MigrateToAnotherDevice: View {
                 uploadProgressView(uploaded, totalBytes: total, archivePath)
             case let .uploadFailed(total, archivePath):
                 uploadFailedView(totalBytes: total, archivePath)
-            case let .linkCreation(totalBytes):
-                linkCreationView(totalBytes)
+            case .linkCreation:
+                linkCreationView()
             case let .linkShown(fileId, link, archivePath, ctrl):
                 linkView(fileId, link, archivePath, ctrl)
             case let .finished(chatDeletion):
@@ -284,7 +284,7 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func linkCreationView(_ totalBytes: Int64) -> some View {
+    private func linkCreationView() -> some View {
         ZStack {
             List {
                 Section {} header: {
@@ -480,9 +480,9 @@ struct MigrateToAnotherDevice: View {
                         if case let .uploadProgress(uploaded, total, _, _, _) = migrationState, uploaded != total {
                             migrationState = .uploadProgress(uploadedBytes: sentSize, totalBytes: totalSize, fileId: fileTransferMeta.fileId, archivePath: archivePath, ctrl: ctrl)
                         }
-                    case let .sndFileRedirectStartXFTP(_, fileTransferMeta, _):
+                    case .sndFileRedirectStartXFTP:
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            migrationState = .linkCreation(totalBytes: fileTransferMeta.fileSize)
+                            migrationState = .linkCreation
                         }
                     case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
