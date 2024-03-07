@@ -3524,7 +3524,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processINFOpqSupport :: Connection -> PQSupport -> m ()
     processINFOpqSupport Connection {pqSupport} pqSupport' =
       case (pqSupport, pqSupport') of
-        (PQSupport b, PQSupport b') | b == b' -> do
+        (PQSupport b, PQSupport b') | b /= b' -> do
           messageWarning "processINFOpqSupport: unexpected pqSupport change"
         _ -> pure ()
 
