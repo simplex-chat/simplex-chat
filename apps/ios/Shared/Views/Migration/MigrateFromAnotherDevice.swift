@@ -16,7 +16,7 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
 
     func makeMigrationState() -> MigrationFromState {
         var initial: MigrationFromState = .pasteOrScanLink
-        logger.debug("Inited with migrationState: \(String(describing: self))")
+        //logger.debug("Inited with migrationState: \(String(describing: self))")
         switch self {
         case let .downloadProgress(link, archiveName):
             // iOS changes absolute directory every launch, check this way
