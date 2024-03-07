@@ -522,24 +522,24 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 maxRawMsgLength :: Int
 maxRawMsgLength = 15610
 
-maxEncodedMsgLength :: PQEncryption -> Int
+maxEncodedMsgLength :: PQFlag -> Int
 maxEncodedMsgLength = \case
-  PQEncOn -> 13410 -- reduced by 2200 (original message should be compressed)
-  PQEncOff -> maxRawMsgLength
+  True -> 13410 -- reduced by 2200 (original message should be compressed)
+  False -> maxRawMsgLength
 
-maxConnInfoLength :: PQEncryption -> Int
+maxConnInfoLength :: PQFlag -> Int
 maxConnInfoLength = \case
-  PQEncOn -> 10902 -- reduced by 3700
-  PQEncOff -> 14602 -- 15610 - delta in agent between MSG and INFO
+  True -> 10902 -- reduced by 3700
+  False -> 14602 -- 15610 - delta in agent between MSG and INFO
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
-encodeChatMessage :: MsgEncodingI e => (PQEncryption -> Int) -> ChatMessage e -> EncodedChatMessage
+encodeChatMessage :: MsgEncodingI e => (PQFlag -> Int) -> ChatMessage e -> EncodedChatMessage
 encodeChatMessage getMaxSize msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = LB.toStrict $ J.encode m
-      if B.length body > getMaxSize PQEncOff
+      if B.length body > getMaxSize False
         then ECMLarge
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m

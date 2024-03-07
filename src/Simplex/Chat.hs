@@ -1433,7 +1433,7 @@ processChatCommand' vr = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
     enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-    dm <- directMessagePQ (PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
+    dm <- directMessagePQ enablePQ maxConnInfoLength $ XInfo profileToSend
     connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm (PQSupport enablePQ) subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode enablePQ
     pure $ CRSentConfirmation user conn
@@ -2175,13 +2175,11 @@ processChatCommand' vr = \case
         ct' <- withStore $ \db -> createAddressContactConnection db user ct connId cReqHash newXContactId incognitoProfile subMode enablePQ
         pure $ CRSentInvitationToContact user ct' incognitoProfile
     requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> PQSupport -> m (ConnId, Maybe Profile, SubscriptionMode)
-    requestContact user incognito cReq xContactId inGroup pqSupport = do
+    requestContact user incognito cReq xContactId inGroup pqSupport@(PQSupport pq) = do
       -- [incognito] generate profile to send
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      -- TODO PQ figure out directMessagePQ type
-      let PQSupport pq = pqSupport
-      dm <- directMessagePQ (PQEncryption pq) maxConnInfoLength (XContact profileToSend $ Just xContactId)
+      dm <- directMessagePQ pq maxConnInfoLength (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
       connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSupport subMode
       pure (connId, incognitoProfile, subMode)
@@ -2880,7 +2878,7 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-  dm <- directMessagePQ (PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
+  dm <- directMessagePQ enablePQ maxConnInfoLength $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm (PQSupport enablePQ) subMode
   withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode enablePQ contactUsed
 
@@ -6084,7 +6082,7 @@ processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = d
   void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
 
 batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
-batchSndMessagesJSON = batchMessages (maxEncodedMsgLength PQEncOff) . L.toList
+batchSndMessagesJSON = batchMessages (maxEncodedMsgLength False) . L.toList
 
 -- batchSndMessagesBinary :: forall m. ChatMonad m => NonEmpty SndMessage -> m [Either ChatError MsgBatch]
 -- batchSndMessagesBinary msgs = do
@@ -6099,12 +6097,13 @@ batchSndMessagesJSON = batchMessages (maxEncodedMsgLength PQEncOff) . L.toList
 --       SMP.TBTransmission {} -> Left . ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
-directMessage = directMessagePQ PQEncOff maxConnInfoLength
+directMessage = directMessagePQ False maxConnInfoLength
 
 -- TODO PQ check size after compression (in compressedBatchMsgBody_ ?)
-directMessagePQ :: (MsgEncodingI e, ChatMonad m) => PQEncryption -> (PQEncryption -> Int) -> ChatMsgEvent e -> m ByteString
-directMessagePQ pqEnc maxMsgSize chatMsgEvent = do
-  chatVRange <- chatVersionRange pqEnc
+-- TODO PQ figure out directMessagePQ type for PQ encryption (PQEncryption / PQSupport) - encode, max msg size used for both
+directMessagePQ :: (MsgEncodingI e, ChatMonad m) => PQFlag -> (PQFlag -> Int) -> ChatMsgEvent e -> m ByteString
+directMessagePQ pq maxMsgSize chatMsgEvent = do
+  chatVRange <- chatVersionRange (PQEncryption pq)
   let shouldCompress = maxVersion chatVRange >= compressedBatchingVersion
       r = encodeChatMessage maxMsgSize ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
@@ -6423,16 +6422,14 @@ joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
 allowAgentConnectionAsync user conn@Connection {connId, enablePQ} confId msg = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
-  dm <- directMessagePQ (PQEncryption enablePQ) maxConnInfoLength msg
+  dm <- directMessagePQ enablePQ maxConnInfoLength msg
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
 agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> PQSupport -> m (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs invId msg subMode pqSupport = do
+agentAcceptContactAsync user enableNtfs invId msg subMode pqSupport@(PQSupport pq) = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  -- TODO PQ figure out directMessagePQ type
-  let PQSupport pq = pqSupport
-  dm <- directMessagePQ (PQEncryption pq) maxConnInfoLength msg
+  dm <- directMessagePQ pq maxConnInfoLength msg
   connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqSupport subMode
   pure (cmdId, connId)
 
