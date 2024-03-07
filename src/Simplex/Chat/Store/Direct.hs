@@ -531,8 +531,8 @@ getUserContacts db user@User {userId} = do
   contacts <- rights <$> mapM (runExceptT . getContact db user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
-createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
+createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ContactOrRequest
+createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ reqPQSup =
   liftIO (maybeM getContact' xContactId_) >>= \case
     Just contact -> pure $ CORContact contact
     Nothing -> CORRequest <$> createOrUpdate_
@@ -561,10 +561,13 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
             db
             [sql|
               INSERT INTO contact_requests
-                (user_contact_link_id, agent_invitation_id, peer_chat_min_version, peer_chat_max_version, contact_profile_id, local_display_name, user_id, created_at, updated_at, xcontact_id)
-              VALUES (?,?,?,?,?,?,?,?,?,?)
+                (user_contact_link_id, agent_invitation_id, peer_chat_min_version, peer_chat_max_version, contact_profile_id, local_display_name, user_id,
+                 created_at, updated_at, xcontact_id, pq_support)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?)
             |]
-            (userContactLinkId, invId, minV, maxV, profileId, ldn, userId, currentTs, currentTs, xContactId_)
+            ( (userContactLinkId, invId, minV, maxV, profileId, ldn, userId)
+                :. (currentTs, currentTs, xContactId_, reqPQSup)
+            )
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
@@ -596,7 +599,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
           [sql|
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
+              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
             JOIN connections c USING (user_contact_link_id)
@@ -617,20 +620,20 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
               db
               [sql|
                 UPDATE contact_requests
-                SET agent_invitation_id = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
+                SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
-              (invId, minV, maxV, currentTs, userId, cReqId)
+              (invId, reqPQSup, minV, maxV, currentTs, userId, cReqId)
         else withLocalDisplayName db userId displayName $ \ldn ->
           Right <$> do
             DB.execute
               db
               [sql|
                 UPDATE contact_requests
-                SET agent_invitation_id = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
+                SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
-              (invId, minV, maxV, ldn, currentTs, userId, cReqId)
+              (invId, reqPQSup, minV, maxV, ldn, currentTs, userId, cReqId)
             safeDeleteLDN db user oldLdn
       where
         updateProfile currentTs =
@@ -665,7 +668,7 @@ getContactRequest db User {userId} contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)

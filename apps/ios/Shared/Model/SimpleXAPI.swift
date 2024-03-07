@@ -1834,7 +1834,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .contactPQEnabled(user, contact, _):
         if active(user) {
             await MainActor.run {
-                m.updateContact(contact) // or updateContactConnectionStats?
+                m.updateContact(contact)
             }
         }
     default:
