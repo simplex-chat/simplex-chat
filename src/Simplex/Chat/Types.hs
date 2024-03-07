@@ -46,7 +46,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
@@ -1142,7 +1142,7 @@ instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
 
-newtype AgentSndFileId = AgentSndFileId ConnId
+newtype AgentSndFileId = AgentSndFileId SndFileId
   deriving (Eq, Show)
 
 instance StrEncoding AgentSndFileId where
@@ -1161,7 +1161,7 @@ instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromFie
 
 instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
 
-newtype AgentRcvFileId = AgentRcvFileId ConnId
+newtype AgentRcvFileId = AgentRcvFileId RcvFileId
   deriving (Eq, Show)
 
 instance StrEncoding AgentRcvFileId where
