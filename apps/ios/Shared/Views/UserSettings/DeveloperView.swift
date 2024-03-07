@@ -12,6 +12,7 @@ import SimpleXChat
 struct DeveloperView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
+    @AppStorage(GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED, store: groupDefaults) private var pqExperimentalEnabled = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -42,7 +43,31 @@ struct DeveloperView: View {
                 } footer: {
                     (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
                 }
+
+                if developerTools {
+                    Section {
+                        settingsRow("key") {
+                            Toggle("Post-quantum E2EE", isOn: $pqExperimentalEnabled)
+                                .onChange(of: pqExperimentalEnabled) {
+                                    setPQExperimentalEnabled($0)
+                                }
+                        }
+                    } header: {
+                        Text(String("Experimental"))
+                    } footer: {
+                        Text(String("In this version applies only to new contacts."))
+                    }
+                }
             }
+        }
+    }
+
+    private func setPQExperimentalEnabled(_ enable: Bool) {
+        do {
+            try apiSetPQEnabled(enable)
+        } catch let error {
+            let err = responseError(error)
+            logger.error("apiSetPQEnabled \(err)")
         }
     }
 }

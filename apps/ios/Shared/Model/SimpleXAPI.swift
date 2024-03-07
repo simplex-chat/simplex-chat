@@ -258,6 +258,18 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     throw r
 }
 
+func apiSetPQEnabled(_ enable: Bool) throws {
+    let r = chatSendCmdSync(.apiSetPQEnabled(enable: enable))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiAllowContactPQ(_ contactId: Int64) async throws -> Contact {
+    let r = await chatSendCmd(.apiAllowContactPQ(contactId: contactId))
+    if case let .contactPQAllowed(_, contact) = r { return contact }
+    throw r
+}
+
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -1244,6 +1256,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
+    try apiSetPQEnabled(pqExperimentalEnabledDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
@@ -1816,6 +1829,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     switchToLocalSession()
                 }
+            }
+        }
+    case let .contactPQEnabled(user, contact, _):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact) // or updateContactConnectionStats?
             }
         }
     default:
