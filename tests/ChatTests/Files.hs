@@ -52,9 +52,10 @@ chatFileTests = do
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
   describe "file transfer over XFTP without chat items" $ do
     it "send and receive small standalone file" testXFTPStandaloneSmall
-    it "send and receive large standalone file" testXFTPStandaloneLarge
-    it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
     it "send and receive small standalone file with extra information" testXFTPStandaloneSmallInfo
+    it "send and receive large standalone file" testXFTPStandaloneLarge
+    it "send and receive large standalone file with extra information" testXFTPStandaloneLargeInfo
+    it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
     it "removes received temporary files" testXFTPStandaloneCancelRcv
 
@@ -917,6 +918,40 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     _uri2 <- getTermLine src
     _uri3 <- getTermLine src
     _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (testfile.out)"
+    srcBody <- B.readFile "./tests/tmp/testfile.in"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneLargeInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLargeInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    let info = J.object ["secret" J..= J.String "*********"]
+    let sf = StandaloneFile {fileInfo = Just info, fileSource = CryptoFile "./tests/tmp/testfile.in" Nothing}
+    src ##> ("/_upload 1 " <> LB.unpack (J.encode sf))
+    src <## "started standalone uploading file 1 (testfile.in)"
+
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "info"
+    dst ##> ("/_download info " <> uri)
+    dst <## "{\"secret\":\"*********\"}"
 
     logNote "receiving"
     let dstFile = "./tests/tmp/testfile.out"
