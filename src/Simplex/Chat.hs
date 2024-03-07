@@ -3518,7 +3518,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case (pqSupport, pqSupport') of
         (PQSupportOn, PQSupportOff) -> do
           withStore' $ \db -> updateConnSupportPQ db connId pqSupport'
-          pure (conn {pqSupport = pqSupport'} :: Connection)
+          pure (conn {pqSupport = pqSupport', pqEncryption = CR.pqSupportToEnc pqSupport'} :: Connection)
         (PQSupportOff, PQSupportOn) -> do
           messageWarning "processCONFpqSupport: unexpected PQSupportOn"
           pure conn
