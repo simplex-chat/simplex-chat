@@ -103,6 +103,7 @@ struct ChatInfoView: View {
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED, store: groupDefaults) private var pqExperimentalEnabled = false
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
@@ -167,18 +168,18 @@ struct ChatInfoView: View {
                 }
                 .disabled(!contact.ready || !contact.active)
 
-                if developerTools,
+                if pqExperimentalEnabled,
                    let conn = contact.activeConn {
                     Section {
-                        infoRow("PQ encryption", conn.connPQEnabled ? "Enabled" : "Disabled")
+                        infoRow(Text(String("PQ E2E encryption")), conn.connPQEnabled ? "Enabled" : "Disabled")
                         if !conn.enablePQ {
                             allowPQButton()
                         }
                     } header: {
-                        Text("Post-quantum encryption")
+                        Text(String("Post-quantum E2E encryption"))
                     } footer: {
                         if !conn.enablePQ {
-                            Text("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it.")
+                            Text(String("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it."))
                         }
                     }
                 }
@@ -433,7 +434,7 @@ struct ChatInfoView: View {
         Button {
             alert = .allowContactPQEncryptionAlert
         } label: {
-            Label("Allow PQ encryption", systemImage: "exclamationmark.triangle")
+            Label(String("Allow PQ encryption"), systemImage: "exclamationmark.triangle")
                 .foregroundColor(.orange)
         }
     }
@@ -593,9 +594,9 @@ struct ChatInfoView: View {
 
     func allowContactPQEncryptionAlert() -> Alert {
         Alert(
-            title: Text("Allow post-quantum encryption?"),
-            message: Text("This is an experimental feature, it is not recommended to enable it for high importance communications. It may result in connection errors!"),
-            primaryButton: .destructive(Text("Allow"), action: allowContactPQEncryption),
+            title: Text(String("Allow post-quantum encryption?")),
+            message: Text(String("This is an experimental feature, it is not recommended to enable it for high importance communications. It may result in connection errors!")),
+            primaryButton: .destructive(Text(String("Allow")), action: allowContactPQEncryption),
             secondaryButton: .cancel()
         )
     }

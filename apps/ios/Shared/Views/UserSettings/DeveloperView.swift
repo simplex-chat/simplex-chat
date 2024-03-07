@@ -47,15 +47,15 @@ struct DeveloperView: View {
                 if developerTools {
                     Section {
                         settingsRow("key") {
-                            Toggle("Post-quantum encryption", isOn: $pqExperimentalEnabled)
+                            Toggle("Post-quantum E2EE", isOn: $pqExperimentalEnabled)
                                 .onChange(of: pqExperimentalEnabled) {
                                     setPQExperimentalEnabled($0)
                                 }
                         }
                     } header: {
-                        Text("Experimental")
+                        Text(String("Experimental"))
                     } footer: {
-                        Text("In this version applies only to new connections.")
+                        Text(String("In this version applies only to new connections."))
                     }
                 }
             }
