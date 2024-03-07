@@ -55,7 +55,7 @@ struct DeveloperView: View {
                     } header: {
                         Text(String("Experimental"))
                     } footer: {
-                        Text(String("In this version applies only to new connections."))
+                        Text(String("In this version applies only to new contacts."))
                     }
                 }
             }
