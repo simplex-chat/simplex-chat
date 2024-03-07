@@ -41,8 +41,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
-import Simplex.Messaging.Crypto.Ratchet (pattern VersionE2E)
-import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff, pattern VersionE2E)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -142,8 +141,8 @@ testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
   testAgentCfg
     { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = \_ -> prevRange $ supportedSMPAgentVRange CR.PQEncOff,
-      e2eEncryptVRange = \_ -> prevRange $ CR.supportedE2EEncryptVRange CR.PQEncOff,
+      smpAgentVRange = \_ -> prevRange $ supportedSMPAgentVRange PQSupportOff,
+      e2eEncryptVRange = \_ -> prevRange $ supportedE2EEncryptVRange PQSupportOff,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 

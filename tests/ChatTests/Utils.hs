@@ -21,7 +21,7 @@ import Data.String
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
-import Simplex.Chat.Messages.CIContent (e2eeInfoNoPQText)
+import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
@@ -30,7 +30,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -204,7 +204,7 @@ chatFeatures'' =
   ]
 
 e2eeInfoNoPQStr :: String
-e2eeInfoNoPQStr = T.unpack e2eeInfoNoPQText
+e2eeInfoNoPQStr = T.unpack e2eInfoNoPQText
 
 lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
@@ -584,7 +584,7 @@ checkActionDeletesFile file action = do
 
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
-  "peer chat protocol version range: " <> vRangeStr (supportedChatVRange PQEncOff)
+  "peer chat protocol version range: " <> vRangeStr (supportedChatVRange PQSupportOff)
 
 vRangeStr :: VersionRange v -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"

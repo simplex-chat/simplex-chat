@@ -72,8 +72,8 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, PQSupport (..))
 import Simplex.Messaging.Encoding.String
-import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
@@ -122,7 +122,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    chatVRange :: CR.PQEncryption -> VersionRangeChat,
+    chatVRange :: PQSupport -> VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
@@ -207,7 +207,7 @@ data ChatController = ChatController
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool,
-    pqExperimentalEnabled :: TVar PQFlag -- TODO remove in 5.7
+    pqExperimentalEnabled :: TVar PQSupport -- TODO v5.7 remove
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -244,7 +244,7 @@ data ChatCommand
   | SetRemoteHostsFolder FilePath
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
-  | APISetPQEnabled Bool
+  | APISetPQEnabled PQSupport
   | APIAllowContactPQ ContactId
   | APIExportArchive ArchiveConfig
   | ExportArchive
@@ -701,7 +701,7 @@ data ChatResponse
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
   | CRContactPQAllowed {user :: User, contact :: Contact}
-  | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: Bool}
+  | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}

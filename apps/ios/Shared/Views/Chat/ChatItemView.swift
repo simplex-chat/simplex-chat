@@ -111,6 +111,11 @@ struct ChatItemContentView<Content: View>: View {
         case .rcvModerated: deletedItemView()
         case .rcvBlocked: deletedItemView()
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
+        // TODO proper items
+        case .sndDirectE2EEInfo: CIEventView(eventText: Text(chatItem.content.text))
+        case .rcvDirectE2EEInfo: CIEventView(eventText: Text(chatItem.content.text))
+        case .sndGroupE2EEInfo: CIEventView(eventText: Text(chatItem.content.text))
+        case .rcvGroupE2EEInfo: CIEventView(eventText: Text(chatItem.content.text))
         }
     }
 

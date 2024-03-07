@@ -49,6 +49,7 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
@@ -335,6 +336,8 @@ data UserContactRequest = UserContactRequest
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId
+    -- TODO PQ save pqSupport from REQ to database
+    -- pqSupport :: PQSupport
   }
   deriving (Eq, Show)
 
@@ -1335,8 +1338,6 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
-type PQFlag = Bool
-
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
@@ -1353,9 +1354,10 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
-    enablePQ :: PQFlag,
-    pqSndEnabled :: Maybe PQFlag,
-    pqRcvEnabled :: Maybe PQFlag,
+    pqSupport :: PQSupport,
+    pqEncryption :: PQEncryption,
+    pqSndEnabled :: Maybe PQEncryption,
+    pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }
@@ -1391,8 +1393,8 @@ connIncognito :: Connection -> Bool
 connIncognito Connection {customUserProfileId} = isJust customUserProfileId
 
 connPQEnabled :: Connection -> Bool
-connPQEnabled Connection {pqSndEnabled, pqRcvEnabled} =
-  pqSndEnabled == Just True && pqRcvEnabled == Just True
+connPQEnabled Connection {pqSndEnabled = Just (PQEncryption s), pqRcvEnabled = Just (PQEncryption r)} = s && r
+connPQEnabled _ = False
 
 data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,
