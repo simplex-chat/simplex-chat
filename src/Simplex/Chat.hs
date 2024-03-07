@@ -102,7 +102,7 @@ import Simplex.Messaging.Compression (withCompressCtx)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption(..), PQSupport(..), pattern PQEncOff, pattern PQSupportOff)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -1307,7 +1307,7 @@ processChatCommand' vr = \case
     ct <- withStore $ \db -> getContact db user contactId
     case contactConn ct of
       Just conn@Connection {enablePQ} -> do
-        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (aConnId conn) (CR.PQEncryption enablePQ) force
+        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (aConnId conn) (PQSupport enablePQ) force
         createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss Nothing) Nothing
         pure $ CRContactRatchetSyncStarted user ct cStats
       Nothing -> throwChatError $ CEContactNotActive ct
@@ -1315,7 +1315,7 @@ processChatCommand' vr = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do
-        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId CR.PQEncOff force
+        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
         createInternalChatItem user (CDGroupSnd g) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
         pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive
@@ -1405,7 +1405,7 @@ processChatCommand' vr = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
     enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing (CR.IKNoPQ $ CR.PQEncryption enablePQ) subMode
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing (CR.IKNoPQ $ PQSupport enablePQ) subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode enablePQ
     pure $ CRInvitation user cReq conn
   AddContact incognito -> withUser $ \User {userId} ->
@@ -1435,7 +1435,7 @@ processChatCommand' vr = \case
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
     enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
     dm <- directMessagePQ (CR.PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
-    connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm (CR.PQEncryption enablePQ) subMode
+    connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm (PQSupport enablePQ) subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode enablePQ
     pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
@@ -1652,7 +1652,7 @@ processChatCommand' vr = \case
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
           dm <- directMessage $ XGrpAcpt membershipMemId
-          agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm CR.PQEncOff subMode
+          agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm PQSupportOff subMode
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -2163,7 +2163,7 @@ processChatCommand' vr = \case
       where
         connect' groupLinkId cReqHash xContactId inGroup = do
           enablePQ <- (not inGroup &&) <$> (readTVarIO =<< asks pqExperimentalEnabled)
-          (connId, incognitoProfile, subMode) <- requestContact user incognito cReq xContactId inGroup (CR.PQEncryption enablePQ)
+          (connId, incognitoProfile, subMode) <- requestContact user incognito cReq xContactId inGroup (PQSupport enablePQ)
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode enablePQ
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
@@ -2171,18 +2171,20 @@ processChatCommand' vr = \case
       withChatLock "connectViaContact" $ do
         newXContactId <- XContactId <$> drgRandomBytes 16
         enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
-        (connId, incognitoProfile, subMode) <- requestContact user incognito cReq newXContactId False (CR.PQEncryption enablePQ)
+        (connId, incognitoProfile, subMode) <- requestContact user incognito cReq newXContactId False (PQSupport enablePQ)
         let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
         ct' <- withStore $ \db -> createAddressContactConnection db user ct connId cReqHash newXContactId incognitoProfile subMode enablePQ
         pure $ CRSentInvitationToContact user ct' incognitoProfile
-    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> PQEncryption -> m (ConnId, Maybe Profile, SubscriptionMode)
-    requestContact user incognito cReq xContactId inGroup pqEnc = do
+    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> PQSupport -> m (ConnId, Maybe Profile, SubscriptionMode)
+    requestContact user incognito cReq xContactId inGroup pqSupport = do
       -- [incognito] generate profile to send
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- directMessagePQ pqEnc maxConnInfoLength (XContact profileToSend $ Just xContactId)
+      -- TODO PQ figure out directMessagePQ type
+      let PQSupport pq = pqSupport
+      dm <- directMessagePQ (PQEncryption pq) maxConnInfoLength (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
-      connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqEnc subMode
+      connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSupport subMode
       pure (connId, incognitoProfile, subMode)
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
@@ -2880,14 +2882,14 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   enablePQ <- readTVarIO =<< asks pqExperimentalEnabled
   dm <- directMessagePQ (CR.PQEncryption enablePQ) maxConnInfoLength $ XInfo profileToSend
-  acId <- withAgent $ \a -> acceptContact a True invId dm (CR.PQEncryption enablePQ) subMode
+  acId <- withAgent $ \a -> acceptContact a True invId dm (PQSupport enablePQ) subMode
   withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode enablePQ contactUsed
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> PQFlag -> m Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqEnabled = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
-  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode (CR.PQEncryption pqEnabled)
+  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode (PQSupport pqEnabled)
   withStore' $ \db -> do
     ct@Contact {activeConn} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode pqEnabled contactUsed
     forM_ activeConn $ \Connection {connId} -> setCommandConnId db user cmdId connId
@@ -2915,7 +2917,7 @@ acceptGroupJoinRequestAsync
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
-    connIds <- agentAcceptContactAsync user True invId msg subMode (CR.PQEncryption False)
+    connIds <- agentAcceptContactAsync user True invId msg subMode (PQSupport False)
     withStore $ \db -> do
       liftIO $ createAcceptedMemberConnection db user connIds ucr groupMemberId subMode
       getGroupMemberById db user groupMemberId
@@ -6416,7 +6418,7 @@ createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
 joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> m (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo CR.PQEncOff subMode
+  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo PQSupportOff subMode
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
@@ -6426,11 +6428,13 @@ allowAgentConnectionAsync user conn@Connection {connId, enablePQ} confId msg = d
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> CR.PQEncryption -> m (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs invId msg subMode pqEnc = do
+agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> PQSupport -> m (CommandId, ConnId)
+agentAcceptContactAsync user enableNtfs invId msg subMode pqSupport = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  dm <- directMessagePQ pqEnc maxConnInfoLength msg
-  connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqEnc subMode
+  -- TODO PQ figure out directMessagePQ type
+  let PQSupport pq = pqSupport
+  dm <- directMessagePQ (PQEncryption pq) maxConnInfoLength msg
+  connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqSupport subMode
   pure (cmdId, connId)
 
 deleteAgentConnectionAsync :: ChatMonad m => User -> ConnId -> m ()
