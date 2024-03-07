@@ -62,7 +62,8 @@ fun MigrateToAnotherDeviceView(close: () -> Unit) {
   val backDisabled = remember {
     derivedStateOf {
       migrationState.value is MigrationToState.DatabaseInit ||
-      migrationState.value is MigrationToState.LinkCreation ||
+          migrationState.value is MigrationToState.Archiving ||
+          migrationState.value is MigrationToState.LinkCreation ||
           migrationState.value is MigrationToState.LinkShown ||
           migrationState.value is MigrationToState.Finished
     }
