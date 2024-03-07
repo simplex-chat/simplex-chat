@@ -108,6 +108,7 @@ struct MigrateToAnotherDevice: View {
         })
         .onChange(of: migrationState) { state in
             backDisabled = switch migrationState {
+            case .archiving: true
             case .linkCreation: true
             case .linkShown: true
             case .finished: true
