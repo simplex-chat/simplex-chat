@@ -453,7 +453,6 @@ data ChatCommand
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
-  -- | APIUploadStandaloneFile UserId CryptoFile
   | APIUploadStandaloneFile UserId StandaloneFile
   | APIDownloadStandaloneFile UserId FileDescriptionURI CryptoFile
   | APIStandaloneFileInfo FileDescriptionURI
