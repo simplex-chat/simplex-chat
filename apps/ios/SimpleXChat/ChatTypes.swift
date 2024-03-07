@@ -3608,7 +3608,7 @@ public enum RcvConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase)
     case ratchetSync(syncStatus: RatchetSyncState)
     case verificationCodeReset
-    case pQEnabled(enabled: Bool) // pqEnabled ?
+    case pqEnabled(enabled: Bool)
 
     var text: String {
         switch self {
@@ -3621,7 +3621,7 @@ public enum RcvConnEvent: Decodable {
             return ratchetSyncStatusToText(syncStatus)
         case .verificationCodeReset:
             return NSLocalizedString("security code changed", comment: "chat item text")
-        case let .pQEnabled(enabled):
+        case let .pqEnabled(enabled):
             if enabled {
                 return NSLocalizedString("enabled post-quantum encryption", comment: "chat item text")
             } else {
@@ -3644,7 +3644,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
     case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
-    case pQEnabled(enabled: Bool) // pqEnabled ?
+    case pqEnabled(enabled: Bool)
 
     var text: String {
         switch self {
@@ -3668,7 +3668,7 @@ public enum SndConnEvent: Decodable {
                 }
             }
             return ratchetSyncStatusToText(syncStatus)
-        case let .pQEnabled(enabled):
+        case let .pqEnabled(enabled):
             if enabled {
                 return NSLocalizedString("enabled post-quantum encryption", comment: "chat item text")
             } else {
