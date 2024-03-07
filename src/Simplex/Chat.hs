@@ -3496,21 +3496,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     agentMsgConnStatus :: ACommand 'Agent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
-      INFO _ -> Just ConnSndReady
+      INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg connEntity conn@Connection {connId, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
-        CONF confId _ connInfo -> do
+        CONF confId pqSupport _ connInfo -> do
+          -- TODO PQ use pqSupport in allowAgentConnectionAsync? set connection pq_enabled to pqSupport?
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
           let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing False
           conn' <- saveConnInfo conn connInfo
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
-        INFO connInfo -> do
+        INFO pqSupport connInfo -> do
+          -- TODO PQ set connection pq_enabled to pqSupport?
           _conn' <- saveConnInfo conn connInfo
           pure ()
         MSG meta _msgFlags msgBody -> do
@@ -3588,7 +3590,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         RCVD msgMeta msgRcpt ->
           withAckMessage' agentConnId conn msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
-        CONF confId _ connInfo -> do
+        CONF confId pqSupport _ connInfo -> do
+          -- TODO PQ set connection pq_enabled to pqSupport? (only for XInfo branch?)
+          -- TODO    can use uncoditionally, as XGrpMemInfo is from old group protocol?
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
@@ -3606,7 +3610,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               allowAgentConnectionAsync user conn' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
-        INFO connInfo -> do
+        INFO pqSupport connInfo -> do
+          -- TODO PQ set connection pq_enabled to pqSupport? (only for XInfo, XOk branch?)
+          -- TODO    can use uncoditionally, as XGrpMemInfo is from old group protocol?
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           _conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
@@ -3758,7 +3764,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
-      CONF confId _ connInfo -> do
+      CONF confId _pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         conn' <- updatePeerChatVRange conn chatVRange
         case memberCategory m of
@@ -3782,7 +3788,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
-      INFO connInfo -> do
+      INFO _pqSupport connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         _conn' <- updatePeerChatVRange conn chatVRange
         case chatMsgEvent of
@@ -4130,7 +4136,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
-        CONF confId _ connInfo -> do
+        CONF confId _pqSupport _ connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
@@ -4199,7 +4205,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- SMP CONF for RcvFileConnection happens for group file protocol
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
-        CONF confId _ connInfo -> do
+        CONF confId _pqSupport _ connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
@@ -4260,7 +4266,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
-      REQ invId _ connInfo -> do
+      REQ invId pqSupport _ connInfo -> do
+        -- TODO PQ pass pqSupport to profileContactRequest? (ignore for group links)
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_
