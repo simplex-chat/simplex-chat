@@ -25,7 +25,7 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -116,14 +116,14 @@ chatDirectTests = do
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "negotiate connection peer chat protocol version range" $ do
     describe "peer version range correctly set for new connection via invitation" $ do
-      testInvVRange (supportedChatVRange PQEncOff) (supportedChatVRange PQEncOff)
-      testInvVRange (supportedChatVRange PQEncOff) vr11
-      testInvVRange vr11 (supportedChatVRange PQEncOff)
+      testInvVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
+      testInvVRange (supportedChatVRange PQSupportOff) vr11
+      testInvVRange vr11 (supportedChatVRange PQSupportOff)
       testInvVRange vr11 vr11
     describe "peer version range correctly set for new connection via contact request" $ do
-      testReqVRange (supportedChatVRange PQEncOff) (supportedChatVRange PQEncOff)
-      testReqVRange (supportedChatVRange PQEncOff) vr11
-      testReqVRange vr11 (supportedChatVRange PQEncOff)
+      testReqVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
+      testReqVRange (supportedChatVRange PQSupportOff) vr11
+      testReqVRange vr11 (supportedChatVRange PQSupportOff)
       testReqVRange vr11 vr11
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
@@ -2700,7 +2700,7 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQEncOff)
+      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
 
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2709,10 +2709,10 @@ testUpdatePeerChatVRange tmp =
       alice <# "bob> hello 1"
 
       alice ##> "/i bob"
-      contactInfoChatVRange alice (supportedChatVRange PQEncOff)
+      contactInfoChatVRange alice (supportedChatVRange PQSupportOff)
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQEncOff)
+      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
 
     withTestChatCfg tmp cfg11 "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2724,7 +2724,7 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQEncOff)
+      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
   where
     cfg11 = testCfg {chatVRange = const vr11} :: ChatConfig
 
