@@ -54,6 +54,7 @@ import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nomina
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
+import Foreign.C.Types (CSize (..))
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -604,11 +605,11 @@ processChatCommand' vr = \case
       Just conn@Connection {connId, pqEncryption} -> case pqEncryption of
         PQEncOn -> pure $ chatCmdError (Just user) "already allowed"
         PQEncOff -> do
-            -- TODO PQ add / change database field(s)
-            withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn
-            let conn' = conn {pqSupport = PQSupportOn, pqEncryption = PQEncOn} :: Connection
-                ct' = ct {activeConn = Just conn'} :: Contact
-            pure $ CRContactPQAllowed user ct'
+          -- TODO PQ add / change database field(s)
+          withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn
+          let conn' = conn {pqSupport = PQSupportOn, pqEncryption = PQEncOn} :: Connection
+              ct' = ct {activeConn = Just conn'} :: Contact
+          pure $ CRContactPQAllowed user ct'
       Nothing -> throwChatError $ CEContactNotActive ct
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
@@ -1431,9 +1432,7 @@ processChatCommand' vr = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
     pqSup <- chatReadVar pqExperimentalEnabled
-    -- TODO PQ use connRequestPQSupport
-    -- pqSup' <- fromMaybe PQSupportOff <$> (connRequestPQSupport pqSup cReq)
-    let pqSup' = PQSupportOff
+    pqSup' <- fromMaybe PQSupportOff <$> withAgent' (\a -> connRequestPQSupport a pqSup cReq)
     dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
     connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode pqSup'
@@ -2187,9 +2186,7 @@ processChatCommand' vr = \case
       (pqSup', pqSupCompression) <- case pqSup of
         PQSupportOff -> pure (PQSupportOff, PQSupportOff)
         PQSupportOn -> do
-          -- TODO PQ use connRequestPQSupport
-          -- pqSupCompression <- fromMaybe PQSupportOff <$> (connRequestPQSupport pqSup cReq)
-          let pqSupCompression = PQSupportOff
+          pqSupCompression <- fromMaybe PQSupportOff <$> withAgent' (\a -> connRequestPQSupport a pqSup cReq)
           pure (PQSupportOn, pqSupCompression)
       dm <- encodeConnInfoPQ pqSupCompression (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
@@ -6143,13 +6140,12 @@ encodeConnInfoPQ pqSup chatMsgEvent = do
       r = encodeChatMessage maxConnInfoLength ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
     ECMEncoded encodedBody
-      | shouldCompress -> compressedBatchMsgBody encodedBody
+      | shouldCompress -> liftIO $ compressedBatchMsgBody encodedBody
       | otherwise -> pure encodedBody
     ECMLarge -> throwChatError $ CEException "large message"
   where
     compressedBatchMsgBody msgBody =
-      liftEitherError (ChatError . CEException . mappend "compressedBatchMsgBody: ") $
-        withCompressCtx (B.length msgBody) (`compressedBatchMsgBody_` msgBody)
+      withCompressCtx (CSize $ fromIntegral $ B.length msgBody) (`compressedBatchMsgBody_` msgBody)
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -6174,13 +6170,13 @@ deliverMessagesB msgReqs = do
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx maxRawMsgLength $ \cctx ->
+    compressBodies = liftIO $ withCompressCtx (CSize $ fromIntegral maxRawMsgLength) $ \cctx ->
       forM msgReqs $ \case
         -- TODO PQ combine pqSupport and pqEncryption to one type:
         -- data PQMode = PQDisabled | PQSupported PQEncryption
         mr@(Right (conn@Connection {pqSupport, pqEncryption}, msgFlags, msgBody, msgId)) -> case pqSupport `CR.pqSupportOrEnc` pqEncryption of
           PQSupportOn ->
-            bimap (ChatError . CEException) (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
+            Right . (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
           PQSupportOff -> pure mr
         skip -> pure skip
     toAgent = \case

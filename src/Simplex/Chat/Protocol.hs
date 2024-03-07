@@ -564,8 +564,8 @@ parseChatMessages s = case B.head s of
       Left e -> [Left e]
       Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxRawMsgLength compressed
 
-compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO (Either String ByteString)
-compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$$> compress ctx msgBody
+compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO ByteString
+compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$> compress ctx msgBody
 
 markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
