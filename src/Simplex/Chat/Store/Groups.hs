@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -141,6 +142,7 @@ import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
@@ -184,7 +186,7 @@ createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName}
       "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, memberRole, True, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode False
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode PQSupportOff
 
 getGroupLinkConnection :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO Connection
 getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
@@ -896,7 +898,7 @@ createAcceptedMemberConnection
   groupMemberId
   subMode = do
     createdAt <- liftIO getCurrentTime
-    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId (fromJVersionRange cReqChatVRange) Nothing (Just userContactLinkId) Nothing 0 createdAt subMode False
+    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId (fromJVersionRange cReqChatVRange) Nothing (Just userContactLinkId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
 getContactViaMember :: DB.Connection -> User -> GroupMember -> ExceptT StoreError IO Contact
@@ -1218,7 +1220,7 @@ createIntroReMember
     currentTs <- liftIO getCurrentTime
     newMember <- case directConnIds of
       Just (directCmdId, directAgentConnId) -> do
-        Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId mcvr memberContactId Nothing customUserProfileId cLevel currentTs subMode False
+        Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId mcvr memberContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff
         liftIO $ setCommandConnId db user directCmdId directConnId
         (localDisplayName, contactId, memProfileId) <- createContact_ db userId memberProfile "" (Just groupId) currentTs False
         liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, directConnId)
@@ -1239,7 +1241,7 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId mcvr viaContactId cLevel currentTs subMode
   setCommandConnId db user groupCmdId groupConnId
   forM_ directConnIds $ \(directCmdId, directAgentConnId) -> do
-    Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId mcvr viaContactId Nothing customUserProfileId cLevel currentTs subMode False
+    Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId mcvr viaContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff
     setCommandConnId db user directCmdId directConnId
     contactId <- createMemberContact_ directConnId currentTs
     updateMember_ contactId currentTs
@@ -1271,7 +1273,7 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionRangeChat -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange viaContact connLevel currentTs subMode =
-  createConnection_ db userId ConnMember (Just groupMemberId) agentConnId peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode False
+  createConnection_ db userId ConnMember (Just groupMemberId) agentConnId peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
 getViaGroupMember :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
 getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
@@ -1932,7 +1934,8 @@ createMemberContact
               localAlias = "",
               createdAt = currentTs,
               connectionCode = Nothing,
-              enablePQ = False,
+              pqSupport = PQSupportOff,
+              pqEncryption = PQEncOff,
               pqSndEnabled = Nothing,
               pqRcvEnabled = Nothing,
               authErrCounter = 0
@@ -2063,7 +2066,8 @@ createMemberContactConn_
           localAlias = "",
           createdAt = currentTs,
           connectionCode = Nothing,
-          enablePQ = False,
+          pqSupport = PQSupportOff,
+          pqEncryption = PQEncOff,
           pqSndEnabled = Nothing,
           pqRcvEnabled = Nothing,
           authErrCounter = 0

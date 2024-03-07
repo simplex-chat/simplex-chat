@@ -114,6 +114,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import System.FilePath (takeFileName)
 
@@ -427,10 +428,11 @@ lookupChatRefByFileId db User {userId} fileId =
         |]
         (userId, fileId)
 
+-- TODO v6.0 remove
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode False
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do

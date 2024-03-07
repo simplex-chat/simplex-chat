@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
@@ -36,6 +37,8 @@ import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQSupportOff)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
@@ -148,12 +151,13 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, Bool, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Maybe PQFlag, Maybe PQFlag, Maybe PQFlag, Int, VersionChat, VersionChat)
+-- TODO PQ nullable?
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, Bool, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Int, VersionChat, VersionChat)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQFlag, Maybe PQFlag, Maybe PQFlag, Maybe Int, Maybe VersionChat, Maybe VersionChat)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe VersionChat, Maybe VersionChat)
 
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, enablePQ_, pqSndEnabled, pqRcvEnabled, authErrCounter, minVer, maxVer)) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqEncryption_, pqSndEnabled, pqRcvEnabled, authErrCounter, minVer, maxVer)) =
   Connection
     { connId,
       agentConnId = AgentConnId acId,
@@ -170,7 +174,9 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
       localAlias,
       entityId = entityId_ connType,
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_,
-      enablePQ = fromMaybe False enablePQ_,
+      -- TODO PQ add field
+      pqSupport = maybe PQSupportOff CR.pqEncToSupport pqEncryption_,
+      pqEncryption = fromMaybe PQEncOff pqEncryption_,
       pqSndEnabled,
       pqRcvEnabled,
       authErrCounter,
@@ -189,11 +195,12 @@ toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, v
   Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, enablePQ_, pqSndEnabled_, pqRcvEnabled_, authErrCounter, minVer, maxVer))
 toMaybeConnection _ = Nothing
 
-createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQFlag -> IO Connection
-createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode enablePQ = do
+createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> IO Connection
+createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
     maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   let viaGroupLink = isJust viaLinkGroupId
+  -- TODO PQ store pq_support
   DB.execute
     db
     [sql|
@@ -205,7 +212,7 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
     |]
     ( (userId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, customUserProfileId, ConnNew, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
-        :. (minV, maxV, subMode == SMOnlyCreate, enablePQ)
+        :. (minV, maxV, subMode == SMOnlyCreate, pqSup)
     )
   connId <- insertedRowId db
   pure
@@ -226,7 +233,8 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
         localAlias = "",
         createdAt = currentTs,
         connectionCode = Nothing,
-        enablePQ,
+        pqSupport = pqSup,
+        pqEncryption = CR.pqSupportToEnc pqSup,
         pqSndEnabled = Nothing,
         pqRcvEnabled = Nothing,
         authErrCounter = 0
@@ -256,7 +264,8 @@ allowConnEnablePQ db connId =
     |]
     (Only connId)
 
-updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQFlag -> IO ()
+-- TODO PQ possibly combine all functions
+updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQEncryption -> IO ()
 updateConnPQSndEnabled db connId pqSndEnabled =
   DB.execute
     db
@@ -267,7 +276,7 @@ updateConnPQSndEnabled db connId pqSndEnabled =
     |]
     (pqSndEnabled, connId)
 
-updateConnPQRcvEnabled :: DB.Connection -> Int64 -> PQFlag -> IO ()
+updateConnPQRcvEnabled :: DB.Connection -> Int64 -> PQEncryption -> IO ()
 updateConnPQRcvEnabled db connId pqRcvEnabled =
   DB.execute
     db
@@ -278,7 +287,7 @@ updateConnPQRcvEnabled db connId pqRcvEnabled =
     |]
     (pqRcvEnabled, connId)
 
-updateConnPQEnabledCON :: DB.Connection -> Int64 -> PQFlag -> IO ()
+updateConnPQEnabledCON :: DB.Connection -> Int64 -> PQEncryption -> IO ()
 updateConnPQEnabledCON db connId pqEnabled =
   DB.execute
     db

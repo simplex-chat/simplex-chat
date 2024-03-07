@@ -47,7 +47,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Compression (CompressCtx, compress, decompressBatch)
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOn, pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -63,10 +63,11 @@ currentChatVersion = VersionChat 7
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 -- TODO remove parameterization in 5.7
-supportedChatVRange :: PQEncryption -> VersionRangeChat
+supportedChatVRange :: PQSupport -> VersionRangeChat
 supportedChatVRange pq = mkVersionRange (VersionChat 1) $ case pq of
-  PQEncOn -> compressedBatchingVersion
-  PQEncOff -> currentChatVersion
+  PQSupportOn -> compressedBatchingVersion
+  PQSupportOff -> currentChatVersion
+{-# INLINE supportedChatVRange #-}
 
 -- version range that supports skipping establishing direct connections in a group
 groupNoDirectVRange :: VersionRangeChat
@@ -522,24 +523,26 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 maxRawMsgLength :: Int
 maxRawMsgLength = 15610
 
-maxEncodedMsgLength :: PQFlag -> Int
+maxEncodedMsgLength :: PQSupport -> Int
 maxEncodedMsgLength = \case
-  True -> 13410 -- reduced by 2200 (original message should be compressed)
-  False -> maxRawMsgLength
+  PQSupportOn -> 13410 -- reduced by 2200 (original message should be compressed)
+  PQSupportOff -> maxRawMsgLength
+{-# INLINE maxEncodedMsgLength #-}
 
-maxConnInfoLength :: PQFlag -> Int
+maxConnInfoLength :: PQSupport -> Int
 maxConnInfoLength = \case
-  True -> 10902 -- reduced by 3700
-  False -> 14602 -- 15610 - delta in agent between MSG and INFO
+  PQSupportOn -> 10902 -- reduced by 3700
+  PQSupportOff -> 14602 -- 15610 - delta in agent between MSG and INFO
+{-# INLINE maxConnInfoLength #-}
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
-encodeChatMessage :: MsgEncodingI e => (PQFlag -> Int) -> ChatMessage e -> EncodedChatMessage
+encodeChatMessage :: MsgEncodingI e => (PQSupport -> Int) -> ChatMessage e -> EncodedChatMessage
 encodeChatMessage getMaxSize msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = LB.toStrict $ J.encode m
-      if B.length body > getMaxSize False
+      if B.length body > getMaxSize PQSupportOff
         then ECMLarge
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
