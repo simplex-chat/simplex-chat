@@ -52,7 +52,7 @@ import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$$>), (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
@@ -65,41 +65,37 @@ currentChatVersion = VersionChat 7
 -- TODO remove parameterization in 5.7
 supportedChatVRange :: PQSupport -> VersionRangeChat
 supportedChatVRange pq = mkVersionRange (VersionChat 1) $ case pq of
-  PQSupportOn -> compressedBatchingVersion
+  PQSupportOn -> pqEncryptionCompressionVersion
   PQSupportOff -> currentChatVersion
 {-# INLINE supportedChatVRange #-}
 
--- version range that supports skipping establishing direct connections in a group
-groupNoDirectVRange :: VersionRangeChat
-groupNoDirectVRange = mkVersionRange (VersionChat 2) currentChatVersion
-
--- version range that supports establishing direct connection via x.grp.direct.inv with a group member
-xGrpDirectInvVRange :: VersionRangeChat
-xGrpDirectInvVRange = mkVersionRange (VersionChat 2) currentChatVersion
+-- version range that supports skipping establishing direct connections in a group and establishing direct connection via x.grp.direct.inv
+groupDirectInvVersion :: VersionChat
+groupDirectInvVersion = VersionChat 2
 
 -- version range that supports joining group via group link without creating direct contact
-groupLinkNoContactVRange :: VersionRangeChat
-groupLinkNoContactVRange = mkVersionRange (VersionChat 3) currentChatVersion
+groupFastLinkJoinVersion :: VersionChat
+groupFastLinkJoinVersion = VersionChat 3
 
 -- version range that supports group forwarding
-groupForwardVRange :: VersionRangeChat
-groupForwardVRange = mkVersionRange (VersionChat 4) currentChatVersion
+groupForwardVersion :: VersionChat
+groupForwardVersion = VersionChat 4
 
 -- version range that supports batch sending in groups
-batchSendVRange :: VersionRangeChat
-batchSendVRange = mkVersionRange (VersionChat 5) currentChatVersion
+batchSendVersion :: VersionChat
+batchSendVersion = VersionChat 5
 
 -- version range that supports sending group welcome message in group history
-groupHistoryIncludeWelcomeVRange :: VersionRangeChat
-groupHistoryIncludeWelcomeVRange = mkVersionRange (VersionChat 6) currentChatVersion
+groupHistoryIncludeWelcomeVersion :: VersionChat
+groupHistoryIncludeWelcomeVersion = VersionChat 6
 
 -- version range that supports sending member profile updates to groups
-memberProfileUpdateVRange :: VersionRangeChat
-memberProfileUpdateVRange = mkVersionRange (VersionChat 7) currentChatVersion
+memberProfileUpdateVersion :: VersionChat
+memberProfileUpdateVersion = VersionChat 7
 
--- version range that supports compressing messages
-compressedBatchingVersion :: VersionChat
-compressedBatchingVersion = VersionChat 8
+-- version range that supports compressing messages and PQ e2e encryption
+pqEncryptionCompressionVersion :: VersionChat
+pqEncryptionCompressionVersion = VersionChat 8
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

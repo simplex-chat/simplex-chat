@@ -160,7 +160,7 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
   Connection
     { connId,
       agentConnId = AgentConnId acId,
-      peerChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer,
+      peerChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer,
       connLevel,
       viaContact,
       viaUserContactLink,
@@ -216,7 +216,7 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
     Connection
       { connId,
         agentConnId = AgentConnId acId,
-        peerChatVRange = JVersionRange peerChatVRange,
+        peerChatVRange,
         connType,
         contactConnInitiated = False,
         entityId,
@@ -397,7 +397,7 @@ type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, In
 toContactRequest :: ContactRequestRow -> UserContactRequest
 toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, preferences, createdAt, updatedAt, minVer, maxVer)) = do
   let profile = Profile {displayName, fullName, image, contactLink, preferences}
-      cReqChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+      cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, createdAt, updatedAt}
 
 userQuery :: Query
