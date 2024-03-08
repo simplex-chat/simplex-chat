@@ -451,8 +451,8 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand cmd =
-  chatVersionRange PQSupportOff -- TODO PQ this is only used to set membership version range (?)
-    >>= (`processChatCommand'` cmd)
+  -- TODO PQ this is only used to set membership version range (?)
+  chatVersionRange PQSupportOff >>= (`processChatCommand'` cmd)
 {-# INLINE processChatCommand #-}
 
 processChatCommand' :: forall m. ChatMonad m => VersionRangeChat -> ChatCommand -> m ChatResponse
@@ -599,12 +599,10 @@ processChatCommand' vr = \case
   APISetPQEnabled onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
   APIAllowContactPQ contactId -> withUser $ \user -> do
     ct@Contact {activeConn} <- withStore $ \db -> getContact db user contactId
-    -- TODO PQ check different flag?
     case activeConn of
-      Just conn@Connection {connId, pqEncryption} -> case pqEncryption of
-        PQEncOn -> pure $ chatCmdError (Just user) "already allowed"
-        PQEncOff -> do
-          -- TODO PQ add / change database field(s)
+      Just conn@Connection {connId, pqSupport} -> case pqSupport of
+        PQSupportOn -> pure $ chatCmdError (Just user) "already allowed"
+        PQSupportOff -> do
           withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn
           let conn' = conn {pqSupport = PQSupportOn, pqEncryption = PQEncOn} :: Connection
               ct' = ct {activeConn = Just conn'} :: Contact
@@ -6170,8 +6168,6 @@ deliverMessagesB msgReqs = do
   where
     compressBodies = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx ->
       forM msgReqs $ \case
-        -- TODO PQ combine pqSupport and pqEncryption to one type:
-        -- data PQMode = PQDisabled | PQSupported PQEncryption
         mr@(Right (conn@Connection {pqSupport, pqEncryption}, msgFlags, msgBody, msgId)) -> case pqSupport `CR.pqSupportOrEnc` pqEncryption of
           PQSupportOn ->
             Right . (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody

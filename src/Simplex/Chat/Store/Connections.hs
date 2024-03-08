@@ -60,7 +60,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
               conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
-              created_at, security_code, security_code_verified_at, enable_pq, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
+              created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
               peer_chat_min_version, peer_chat_max_version
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?

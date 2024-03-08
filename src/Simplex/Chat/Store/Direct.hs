@@ -142,12 +142,12 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
         via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
-        created_at, updated_at, to_subscribe, enable_pq
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        created_at, updated_at, to_subscribe, pq_support, pq_encryption
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, pccConnStatus, ConnContact, True, cReqHash, xContactId)
         :. (customUserProfileId, isJust groupLinkId, groupLinkId)
-        :. (createdAt, createdAt, subMode == SMOnlyCreate, pqSup)
+        :. (createdAt, createdAt, subMode == SMOnlyCreate, pqSup, pqSup)
     )
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
@@ -178,7 +178,7 @@ getContactByConnReqHash db user@User {userId} cReqHash =
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.enable_pq, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
           c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -199,11 +199,11 @@ createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile
     [sql|
       INSERT INTO connections
         (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, contact_conn_initiated, custom_user_profile_id,
-         created_at, updated_at, to_subscribe, enable_pq)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+         created_at, updated_at, to_subscribe, pq_support, pq_encryption)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, cReq, pccConnStatus, ConnContact, contactConnInitiated, customUserProfileId)
-        :. (createdAt, createdAt, subMode == SMOnlyCreate, pqSup)
+        :. (createdAt, createdAt, subMode == SMOnlyCreate, pqSup, pqSup)
     )
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}
@@ -581,7 +581,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.enable_pq, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
               c.peer_chat_min_version, c.peer_chat_max_version
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -746,7 +746,7 @@ getContact_ db user@User {userId} contactId deleted =
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.enable_pq, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
           c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -800,7 +800,7 @@ getContactConnections db userId Contact {contactId} =
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-            c.created_at, c.security_code, c.security_code_verified_at, c.enable_pq, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+            c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
             c.peer_chat_min_version, c.peer_chat_max_version
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -818,7 +818,7 @@ getConnectionById db User {userId} connId = ExceptT $ do
       [sql|
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
-          created_at, security_code, security_code_verified_at, enable_pq, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
+          created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
           peer_chat_min_version, peer_chat_max_version
         FROM connections
         WHERE user_id = ? AND connection_id = ?
