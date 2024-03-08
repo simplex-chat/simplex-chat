@@ -188,7 +188,7 @@ struct MigrateToAppGroupView: View {
         let config = ArchiveConfig(archivePath: getDocumentsDirectory().appendingPathComponent(archiveName).path)
         Task {
             do {
-                try apiSaveAppSettings(settings: AppSettings.current)
+                try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
@@ -205,7 +205,7 @@ struct MigrateToAppGroupView: View {
                 resetChatCtrl()
                 try await MainActor.run { try initializeChat(start: false) }
                 let _ = try await apiImportArchive(config: config)
-                let appSettings = try apiGetAppSettings(settings: AppSettings.current)
+                let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
                 await MainActor.run {
                     appSettings.importIntoApp()
                     setV3DBMigration(.migrated)
@@ -229,7 +229,7 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
     let config = ArchiveConfig(archivePath: archivePath.path)
     // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
     if !ChatModel.shared.chatDbChanged {
-        try apiSaveAppSettings(settings: AppSettings.current)
+        try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
     }
     try await apiExportArchive(config: config)
     if storagePath == nil {

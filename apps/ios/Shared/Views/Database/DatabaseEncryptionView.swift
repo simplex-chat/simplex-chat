@@ -141,7 +141,7 @@ struct DatabaseEncryptionView: View {
             do {
                 encryptionStartedDefault.set(true)
                 encryptionStartedAtDefault.set(Date.now)
-                try apiSaveAppSettings(settings: AppSettings.current)
+                try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
                 try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
                 encryptionStartedDefault.set(false)
                 initialRandomDBPassphraseGroupDefault.set(false)

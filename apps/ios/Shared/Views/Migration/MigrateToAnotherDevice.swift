@@ -406,7 +406,7 @@ struct MigrateToAnotherDevice: View {
             do {
                 try await stopChatAsync()
                 do {
-                    try apiSaveAppSettings(settings: AppSettings.current)
+                    try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
                     await MainActor.run {
                         migrationState = initialRandomDBPassphraseGroupDefault.get() ? .passphraseNotSet :  .passphraseConfirmation
                     }

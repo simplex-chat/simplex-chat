@@ -524,7 +524,7 @@ struct MigrateFromAnotherDevice: View {
             do {
                 resetChatCtrl()
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
-                var appSettings = try apiGetAppSettings(settings: AppSettings.current)
+                var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
                 await MainActor.run {
                     // LALAL
                     if true/*appSettings.networkConfig?.socksProxy != nil*/ {
