@@ -371,6 +371,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
+  CRThreadsSummary {threadsRunning, threadsBlocked, threadsBlockedConc, threadsDone} -> ["running: " <> sShow threadsRunning <> " blocked: " <> sShow threadsBlocked <> " waiting: " <> sShow threadsBlockedConc <> " done: " <> sShow threadsDone]
+  CRThreadsDetails rows -> map (plain . intercalate ",") rows
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)

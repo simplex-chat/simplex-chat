@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -15,6 +17,9 @@
 
 module Simplex.Chat where
 
+#if MIN_VERSION_base(4,18,0)
+import GHC.Conc.Sync (BlockReason (..), ThreadStatus (..), listThreads, threadLabel, threadStatus)
+#endif
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
@@ -330,7 +335,7 @@ startChatController mainApp = do
       a1 <- async agentSubscriber
       a2 <-
         if mainApp
-          then Just <$> async (subscribeUsers False users)
+          then Just <$> async (labelMyThread "startChatController.subscribeUsers" >> subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       when mainApp $ do
@@ -561,8 +566,8 @@ processChatCommand' vr = \case
     chatWriteVar chatActivated True
     when restoreChat $ do
       users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
-      void . forkIO $ subscribeUsers True users
-      void . forkIO $ startFilesToReceive users
+      void . forkIO $ labelMyThread "APIActivateChat.subscribeUsers" >> subscribeUsers True users
+      void . forkIO $ labelMyThread "APIActivateChat.startFilesToReceive" >> startFilesToReceive users
       setAllExpireCIFlags True
     ok_
   APISuspendChat t -> do
@@ -2025,6 +2030,10 @@ processChatCommand' vr = \case
     pure CRDebugLocks {chatLockName, agentLocks}
   GetAgentWorkers -> CRAgentWorkersSummary <$> withAgent getAgentWorkersSummary
   GetAgentWorkersDetails -> CRAgentWorkersDetails <$> withAgent getAgentWorkersDetails
+  GetThreads -> do
+    (threadsRunning, threadsBlocked, threadsBlockedConc, threadsDone) <- liftIO getThreadsSummary
+    pure CRThreadsSummary {threadsRunning, threadsBlocked, threadsBlockedConc, threadsDone}
+  GetThreadsDetails -> CRThreadsDetails <$> liftIO getThreadsDetails
   GetAgentStats -> CRAgentStats . map stat <$> withAgent getAgentStats
     where
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
@@ -2890,6 +2899,7 @@ deleteGroupLink_ user gInfo conn = do
 
 agentSubscriber :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
+  labelMyThread "agentSubscriber"
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
   forever $ atomically (readTBQueue q) >>= void . process l
@@ -3052,6 +3062,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user@User {userId} = 
       forM_ sftRs $ \(ft@SndFileTransfer {fileId, fileStatus}, err_) -> do
         forM_ err_ $ toView . CRSndFileSubError user ft
         void . forkIO $ do
+          labelMyThread "sndFileSubsToView"
           threadDelay 1000000
           l <- asks chatLock
           when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withLock l "subscribe sendFileChunk" $
@@ -6796,7 +6807,9 @@ chatCommandP =
       "/get subs" $> GetAgentSubs,
       "/get subs details" $> GetAgentSubsDetails,
       "/get workers" $> GetAgentWorkers,
-      "/get workers details" $> GetAgentWorkersDetails
+      "/get workers details" $> GetAgentWorkersDetails,
+      "/get threads" $> GetThreads,
+      "/get threads details" $> GetThreadsDetails
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
@@ -6993,3 +7006,33 @@ xftpSndFileRedirect user ftId vfd = do
 
 dummyFileDescr :: FileDescr
 dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+
+getThreadsSummary :: IO (Int, Int, Int, Int)
+getThreadsSummary = do
+#if MIN_VERSION_base(4,18,0)
+  threads <- listThreads >>= mapM threadStatus
+  pure $ foldl' byStatus (0, 0, 0, 0) threads
+  where
+    byStatus (!r, !b, !bc, !d) = \case
+      ThreadRunning -> (r + 1, b, bc, d)
+      ThreadDied -> (r, b, bc, d + 1)
+      ThreadFinished -> (r, b, bc, d + 1)
+      ThreadBlocked br -> case br of
+        BlockedOnMVar -> (r, b, bc + 1, d)
+        BlockedOnSTM -> (r, b, bc + 1, d)
+        _ -> (r, b + 1, bc, d)
+#else
+getThreadsSummary = pure (0, 0, 0, 0)
+#endif
+
+getThreadsDetails :: IO [[String]]
+#if MIN_VERSION_base(4,18,0)
+getThreadsDetails = do
+  threads <- listThreads
+  forM threads $ \tid -> do
+    status <- threadStatus tid
+    label <- threadLabel tid
+    pure [drop 9 $ show tid, show status, show label]
+#else
+getThreadsDetails = pure []
+#endif
