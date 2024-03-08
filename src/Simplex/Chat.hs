@@ -81,7 +81,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, shuffle)
-import Simplex.FileTransfer.Client.Main (maxFileSize)
+import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
@@ -2005,8 +2005,10 @@ processChatCommand' vr = \case
   APIUploadStandaloneFile userId file@CryptoFile {filePath} -> withUserId userId $ \user -> do
     fsFilePath <- toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
+    when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
     (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
+  APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
     ft <- receiveViaURI user uri file
     pure $ CRRcvStandaloneFileCreated user ft
@@ -3270,13 +3272,15 @@ processAgentMsgSndFile _corrId aFileId msg =
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
-              case mapMaybe fileDescrURI rfds of
-                [] -> case rfds of
-                  [] -> logError "File sent without receiver descriptions" -- should not happen
-                  (rfd : _) -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
-                uris -> do
-                  ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
-                  toView $ CRSndStandaloneFileComplete user ft' uris
+              case rfds of
+                [] -> sendFileError "no receiver descriptions" fileId vr ft
+                rfd : _ -> case [fd | fd@(FD.ValidFileDescription FD.FileDescription {chunks = [_]}) <- rfds] of
+                  [] -> case xftpRedirectFor of
+                    Nothing -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
+                    Just _ -> sendFileError "Prohibit chaining redirects" fileId vr ft
+                  rfds' -> do -- we have 1 chunk - use it as URI whether it is redirect or not
+                    ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
+                    toView $ CRSndStandaloneFileComplete user ft' $ map (decodeLatin1 . strEncode . FD.fileDescriptionURI) rfds'
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
@@ -3318,19 +3322,11 @@ processAgentMsgSndFile _corrId aFileId msg =
         SFERR e
           | temporaryAgentError e ->
               throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
-          | otherwise -> do
-              ci <- withStore $ \db -> do
-                liftIO $ updateFileCancelled db user fileId CIFSSndError
-                lookupChatItemByFileId db vr user fileId
-              withAgent (`xftpDeleteSndFileInternal` aFileId)
-              toView $ CRSndFileError user ci ft
+          | otherwise ->
+              sendFileError (tshow e) fileId vr ft
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        fileDescrURI :: ValidFileDescription 'FRecipient -> Maybe T.Text
-        fileDescrURI vfd = if T.length uri < FD.qrSizeLimit then Just uri else Nothing
-          where
-            uri = decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = fileDescrText rfd
@@ -3345,6 +3341,14 @@ processAgentMsgSndFile _corrId aFileId msg =
               case L.nonEmpty fds of
                 Just fds' -> loopSend fds'
                 Nothing -> pure msgDeliveryId
+        sendFileError :: Text -> Int64 -> VersionRange -> FileTransferMeta -> m ()
+        sendFileError err fileId vr ft = do
+          logError $ "Sent file error: " <> err
+          ci <- withStore $ \db -> do
+            liftIO $ updateFileCancelled db user fileId CIFSSndError
+            lookupChatItemByFileId db vr user fileId
+          withAgent (`xftpDeleteSndFileInternal` aFileId)
+          toView $ CRSndFileError user ci ft
 
 splitFileDescr :: ChatMonad m => RcvFileDescrText -> m (NonEmpty FileDescr)
 splitFileDescr rfdText = do
@@ -6782,6 +6786,7 @@ chatCommandP =
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       "/_upload " *> (APIUploadStandaloneFile <$> A.decimal <* A.space <*> cryptoFileP),
+      "/_download info " *> (APIStandaloneFileInfo <$> strP),
       "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,

@@ -448,7 +448,7 @@ To update your XFTP server to latest version, choose your installation method an
    - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
      1. Stop and remove the container:
         ```sh
-        docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/xftp-server --format="{{.ID}}"))
+        docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/xftp-server --format="\{\{.ID\}\}"))
         ```
      2. Pull latest image:
         ```sh
