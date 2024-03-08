@@ -1431,11 +1431,13 @@ processChatCommand' vr = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
     pqSup <- chatReadVar pqExperimentalEnabled
-    pqSup' <- fromMaybe PQSupportOff <$> withAgent' (\a -> connRequestPQSupport a pqSup cReq)
-    dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
-    connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
-    conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode pqSup'
-    pure $ CRSentConfirmation user conn
+    withAgent' (\a -> connRequestPQSupport a pqSup cReq) >>= \case
+      Nothing -> throwChatError CEInvalidConnReq
+      Just pqSup' -> do
+        dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
+        connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
+        conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode pqSup'
+        pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
@@ -2182,15 +2184,16 @@ processChatCommand' vr = \case
       -- 0) toggle disabled - PQSupportOff
       -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
-      (pqSup', pqCompress) <- case pqSup of
-        PQSupportOff -> pure (PQSupportOff, PQSupportOff)
-        PQSupportOn -> do
-          pqCompress <- fromMaybe PQSupportOff <$> withAgent' (\a -> connRequestPQSupport a pqSup cReq)
-          pure (PQSupportOn, pqCompress)
-      dm <- encodeConnInfoPQ pqCompress (XContact profileToSend $ Just xContactId)
-      subMode <- chatReadVar subscriptionMode
-      connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
-      pure (connId, incognitoProfile, subMode, pqSup')
+      withAgent' (\a -> connRequestPQSupport a pqSup cReq) >>= \case
+        Nothing -> throwChatError CEInvalidConnReq
+        Just pqCompress -> do
+          let (pqSup', pqCompress') = case pqSup of
+                PQSupportOff -> (PQSupportOff, PQSupportOff)
+                PQSupportOn -> (PQSupportOn, pqCompress)
+          dm <- encodeConnInfoPQ pqCompress' (XContact profileToSend $ Just xContactId)
+          subMode <- chatReadVar subscriptionMode
+          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
+          pure (connId, incognitoProfile, subMode, pqSup')
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
