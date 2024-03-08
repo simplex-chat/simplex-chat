@@ -21,8 +21,9 @@ import Data.String
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
-import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText)
+import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
@@ -30,7 +31,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -114,6 +115,17 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest tmp =
       withNewTestChatCfg tmp cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
 
+type PQEnabled = Bool
+
+pqMatrix2 :: (HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()) -> SpecWith FilePath
+pqMatrix2 runTest = do
+  it "PQ: off, off" $ test False False
+  it "PQ: on, off" $ test False True
+  it "PQ: off, on" $ test True False
+  it "PQ: on, on" $ test True True
+  where
+    test aPQ bPQ = testChat2 aliceProfile bobProfile $ \a b -> runTest (a, aPQ) (b, bPQ)
+
 withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatGroup3Connected tmp dbPrefix action = do
   withTestChat tmp dbPrefix $ \cc -> do
@@ -172,6 +184,32 @@ cc #$> (cmd, f, res) = do
   cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
 
+-- / PQ combinators
+
+(\#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(\#>) = sndRcv PQEncOff False
+
+(+#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(+#>) = sndRcv PQEncOn False
+
+(++#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(++#>) = sndRcv PQEncOn True
+
+sndRcv :: HasCallStack => PQEncryption -> Bool -> (TestCC, String) -> TestCC -> IO ()
+sndRcv pqEnc enabled (cc1, msg) cc2 = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  let cmd = "@" <> name2 <> " " <> msg
+  cc1 `send` cmd
+  when enabled $ cc1 <## (name2 <> ": post-quantum encryption enabled")
+  cc1 <# cmd
+  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
+  when enabled $ cc2 <## (name1 <> ": post-quantum encryption enabled")
+  cc2 <# (name1 <> "> " <> msg)
+  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
+
+-- PQ combinators /
+
 chat :: String -> [(Int, String)]
 chat = map (\(a, _, _) -> a) . chat''
 
@@ -205,6 +243,9 @@ chatFeatures'' =
 
 e2eeInfoNoPQStr :: String
 e2eeInfoNoPQStr = T.unpack e2eInfoNoPQText
+
+e2eeInfoPQStr :: String
+e2eeInfoPQStr = T.unpack e2eInfoPQText
 
 lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
@@ -475,6 +516,27 @@ getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
     maybeFirstRow fromOnly $
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+
+pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
+pqSndForContact = pqForContact_ pqSndEnabled
+
+pqRcvForContact :: TestCC -> ContactId -> IO PQEncryption
+pqRcvForContact = pqForContact_ pqRcvEnabled
+
+pqForContact :: TestCC -> ContactId -> IO PQEncryption
+pqForContact = pqForContact_ (Just . connPQEnabled)
+
+pqForContact_ :: (Connection -> Maybe PQEncryption) -> TestCC -> ContactId -> IO PQEncryption
+pqForContact_ pqSel cc contactId =
+  getTestCCContact cc contactId >>= \ct -> case contactConn ct of
+    Just conn -> pure $ fromMaybe PQEncOff $ pqSel conn
+    Nothing -> fail "no connection"
+
+getTestCCContact :: TestCC -> ContactId -> IO Contact
+getTestCCContact cc contactId =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

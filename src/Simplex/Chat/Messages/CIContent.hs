@@ -270,7 +270,7 @@ ciContentToText = \case
 
 directE2EInfoToText :: E2EInfo -> Text
 directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
-  PQEncOn -> "This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery."
+  PQEncOn -> e2eInfoPQText
   PQEncOff -> e2eInfoNoPQText
 
 groupE2EInfoToText :: E2EInfo -> Text
@@ -279,6 +279,10 @@ groupE2EInfoToText _e2eeInfo = e2eInfoNoPQText
 e2eInfoNoPQText :: Text
 e2eInfoNoPQText =
   "This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery."
+
+e2eInfoPQText :: Text
+e2eInfoPQText =
+  "This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery."
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =

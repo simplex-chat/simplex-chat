@@ -10,7 +10,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -25,7 +25,7 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQSupportOff, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -128,6 +128,10 @@ chatDirectTests = do
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
+  describe "PQ tests" $ do
+    describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
+    describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
+    it "should enable PQ after several messages in connection without PQ" testPQAllowContact
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2753,3 +2757,145 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+
+runTestPQConnectViaLink :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
+runTestPQConnectViaLink (alice, aPQ) (bob, bPQ) = do
+  when aPQ $ pqOn alice
+  when bPQ $ pqOn bob
+
+  connectUsers alice bob
+
+  (alice, "hi") `pqSend` bob
+  (bob, "hey") `pqSend` alice
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+  where
+    pqEnabled = aPQ && bPQ
+    pqSend = if pqEnabled then (+#>) else (\#>)
+    e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
+
+pqOn :: TestCC -> IO ()
+pqOn cc = do
+  cc ##> "/_pq on"
+  cc <## "ok"
+
+runTestPQConnectViaAddress :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
+runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
+  when aPQ $ pqOn alice
+  when bPQ $ pqOn bob
+
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  bob ##> ("/c " <> cLink)
+  alice <#? bob
+  alice @@@ [("<@bob", "")]
+  alice ##> "/ac bob"
+  alice <## "bob (Bob): accepting contact request..."
+  concurrently_
+    (bob <## "alice (Alice): contact is connected")
+    (alice <## "bob (Bob): contact is connected")
+
+  (alice, "hi") `pqSend` bob
+  (bob, "hey") `pqSend` alice
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+  where
+    pqEnabled = aPQ && bPQ
+    pqSend = if pqEnabled then (+#>) else (\#>)
+    e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
+
+testPQAllowContact :: HasCallStack => FilePath -> IO ()
+testPQAllowContact =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    (alice, "hi") \#> bob
+    (bob, "hey") \#> alice
+
+    alice ##> "/_get chat @2 count=100"
+    ra <- chat <$> getTermLine alice
+    ra `shouldContain` [(0, e2eeInfoNoPQStr)]
+    PQEncOff <- alice `pqForContact` 2
+
+    bob ##> "/_get chat @2 count=100"
+    rb <- chat <$> getTermLine bob
+    rb `shouldContain` [(0, e2eeInfoNoPQStr)]
+    PQEncOff <- bob `pqForContact` 2
+
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    -- enabling experimental flags doesn't enable PQ in previously created connection
+    pqOn alice
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    pqOn bob
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    -- if only one contact allows PQ, it's not enabled
+    alice ##> "/_pq allow 2"
+    alice <## "bob: post-quantum encryption allowed"
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    -- both contacts have to allow PQ to enable it
+    bob ##> "/_pq allow 2"
+    bob <## "alice: post-quantum encryption allowed"
+
+    (alice, "1") \#> bob
+    (bob, "2") \#> alice
+    (alice, "3") \#> bob
+    (bob, "4") \#> alice
+    (alice, "5") +#> bob
+
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    (bob, "6") ++#> alice
+    -- equivalent to:
+    -- bob `send` "@alice 6"
+    -- bob <## "alice: post-quantum encryption enabled"
+    -- bob <# "@alice 6"
+    -- alice <## "bob: post-quantum encryption enabled"
+    -- alice <# "bob> 6"
+
+    PQEncOn <- alice `pqForContact` 2
+    alice #$> ("/_get chat @2 count=2", chat, [(0, "post-quantum encryption enabled"), (0, "6")])
+
+    PQEncOn <- bob `pqForContact` 2
+    bob #$> ("/_get chat @2 count=2", chat, [(1, "post-quantum encryption enabled"), (1, "6")])
+
+    (alice, "6") +#> bob
+    (bob, "7") +#> alice
+
+    sendMany PQEncOn alice bob
+
+    PQEncOn <- alice `pqForContact` 2
+    PQEncOn <- bob `pqForContact` 2
+    pure ()
+  where
+    sendMany pqEnc alice bob =
+      forM_ [(1 :: Int) .. 10] $ \i -> do
+        sndRcv pqEnc False (alice, show i) bob
+        sndRcv pqEnc False (bob, show i) alice
