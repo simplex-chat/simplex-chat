@@ -172,13 +172,13 @@ struct ChatInfoView: View {
                    let conn = contact.activeConn {
                     Section {
                         infoRow(Text(String("PQ E2E encryption")), conn.connPQEnabled ? "Enabled" : "Disabled")
-                        if !conn.enablePQ {
+                        if !conn.pqSupport {
                             allowPQButton()
                         }
                     } header: {
                         Text(String("Post-quantum E2E encryption"))
                     } footer: {
-                        if !conn.enablePQ {
+                        if !conn.pqSupport {
                             Text(String("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it."))
                         }
                     }

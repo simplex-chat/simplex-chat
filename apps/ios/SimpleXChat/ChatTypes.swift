@@ -1532,14 +1532,15 @@ public struct Connection: Decodable {
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
-    public var enablePQ: Bool
+    public var pqSupport: Bool
+    public var pqEncryption: Bool
     public var pqSndEnabled: Bool?
     public var pqRcvEnabled: Bool?
 
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, enablePQ, pqSndEnabled, pqRcvEnabled
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled
     }
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -1555,7 +1556,8 @@ public struct Connection: Decodable {
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false,
-        enablePQ: false
+        pqSupport: false,
+        pqEncryption: false
     )
 }
 
