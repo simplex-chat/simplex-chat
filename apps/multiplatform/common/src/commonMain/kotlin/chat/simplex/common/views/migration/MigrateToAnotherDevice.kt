@@ -1,5 +1,6 @@
 package chat.simplex.common.views.migration
 
+import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -97,11 +98,9 @@ private fun MigrateToAnotherDeviceLayout(
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_to_device))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
+    SectionBottomSpacer()
   }
   platform.androidLockPortraitOrientation()
-  LaunchedEffect(Unit) {
-    migrationState.stopChat()
-  }
 }
 
 @Composable
@@ -111,7 +110,7 @@ private fun SectionByState(
   chatReceiver: MutableState<MigrationToChatReceiver?>
 ) {
   when (val s = migrationState.value) {
-    is MigrationToState.ChatStopInProgress -> ChatStopInProgressView()
+    is MigrationToState.ChatStopInProgress -> migrationState.ChatStopInProgressView()
     is MigrationToState.ChatStopFailed -> migrationState.ChatStopFailedView(s.reason)
     is MigrationToState.PassphraseNotSet -> migrationState.PassphraseNotSetView()
     is MigrationToState.PassphraseConfirmation -> migrationState.PassphraseConfirmationView()
@@ -127,10 +126,13 @@ private fun SectionByState(
 }
 
 @Composable
-private fun ChatStopInProgressView() {
+private fun MutableState<MigrationToState>.ChatStopInProgressView() {
   Box {
     SectionView(stringResource(MR.strings.migration_to_device_stopping_chat).uppercase()) {}
     ProgressView()
+  }
+  LaunchedEffect(Unit) {
+    stopChat()
   }
 }
 
@@ -177,6 +179,7 @@ private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
           icon = painterResource(if (useKeychain) MR.images.ic_vpn_key_filled else MR.images.ic_lock),
           text = stringResource(MR.strings.migration_to_device_verify_passphrase),
           textColor = MaterialTheme.colors.primary,
+          disabled = verifyingPassphrase.value,
           click = {
             verifyingPassphrase.value = true
             hideKeyboard(view)
@@ -354,15 +357,15 @@ private fun MutableState<MigrationToState>.FinishedView(chatDeletion: Boolean) {
 
 @Composable
 private fun ProgressView() {
-  DefaultProgressView("")
+  DefaultProgressView(null)
 }
 
 @Composable
 private fun LargeProgressView(value: Float, title: String, description: String) {
-  Box(Modifier.fillMaxSize().padding(DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+  Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
-      if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth()),
+      if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth() - DEFAULT_PADDING * 2),
       color = MaterialTheme.colors.primary,
       strokeWidth = 25.dp
     )

@@ -1,5 +1,6 @@
 package chat.simplex.common.views.migration
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
@@ -166,6 +167,7 @@ private fun ModalData.MigrateFromAnotherDeviceLayout(
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_here))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)
+    SectionBottomSpacer()
   }
   platform.androidLockPortraitOrientation()
 }
@@ -387,6 +389,7 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
         icon = painterResource(MR.images.ic_vpn_key_filled),
         text = stringResource(MR.strings.open_chat),
         textColor = MaterialTheme.colors.primary,
+        disabled = verifyingPassphrase.value,
         click = {
           verifyingPassphrase.value = true
           hideKeyboard(view)
@@ -469,7 +472,7 @@ private fun MigrationView(passphrase: String, confirmation: MigrationConfirmatio
 
 @Composable
 private fun ProgressView() {
-  DefaultProgressView("")
+  DefaultProgressView(null)
 }
 
 @Composable

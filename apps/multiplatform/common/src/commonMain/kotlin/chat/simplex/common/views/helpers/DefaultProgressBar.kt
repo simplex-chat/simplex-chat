@@ -15,7 +15,7 @@ fun DefaultProgressView(description: String?) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       CircularProgressIndicator(
         Modifier
-          .padding(bottom = DEFAULT_PADDING)
+          .padding(bottom = if (description != null) DEFAULT_PADDING else 0.dp)
           .size(30.dp),
         color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
