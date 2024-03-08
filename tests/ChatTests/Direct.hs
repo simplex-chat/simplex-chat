@@ -2757,13 +2757,6 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "connection not verified, use /code command to see security code"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
 
-pqMatrix2 :: (HasCallStack => (TestCC, TurnPQOn) -> (TestCC, TurnPQOn) -> IO ()) -> SpecWith FilePath
-pqMatrix2 runTest = do
-  it "PQ flag: off, off" $ pqTestChat2 (aliceProfile, False) (bobProfile, False) runTest
-  it "PQ flag: on, off" $ pqTestChat2 (aliceProfile, True) (bobProfile, False) runTest
-  it "PQ flag: off, on" $ pqTestChat2 (aliceProfile, False) (bobProfile, True) runTest
-  it "PQ flag: on, on" $ pqTestChat2 (aliceProfile, True) (bobProfile, True) runTest
-
 testPQConnectViaLink :: HasCallStack => SpecWith FilePath
 testPQConnectViaLink = pqMatrix2 runTestPQConnectViaLink
   where
