@@ -21,8 +21,9 @@ import Data.String
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
-import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText)
+import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
@@ -205,6 +206,9 @@ chatFeatures'' =
 
 e2eeInfoNoPQStr :: String
 e2eeInfoNoPQStr = T.unpack e2eInfoNoPQText
+
+e2eeInfoPQStr :: String
+e2eeInfoPQStr = T.unpack e2eInfoPQText
 
 lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
@@ -475,6 +479,20 @@ getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
     maybeFirstRow fromOnly $
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+
+hasPQEnabledForContact :: HasCallStack => TestCC -> ContactId -> Expectation
+hasPQEnabledForContact cc contactId =
+  getContactPQEnabled cc contactId >>= \actual -> actual `shouldBe` True
+
+hasPQDisabledForContact :: HasCallStack => TestCC -> ContactId -> Expectation
+hasPQDisabledForContact cc contactId =
+  getContactPQEnabled cc contactId >>= \actual -> actual `shouldBe` False
+
+getContactPQEnabled :: TestCC -> ContactId -> IO Bool
+getContactPQEnabled cc contactId =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db user contactId) >>= either (fail . show) (pure . contactPQEnabled)
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

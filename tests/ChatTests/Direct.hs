@@ -10,7 +10,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -128,6 +128,9 @@ chatDirectTests = do
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
+  describe "PQ" $ do
+    describe "test PQ connection via invitation link" testPQConnectViaLink
+    describe "test PQ connection via contact address" testPQConnectViaAddress
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2753,3 +2756,72 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+
+pqMatrix2 :: (HasCallStack => (TestCC, TurnPQOn) -> (TestCC, TurnPQOn) -> IO ()) -> SpecWith FilePath
+pqMatrix2 runTest = do
+  it "PQ flag: off, off" $ pqTestChat2 (aliceProfile, False) (bobProfile, False) runTest
+  it "PQ flag: on, off" $ pqTestChat2 (aliceProfile, True) (bobProfile, False) runTest
+  it "PQ flag: off, on" $ pqTestChat2 (aliceProfile, False) (bobProfile, True) runTest
+  it "PQ flag: on, on" $ pqTestChat2 (aliceProfile, True) (bobProfile, True) runTest
+
+testPQConnectViaLink :: HasCallStack => SpecWith FilePath
+testPQConnectViaLink = pqMatrix2 runTestPQConnectViaLink
+  where
+    runTestPQConnectViaLink (alice, aPQ) (bob, bPQ) = do
+      when aPQ $ enablePQ alice
+      when bPQ $ enablePQ bob
+
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/_get chat @2 count=100"
+      ra <- chat <$> getTermLine alice
+      ra `shouldContain` [(0, e2eeInfo)]
+      alice `pqForContact` 2
+
+      bob ##> "/_get chat @2 count=100"
+      rb <- chat <$> getTermLine bob
+      rb `shouldContain` [(0, e2eeInfo)]
+      bob `pqForContact` 2
+      where
+        pqEnabled = aPQ && bPQ
+        e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
+        pqForContact = if pqEnabled then hasPQEnabledForContact else hasPQDisabledForContact
+
+enablePQ :: TestCC -> IO ()
+enablePQ cc = do
+  cc ##> "/_pq on"
+  cc <## "ok"
+
+testPQConnectViaAddress :: HasCallStack => SpecWith FilePath
+testPQConnectViaAddress = pqMatrix2 runTestPQConnectViaAddress
+  where
+    runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
+      when aPQ $ enablePQ alice
+      when bPQ $ enablePQ bob
+
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice @@@ [("<@bob", "")]
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+      alice ##> "/_get chat @2 count=100"
+      ra <- chat <$> getTermLine alice
+      ra `shouldContain` [(0, e2eeInfo)]
+      alice `pqForContact` 2
+
+      bob ##> "/_get chat @2 count=100"
+      rb <- chat <$> getTermLine bob
+      rb `shouldContain` [(0, e2eeInfo)]
+      bob `pqForContact` 2
+      where
+        pqEnabled = aPQ && bPQ
+        e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
+        pqForContact = if pqEnabled then hasPQEnabledForContact else hasPQDisabledForContact

@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -455,3 +456,42 @@ serverBracket server f = do
       5000000 `timeout` atomically (takeTMVar started) >>= \case
         Nothing -> error $ "server did not " <> s
         _ -> pure ()
+
+-- PQ matrix utils
+
+type TurnPQOn = Bool
+
+type PQTestClientSimpleParams = (Profile, TurnPQOn)
+
+data PQTestClientParams = PQTestClientParams
+  { chatConfig :: ChatConfig,
+    chatOpts :: ChatOpts,
+    chatProfile :: Profile,
+    pq :: TurnPQOn
+  }
+
+toPQTestClientParams :: PQTestClientSimpleParams -> PQTestClientParams
+toPQTestClientParams (chatProfile, pq) =
+  PQTestClientParams {chatConfig = testCfg, chatOpts = testOpts, chatProfile, pq}
+
+pqTestChat2 :: HasCallStack => PQTestClientSimpleParams -> PQTestClientSimpleParams -> (HasCallStack => (TestCC, TurnPQOn) -> (TestCC, TurnPQOn) -> IO ()) -> FilePath -> IO ()
+pqTestChat2 params1 params2 = pqTestChatParams2 (toPQTestClientParams params1) (toPQTestClientParams params2)
+
+pqTestChatParams2 :: HasCallStack => PQTestClientParams -> PQTestClientParams -> (HasCallStack => (TestCC, TurnPQOn) -> (TestCC, TurnPQOn) -> IO ()) -> FilePath -> IO ()
+pqTestChatParams2 params1 params2 test = pqTestChatParamsN [params1, params2] test_
+  where
+    test_ :: HasCallStack => [(TestCC, TurnPQOn)] -> IO ()
+    test_ [tc1, tc2] = test tc1 tc2
+    test_ _ = error "expected 2 chat clients"
+
+pqTestChatParamsN :: HasCallStack => [PQTestClientParams] -> (HasCallStack => [(TestCC, TurnPQOn)] -> IO ()) -> FilePath -> IO ()
+pqTestChatParamsN params test tmp = do
+  tcs <- getTestCCs (zip params [1 ..]) []
+  test tcs
+  concurrentlyN_ $ map (\(tc, _) -> tc <// 100000) tcs
+  concurrentlyN_ $ map (\(tc, _) -> stopTestChat tc) tcs
+  where
+    getTestCCs :: [(PQTestClientParams, Int)] -> [(TestCC, TurnPQOn)] -> IO [(TestCC, TurnPQOn)]
+    getTestCCs [] tcs = pure tcs
+    getTestCCs ((PQTestClientParams {chatConfig, chatOpts, chatProfile, pq}, db) : envs') tcs =
+      ((:) . (,pq) <$> createTestChat tmp chatConfig chatOpts (show db) chatProfile) <*> getTestCCs envs' tcs
