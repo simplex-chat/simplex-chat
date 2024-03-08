@@ -379,7 +379,7 @@ private fun MutableState<MigrationToState>.stopChat() {
     try {
       stopChatAsync(chatModel)
       try {
-        controller.apiSaveAppSettings(AppSettings.current)
+        controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
         state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationToState.PassphraseNotSet else MigrationToState.PassphraseConfirmation
       } catch (e: Exception) {
         AlertManager.shared.showAlertMsg(

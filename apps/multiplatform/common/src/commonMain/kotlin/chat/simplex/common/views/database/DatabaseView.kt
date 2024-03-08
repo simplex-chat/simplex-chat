@@ -535,7 +535,7 @@ suspend fun exportChatArchive(
   val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
   // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
   if (!m.chatDbChanged.value) {
-    controller.apiSaveAppSettings(AppSettings.current)
+    controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
   }
   m.controller.apiExportArchive(config)
   if (storagePath == null) {
@@ -595,7 +595,7 @@ private fun importArchive(
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)
-          val appSettings = controller.apiGetAppSettings(AppSettings.current)
+          val appSettings = controller.apiGetAppSettings(AppSettings.current.prepareForExport())
           appSettings.importIntoApp()
           DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)

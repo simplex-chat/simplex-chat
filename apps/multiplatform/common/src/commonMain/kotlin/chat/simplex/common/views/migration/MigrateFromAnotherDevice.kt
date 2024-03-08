@@ -608,7 +608,7 @@ private fun startChat(passphrase: String, confirmation: MigrationConfirmation, n
   withBGApi {
     try {
       initChatController(useKey = passphrase, confirmMigrations = confirmation) { CompletableDeferred(false) }
-      val appSettings = controller.apiGetAppSettings(AppSettings.current).copy(
+      val appSettings = controller.apiGetAppSettings(AppSettings.current.prepareForExport()).copy(
         networkConfig = netCfg
       )
       finishMigration(appSettings, close)
