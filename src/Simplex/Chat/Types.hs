@@ -23,7 +23,7 @@
 module Simplex.Chat.Types where
 
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -1342,6 +1342,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
+    connChatVersion :: Maybe VersionChat,
     peerChatVRange :: VersionRangeChat,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection

@@ -709,8 +709,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> Maybe VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
@@ -722,7 +722,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, contactUsed)
   contactId <- insertedRowId db
-  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
+  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
   pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn = Just conn, viaGroup = Nothing, contactUsed, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
@@ -801,7 +801,7 @@ getContactConnections db userId Contact {contactId} =
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
-            c.peer_chat_min_version, c.peer_chat_max_version
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
@@ -819,7 +819,7 @@ getConnectionById db User {userId} connId = ExceptT $ do
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
-          peer_chat_min_version, peer_chat_max_version
+          conn_chat_version, peer_chat_min_version, peer_chat_max_version
         FROM connections
         WHERE user_id = ? AND connection_id = ?
       |]
