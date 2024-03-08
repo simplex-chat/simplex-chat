@@ -1878,7 +1878,7 @@
   <string name="migration_to_device_error_uploading_archive">Error uploading the archive</string>
   <string name="migration_to_device_error_deleting_database">Error deleting database</string>
   <string name="migration_to_device_stopping_chat">Stopping chat</string>
-  <string name="migration_to_device_chat_should_be_stopped">In order to continue, chat should be stopped</string>
+  <string name="migration_to_device_chat_should_be_stopped">In order to continue, chat should be stopped.</string>
   <string name="migration_to_device_archive_and_upload">Archive and upload</string>
   <string name="migration_to_device_confirm_upload">Confirm upload</string>
   <string name="migration_to_device_all_data_will_be_uploaded">All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</string>

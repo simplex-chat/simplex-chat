@@ -68,7 +68,7 @@ fun SimpleXInfoLayout(
       Box(
         Modifier
           .fillMaxWidth()
-          .padding(bottom = DEFAULT_PADDING.times(1.5f), top = DEFAULT_PADDING), contentAlignment = Alignment.Center
+          .padding(top = DEFAULT_PADDING), contentAlignment = Alignment.Center
       ) {
         SimpleButtonDecorated(text = stringResource(MR.strings.migrate_from_another_device), icon = painterResource(MR.images.ic_download),
           click = { ModalManager.fullscreen.showCustomModal { close -> MigrateFromAnotherDeviceView(chatModel.migrationState.value, close) } })
@@ -78,7 +78,7 @@ fun SimpleXInfoLayout(
     Box(
       Modifier
         .fillMaxWidth()
-        .padding(bottom = DEFAULT_PADDING.times(1.5f), top = DEFAULT_PADDING), contentAlignment = Alignment.Center
+        .padding(bottom = DEFAULT_PADDING.times(1.5f), top = if (onboardingStage == null) DEFAULT_PADDING else 0.dp), contentAlignment = Alignment.Center
     ) {
       SimpleButtonDecorated(text = stringResource(MR.strings.how_it_works), icon = painterResource(MR.images.ic_info),
         click = showModal { HowItWorks(user, onboardingStage) })

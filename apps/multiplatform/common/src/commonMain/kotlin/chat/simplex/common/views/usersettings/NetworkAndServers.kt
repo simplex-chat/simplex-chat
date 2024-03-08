@@ -163,7 +163,7 @@ fun NetworkAndServersView() {
         SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
 
         if (currentRemoteHost == null) {
-          val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
+          val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
           UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, false)
           UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
           if (developerTools) {
@@ -187,7 +187,7 @@ fun NetworkAndServersView() {
     }
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
-      SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal  { RTCServersView(m) } })
+      SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
     SectionBottomSpacer()
   }

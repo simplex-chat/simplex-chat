@@ -399,6 +399,7 @@ suspend fun encryptDatabase(
   progressIndicator.value = true
   return try {
     prefs.encryptionStartedAt.set(Clock.System.now())
+    m.controller.apiSaveAppSettings(AppSettings.current)
     val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
     prefs.encryptionStartedAt.set(null)
     val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError

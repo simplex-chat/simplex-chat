@@ -488,7 +488,7 @@ private fun MutableState<MigrationToState>.startUploading(
 
     chatReceiver.value?.start()
 
-    val (res, error) = controller.uploadStandaloneFile(user, CryptoFile.plain(File(archivePath).path), ctrl)
+    val (res, error) = controller.uploadStandaloneFile(user, CryptoFile.plain(File(archivePath).name), ctrl)
     if (res == null) {
       state = MigrationToState.UploadFailed(totalBytes, archivePath)
       return@withBGApi AlertManager.shared.showAlertMsg(

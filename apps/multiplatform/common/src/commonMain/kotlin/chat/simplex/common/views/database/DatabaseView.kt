@@ -595,6 +595,8 @@ private fun importArchive(
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)
+          val appSettings = controller.apiGetAppSettings(AppSettings.current)
+          appSettings.importIntoApp()
           DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
           if (archiveErrors.isEmpty()) {

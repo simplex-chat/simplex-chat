@@ -342,8 +342,8 @@ private fun MutableState<MigrationState>.DownloadFailedView(totalBytes: Long, li
     SectionTextFooter(stringResource(MR.strings.migration_from_device_try_again))
   }
   LaunchedEffect(Unit) {
-    File(archivePath).delete()
     chatReceiver?.stopAndCleanUp()
+    File(archivePath).delete()
     MigrationFromAnotherDeviceState.save(null)
   }
 }
