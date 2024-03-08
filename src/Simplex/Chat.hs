@@ -3274,13 +3274,14 @@ processAgentMsgSndFile _corrId aFileId msg =
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case mapMaybe fileDescrURI rfds of
                 [] -> case rfds of
-                  rfd@(FD.ValidFileDescription FD.FileDescription {redirect = Nothing}) : _ -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
                   [] -> do
                     logError "File sent without receiver descriptions"
                     sendFileError fileId vr ft
-                  _ -> do
-                    logError "Refusing to chain redirects"
-                    sendFileError fileId vr ft
+                  rfd@(FD.ValidFileDescription FD.FileDescription {redirect}) : _ -> case redirect of
+                    Nothing -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
+                    Just _ -> do
+                      logError "Refusing to chain redirects"
+                      sendFileError fileId vr ft
                 uris -> do
                   ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                   toView $ CRSndStandaloneFileComplete user ft' uris
