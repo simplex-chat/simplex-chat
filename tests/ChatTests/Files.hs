@@ -13,6 +13,7 @@ import Control.Logger.Simple
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Network.HTTP.Types.URI (urlEncode)
 import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Mobile.File
@@ -52,7 +53,9 @@ chatFileTests = do
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
   describe "file transfer over XFTP without chat items" $ do
     it "send and receive small standalone file" testXFTPStandaloneSmall
+    it "send and receive small standalone file with extra information" testXFTPStandaloneSmallInfo
     it "send and receive large standalone file" testXFTPStandaloneLarge
+    it "send and receive large standalone file with extra information" testXFTPStandaloneLargeInfo
     it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
     it "removes received temporary files" testXFTPStandaloneCancelRcv
@@ -848,11 +851,11 @@ testXFTPStandaloneSmall :: HasCallStack => FilePath -> IO ()
 testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
-    src ##> "/_upload 1 ./tests/fixtures/test.jpg"
-    src <## "started standalone uploading file 1 (test.jpg)"
+    src ##> "/_upload 1 ./tests/fixtures/logo.jpg"
+    src <## "started standalone uploading file 1 (logo.jpg)"
     -- silent progress events
     threadDelay 250000
-    src <## "file 1 (test.jpg) upload complete. download with:"
+    src <## "file 1 (logo.jpg) upload complete. download with:"
     -- file description fits, enjoy the direct URIs
     _uri1 <- getTermLine src
     _uri2 <- getTermLine src
@@ -860,13 +863,43 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     _uri4 <- getTermLine src
 
     logNote "receiving"
-    let dstFile = "./tests/tmp/test.jpg"
+    let dstFile = "./tests/tmp/logo.jpg"
     dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile)
-    dst <## "started standalone receiving file 1 (test.jpg)"
+    dst <## "started standalone receiving file 1 (logo.jpg)"
     -- silent progress events
     threadDelay 250000
-    dst <## "completed standalone receiving file 1 (test.jpg)"
-    srcBody <- B.readFile "./tests/fixtures/test.jpg"
+    dst <## "completed standalone receiving file 1 (logo.jpg)"
+    srcBody <- B.readFile "./tests/fixtures/logo.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneSmallInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/fixtures/logo.jpg"
+    src <## "started standalone uploading file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (logo.jpg) upload complete. download with:"
+    -- file description fits, enjoy the direct URIs
+    _uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+    let uri = uri3 <> "&data=" <> B.unpack (urlEncode False . LB.toStrict . J.encode $ J.object ["secret" J..= J.String "*********"])
+
+    logNote "info"
+    dst ##> ("/_download info " <> uri)
+    dst <## "{\"secret\":\"*********\"}"
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/logo.jpg"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile) -- download sucessfully discarded extra info
+    dst <## "started standalone receiving file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (logo.jpg)"
+    srcBody <- B.readFile "./tests/fixtures/logo.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
 testXFTPStandaloneLarge :: HasCallStack => FilePath -> IO ()
@@ -885,6 +918,39 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     _uri2 <- getTermLine src
     _uri3 <- getTermLine src
     _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (testfile.out)"
+    srcBody <- B.readFile "./tests/tmp/testfile.in"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneLargeInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLargeInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+    let uri = uri1 <> "&data=" <> B.unpack (urlEncode False . LB.toStrict . J.encode $ J.object ["secret" J..= J.String "*********"])
+
+    logNote "info"
+    dst ##> ("/_download info " <> uri)
+    dst <## "{\"secret\":\"*********\"}"
 
     logNote "receiving"
     let dstFile = "./tests/tmp/testfile.out"

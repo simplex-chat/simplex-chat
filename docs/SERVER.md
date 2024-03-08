@@ -17,7 +17,7 @@ _Please note_: when you change the servers in the app configuration, it only aff
 
 ## Installation
 
-0. First, install `smp-server`:
+1. First, install `smp-server`:
 
    - Manual deployment (see below)
 
@@ -28,7 +28,7 @@ _Please note_: when you change the servers in the app configuration, it only aff
 
 Manual installation requires some preliminary actions:
 
-0. Install binary:
+1. Install binary:
 
    - Using offical binaries:
 
@@ -40,20 +40,20 @@ Manual installation requires some preliminary actions:
 
      Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
 
-1. Create user and group for `smp-server`:
+2. Create user and group for `smp-server`:
 
    ```sh
    sudo useradd -m smp
    ```
 
-2. Create necessary directories and assign permissions:
+3. Create necessary directories and assign permissions:
 
    ```sh
    sudo mkdir -p /var/opt/simplex /etc/opt/simplex
    sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
    ```
 
-3. Allow `smp-server` port in firewall:
+4. Allow `smp-server` port in firewall:
 
    ```sh
    # For Ubuntu
@@ -63,7 +63,7 @@ Manual installation requires some preliminary actions:
    sudo firewall-cmd --reload
    ```
 
-4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
+5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
 
    ```sh
    [Unit]
@@ -398,20 +398,20 @@ To import `csv` to `Grafana` one should:
 
 2. Allow local mode by appending following:
 
-   ```sh
-   [plugin.marcusolsson-csv-datasource]
-   allow_local_mode = true
-   ```
+  ```sh
+  [plugin.marcusolsson-csv-datasource]
+  allow_local_mode = true
+  ```
 
-   ... to `/etc/grafana/grafana.ini`
+  ... to `/etc/grafana/grafana.ini`
 
 3. Add a CSV data source:
 
-   - In the side menu, click the Configuration tab (cog icon)
-   - Click Add data source in the top-right corner of the Data Sources tab
-   - Enter "CSV" in the search box to find the CSV data source
-   - Click the search result that says "CSV"
-   - In URL, enter a file that points to CSV content
+  - In the side menu, click the Configuration tab (cog icon)
+  - Click Add data source in the top-right corner of the Data Sources tab
+  - Enter "CSV" in the search box to find the CSV data source
+  - Click the search result that says "CSV"
+  - In URL, enter a file that points to CSV content
 
 4. You're done! You should be able to create your own dashboard with statistics.
 
@@ -445,7 +445,7 @@ To update your smp-server to latest version, choose your installation method and
    - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
      1. Stop and remove the container:
         ```sh
-        docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/smp-server --format="{{.ID}}"))
+        docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/smp-server --format="\{\{.ID\}\}"))
         ```
      2. Pull latest image:
         ```sh
