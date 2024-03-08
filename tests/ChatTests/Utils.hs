@@ -31,7 +31,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -172,6 +172,42 @@ cc ?#> cmd = do
 cc #$> (cmd, f, res) = do
   cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
+
+-- / PQ combinators
+
+(\#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(cc1, msg) \#> cc2 = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  cc1 `send` ("@" <> name2 <> " " <> msg)
+  cc1 <# ("@" <> name2 <> " " <> msg)
+  cc1 `hasPQSelForContact` (2, pqSndEnabled, PQEncOff)
+  cc2 <# (name1 <> "> " <> msg)
+  cc2 `hasPQSelForContact` (2, pqRcvEnabled, PQEncOff)
+
+(+#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(cc1, msg) +#> cc2 = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  cc1 `send` ("@" <> name2 <> " " <> msg)
+  cc1 <# ("@" <> name2 <> " " <> msg)
+  cc1 `hasPQSelForContact` (2, pqSndEnabled, PQEncOn)
+  cc2 <# (name1 <> "> " <> msg)
+  cc2 `hasPQSelForContact` (2, pqRcvEnabled, PQEncOn)
+
+(++#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(cc1, msg) ++#> cc2 = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  cc1 `send` ("@" <> name2 <> " " <> msg)
+  cc1 <## (name2 <>": post-quantum encryption enabled")
+  cc1 <# ("@" <> name2 <> " " <> msg)
+  cc1 `hasPQSelForContact` (2, pqSndEnabled, PQEncOn)
+  cc2 <## (name1 <>": post-quantum encryption enabled")
+  cc2 <# (name1 <> "> " <> msg)
+  cc2 `hasPQSelForContact` (2, pqRcvEnabled, PQEncOn)
+
+-- PQ combinators /
 
 chat :: String -> [(Int, String)]
 chat = map (\(a, _, _) -> a) . chat''
@@ -480,19 +516,27 @@ getProfilePictureByName cc displayName =
     maybeFirstRow fromOnly $
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
 
+hasPQSelForContact :: HasCallStack => TestCC -> (ContactId, Connection -> Maybe PQEncryption, PQEncryption) -> Expectation
+hasPQSelForContact cc (contactId, pqSel, expected) =
+  getTestCCContact cc contactId >>= \ct -> case contactConn ct of
+    Just conn -> case pqSel conn of
+      Nothing -> expected `shouldBe` PQEncOff
+      Just pqEnc -> pqEnc `shouldBe` expected
+    Nothing -> fail "no connection"
+
 hasPQEnabledForContact :: HasCallStack => TestCC -> ContactId -> Expectation
 hasPQEnabledForContact cc contactId =
-  getContactPQEnabled cc contactId >>= \actual -> actual `shouldBe` True
+  getTestCCContact cc contactId >>= \ct -> contactPQEnabled ct `shouldBe` True
 
 hasPQDisabledForContact :: HasCallStack => TestCC -> ContactId -> Expectation
 hasPQDisabledForContact cc contactId =
-  getContactPQEnabled cc contactId >>= \actual -> actual `shouldBe` False
+  getTestCCContact cc contactId >>= \ct -> contactPQEnabled ct `shouldBe` False
 
-getContactPQEnabled :: TestCC -> ContactId -> IO Bool
-getContactPQEnabled cc contactId =
+getTestCCContact :: TestCC -> ContactId -> IO Contact
+getTestCCContact cc contactId =
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db user contactId) >>= either (fail . show) (pure . contactPQEnabled)
+      runExceptT (getContact db user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

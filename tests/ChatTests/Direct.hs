@@ -2766,7 +2766,9 @@ testPQConnectViaLink = pqMatrix2 runTestPQConnectViaLink
       when bPQ $ enablePQ bob
 
       connectUsers alice bob
-      alice <##> bob
+
+      (alice, "hi") `pqSend` bob
+      (bob, "hey") `pqSend` alice
 
       alice ##> "/_get chat @2 count=100"
       ra <- chat <$> getTermLine alice
@@ -2779,6 +2781,7 @@ testPQConnectViaLink = pqMatrix2 runTestPQConnectViaLink
       bob `pqForContact` 2
       where
         pqEnabled = aPQ && bPQ
+        pqSend = if pqEnabled then (+#>) else (\#>)
         e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
         pqForContact = if pqEnabled then hasPQEnabledForContact else hasPQDisabledForContact
 
@@ -2804,7 +2807,9 @@ testPQConnectViaAddress = pqMatrix2 runTestPQConnectViaAddress
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      alice <##> bob
+
+      (alice, "hi") `pqSend` bob
+      (bob, "hey") `pqSend` alice
 
       alice ##> "/_get chat @2 count=100"
       ra <- chat <$> getTermLine alice
@@ -2817,6 +2822,7 @@ testPQConnectViaAddress = pqMatrix2 runTestPQConnectViaAddress
       bob `pqForContact` 2
       where
         pqEnabled = aPQ && bPQ
+        pqSend = if pqEnabled then (+#>) else (\#>)
         e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
         pqForContact = if pqEnabled then hasPQEnabledForContact else hasPQDisabledForContact
 
@@ -2825,7 +2831,8 @@ testPQAllowContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice <##> bob
+      (alice, "hi") \#> bob
+      (bob, "hey") \#> alice
 
       alice ##> "/_get chat @2 count=100"
       ra <- chat <$> getTermLine alice
@@ -2837,25 +2844,25 @@ testPQAllowContact =
       rb `shouldContain` [(0, e2eeInfoNoPQStr)]
       bob `hasPQDisabledForContact` 2
 
-      sendManyMessages alice bob
+      sendManyMessagesPQOff alice bob
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
       -- enabling experimental flags doesn't enable PQ in previously created connection
       enablePQ alice
-      sendManyMessages alice bob -- PQ not enabled
+      sendManyMessagesPQOff alice bob
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
       enablePQ bob
-      sendManyMessages alice bob -- PQ not enabled
+      sendManyMessagesPQOff alice bob
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
       -- if only one contact allows PQ, it's not enabled
       alice ##> "/_pq allow 2"
       alice <## "bob: post-quantum encryption allowed"
-      sendManyMessages alice bob -- PQ not enabled
+      sendManyMessagesPQOff alice bob
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
@@ -2863,29 +2870,22 @@ testPQAllowContact =
       bob ##> "/_pq allow 2"
       bob <## "alice: post-quantum encryption allowed"
 
-      alice #> "@bob 1"
-      bob <# "alice> 1"
-
-      bob #> "@alice 2"
-      alice <# "bob> 2"
-
-      alice #> "@bob 3"
-      bob <# "alice> 3"
-
-      bob #> "@alice 4"
-      alice <# "bob> 4"
-
-      alice #> "@bob 5"
-      bob <# "alice> 5"
+      (alice, "1") \#> bob
+      (bob, "2") \#> alice
+      (alice, "3") \#> bob
+      (bob, "4") \#> alice
+      (alice, "5") +#> bob
 
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
-      bob `send` "@alice 6"
-      bob <## "alice: post-quantum encryption enabled"
-      bob <# "@alice 6"
-      alice <## "bob: post-quantum encryption enabled"
-      alice <# "bob> 6"
+      (bob, "6") ++#> alice
+      -- equivalent to:
+      -- bob `send` "@alice 6"
+      -- bob <## "alice: post-quantum encryption enabled"
+      -- bob <# "@alice 6"
+      -- alice <## "bob: post-quantum encryption enabled"
+      -- alice <# "bob> 6"
 
       alice `hasPQEnabledForContact` 2
       alice #$> ("/_get chat @2 count=2", chat, [(0, "post-quantum encryption enabled"), (0, "6")])
@@ -2893,14 +2893,19 @@ testPQAllowContact =
       bob `hasPQEnabledForContact` 2
       bob #$> ("/_get chat @2 count=2", chat, [(1, "post-quantum encryption enabled"), (1, "6")])
 
-      sendManyMessages alice bob
+      (alice, "6") +#> bob
+      (bob, "7") +#> alice
+
+      sendManyMessagesPQOn alice bob
 
       alice `hasPQEnabledForContact` 2
       bob `hasPQEnabledForContact` 2
   where
-    sendManyMessages alice bob = do
+    sendManyMessagesPQOff alice bob = do
       forM_ [(1 :: Int) .. 10] $ \i -> do
-        alice #> ("@bob " <> show i)
-        bob <# ("alice> " <> show i)
-        bob #> ("@alice " <> show i)
-        alice <# ("bob> " <> show i)
+        (alice, show i) \#> bob
+        (bob, show i) \#> alice
+    sendManyMessagesPQOn alice bob = do
+      forM_ [(1 :: Int) .. 10] $ \i -> do
+        (alice, show i) +#> bob
+        (bob, show i) +#> alice
