@@ -252,8 +252,8 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
     (displayName, fullName, image, userId, Just True, createdAt, createdAt)
   insertedRowId db
 
-updateConnSupportPQ :: DB.Connection -> Int64 -> PQSupport -> IO ()
-updateConnSupportPQ db connId pqSup =
+updateConnSupportPQ :: DB.Connection -> Int64 -> PQSupport -> PQEncryption -> IO ()
+updateConnSupportPQ db connId pqSup pqEnc =
   DB.execute
     db
     [sql|
@@ -261,7 +261,7 @@ updateConnSupportPQ db connId pqSup =
       SET pq_support = ?, pq_encryption = ?
       WHERE connection_id = ?
     |]
-    (pqSup, pqSup, connId)
+    (pqSup, pqEnc, connId)
 
 updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQEncryption -> IO ()
 updateConnPQSndEnabled db connId pqSndEnabled =
@@ -296,16 +296,16 @@ updateConnPQEnabledCON db connId pqEnabled =
     |]
     (pqEnabled, pqEnabled, connId)
 
-setPeerChatVRange :: DB.Connection -> Int64 -> VersionRangeChat -> IO ()
-setPeerChatVRange db connId (VersionRange minVer maxVer) =
+setPeerChatVRange :: DB.Connection -> Int64 -> Maybe VersionChat -> VersionRangeChat -> IO ()
+setPeerChatVRange db connId chatV (VersionRange minVer maxVer) =
   DB.execute
     db
     [sql|
       UPDATE connections
-      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      SET conn_chat_version = ?, peer_chat_min_version = ?, peer_chat_max_version = ?
       WHERE connection_id = ?
     |]
-    (minVer, maxVer, connId)
+    (chatV, minVer, maxVer, connId)
 
 setMemberChatVRange :: DB.Connection -> GroupMemberId -> VersionRangeChat -> IO ()
 setMemberChatVRange db mId (VersionRange minVer maxVer) =

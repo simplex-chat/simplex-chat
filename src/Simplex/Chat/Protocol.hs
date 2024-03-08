@@ -46,6 +46,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
+import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (CompressCtx, compress, decompressBatch)
 import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding
@@ -54,6 +55,15 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstTo
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
+
+-- Chat version history:
+-- 1 - support chat versions in connections (9/1/2023)
+-- 2 - create contacts for group members via x.grp.direct.inv (9/16/2023)
+-- 3 - faster joining via group links without creating contact (10/30/2023)
+-- 4 - group message forwarding (11/18/2023)
+-- 5 - batch sending messages (12/23/2023)
+-- 6 - send group welcome message after history (12/29/2023)
+-- 7 - update member profiles (1/15/2024)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
@@ -64,7 +74,7 @@ currentChatVersion = VersionChat 7
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 -- TODO remove parameterization in 5.7
 supportedChatVRange :: PQSupport -> VersionRangeChat
-supportedChatVRange pq = mkVersionRange (VersionChat 1) $ case pq of
+supportedChatVRange pq = mkVersionRange initialChatVersion $ case pq of
   PQSupportOn -> pqEncryptionCompressionVersion
   PQSupportOff -> currentChatVersion
 {-# INLINE supportedChatVRange #-}
@@ -96,6 +106,11 @@ memberProfileUpdateVersion = VersionChat 7
 -- version range that supports compressing messages and PQ e2e encryption
 pqEncryptionCompressionVersion :: VersionChat
 pqEncryptionCompressionVersion = VersionChat 8
+
+agentToChatVersion :: VersionSMPA -> VersionChat
+agentToChatVersion v
+  | v < pqdrSMPAgentVersion = initialChatVersion
+  | otherwise = pqEncryptionCompressionVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

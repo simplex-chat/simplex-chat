@@ -125,14 +125,14 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createAddressContactConnection :: DB.Connection -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> PQSupport -> ExceptT StoreError IO Contact
-createAddressContactConnection db user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode pqSup = do
-  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode pqSup
+createAddressContactConnection :: DB.Connection -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO Contact
+createAddressContactConnection db user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode chatV pqSup = do
+  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode chatV pqSup
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
   getContact db user contactId
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> PQSupport -> IO PendingContactConnection
-createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode pqSup = do
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
+createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   createdAt <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let pccConnStatus = ConnJoined
@@ -142,12 +142,12 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
         via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
-        created_at, updated_at, to_subscribe, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, pccConnStatus, ConnContact, True, cReqHash, xContactId)
         :. (customUserProfileId, isJust groupLinkId, groupLinkId)
-        :. (createdAt, createdAt, subMode == SMOnlyCreate, pqSup, pqSup)
+        :. (createdAt, createdAt, subMode == SMOnlyCreate, chatV, pqSup, pqSup)
     )
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
@@ -189,8 +189,8 @@ getContactByConnReqHash db user@User {userId} cReqHash =
       |]
       (userId, cReqHash, CSActive)
 
-createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> SubscriptionMode -> PQSupport -> IO PendingContactConnection
-createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile subMode pqSup = do
+createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
+createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile subMode chatV pqSup = do
   createdAt <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let contactConnInitiated = pccConnStatus == ConnNew
@@ -199,11 +199,11 @@ createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile
     [sql|
       INSERT INTO connections
         (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, contact_conn_initiated, custom_user_profile_id,
-         created_at, updated_at, to_subscribe, pq_support, pq_encryption)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, cReq, pccConnStatus, ConnContact, contactConnInitiated, customUserProfileId)
-        :. (createdAt, createdAt, subMode == SMOnlyCreate, pqSup, pqSup)
+        :. (createdAt, createdAt, subMode == SMOnlyCreate, chatV, pqSup, pqSup)
     )
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}

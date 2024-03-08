@@ -245,7 +245,7 @@ data ChatCommand
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APISetPQEnabled PQSupport
-  | APIAllowContactPQ ContactId
+  | APISetContactPQ ContactId PQEncryption
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
