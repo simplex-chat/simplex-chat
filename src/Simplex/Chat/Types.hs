@@ -57,57 +57,6 @@ import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 
--- TODO PQ replace with actual instances
-instance Eq (ConnectionRequestUri m) where _ == _ = True
-
-instance Eq (APartyCmdTag p) where
-  t1 == t2 = case (t1, t2) of
-    (APCT SAEConn NEW_, APCT SAEConn NEW_) -> True
-    (APCT SAEConn INV_, APCT SAEConn INV_) -> True
-    (APCT SAEConn JOIN_, APCT SAEConn JOIN_) -> True
-    (APCT SAEConn CONF_, APCT SAEConn CONF_) -> True
-    (APCT SAEConn LET_, APCT SAEConn LET_) -> True
-    (APCT SAEConn REQ_, APCT SAEConn REQ_) -> True
-    (APCT SAEConn ACPT_, APCT SAEConn ACPT_) -> True
-    (APCT SAEConn RJCT_, APCT SAEConn RJCT_) -> True
-    (APCT SAEConn INFO_, APCT SAEConn INFO_) -> True
-    (APCT SAEConn CON_, APCT SAEConn CON_) -> True
-    (APCT SAEConn SUB_, APCT SAEConn SUB_) -> True
-    (APCT SAEConn END_, APCT SAEConn END_) -> True
-    (APCT SAENone CONNECT_, APCT SAENone CONNECT_) -> True
-    (APCT SAENone DISCONNECT_, APCT SAENone DISCONNECT_) -> True
-    (APCT SAENone DOWN_, APCT SAENone DOWN_) -> True
-    (APCT SAENone UP_, APCT SAENone UP_) -> True
-    (APCT SAEConn SWITCH_, APCT SAEConn SWITCH_) -> True
-    (APCT SAEConn RSYNC_, APCT SAEConn RSYNC_) -> True
-    (APCT SAEConn SEND_, APCT SAEConn SEND_) -> True
-    (APCT SAEConn MID_, APCT SAEConn MID_) -> True
-    (APCT SAEConn SENT_, APCT SAEConn SENT_) -> True
-    (APCT SAEConn MERR_, APCT SAEConn MERR_) -> True
-    (APCT SAEConn MERRS_, APCT SAEConn MERRS_) -> True
-    (APCT SAEConn MSG_, APCT SAEConn MSG_) -> True
-    (APCT SAEConn MSGNTF_, APCT SAEConn MSGNTF_) -> True
-    (APCT SAEConn ACK_, APCT SAEConn ACK_) -> True
-    (APCT SAEConn RCVD_, APCT SAEConn RCVD_) -> True
-    (APCT SAEConn SWCH_, APCT SAEConn SWCH_) -> True
-    (APCT SAEConn OFF_, APCT SAEConn OFF_) -> True
-    (APCT SAEConn DEL_, APCT SAEConn DEL_) -> True
-    (APCT SAEConn DEL_RCVQ_, APCT SAEConn DEL_RCVQ_) -> True
-    (APCT SAEConn DEL_CONN_, APCT SAEConn DEL_CONN_) -> True
-    (APCT SAENone DEL_USER_, APCT SAENone DEL_USER_) -> True
-    (APCT SAEConn CHK_, APCT SAEConn CHK_) -> True
-    (APCT SAEConn STAT_, APCT SAEConn STAT_) -> True
-    (APCT SAEConn OK_, APCT SAEConn OK_) -> True
-    (APCT SAEConn ERR_, APCT SAEConn ERR_) -> True
-    (APCT SAENone SUSPENDED_, APCT SAENone SUSPENDED_) -> True
-    (APCT SAERcvFile RFDONE_, APCT SAERcvFile RFDONE_) -> True
-    (APCT SAERcvFile RFPROG_, APCT SAERcvFile RFPROG_) -> True
-    (APCT SAERcvFile RFERR_, APCT SAERcvFile RFERR_) -> True
-    (APCT SAESndFile SFPROG_, APCT SAESndFile SFPROG_) -> True
-    (APCT SAESndFile SFDONE_, APCT SAESndFile SFDONE_) -> True
-    (APCT SAESndFile SFERR_, APCT SAESndFile SFERR_) -> True
-    _ -> False
-
 class IsContact a where
   contactId' :: a -> ContactId
   profile' :: a -> LocalProfile
