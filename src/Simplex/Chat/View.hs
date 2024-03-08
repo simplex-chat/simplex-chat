@@ -219,6 +219,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileError u (Just ci) _ -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
+  CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [plain . LB.toStrict $ J.encode j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
@@ -1200,8 +1201,8 @@ viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
-viewPeerChatVRange :: JVersionRange -> StyledString
-viewPeerChatVRange (JVersionRange (VersionRange minVer maxVer)) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
+viewPeerChatVRange :: VersionRangeChat -> StyledString
+viewPeerChatVRange (VersionRange minVer maxVer) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =

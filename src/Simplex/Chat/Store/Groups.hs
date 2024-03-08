@@ -133,7 +133,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (groupForwardVRange)
+import Simplex.Chat.Protocol (groupForwardVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -156,7 +156,7 @@ type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe Ver
 
 toGroupInfo :: VersionRangeChat -> Int64 -> GroupInfoRow -> GroupInfo
 toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. userMemberRow) =
-  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = JVersionRange vr}
+  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
@@ -169,7 +169,7 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
-      memberChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+      memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in GroupMember {..}
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
@@ -393,7 +393,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               |]
               (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
             insertedRowId db
-          let JVersionRange hostVRange = peerChatVRange
+          let hostVRange = peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
@@ -444,7 +444,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         memberContactId = Just $ contactId' userOrContact,
         memberContactProfileId = localProfileId (profile' userOrContact),
         activeConn = Nothing,
-        memberChatVRange = JVersionRange memberChatVRange
+        memberChatVRange
       }
   where
     insertMember_ :: IO ContactName
@@ -789,10 +789,10 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
-    void $ createMemberConnection_ db userId groupMemberId agentConnId (fromJVersionRange peerChatVRange) Nothing 0 createdAt subMode
+    void $ createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 createdAt subMode
     pure member
   where
-    JVersionRange (VersionRange minV maxV) = peerChatVRange
+    VersionRange minV maxV = peerChatVRange
     invitedByGroupMemberId = groupMemberId' membership
     createMember_ memberId createdAt = do
       insertMember_
@@ -873,7 +873,7 @@ createAcceptedMember
       groupMemberId <- liftIO $ insertedRowId db
       pure (groupMemberId, MemberId memId)
     where
-      JVersionRange (VersionRange minV maxV) = cReqChatVRange
+      VersionRange minV maxV = cReqChatVRange
       insertMember_ memberId createdAt =
         DB.execute
           db
@@ -898,7 +898,7 @@ createAcceptedMemberConnection
   groupMemberId
   subMode = do
     createdAt <- liftIO getCurrentTime
-    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId (fromJVersionRange cReqChatVRange) Nothing (Just userContactLinkId) Nothing 0 createdAt subMode PQSupportOff
+    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
 getContactViaMember :: DB.Connection -> User -> GroupMember -> ExceptT StoreError IO Contact
@@ -1002,7 +1002,7 @@ createNewMember_
   createdAt = do
     let invitedById = fromInvitedBy userContactId invitedBy
         activeConn = Nothing
-        mcvr@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
+        memberChatVRange@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
     DB.execute
       db
       [sql|
@@ -1034,7 +1034,7 @@ createNewMember_
           memberContactId,
           memberContactProfileId,
           activeConn,
-          memberChatVRange = JVersionRange mcvr
+          memberChatVRange
         }
 
 checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)
@@ -1174,7 +1174,7 @@ getForwardIntroducedMembers db user invitee highlyAvailable = do
           DB.query
             db
             (q <> " AND intro_chat_protocol_version >= ?")
-            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, minVersion groupForwardVRange)
+            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, groupForwardVersion)
     q =
       [sql|
         SELECT re_group_member_id
@@ -1194,7 +1194,7 @@ getForwardInvitedMembers db user forwardMember highlyAvailable = do
           DB.query
             db
             (q <> " AND intro_chat_protocol_version >= ?")
-            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, minVersion groupForwardVRange)
+            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, groupForwardVersion)
     q =
       [sql|
         SELECT to_group_member_id
@@ -1882,7 +1882,7 @@ createMemberContact
   cReq
   gInfo
   GroupMember {groupMemberId, localDisplayName, memberProfile, memberContactProfileId}
-  Connection {connLevel, peerChatVRange = peerChatVRange@(JVersionRange (VersionRange minV maxV))}
+  Connection {connLevel, peerChatVRange = peerChatVRange@(VersionRange minV maxV)}
   subMode = do
     currentTs <- getCurrentTime
     let incognitoProfile = incognitoMembershipProfile gInfo
@@ -2030,7 +2030,7 @@ createMemberContactConn_
   user@User {userId}
   (cmdId, acId)
   gInfo
-  _memberConn@Connection {connLevel, peerChatVRange = peerChatVRange@(JVersionRange (VersionRange minV maxV))}
+  _memberConn@Connection {connLevel, peerChatVRange = peerChatVRange@(VersionRange minV maxV)}
   contactId
   subMode = do
     currentTs <- liftIO getCurrentTime
@@ -2169,7 +2169,7 @@ updateUnknownMemberAnnounced db user@User {userId} invitingMember unknownMember@
       )
   getGroupMemberById db user groupMemberId
   where
-    VersionRange minV maxV = maybe (fromJVersionRange memberChatVRange) fromChatVRange v
+    VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
 
 updateUserMemberProfileSentAt :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateUserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =

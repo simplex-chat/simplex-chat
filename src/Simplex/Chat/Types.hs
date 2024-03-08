@@ -278,7 +278,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
-    cReqChatVRange :: JVersionRange,
+    cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
@@ -609,7 +609,7 @@ memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo
     { memberId,
       memberRole,
-      v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
+      v = ChatVersionRange . peerChatVRange <$> activeConn,
       profile = redactedMemberProfile $ fromLocalProfile memberProfile
     }
 
@@ -691,7 +691,7 @@ data GroupMember = GroupMember
     -- member chat protocol version range; if member has active connection, its version range is preferred;
     -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
     -- but it's correctly set on read (see toGroupInfo)
-    memberChatVRange :: JVersionRange
+    memberChatVRange :: VersionRangeChat
   }
   deriving (Eq, Show)
 
@@ -709,10 +709,12 @@ memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
 memberChatVRange' :: GroupMember -> VersionRangeChat
-memberChatVRange' GroupMember {activeConn, memberChatVRange} =
-  fromJVersionRange $ case activeConn of
-    Just Connection {peerChatVRange} -> peerChatVRange
-    Nothing -> memberChatVRange
+memberChatVRange' GroupMember {activeConn, memberChatVRange} = case activeConn of
+  Just Connection {peerChatVRange} -> peerChatVRange
+  Nothing -> memberChatVRange
+
+supportsVersion :: GroupMember -> VersionChat -> Bool
+supportsVersion m v = maxVersion (memberChatVRange' m) >= v
 
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
@@ -1289,7 +1291,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
-    peerChatVRange :: JVersionRange,
+    peerChatVRange :: VersionRangeChat,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
@@ -1643,6 +1645,7 @@ type VersionRangeChat = VersionRange ChatVersion
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
 
+-- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
 
 initialChatVersion :: VersionChat
@@ -1657,18 +1660,6 @@ instance FromJSON ChatVersionRange where
 instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
-
-newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRangeChat} deriving (Eq, Show)
-
-instance FromJSON JVersionRange where
-  parseJSON = J.withObject "JVersionRange" $ \o -> do
-    minv <- o .: "minVersion"
-    maxv <- o .: "maxVersion"
-    maybe (fail "bad version range") (pure . JVersionRange) $ safeVersionRange minv maxv
-
-instance ToJSON JVersionRange where
-  toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
-  toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
 
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
