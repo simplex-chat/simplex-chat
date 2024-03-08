@@ -458,6 +458,7 @@ data ChatCommand
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
   | APIUploadStandaloneFile UserId CryptoFile
   | APIDownloadStandaloneFile UserId FileDescriptionURI CryptoFile
+  | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -597,6 +598,7 @@ data ChatResponse
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
+  | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
   | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
   | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
   | CRRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
