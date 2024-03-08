@@ -4321,7 +4321,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   Just groupId -> do
                     gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                     let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                    if maxVersion chatVRange >= groupDirectInvVersion
+                    if maxVersion chatVRange >= groupFastLinkJoinVersion
                       then do
                         mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
                         createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
