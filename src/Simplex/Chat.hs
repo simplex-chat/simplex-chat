@@ -3272,19 +3272,15 @@ processAgentMsgSndFile _corrId aFileId msg =
             Nothing -> do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
-              case mapMaybe fileDescrURI rfds of
-                [] -> case rfds of
-                  [] -> do
-                    logError "File sent without receiver descriptions"
-                    sendFileError fileId vr ft
-                  rfd@(FD.ValidFileDescription FD.FileDescription {redirect}) : _ -> case redirect of
+              case rfds of
+                [] -> sendFileError "no receiver descriptions" fileId vr ft
+                rfd : _ -> case [fd | fd@(FD.ValidFileDescription FD.FileDescription {chunks = [_]}) <- rfds] of
+                  [] -> case xftpRedirectFor of
                     Nothing -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
-                    Just _ -> do
-                      logError "Refusing to chain redirects"
-                      sendFileError fileId vr ft
-                uris -> do
-                  ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
-                  toView $ CRSndStandaloneFileComplete user ft' uris
+                    Just _ -> sendFileError "Prohibit chaining redirects" fileId vr ft
+                  rfds' -> do -- we have 1 chunk - use it as URI whether it is redirect or not
+                    ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
+                    toView $ CRSndStandaloneFileComplete user ft' $ map (decodeLatin1 . strEncode . FD.fileDescriptionURI) rfds'
             Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
@@ -3327,14 +3323,10 @@ processAgentMsgSndFile _corrId aFileId msg =
           | temporaryAgentError e ->
               throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
           | otherwise ->
-              sendFileError fileId vr ft
+              sendFileError (tshow e) fileId vr ft
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        fileDescrURI :: ValidFileDescription 'FRecipient -> Maybe T.Text
-        fileDescrURI vfd = case vfd of
-          FD.ValidFileDescription FD.FileDescription {chunks = [_]} -> Just $ decodeLatin1 . strEncode $ FD.fileDescriptionURI vfd
-          _ -> Nothing
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = fileDescrText rfd
@@ -3349,7 +3341,9 @@ processAgentMsgSndFile _corrId aFileId msg =
               case L.nonEmpty fds of
                 Just fds' -> loopSend fds'
                 Nothing -> pure msgDeliveryId
-        sendFileError fileId vr ft = do
+        sendFileError :: Text -> Int64 -> VersionRange -> FileTransferMeta -> m ()
+        sendFileError err fileId vr ft = do
+          logError $ "Sent file error: " <> err
           ci <- withStore $ \db -> do
             liftIO $ updateFileCancelled db user fileId CIFSSndError
             lookupChatItemByFileId db vr user fileId
