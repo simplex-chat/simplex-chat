@@ -58,6 +58,14 @@ fun DeveloperView(
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
       }
+
+      SectionSpacer()
+      SectionView("Experimental".uppercase()) {
+        SettingsPreferenceItem(painterResource(MR.images.ic_vpn_key_filled), "Post-quantum E2EE", m.controller.appPrefs.pqExperimentalEnabled, onChange = { enable ->
+          withBGApi { m.controller.apiSetPQEnabled(enable) }
+        })
+        SectionTextFooter("In this version applies only to new contacts.")
+      }
     }
     SectionBottomSpacer()
   }

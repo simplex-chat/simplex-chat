@@ -58,6 +58,7 @@ fun ChatInfoView(
   val currentUser = remember { chatModel.currentUser }.value
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
+  val pqExperimentalEnabled = chatModel.controller.appPrefs.pqExperimentalEnabled.get()
   if (chat != null && currentUser != null) {
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
@@ -80,6 +81,7 @@ fun ChatInfoView(
       localAlias,
       connectionCode,
       developerTools,
+      pqExperimentalEnabled,
       onLocalAliasChanged = {
         setContactAlias(chat, it, chatModel)
       },
@@ -137,6 +139,17 @@ fun ChatInfoView(
             close.invoke()
           }
         })
+      },
+      allowContactPQ = {
+         showAllowContactPQAlert(allowContactPQ = {
+           withBGApi {
+             val ct = chatModel.controller.apiAllowContactPQ(chatRh, contact.contactId)
+             if (ct != null) {
+               chatModel.updateContact(chatRh, contact)
+             }
+             close.invoke()
+           }
+         })
       },
       verifyClicked = {
         ModalManager.end.showModalCloseable { close ->
@@ -288,6 +301,7 @@ fun ChatInfoLayout(
   localAlias: String,
   connectionCode: String?,
   developerTools: Boolean,
+  pqExperimentalEnabled: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   openPreferences: () -> Unit,
   deleteContact: () -> Unit,
@@ -296,6 +310,7 @@ fun ChatInfoLayout(
   abortSwitchContactAddress: () -> Unit,
   syncContactConnection: () -> Unit,
   syncContactConnectionForce: () -> Unit,
+  allowContactPQ: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
@@ -343,6 +358,18 @@ fun ChatInfoLayout(
         //      }
       }
       SectionDividerSpaced()
+    }
+
+    val conn = contact.activeConn
+    if (pqExperimentalEnabled && conn != null) {
+      SectionView("Post-quantum E2E encryption") {
+        InfoRow("PQ E2E encryption", if (conn.connPQEnabled) "Enabled" else "Disabled")
+        if (!conn.pqSupport) {
+          AllowContactPQButton(allowContactPQ)
+          SectionTextFooter("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it.")
+        }
+        SectionDividerSpaced()
+      }
     }
 
     if (contact.contactLink != null) {
@@ -602,6 +629,17 @@ fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
 }
 
 @Composable
+fun AllowContactPQButton(allowContactPQ: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_warning),
+    "Allow PQ encryption",
+    click = allowContactPQ,
+    textColor = WarningOrange,
+    iconColor = WarningOrange
+  )
+}
+
+@Composable
 fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
     if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
@@ -704,6 +742,16 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
   )
 }
 
+fun showAllowContactPQAlert(allowContactPQ: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = "Allow post-quantum encryption?",
+    text = "This is an experimental feature, it is not recommended to enable it for high importance communications. It may result in connection errors!",
+    confirmText = "Allow",
+    onConfirm = allowContactPQ,
+    destructive = true,
+  )
+}
+
 @Preview
 @Composable
 fun PreviewChatInfoLayout() {
@@ -721,6 +769,7 @@ fun PreviewChatInfoLayout() {
       localAlias = "",
       connectionCode = "123",
       developerTools = false,
+      pqExperimentalEnabled = false,
       connStats = remember { mutableStateOf(null) },
       contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
@@ -732,6 +781,7 @@ fun PreviewChatInfoLayout() {
       abortSwitchContactAddress = {},
       syncContactConnection = {},
       syncContactConnectionForce = {},
+      allowContactPQ = {},
       verifyClicked = {},
     )
   }
