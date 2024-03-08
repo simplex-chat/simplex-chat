@@ -448,10 +448,6 @@ struct MigrateFromAnotherDevice: View {
             }
             let (ctrl, user) = ctrlAndUser
             chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
-                Task {
-                    await TerminalItems.shared.add(.resp(.now, msg))
-                }
-                logger.debug("processReceivedMsg: \(msg.responseType)")
                 await MainActor.run {
                     switch msg {
                     case let .rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer):
@@ -675,6 +671,10 @@ private class MigrationChatReceiver {
     func receiveMsgLoop() async {
         // TODO use function that has timeout
         if let msg = await chatRecvMsg(ctrl) {
+            Task {
+                await TerminalItems.shared.add(.resp(.now, msg))
+            }
+            logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {

@@ -98,7 +98,7 @@ struct MigrateToAnotherDevice: View {
             case .linkCreation:
                 linkCreationView()
             case let .linkShown(fileId, link, archivePath, ctrl):
-                linkView(fileId, link, archivePath, ctrl)
+                linkShownView(fileId, link, archivePath, ctrl)
             case let .finished(chatDeletion):
                 finishedView(chatDeletion)
             }
@@ -120,7 +120,7 @@ struct MigrateToAnotherDevice: View {
         }
         .onDisappear {
             Task {
-                if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
+                if case .linkCreation = migrationState {} else if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
                     await MainActor.run {
                         showProgressOnSettings = true
                     }
@@ -132,9 +132,7 @@ struct MigrateToAnotherDevice: View {
                 if case let .uploadProgress(_, _, fileId, _, ctrl) = migrationState, let ctrl {
                     await cancelUploadedArchive(fileId, ctrl)
                 }
-                chatReceiver?.stop()
-                try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
-                try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_agent.db")
+                chatReceiver?.stopAndCleanUp()
                 try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             }
         }
@@ -279,9 +277,7 @@ struct MigrateToAnotherDevice: View {
             }
         }
         .onAppear {
-            chatReceiver?.stop()
-            try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_chat.db")
-            try? FileManager.default.removeItem(atPath: "\(tempDatabaseUrl.path)_agent.db")
+            chatReceiver?.stopAndCleanUp()
         }
     }
 
@@ -296,7 +292,7 @@ struct MigrateToAnotherDevice: View {
         }
     }
 
-    private func linkView(_ fileId: Int64, _ link: String, _ archivePath: URL, _ ctrl: chat_ctrl) -> some View {
+    private func linkShownView(_ fileId: Int64, _ link: String, _ archivePath: URL, _ ctrl: chat_ctrl) -> some View {
         List {
             Section {
                 Button(action: { cancelMigration(fileId, ctrl) }) {
@@ -470,11 +466,7 @@ struct MigrateToAnotherDevice: View {
                 return migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
             }
             let (ctrl, user) = ctrlAndUser
-            chatReceiver = MigrationChatReceiver(ctrl: ctrl) { msg in
-                Task {
-                    await TerminalItems.shared.add(.resp(.now, msg))
-                }
-                logger.debug("processReceivedMsg: \(msg.responseType)")
+            chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
                 await MainActor.run {
                     switch msg {
                     case let .sndFileProgressXFTP(_, _, fileTransferMeta, sentSize, totalSize):
@@ -659,12 +651,14 @@ func chatStoppedView() -> some View {
 
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
+    let databaseUrl: URL
     let processReceivedMsg: (ChatResponse) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
         self.ctrl = ctrl
+        self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
     }
 
@@ -678,6 +672,10 @@ private class MigrationChatReceiver {
     func receiveMsgLoop() async {
         // TODO use function that has timeout
         if let msg = await chatRecvMsg(ctrl) {
+            Task {
+                await TerminalItems.shared.add(.resp(.now, msg))
+            }
+            logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {
@@ -686,12 +684,14 @@ private class MigrationChatReceiver {
         }
     }
 
-    func stop() {
+    func stopAndCleanUp() {
         logger.debug("MigrationChatReceiver.stop")
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
         chat_close_store(ctrl)
+        try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_chat.db")
+        try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
     }
 }
 

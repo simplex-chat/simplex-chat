@@ -42,7 +42,7 @@ extension AppSettings {
         if let val = confirmDBUpgrades { confirmDBUpgradesGroupDefault.set(val) }
         if let val = androidCallOnLockScreen { def.setValue(val.rawValue, forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN) }
         if let val = iosCallKitEnabled { callKitEnabledGroupDefault.set(val) }
-        if let val = iosCallKitCallsInRecents { callKitEnabledGroupDefault.set(val) }
+        if let val = iosCallKitCallsInRecents { def.setValue(val, forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS) }
     }
 
     public static var current: AppSettings {
@@ -66,7 +66,7 @@ extension AppSettings {
         c.confirmDBUpgrades = confirmDBUpgradesGroupDefault.get()
         c.androidCallOnLockScreen = AppSettingsLockScreenCalls(rawValue: def.string(forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN)!)
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
-        c.iosCallKitCallsInRecents = callKitEnabledGroupDefault.get()
+        c.iosCallKitCallsInRecents = def.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
         return c
     }
 }
