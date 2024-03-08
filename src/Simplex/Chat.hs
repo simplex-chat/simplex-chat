@@ -54,7 +54,6 @@ import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nomina
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
-import Foreign.C.Types (CSize (..))
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -3511,22 +3510,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       _ -> Nothing
 
     processCONFpqSupport :: Connection -> PQSupport -> m Connection
-    processCONFpqSupport conn@Connection {connId, pqSupport} pqSupport' =
-      case (pqSupport, pqSupport') of
-        (PQSupportOn, PQSupportOff) -> do
-          withStore' $ \db -> updateConnSupportPQ db connId pqSupport'
-          pure (conn {pqSupport = pqSupport', pqEncryption = CR.pqSupportToEnc pqSupport'} :: Connection)
-        (PQSupportOff, PQSupportOn) -> do
-          messageWarning "processCONFpqSupport: unexpected PQSupportOn"
+    processCONFpqSupport conn@Connection {connId, pqSupport = pq} pq'
+      | pq == PQSupportOn && pq' == PQSupportOff = do
+          withStore' $ \db -> updateConnSupportPQ db connId pq'
+          pure (conn {pqSupport = pq', pqEncryption = CR.pqSupportToEnc pq'} :: Connection)
+      | pq /= pq' = do
+          messageWarning "processCONFpqSupport: unexpected pqSupport change"
           pure conn
-        _ -> pure conn
+      | otherwise = pure conn
 
     processINFOpqSupport :: Connection -> PQSupport -> m ()
-    processINFOpqSupport Connection {pqSupport} pqSupport' =
-      case (pqSupport, pqSupport') of
-        (PQSupport b, PQSupport b') | b /= b' -> do
-          messageWarning "processINFOpqSupport: unexpected pqSupport change"
-        _ -> pure ()
+    processINFOpqSupport Connection {pqSupport = pq} pq' =
+      when (pq /= pq') $ messageWarning "processINFOpqSupport: unexpected pqSupport change"
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg connEntity conn@Connection {connId, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
@@ -6145,7 +6140,7 @@ encodeConnInfoPQ pqSup chatMsgEvent = do
     ECMLarge -> throwChatError $ CEException "large message"
   where
     compressedBatchMsgBody msgBody =
-      withCompressCtx (CSize $ fromIntegral $ B.length msgBody) (`compressedBatchMsgBody_` msgBody)
+      withCompressCtx (toEnum $ B.length msgBody) (`compressedBatchMsgBody_` msgBody)
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -6170,7 +6165,7 @@ deliverMessagesB msgReqs = do
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx (CSize $ fromIntegral maxRawMsgLength) $ \cctx ->
+    compressBodies = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx ->
       forM msgReqs $ \case
         -- TODO PQ combine pqSupport and pqEncryption to one type:
         -- data PQMode = PQDisabled | PQSupported PQEncryption
