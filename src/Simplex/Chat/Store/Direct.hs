@@ -532,7 +532,7 @@ getUserContacts db user@User {userId} = do
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
 createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ reqPQSup =
+createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
   liftIO (maybeM getContact' xContactId_) >>= \case
     Just contact -> pure $ CORContact contact
     Nothing -> CORRequest <$> createOrUpdate_
@@ -566,7 +566,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
               VALUES (?,?,?,?,?,?,?,?,?,?,?)
             |]
             ( (userContactLinkId, invId, minV, maxV, profileId, ldn, userId)
-                :. (currentTs, currentTs, xContactId_, reqPQSup)
+                :. (currentTs, currentTs, xContactId_, pqSup)
             )
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
@@ -623,7 +623,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
                 SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
-              (invId, reqPQSup, minV, maxV, currentTs, userId, cReqId)
+              (invId, pqSup, minV, maxV, currentTs, userId, cReqId)
         else withLocalDisplayName db userId displayName $ \ldn ->
           Right <$> do
             DB.execute
@@ -633,7 +633,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
                 SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
-              (invId, reqPQSup, minV, maxV, ldn, currentTs, userId, cReqId)
+              (invId, pqSup, minV, maxV, ldn, currentTs, userId, cReqId)
             safeDeleteLDN db user oldLdn
       where
         updateProfile currentTs =

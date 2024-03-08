@@ -336,7 +336,7 @@ data UserContactRequest = UserContactRequest
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId,
-    pqSupport :: Maybe PQSupport
+    pqSupport :: PQSupport
   }
   deriving (Eq, Show)
 

@@ -2183,12 +2183,12 @@ processChatCommand' vr = \case
       -- 0) toggle disabled - PQSupportOff
       -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
-      (pqSup', pqSupCompression) <- case pqSup of
+      (pqSup', pqCompress) <- case pqSup of
         PQSupportOff -> pure (PQSupportOff, PQSupportOff)
         PQSupportOn -> do
-          pqSupCompression <- fromMaybe PQSupportOff <$> withAgent' (\a -> connRequestPQSupport a pqSup cReq)
-          pure (PQSupportOn, pqSupCompression)
-      dm <- encodeConnInfoPQ pqSupCompression (XContact profileToSend $ Just xContactId)
+          pqCompress <- fromMaybe PQSupportOff <$> withAgent' (\a -> connRequestPQSupport a pqSup cReq)
+          pure (PQSupportOn, pqCompress)
+      dm <- encodeConnInfoPQ pqCompress (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
       connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
       pure (connId, incognitoProfile, subMode, pqSup')
@@ -2887,7 +2887,7 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   pqSup <- chatReadVar pqExperimentalEnabled
-  let pqSup' = pqSup `CR.pqSupportAnd` fromMaybe PQSupportOff pqSupport
+  let pqSup' = pqSup `CR.pqSupportAnd` pqSupport
   dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
   withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed

@@ -11,7 +11,7 @@ m20240228_pq =
 ALTER TABLE connections ADD COLUMN enable_pq INTEGER;
 ALTER TABLE connections ADD COLUMN pq_snd_enabled INTEGER;
 ALTER TABLE connections ADD COLUMN pq_rcv_enabled INTEGER;
-ALTER TABLE contact_requests ADD COLUMN pq_support INTEGER;
+ALTER TABLE contact_requests ADD COLUMN pq_support INTEGER NOT NULL DEFAULT 0;
 |]
 
 down_m20240228_pq :: Query
