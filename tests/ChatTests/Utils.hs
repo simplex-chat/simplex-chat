@@ -115,6 +115,17 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest tmp =
       withNewTestChatCfg tmp cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
 
+type PQEnabled = Bool
+
+pqMatrix2 :: (HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()) -> SpecWith FilePath
+pqMatrix2 runTest = do
+  it "PQ: off, off" $ test False False
+  it "PQ: on, off" $ test False True
+  it "PQ: off, on" $ test True False
+  it "PQ: on, on" $ test True True
+  where
+    test aPQ bPQ = testChat2 aliceProfile bobProfile $ \a b -> runTest (a, aPQ) (b, bPQ)
+
 withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatGroup3Connected tmp dbPrefix action = do
   withTestChat tmp dbPrefix $ \cc -> do
@@ -176,36 +187,26 @@ cc #$> (cmd, f, res) = do
 -- / PQ combinators
 
 (\#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
-(cc1, msg) \#> cc2 = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  cc1 `send` ("@" <> name2 <> " " <> msg)
-  cc1 <# ("@" <> name2 <> " " <> msg)
-  cc1 `hasPQSelForContact` (2, pqSndEnabled, PQEncOff)
-  cc2 <# (name1 <> "> " <> msg)
-  cc2 `hasPQSelForContact` (2, pqRcvEnabled, PQEncOff)
+(\#>) = sndRcv PQEncOff False
 
 (+#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
-(cc1, msg) +#> cc2 = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  cc1 `send` ("@" <> name2 <> " " <> msg)
-  cc1 <# ("@" <> name2 <> " " <> msg)
-  cc1 `hasPQSelForContact` (2, pqSndEnabled, PQEncOn)
-  cc2 <# (name1 <> "> " <> msg)
-  cc2 `hasPQSelForContact` (2, pqRcvEnabled, PQEncOn)
+(+#>) = sndRcv PQEncOn False
 
 (++#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
-(cc1, msg) ++#> cc2 = do
+(++#>) = sndRcv PQEncOn True
+
+sndRcv :: HasCallStack => PQEncryption -> Bool -> (TestCC, String) -> TestCC -> IO ()
+sndRcv pqEnc enabled (cc1, msg) cc2 = do
   name1 <- userName cc1
   name2 <- userName cc2
-  cc1 `send` ("@" <> name2 <> " " <> msg)
-  cc1 <## (name2 <>": post-quantum encryption enabled")
-  cc1 <# ("@" <> name2 <> " " <> msg)
-  cc1 `hasPQSelForContact` (2, pqSndEnabled, PQEncOn)
-  cc2 <## (name1 <>": post-quantum encryption enabled")
+  let cmd = "@" <> name2 <> " " <> msg
+  cc1 `send` cmd
+  when enabled $ cc1 <## (name2 <> ": post-quantum encryption enabled")
+  cc1 <# cmd
+  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
+  when enabled $ cc2 <## (name1 <> ": post-quantum encryption enabled")
   cc2 <# (name1 <> "> " <> msg)
-  cc2 `hasPQSelForContact` (2, pqRcvEnabled, PQEncOn)
+  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
 
 -- PQ combinators /
 
@@ -516,21 +517,20 @@ getProfilePictureByName cc displayName =
     maybeFirstRow fromOnly $
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
 
-hasPQSelForContact :: HasCallStack => TestCC -> (ContactId, Connection -> Maybe PQEncryption, PQEncryption) -> Expectation
-hasPQSelForContact cc (contactId, pqSel, expected) =
+pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
+pqSndForContact = pqForContact_ pqSndEnabled
+
+pqRcvForContact :: TestCC -> ContactId -> IO PQEncryption
+pqRcvForContact = pqForContact_ pqRcvEnabled
+
+pqForContact :: TestCC -> ContactId -> IO PQEncryption
+pqForContact = pqForContact_ (Just . connPQEnabled)
+
+pqForContact_ :: (Connection -> Maybe PQEncryption) -> TestCC -> ContactId -> IO PQEncryption
+pqForContact_ pqSel cc contactId =
   getTestCCContact cc contactId >>= \ct -> case contactConn ct of
-    Just conn -> case pqSel conn of
-      Nothing -> expected `shouldBe` PQEncOff
-      Just pqEnc -> pqEnc `shouldBe` expected
+    Just conn -> pure $ fromMaybe PQEncOff $ pqSel conn
     Nothing -> fail "no connection"
-
-hasPQEnabledForContact :: HasCallStack => TestCC -> ContactId -> Expectation
-hasPQEnabledForContact cc contactId =
-  getTestCCContact cc contactId >>= \ct -> contactPQEnabled ct `shouldBe` True
-
-hasPQDisabledForContact :: HasCallStack => TestCC -> ContactId -> Expectation
-hasPQDisabledForContact cc contactId =
-  getTestCCContact cc contactId >>= \ct -> contactPQEnabled ct `shouldBe` False
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId =
@@ -661,10 +661,3 @@ linkAnotherSchema link
 
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
-
-pqMatrix2 :: (HasCallStack => (TestCC, TurnPQOn) -> (TestCC, TurnPQOn) -> IO ()) -> SpecWith FilePath
-pqMatrix2 runTest = do
-  it "PQ flag: off, off" $ pqTestChat2 (aliceProfile, False) (bobProfile, False) runTest
-  it "PQ flag: on, off" $ pqTestChat2 (aliceProfile, True) (bobProfile, False) runTest
-  it "PQ flag: off, on" $ pqTestChat2 (aliceProfile, False) (bobProfile, True) runTest
-  it "PQ flag: on, on" $ pqTestChat2 (aliceProfile, True) (bobProfile, True) runTest

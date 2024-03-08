@@ -49,7 +49,7 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
@@ -265,8 +265,8 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
-contactPQEnabled :: Contact -> Bool
-contactPQEnabled Contact {activeConn} = maybe False connPQEnabled activeConn
+contactPQEnabled :: Contact -> PQEncryption
+contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
@@ -1393,9 +1393,9 @@ aConnId Connection {agentConnId = AgentConnId cId} = cId
 connIncognito :: Connection -> Bool
 connIncognito Connection {customUserProfileId} = isJust customUserProfileId
 
-connPQEnabled :: Connection -> Bool
-connPQEnabled Connection {pqSndEnabled = Just (PQEncryption s), pqRcvEnabled = Just (PQEncryption r)} = s && r
-connPQEnabled _ = False
+connPQEnabled :: Connection -> PQEncryption
+connPQEnabled Connection {pqSndEnabled = Just (PQEncryption s), pqRcvEnabled = Just (PQEncryption r)} = PQEncryption $ s && r
+connPQEnabled _ = PQEncOff
 
 data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,

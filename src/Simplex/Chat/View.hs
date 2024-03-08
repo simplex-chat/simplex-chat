@@ -1177,7 +1177,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
-    <> ["post-quantum encryption enabled" | contactPQEnabled ct]
+    <> ["post-quantum encryption enabled" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
