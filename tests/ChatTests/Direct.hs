@@ -2843,19 +2843,19 @@ testPQAllowContact =
 
       -- enabling experimental flags doesn't enable PQ in previously created connection
       enablePQ alice
-      sendManyMessages alice bob
+      sendManyMessages alice bob -- PQ not enabled
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
       enablePQ bob
-      sendManyMessages alice bob
+      sendManyMessages alice bob -- PQ not enabled
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
       -- if only one contact allows PQ, it's not enabled
       alice ##> "/_pq allow 2"
       alice <## "bob: post-quantum encryption allowed"
-      sendManyMessages alice bob
+      sendManyMessages alice bob -- PQ not enabled
       alice `hasPQDisabledForContact` 2
       bob `hasPQDisabledForContact` 2
 
