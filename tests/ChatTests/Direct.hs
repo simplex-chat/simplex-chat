@@ -129,8 +129,9 @@ chatDirectTests = do
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
   describe "PQ tests" $ do
-    describe "set flag before connection, connect via invitation link" testPQConnectViaLink
-    describe "set flag before connection, connect via contact address" testPQConnectViaAddress
+    describe "enable PQ before connection, connect via invitation link" testPQConnectViaLink
+    describe "enable PQ before connection, connect via contact address" testPQConnectViaAddress
+    it "allow PQ after connection, it is enabled after several messages" testPQAllowContact
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2818,3 +2819,88 @@ testPQConnectViaAddress = pqMatrix2 runTestPQConnectViaAddress
         pqEnabled = aPQ && bPQ
         e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
         pqForContact = if pqEnabled then hasPQEnabledForContact else hasPQDisabledForContact
+
+testPQAllowContact :: HasCallStack => FilePath -> IO ()
+testPQAllowContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/_get chat @2 count=100"
+      ra <- chat <$> getTermLine alice
+      ra `shouldContain` [(0, e2eeInfoNoPQStr)]
+      alice `hasPQDisabledForContact` 2
+
+      bob ##> "/_get chat @2 count=100"
+      rb <- chat <$> getTermLine bob
+      rb `shouldContain` [(0, e2eeInfoNoPQStr)]
+      bob `hasPQDisabledForContact` 2
+
+      sendManyMessages alice bob
+      alice `hasPQDisabledForContact` 2
+      bob `hasPQDisabledForContact` 2
+
+      -- enabling experimental flags doesn't enable PQ in previously created connection
+      enablePQ alice
+      sendManyMessages alice bob
+      alice `hasPQDisabledForContact` 2
+      bob `hasPQDisabledForContact` 2
+
+      enablePQ bob
+      sendManyMessages alice bob
+      alice `hasPQDisabledForContact` 2
+      bob `hasPQDisabledForContact` 2
+
+      -- if only one contact allows PQ, it's not enabled
+      alice ##> "/_pq allow 2"
+      alice <## "bob: post-quantum encryption allowed"
+      sendManyMessages alice bob
+      alice `hasPQDisabledForContact` 2
+      bob `hasPQDisabledForContact` 2
+
+      -- both contacts have to allow PQ to enable it
+      bob ##> "/_pq allow 2"
+      bob <## "alice: post-quantum encryption allowed"
+
+      alice #> "@bob 1"
+      bob <# "alice> 1"
+
+      bob #> "@alice 2"
+      alice <# "bob> 2"
+
+      alice #> "@bob 3"
+      bob <# "alice> 3"
+
+      bob #> "@alice 4"
+      alice <# "bob> 4"
+
+      alice #> "@bob 5"
+      bob <# "alice> 5"
+
+      alice `hasPQDisabledForContact` 2
+      bob `hasPQDisabledForContact` 2
+
+      bob `send` "@alice 6"
+      bob <## "alice: post-quantum encryption enabled"
+      bob <# "@alice 6"
+      alice <## "bob: post-quantum encryption enabled"
+      alice <# "bob> 6"
+
+      alice `hasPQEnabledForContact` 2
+      alice #$> ("/_get chat @2 count=2", chat, [(0, "post-quantum encryption enabled"), (0, "6")])
+
+      bob `hasPQEnabledForContact` 2
+      bob #$> ("/_get chat @2 count=2", chat, [(1, "post-quantum encryption enabled"), (1, "6")])
+
+      sendManyMessages alice bob
+
+      alice `hasPQEnabledForContact` 2
+      bob `hasPQEnabledForContact` 2
+  where
+    sendManyMessages alice bob = do
+      forM_ [(1 :: Int) .. 10] $ \i -> do
+        alice #> ("@bob " <> show i)
+        bob <# ("alice> " <> show i)
+        bob #> ("@alice " <> show i)
+        alice <# ("bob> " <> show i)
