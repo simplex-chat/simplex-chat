@@ -311,7 +311,15 @@ struct MigrateToAnotherDevice: View {
             }
             Section("Show QR code") {
                 SimpleXLinkQRCode(uri: link)
-                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    )
+                    .padding(.horizontal)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
 
             Section("Or securely share this file link") {
