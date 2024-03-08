@@ -6166,16 +6166,16 @@ deliverMessagesB msgReqs = do
   where
     compressBodies = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx -> do
       forM msgReqs $ \case
-        mr@(Right (conn@Connection {pqSupport, pqEncryption, peerChatVRange}, msgFlags, msgBody, msgId)) -> case CR.pqEnableSupport e2eV pqSupport pqEncryption of
-          PQSupportOn ->
-            Right . (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
-          PQSupportOff -> pure mr
+        mr@(Right (conn@Connection {pqSupport, pqEncryption, peerChatVRange}, msgFlags, msgBody, msgId))
+          | shouldCompress pqSupport pqEncryption ->
+              Right . (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
+          | otherwise -> pure mr
           where
             --- TODO PQ
             -- This version agreement is ephemeral and in case of peer downgrade it will get reduced, and pqSupport may be turned off in the result
             -- We probably should store agreed version on Connection and do not allow reducing it.
             chatV = maybe currentChatVersion (\(Compatible v') -> v') $ supportedChatVRange pqSupport `compatibleVersion` peerChatVRange
-            e2eV = (if chatV == pqEncryptionCompressionVersion then max CR.pqRatchetE2EEncryptVersion else id) CR.currentE2EEncryptVersion
+            shouldCompress (PQSupport sup) (PQEncryption enc) = sup && (chatV >= pqEncryptionCompressionVersion && enc)
         skip -> pure skip
     toAgent = \case
       Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
