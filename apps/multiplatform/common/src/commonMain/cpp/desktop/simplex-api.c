@@ -19,9 +19,14 @@ Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
     argv[argc++] = "-H64m"; // larger heap size on start (faster boot)
     argv[argc++] = "-M8G"; // keep memory usage under 8G, collecting more aggressively when approaching it (and crashing sooner rather than taking down the whole system)
     int eventlog = 1; // TODO: geto option flag from app (pointer for -ol?)
+    int eventlog_threads = 2; // XXX: can be a bit flag on eventlog
     if (eventlog) {
         argv[argc++] = "-olsimplex.eventlog"; // produce simplex.eventlog in "current" directory
-        argv[argc++] = "-l-agu"; // collect GC and user events
+        if (eventlog_threads) {
+            argv[argc++] = "-l-asgu"; // collect scheduler, GC, and user events
+        } else {
+            argv[argc++] = "-l-agu"; // collect GC and user events
+        }
     }
     int profiling = 1; // TODO: get option flag from app (pointer for -po?)
     if (profiling) {
