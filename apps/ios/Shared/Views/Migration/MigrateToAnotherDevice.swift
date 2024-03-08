@@ -594,6 +594,7 @@ private struct PassphraseConfirmationView: View {
                             Text("Verify passphrase")
                         }
                     }
+                    .disabled(verifyingPassphrase)
                 } header: {
                     Text("Verify database passphrase")
                 } footer: {

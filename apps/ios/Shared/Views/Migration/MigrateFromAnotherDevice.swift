@@ -610,6 +610,7 @@ private struct PassphraseEnteringView: View {
                             Text("Open chat")
                         }
                     }
+                    .disabled(verifyingPassphrase)
                 } header: {
                     Text("Enter passphrase")
                 } footer: {
