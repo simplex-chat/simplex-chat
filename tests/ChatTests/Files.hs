@@ -13,8 +13,9 @@ import Control.Logger.Simple
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Network.HTTP.Types.URI (urlEncode)
 import Simplex.Chat (roundedFDCount)
-import Simplex.Chat.Controller (ChatConfig (..), StandaloneFile (..))
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
@@ -875,9 +876,7 @@ testXFTPStandaloneSmallInfo :: HasCallStack => FilePath -> IO ()
 testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
-    let info = J.object ["secret" J..= J.String "*********"]
-    let sf = StandaloneFile {fileInfo = Just info, fileSource = CryptoFile "./tests/fixtures/logo.jpg" Nothing}
-    src ##> ("/_upload 1 " <> LB.unpack (J.encode sf))
+    src ##> "/_upload 1 ./tests/fixtures/logo.jpg"
     src <## "started standalone uploading file 1 (logo.jpg)"
     -- silent progress events
     threadDelay 250000
@@ -887,14 +886,15 @@ testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src 
     _uri2 <- getTermLine src
     uri3 <- getTermLine src
     _uri4 <- getTermLine src
+    let uri = uri3 <> "&data=" <> B.unpack (urlEncode False . LB.toStrict . J.encode $ J.object ["secret" J..= J.String "*********"])
 
     logNote "info"
-    dst ##> ("/_download info " <> uri3)
+    dst ##> ("/_download info " <> uri)
     dst <## "{\"secret\":\"*********\"}"
 
     logNote "receiving"
     let dstFile = "./tests/tmp/logo.jpg"
-    dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile) -- download sucessfully discarded extra info
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile) -- download sucessfully discarded extra info
     dst <## "started standalone receiving file 1 (logo.jpg)"
     -- silent progress events
     threadDelay 250000
@@ -935,19 +935,18 @@ testXFTPStandaloneLargeInfo = testChat2 aliceProfile aliceDesktopProfile $ \src 
     xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
 
     logNote "sending"
-    let info = J.object ["secret" J..= J.String "*********"]
-    let sf = StandaloneFile {fileInfo = Just info, fileSource = CryptoFile "./tests/tmp/testfile.in" Nothing}
-    src ##> ("/_upload 1 " <> LB.unpack (J.encode sf))
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
     src <## "started standalone uploading file 1 (testfile.in)"
 
     -- silent progress events
     threadDelay 250000
     src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
     src <## "file 1 (testfile.in) upload complete. download with:"
-    uri <- getTermLine src
+    uri1 <- getTermLine src
     _uri2 <- getTermLine src
     _uri3 <- getTermLine src
     _uri4 <- getTermLine src
+    let uri = uri1 <> "&data=" <> B.unpack (urlEncode False . LB.toStrict . J.encode $ J.object ["secret" J..= J.String "*********"])
 
     logNote "info"
     dst ##> ("/_download info " <> uri)

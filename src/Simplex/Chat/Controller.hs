@@ -453,7 +453,7 @@ data ChatCommand
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
-  | APIUploadStandaloneFile UserId StandaloneFile
+  | APIUploadStandaloneFile UserId CryptoFile
   | APIDownloadStandaloneFile UserId FileDescriptionURI CryptoFile
   | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
@@ -928,12 +928,6 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent
-  }
-  deriving (Show)
-
-data StandaloneFile = StandaloneFile
-  { fileInfo :: Maybe J.Value,
-    fileSource :: CryptoFile
   }
   deriving (Show)
 
@@ -1421,5 +1415,3 @@ $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
-
-$(JQ.deriveJSON defaultJSON ''StandaloneFile)

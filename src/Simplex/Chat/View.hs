@@ -218,7 +218,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileError u (Just ci) _ -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
-  CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [plain $ J.encode j]) info_
+  CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [plain . LB.toStrict $ J.encode j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
