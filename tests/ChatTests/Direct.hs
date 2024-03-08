@@ -128,9 +128,9 @@ chatDirectTests = do
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
-  describe "PQ" $ do
-    describe "test PQ connection via invitation link" testPQConnectViaLink
-    describe "test PQ connection via contact address" testPQConnectViaAddress
+  describe "PQ tests" $ do
+    describe "set flag before connection, connect via invitation link" testPQConnectViaLink
+    describe "set flag before connection, connect via contact address" testPQConnectViaAddress
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
