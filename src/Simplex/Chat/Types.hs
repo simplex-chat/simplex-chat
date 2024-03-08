@@ -335,9 +335,8 @@ data UserContactRequest = UserContactRequest
     profile :: Profile,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    xContactId :: Maybe XContactId
-    -- TODO PQ save pqSupport from REQ to database
-    -- pqSupport :: PQSupport
+    xContactId :: Maybe XContactId,
+    pqSupport :: PQSupport
   }
   deriving (Eq, Show)
 

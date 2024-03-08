@@ -253,16 +253,16 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
     (displayName, fullName, image, userId, Just True, createdAt, createdAt)
   insertedRowId db
 
-allowConnEnablePQ :: DB.Connection -> Int64 -> IO ()
-allowConnEnablePQ db connId =
+updateConnSupportPQ :: DB.Connection -> Int64 -> PQSupport -> IO ()
+updateConnSupportPQ db connId pqSup =
   DB.execute
     db
     [sql|
       UPDATE connections
-      SET enable_pq = 1
+      SET enable_pq = ?
       WHERE connection_id = ?
     |]
-    (Only connId)
+    (pqSup, connId)
 
 -- TODO PQ possibly combine all functions
 updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQEncryption -> IO ()
@@ -396,13 +396,13 @@ getProfileById db userId profileId =
     toProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences) -> LocalProfile
     toProfile (displayName, fullName, image, contactLink, localAlias, preferences) = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact) :. (Maybe XContactId, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact) :. (Maybe XContactId, PQSupport, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, preferences, createdAt, updatedAt, minVer, maxVer)) = do
+toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, preferences, createdAt, updatedAt, minVer, maxVer)) = do
   let profile = Profile {displayName, fullName, image, contactLink, preferences}
       cReqChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, createdAt, updatedAt}
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, createdAt, updatedAt}
 
 userQuery :: Query
 userQuery =
