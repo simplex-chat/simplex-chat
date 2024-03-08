@@ -2002,11 +2002,11 @@ processChatCommand' vr = \case
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
-  APIUploadStandaloneFile userId StandaloneFile {fileInfo, fileSource=file@CryptoFile {filePath}} -> withUserId userId $ \user -> do
+  APIUploadStandaloneFile userId StandaloneFile {fileInfo, fileSource = file@CryptoFile {filePath}} -> withUserId userId $ \user -> do
     fsFilePath <- toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
-    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user (decodeUtf8 . LB.toStrict . J.encode <$> fileInfo) file fileSize 1 Nothing
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user (safeDecodeUtf8 . LB.toStrict . J.encode <$> fileInfo) file fileSize 1 Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do

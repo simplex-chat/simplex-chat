@@ -1422,5 +1422,4 @@ $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
 
-$(JQ.deriveFromJSON defaultJSON ''StandaloneFile)
-$(JQ.deriveToJSON defaultJSON ''StandaloneFile)
+$(JQ.deriveJSON defaultJSON ''StandaloneFile)
