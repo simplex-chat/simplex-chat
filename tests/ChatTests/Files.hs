@@ -850,11 +850,11 @@ testXFTPStandaloneSmall :: HasCallStack => FilePath -> IO ()
 testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
-    src ##> "/_upload 1 ./tests/fixtures/test.jpg"
-    src <## "started standalone uploading file 1 (test.jpg)"
+    src ##> "/_upload 1 ./tests/fixtures/logo.jpg"
+    src <## "started standalone uploading file 1 (logo.jpg)"
     -- silent progress events
     threadDelay 250000
-    src <## "file 1 (test.jpg) upload complete. download with:"
+    src <## "file 1 (logo.jpg) upload complete. download with:"
     -- file description fits, enjoy the direct URIs
     _uri1 <- getTermLine src
     _uri2 <- getTermLine src
@@ -862,13 +862,13 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     _uri4 <- getTermLine src
 
     logNote "receiving"
-    let dstFile = "./tests/tmp/test.jpg"
+    let dstFile = "./tests/tmp/logo.jpg"
     dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile)
-    dst <## "started standalone receiving file 1 (test.jpg)"
+    dst <## "started standalone receiving file 1 (logo.jpg)"
     -- silent progress events
     threadDelay 250000
-    dst <## "completed standalone receiving file 1 (test.jpg)"
-    srcBody <- B.readFile "./tests/fixtures/test.jpg"
+    dst <## "completed standalone receiving file 1 (logo.jpg)"
+    srcBody <- B.readFile "./tests/fixtures/logo.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
 testXFTPStandaloneSmallInfo :: HasCallStack => FilePath -> IO ()
