@@ -475,23 +475,6 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-@Composable
-private fun LargeProgressView(value: Float, title: String, description: String) {
-  Box(Modifier.fillMaxSize().padding(DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-    CircularProgressIndicator(
-      progress = value,
-      if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth()),
-      color = MaterialTheme.colors.primary,
-      strokeWidth = 25.dp
-    )
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Text(description, color = Color.Transparent)
-      Text(title, style = MaterialTheme.typography.h1, fontWeight = FontWeight.Bold, color = MaterialTheme.colors.primary)
-      Text(description, style = MaterialTheme.typography.subtitle1)
-    }
-  }
-}
-
 private fun MutableState<MigrationState>.checkUserLink(link: String) {
   if (strHasSimplexFileLink(link.trim())) {
     // LALAL need to show onion setup or not

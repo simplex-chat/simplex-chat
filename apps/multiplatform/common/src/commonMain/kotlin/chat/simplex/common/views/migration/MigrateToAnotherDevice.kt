@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.startChat
@@ -360,8 +361,7 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-@Composable
-private fun LargeProgressView(value: Float, title: String, description: String) {
+@Composable fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
@@ -371,7 +371,7 @@ private fun LargeProgressView(value: Float, title: String, description: String) 
     )
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       Text(description, color = Color.Transparent)
-      Text(title, style = MaterialTheme.typography.h1, fontWeight = FontWeight.Bold, color = MaterialTheme.colors.primary)
+      Text(title, style = MaterialTheme.typography.h1.copy(fontSize = 50.sp, fontWeight = FontWeight.Bold), color = MaterialTheme.colors.primary)
       Text(description, style = MaterialTheme.typography.subtitle1)
     }
   }
