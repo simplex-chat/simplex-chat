@@ -3,7 +3,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -1718,8 +1717,6 @@ $(JQ.deriveJSON defaultJSON ''UserContact)
 $(JQ.deriveJSON defaultJSON ''Profile)
 
 $(JQ.deriveJSON defaultJSON ''LocalProfile)
-
-$(JQ.deriveJSON defaultJSON ''ChatVersion)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
