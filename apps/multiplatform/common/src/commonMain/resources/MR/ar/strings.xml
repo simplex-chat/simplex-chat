@@ -104,7 +104,7 @@
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> تستهلك المزيد من البطارية </b>! تعمل خدمة الخلفية دائمًا - تظهر الإشعارات بمجرد توفر الرسائل.]]></string>
     <string name="call_already_ended">انتهت المكالمة بالفعل!</string>
     <string name="alert_title_msg_bad_hash">تجزئة رسالة سيئة</string>
-    <string name="integrity_msg_bad_id">معرف رسالة سيئ</string>
+    <string name="integrity_msg_bad_id">معرّف رسالة سيئ</string>
     <string name="icon_descr_call_ended">انتهت المكالمة</string>
     <string name="change_verb">تغير</string>
     <string name="color_primary_variant">لون إضافي ثانوي</string>
@@ -132,7 +132,7 @@
     <string name="icon_descr_audio_on">الصوت مفعل</string>
     <string name="auto_accept_images">قبول تلقائي للصور</string>
     <string name="integrity_msg_bad_hash">تجزئة رسالة سيئة</string>
-    <string name="alert_title_msg_bad_id">معرف رسالة سيئ</string>
+    <string name="alert_title_msg_bad_id">معرّف رسالة سيئ</string>
     <string name="app_passcode_replaced_with_self_destruct">يتم استبدال رمز مرور التطبيق برمز مرور التدمير الذاتي.</string>
     <string name="v4_6_audio_video_calls">مكالمات الصوت والفيديو</string>
     <string name="callstatus_error">خطأ في الاتصال</string>
