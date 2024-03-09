@@ -62,7 +62,7 @@ fun DeveloperView(
       SectionSpacer()
       SectionView("Experimental".uppercase()) {
         SettingsPreferenceItem(painterResource(MR.images.ic_vpn_key_filled), "Post-quantum E2EE", m.controller.appPrefs.pqExperimentalEnabled, onChange = { enable ->
-          withBGApi { m.controller.apiSetPQEnabled(enable) }
+          withBGApi { m.controller.apiSetPQEncryption(enable) }
         })
         SectionTextFooter("In this version applies only to new contacts.")
       }

@@ -2785,7 +2785,7 @@ runTestPQConnectViaLink (alice, aPQ) (bob, bPQ) = do
 
 pqOn :: TestCC -> IO ()
 pqOn cc = do
-  cc ##> "/_pq on"
+  cc ##> "/pq on"
   cc <## "ok"
 
 runTestPQConnectViaAddress :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
@@ -2854,14 +2854,14 @@ testPQEnableContact =
     PQEncOff <- bob `pqForContact` 2
 
     -- if only one contact allows PQ, it's not enabled
-    alice ##> "/_pq allow 2"
+    alice ##> "/pq @bob on"
     alice <## "bob: post-quantum encryption allowed"
     sendMany PQEncOff alice bob
     PQEncOff <- alice `pqForContact` 2
     PQEncOff <- bob `pqForContact` 2
 
     -- both contacts have to allow PQ to enable it
-    bob ##> "/_pq allow 2"
+    bob ##> "/pq @alice on"
     bob <## "alice: post-quantum encryption allowed"
 
     (alice, "1") \#> bob
@@ -2913,13 +2913,13 @@ testPQEnableContactCompression =
     (alice, "lrg 1", v) \:#> (bob, v)
     (bob, "lrg 2", v) \:#> (alice, v)
     PQSupportOff <- alice `pqSupportForCt` 2
-    alice ##> "/_pq allow 2"
+    alice ##> "/pq @bob on"
     alice <## "bob: post-quantum encryption allowed"
     PQSupportOn <- alice `pqSupportForCt` 2
     (alice, "lrg 3", v) \:#> (bob, v)
     (bob, "lrg 4", v) \:#> (alice, v)
     PQSupportOff <- bob `pqSupportForCt` 2
-    bob ##> "/_pq allow 2"
+    bob ##> "/pq @alice on"
     bob <## "alice: post-quantum encryption allowed"
     PQSupportOn <- bob `pqSupportForCt` 2
     (alice, "lrg 1", v) \:#> (bob, v')

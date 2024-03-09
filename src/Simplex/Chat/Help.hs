@@ -185,6 +185,7 @@ contactsHelpInfo =
       indent <> highlight "/verify @<name>          " <> " - clear security code verification",
       indent <> highlight "/info @<name>            " <> " - info about contact connection",
       indent <> highlight "/switch @<name>          " <> " - switch receiving messages to another SMP relay",
+      indent <> highlight "/pq @<name> on/off       " <> " - [BETA] enable/disable post-quantum encryption for a contact (both have to enable)",
       "",
       green "Contact chat preferences:",
       indent <> highlight "/set voice @<name> yes/no/always   " <> " - allow/prohibit voice messages with the contact",
@@ -320,6 +321,7 @@ settingsInfo =
   map
     styleMarkdown
     [ green "Chat settings:",
+      indent <> highlight "/pq on/off               " <> " - [BETA] enable/disbale post-quantum e2e encryption for the new contacts",
       indent <> highlight "/network                 " <> " - show / set network access options",
       indent <> highlight "/smp                     " <> " - show / set configured SMP servers",
       indent <> highlight "/xftp                    " <> " - show / set configured XFTP servers",

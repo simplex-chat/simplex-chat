@@ -596,20 +596,20 @@ processChatCommand' vr = \case
     ok_
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
-  APISetPQEnabled onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
-  APISetContactPQ contactId pq -> withUser $ \user -> case pq of
-    PQEncOff -> pure $ chatCmdError (Just user) "not supported"
-    PQEncOn -> do
-      ct@Contact {activeConn} <- withStore $ \db -> getContact db user contactId
-      case activeConn of
-        Just conn@Connection {connId, pqEncryption} -> case pqEncryption of
-          PQEncOn -> pure $ chatCmdError (Just user) "already enabled"
-          PQEncOff -> do
-            withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn PQEncOn
-            let conn' = conn {pqSupport = PQSupportOn, pqEncryption = PQEncOn} :: Connection
+  APISetPQEncryption onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
+  APISetContactPQ ctId pqEnc -> withUser $ \user -> do 
+    ct@Contact {activeConn} <- withStore $ \db -> getContact db user ctId
+    case activeConn of
+      Just conn@Connection {connId, pqSupport, pqEncryption}
+        | pqEncryption == pqEnc -> pure $ CRContactPQAllowed user ct pqEnc
+        | otherwise -> do
+            let pqSup = PQSupport $ pqEnc == PQEncOn || pqSupport == PQSupportOn
+                conn' = conn {pqSupport = pqSup, pqEncryption = pqEnc} :: Connection
                 ct' = ct {activeConn = Just conn'} :: Contact
-            pure $ CRContactPQAllowed user ct'
-        Nothing -> throwChatError $ CEContactNotActive ct
+            withStore' $ \db -> updateConnSupportPQ db connId pqSup pqEnc
+            pure $ CRContactPQAllowed user ct' pqEnc
+      Nothing -> throwChatError $ CEContactNotActive ct
+  SetContactPQ cName pqEnc -> withContactName cName (`APISetContactPQ` pqEnc)
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -6755,8 +6755,9 @@ chatCommandP =
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
-      "/_pq " *> (APISetPQEnabled . PQSupport <$> onOffP),
-      "/_pq allow " *> ((`APISetContactPQ` PQEncOn) <$> A.decimal),
+      "/_pq @" *> (APISetContactPQ <$> A.decimal <* A.space <*> (PQEncryption <$> onOffP)),
+      "/pq @" *> (SetContactPQ <$> displayName <* A.space <*> (PQEncryption <$> onOffP)),
+      "/pq " *> (APISetPQEncryption . PQSupport <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),

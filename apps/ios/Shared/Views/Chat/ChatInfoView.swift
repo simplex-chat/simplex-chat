@@ -576,14 +576,14 @@ struct ChatInfoView: View {
     private func allowContactPQEncryption() {
         Task {
             do {
-                let ct = try await apiAllowContactPQ(contact.apiId)
+                let ct = try await apiSetContactPQ(contact.apiId, true)
                 contact = ct
                 await MainActor.run {
                     chatModel.updateContact(contact)
                     dismiss()
                 }
             } catch let error {
-                logger.error("allowContactPQEncryption apiAllowContactPQ error: \(responseError(error))")
+                logger.error("allowContactPQEncryption apiSetContactPQ error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error allowing contact PQ encryption")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)

@@ -328,7 +328,7 @@ testChatN tCfg cfg opts ps test tmp = do
 
 getTermLine :: HasCallStack => TestCC -> IO String
 getTermLine cc =
-  50000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
+  5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do

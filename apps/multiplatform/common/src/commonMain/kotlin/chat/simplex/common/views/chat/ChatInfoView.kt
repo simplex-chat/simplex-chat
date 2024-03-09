@@ -143,7 +143,7 @@ fun ChatInfoView(
       allowContactPQ = {
          showAllowContactPQAlert(allowContactPQ = {
            withBGApi {
-             val ct = chatModel.controller.apiAllowContactPQ(chatRh, contact.contactId)
+             val ct = chatModel.controller.apiSetContactPQ(chatRh, contact.contactId, true)
              if (ct != null) {
                chatModel.updateContact(chatRh, contact)
              }

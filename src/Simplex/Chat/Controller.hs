@@ -244,8 +244,9 @@ data ChatCommand
   | SetRemoteHostsFolder FilePath
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
-  | APISetPQEnabled PQSupport
+  | APISetPQEncryption PQSupport
   | APISetContactPQ ContactId PQEncryption
+  | SetContactPQ ContactName PQEncryption
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
@@ -702,7 +703,7 @@ data ChatResponse
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
-  | CRContactPQAllowed {user :: User, contact :: Contact}
+  | CRContactPQAllowed {user :: User, contact :: Contact, pqEncryption :: PQEncryption}
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
