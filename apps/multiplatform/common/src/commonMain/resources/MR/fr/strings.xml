@@ -1614,8 +1614,8 @@
     <string name="profile_update_event_member_name_changed">le membre %1$s est devenu %2$s</string>
     <string name="profile_update_event_removed_address">suppression de l\'adresse de contact</string>
     <string name="profile_update_event_removed_picture">suppression de la photo de profil</string>
-    <string name="profile_update_event_set_new_address">définir une nouvelle adresse de contact</string>
-    <string name="profile_update_event_set_new_picture">définir une nouvelle image de profil</string>
+    <string name="profile_update_event_set_new_address">a changé d\'adresse de contact</string>
+    <string name="profile_update_event_set_new_picture">a changé d\'image de profil</string>
     <string name="profile_update_event_updated_profile">profil mis à jour</string>
     <string name="clear_note_folder_question">Effacer les notes privées ?</string>
     <string name="saved_message_title">Message enregistré</string>
