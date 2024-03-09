@@ -6865,14 +6865,14 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>envoyer un message direct</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="set new contact address" xml:space="preserve">
+      <trans-unit id="set new contact address" xml:space="preserve" approved="no">
         <source>set new contact address</source>
-        <target>définir une nouvelle adresse de contact</target>
+        <target state="translated">a changé d'adresse de contact</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="set new profile picture" xml:space="preserve">
+      <trans-unit id="set new profile picture" xml:space="preserve" approved="no">
         <source>set new profile picture</source>
-        <target>définir une nouvelle image de profil</target>
+        <target state="translated">a changé d'image de profil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
