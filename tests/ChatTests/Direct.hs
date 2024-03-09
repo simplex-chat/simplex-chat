@@ -21,11 +21,11 @@ import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion, supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQSupportOff, pattern PQEncOn, pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQSupportOn, pattern PQSupportOff, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -131,7 +131,8 @@ chatDirectTests = do
   describe "PQ tests" $ do
     describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
     describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
-    it "should enable PQ after several messages in connection without PQ" testPQAllowContact
+    it "should enable PQ after several messages in connection without PQ" testPQEnableContact
+    fit "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2820,8 +2821,8 @@ runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
     pqSend = if pqEnabled then (+#>) else (\#>)
     e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
 
-testPQAllowContact :: HasCallStack => FilePath -> IO ()
-testPQAllowContact =
+testPQEnableContact :: HasCallStack => FilePath -> IO ()
+testPQEnableContact =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     (alice, "hi") \#> bob
@@ -2894,8 +2895,44 @@ testPQAllowContact =
     PQEncOn <- alice `pqForContact` 2
     PQEncOn <- bob `pqForContact` 2
     pure ()
+
+sendMany :: PQEncryption -> TestCC -> TestCC -> IO ()
+sendMany pqEnc alice bob =
+  forM_ [(1 :: Int) .. 10] $ \i -> do
+    sndRcv pqEnc False (alice, show i) bob
+    sndRcv pqEnc False (bob, show i) alice
+
+testPQEnableContactCompression :: HasCallStack => FilePath -> IO ()
+testPQEnableContactCompression =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    (alice, "hi") \#> bob
+    (bob, "hey") \#> alice
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+    (alice, "lrg 1", v) \:#> (bob, v)
+    (bob, "lrg 2", v) \:#> (alice, v)
+    PQSupportOff <- alice `pqSupportForCt` 2
+    alice ##> "/_pq allow 2"
+    alice <## "bob: post-quantum encryption allowed"
+    PQSupportOn <- alice `pqSupportForCt` 2
+    (alice, "lrg 3", v) \:#> (bob, v)
+    (bob, "lrg 4", v) \:#> (alice, v)
+    PQSupportOff <- bob `pqSupportForCt` 2
+    bob ##> "/_pq allow 2"
+    bob <## "alice: post-quantum encryption allowed"
+    PQSupportOn <- bob `pqSupportForCt` 2
+    (alice, "lrg 1", v) \:#> (bob, v')
+    (bob, "lrg 2", v') \:#> (alice, v')
+    (alice, "lrg 3", v') \:#> (bob, v')
+    (bob, "lrg 4", v') \:#> (alice, v')
+    (alice, "lrg 5", v') +:#> (bob, v')
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+    (bob, "lrg 6", v') ++:#> (alice, v')
+    (alice, "lrg 7", v') +:#> (bob, v')
+    (bob, "lrg 8", v') +:#> (alice, v')
+    pure ()
   where
-    sendMany pqEnc alice bob =
-      forM_ [(1 :: Int) .. 10] $ \i -> do
-        sndRcv pqEnc False (alice, show i) bob
-        sndRcv pqEnc False (bob, show i) alice
+    v = currentChatVersion
+    v' = pqEncryptionCompressionVersion

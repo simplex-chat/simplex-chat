@@ -602,12 +602,11 @@ processChatCommand' vr = \case
     PQEncOn -> do
       ct@Contact {activeConn} <- withStore $ \db -> getContact db user contactId
       case activeConn of
-        Just conn@Connection {connId, pqSupport, pqEncryption, connChatVersion} -> case pqEncryption of
+        Just conn@Connection {connId, pqEncryption} -> case pqEncryption of
           PQEncOn -> pure $ chatCmdError (Just user) "already enabled"
           PQEncOff -> do
-            let pqSupport' = PQSupport $ pqSupport == PQSupportOn || maybe False (>= pqEncryptionCompressionVersion) connChatVersion
-            withStore' $ \db -> updateConnSupportPQ db connId pqSupport' PQEncOn
-            let conn' = conn {pqSupport = pqSupport', pqEncryption = PQEncOn} :: Connection
+            withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn PQEncOn
+            let conn' = conn {pqSupport = PQSupportOn, pqEncryption = PQEncOn} :: Connection
                 ct' = ct {activeConn = Just conn'} :: Contact
             pure $ CRContactPQAllowed user ct'
         Nothing -> throwChatError $ CEContactNotActive ct
@@ -5827,8 +5826,6 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 sameMemberId :: MemberId -> GroupMember -> Bool
 sameMemberId memId GroupMember {memberId} = memId == memberId
 
--- TODO *** upgrade pqSupport if pqEncryption is enabled and version is sufficient
--- Decide: send PQEncOn to agent when 1) pqEncryption is set (but don't do compression yet) or 2) only if both pqSupport and pqEncryption is set
 updatePeerChatVRange :: ChatMonad m => Connection -> VersionRangeChat -> m Connection
 updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange, pqSupport} msgVRange = do
   v' <- upgradedConnVersion pqSupport v msgVRange
@@ -6186,28 +6183,16 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: forall m. ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
-  ChatConfig {chatVRange} <- asks config
-  msgReqs' <- compressBodies chatVRange
+  msgReqs' <- compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies getVR = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx -> do
-      forM msgReqs $ \case
-        mr@(Right (conn@Connection {pqSupport, pqEncryption, peerChatVRange}, msgFlags, msgBody, msgId))
-          | shouldCompress ->
-              Right . (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
-          | otherwise -> pure mr
-          where
-            -- TODO PQ
-            -- This version agreement is ephemeral and in case of peer downgrade it will get reduced, and pqSupport may be turned off in the result
-            -- We probably should store agreed version on Connection and do not allow reducing it.
-            shouldCompress :: Bool
-            shouldCompress =
-              case getVR pqSupport `compatibleChatVersion` peerChatVRange of
-                Nothing -> False
-                Just v -> CR.supportPQ pqSupport && (v >= pqEncryptionCompressionVersion && CR.enablePQ pqEncryption)
-        skip -> pure skip
+    compressBodies = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx -> do
+      forME msgReqs $ \mr@(conn@Connection {pqSupport, pqEncryption, connChatVersion}, msgFlags, msgBody, msgId) -> Right <$> case pqSupport of
+        PQSupportOn | maybe False (>= pqEncryptionCompressionVersion) connChatVersion ->
+          (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
+        _ -> pure mr
     toAgent = \case
       Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
