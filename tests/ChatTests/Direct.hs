@@ -132,7 +132,7 @@ chatDirectTests = do
     describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
     describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
     it "should enable PQ after several messages in connection without PQ" testPQEnableContact
-    fit "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
+    it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
