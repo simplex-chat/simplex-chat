@@ -35,7 +35,6 @@ import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import java.io.File
-import java.net.URLDecoder
 import java.net.URLEncoder
 import kotlin.math.max
 
@@ -51,7 +50,11 @@ data class MigrationFileLinkData(
   ) {
     fun transformToPlatformSupported(): NetworkConfig {
       return if (hostMode != null && requiredHostMode != null) {
-        NetworkConfig(socksProxy, hostMode = if (hostMode == HostMode.Onion) HostMode.OnionViaSocks else hostMode, requiredHostMode)
+        NetworkConfig(
+          socksProxy = if (hostMode == HostMode.Onion) socksProxy ?: NetCfg.proxyDefaults.socksProxy else socksProxy,
+          hostMode = if (hostMode == HostMode.Onion) HostMode.OnionViaSocks else hostMode,
+          requiredHostMode = requiredHostMode
+        )
       } else this
     }
   }
@@ -59,10 +62,11 @@ data class MigrationFileLinkData(
   fun addToLink(link: String) = link + "&data=" + URLEncoder.encode(jsonShort.encodeToString(this), "UTF-8")
 
   companion object {
-    fun readFromLink(link: String): MigrationFileLinkData? =
+    suspend fun readFromLink(link: String): MigrationFileLinkData? =
       try {
-        val data = link.substringAfter("&data=").substringBefore("&")
-        json.decodeFromString(URLDecoder.decode(data, "UTF-8"))
+        // val data = link.substringAfter("&data=").substringBefore("&")
+        // json.decodeFromString(URLDecoder.decode(data, "UTF-8"))
+        controller.standaloneFileInfo(link)
       } catch (e: Exception) {
         null
       }

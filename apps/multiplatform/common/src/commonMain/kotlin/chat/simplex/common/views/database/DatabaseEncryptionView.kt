@@ -222,6 +222,7 @@ expect fun SavePassphraseSetting(
   storedKey: Boolean,
   minHeight: Dp = TextFieldDefaults.MinHeight,
   enabled: Boolean,
+  smallPadding: Boolean = true,
   onCheckedChange: (Boolean) -> Unit,
 )
 

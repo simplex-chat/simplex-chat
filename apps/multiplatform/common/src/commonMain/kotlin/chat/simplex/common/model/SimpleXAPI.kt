@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import com.charleskorn.kaml.Yaml
@@ -1284,6 +1285,16 @@ object ChatController {
     }
   }
 
+  suspend fun standaloneFileInfo(url: String, ctrl: ChatCtrl? = null): MigrationFileLinkData? {
+    val r = sendCmd(null, CC.ApiStandaloneFileInfo(url), ctrl)
+    return if (r is CR.StandaloneFileInfo) {
+      r.fileMeta
+    } else {
+      Log.e(TAG, "standaloneFileInfo error: $r")
+      null
+    }
+  }
+
   suspend fun apiReceiveFile(rh: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
     val r = sendCmd(rh, CC.ReceiveFile(fileId, encrypted, inline))
@@ -2439,6 +2450,7 @@ sealed class CC {
   class DeleteRemoteCtrl(val remoteCtrlId: Long): CC()
   class ApiUploadStandaloneFile(val userId: Long, val file: CryptoFile): CC()
   class ApiDownloadStandaloneFile(val userId: Long, val url: String, val file: CryptoFile): CC()
+  class ApiStandaloneFileInfo(val url: String): CC()
   // misc
   class ShowVersion(): CC()
 
@@ -2587,6 +2599,7 @@ sealed class CC {
     is DeleteRemoteCtrl -> "/delete remote ctrl $remoteCtrlId"
     is ApiUploadStandaloneFile -> "/_upload $userId ${file.filePath}"
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
+    is ApiStandaloneFileInfo -> "/_download info $url"
     is ShowVersion -> "/version"
   }
 
@@ -2711,6 +2724,7 @@ sealed class CC {
     is DeleteRemoteCtrl -> "deleteRemoteCtrl"
     is ApiUploadStandaloneFile -> "apiUploadStandaloneFile"
     is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
+    is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ShowVersion -> "showVersion"
   }
 
@@ -4050,6 +4064,7 @@ sealed class CR {
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: UserRef, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("standaloneFileInfo") class StandaloneFileInfo(val fileMeta: MigrationFileLinkData?): CR()
   @Serializable @SerialName("rcvStandaloneFileCreated") class RcvStandaloneFileCreated(val user: UserRef, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: UserRef, val chatItem: AChatItem): CR() // send by chats
   @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: UserRef, val chatItem_: AChatItem?, val receivedSize: Long, val totalSize: Long, val rcvFileTransfer: RcvFileTransfer): CR()
@@ -4210,6 +4225,7 @@ sealed class CR {
     is NewMemberContactSentInv -> "newMemberContactSentInv"
     is NewMemberContactReceivedInv -> "newMemberContactReceivedInv"
     is RcvFileAcceptedSndCancelled -> "rcvFileAcceptedSndCancelled"
+    is StandaloneFileInfo -> "standaloneFileInfo"
     is RcvStandaloneFileCreated -> "rcvStandaloneFileCreated"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
@@ -4367,6 +4383,7 @@ sealed class CR {
     is NewMemberContactSentInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
     is NewMemberContactReceivedInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
     is RcvFileAcceptedSndCancelled -> withUser(user, noDetails())
+    is StandaloneFileInfo -> json.encodeToString(fileMeta)
     is RcvStandaloneFileCreated -> noDetails()
     is RcvFileAccepted -> withUser(user, json.encodeToString(chatItem))
     is RcvFileStart -> withUser(user, json.encodeToString(chatItem))

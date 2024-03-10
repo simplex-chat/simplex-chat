@@ -90,8 +90,8 @@ private sealed class MigrationState {
   @Serializable data class ArchiveImport(val archivePath: String, val netCfg: NetCfg): MigrationState()
   @Serializable data class ArchiveImportFailed(val archivePath: String, val netCfg: NetCfg): MigrationState()
   @Serializable data class Passphrase(val passphrase: String, val netCfg: NetCfg): MigrationState()
-  @Serializable data class MigrationConfirmation(val status: DBMigrationResult, val passphrase: String, val netCfg: NetCfg): MigrationState()
-  @Serializable data class Migration(val passphrase: String, val confirmation: chat.simplex.common.views.helpers.MigrationConfirmation, val netCfg: NetCfg): MigrationState()
+  @Serializable data class MigrationConfirmation(val status: DBMigrationResult, val passphrase: String, val useKeychain: Boolean, val netCfg: NetCfg): MigrationState()
+  @Serializable data class Migration(val passphrase: String, val confirmation: chat.simplex.common.views.helpers.MigrationConfirmation, val useKeychain: Boolean, val netCfg: NetCfg): MigrationState()
 }
 
 private var MutableState<MigrationState>.state: MigrationState
@@ -185,8 +185,8 @@ private fun ModalData.SectionByState(
     is MigrationState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg)
     is MigrationState.ArchiveImportFailed -> migrationState.ArchiveImportFailedView(s.archivePath, s.netCfg)
     is MigrationState.Passphrase -> migrationState.PassphraseEnteringView(currentKey = s.passphrase, s.netCfg)
-    is MigrationState.MigrationConfirmation -> migrationState.MigrationConfirmationView(s.status, s.passphrase, s.netCfg)
-    is MigrationState.Migration -> MigrationView(s.passphrase, s.confirmation, s.netCfg, close)
+    is MigrationState.MigrationConfirmation -> migrationState.MigrationConfirmationView(s.status, s.passphrase, s.useKeychain, s.netCfg)
+    is MigrationState.Migration -> MigrationView(s.passphrase, s.confirmation, s.useKeychain, s.netCfg, close)
   }
 }
 
@@ -195,7 +195,7 @@ private fun MutableState<MigrationState>.PasteOrScanLinkView() {
   if (appPlatform.isAndroid) {
     SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
       QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
-        checkUserLink(text)
+        withBGApi { checkUserLink(text) }
       }
     }
     SectionSpacer()
@@ -213,7 +213,7 @@ private fun MutableState<MigrationState>.PasteLinkView() {
   val clipboard = LocalClipboardManager.current
   SectionItemView({
     val str = clipboard.getText()?.text ?: return@SectionItemView
-    checkUserLink(str)
+    withBGApi { checkUserLink(str) }
   }) {
     Text(stringResource(MR.strings.tap_to_paste_link))
   }
@@ -238,7 +238,7 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
     mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = socksProxy, sessionMode = sessionMode.value))
   }
 
-  SectionView(stringResource(MR.strings.migration_from_device_review_onion_settings).uppercase()) {
+  SectionView(stringResource(MR.strings.migration_from_device_confirm_network_settings).uppercase()) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_check),
       text = stringResource(MR.strings.migration_from_device_apply_onion),
@@ -255,7 +255,7 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
         }
       }
     ){}
-    SectionTextFooter(stringResource(MR.strings.migration_from_device_review_onion_settings_footer))
+    SectionTextFooter(stringResource(MR.strings.migration_from_device_confirm_network_settings_footer))
   }
 
   SectionSpacer()
@@ -263,7 +263,7 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
   val networkProxyHostPortPref = SharedPreference(get = { networkProxyHostPort.value }, set = {
     networkProxyHostPort.value = it
   })
-  SectionView(stringResource(MR.strings.network_use_onion_hosts).uppercase()) {
+  SectionView(stringResource(MR.strings.network_settings_title).uppercase()) {
     OnionRelatedLayout(
       appPreferences.developerTools.get(),
       networkUseSocksProxy,
@@ -280,15 +280,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       updateSessionMode = {
         sessionMode.value = it
       }
-    )
-    SectionTextFooter(
-      stringResource(
-        when (onionHosts.value) {
-          OnionHosts.NEVER -> MR.strings.migration_from_device_onion_hosts_never
-          OnionHosts.PREFER -> MR.strings.migration_from_device_onion_hosts_prefer
-          OnionHosts.REQUIRED -> MR.strings.migration_from_device_onion_hosts_require
-        }
-      )
     )
   }
 }
@@ -383,9 +374,19 @@ private fun MutableState<MigrationState>.ArchiveImportFailedView(archivePath: St
 private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: String, netCfg: NetCfg) {
   val currentKey = rememberSaveable { mutableStateOf(currentKey) }
   val verifyingPassphrase = rememberSaveable { mutableStateOf(false) }
+  val useKeychain = rememberSaveable { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
+
   Box {
     val view = LocalMultiplatformView()
     SectionView(stringResource(MR.strings.migration_from_device_enter_passphrase).uppercase()) {
+      SavePassphraseSetting(
+        useKeychain.value,
+        false,
+        false,
+        enabled = !verifyingPassphrase.value,
+        smallPadding = false
+      ) { checked -> useKeychain.value = checked }
+
       PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey)
 
       SettingsActionItemWithContent(
@@ -400,9 +401,9 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
             val (status, _) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
             val success = status == DBMigrationResult.OK || status == DBMigrationResult.InvalidConfirmation
             if (success) {
-              state = MigrationState.Migration(currentKey.value, MigrationConfirmation.YesUp, netCfg)
+              state = MigrationState.Migration(currentKey.value, MigrationConfirmation.YesUp, useKeychain.value, netCfg)
             } else if (status is DBMigrationResult.ErrorMigration) {
-              state = MigrationState.MigrationConfirmation(status, currentKey.value, netCfg)
+              state = MigrationState.MigrationConfirmation(status, currentKey.value, useKeychain.value, netCfg)
             } else {
               showErrorOnMigrationIfNeeded(status)
             }
@@ -410,7 +411,7 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
           }
         }
       ) {}
-      SectionTextFooter(stringResource(MR.strings.migration_from_device_passphrase_will_be_stored))
+      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, true)
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -419,7 +420,7 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
 }
 
 @Composable
-private fun MutableState<MigrationState>.MigrationConfirmationView(status: DBMigrationResult, passphrase: String, netCfg: NetCfg) {
+private fun MutableState<MigrationState>.MigrationConfirmationView(status: DBMigrationResult, passphrase: String, useKeychain: Boolean, netCfg: NetCfg) {
   data class Tuple4<A,B,C,D>(val a: A, val b: B, val c: C, val d: D)
   val (header: String, button: String?, footer: String, confirmation: MigrationConfirmation?) = when (status) {
     is DBMigrationResult.ErrorMigration -> when (val err = status.migrationError) {
@@ -454,7 +455,7 @@ private fun MutableState<MigrationState>.MigrationConfirmationView(status: DBMig
         text = button,
         textColor = MaterialTheme.colors.primary,
         click = {
-          state = MigrationState.Migration(passphrase, confirmation, netCfg)
+          state = MigrationState.Migration(passphrase, confirmation, useKeychain, netCfg)
         }
       ) {}
     }
@@ -463,13 +464,13 @@ private fun MutableState<MigrationState>.MigrationConfirmationView(status: DBMig
 }
 
 @Composable
-private fun MigrationView(passphrase: String, confirmation: MigrationConfirmation, netCfg: NetCfg, close: () -> Unit) {
+private fun MigrationView(passphrase: String, confirmation: MigrationConfirmation, useKeychain: Boolean, netCfg: NetCfg, close: () -> Unit) {
   Box {
     SectionView(stringResource(MR.strings.migration_from_device_migrating).uppercase()) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
-    startChat(passphrase, confirmation, netCfg, close)
+    startChat(passphrase, confirmation, useKeychain, netCfg, close)
   }
 }
 
@@ -478,7 +479,7 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-private fun MutableState<MigrationState>.checkUserLink(link: String) {
+private suspend fun MutableState<MigrationState>.checkUserLink(link: String) {
   if (strHasSimplexFileLink(link.trim())) {
     val data = MigrationFileLinkData.readFromLink(link)
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
@@ -572,7 +573,7 @@ private fun MutableState<MigrationState>.importArchive(archivePath: String, netC
       }
       controller.apiDeleteStorage()
       try {
-        val config = ArchiveConfig(archivePath)
+        val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
         val archiveErrors = controller.apiImportArchive(config)
         if (archiveErrors.isNotEmpty()) {
           AlertManager.shared.showAlertMsg(
@@ -597,9 +598,13 @@ private suspend fun stopArchiveDownloading(fileId: Long, ctrl: ChatCtrl) {
   controller.apiCancelFile(null, fileId, ctrl)
 }
 
-private fun startChat(passphrase: String, confirmation: MigrationConfirmation, netCfg: NetCfg, close: () -> Unit) {
-  ksDatabasePassword.set(passphrase)
-  appPreferences.storeDBPassphrase.set(true)
+private fun startChat(passphrase: String, confirmation: MigrationConfirmation, useKeychain: Boolean, netCfg: NetCfg, close: () -> Unit) {
+  if (useKeychain) {
+    ksDatabasePassword.set(passphrase)
+  } else {
+    ksDatabasePassword.remove()
+  }
+  appPreferences.storeDBPassphrase.set(useKeychain)
   appPreferences.initialRandomDBPassphrase.set(false)
   withBGApi {
     try {
@@ -616,6 +621,7 @@ private fun startChat(passphrase: String, confirmation: MigrationConfirmation, n
 }
 
 private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit) {
+  hideView(close)
   try {
     getMigrationTempFilesDirectory().deleteRecursively()
     MigrationFromAnotherDeviceState.save(null)
@@ -628,7 +634,6 @@ private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit)
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.stackTraceToString())
   }
-  hideView(close)
 }
 
 private fun hideView(close: () -> Unit) {

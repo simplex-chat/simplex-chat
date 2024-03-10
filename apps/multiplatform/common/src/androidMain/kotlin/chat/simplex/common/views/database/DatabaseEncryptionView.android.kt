@@ -2,6 +2,7 @@ package chat.simplex.common.views.database
 
 import SectionItemView
 import SectionTextFooter
+import TextIconSpaced
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ actual fun SavePassphraseSetting(
   storedKey: Boolean,
   minHeight: Dp,
   enabled: Boolean,
+  smallPadding: Boolean,
   onCheckedChange: (Boolean) -> Unit,
 ) {
   SectionItemView(minHeight = minHeight) {
@@ -33,7 +35,11 @@ actual fun SavePassphraseSetting(
         stringResource(MR.strings.save_passphrase_in_keychain),
         tint = if (storedKey) SimplexGreen else MaterialTheme.colors.secondary
       )
-      Spacer(Modifier.padding(horizontal = 4.dp))
+      if (smallPadding) {
+        Spacer(Modifier.padding(horizontal = 4.dp))
+      } else {
+        TextIconSpaced(false)
+      }
       Text(
         stringResource(MR.strings.save_passphrase_in_keychain),
         Modifier.padding(end = 24.dp),
