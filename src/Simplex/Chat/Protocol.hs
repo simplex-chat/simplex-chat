@@ -534,16 +534,25 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 maxRawMsgLength :: Int
 maxRawMsgLength = 15610
 
+maxCompressedMsgLength :: Int
+maxCompressedMsgLength = 13410 -- reduced by 2200 (original message should be compressed)
+
 maxEncodedMsgLength :: PQSupport -> Int
 maxEncodedMsgLength = \case
-  PQSupportOn -> 13410 -- reduced by 2200 (original message should be compressed)
+  PQSupportOn -> maxCompressedMsgLength
   PQSupportOff -> maxRawMsgLength
 {-# INLINE maxEncodedMsgLength #-}
 
+maxRawInfoLength :: Int
+maxRawInfoLength = 14602 -- 15610 (maxRawMsgLength) - delta in agent between MSG and INFO
+
+maxCompressedInfoLength :: Int
+maxCompressedInfoLength = 10902 -- reduced by 3700
+
 maxConnInfoLength :: PQSupport -> Int
 maxConnInfoLength = \case
-  PQSupportOn -> 10902 -- reduced by 3700
-  PQSupportOff -> 14602 -- 15610 - delta in agent between MSG and INFO
+  PQSupportOn -> maxCompressedInfoLength
+  PQSupportOff -> maxRawInfoLength
 {-# INLINE maxConnInfoLength #-}
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
