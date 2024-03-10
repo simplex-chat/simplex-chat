@@ -13,6 +13,7 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
@@ -128,6 +129,18 @@ pqMatrix2 runTest = do
   where
     test aPQ bPQ = testChat2 aliceProfile bobProfile $ \a b -> runTest (a, aPQ) (b, bPQ)
 
+pqVersionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()) -> SpecWith FilePath
+pqVersionTestMatrix2 runTest = do
+  it "current" $ testChat2 aliceProfile bobProfile (runTest' True pqEncryptionCompressionVersion)
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest' False (VersionChat 6))
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest' False (VersionChat 6))
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest' False (VersionChat 6))
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest' False (VersionChat 1))
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest' False (VersionChat 1))
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest' False (VersionChat 1))
+  where
+    runTest' pqExpected v a b = runTest a b pqExpected v
+
 withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatGroup3Connected tmp dbPrefix action = do
   withTestChat tmp dbPrefix $ \cc -> do
@@ -237,6 +250,20 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
   cc2 `pqVerForContact` 2 `shouldReturn` v2
   where
     lrgLen = maxEncodedMsgLength PQSupportOff * 3 `div` 4 - 98 -- this is max size for binary image preview given the rest of the message
+
+genProfileImgForLink :: IO ByteString
+genProfileImgForLink = do
+  g <- C.newRandom
+  atomically $ B64.encode <$> C.randomBytes lrgLen g
+  where
+    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 214 -- magic number to make tests pass
+
+genProfileImgForAddress :: IO ByteString
+genProfileImgForAddress = do
+  g <- C.newRandom
+  atomically $ B64.encode <$> C.randomBytes lrgLen g
+  where
+    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 238 -- magic number to make tests pass
 
 -- PQ combinators /
 
