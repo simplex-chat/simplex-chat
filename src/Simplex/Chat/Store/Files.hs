@@ -432,6 +432,7 @@ lookupChatRefByFileId db User {userId} fileId =
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
+  -- TODO PQ use range from minVersion of the current range?
   createConnection_ db userId ConnSndFile (Just fileId) agentConnId (Just initialChatVersion) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()

@@ -58,7 +58,7 @@ import Simplex.Messaging.Version hiding (version)
 
 -- Chat version history:
 -- 1 - support chat versions in connections (9/1/2023)
--- 2 - create contacts for group members via x.grp.direct.inv (9/16/2023)
+-- 2 - create contacts for group members only via x.grp.direct.inv (9/16/2023)
 -- 3 - faster joining via group links without creating contact (10/30/2023)
 -- 4 - group message forwarding (11/18/2023)
 -- 5 - batch sending messages (12/23/2023)

@@ -597,7 +597,7 @@ processChatCommand' vr = \case
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
   APISetPQEncryption onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
-  APISetContactPQ ctId pqEnc -> withUser $ \user -> do 
+  APISetContactPQ ctId pqEnc -> withUser $ \user -> do
     ct@Contact {activeConn} <- withStore $ \db -> getContact db user ctId
     case activeConn of
       Just conn@Connection {connId, pqSupport, pqEncryption}
@@ -1403,6 +1403,7 @@ processChatCommand' vr = \case
     subMode <- chatReadVar subscriptionMode
     pqSup <- chatReadVar pqExperimentalEnabled
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing (IKNoPQ pqSup) subMode
+    -- TODO PQ pass minVersion from the current range
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode initialChatVersion pqSup
     pure $ CRInvitation user cReq conn
   AddContact incognito -> withUser $ \User {userId} ->
@@ -1433,6 +1434,7 @@ processChatCommand' vr = \case
     pqSup <- chatReadVar pqExperimentalEnabled
     withAgent' (\a -> connRequestPQSupport a pqSup cReq) >>= \case
       Nothing -> throwChatError CEInvalidConnReq
+      -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' (Just chatV) $ XInfo profileToSend

@@ -364,7 +364,7 @@ fun ChatInfoLayout(
     if (pqExperimentalEnabled && conn != null) {
       SectionView("Quantum resistant E2E encryption") {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        if (!conn.pqSupport) {
+        if (!conn.pqEncryption) {
           AllowContactPQButton(allowContactPQ)
           SectionTextFooter("After allowing quantum resistant e2e encryption, it will be enabled after several messages if your contact also allows it.")
         }
