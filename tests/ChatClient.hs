@@ -42,7 +42,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
-import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff, pattern VersionE2E)
+import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff, pattern PQSupportOn, pattern VersionE2E)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -147,6 +147,15 @@ testAgentCfgVPrev =
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
+testAgentCfgVNext :: AgentConfig
+testAgentCfgVNext =
+  testAgentCfg
+    { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
+      smpAgentVRange = \_ -> nextRange $ supportedSMPAgentVRange PQSupportOn,
+      e2eEncryptVRange = \_ -> nextRange $ supportedE2EEncryptVRange PQSupportOn,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
+    }
+
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
@@ -163,6 +172,13 @@ testCfgVPrev =
       agentConfig = testAgentCfgVPrev
     }
 
+testCfgVNext :: ChatConfig
+testCfgVNext =
+  testCfg
+    { chatVRange = \_ -> nextRange $ chatVRange testCfg PQSupportOn,
+      agentConfig = testAgentCfgVNext
+    }
+
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
@@ -173,11 +189,17 @@ testCfgV1 =
 prevRange :: VersionRange v -> VersionRange v
 prevRange vr = vr {maxVersion = max (minVersion vr) (prevVersion $ maxVersion vr)}
 
+nextRange :: VersionRange v -> VersionRange v
+nextRange vr = vr {maxVersion = max (minVersion vr) (nextVersion $ maxVersion vr)}
+
 v1Range :: VersionRange v
 v1Range = mkVersionRange (Version 1) (Version 1)
 
 prevVersion :: Version v -> Version v
 prevVersion (Version v) = Version (v - 1)
+
+nextVersion :: Version v -> Version v
+nextVersion (Version v) = Version (v + 1)
 
 testCfgCreateGroupDirect :: ChatConfig
 testCfgCreateGroupDirect =

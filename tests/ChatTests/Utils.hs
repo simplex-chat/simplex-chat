@@ -138,6 +138,9 @@ pqVersionTestMatrix2 runTest = do
   it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest' False (VersionChat 1))
   it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest' False (VersionChat 1))
   it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest' False (VersionChat 1))
+  it "next" $ testChatCfg2 testCfgVNext aliceProfile bobProfile (runTest' True pqEncryptionCompressionVersion)
+  it "next to curr" $ runTestCfg2 testCfg testCfgVNext (runTest' True pqEncryptionCompressionVersion)
+  it "curr to next" $ runTestCfg2 testCfgVNext testCfg (runTest' True pqEncryptionCompressionVersion)
   where
     runTest' pqExpected v a b = runTest a b pqExpected v
 
@@ -256,14 +259,14 @@ genProfileImgForLink = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 214 -- magic number to make tests pass
+    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 214 -- magic number to make tests pass (10737)
 
 genProfileImgForAddress :: IO ByteString
 genProfileImgForAddress = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 238 -- magic number to make tests pass
+    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 238 -- magic number to make tests pass (10713)
 
 -- PQ combinators /
 

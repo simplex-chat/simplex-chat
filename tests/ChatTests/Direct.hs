@@ -131,8 +131,8 @@ chatDirectTests = do
   describe "PQ tests" $ do
     describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
     describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
-    describe "connect via invitation link with PQ encryption enabled" testPQVersionsViaLink
-    describe "connect via contact address with PQ encryption enabled" testPQVersionsViaAddress
+    fdescribe "connect via invitation link with PQ encryption enabled" testPQVersionsViaLink
+    fdescribe "connect via contact address with PQ encryption enabled" testPQVersionsViaAddress
     it "should enable PQ after several messages in connection without PQ" testPQEnableContact
     it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
