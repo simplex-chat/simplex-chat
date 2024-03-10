@@ -3455,12 +3455,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         INFO connInfo -> do
           _conn' <- saveConnInfo conn connInfo
           pure ()
-        MSG meta _msgFlags msgBody -> do
-          cmdId <- createAckCmd conn
+        MSG meta _msgFlags msgBody ->
           -- TODO only acknowledge without saving message?
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
-          withAckMessage agentConnId cmdId meta $ do
+          withAckMessage agentConnId conn meta $ \cmdId -> do
             (_conn', _) <- saveDirectRcvMSG conn meta cmdId msgBody
             pure False
         SENT msgId ->
@@ -3493,9 +3492,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-          cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId msgMeta $ do
+          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta -- XXX: critical? retry?
+          withAckMessage agentConnId conn msgMeta $ \cmdId -> do
             (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn msgMeta cmdId msgBody
             let ct' = ct {activeConn = Just conn'} :: Contact
             assertDirectAllowed user MDRcv ct' $ toCMEventTag event
@@ -3887,9 +3885,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
-        cmdId <- createAckCmd conn
-        let aChatMsgs = parseChatMessages msgBody
-        withAckMessage agentConnId cmdId msgMeta $ do
+        let aChatMsgs = parseChatMessages msgBody -- XXX: evaluate here?
+        withAckMessage agentConnId conn msgMeta $ \cmdId -> do
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
               processEvent cmdId chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
@@ -4272,18 +4269,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     withAckMessage' :: ConnId -> Connection -> MsgMeta -> m () -> m ()
     withAckMessage' cId conn msgMeta action = do
-      cmdId <- createAckCmd conn
-      withAckMessage cId cmdId msgMeta $ action $> False
+      withAckMessage cId conn msgMeta $ \_cmdId -> action $> False
 
-    withAckMessage :: ConnId -> CommandId -> MsgMeta -> m Bool -> m ()
-    withAckMessage cId cmdId msgMeta action = do
+    withAckMessage :: ConnId -> Connection -> MsgMeta -> (CommandId -> m Bool) -> m ()
+    withAckMessage cId conn msgMeta action = do
+      cmdId <- createAckCmd conn -- XXX: critical
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
       -- 1) retry processing several times
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
-      tryChatError action >>= \case
+      tryChatError (action cmdId) >>= \case
         Right withRcpt -> ackMsg cId cmdId msgMeta $ if withRcpt then Just "" else Nothing
         Left e -> ackMsg cId cmdId msgMeta Nothing >> throwError e
 
