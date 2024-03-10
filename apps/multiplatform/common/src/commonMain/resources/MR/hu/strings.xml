@@ -40,16 +40,16 @@
     <string name="calls_prohibited_with_this_contact">A hang- és videóhívások le vannak tiltva.</string>
     <string name="network_session_mode_entity_description">Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesz használva <b>minden ismerős és csoporttag számára</b>. 
 \n<b>Figyelem</b>: ha sok ismerőse van, az akkumulátor- és adathasználat jelentősen megnövekedhet és néhány kapcsolódási kísérlet sikertelen lehet.</string>
-    <string name="icon_descr_cancel_link_preview">URL link előnézet megszakítása</string>
+    <string name="icon_descr_cancel_link_preview">Hivatkozás előnézet megszakítása</string>
     <string name="network_session_mode_user_description">Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesz használva <b>az alkalmazásban minden csevegési profiljához </b>.</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">Mindketten, te is és az ismerősöd is küldhet eltűnő üzeneteket.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Téves üzenet hash</string>
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><b>Tudnivaló</b>: az üzenet- és fájl átjátszók SOCKS proxy által vannak kapcsolatban. A hívások és URL link előnézetek közvetlen kapcsolatot használnak.</string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis inicializálása sikertelen</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Minden ismerős csatlakoztatva marad. Profil változtatások frissítésre kerülnek ismerősöknél.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profil által (alap beállítás), vagy kapcsolat által (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">Hangüzenetek küldésének engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.</string>
@@ -61,7 +61,7 @@
     <string name="v5_3_encrypt_local_files_descr">Az alkalmazás titkosítja a helyi fájlokat (a videók kivételével).</string>
     <string name="answer_call">Hívás fogadása</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Eltűnő üzenetek engedélyezése ismerősök számára.</string>
-    <string name="connect_plan_already_connecting">Már kapcsolódik!</string>
+    <string name="connect_plan_already_connecting">Kapcsolódás folyamatban!</string>
     <string name="cannot_receive_file">Nem lehet fogadni a fájlt</string>
     <string name="auth_unavailable">Hitelesítés elérhetetlen</string>
     <string name="app_version_title">Alkalmazás verzió</string>
@@ -76,11 +76,11 @@
     <string name="settings_section_title_calls">HÍVÁSOK</string>
     <string name="rcv_group_and_other_events">és %d egyéb esemény</string>
     <string name="address_section_title">Cím</string>
-    <string name="connect_plan_already_joining_the_group">Már csatlakozik a csoporthoz!</string>
+    <string name="connect_plan_already_joining_the_group">Csatlakozás folyamatban!</string>
     <string name="auto_accept_contact">Automatikus elfogadás</string>
     <string name="notifications_mode_service_desc">A háttérszolgáltatás mindig fut - az értesítések azonnal megjelennek, amint üzenetek vannak.</string>
     <string name="allow_to_delete_messages">Elküldött üzenetek visszafordíthatatlan törlésének engedélyezése. (24 óra)</string>
-    <string name="both_you_and_your_contact_can_send_voice">Mindketten, te is és az ismerősöd is küldhet hangüzeneteket.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Mindkét fél küldhet hangüzeneteket.</string>
     <string name="alert_title_msg_bad_id">Téves üzenet ID</string>
     <string name="allow_your_contacts_adding_message_reactions">Ismerősök általi üzenetreakciók hozzáadásának engedélyezése.</string>
     <string name="allow_to_send_voice">Hangüzenetek küldésének engedélyezése.</string>
@@ -99,7 +99,7 @@
     <string name="smp_servers_add_to_another_device">Hozzáadás egy másik eszközhöz</string>
     <string name="allow_message_reactions">Üzenetreakciók engedélyezése.</string>
     <string name="icon_descr_cancel_file_preview">Fájl előnézet megszakítása</string>
-    <string name="all_group_members_will_remain_connected">Minden csoporttag kapcsolatban marad.</string>
+    <string name="all_group_members_will_remain_connected">Minden csoporttag csatlakoztatva marad.</string>
     <string name="onboarding_notifications_mode_service_desc"><b>Több akkumulátort használ</b>! Háttérszolgáltatás mindig fut - az értesítések megjelennek, amint az üzenetek elérhetővé válnak.</string>
     <string name="block_member_confirmation">Blokkolás</string>
     <string name="group_member_role_admin">admin</string>
@@ -120,7 +120,7 @@
     <string name="chat_preferences_always">mindig</string>
     <string name="call_already_ended">A hívás már befejeződött!</string>
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
-    <string name="all_your_contacts_will_remain_connected">Minden ismerős kapcsolatban marad.</string>
+    <string name="all_your_contacts_will_remain_connected">Minden ismerős csatlakoztatva marad.</string>
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet megszakítása</string>
     <string name="allow_irreversible_message_deletion_only_if">Üzenet végleges törlésének engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
@@ -160,7 +160,7 @@
     <string name="settings_section_title_app">Alkalmazás</string>
     <string name="icon_descr_call_progress">Hívás folyamatban</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Mindkét fél is hozzáadhat üzenetreakciókat.</string>
-    <string name="both_you_and_your_contact_can_make_calls">Mindketten, te is és az ismerősöd is tud hívásokat indítani.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Mindkét fél tud hívásokat indítani.</string>
     <string name="la_auth_failed">Hitelesítés sikertelen</string>
     <string name="block_member_desc">Minden %s által írt új üzenet elrejtésre kerül!</string>
     <string name="app_version_name">Alkalmazás verzió: v%s</string>
@@ -198,15 +198,15 @@
     <string name="rcv_group_event_member_created_contact">közvetlenül kapcsolódva</string>
     <string name="connection_local_display_name">kapcsolat %1$d</string>
     <string name="status_contact_has_e2e_encryption">az ismerős e2e titkosítással rendelkezik</string>
-    <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerűen létrehozott profillal.</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Az ismerős és az összes üzenet törlésre kerül - ez visszafordíthatatlan!</string>
+    <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerű profillal.</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Az ismerős és az összes üzenet törlésre kerül - ez nem vonható vissza!</string>
     <string name="contacts_can_mark_messages_for_deletion">Az ismerősök törlésre jelölhetnek üzeneteket ; megtekintheti őket.</string>
     <string name="connect_via_invitation_link">Kapcsolódás Egyszer használatos linkkel?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy link / QR-kód által</string>
     <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
     <string name="notification_preview_mode_contact">Ismerős neve</string>
     <string name="connect_via_contact_link">Kapcsolódás ismerős azonosítója által?</string>
-    <string name="create_address">Cím létrehozása</string>
+    <string name="create_address">Azonosító létrehozása</string>
     <string name="copy_verb">Másolás</string>
     <string name="continue_to_next_step">Folytatás</string>
     <string name="connect_plan_connect_via_link">Kapcsolódás egy linken keresztül?</string>
@@ -230,7 +230,7 @@
     <string name="chat_preferences_contact_allows">Ismerős engedélyezi</string>
     <string name="notification_preview_somebody">Ismerős elrejtve:</string>
     <string name="connect_to_desktop">Kapcsolódás számítógéphez</string>
-    <string name="icon_descr_context">Kontextus ikon</string>
+    <string name="icon_descr_context">Környezeti ikon</string>
     <string name="connect_via_link">Kapcsolódás egy linken keresztül</string>
     <string name="receipts_section_contacts">Ismerősök</string>
     <string name="connection_error">Kapcsolódási hiba</string>
@@ -239,7 +239,7 @@
 \n- kézbesítési igazolások (20 tagig).
 \n- gyorsabb és stabilabb</string>
     <string name="contribute">Hozzájárulás</string>
-    <string name="group_member_status_intro_invitation">csatlakozás (bemutatkozás meghívás)</string>
+    <string name="group_member_status_intro_invitation">csatlakozás (bemutatkozás meghívó)</string>
     <string name="create_simplex_address">SimpleX azonosító létrehozása</string>
     <string name="rcv_direct_event_contact_deleted">törölt ismerős</string>
     <string name="delete_member_message__question">Csoporttag üzenet törlése?</string>
@@ -261,7 +261,7 @@
     <string name="create_profile">Profil létrehozása</string>
     <string name="rcv_group_event_group_deleted">törölt csoport</string>
     <string name="full_deletion">Törlés mindenkinél</string>
-    <string name="button_create_group_link">Link létrehozása</string>
+    <string name="button_create_group_link">Hivatkozás létrehozása</string>
     <string name="chat_preferences">Csevegési beállítások</string>
     <string name="chat_archive_header">Csevegési archívum</string>
     <string name="delete_profile">Profil törlése</string>
@@ -272,7 +272,7 @@
     <string name="delete_chat_profile">Csevegési profil törlése</string>
     <string name="custom_time_picker_custom">egyedi</string>
     <string name="callstatus_connecting">hívás kapcsolódik…</string>
-    <string name="customize_theme_title">Színséma személyreszabása</string>
+    <string name="customize_theme_title">Téma személyre szabása</string>
     <string name="maximum_supported_file_size">Jelenleg támogatott legnagyobb fájl méret: %1$s.</string>
     <string name="smp_server_test_delete_file">Fájl törlése</string>
     <string name="in_developing_title">Hamarosan!</string>
@@ -284,7 +284,7 @@
     <string name="icon_descr_close_button">Bezárás gomb</string>
     <string name="chat_is_stopped">A csevegés leállt</string>
     <string name="item_info_current">(jelenlegi)</string>
-    <string name="v5_1_custom_themes_descr">Színsémák személyreszabása és megosztása</string>
+    <string name="v5_1_custom_themes_descr">Témák személyre szabása és megosztása</string>
     <string name="delete_chat_profile_question">Csevegési profil törlése?</string>
     <string name="create_group">Titkos csoport létrehozása</string>
     <string name="connected_to_desktop">Csatlakozva a számítógéphez</string>
@@ -295,7 +295,7 @@
     <string name="confirm_verb">Megerősítés</string>
     <string name="for_me_only">Törlés nálam</string>
     <string name="delete_messages__question">%d üzenet törlése?</string>
-    <string name="v5_1_custom_themes">Egyedi színsémák</string>
+    <string name="v5_1_custom_themes">Egyedi témák</string>
     <string name="group_member_status_accepted">kapcsolódás (elfogadva)</string>
     <string name="smp_servers_check_address">Kiszolgáló címének ellenőrzése és újrapróbálkozás.</string>
     <string name="delete_group_question">Csoport törlése?</string>
@@ -311,7 +311,7 @@
     <string name="smp_server_test_create_queue">Várólista létrehozása</string>
     <string name="colored_text">színes</string>
     <string name="callstate_connecting">kapcsolódás…</string>
-    <string name="dark_theme">Sötét színséma</string>
+    <string name="dark_theme">Sötét téma</string>
     <string name="deleted_description">törölve</string>
     <string name="users_delete_question">Csevegési profil törlése?</string>
     <string name="chat_with_developers">Csevegés a fejlesztőkkel</string>
@@ -325,7 +325,7 @@
     <string name="contact_connection_pending">kapcsolódás…</string>
     <string name="chat_database_deleted">Csevegési adatbázis törölve</string>
     <string name="group_member_status_introduced">kapcsolódás (bejelentve)</string>
-    <string name="create_group_link">Csoporthoz link létrehozása</string>
+    <string name="create_group_link">Csoportos hivatkozás létrehozása</string>
     <string name="chat_console">Csevegési konzol</string>
     <string name="delete_files_and_media_for_all_users">Fájlok törlése minden csevegési profilból</string>
     <string name="smp_server_test_delete_queue">Várólista törlése</string>
@@ -341,7 +341,7 @@
     <string name="clear_contacts_selection_button">Kiürítés</string>
     <string name="delete_contact_question">Ismerős törlése?</string>
     <string name="clear_verb">Kiürítés</string>
-    <string name="create_address_and_let_people_connect">Hozzon létre egy címet, hogy az emberek kapcsolatba léphessenek Önnel.</string>
+    <string name="create_address_and_let_people_connect">Azonosító létrehozása, hogy az emberek kapcsolatba léphessenek Önnel.</string>
     <string name="v4_4_verify_connection_security_desc">Biztonsági kódok összehasonlítása ismerősökkel.</string>
     <string name="smp_server_test_compare_file">Fájl összehasonlítás</string>
     <string name="your_chats">Csevegések</string>
@@ -361,7 +361,7 @@
     <string name="database_encryption_will_be_updated">Az adatbázis titkosítás jelmondata megváltoztatásra és mentésre kerül a Keystore-ban.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Az adatbázis titkosításra kerül és a jelmondat eltárolásra a beállításokban.</string>
     <string name="smp_servers_delete_server">Kiszolgáló törlése</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Eszközhitelesítés kikapcsolva. SimpleX zár kikapcsolása.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Eszközhitelesítés kikapcsolva. SimpleX zárolás kikapcsolása.</string>
     <string name="no_call_on_lock_screen">Letiltás</string>
     <string name="receipts_groups_disable_for_all">Letiltás minden csoport számára</string>
     <string name="receipts_groups_enable_for_all">Engedélyezés minden csoport részére</string>
@@ -372,7 +372,7 @@
     <string name="desktop_address">Számítógép azonosítója</string>
     <string name="ttl_s">%dmp</string>
     <string name="delivery_receipts_title">Kézbesítési igazolások!</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Eszközhitelesítés nem engedélyezett.A SimpleX zár bekapcsolható a Beállításokon keresztül, miután az eszköz hitelesítés engedélyezésre került.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Eszközhitelesítés nem engedélyezett.A SimpleX zárolás bekapcsolható a Beállításokon keresztül, miután az eszköz hitelesítés engedélyezésre került.</string>
     <string name="decryption_error">Titkosítás visszafejtési hiba</string>
     <string name="share_text_disappears_at">Eltűnik ekkor: %s</string>
     <string name="icon_descr_edited">szerkesztve</string>
@@ -398,7 +398,7 @@
     <string name="disappearing_message">Eltűnő üzenet</string>
     <string name="dont_create_address">Ne hozzon létre azonosítót</string>
     <string name="dont_show_again">Ne mutasd újra</string>
-    <string name="auth_disable_simplex_lock">SimpleX Zár kikapcsolása</string>
+    <string name="auth_disable_simplex_lock">SimpleX zárolás kikapcsolása</string>
     <string name="status_e2e_encrypted">e2e titkosított</string>
     <string name="settings_section_title_device">ESZKÖZ</string>
     <string name="encrypted_video_call">e2e titkosított videóhívás</string>
@@ -468,7 +468,7 @@
     <string name="error_sending_message">Hiba az üzenet küldésekor</string>
     <string name="la_enter_app_passcode">Jelkód megadása</string>
     <string name="for_everybody">Mindenkinél</string>
-    <string name="encryption_renegotiation_error">Titkosítás újra egyeztetési hiba</string>
+    <string name="encryption_renegotiation_error">Titkosítás újraegyeztetési hiba</string>
     <string name="error_encrypting_database">Hiba az adatbázis titkosításakor</string>
     <string name="error_deleting_group">Hiba a csoport törlésekor</string>
     <string name="exit_without_saving">Kilépés mentés nélkül</string>
@@ -516,12 +516,12 @@
     <string name="v4_6_group_moderation">Csoport moderáció</string>
     <string name="choose_file">Fájl</string>
     <string name="group_link">Csoport link</string>
-    <string name="snd_conn_event_ratchet_sync_required">titkosítás újra egyeztetés szükséges %s számára</string>
+    <string name="snd_conn_event_ratchet_sync_required">titkosítás újraegyeztetés szükséges %s számára</string>
     <string name="failed_to_active_user_title">Hiba a profil váltásakor!</string>
     <string name="settings_experimental_features">Kísérleti funkciók</string>
     <string name="receipts_contacts_enable_keep_overrides">Engedélyezés (felülírások megtartásával)</string>
     <string name="enter_correct_passphrase">Helyes jelmondat bevitele.</string>
-    <string name="delete_group_for_self_cannot_undo_warning">A csoport törlésre kerül az Ön részére - ez visszafordíthatatlan!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">A csoport törlésre kerül az Ön részére - ez nem vonható vissza!</string>
     <string name="encrypt_database_question">Adatbázis titkosítása?</string>
     <string name="allow_accepting_calls_from_lock_screen">A zárolási képernyőn megjelenő hívások engedélyezése a Beállításokban.</string>
     <string name="conn_event_ratchet_sync_agreed">titkosítás egyeztetve</string>
@@ -531,7 +531,7 @@
     <string name="revoke_file__message">A fájl törölve lesz a kiszolgálóról.</string>
     <string name="v5_2_disappear_one_message_descr">Akkor is, ha le van tiltva a beszélgetésben.</string>
     <string name="v5_4_better_groups_descr">Gyorsabb csatlakozás és megbízhatóbb üzenet kézbesítés.</string>
-    <string name="enable_lock">Zár engedélyezése</string>
+    <string name="enable_lock">Zárolás engedélyezése</string>
     <string name="settings_section_title_help">SEGÍTSÉG</string>
     <string name="group_is_decentralized">Teljesen decentralizált - kizárólag tagok számára látható.</string>
     <string name="file_with_path">Fájl: %s</string>
@@ -540,18 +540,18 @@
     <string name="file_saved">Fájl elmentve</string>
     <string name="fix_connection_question">Kapcsolat javítása?</string>
     <string name="files_and_media">Fájlok és médiatartalom</string>
-    <string name="section_title_for_console">A KONZOL SZÁMÁRA</string>
-    <string name="alert_text_encryption_renegotiation_failed">Titkosítás újra egyeztetése sikertelen.</string>
+    <string name="section_title_for_console">KONZOLHOZ</string>
+    <string name="alert_text_encryption_renegotiation_failed">Titkosítás újraegyeztetése sikertelen.</string>
     <string name="error_deleting_user">Hiba a felhasználói profil törlésekor</string>
     <string name="fix_connection_not_supported_by_group_member">Csoporttag általi javítás nem támogatott</string>
     <string name="enter_welcome_message">Üdvözlő üzenetet megadása…</string>
     <string name="encrypted_database">Titkosított adatbázis</string>
     <string name="enter_password_to_show">Jelszó megadása a keresőben</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">A fájl megérkezik amint az ismerősöd befejezi a feltöltését.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">A fájl akkor érkezik meg, amikor ismerőse befejezte annak feltöltést.</string>
     <string name="smp_server_test_download_file">Fájl letöltése</string>
     <string name="failed_to_parse_chat_title">Csevegés betöltése sikertelen</string>
     <string name="smp_servers_enter_manually">Kiszolgáló megadása kézzel</string>
-    <string name="file_will_be_received_when_contact_is_online">A fájl megérkezik amint az ismerősöd online lesz, kérlek várj vagy nézz vissza később!</string>
+    <string name="file_will_be_received_when_contact_is_online">A fájl akkor érkezik meg, amint ismerőse online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="error_creating_link_for_group">Hiba a csoport linkjének létrehozásakor</string>
     <string name="from_gallery_button">A Galériából</string>
     <string name="receipts_groups_enable_keep_overrides">Engedélyezés (csoport felülírások megtartásával)</string>
@@ -570,7 +570,7 @@
     <string name="error_updating_link_for_group">Hiba a csoport link frissítésekor</string>
     <string name="group_member_status_group_deleted">a csoport törölve</string>
     <string name="snd_group_event_group_profile_updated">csoport profil frissítve</string>
-    <string name="error_deleting_pending_contact_connection">Hiba a függőben lévő parner kapcsolatának törlésekor</string>
+    <string name="error_deleting_pending_contact_connection">Hiba a függőben lévő ismerős kapcsolatának törlésekor</string>
     <string name="error_importing_database">Hiba a csevegési adatbázis importálásakor</string>
     <string name="error_enabling_delivery_receipts">Hiba a kézbesítési jelentések engedélyezésekor!</string>
     <string name="error_saving_xftp_servers">Hiba az XFTP kiszolgálók mentésekor</string>
@@ -582,7 +582,7 @@
     <string name="error_sending_message_contact_invitation">Hiba a meghívó küldésekor</string>
     <string name="display_name">Adja meg nevét::</string>
     <string name="error_saving_user_password">Hiba a felhasználó jelszavának mentésekor</string>
-    <string name="export_theme">Színséma exportálása</string>
+    <string name="export_theme">Téma exportálása</string>
     <string name="enter_this_device_name">Eszköznév megadása…</string>
     <string name="error">Hiba</string>
     <string name="alert_message_group_invitation_expired">A csoport meghívó már nem érvényes, el lett távolítva a küldője által.</string>
@@ -604,7 +604,7 @@
     <string name="v4_6_reduced_battery_usage">Tovább csökkentett akkumulátor használat</string>
     <string name="error_stopping_chat">Hiba a csevegés megállításakor</string>
     <string name="snd_conn_event_ratchet_sync_ok">titkosítás rendben %s számára</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Csoport törlésre kerül minden tag számára - ez visszafordíthatatlan!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Csoport törlésre kerül minden tag számára - ez nem vonható vissza!</string>
     <string name="v5_2_fix_encryption_descr">Titkosítás javítása az adatmentések helyreállítása után.</string>
     <string name="error_deleting_database">Hiba a csevegési adatbázis törlésekor</string>
     <string name="simplex_link_mode_full">Teljes link</string>
@@ -613,14 +613,14 @@
     <string name="group_preferences">Csoport beállítások</string>
     <string name="error_with_info">Hiba: %s</string>
     <string name="v4_4_disappearing_messages">Eltűnő üzenetek</string>
-    <string name="auth_enable_simplex_lock">SimpleX Zár engedélyezése</string>
+    <string name="auth_enable_simplex_lock">SimpleX zárolás engedélyezése</string>
     <string name="error_synchronizing_connection">Hiba a kapcsolat szinkronizálása során</string>
     <string name="error_creating_address">Hiba az azonosító létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba a részletek betöltésekor</string>
     <string name="error_accepting_contact_request">Hiba történt a kapcsolatfelvételi kérelem elfogadásakor</string>
-    <string name="snd_conn_event_ratchet_sync_allowed">%s ismerősöddel való titkosítás újra egyeztetése engedélyezve</string>
-    <string name="conn_event_ratchet_sync_required">titkosítás újra egyeztetés szükséges</string>
+    <string name="snd_conn_event_ratchet_sync_allowed">titkosítás újraegyeztetése engedélyezett %s számára</string>
+    <string name="conn_event_ratchet_sync_required">titkosítás újraegyeztetés szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
     <string name="files_and_media_section">Fájlok és média</string>
     <string name="image_saved">A kép mentve a Galériába</string>
@@ -629,9 +629,9 @@
     <string name="files_and_media_prohibited">A fájlok- és a médiatartalom küldése le van tiltva!</string>
     <string name="hide_profile">Profil elrejtése</string>
     <string name="how_to_use_your_servers">Kiszolgálók használata</string>
-    <string name="v5_2_favourites_filter">Találd meg a csevegési üzeneteket gyorsabban</string>
-    <string name="import_theme">Színséma importálása</string>
-    <string name="import_theme_error">Hiba a színséma importálásakor</string>
+    <string name="v5_2_favourites_filter">Csevegési üzenetek gyorsabb megtalálása</string>
+    <string name="import_theme">Téma importálása</string>
+    <string name="import_theme_error">Hiba a téma importálásakor</string>
     <string name="notification_display_mode_hidden_desc">Ismerős és üzenet elrejtése</string>
     <string name="incompatible_database_version">Nem kompatibilis adatbázis verzió</string>
     <string name="how_simplex_works">Hogyan működik a SimpleX</string>
@@ -669,7 +669,7 @@
     <string name="files_are_prohibited_in_group">A fájlok- és a médiatartalom küldése le van tiltva ebben a csoportban.</string>
     <string name="how_it_works">Hogyan működik</string>
     <string name="hide_dev_options">Elrejt:</string>
-    <string name="error_creating_member_contact">Hiba a névjeggyel történő kapcsolat létrehozásában</string>
+    <string name="error_creating_member_contact">Hiba az ismerőssel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy ismerőse megoszthat egy meghívó linket.</string>
     <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelszót, az összes alkalmazásadat visszafordíthatatlanul törlődik!</string>
@@ -680,7 +680,7 @@
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Kapott SimpleX Chat meghívó linkjét megnyithatja böngészőjében:</string>
     <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:</string>
-    <string name="found_desktop">Megtalált asztali számítógép</string>
+    <string name="found_desktop">Megtalált számítógép</string>
     <string name="desktop_devices">Számítógépek</string>
     <string name="how_to_use_markdown">A markdown használata</string>
     <string name="create_chat_profile">Csevegő profil létrehozása</string>
@@ -886,7 +886,7 @@
     <string name="v5_1_message_reactions">Üzenetreakciók</string>
     <string name="no_connected_mobile">Nincs csatlakoztatott mobil eszköz</string>
     <string name="network_status">Hálózat állapota</string>
-    <string name="new_passcode">Új Jelkód</string>
+    <string name="new_passcode">Új jelkód</string>
     <string name="message_delivery_error_desc">Valószínűleg ez az ismerős törölte Önnel a kapcsolatot.</string>
     <string name="join_group_incognito_button">Csatlakozás inkognitóban</string>
     <string name="open_chat">Csevegés megnyitása</string>
@@ -969,7 +969,7 @@
     <string name="icon_descr_video_on">Videó bekapcsolva</string>
     <string name="display_name__field">Profil neve:</string>
     <string name="paste_button">Beillesztés</string>
-    <string name="thank_you_for_installing_simplex">Köszönjük, hogy telepítetted a SimpleX Chatet!</string>
+    <string name="thank_you_for_installing_simplex">Köszönjük, hogy telepítette a SimpleX Chatet!</string>
     <string name="star_on_github">Csillag a GitHub-on</string>
     <string name="remove_member_confirmation">Eltávolítás</string>
     <string name="search_verb">Keresés</string>
@@ -1003,7 +1003,7 @@
     <string name="smp_servers_your_server">Saját kiszolgáló</string>
     <string name="random_port">Véletlen</string>
     <string name="share_with_contacts">Megosztás ismerősökkel...</string>
-    <string name="sender_you_pronoun">te</string>
+    <string name="sender_you_pronoun">ön</string>
     <string name="you_have_no_chats">Nincsenek csevegési üzenetek</string>
     <string name="send_disappearing_message_send">Küldés</string>
     <string name="chat_item_ttl_seconds">%s másodperc</string>
@@ -1080,14 +1080,14 @@
     <string name="smp_server_test_upload_file">Fájl feltöltése</string>
     <string name="prohibit_calls">Hang- és videóhívások tiltása.</string>
     <string name="network_use_onion_hosts_required">Megkövetelt</string>
-    <string name="ntf_channel_messages">SimpleX chat üzenetek</string>
+    <string name="ntf_channel_messages">SimpleX Chat üzenetek</string>
     <string name="restore_database_alert_confirm">Visszaállítás</string>
     <string name="setup_database_passphrase">Adatbázis jelmondat beállítása</string>
     <string name="color_sent_message">Elküldött üzenet</string>
     <string name="notifications_mode_periodic">Időszakosan indul</string>
     <string name="connect_plan_this_is_your_own_simplex_address">Ez a SimpleX azonosítója!</string>
     <string name="group_member_status_removed">eltávolítva</string>
-    <string name="share_link">Link megosztása</string>
+    <string name="share_link">Hivatkozás megosztása</string>
     <string name="icon_descr_simplex_team">SimpleX csapat</string>
     <string name="image_descr_profile_image">profilkép</string>
     <string name="your_chat_profiles">Csevegési profiljai</string>
@@ -1132,7 +1132,7 @@
     <string name="chat_preferences_yes">igen</string>
     <string name="voice_message">Hangüzenet</string>
     <string name="settings_section_title_use_from_desktop">Használat számítógépről</string>
-    <string name="settings_section_title_you">TE</string>
+    <string name="settings_section_title_you">ÖN</string>
     <string name="network_proxy_port">port %d</string>
     <string name="to_connect_via_link_title">Kapcsolódás hivatkozás által</string>
     <string name="share_address">Azonosító megosztása</string>
@@ -1272,7 +1272,7 @@
     <string name="custom_time_unit_seconds">másodperc</string>
     <string name="lock_not_enabled">SimpleX zárolás nincs engedélyezve!</string>
     <string name="chat_lock">SimpleX zárolás</string>
-    <string name="your_settings">Beállításai</string>
+    <string name="your_settings">Beállítások</string>
     <string name="your_chat_database">Csevegési adatbázisa</string>
     <string name="rcv_group_event_member_deleted">%1$s eltávolítva</string>
     <string name="smp_servers_test_failed">A kiszolgáló tesztje sikertelen!</string>
@@ -1356,7 +1356,7 @@
     <string name="description_you_shared_one_time_link_incognito">egyszer használatos linket osztott meg inkognitóban</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Kiszolgálóhoz történő csatlakozás, mely az adott ismerőstől érkező üzenetek fogadására szolgál.</string>
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a Beállításokban</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">Akkor tud csatlakozni a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy nézzen vissza később!</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Akkor tud csatlakozni a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="mtr_error_different">eltérő migráció az appban/adatbázisban: %s / %s</string>
     <string name="connect_plan_you_are_already_connecting_to_vName">Már csatlakozik a következőhöz: <b>%1$s</b>.</string>
     <string name="unhide_profile">Profil felfedése</string>
@@ -1379,7 +1379,7 @@
     <string name="onboarding_notifications_mode_off">Amikor az alkalmazás fut</string>
     <string name="alert_title_cant_invite_contacts_descr">Inkognító profilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében meghívók küldése tiltott</string>
     <string name="v4_5_transport_isolation">Kapcsolat izolációs mód</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz csatlakoztatva, ha a csatlakozási kérelme elfogadásra került, várjon, vagy nézz en vissza később!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz csatlakoztatva, ha a csatlakozási kérelme elfogadásra került, várjon, vagy ellenőrizze később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva ebben a csoportban.</string>
     <string name="system_restricted_background_in_call_warn">A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.</string>
     <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantum ellenálló protokoll által.</string>
@@ -1388,7 +1388,7 @@
 \n- előzmény szerkesztése</string>
     <string name="open_on_mobile_and_scan_qr_code">Megnyitás a <i>Használat számítógépről</i> gombra a mobil appban és olvassa be a QR-kódot!</string>
     <string name="sender_at_ts">%s at %s</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor csatlakozik, amikor az ismerős eszköze online lesz. Várjon, vagy ellenőrizze később!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor csatlakozik, amikor az ismerős eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
     <string name="disable_onion_hosts_when_not_supported">Állítsa a <i>Használja az .onion hostokat</i> NEM értékre, ha a SOCKS proxy nem támogatja őket.</string>
     <string name="you_can_share_your_address">Megoszthatja azonosítóját linkként vagy QR-kódként – így bárki csatlakozhat Önhöz.</string>
@@ -1397,7 +1397,7 @@
     <string name="snd_group_event_changed_member_role">%s szerepkörét megváltoztatta erre: %s</string>
     <string name="you_rejected_group_invitation">Csoport meghívó elutasítva</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználói azonosítók helyett, a SimpleX üzenetsorokhoz rendel azonosítókat, minden egyes ismerőshöz egy különbözőt.</string>
-    <string name="to_share_with_your_contact">(megosztás névjeggyel)</string>
+    <string name="to_share_with_your_contact">(megosztás ismerőssel)</string>
     <string name="you_sent_group_invitation">Csoport meghívó elküldve</string>
     <string name="update_network_session_mode_question">Kapcsolat izolációs mód frissítése?</string>
     <string name="network_session_mode_transport_isolation">Kapcsolat izolációs mód</string>
@@ -1446,7 +1446,7 @@
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már kért egy csatlakozást ezen az azonosítón keresztül!</string>
     <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX azonosítót ismerősökkel, hogy kapcsolatba léphessenek %s-el .</string>
     <string name="you_can_accept_or_reject_connection">Csatlakozási kérelmek esetében, elfogadhatja vagy elutasíthatja azokat.</string>
-    <string name="v4_6_group_welcome_message_descr">Állítsd be az új tagoknak megjelenő üzenetet!</string>
+    <string name="v4_6_group_welcome_message_descr">Megjelenő üzenetet beállítása új tagok részére!</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="sending_delivery_receipts_will_be_enabled">A kézbesítési jelentés küldése minden ismerős számára engedélyezésre kerül.</string>
     <string name="network_option_protocol_timeout_per_kb">Protokoll időkorlát KB-onként</string>
@@ -1477,7 +1477,7 @@
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés leállítása a csevegőadatbázis exportálásához, importálásához vagy törléséhez. A csevegés leállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
-    <string name="save_passphrase_in_keychain">Jelmondat mentése a Kulcstárban</string>
+    <string name="save_passphrase_in_keychain">Jelmondat mentése a kulcstárolóban</string>
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
@@ -1539,18 +1539,18 @@
     <string name="retry_verb">Újrapróbálkozás</string>
     <string name="camera_not_available">A fényképező nem elérhető</string>
     <string name="enable_sending_recent_history">Utolsó 100 üzenet küldése új tagoknak.</string>
-    <string name="disable_sending_recent_history">Ne küldjön előzményeket az új tagoknak.</string>
+    <string name="disable_sending_recent_history">Ne küldjön előzményeket új tagok részére.</string>
     <string name="or_show_this_qr_code">Vagy mutassa meg ezt a kódot</string>
     <string name="enable_camera_access">Kamera hozzáférés engedélyezése</string>
     <string name="keep_unused_invitation_question">Fel nem használt meghívó megtartása?</string>
     <string name="share_this_1_time_link">Egyszer használatos link megosztása</string>
     <string name="new_chat">Új beszélgetés</string>
     <string name="loading_chats">Csevegések betöltése…</string>
-    <string name="creating_link">Link létrehozása…</string>
+    <string name="creating_link">Hivatkozás létrehozása…</string>
     <string name="or_scan_qr_code">Vagy QR-kód beolvasása</string>
     <string name="invalid_qr_code">Érvénytelen QR-kód</string>
     <string name="keep_invitation_link">Megtart</string>
-    <string name="search_or_paste_simplex_link">Keresés, vagy SimpleX link beillesztése</string>
+    <string name="search_or_paste_simplex_link">Keresés, vagy SimpleX azonosító beillesztése</string>
     <string name="show_internal_errors">Belső hibák megjelenítése</string>
     <string name="agent_critical_error_title">Kritikus hiba</string>
     <string name="agent_internal_error_title">Belső hiba</string>
@@ -1613,7 +1613,7 @@
     <string name="v5_5_private_notes_descr">Titkosított fájlokkal és médiatartalommal.</string>
     <string name="v5_5_message_delivery_descr">Csökkentett akkumulátorhasználattal.</string>
     <string name="v5_5_new_interface_languages">Magyar és török felhasználói felület</string>
-    <string name="v5_5_join_group_conversation_descr">A közelmúlt eseményei és továbbfejlesztett Jegyzék Bot.</string>
+    <string name="v5_5_join_group_conversation_descr">A közelmúlt eseményei és továbbfejlesztett jegyzék bot.</string>
     <string name="rcv_group_event_member_unblocked">%s letiltása feloldva</string>
     <string name="snd_group_event_member_unblocked">%s letiltását visszavonta</string>
     <string name="member_info_member_blocked">letiltva</string>
