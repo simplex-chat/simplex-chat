@@ -1242,8 +1242,8 @@
   <string name="snd_conn_event_ratchet_sync_started">agreeing encryption for %s…</string>
   <string name="snd_conn_event_ratchet_sync_agreed">encryption agreed for %s</string>
   <string name="rcv_conn_event_verification_code_reset">security code changed</string>
-  <string name="conn_event_enabled_pq">enabled post-quantum encryption</string>
-  <string name="conn_event_disabled_pq">disabled post-quantum encryption</string>
+  <string name="conn_event_enabled_pq">quantum resistant e2e encryption</string>
+  <string name="conn_event_disabled_pq">standard end-to-end encryption</string>
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_observer">observer</string>

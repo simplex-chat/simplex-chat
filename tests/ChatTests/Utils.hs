@@ -13,6 +13,7 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
@@ -31,7 +32,8 @@ import Simplex.Chat.Types.Preferences
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -201,12 +203,40 @@ sndRcv pqEnc enabled (cc1, msg) cc2 = do
   name2 <- userName cc2
   let cmd = "@" <> name2 <> " " <> msg
   cc1 `send` cmd
-  when enabled $ cc1 <## (name2 <> ": post-quantum encryption enabled")
+  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
   cc1 <# cmd
   cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
-  when enabled $ cc2 <## (name1 <> ": post-quantum encryption enabled")
+  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
   cc2 <# (name1 <> "> " <> msg)
   cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
+
+(\:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+(\:#>) = sndRcvImg PQEncOff False
+
+(+:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+(+:#>) = sndRcvImg PQEncOn False
+
+(++:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+(++:#>) = sndRcvImg PQEncOn True
+
+sndRcvImg :: HasCallStack => PQEncryption -> Bool -> (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  g <- C.newRandom
+  img <- atomically $ B64.encode <$> C.randomBytes lrgLen g
+  cc1 `send` ("/_send @2 json {\"msgContent\":{\"type\":\"image\",\"text\":\"" <> msg <> "\",\"image\":\"" <> B.unpack img <> "\"}}")
+  cc1 .<## "}}"
+  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
+  cc1 <# ("@" <> name2 <> " " <> msg)
+  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
+  cc1 `pqVerForContact` 2 `shouldReturn` v1
+  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
+  cc2 <# (name1 <> "> " <> msg)
+  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
+  cc2 `pqVerForContact` 2 `shouldReturn` v2
+  where
+    lrgLen = maxEncodedMsgLength PQSupportOff * 3 `div` 4 - 98 -- this is max size for binary image preview given the rest of the message
 
 -- PQ combinators /
 
@@ -518,19 +548,25 @@ getProfilePictureByName cc displayName =
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
 
 pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
-pqSndForContact = pqForContact_ pqSndEnabled
+pqSndForContact = pqForContact_ pqSndEnabled PQEncOff
 
 pqRcvForContact :: TestCC -> ContactId -> IO PQEncryption
-pqRcvForContact = pqForContact_ pqRcvEnabled
+pqRcvForContact = pqForContact_ pqRcvEnabled PQEncOff
 
 pqForContact :: TestCC -> ContactId -> IO PQEncryption
-pqForContact = pqForContact_ (Just . connPQEnabled)
+pqForContact = pqForContact_ (Just . connPQEnabled) PQEncOff
 
-pqForContact_ :: (Connection -> Maybe PQEncryption) -> TestCC -> ContactId -> IO PQEncryption
-pqForContact_ pqSel cc contactId =
-  getTestCCContact cc contactId >>= \ct -> case contactConn ct of
-    Just conn -> pure $ fromMaybe PQEncOff $ pqSel conn
-    Nothing -> fail "no connection"
+pqSupportForCt :: TestCC -> ContactId -> IO PQSupport
+pqSupportForCt = pqForContact_ (\Connection {pqSupport} -> Just pqSupport) PQSupportOff
+
+pqVerForContact :: TestCC -> ContactId -> IO VersionChat
+pqVerForContact = pqForContact_ connChatVersion (VersionChat 0)
+
+pqForContact_ :: (Connection -> Maybe a) -> a -> TestCC -> ContactId -> IO a
+pqForContact_ pqSel def cc contactId = (fromMaybe def . pqSel) <$> getCtConn cc contactId
+
+getCtConn :: TestCC -> ContactId -> IO Connection
+getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no connection") pure . contactConn
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId =

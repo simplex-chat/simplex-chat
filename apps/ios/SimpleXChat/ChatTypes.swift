@@ -3625,9 +3625,9 @@ public enum RcvConnEvent: Decodable {
             return NSLocalizedString("security code changed", comment: "chat item text")
         case let .pqEnabled(enabled):
             if enabled {
-                return NSLocalizedString("enabled post-quantum encryption", comment: "chat item text")
+                return NSLocalizedString("quantum resistant e2e encryption", comment: "chat item text")
             } else {
-                return NSLocalizedString("disabled post-quantum encryption", comment: "chat item text")
+                return NSLocalizedString("standard end-to-end encryption", comment: "chat item text")
             }
         }
     }
@@ -3672,9 +3672,9 @@ public enum SndConnEvent: Decodable {
             return ratchetSyncStatusToText(syncStatus)
         case let .pqEnabled(enabled):
             if enabled {
-                return NSLocalizedString("enabled post-quantum encryption", comment: "chat item text")
+                return NSLocalizedString("quantum resistant e2e encryption", comment: "chat item text")
             } else {
-                return NSLocalizedString("disabled post-quantum encryption", comment: "chat item text")
+                return NSLocalizedString("standard end-to-end encryption", comment: "chat item text")
             }
         }
     }

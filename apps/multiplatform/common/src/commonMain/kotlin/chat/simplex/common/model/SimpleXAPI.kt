@@ -635,12 +635,12 @@ object ChatController {
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
 
-  suspend fun apiSetPQEnabled(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEnabled(enable))
+  suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
 
-  suspend fun apiAllowContactPQ(rh: Long?, contactId: Long): Contact? {
-    val r = sendCmd(rh, CC.ApiAllowContactPQ(contactId))
+  suspend fun apiSetContactPQ(rh: Long?, contactId: Long, enable: Boolean): Contact? {
+    val r = sendCmd(rh, CC.ApiSetContactPQ(contactId, enable))
     if (r is CR.ContactPQAllowed) return r.contact
-    apiErrorAlert("apiAllowContactPQ", "Error allowing contact PQ", r)
+    apiErrorAlert("apiSetContactPQ", "Error allowing contact PQ", r)
     return null
   }
 
@@ -2289,8 +2289,8 @@ sealed class CC {
   class SetFilesFolder(val filesFolder: String): CC()
   class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
-  class ApiSetPQEnabled(val enable: Boolean): CC()
-  class ApiAllowContactPQ(val contactId: Long): CC()
+  class ApiSetPQEncryption(val enable: Boolean): CC()
+  class ApiSetContactPQ(val contactId: Long, val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -2420,8 +2420,8 @@ sealed class CC {
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
-    is ApiSetPQEnabled -> "/_pq ${onOff(enable)}"
-    is ApiAllowContactPQ -> "/_pq allow $contactId"
+    is ApiSetPQEncryption -> "/pq ${onOff(enable)}"
+    is ApiSetContactPQ -> "/_pq @$contactId ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -2556,8 +2556,8 @@ sealed class CC {
     is SetFilesFolder -> "setFilesFolder"
     is SetRemoteHostsFolder -> "setRemoteHostsFolder"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
-    is ApiSetPQEnabled -> "apiSetPQEnabled"
-    is ApiAllowContactPQ -> "apiAllowContactPQ"
+    is ApiSetPQEncryption -> "apiSetPQEncryption"
+    is ApiSetContactPQ -> "apiSetContactPQ"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -4024,7 +4024,7 @@ sealed class CR {
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
   @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason): CR()
   // pq
-  @Serializable @SerialName("contactPQAllowed") class ContactPQAllowed(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactPQAllowed") class ContactPQAllowed(val user: UserRef, val contact: Contact, val pqEncryption: Boolean): CR()
   @Serializable @SerialName("contactPQEnabled") class ContactPQEnabled(val user: UserRef, val contact: Contact, val pqEnabled: Boolean): CR()
   // misc
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
@@ -4342,7 +4342,7 @@ sealed class CR {
           "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
     is RemoteCtrlStopped -> noDetails()
-    is ContactPQAllowed -> withUser(user, "contact: ${contact.id}")
+    is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
     is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +

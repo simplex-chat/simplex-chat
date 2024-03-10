@@ -328,8 +328,8 @@ rcvConnEventToText = \case
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
   RCEVerificationCodeReset -> "security code changed"
   RCEPqEnabled pqEnc -> case pqEnc of
-    PQEncOn -> "post-quantum encryption enabled"
-    PQEncOff -> "post-quantum encryption disabled"
+    PQEncOn -> "quantum resistant e2e encryption"
+    PQEncOff -> "standard end-to-end encryption"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case
@@ -348,8 +348,8 @@ sndConnEventToText = \case
     SPCompleted -> "you changed address" <> forMember m
   SCERatchetSync syncStatus m -> ratchetSyncStatusToText syncStatus <> forMember m
   SCEPqEnabled pqEnc -> case pqEnc of
-    PQEncOn -> "post-quantum encryption enabled"
-    PQEncOff -> "post-quantum encryption disabled"
+    PQEncOn -> "quantum resistant e2e encryption"
+    PQEncOff -> "standard end-to-end encryption"
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_

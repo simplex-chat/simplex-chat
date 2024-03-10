@@ -596,18 +596,20 @@ processChatCommand' vr = \case
     ok_
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
-  APISetPQEnabled onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
-  APIAllowContactPQ contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db user contactId
+  APISetPQEncryption onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
+  APISetContactPQ ctId pqEnc -> withUser $ \user -> do
+    ct@Contact {activeConn} <- withStore $ \db -> getContact db user ctId
     case activeConn of
-      Just conn@Connection {connId, pqSupport} -> case pqSupport of
-        PQSupportOn -> pure $ chatCmdError (Just user) "already allowed"
-        PQSupportOff -> do
-          withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn
-          let conn' = conn {pqSupport = PQSupportOn, pqEncryption = PQEncOn} :: Connection
-              ct' = ct {activeConn = Just conn'} :: Contact
-          pure $ CRContactPQAllowed user ct'
+      Just conn@Connection {connId, pqSupport, pqEncryption}
+        | pqEncryption == pqEnc -> pure $ CRContactPQAllowed user ct pqEnc
+        | otherwise -> do
+            let pqSup = PQSupport $ pqEnc == PQEncOn || pqSupport == PQSupportOn
+                conn' = conn {pqSupport = pqSup, pqEncryption = pqEnc} :: Connection
+                ct' = ct {activeConn = Just conn'} :: Contact
+            withStore' $ \db -> updateConnSupportPQ db connId pqSup pqEnc
+            pure $ CRContactPQAllowed user ct' pqEnc
       Nothing -> throwChatError $ CEContactNotActive ct
+  SetContactPQ cName pqEnc -> withContactName cName (`APISetContactPQ` pqEnc)
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -1401,7 +1403,8 @@ processChatCommand' vr = \case
     subMode <- chatReadVar subscriptionMode
     pqSup <- chatReadVar pqExperimentalEnabled
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing (IKNoPQ pqSup) subMode
-    conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode pqSup
+    -- TODO PQ pass minVersion from the current range
+    conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode initialChatVersion pqSup
     pure $ CRInvitation user cReq conn
   AddContact incognito -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId incognito
@@ -1431,10 +1434,12 @@ processChatCommand' vr = \case
     pqSup <- chatReadVar pqExperimentalEnabled
     withAgent' (\a -> connRequestPQSupport a pqSup cReq) >>= \case
       Nothing -> throwChatError CEInvalidConnReq
-      Just pqSup' -> do
-        dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
+      -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
+      Just (agentV, pqSup') -> do
+        let chatV = agentToChatVersion agentV
+        dm <- encodeConnInfoPQ pqSup' (Just chatV) $ XInfo profileToSend
         connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
-        conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode pqSup'
+        conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
         pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
@@ -1652,8 +1657,9 @@ processChatCommand' vr = \case
           subMode <- chatReadVar subscriptionMode
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm PQSupportOff subMode
+          let chatV = vr `compatibleChatVersion` peerChatVRange
           withStore' $ \db -> do
-            createMemberConnection db userId fromMember agentConnId peerChatVRange subMode
+            createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` \_ -> pure ()
@@ -2163,19 +2169,19 @@ processChatCommand' vr = \case
       where
         connect' groupLinkId cReqHash xContactId inGroup = do
           pqSup <- if inGroup then pure PQSupportOff else chatReadVar pqExperimentalEnabled
-          (connId, incognitoProfile, subMode, pqSup') <- requestContact user incognito cReq xContactId inGroup pqSup
-          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode pqSup'
+          (connId, incognitoProfile, subMode, chatV) <- requestContact user incognito cReq xContactId inGroup pqSup
+          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
     connectContactViaAddress user incognito ct cReq =
       withChatLock "connectViaContact" $ do
         newXContactId <- XContactId <$> drgRandomBytes 16
         pqSup <- chatReadVar pqExperimentalEnabled
-        (connId, incognitoProfile, subMode, pqSup') <- requestContact user incognito cReq newXContactId False pqSup
+        (connId, incognitoProfile, subMode, chatV) <- requestContact user incognito cReq newXContactId False pqSup
         let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-        ct' <- withStore $ \db -> createAddressContactConnection db user ct connId cReqHash newXContactId incognitoProfile subMode pqSup'
+        ct' <- withStore $ \db -> createAddressContactConnection db user ct connId cReqHash newXContactId incognitoProfile subMode chatV pqSup
         pure $ CRSentInvitationToContact user ct' incognitoProfile
-    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> PQSupport -> m (ConnId, Maybe Profile, SubscriptionMode, PQSupport)
+    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> PQSupport -> m (ConnId, Maybe Profile, SubscriptionMode, VersionChat)
     requestContact user incognito cReq xContactId inGroup pqSup = do
       -- [incognito] generate profile to send
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -2185,14 +2191,12 @@ processChatCommand' vr = \case
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
       withAgent' (\a -> connRequestPQSupport a pqSup cReq) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
-        Just pqCompress -> do
-          let (pqSup', pqCompress') = case pqSup of
-                PQSupportOff -> (PQSupportOff, PQSupportOff)
-                PQSupportOn -> (PQSupportOn, pqCompress)
-          dm <- encodeConnInfoPQ pqCompress' (XContact profileToSend $ Just xContactId)
+        Just (agentV, _) -> do
+          let chatV = agentToChatVersion agentV
+          dm <- encodeConnInfoPQ pqSup (Just chatV) (XContact profileToSend $ Just xContactId)
           subMode <- chatReadVar subscriptionMode
-          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
-          pure (connId, incognitoProfile, subMode, pqSup')
+          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup subMode
+          pure (connId, incognitoProfile, subMode, chatV)
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -2889,17 +2893,19 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   pqSup <- chatReadVar pqExperimentalEnabled
   let pqSup' = pqSup `CR.pqSupportAnd` pqSupport
-  dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
+  chatV <- pqCompatibleVersion pqSup cReqChatVRange
+  dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
-  withStore' $ \db -> createAcceptedContact db user acId cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
+  withStore' $ \db -> createAcceptedContact db user acId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> PQSupport -> m Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
-  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode pqSup
+  chatV <- chatReadVar pqExperimentalEnabled >>= (`pqCompatibleVersion` cReqChatVRange)
+  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode pqSup chatV
   withStore' $ \db -> do
-    ct@Contact {activeConn} <- createAcceptedContact db user acId cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
+    ct@Contact {activeConn} <- createAcceptedContact db user acId chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
     forM_ activeConn $ \Connection {connId} -> setCommandConnId db user cmdId connId
     pure ct
 
@@ -2907,7 +2913,7 @@ acceptGroupJoinRequestAsync :: ChatMonad m => User -> GroupInfo -> UserContactRe
 acceptGroupJoinRequestAsync
   user
   gInfo@GroupInfo {groupProfile, membership}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId}
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
@@ -2925,9 +2931,10 @@ acceptGroupJoinRequestAsync
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
-    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff
+    chatV <- chatReadVar pqExperimentalEnabled >>= (`pqCompatibleVersion` cReqChatVRange)
+    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     withStore $ \db -> do
-      liftIO $ createAcceptedMemberConnection db user connIds ucr groupMemberId subMode
+      liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db user groupMemberId
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
@@ -3516,8 +3523,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processCONFpqSupport :: Connection -> PQSupport -> m Connection
     processCONFpqSupport conn@Connection {connId, pqSupport = pq} pq'
       | pq == PQSupportOn && pq' == PQSupportOff = do
-          withStore' $ \db -> updateConnSupportPQ db connId pq'
-          pure (conn {pqSupport = pq', pqEncryption = CR.pqSupportToEnc pq'} :: Connection)
+          let pqEnc' = CR.pqSupportToEnc pq'
+          withStore' $ \db -> updateConnSupportPQ db connId pq' pqEnc'
+          pure (conn {pqSupport = pq', pqEncryption = pqEnc'} :: Connection)
       | pq /= pq' = do
           messageWarning "processCONFpqSupport: unexpected pqSupport change"
           pure conn
@@ -3528,7 +3536,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       when (pq /= pq') $ messageWarning "processINFOpqSupport: unexpected pqSupport change"
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVersion, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
@@ -3652,7 +3660,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CON pqEnc ->
           withStore' (\db -> getViaGroupMember db vr user ct) >>= \case
             Nothing -> do
-              withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
+              when (pqEnc == PQEncOn) $ withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
               let conn' = conn {pqSndEnabled = Just pqEnc, pqRcvEnabled = Just pqEnc} :: Connection
                   ct' = ct {activeConn = Just conn'} :: Contact
               -- [incognito] print incognito profile used for this contact
@@ -3680,7 +3688,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   subMode <- chatReadVar subscriptionMode
                   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
                   gVar <- asks random
-                  withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds peerChatVRange subMode
+                  withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
             Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m $ Just ct
@@ -4960,7 +4968,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processGroupInvitation ct inv msg msgMeta = do
       let Contact {localDisplayName = c, activeConn} = ct
           GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
-      forM_ activeConn $ \Connection {connId, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
+      forM_ activeConn $ \Connection {connId, connChatVersion, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
         when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
@@ -4973,7 +4981,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkHash db groupId connId
-              createMemberConnectionAsync db user hostId connIds peerChatVRange subMode
+              createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
               updateGroupMemberStatusById db userId hostId GSMemAccepted
               updateGroupMemberStatus db userId membership GSMemAccepted
             toView $ CRUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
@@ -5413,7 +5421,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | maxVersion mcvr >= groupDirectInvVersion -> pure Nothing
                   | otherwise -> Just <$> createConn subMode
               let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
-              void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo memRestrictions groupConnIds directConnIds customUserProfileId subMode
+                  chatV = (vr `compatibleChatVersion` ) . fromChatVRange =<< memChatVRange
+              void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds directConnIds customUserProfileId subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
         createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation subMode
@@ -5460,7 +5469,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
-      withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
+          chatV = vr `compatibleChatVersion` mcvr
+      withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg brokerTs
@@ -5814,26 +5824,35 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 sameMemberId :: MemberId -> GroupMember -> Bool
 sameMemberId memId GroupMember {memberId} = memId == memberId
 
+-- TODO v5.7 for contacts only version upgrade should trigger enabling PQ support/encryption
 updatePeerChatVRange :: ChatMonad m => Connection -> VersionRangeChat -> m Connection
-updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
-  let jMsgChatVRange = msgChatVRange
-  if jMsgChatVRange /= peerChatVRange
+updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange, pqSupport} msgVRange = do
+  v' <- upgradedConnVersion pqSupport v msgVRange
+  if msgVRange /= peerChatVRange || v' /= v
     then do
-      withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
-      pure conn {peerChatVRange = jMsgChatVRange}
+      withStore' $ \db -> setPeerChatVRange db connId v' msgVRange
+      pure conn {connChatVersion = v', peerChatVRange = msgVRange}
     else pure conn
 
 updateMemberChatVRange :: ChatMonad m => GroupMember -> Connection -> VersionRangeChat -> m (GroupMember, Connection)
-updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, peerChatVRange} msgChatVRange = do
-  let jMsgChatVRange = msgChatVRange
-  if jMsgChatVRange /= peerChatVRange
+updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
+  v' <- upgradedConnVersion PQSupportOff v msgVRange
+  if msgVRange /= peerChatVRange || v' /= v
     then do
       withStore' $ \db -> do
-        setPeerChatVRange db connId msgChatVRange
-        setMemberChatVRange db groupMemberId msgChatVRange
-      let conn' = conn {peerChatVRange = jMsgChatVRange}
-      pure (mem {memberChatVRange = jMsgChatVRange, activeConn = Just conn'}, conn')
+        setPeerChatVRange db connId v' msgVRange
+        setMemberChatVRange db groupMemberId msgVRange
+      let conn' = conn {connChatVersion = v', peerChatVRange = msgVRange}
+      pure (mem {memberChatVRange = msgVRange, activeConn = Just conn'}, conn')
     else pure (mem, conn)
+
+upgradedConnVersion :: ChatMonad' m => PQSupport -> Maybe VersionChat -> VersionRangeChat -> m (Maybe VersionChat)
+upgradedConnVersion pqSup v_ vr = do
+  v_' <- pqCompatibleVersion pqSup vr
+  pure $ case (v_, v_') of
+    (Just v, Just v') -> Just $ max v v'
+    (Nothing, v'@Just {}) -> v'
+    (v, Nothing) -> v
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
@@ -6127,18 +6146,19 @@ batchSndMessagesJSON = batchMessages maxRawMsgLength . L.toList
 --       SMP.TBTransmission {} -> Left . ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
 
 encodeConnInfo :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
-encodeConnInfo = encodeConnInfoPQ PQSupportOff
+encodeConnInfo chatMsgEvent = do
+  vr <- chatVersionRange PQSupportOff
+  encodeConnInfoPQ PQSupportOff (Just $ maxVersion vr) chatMsgEvent
 
 -- TODO PQ check size after compression (in compressedBatchMsgBody_ ?)
-encodeConnInfoPQ :: (MsgEncodingI e, ChatMonad m) => PQSupport -> ChatMsgEvent e -> m ByteString
-encodeConnInfoPQ pqSup chatMsgEvent = do
+encodeConnInfoPQ :: (MsgEncodingI e, ChatMonad m) => PQSupport -> Maybe VersionChat -> ChatMsgEvent e -> m ByteString
+encodeConnInfoPQ pqSup v chatMsgEvent = do
   chatVRange <- chatVersionRange pqSup
-  let shouldCompress = maxVersion chatVRange >= pqEncryptionCompressionVersion
-      r = encodeChatMessage maxConnInfoLength ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
-  case r of
-    ECMEncoded encodedBody
-      | shouldCompress -> liftIO $ compressedBatchMsgBody encodedBody
-      | otherwise -> pure encodedBody
+  let msg = ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
+  case encodeChatMessage maxConnInfoLength msg of
+    ECMEncoded encodedBody -> case pqSup of
+      PQSupportOn | maybe False (>= pqEncryptionCompressionVersion) v -> liftIO $ compressedBatchMsgBody encodedBody
+      _ -> pure encodedBody
     ECMLarge -> throwChatError $ CEException "large message"
   where
     compressedBatchMsgBody msgBody =
@@ -6160,7 +6180,7 @@ type MsgReq = (Connection, MsgFlags, MsgBody, MessageId)
 deliverMessages :: ChatMonad' m => NonEmpty MsgReq -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
-deliverMessagesB :: ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
+deliverMessagesB :: forall m. ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
@@ -6168,18 +6188,10 @@ deliverMessagesB msgReqs = do
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
     compressBodies = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx -> do
-      forM msgReqs $ \case
-        mr@(Right (conn@Connection {pqSupport, pqEncryption, peerChatVRange}, msgFlags, msgBody, msgId))
-          | shouldCompress pqSupport pqEncryption ->
-              Right . (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
-          | otherwise -> pure mr
-          where
-            --- TODO PQ
-            -- This version agreement is ephemeral and in case of peer downgrade it will get reduced, and pqSupport may be turned off in the result
-            -- We probably should store agreed version on Connection and do not allow reducing it.
-            chatV = maybe currentChatVersion (\(Compatible v') -> v') $ supportedChatVRange pqSupport `compatibleVersion` peerChatVRange
-            shouldCompress (PQSupport sup) (PQEncryption enc) = sup && (chatV >= pqEncryptionCompressionVersion && enc)
-        skip -> pure skip
+      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion}, msgFlags, msgBody, msgId) -> Right <$> case pqSupport of
+        PQSupportOn | maybe False (>= pqEncryptionCompressionVersion) connChatVersion ->
+          (\cBody -> (conn, msgFlags, cBody, msgId)) <$> compressedBatchMsgBody_ cctx msgBody
+        _ -> pure mr
     toAgent = \case
       Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
@@ -6449,16 +6461,16 @@ joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
-allowAgentConnectionAsync user conn@Connection {connId, pqSupport} confId msg = do
+allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersion} confId msg = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
-  dm <- encodeConnInfoPQ pqSupport msg
+  dm <- encodeConnInfoPQ pqSupport connChatVersion msg
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> PQSupport -> m (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs invId msg subMode pqSup = do
+agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> PQSupport -> Maybe VersionChat -> m (CommandId, ConnId)
+agentAcceptContactAsync user enableNtfs invId msg subMode pqSup chatV = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  dm <- encodeConnInfoPQ pqSup msg
+  dm <- encodeConnInfoPQ pqSup chatV msg
   connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqSup subMode
   pure (cmdId, connId)
 
@@ -6698,6 +6710,12 @@ chatVersionRange pq = do
   ChatConfig {chatVRange} <- asks config
   pure $ chatVRange pq
 
+compatibleChatVersion :: VersionRangeChat -> VersionRangeChat -> Maybe VersionChat
+compatibleChatVersion vr vr' = (\(Compatible v) -> v) <$> (vr `compatibleVersion` vr')
+
+pqCompatibleVersion :: ChatMonad' m => PQSupport -> VersionRangeChat -> m (Maybe VersionChat)
+pqCompatibleVersion pq vr' = (`compatibleChatVersion` vr') <$> chatVersionRange pq
+
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
@@ -6740,8 +6758,9 @@ chatCommandP =
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
-      "/_pq " *> (APISetPQEnabled . PQSupport <$> onOffP),
-      "/_pq allow " *> (APIAllowContactPQ <$> A.decimal),
+      "/_pq @" *> (APISetContactPQ <$> A.decimal <* A.space <*> (PQEncryption <$> onOffP)),
+      "/pq @" *> (SetContactPQ <$> displayName <* A.space <*> (PQEncryption <$> onOffP)),
+      "/pq " *> (APISetPQEncryption . PQSupport <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),

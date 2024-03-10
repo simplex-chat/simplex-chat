@@ -32,8 +32,8 @@ public enum ChatCommand {
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetEncryptLocalFiles(enable: Bool)
-    case apiSetPQEnabled(enable: Bool)
-    case apiAllowContactPQ(contactId: Int64)
+    case apiSetPQEncryption(enable: Bool)
+    case apiSetContactPQ(contactId: Int64, enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -164,8 +164,8 @@ public enum ChatCommand {
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
-            case let .apiSetPQEnabled(enable): return "/_pq \(onOff(enable))"
-            case let .apiAllowContactPQ(contactId): return "/_pq allow \(contactId)"
+            case let .apiSetPQEncryption(enable): return "/pq \(onOff(enable))"
+            case let .apiSetContactPQ(contactId, enable): return "/_pq @\(contactId) \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -310,8 +310,8 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
-            case .apiSetPQEnabled: return "apiSetPQEnabled"
-            case .apiAllowContactPQ: return "apiAllowContactPQ"
+            case .apiSetPQEncryption: return "apiSetPQEncryption"
+            case .apiSetContactPQ: return "apiSetContactPQ"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -624,7 +624,7 @@ public enum ChatResponse: Decodable, Error {
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
     // pq
-    case contactPQAllowed(user: UserRef, contact: Contact)
+    case contactPQAllowed(user: UserRef, contact: Contact, pqEncryption: Bool)
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
@@ -926,7 +926,7 @@ public enum ChatResponse: Decodable, Error {
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
-            case let .contactPQAllowed(u, contact): return withUser(u, "contact: \(String(describing: contact))")
+            case let .contactPQAllowed(u, contact, pqEncryption): return withUser(u, "contact: \(String(describing: contact))\npqEncryption: \(pqEncryption)")
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails

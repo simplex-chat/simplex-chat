@@ -21,11 +21,11 @@ import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion, supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQSupportOff, pattern PQEncOn, pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQSupportOn, pattern PQSupportOff, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -131,7 +131,8 @@ chatDirectTests = do
   describe "PQ tests" $ do
     describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
     describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
-    it "should enable PQ after several messages in connection without PQ" testPQAllowContact
+    it "should enable PQ after several messages in connection without PQ" testPQEnableContact
+    it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2784,7 +2785,7 @@ runTestPQConnectViaLink (alice, aPQ) (bob, bPQ) = do
 
 pqOn :: TestCC -> IO ()
 pqOn cc = do
-  cc ##> "/_pq on"
+  cc ##> "/pq on"
   cc <## "ok"
 
 runTestPQConnectViaAddress :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
@@ -2820,8 +2821,8 @@ runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
     pqSend = if pqEnabled then (+#>) else (\#>)
     e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
 
-testPQAllowContact :: HasCallStack => FilePath -> IO ()
-testPQAllowContact =
+testPQEnableContact :: HasCallStack => FilePath -> IO ()
+testPQEnableContact =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     (alice, "hi") \#> bob
@@ -2853,15 +2854,15 @@ testPQAllowContact =
     PQEncOff <- bob `pqForContact` 2
 
     -- if only one contact allows PQ, it's not enabled
-    alice ##> "/_pq allow 2"
-    alice <## "bob: post-quantum encryption allowed"
+    alice ##> "/pq @bob on"
+    alice <## "bob: enable quantum resistant end-to-end encryption"
     sendMany PQEncOff alice bob
     PQEncOff <- alice `pqForContact` 2
     PQEncOff <- bob `pqForContact` 2
 
     -- both contacts have to allow PQ to enable it
-    bob ##> "/_pq allow 2"
-    bob <## "alice: post-quantum encryption allowed"
+    bob ##> "/pq @alice on"
+    bob <## "alice: enable quantum resistant end-to-end encryption"
 
     (alice, "1") \#> bob
     (bob, "2") \#> alice
@@ -2875,16 +2876,16 @@ testPQAllowContact =
     (bob, "6") ++#> alice
     -- equivalent to:
     -- bob `send` "@alice 6"
-    -- bob <## "alice: post-quantum encryption enabled"
+    -- bob <## "alice: quantum resistant end-to-end encryption enabled"
     -- bob <# "@alice 6"
-    -- alice <## "bob: post-quantum encryption enabled"
+    -- alice <## "bob: quantum resistant end-to-end encryption enabled"
     -- alice <# "bob> 6"
 
     PQEncOn <- alice `pqForContact` 2
-    alice #$> ("/_get chat @2 count=2", chat, [(0, "post-quantum encryption enabled"), (0, "6")])
+    alice #$> ("/_get chat @2 count=2", chat, [(0, e2eeInfoPQStr), (0, "6")])
 
     PQEncOn <- bob `pqForContact` 2
-    bob #$> ("/_get chat @2 count=2", chat, [(1, "post-quantum encryption enabled"), (1, "6")])
+    bob #$> ("/_get chat @2 count=2", chat, [(1, e2eeInfoPQStr), (1, "6")])
 
     (alice, "6") +#> bob
     (bob, "7") +#> alice
@@ -2894,8 +2895,43 @@ testPQAllowContact =
     PQEncOn <- alice `pqForContact` 2
     PQEncOn <- bob `pqForContact` 2
     pure ()
+
+sendMany :: PQEncryption -> TestCC -> TestCC -> IO ()
+sendMany pqEnc alice bob =
+  forM_ [(1 :: Int) .. 10] $ \i -> do
+    sndRcv pqEnc False (alice, show i) bob
+    sndRcv pqEnc False (bob, show i) alice
+
+testPQEnableContactCompression :: HasCallStack => FilePath -> IO ()
+testPQEnableContactCompression =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    (alice, "hi") \#> bob
+    (bob, "hey") \#> alice
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+    (alice, "lrg 1", v) \:#> (bob, v)
+    (bob, "lrg 2", v) \:#> (alice, v)
+    PQSupportOff <- alice `pqSupportForCt` 2
+    alice ##> "/pq @bob on"
+    alice <## "bob: enable quantum resistant end-to-end encryption"
+    PQSupportOn <- alice `pqSupportForCt` 2
+    (alice, "lrg 3", v) \:#> (bob, v)
+    (bob, "lrg 4", v) \:#> (alice, v)
+    PQSupportOff <- bob `pqSupportForCt` 2
+    bob ##> "/pq @alice on"
+    bob <## "alice: enable quantum resistant end-to-end encryption"
+    PQSupportOn <- bob `pqSupportForCt` 2
+    (alice, "lrg 1", v) \:#> (bob, v')
+    (bob, "lrg 2", v') \:#> (alice, v')
+    (alice, "lrg 3", v') \:#> (bob, v')
+    (bob, "lrg 4", v') \:#> (alice, v')
+    (alice, "lrg 5", v') +:#> (bob, v')
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+    (bob, "lrg 6", v') ++:#> (alice, v')
+    (alice, "lrg 7", v') +:#> (bob, v')
+    (bob, "lrg 8", v') +:#> (alice, v')
   where
-    sendMany pqEnc alice bob =
-      forM_ [(1 :: Int) .. 10] $ \i -> do
-        sndRcv pqEnc False (alice, show i) bob
-        sndRcv pqEnc False (bob, show i) alice
+    v = currentChatVersion
+    v' = pqEncryptionCompressionVersion

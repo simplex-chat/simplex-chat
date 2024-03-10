@@ -64,10 +64,10 @@ struct DeveloperView: View {
 
     private func setPQExperimentalEnabled(_ enable: Bool) {
         do {
-            try apiSetPQEnabled(enable)
+            try apiSetPQEncryption(enable)
         } catch let error {
             let err = responseError(error)
-            logger.error("apiSetPQEnabled \(err)")
+            logger.error("apiSetPQEncryption \(err)")
         }
     }
 }
