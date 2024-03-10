@@ -1105,6 +1105,7 @@ data DatabaseError
   | DBErrorNoFile {dbFile :: String}
   | DBErrorExport {sqliteError :: SQLiteError}
   | DBErrorOpen {sqliteError :: SQLiteError}
+  | DBErrorInternal {message :: String}
   deriving (Show, Exception)
 
 data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
@@ -1305,7 +1306,7 @@ withStoreCtx ctx_ action = do
     Just _ -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+    handleInternal ctxStr e = pure . Left . SEDatabaseError $ show e <> ctxStr
 
 withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
 withStoreBatch actions = do
@@ -1313,7 +1314,7 @@ withStoreBatch actions = do
   liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
   where
     handleInternal :: E.SomeException -> IO (Either ChatError a)
-    handleInternal = pure . Left . ChatError . CEInternalError . show
+    handleInternal = pure . Left . ChatErrorDatabase . DBErrorInternal . show
 
 withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
