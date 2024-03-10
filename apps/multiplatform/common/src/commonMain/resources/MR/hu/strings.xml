@@ -52,7 +52,7 @@
     <string name="all_your_contacts_will_remain_connected_update_sent">Minden ismerős csatlakoztatva marad. Profil változtatások frissítésre kerülnek ismerősöknél.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profil által (alap beállítás), vagy kapcsolat által (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
-    <string name="allow_voice_messages_only_if">Hangüzenetek küldésének engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi.</string>
+    <string name="allow_voice_messages_only_if">Hangüzenetek küldésének engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.</string>
     <string name="app_version_code">Az alkalmazás build száma: %s</string>
     <string name="audio_video_calls">Hang-/videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
@@ -84,7 +84,7 @@
     <string name="alert_title_msg_bad_id">Téves üzenet ID</string>
     <string name="allow_your_contacts_adding_message_reactions">Ismerősök általi üzenetreakciók hozzáadásának engedélyezése.</string>
     <string name="allow_to_send_voice">Hangüzenetek küldésének engedélyezése.</string>
-    <string name="allow_message_reactions_only_if">Üzenetreakciók engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi.</string>
+    <string name="allow_message_reactions_only_if">Üzenetreakciók engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.</string>
     <string name="back">Vissza</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is megjelenítésre kerülnek amíg az alkalmazás fut.]]></string>
     <string name="v4_2_group_links_desc">Az adminok hivatkozásokat hozhatnak létre a csoportokhoz való csatlakozáshoz.</string>
@@ -110,7 +110,7 @@
     <string name="v5_2_more_things">Még néhány dolog</string>
     <string name="authentication_cancelled">Hitelesítés megszakítva</string>
     <string name="allow_to_send_files">Fájlok és médiatartalom küldésének engedélyezése.</string>
-    <string name="users_delete_all_chats_deleted">Minden csevegés és üzenet törlésre kerül - ezt nem lehet visszavonni!</string>
+    <string name="users_delete_all_chats_deleted">Minden csevegés és üzenet törlésre kerül - ez nem vonható vissza!</string>
     <string name="icon_descr_audio_call">hanghívás</string>
     <string name="bold_text">félkövér</string>
     <string name="app_passcode_replaced_with_self_destruct">Az alkalmazás jelkód helyettesítésre kerül egy önmegsemmisítő jelkóddal.</string>
@@ -122,7 +122,7 @@
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
     <string name="all_your_contacts_will_remain_connected">Minden ismerős kapcsolatban marad.</string>
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet megszakítása</string>
-    <string name="allow_irreversible_message_deletion_only_if">Üzenet végleges törlésének engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi. (24 óra)</string>
+    <string name="allow_irreversible_message_deletion_only_if">Üzenet végleges törlésének engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
     <string name="integrity_msg_bad_hash">téves üzenet hash</string>
     <string name="notifications_mode_service">Mindig bekapcsolva</string>
@@ -154,7 +154,7 @@
     <string name="settings_section_title_icon">ALKALMAZÁS IKON</string>
     <string name="v4_3_improved_server_configuration_desc">Kiszolgáló hozzáadása QR-kód beolvasásával.</string>
     <string name="allow_to_send_disappearing">Eltűnő üzenetek küldésének engedélyezése.</string>
-    <string name="allow_disappearing_messages_only_if">Eltűnő üzenetek engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi.</string>
+    <string name="allow_disappearing_messages_only_if">Eltűnő üzenetek engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.</string>
     <string name="icon_descr_audio_off">Hang kikapcsolva</string>
     <string name="allow_direct_messages">Közvetlen üzenetek küldésének engedélyezése tagok részére.</string>
     <string name="settings_section_title_app">Alkalmazás</string>
@@ -164,7 +164,7 @@
     <string name="la_auth_failed">Hitelesítés sikertelen</string>
     <string name="block_member_desc">Minden %s által írt új üzenet elrejtésre kerül!</string>
     <string name="app_version_name">Alkalmazás verzió: v%s</string>
-    <string name="allow_calls_only_if">Hívások engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi.</string>
+    <string name="allow_calls_only_if">Hívások engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.</string>
     <string name="smp_servers_add">Kiszolgáló hozzáadása…</string>
     <string name="icon_descr_audio_on">Hang bekapcsolva</string>
     <string name="audio_call_no_encryption">hanghívás (nem e2e titkosított)</string>
@@ -696,14 +696,14 @@
     <string name="no_details">nincsenek részletek</string>
     <string name="icon_descr_call_missed">Nem fogadott hívás</string>
     <string name="theme_light">Világos</string>
-    <string name="delete_message_cannot_be_undone_warning">Az üzenet törlésre kerül - ezt nem lehet visszafordítani!</string>
+    <string name="delete_message_cannot_be_undone_warning">Az üzenet törlésre kerül - ez nem vonható vissza!</string>
     <string name="markdown_help">Markdown segítség</string>
     <string name="notification_preview_new_message">új üzenet</string>
     <string name="old_database_archive">Régi adatbázis archívum</string>
     <string name="network_settings_title">Hálózati beállítások</string>
     <string name="no_info_on_delivery">Nincs kézbesítési információ</string>
     <string name="moderated_description">moderált</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból - ezt nem lehet visszafordítani!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból - ez nem vonható vissza!</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg róla, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nem duplikáltak.</string>
     <string name="no_contacts_selected">Nem kerültek ismerősök kiválasztásra</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
