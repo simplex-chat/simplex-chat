@@ -3219,9 +3219,11 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   vr <- chatVersionRange
-  withStore' (`getUserByAConnId` AgentConnId connId) >>= \case -- XXX: critical, can miss acks
+  critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+  where
+    critical action = action `catchChatError` \e -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
 
 processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
 processAgentMessageNoConn = \case
@@ -3409,7 +3411,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
 
 processAgentMessageConn :: forall m. ChatMonad m => VersionRange -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
-  entity <- withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus -- XXX: critical, can miss acks
+  entity <- (withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus) `catchChatError` \e -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
@@ -3492,7 +3494,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta -- XXX: critical, retry or bsod?
+          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
           withAckMessage agentConnId conn msgMeta $ \cmdId -> do
             (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn msgMeta cmdId msgBody
             let ct' = ct {activeConn = Just conn'} :: Contact
@@ -4274,7 +4276,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     withAckMessage :: ConnId -> Connection -> MsgMeta -> (CommandId -> m Bool) -> m ()
     withAckMessage cId conn msgMeta action = do
-      cmdId <- createAckCmd conn -- XXX: critical
+      cmdId <- createAckCmd conn `catchChatError` \e -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
