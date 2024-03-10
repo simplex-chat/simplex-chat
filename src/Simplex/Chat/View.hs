@@ -342,8 +342,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
   CRRemoteCtrlStopped {} -> ["remote controller stopped"]
-  CRContactPQAllowed u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": post-quantum encryption " <> (if pqOn then "allowed" else "prohibited")]
-  CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": post-quantum encryption " <> (if pqOn then "enabled" else "disabled")]
+  CRContactPQAllowed u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": enable " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption"]
+  CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
@@ -1177,7 +1177,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
-    <> ["post-quantum encryption enabled" | contactPQEnabled ct == CR.PQEncOn]
+    <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]

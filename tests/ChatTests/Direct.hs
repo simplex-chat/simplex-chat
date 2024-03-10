@@ -2855,14 +2855,14 @@ testPQEnableContact =
 
     -- if only one contact allows PQ, it's not enabled
     alice ##> "/pq @bob on"
-    alice <## "bob: post-quantum encryption allowed"
+    alice <## "bob: enable quantum resistant end-to-end encryption"
     sendMany PQEncOff alice bob
     PQEncOff <- alice `pqForContact` 2
     PQEncOff <- bob `pqForContact` 2
 
     -- both contacts have to allow PQ to enable it
     bob ##> "/pq @alice on"
-    bob <## "alice: post-quantum encryption allowed"
+    bob <## "alice: enable quantum resistant end-to-end encryption"
 
     (alice, "1") \#> bob
     (bob, "2") \#> alice
@@ -2876,16 +2876,16 @@ testPQEnableContact =
     (bob, "6") ++#> alice
     -- equivalent to:
     -- bob `send` "@alice 6"
-    -- bob <## "alice: post-quantum encryption enabled"
+    -- bob <## "alice: quantum resistant end-to-end encryption enabled"
     -- bob <# "@alice 6"
-    -- alice <## "bob: post-quantum encryption enabled"
+    -- alice <## "bob: quantum resistant end-to-end encryption enabled"
     -- alice <# "bob> 6"
 
     PQEncOn <- alice `pqForContact` 2
-    alice #$> ("/_get chat @2 count=2", chat, [(0, "post-quantum encryption enabled"), (0, "6")])
+    alice #$> ("/_get chat @2 count=2", chat, [(0, "quantum resistant e2e encryption"), (0, "6")])
 
     PQEncOn <- bob `pqForContact` 2
-    bob #$> ("/_get chat @2 count=2", chat, [(1, "post-quantum encryption enabled"), (1, "6")])
+    bob #$> ("/_get chat @2 count=2", chat, [(1, "quantum resistant e2e encryption"), (1, "6")])
 
     (alice, "6") +#> bob
     (bob, "7") +#> alice
@@ -2914,13 +2914,13 @@ testPQEnableContactCompression =
     (bob, "lrg 2", v) \:#> (alice, v)
     PQSupportOff <- alice `pqSupportForCt` 2
     alice ##> "/pq @bob on"
-    alice <## "bob: post-quantum encryption allowed"
+    alice <## "bob: enable quantum resistant end-to-end encryption"
     PQSupportOn <- alice `pqSupportForCt` 2
     (alice, "lrg 3", v) \:#> (bob, v)
     (bob, "lrg 4", v) \:#> (alice, v)
     PQSupportOff <- bob `pqSupportForCt` 2
     bob ##> "/pq @alice on"
-    bob <## "alice: post-quantum encryption allowed"
+    bob <## "alice: enable quantum resistant end-to-end encryption"
     PQSupportOn <- bob `pqSupportForCt` 2
     (alice, "lrg 1", v) \:#> (bob, v')
     (bob, "lrg 2", v') \:#> (alice, v')

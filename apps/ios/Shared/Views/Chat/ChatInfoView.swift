@@ -176,10 +176,10 @@ struct ChatInfoView: View {
                             allowPQButton()
                         }
                     } header: {
-                        Text(String("Post-quantum E2E encryption"))
+                        Text(String("Quantum resistant E2E encryption"))
                     } footer: {
                         if !conn.pqSupport {
-                            Text(String("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it."))
+                            Text(String("After allowing quantum resistant encryption, it will be enabled after several messages if your contact also allows it."))
                         }
                     }
                 }
@@ -594,8 +594,8 @@ struct ChatInfoView: View {
 
     func allowContactPQEncryptionAlert() -> Alert {
         Alert(
-            title: Text(String("Allow post-quantum encryption?")),
-            message: Text(String("This is an experimental feature, it is not recommended to enable it for high importance communications. It may result in connection errors!")),
+            title: Text(String("Allow quantum resistant encryption?")),
+            message: Text(String("This is an experimental feature, it is not recommended to enable it for important chats.")),
             primaryButton: .destructive(Text(String("Allow")), action: allowContactPQEncryption),
             secondaryButton: .cancel()
         )

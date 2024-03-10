@@ -203,10 +203,10 @@ sndRcv pqEnc enabled (cc1, msg) cc2 = do
   name2 <- userName cc2
   let cmd = "@" <> name2 <> " " <> msg
   cc1 `send` cmd
-  when enabled $ cc1 <## (name2 <> ": post-quantum encryption enabled")
+  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
   cc1 <# cmd
   cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
-  when enabled $ cc2 <## (name1 <> ": post-quantum encryption enabled")
+  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
   cc2 <# (name1 <> "> " <> msg)
   cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
 
@@ -227,11 +227,11 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
   img <- atomically $ B64.encode <$> C.randomBytes lrgLen g
   cc1 `send` ("/_send @2 json {\"msgContent\":{\"type\":\"image\",\"text\":\"" <> msg <> "\",\"image\":\"" <> B.unpack img <> "\"}}")
   cc1 .<## "}}"
-  when enabled $ cc1 <## (name2 <> ": post-quantum encryption enabled")
+  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
   cc1 <# ("@" <> name2 <> " " <> msg)
   cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
   cc1 `pqVerForContact` 2 `shouldReturn` v1
-  when enabled $ cc2 <## (name1 <> ": post-quantum encryption enabled")
+  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
   cc2 <# (name1 <> "> " <> msg)
   cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
   cc2 `pqVerForContact` 2 `shouldReturn` v2

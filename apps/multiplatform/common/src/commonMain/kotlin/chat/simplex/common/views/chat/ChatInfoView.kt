@@ -362,11 +362,11 @@ fun ChatInfoLayout(
 
     val conn = contact.activeConn
     if (pqExperimentalEnabled && conn != null) {
-      SectionView("Post-quantum E2E encryption") {
-        InfoRow("PQ E2E encryption", if (conn.connPQEnabled) "Enabled" else "Disabled")
+      SectionView("Quantum resistant E2E encryption") {
+        InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
         if (!conn.pqSupport) {
           AllowContactPQButton(allowContactPQ)
-          SectionTextFooter("After allowing post-quantum encryption, it will be enabled after several messages if your contact also allows it.")
+          SectionTextFooter("After allowing quantum resistant e2e encryption, it will be enabled after several messages if your contact also allows it.")
         }
         SectionDividerSpaced()
       }
@@ -744,8 +744,8 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
 
 fun showAllowContactPQAlert(allowContactPQ: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = "Allow post-quantum encryption?",
-    text = "This is an experimental feature, it is not recommended to enable it for high importance communications. It may result in connection errors!",
+    title = "Allow quantum resistant encryption?",
+    text = "This is an experimental feature, it is not recommended to enable it for important chats.",
     confirmText = "Allow",
     onConfirm = allowContactPQ,
     destructive = true,
