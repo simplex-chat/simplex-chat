@@ -37,12 +37,13 @@ import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange, pattern VersionSMPA)
+import Simplex.Messaging.Agent.Protocol (pqdrSMPAgentVersion, supportedSMPAgentVRange, pattern VersionSMPA)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff, pattern PQSupportOn, pattern VersionE2E)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -151,8 +152,13 @@ testAgentCfgVNext :: AgentConfig
 testAgentCfgVNext =
   testAgentCfg
     { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = \_ -> nextRange $ supportedSMPAgentVRange PQSupportOn,
-      e2eEncryptVRange = \_ -> nextRange $ supportedE2EEncryptVRange PQSupportOn,
+      smpAgentVRange = \_ ->
+        mkVersionRange
+          (VersionSMPA 2) -- duplexHandshakeSMPAgentVersion
+          $ max
+            pqdrSMPAgentVersion
+            (VersionSMPA 4), -- currentSMPAgentVersion
+      e2eEncryptVRange = \_ -> mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
