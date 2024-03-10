@@ -3854,6 +3854,13 @@ val json = Json {
   explicitNulls = false
 }
 
+val jsonShort = Json {
+  prettyPrint = false
+  ignoreUnknownKeys = true
+  encodeDefaults = true
+  explicitNulls = false
+}
+
 val yaml = Yaml(configuration = YamlConfiguration(
   strictMode = false,
   encodeDefaults = false,
@@ -5295,7 +5302,7 @@ data class AppSettings(
     val def = appPreferences
     var net = networkConfig?.copy()
     if (net != null) {
-      // migrating from iOS BUT shouldn't be here ever because it should be changed in migration stage
+      // migrating from iOS BUT shouldn't be here ever because it should be changed on migration stage
       if (net.hostMode == HostMode.Onion) {
         net = net.copy(hostMode = HostMode.Public, requiredHostMode = true)
       }

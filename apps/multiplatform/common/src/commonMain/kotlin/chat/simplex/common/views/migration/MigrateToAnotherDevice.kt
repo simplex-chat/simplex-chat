@@ -35,7 +35,41 @@ import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import java.io.File
+import java.net.URLDecoder
+import java.net.URLEncoder
 import kotlin.math.max
+
+@Serializable
+data class MigrationFileLinkData(
+  val networkConfig: NetworkConfig?,
+) {
+  @Serializable
+  data class NetworkConfig(
+    val socksProxy: String?,
+    val hostMode: HostMode?,
+    val requiredHostMode: Boolean?
+  ) {
+    fun transformToPlatformSupported(): NetworkConfig {
+      return if (hostMode != null && requiredHostMode != null) {
+        NetworkConfig(socksProxy, hostMode = if (hostMode == HostMode.Onion) HostMode.OnionViaSocks else hostMode, requiredHostMode)
+      } else this
+    }
+  }
+
+  fun addToLink(link: String) = link + "&data=" + URLEncoder.encode(jsonShort.encodeToString(this), "UTF-8")
+
+  companion object {
+    fun readFromLink(link: String): MigrationFileLinkData? =
+      try {
+        val data = link.substringAfter("&data=").substringBefore("&")
+        json.decodeFromString(URLDecoder.decode(data, "UTF-8"))
+      } catch (e: Exception) {
+        null
+      }
+  }
+}
+
+
 
 @Serializable
 private sealed class MigrationToState {
@@ -361,7 +395,8 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-@Composable fun LargeProgressView(value: Float, title: String, description: String) {
+@Composable
+fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
@@ -481,7 +516,15 @@ private fun MutableState<MigrationToState>.startUploading(
         }
         is CR.SndStandaloneFileComplete -> {
           delay(500)
-          state = MigrationToState.LinkShown(msg.fileTransferMeta.fileId, msg.rcvURIs[0], ctrl)
+          val cfg = getNetCfg()
+          val data = MigrationFileLinkData(
+            networkConfig = MigrationFileLinkData.NetworkConfig(
+              socksProxy = cfg.socksProxy,
+              hostMode = cfg.hostMode,
+              requiredHostMode = cfg.requiredHostMode
+            )
+          )
+          state = MigrationToState.LinkShown(msg.fileTransferMeta.fileId, data.addToLink(msg.rcvURIs[0]), ctrl)
         }
         else -> {
           Log.d(TAG, "unsupported event: ${msg.responseType}")

@@ -85,8 +85,9 @@ fun SimpleXInfoLayout(
     }
   }
   LaunchedEffect(Unit) {
-    if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
-      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateFromAnotherDeviceView(chatModel.migrationState.value, close) }
+    val state = chatModel.migrationState.value
+    if (state != null && !ModalManager.fullscreen.hasModalsOpen()) {
+      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateFromAnotherDeviceView(state, close) }
     }
   }
 }

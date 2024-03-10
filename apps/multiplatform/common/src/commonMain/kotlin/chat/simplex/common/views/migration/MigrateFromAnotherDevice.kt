@@ -10,12 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.AppPreferences.Companion.SHARED_PREFS_MIGRATION_STAGE
 import chat.simplex.common.model.ChatController.getNetCfg
@@ -44,10 +40,10 @@ import kotlin.math.max
 
 @Serializable
 sealed class MigrationFromAnotherDeviceState {
-  @Serializable data class Onion(val link: String): MigrationFromAnotherDeviceState()
-  @Serializable data class DownloadProgress(val link: String, val archiveName: String, val netCfg: NetCfg): MigrationFromAnotherDeviceState()
-  @Serializable data class ArchiveImport(val archiveName: String, val netCfg: NetCfg): MigrationFromAnotherDeviceState()
-  @Serializable data class Passphrase(val netCfg: NetCfg): MigrationFromAnotherDeviceState()
+  @Serializable @SerialName("onion") data class Onion(val link: String, val socksProxy: String?, val hostMode: HostMode, val requiredHostMode: Boolean): MigrationFromAnotherDeviceState()
+  @Serializable @SerialName("downloadProgress") data class DownloadProgress(val link: String, val archiveName: String, val netCfg: NetCfg): MigrationFromAnotherDeviceState()
+  @Serializable @SerialName("archiveImport") data class ArchiveImport(val archiveName: String, val netCfg: NetCfg): MigrationFromAnotherDeviceState()
+  @Serializable @SerialName("passphrase") data class Passphrase(val netCfg: NetCfg): MigrationFromAnotherDeviceState()
 
   companion object  {
     // Here we check whether it's needed to show migration process after app restart or not
@@ -86,7 +82,7 @@ sealed class MigrationFromAnotherDeviceState {
 @Serializable
 private sealed class MigrationState {
   @Serializable object PasteOrScanLink: MigrationState()
-  @Serializable data class Onion(val link: String): MigrationState()
+  @Serializable data class Onion(val link: String, val socksProxy: String?, val hostMode: HostMode, val requiredHostMode: Boolean): MigrationState()
   @Serializable data class DatabaseInit(val link: String, val netCfg: NetCfg): MigrationState()
   @Serializable data class LinkDownloading(val link: String, val ctrl: ChatCtrl, val user: User, val archivePath: String, val netCfg: NetCfg): MigrationState()
   @Serializable data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long, val fileId: Long, val link: String, val archivePath: String, val netCfg: NetCfg, val ctrl: ChatCtrl?): MigrationState()
@@ -109,7 +105,7 @@ fun ModalData.MigrateFromAnotherDeviceView(state: MigrationFromAnotherDeviceStat
       when (state) {
         null -> MigrationState.PasteOrScanLink
         is MigrationFromAnotherDeviceState.Onion -> {
-          MigrationState.Onion(state.link)
+          MigrationState.Onion(state.link, state.socksProxy, state.hostMode, state.requiredHostMode)
         }
         is MigrationFromAnotherDeviceState.DownloadProgress -> {
           val archivePath = File(getMigrationTempFilesDirectory(), state.archiveName)
@@ -130,9 +126,9 @@ fun ModalData.MigrateFromAnotherDeviceView(state: MigrationFromAnotherDeviceStat
   // Prevent from hiding the view until migration is finished or app deleted
   val backDisabled = remember {
     derivedStateOf {
-      val state = chatModel.migrationState.value
-      state is MigrationFromAnotherDeviceState.ArchiveImport ||
-          state is MigrationFromAnotherDeviceState.Passphrase ||
+      val s = chatModel.migrationState.value
+      s is MigrationFromAnotherDeviceState.ArchiveImport ||
+          s is MigrationFromAnotherDeviceState.Passphrase ||
           migrationState.value is MigrationState.DatabaseInit
     }
   }
@@ -181,11 +177,11 @@ private fun ModalData.SectionByState(
 ) {
   when (val s = migrationState.value) {
     is MigrationState.PasteOrScanLink -> migrationState.PasteOrScanLinkView()
-    is MigrationState.Onion -> OnionView(s.link, migrationState, close)
-    is MigrationState.DatabaseInit -> migrationState.DatabaseInitView(s.link, tempDatabaseFile, chatReceiver, s.netCfg)
+    is MigrationState.Onion -> OnionView(s.link, s.socksProxy, s.hostMode, s.requiredHostMode, migrationState)
+    is MigrationState.DatabaseInit -> migrationState.DatabaseInitView(s.link, tempDatabaseFile, s.netCfg)
     is MigrationState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg)
     is MigrationState.DownloadProgress -> DownloadProgressView(s.downloadedBytes, totalBytes = s.totalBytes)
-    is MigrationState.DownloadFailed -> migrationState.DownloadFailedView(totalBytes = s.totalBytes, s.link, chatReceiver.value, s.archivePath, s.netCfg)
+    is MigrationState.DownloadFailed -> migrationState.DownloadFailedView(s.link, chatReceiver.value, s.archivePath, s.netCfg)
     is MigrationState.ArchiveImport -> migrationState.ArchiveImportView(s.archivePath, s.netCfg)
     is MigrationState.ArchiveImportFailed -> migrationState.ArchiveImportFailedView(s.archivePath, s.netCfg)
     is MigrationState.Passphrase -> migrationState.PassphraseEnteringView(currentKey = s.passphrase, s.netCfg)
@@ -224,15 +220,22 @@ private fun MutableState<MigrationState>.PasteLinkView() {
 }
 
 @Composable
-private fun ModalData.OnionView(link: String, state: MutableState<MigrationState>, close: () -> Unit) {
-  val onionHosts = remember { stateGetOrPut("onionHosts") { OnionHosts.NEVER } }
-  val networkUseSocksProxy = remember { stateGetOrPut("networkUseSocksProxy") { false } }
+private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: HostMode, requiredHostMode: Boolean, state: MutableState<MigrationState>) {
+  val onionHosts = remember { stateGetOrPut("onionHosts") {
+    getNetCfg().copy(socksProxy = socksProxy, hostMode = hostMode, requiredHostMode = requiredHostMode).onionHosts
+  } }
+  val networkUseSocksProxy = remember { stateGetOrPut("networkUseSocksProxy") { socksProxy != null } }
   val sessionMode = remember { stateGetOrPut("sessionMode") { TransportSessionMode.User} }
-  val networkProxyHostPort = remember { stateGetOrPut("networkHostProxyPort") { chatModel.controller.appPrefs.networkProxyHostPort.get() } }
+  val networkProxyHostPort = remember { stateGetOrPut("networkHostProxyPort") {
+    var proxy = (socksProxy ?: chatModel.controller.appPrefs.networkProxyHostPort.get())
+    if (proxy?.startsWith(":") == true) proxy = "localhost$proxy"
+    proxy
+  }
+  }
   val proxyPort = remember { derivedStateOf { networkProxyHostPort.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
 
   val netCfg = rememberSaveable(stateSaver = serializableSaver()) {
-    mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(sessionMode = sessionMode.value))
+    mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = socksProxy, sessionMode = sessionMode.value))
   }
 
   SectionView(stringResource(MR.strings.migration_from_device_review_onion_settings).uppercase()) {
@@ -291,7 +294,7 @@ private fun ModalData.OnionView(link: String, state: MutableState<MigrationState
 }
 
 @Composable
-private fun MutableState<MigrationState>.DatabaseInitView(link: String, tempDatabaseFile: File, chatReceiver: MutableState<MigrationFromChatReceiver?>, netCfg: NetCfg) {
+private fun MutableState<MigrationState>.DatabaseInitView(link: String, tempDatabaseFile: File, netCfg: NetCfg) {
   Box {
     SectionView(stringResource(MR.strings.migration_from_device_database_init).uppercase()) {}
     ProgressView()
@@ -331,7 +334,7 @@ private fun DownloadProgressView(downloadedBytes: Long, totalBytes: Long) {
 }
 
 @Composable
-private fun MutableState<MigrationState>.DownloadFailedView(totalBytes: Long, link: String, chatReceiver: MigrationFromChatReceiver?, archivePath: String, netCfg: NetCfg) {
+private fun MutableState<MigrationState>.DownloadFailedView(link: String, chatReceiver: MigrationFromChatReceiver?, archivePath: String, netCfg: NetCfg) {
   SectionView(stringResource(MR.strings.migration_from_device_download_failed).uppercase()) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
@@ -394,7 +397,7 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
           verifyingPassphrase.value = true
           hideKeyboard(view)
           withBGApi {
-            val (status, ctrl) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
+            val (status, _) = chatInitTemporaryDatabase(dbAbsolutePrefixPath, key = currentKey.value, confirmation = MigrationConfirmation.YesUp)
             val success = status == DBMigrationResult.OK || status == DBMigrationResult.InvalidConfirmation
             if (success) {
               state = MigrationState.Migration(currentKey.value, MigrationConfirmation.YesUp, netCfg)
@@ -477,12 +480,19 @@ private fun ProgressView() {
 
 private fun MutableState<MigrationState>.checkUserLink(link: String) {
   if (strHasSimplexFileLink(link.trim())) {
-    // LALAL need to show onion setup or not
-    if (true) {
-      state = MigrationState.Onion(link.trim())
-      MigrationFromAnotherDeviceState.save(MigrationFromAnotherDeviceState.Onion(link.trim()))
+    val data = MigrationFileLinkData.readFromLink(link)
+    val networkConfig = data?.networkConfig?.transformToPlatformSupported()
+    // If any of iOS or Android had onion enabled, show onion screen
+    if (networkConfig?.hostMode == HostMode.OnionViaSocks && networkConfig.socksProxy != null && networkConfig.requiredHostMode != null) {
+      state = MigrationState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
+      MigrationFromAnotherDeviceState.save(MigrationFromAnotherDeviceState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
     } else {
-      state = MigrationState.DatabaseInit(link.trim(), getNetCfg())
+      val current = getNetCfg()
+      state = MigrationState.DatabaseInit(link.trim(), current.copy(
+        socksProxy = networkConfig?.socksProxy,
+        hostMode = networkConfig?.hostMode ?: current.hostMode,
+        requiredHostMode = networkConfig?.requiredHostMode ?: current.requiredHostMode
+      ))
     }
   } else {
     AlertManager.shared.showAlertMsg(
@@ -686,7 +696,7 @@ private class MigrationFromChatReceiver(
             }
           }
         } catch (e: Exception) {
-          Log.e(TAG, "MigrationChatReceiver recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
+          Log.e(TAG, "MigrationChatReceiver recvMsg/processReceivedMsg exception: " + e.stackTraceToString())
         } catch (e: Exception) {
           Log.e(TAG, "MigrationChatReceiver recvMsg/processReceivedMsg throwable: " + e.stackTraceToString())
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
