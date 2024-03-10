@@ -531,38 +531,29 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxRawMsgLength :: Int
-maxRawMsgLength = 15610
+maxEncodedMsgLength :: Int
+maxEncodedMsgLength = 15610
 
+-- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
 maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13410 -- reduced by 2200 (original message should be compressed)
+maxCompressedMsgLength = 13388
 
-maxEncodedMsgLength :: PQSupport -> Int
-maxEncodedMsgLength = \case
-  PQSupportOn -> maxCompressedMsgLength
-  PQSupportOff -> maxRawMsgLength
-{-# INLINE maxEncodedMsgLength #-}
-
-maxRawInfoLength :: Int
-maxRawInfoLength = 14602 -- 15610 (maxRawMsgLength) - delta in agent between MSG and INFO
+-- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
+-- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
+maxEncodedInfoLength :: Int
+maxEncodedInfoLength = 14702
 
 maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10902 -- reduced by 3700
-
-maxConnInfoLength :: PQSupport -> Int
-maxConnInfoLength = \case
-  PQSupportOn -> maxCompressedInfoLength
-  PQSupportOff -> maxRawInfoLength
-{-# INLINE maxConnInfoLength #-}
+maxCompressedInfoLength = 10976 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
-encodeChatMessage :: MsgEncodingI e => (PQSupport -> Int) -> ChatMessage e -> EncodedChatMessage
-encodeChatMessage getMaxSize msg = do
+encodeChatMessage :: MsgEncodingI e => Int -> ChatMessage e -> EncodedChatMessage
+encodeChatMessage maxSize msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = LB.toStrict $ J.encode m
-      if B.length body > getMaxSize PQSupportOff
+      if B.length body > maxSize
         then ECMLarge
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
@@ -582,7 +573,7 @@ parseChatMessages s = case B.head s of
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
-      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxRawMsgLength compressed
+      Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxEncodedMsgLength compressed
 
 compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO ByteString
 compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$> compress ctx msgBody

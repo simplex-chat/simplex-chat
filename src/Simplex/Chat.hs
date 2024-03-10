@@ -6062,8 +6062,7 @@ sendDirectContactMessage user ct chatMsgEvent = do
   conn@Connection {connId, pqSupport} <- liftEither $ contactSendConn_ ct
   r <- sendDirectMessage_ conn pqSupport chatMsgEvent (ConnectionId connId)
   let (sndMessage, msgDeliveryId, pqEnc') = r
-  -- TODO PQ use updated ct' and conn'? check downstream if it may affect something, maybe it's not necessary
-  void $ createContactPQSndItem user ct conn pqEnc' -- (_ct', _conn')
+  void $ createContactPQSndItem user ct conn pqEnc'
   pure (sndMessage, msgDeliveryId)
 
 contactSendConn_ :: Contact -> Either ChatError Connection
@@ -6132,12 +6131,12 @@ processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = d
 
 -- TODO v5.7 update batching for groups
 batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
-batchSndMessagesJSON = batchMessages maxRawMsgLength . L.toList
+batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
 
 -- batchSndMessagesBinary :: forall m. ChatMonad m => NonEmpty SndMessage -> m [Either ChatError MsgBatch]
 -- batchSndMessagesBinary msgs = do
 --   compressed <- liftIO $ withCompressCtx maxChatMsgSize $ \cctx -> mapM (compressForBatch cctx) msgs
---   pure . map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength PQEncOff) $ L.zip compressed msgs
+--   pure . map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength) $ L.zip compressed msgs
 --   where
 --     compressForBatch cctx SndMessage {msgBody} = bimap (const TELargeMsg) smpEncode <$> compress cctx msgBody
 --     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
@@ -6155,7 +6154,7 @@ encodeConnInfoPQ :: (MsgEncodingI e, ChatMonad m) => PQSupport -> Maybe VersionC
 encodeConnInfoPQ pqSup v chatMsgEvent = do
   chatVRange <- chatVersionRange pqSup
   let info = ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxConnInfoLength info of
+  case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded encodedInfo -> case pqSup of
       PQSupportOn | B.length encodedInfo > maxCompressedInfoLength && maybe False (>= pqEncryptionCompressionVersion) v -> do
         compressedInfo <- liftIO compressedBatchMsgBody
@@ -6191,7 +6190,7 @@ deliverMessagesB msgReqs = do
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx (toEnum maxRawMsgLength) $ \cctx -> do
+    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \cctx -> do
       forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion}, msgFlags, msgBody, msgId) ->
         case pqSupport of
           PQSupportOn
