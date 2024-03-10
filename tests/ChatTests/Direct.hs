@@ -2827,7 +2827,7 @@ testPQVersionsViaLink :: HasCallStack => SpecWith FilePath
 testPQVersionsViaLink = pqVersionTestMatrix2 runTestPQVersionsViaLink
   where
     runTestPQVersionsViaLink alice bob pqExpected vExpected = do
-      img <- genProfileImgLink
+      img <- genProfileImgForLink
       let profileImage = "data:image/png;base64," <> B.unpack img
       alice `send` ("/set profile image " <> profileImage)
       _trimmedCmd1 <- getTermLine alice
@@ -2861,7 +2861,7 @@ testPQVersionsViaAddress :: HasCallStack => SpecWith FilePath
 testPQVersionsViaAddress = pqVersionTestMatrix2 runTestPQVersionsViaAddress
   where
     runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
-      img <- genProfileImgAddress
+      img <- genProfileImgForAddress
       let profileImage = "data:image/png;base64," <> B.unpack img
       alice `send` ("/set profile image " <> profileImage)
       _trimmedCmd1 <- getTermLine alice

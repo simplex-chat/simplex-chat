@@ -159,7 +159,7 @@ testAgentCfgV1 =
 testCfgVPrev :: ChatConfig
 testCfgVPrev =
   testCfg
-    { chatVRange = prevRange . chatVRange testCfg,
+    { chatVRange = \_ -> prevRange $ chatVRange testCfg PQSupportOff,
       agentConfig = testAgentCfgVPrev
     }
 

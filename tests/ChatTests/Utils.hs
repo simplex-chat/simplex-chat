@@ -251,19 +251,19 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
   where
     lrgLen = maxEncodedMsgLength PQSupportOff * 3 `div` 4 - 98 -- this is max size for binary image preview given the rest of the message
 
-genProfileImgLink :: IO ByteString
-genProfileImgLink = do
+genProfileImgForLink :: IO ByteString
+genProfileImgForLink = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 214 -- magic number
+    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 214 -- magic number to make tests pass
 
-genProfileImgAddress :: IO ByteString
-genProfileImgAddress = do
+genProfileImgForAddress :: IO ByteString
+genProfileImgForAddress = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 238 -- magic number
+    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 238 -- magic number to make tests pass
 
 -- PQ combinators /
 
