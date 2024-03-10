@@ -28,6 +28,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
+import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
@@ -37,12 +38,13 @@ import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange, pattern VersionSMPA)
+import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
-import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff, pattern VersionE2E)
+import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -147,20 +149,36 @@ testAgentCfgVPrev =
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
+testAgentCfgVNext :: AgentConfig
+testAgentCfgVNext =
+  testAgentCfg
+    { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
+      smpAgentVRange = \_ -> mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
+      e2eEncryptVRange = \_ -> mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
+    }
+
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = \_ -> versionToRange (VersionSMPA 2), -- duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = \_ -> versionToRange (VersionE2E 2), -- kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = \_ -> versionToRange duplexHandshakeSMPAgentVersion,
+      e2eEncryptVRange = \_ -> versionToRange CR.kdfX3DHE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange batchCmdsSMPVersion}
     }
 
 testCfgVPrev :: ChatConfig
 testCfgVPrev =
   testCfg
-    { chatVRange = prevRange . chatVRange testCfg,
+    { chatVRange = \_ -> prevRange $ chatVRange testCfg PQSupportOff,
       agentConfig = testAgentCfgVPrev
+    }
+
+testCfgVNext :: ChatConfig
+testCfgVNext =
+  testCfg
+    { chatVRange = \_ -> mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
+      agentConfig = testAgentCfgVNext
     }
 
 testCfgV1 :: ChatConfig
@@ -173,11 +191,17 @@ testCfgV1 =
 prevRange :: VersionRange v -> VersionRange v
 prevRange vr = vr {maxVersion = max (minVersion vr) (prevVersion $ maxVersion vr)}
 
+nextRange :: VersionRange v -> VersionRange v
+nextRange vr = vr {maxVersion = max (minVersion vr) (nextVersion $ maxVersion vr)}
+
 v1Range :: VersionRange v
 v1Range = mkVersionRange (Version 1) (Version 1)
 
 prevVersion :: Version v -> Version v
 prevVersion (Version v) = Version (v - 1)
+
+nextVersion :: Version v -> Version v
+nextVersion (Version v) = Version (v + 1)
 
 testCfgCreateGroupDirect :: ChatConfig
 testCfgCreateGroupDirect =
