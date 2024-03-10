@@ -3660,8 +3660,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CON pqEnc ->
           withStore' (\db -> getViaGroupMember db vr user ct) >>= \case
             Nothing -> do
-              when (pqEnc == PQEncOn) $
-                withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
+              when (pqEnc == PQEncOn) $ withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
               let conn' = conn {pqSndEnabled = Just pqEnc, pqRcvEnabled = Just pqEnc} :: Connection
                   ct' = ct {activeConn = Just conn'} :: Contact
               -- [incognito] print incognito profile used for this contact
@@ -5825,6 +5824,7 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 sameMemberId :: MemberId -> GroupMember -> Bool
 sameMemberId memId GroupMember {memberId} = memId == memberId
 
+-- TODO v5.7 for contacts only version upgrade should trigger enabling PQ support/encryption
 updatePeerChatVRange :: ChatMonad m => Connection -> VersionRangeChat -> m Connection
 updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange, pqSupport} msgVRange = do
   v' <- upgradedConnVersion pqSupport v msgVRange
