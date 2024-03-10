@@ -1649,8 +1649,12 @@ pattern VersionChat v = Version v
 -- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
 
-compatibleChatVersion :: VersionRangeChat -> VersionRangeChat -> VersionChat
-compatibleChatVersion localVR peerVR = maybe (minVersion localVR) (\(Compatible v) -> v) (localVR `compatibleVersion` peerVR)
+-- TODO v6.0 review
+peerConnChatVersion :: VersionRangeChat -> VersionRangeChat -> VersionChat
+peerConnChatVersion _local@(VersionRange lmin lmax) _peer@(VersionRange rmin rmax)
+  | lmin <= rmax && rmin <= lmax = min lmax rmax -- compatible
+  | rmin > lmax = rmin
+  | otherwise = rmax
 
 initialChatVersion :: VersionChat
 initialChatVersion = VersionChat 1

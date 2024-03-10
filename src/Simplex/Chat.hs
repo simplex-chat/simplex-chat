@@ -1655,7 +1655,7 @@ processChatCommand' vr = \case
           subMode <- chatReadVar subscriptionMode
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm PQSupportOff subMode
-          let chatV = vr PQSupportOff `compatibleChatVersion` peerChatVRange
+          let chatV = vr PQSupportOff `peerConnChatVersion` peerChatVRange
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -2885,10 +2885,11 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognitoProfile contactUsed = do
   subMode <- chatReadVar subscriptionMode
-  let profileToSend = profileToSendOnAccept user incognitoProfile False
   pqSup <- chatReadVar pqExperimentalEnabled
-  let pqSup' = pqSup `CR.pqSupportAnd` pqSupport
-  chatV <- pqCompatibleVersion pqSup cReqChatVRange
+  vr <- chatVersionRange
+  let profileToSend = profileToSendOnAccept user incognitoProfile False
+      chatV = vr pqSup `peerConnChatVersion` cReqChatVRange
+      pqSup' = pqSup `CR.pqSupportAnd` pqSupport
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
   withStore' $ \db -> createAcceptedContact db user acId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
@@ -2897,7 +2898,8 @@ acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe 
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
-  chatV <- chatReadVar pqExperimentalEnabled >>= (`pqCompatibleVersion` cReqChatVRange)
+  vr <- chatVersionRange
+  chatV <- (\pq -> vr pq `peerConnChatVersion` cReqChatVRange) <$> chatReadVar pqExperimentalEnabled
   (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode pqSup chatV
   withStore' $ \db -> do
     ct@Contact {activeConn} <- createAcceptedContact db user acId chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
@@ -2926,9 +2928,9 @@ acceptGroupJoinRequestAsync
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
-    chatV <- chatReadVar pqExperimentalEnabled >>= (`pqCompatibleVersion` cReqChatVRange)
-    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     vr <- chatVersionRange
+    chatV <- (\pq -> vr pq `peerConnChatVersion` cReqChatVRange) <$> chatReadVar pqExperimentalEnabled
+    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     withStore $ \db -> do
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
@@ -5416,7 +5418,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> Just <$> createConn subMode
               let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
                   vr' = vr PQSupportOff
-                  chatV = maybe (minVersion vr') ((vr' `compatibleChatVersion` ) . fromChatVRange) memChatVRange
+                  chatV = maybe (minVersion vr') (\peerVR -> vr' `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
               void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds directConnIds customUserProfileId subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
@@ -5464,7 +5466,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
-          chatV = vr PQSupportOff `compatibleChatVersion` mcvr
+          chatV = vr PQSupportOff `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
@@ -5842,7 +5844,10 @@ updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, 
     else pure (mem, conn)
 
 upgradedConnVersion :: ChatMonad' m => PQSupport -> VersionChat -> VersionRangeChat -> m VersionChat
-upgradedConnVersion pqSup v vr = max v <$> pqCompatibleVersion pqSup vr
+upgradedConnVersion pqSup v peerVR = do
+  vr <- chatVersionRange
+  -- don't allow reducing agreed connection version
+  pure $ maybe v (\(Compatible v') -> max v v') $ vr pqSup `compatibleVersion` peerVR
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
@@ -6703,9 +6708,6 @@ chatVersionRange = do
   ChatConfig {chatVRange} <- asks config
   pure chatVRange
 {-# INLINE chatVersionRange #-}
-
-pqCompatibleVersion :: ChatMonad' m => PQSupport -> VersionRangeChat -> m VersionChat
-pqCompatibleVersion pq vr' = (\vr -> vr pq `compatibleChatVersion` vr') <$> chatVersionRange
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

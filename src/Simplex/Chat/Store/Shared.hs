@@ -160,7 +160,7 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGr
   Connection
     { connId,
       agentConnId = AgentConnId acId,
-      connChatVersion = fromMaybe (vr pqSupport `compatibleChatVersion` peerChatVRange) chatV,
+      connChatVersion = fromMaybe (vr pqSupport `peerConnChatVersion` peerChatVRange) chatV,
       peerChatVRange = peerChatVRange,
       connLevel,
       viaContact,
