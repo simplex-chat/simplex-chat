@@ -171,7 +171,7 @@ struct ChatInfoView: View {
                 if pqExperimentalEnabled,
                    let conn = contact.activeConn {
                     Section {
-                        infoRow(Text(String("PQ E2E encryption")), conn.connPQEnabled ? "Enabled" : "Disabled")
+                        infoRow(Text(String("E2E encryption")), conn.connPQEnabled ? "Quantum resistant" : "Standard")
                         if !conn.pqSupport {
                             allowPQButton()
                         }
