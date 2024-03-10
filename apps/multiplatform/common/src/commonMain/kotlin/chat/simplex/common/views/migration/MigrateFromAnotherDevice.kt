@@ -387,13 +387,13 @@ private fun MutableState<MigrationState>.PassphraseEnteringView(currentKey: Stri
         smallPadding = false
       ) { checked -> useKeychain.value = checked }
 
-      PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey)
+      PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey, requestFocus = true)
 
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_vpn_key_filled),
         text = stringResource(MR.strings.open_chat),
         textColor = MaterialTheme.colors.primary,
-        disabled = verifyingPassphrase.value,
+        disabled = verifyingPassphrase.value || currentKey.value.isEmpty(),
         click = {
           verifyingPassphrase.value = true
           hideKeyboard(view)
@@ -621,19 +621,19 @@ private fun startChat(passphrase: String, confirmation: MigrationConfirmation, u
 }
 
 private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit) {
-  hideView(close)
   try {
     getMigrationTempFilesDirectory().deleteRecursively()
-    MigrationFromAnotherDeviceState.save(null)
     appSettings.importIntoApp()
     val user = chatModel.currentUser.value
     if (user != null) {
       startChat(user)
     }
+    hideView(close)
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migration_from_device_chat_migrated), generalGetString(MR.strings.migration_from_device_finalize_migration))
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.stackTraceToString())
   }
+  MigrationFromAnotherDeviceState.save(null)
 }
 
 private fun hideView(close: () -> Unit) {

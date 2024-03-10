@@ -23,6 +23,8 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
@@ -30,6 +32,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.Clock
 import kotlin.math.log2
@@ -296,6 +299,7 @@ fun PassphraseField(
   isValid: (String) -> Boolean,
   keyboardActions: KeyboardActions = KeyboardActions(),
   dependsOn: State<Any?>? = null,
+  requestFocus: Boolean = false,
 ) {
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
@@ -324,6 +328,7 @@ fun PassphraseField(
   val color = MaterialTheme.colors.onBackground
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
+  val focusRequester = remember { FocusRequester() }
   BasicTextField(
     value = state.value,
     modifier = modifier
@@ -333,7 +338,8 @@ fun PassphraseField(
       .defaultMinSize(
         minWidth = TextFieldDefaults.MinWidth,
         minHeight = TextFieldDefaults.MinHeight
-      ),
+      )
+      .focusRequester(focusRequester),
     onValueChange = {
       state.value = it
       key.value = it.text
@@ -376,6 +382,12 @@ fun PassphraseField(
       )
     }
   )
+  LaunchedEffect(Unit) {
+    if (requestFocus) {
+      delay(200)
+      focusRequester.requestFocus()
+    }
+  }
   LaunchedEffect(Unit) {
     snapshotFlow { dependsOn?.value }
       .distinctUntilChanged()

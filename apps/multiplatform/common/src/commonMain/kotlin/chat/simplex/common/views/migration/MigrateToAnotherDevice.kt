@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -212,13 +213,13 @@ private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
       SectionSpacer()
 
       SectionView(stringResource(MR.strings.migration_to_device_verify_database_passphrase).uppercase()) {
-        PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey)
+        PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey, requestFocus = true)
 
         SettingsActionItemWithContent(
           icon = painterResource(if (useKeychain) MR.images.ic_vpn_key_filled else MR.images.ic_lock),
           text = stringResource(MR.strings.migration_to_device_verify_passphrase),
           textColor = MaterialTheme.colors.primary,
-          disabled = verifyingPassphrase.value,
+          disabled = verifyingPassphrase.value || currentKey.value.isEmpty(),
           click = {
             verifyingPassphrase.value = true
             hideKeyboard(view)
@@ -404,7 +405,8 @@ fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
-      if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth() - DEFAULT_PADDING * 2),
+      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth() - DEFAULT_PADDING * 2))
+        .rotate(-90f),
       color = MaterialTheme.colors.primary,
       strokeWidth = 25.dp
     )
