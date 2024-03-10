@@ -3658,7 +3658,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CON pqEnc ->
           withStore' (\db -> getViaGroupMember db vr user ct) >>= \case
             Nothing -> do
-              withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
+              when (pqEnc == PQEncOn) $
+                withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
               let conn' = conn {pqSndEnabled = Just pqEnc, pqRcvEnabled = Just pqEnc} :: Connection
                   ct' = ct {activeConn = Just conn'} :: Contact
               -- [incognito] print incognito profile used for this contact

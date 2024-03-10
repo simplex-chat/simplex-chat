@@ -2882,10 +2882,10 @@ testPQEnableContact =
     -- alice <# "bob> 6"
 
     PQEncOn <- alice `pqForContact` 2
-    alice #$> ("/_get chat @2 count=2", chat, [(0, "quantum resistant e2e encryption"), (0, "6")])
+    alice #$> ("/_get chat @2 count=2", chat, [(0, e2eeInfoPQStr), (0, "6")])
 
     PQEncOn <- bob `pqForContact` 2
-    bob #$> ("/_get chat @2 count=2", chat, [(1, "quantum resistant e2e encryption"), (1, "6")])
+    bob #$> ("/_get chat @2 count=2", chat, [(1, e2eeInfoPQStr), (1, "6")])
 
     (alice, "6") +#> bob
     (bob, "7") +#> alice
@@ -2932,7 +2932,6 @@ testPQEnableContactCompression =
     (bob, "lrg 6", v') ++:#> (alice, v')
     (alice, "lrg 7", v') +:#> (bob, v')
     (bob, "lrg 8", v') +:#> (alice, v')
-    pure ()
   where
     v = currentChatVersion
     v' = pqEncryptionCompressionVersion
