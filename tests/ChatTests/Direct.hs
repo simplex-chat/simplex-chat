@@ -2825,7 +2825,7 @@ runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
 
 runTestPQVersionsViaLink :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
 runTestPQVersionsViaLink alice bob pqExpected vExpected = do
-  img <- genProfileImgForLink
+  img <- genProfileImg
   let profileImage = "data:image/png;base64," <> B.unpack img
   alice `send` ("/set profile image " <> profileImage)
   _trimmedCmd1 <- getTermLine alice
@@ -2857,7 +2857,7 @@ runTestPQVersionsViaLink alice bob pqExpected vExpected = do
 
 runTestPQVersionsViaAddress :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
 runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
-  img <- genProfileImgForAddress
+  img <- genProfileImg
   let profileImage = "data:image/png;base64," <> B.unpack img
   alice `send` ("/set profile image " <> profileImage)
   _trimmedCmd1 <- getTermLine alice

@@ -245,30 +245,21 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
   img <- atomically $ B64.encode <$> C.randomBytes lrgLen g
   cc1 `send` ("/_send @2 json {\"msgContent\":{\"type\":\"image\",\"text\":\"" <> msg <> "\",\"image\":\"" <> B.unpack img <> "\"}}")
   cc1 .<## "}}"
-  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
-  cc1 <# ("@" <> name2 <> " " <> msg)
+  cc1 <### ([ConsoleString (name2 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime ("@" <> name2 <> " " <> msg)])
   cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
   cc1 `pqVerForContact` 2 `shouldReturn` v1
-  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
-  cc2 <# (name1 <> "> " <> msg)
+  cc2 <### ([ConsoleString (name1 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime (name1 <> "> " <> msg)])
   cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
   cc2 `pqVerForContact` 2 `shouldReturn` v2
   where
-    lrgLen = maxEncodedMsgLength PQSupportOff * 3 `div` 4 - 110 -- 98 is ~ max size for binary image preview given the rest of the message
+    lrgLen = maxEncodedMsgLength * 3 `div` 4 - 110 -- 98 is ~ max size for binary image preview given the rest of the message
 
-genProfileImgForLink :: IO ByteString
-genProfileImgForLink = do
+genProfileImg :: IO ByteString
+genProfileImg = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 240 -- 214 is the magic number to make tests pass (10737)
-
-genProfileImgForAddress :: IO ByteString
-genProfileImgForAddress = do
-  g <- C.newRandom
-  atomically $ B64.encode <$> C.randomBytes lrgLen g
-  where
-    lrgLen = maxConnInfoLength PQSupportOff * 3 `div` 4 - 260 -- 238 is the magic number to make tests pass (10713)
+    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
 
 -- PQ combinators /
 
