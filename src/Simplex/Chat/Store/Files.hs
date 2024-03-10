@@ -695,7 +695,7 @@ getRcvFileTransfer_ db userId fileId = do
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
-acceptRcvFileTransfer :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
+acceptRcvFileTransfer :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
   currentTs <- getCurrentTime
   acceptRcvFT_ db user fileId filePath Nothing currentTs
@@ -716,7 +716,7 @@ getContactByFileId db user@User {userId} fileId = do
       ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $
         DB.query db "SELECT contact_id FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
 
-acceptRcvInlineFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db vr user fileId
@@ -725,7 +725,7 @@ startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Mayb
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
   acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-xftpAcceptRcvFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 xftpAcceptRcvFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath Nothing =<< getCurrentTime
   getChatItemByFileId db vr user fileId
@@ -1000,7 +1000,7 @@ getLocalCryptoFile db userId fileId sent =
       pure $ CryptoFile filePath fileCryptoArgs
     _ -> throwError $ SEFileNotFound fileId
 
-updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRangeChat -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
+updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db vr user fileId fileStatus = do
   aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db vr user fileId
   case (cType, testEquality d $ msgDirection @d) of

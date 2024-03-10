@@ -367,12 +367,11 @@ startChatController mainApp = do
 subscribeUsers :: forall m. ChatMonad' m => Bool -> [User] -> m ()
 subscribeUsers onlyNeeded users = do
   let (us, us') = partition activeUser users
-  -- TODO PQ this is only used to set membership version range
-  vr <- chatVersionRange PQSupportOff
+  vr <- chatVersionRange
   subscribe vr us
   subscribe vr us'
   where
-    subscribe :: VersionRangeChat -> [User] -> m ()
+    subscribe :: (PQSupport -> VersionRangeChat) -> [User] -> m ()
     subscribe vr = mapM_ $ runExceptT . subscribeUserConnections vr onlyNeeded Agent.subscribeConnections
 
 startFilesToReceive :: forall m. ChatMonad' m => [User] -> m ()
@@ -451,11 +450,10 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand cmd =
-  -- TODO PQ this is only used to set membership version range (?)
-  chatVersionRange PQSupportOff >>= (`processChatCommand'` cmd)
+  chatVersionRange >>= (`processChatCommand'` cmd)
 {-# INLINE processChatCommand #-}
 
-processChatCommand' :: forall m. ChatMonad m => VersionRangeChat -> ChatCommand -> m ChatResponse
+processChatCommand' :: forall m. ChatMonad m => (PQSupport -> VersionRangeChat) -> ChatCommand -> m ChatResponse
 processChatCommand' vr = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
@@ -1657,7 +1655,7 @@ processChatCommand' vr = \case
           subMode <- chatReadVar subscriptionMode
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm PQSupportOff subMode
-          let chatV = vr `compatibleChatVersion` peerChatVRange
+          let chatV = vr PQSupportOff `compatibleChatVersion` peerChatVRange
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -2757,8 +2755,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
-  -- TODO PQ this is only used to set membership version range
-  vr <- chatVersionRange PQSupportOff
+  vr <- chatVersionRange
   case (xftpRcvFile, fileConnReq) of
     -- direct file protocol
     (Nothing, Just connReq) -> do
@@ -2797,8 +2794,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     acceptFile cmdFunction send = do
       filePath <- getRcvFilePath fileId filePath_ fName True
       inline <- receiveInline
-      -- TODO PQ this is only used to set membership version range
-      vr <- chatVersionRange PQSupportOff
+      vr <- chatVersionRange
       if
         | inline -> do
             -- accepting inline
@@ -2845,8 +2841,7 @@ receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile 
 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do
-  -- TODO PQ this is only used to set membership version range
-  vr <- chatVersionRange PQSupportOff
+  vr <- chatVersionRange
   ci <- withStoreCtx (Just "startReceivingFile, updateRcvFileStatus ...") $ \db -> do
     liftIO $ updateRcvFileStatus db fileId FSConnected
     liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
@@ -2980,7 +2975,7 @@ agentSubscriber = do
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
-subscribeUserConnections :: forall m. ChatMonad m => VersionRangeChat -> Bool -> AgentBatchSubscribe m -> User -> m ()
+subscribeUserConnections :: forall m. ChatMonad m => (PQSupport -> VersionRangeChat) -> Bool -> AgentBatchSubscribe m -> User -> m ()
 subscribeUserConnections vr onlyNeeded agentBatchSubscribe user@User {userId} = do
   -- get user connections
   ce <- asks $ subscriptionEvents . config
@@ -3221,8 +3216,7 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime deleteAt ts
   waitChatStartedAndActivated
-  -- TODO PQ this is only used to set membership version range
-  vr <- chatVersionRange PQSupportOff
+  vr <- chatVersionRange
   case cType of
     CTDirect -> do
       (ct, CChatItem _ ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
@@ -3243,8 +3237,7 @@ startUpdatedTimedItemThread user chatRef ci ci' =
 expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
 expireChatItems user@User {userId} ttl sync = do
   currentTs <- liftIO getCurrentTime
-  -- TODO PQ this is only used to set membership version range
-  vr <- chatVersionRange PQSupportOff
+  vr <- chatVersionRange
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
       -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
@@ -3291,8 +3284,7 @@ processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
 processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
-  -- TODO PQ this is only used to set membership version range (?)
-  vr <- chatVersionRange PQSupportOff
+  vr <- chatVersionRange
   withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
@@ -3331,8 +3323,7 @@ processAgentMsgSndFile _corrId aFileId msg =
       (ft@FileTransferMeta {fileId, xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> do
         fileId <- getXFTPSndFileDBId db user $ AgentSndFileId aFileId
         getSndFileTransfer db user fileId
-      -- TODO PQ this is only used to set membership version range
-      vr <- chatVersionRange PQSupportOff
+      vr <- chatVersionRange
       unless cancelled $ case msg of
         SFPROG sndProgress sndTotal -> do
           let status = CIFSSndTransfer {sndProgress, sndTotal}
@@ -3418,7 +3409,7 @@ processAgentMsgSndFile _corrId aFileId msg =
               case L.nonEmpty fds of
                 Just fds' -> loopSend fds'
                 Nothing -> pure msgDeliveryId
-        sendFileError :: Text -> Int64 -> VersionRangeChat -> FileTransferMeta -> m ()
+        sendFileError :: Text -> Int64 -> (PQSupport -> VersionRangeChat) -> FileTransferMeta -> m ()
         sendFileError err fileId vr ft = do
           logError $ "Sent file error: " <> err
           ci <- withStore $ \db -> do
@@ -3453,8 +3444,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
       ft@RcvFileTransfer {fileId} <- withStore $ \db -> do
         fileId <- getXFTPRcvFileDBId db $ AgentRcvFileId aFileId
         getRcvFileTransfer db user fileId
-      -- TODO PQ this is only used to set membership version range
-      vr <- chatVersionRange PQSupportOff
+      vr <- chatVersionRange
       unless (rcvFileCompleteOrCancelled ft) $ case msg of
         RFPROG rcvProgress rcvTotal -> do
           let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
@@ -3485,7 +3475,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
 
-processAgentMessageConn :: forall m. ChatMonad m => VersionRangeChat -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
+processAgentMessageConn :: forall m. ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
   entity <- withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
@@ -3867,7 +3857,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     profileToSend = profileToSendOnAccept user profileMode True
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
               sendIntroductions members = do
-                intros <- withStore' $ \db -> createIntroductions db (maxVersion vr) members m
+                intros <- withStore' $ \db -> createIntroductions db (maxVersion $ vr PQSupportOff) members m
                 shuffledIntros <- liftIO $ shuffleIntros intros
                 if m `supportsVersion` batchSendVersion
                   then do
@@ -5421,7 +5411,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | maxVersion mcvr >= groupDirectInvVersion -> pure Nothing
                   | otherwise -> Just <$> createConn subMode
               let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
-                  chatV = (vr `compatibleChatVersion` ) . fromChatVRange =<< memChatVRange
+                  chatV = (vr PQSupportOff `compatibleChatVersion` ) . fromChatVRange =<< memChatVRange
               void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds directConnIds customUserProfileId subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
@@ -5469,7 +5459,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
-          chatV = vr `compatibleChatVersion` mcvr
+          chatV = vr PQSupportOff `compatibleChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
@@ -5894,7 +5884,7 @@ parseChatMessage conn s = do
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
   unless (fileStatus == FSComplete || fileStatus == FSCancelled) $ do
-    vr <- chatVersionRange PQSupportOff
+    vr <- chatVersionRange
     withStore' (`createSndFileChunk` ft) >>= \case
       Just chunkNo -> sendFileChunkNo ft chunkNo
       Nothing -> do
@@ -6096,7 +6086,7 @@ createSndMessage chatMsgEvent connOrGroupId pqSup =
 createSndMessages :: forall e m t. (MsgEncodingI e, ChatMonad' m, Traversable t) => t (ConnOrGroupId, PQSupport, ChatMsgEvent e) -> m (t (Either ChatError SndMessage))
 createSndMessages idsEvents = do
   g <- asks random
-  ChatConfig {chatVRange = vr} <- asks config
+  vr <- chatVersionRange
   withStoreBatch $ \db -> fmap (createMsg db g vr) idsEvents
   where
     createMsg :: DB.Connection -> TVar ChaChaDRG -> (PQSupport -> VersionRangeChat) -> (ConnOrGroupId, PQSupport, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
@@ -6147,14 +6137,14 @@ batchSndMessagesJSON = batchMessages maxRawMsgLength . L.toList
 
 encodeConnInfo :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 encodeConnInfo chatMsgEvent = do
-  vr <- chatVersionRange PQSupportOff
-  encodeConnInfoPQ PQSupportOff (Just $ maxVersion vr) chatMsgEvent
+  vr <- chatVersionRange
+  encodeConnInfoPQ PQSupportOff (Just $ maxVersion $ vr PQSupportOff) chatMsgEvent
 
 -- TODO PQ check size after compression (in compressedBatchMsgBody_ ?)
 encodeConnInfoPQ :: (MsgEncodingI e, ChatMonad m) => PQSupport -> Maybe VersionChat -> ChatMsgEvent e -> m ByteString
 encodeConnInfoPQ pqSup v chatMsgEvent = do
-  chatVRange <- chatVersionRange pqSup
-  let msg = ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
+  vr <- chatVersionRange
+  let msg = ChatMessage {chatVRange = vr pqSup, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxConnInfoLength msg of
     ECMEncoded encodedBody -> case pqSup of
       PQSupportOn | maybe False (>= pqEncryptionCompressionVersion) v -> liftIO $ compressedBatchMsgBody encodedBody
@@ -6705,16 +6695,17 @@ waitChatStartedAndActivated = do
     activated <- readTVar chatActivated
     unless (isJust started && activated) retry
 
-chatVersionRange :: ChatMonad' m => PQSupport -> m VersionRangeChat
-chatVersionRange pq = do
+chatVersionRange :: ChatMonad' m => m (PQSupport -> VersionRangeChat)
+chatVersionRange = do
   ChatConfig {chatVRange} <- asks config
-  pure $ chatVRange pq
+  pure chatVRange
+{-# INLINE chatVersionRange #-}
 
 compatibleChatVersion :: VersionRangeChat -> VersionRangeChat -> Maybe VersionChat
 compatibleChatVersion vr vr' = (\(Compatible v) -> v) <$> (vr `compatibleVersion` vr')
 
 pqCompatibleVersion :: ChatMonad' m => PQSupport -> VersionRangeChat -> m (Maybe VersionChat)
-pqCompatibleVersion pq vr' = (`compatibleChatVersion` vr') <$> chatVersionRange pq
+pqCompatibleVersion pq vr' = (\vr -> vr pq `compatibleChatVersion` vr') <$> chatVersionRange
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

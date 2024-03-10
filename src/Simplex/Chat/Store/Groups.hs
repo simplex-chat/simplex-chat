@@ -142,7 +142,7 @@ import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (PQSupport, pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
@@ -154,9 +154,9 @@ type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupM
 
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
 
-toGroupInfo :: VersionRangeChat -> Int64 -> GroupInfoRow -> GroupInfo
+toGroupInfo :: (PQSupport -> VersionRangeChat) -> Int64 -> GroupInfoRow -> GroupInfo
 toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. userMemberRow) =
-  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
+  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr PQSupportOff}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
@@ -261,7 +261,7 @@ setGroupLinkMemberRole :: DB.Connection -> User -> Int64 -> GroupMemberRole -> I
 setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
   DB.execute db "UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?" (memberRole, userId, userContactLinkId)
 
-getGroupAndMember :: DB.Connection -> User -> Int64 -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
+getGroupAndMember :: DB.Connection -> User -> Int64 -> (PQSupport -> VersionRangeChat) -> ExceptT StoreError IO (GroupInfo, GroupMember)
 getGroupAndMember db User {userId, userContactId} groupMemberId vr =
   ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
     DB.query
@@ -306,7 +306,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr =
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
+createNewGroup :: DB.Connection -> (PQSupport -> VersionRangeChat) -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
 createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
   let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
@@ -348,7 +348,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
-createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
+createGroupInvitation :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
 createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
@@ -393,7 +393,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               |]
               (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
             insertedRowId db
-          let hostVRange = peerChatVRange
+          let hostVRange = const $ adjustedMemberVRange vr peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
@@ -414,13 +414,18 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               groupMemberId
             )
 
+adjustedMemberVRange :: (PQSupport -> VersionRangeChat) -> VersionRangeChat -> VersionRangeChat
+adjustedMemberVRange getVR vr@(VersionRange minV maxV) =
+  let maxV' = min maxV (maxVersion $ getVR PQSupportOff)
+   in fromMaybe vr $ safeVersionRange minV (max minV maxV')
+
 getHostMemberId_ :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostMemberId_ db User {userId} groupId =
   ExceptT . firstRow fromOnly (SEHostMemberIdNotFound groupId) $
     DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_category = ?" (userId, groupId, GCHostMember)
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> Maybe GroupMemberId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ProfileId -> UTCTime -> VersionRangeChat -> ExceptT StoreError IO GroupMember
-createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMemberId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfileId createdAt memberChatVRange@(VersionRange minV maxV) = do
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> Maybe GroupMemberId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ProfileId -> UTCTime -> (PQSupport -> VersionRangeChat) -> ExceptT StoreError IO GroupMember
+createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMemberId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfileId createdAt vr = do
   incognitoProfile <- forM incognitoProfileId $ \profileId -> getProfileById db userId profileId
   (localDisplayName, memberProfile) <- case (incognitoProfile, incognitoProfileId) of
     (Just profile@LocalProfile {displayName}, Just profileId) ->
@@ -447,6 +452,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         memberChatVRange
       }
   where
+    memberChatVRange@(VersionRange minV maxV) = vr PQSupportOff
     insertMember_ :: IO ContactName
     insertMember_ = do
       let localDisplayName = localDisplayName' userOrContact
@@ -482,7 +488,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
           )
         pure $ Right incognitoLdn
 
-createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createGroupInvitedViaLink :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink
   db
   vr
@@ -553,7 +559,7 @@ setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
+getGroup :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> GroupId -> ExceptT StoreError IO Group
 getGroup db vr user groupId = do
   gInfo <- getGroupInfo db vr user groupId
   members <- liftIO $ getGroupMembers db user gInfo
@@ -608,12 +614,12 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
-getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
+getUserGroups :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> IO [Group]
 getUserGroups db vr user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
 
-getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
+getUserGroupDetails :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
   map (toGroupInfo vr userContactId)
     <$> DB.query
@@ -636,7 +642,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
   where
     search = fromMaybe "" search_
 
-getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
+getUserGroupsWithSummary :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
 getUserGroupsWithSummary db vr user _contactId_ search_ =
   getUserGroupDetails db vr user _contactId_ search_
     >>= mapM (\g@GroupInfo {groupId} -> (g,) <$> getGroupSummary db user groupId)
@@ -677,7 +683,7 @@ checkContactHasGroups :: DB.Connection -> User -> Contact -> IO (Maybe GroupId)
 checkContactHasGroups db User {userId} Contact {contactId} =
   maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
 
-getGroupInfoByName :: DB.Connection -> VersionRangeChat -> User -> GroupName -> ExceptT StoreError IO GroupInfo
+getGroupInfoByName :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db vr user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db vr user gId
@@ -767,7 +773,7 @@ getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
         (groupId, userId)
   pure $ length $ filter memberCurrent' statuses
 
-getGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
+getGroupInvitation :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db vr user groupId =
   getConnRec_ user >>= \case
     Just connRequest -> do
@@ -1277,7 +1283,7 @@ createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Maybe V
 createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange viaContact connLevel currentTs subMode =
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
-getViaGroupMember :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
+getViaGroupMember :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
 getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
   maybeFirstRow toGroupAndMember $
     DB.query
@@ -1373,7 +1379,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
-getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
+getGroupInfo :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db vr User {userId, userContactId} groupId =
   ExceptT . firstRow (toGroupInfo vr userContactId) (SEGroupNotFound groupId) $
     DB.query
@@ -1396,7 +1402,7 @@ getGroupInfo db vr User {userId, userContactId} groupId =
       |]
       (groupId, userId, userContactId)
 
-getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
+getGroupInfoByUserContactLinkConnReq :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   groupId_ <-
     maybeFirstRow fromOnly $
@@ -1410,7 +1416,7 @@ getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReq
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db vr user) groupId_
 
-getGroupInfoByGroupLinkHash :: DB.Connection -> VersionRangeChat -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
+getGroupInfoByGroupLinkHash :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
 getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHash1, groupLinkHash2) = do
   groupId_ <-
     maybeFirstRow fromOnly $
@@ -1437,7 +1443,7 @@ getGroupMemberIdByName db User {userId} groupId groupMemberName =
   ExceptT . firstRow fromOnly (SEGroupMemberNameNotFound groupId groupMemberName) $
     DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
 
-getActiveMembersByName :: DB.Connection -> VersionRangeChat -> User -> ContactName -> ExceptT StoreError IO [(GroupInfo, GroupMember)]
+getActiveMembersByName :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ContactName -> ExceptT StoreError IO [(GroupInfo, GroupMember)]
 getActiveMembersByName db vr user@User {userId} groupMemberName = do
   groupMemberIds :: [(GroupId, GroupMemberId)] <-
     liftIO $
@@ -1946,7 +1952,7 @@ createMemberContact
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
     pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False}
 
-getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
+getMemberContact :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
   ct <- getContact db user contactId
   let Contact {contactGroupMemberId, activeConn} = ct
@@ -2126,7 +2132,7 @@ setXGrpLinkMemReceived db mId xGrpLinkMemReceived = do
     "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
     (xGrpLinkMemReceived, currentTs, mId)
 
-createNewUnknownGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Text -> ExceptT StoreError IO GroupMember
+createNewUnknownGroupMember :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> GroupInfo -> MemberId -> Text -> ExceptT StoreError IO GroupMember
 createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId memberName = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName memberName
@@ -2148,7 +2154,7 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
     insertedRowId db
   getGroupMemberById db user groupMemberId
   where
-    VersionRange minV maxV = vr
+    VersionRange minV maxV = vr PQSupportOff
 
 updateUnknownMemberAnnounced :: DB.Connection -> User -> GroupMember -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
 updateUnknownMemberAnnounced db user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} = do
