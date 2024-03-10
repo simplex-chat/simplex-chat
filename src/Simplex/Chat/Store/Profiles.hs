@@ -86,6 +86,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
@@ -324,16 +325,16 @@ createUserContactLink db User {userId} agentConnId cReq subMode =
       "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
       (userId, cReq, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId (Just initialChatVersion) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
-getUserAddressConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
-getUserAddressConnections db User {userId} = do
+getUserAddressConnections :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ExceptT StoreError IO [Connection]
+getUserAddressConnections db vr User {userId} = do
   cs <- liftIO getUserAddressConnections_
   if null cs then throwError SEUserContactLinkNotFound else pure cs
   where
     getUserAddressConnections_ :: IO [Connection]
     getUserAddressConnections_ =
-      map toConnection
+      map (toConnection vr)
         <$> DB.query
           db
           [sql|
@@ -347,8 +348,8 @@ getUserAddressConnections db User {userId} = do
           |]
           (userId, userId)
 
-getUserContactLinks :: DB.Connection -> User -> IO [(Connection, UserContact)]
-getUserContactLinks db User {userId} =
+getUserContactLinks :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> IO [(Connection, UserContact)]
+getUserContactLinks db vr User {userId} =
   map toUserContactConnection
     <$> DB.query
       db
@@ -365,7 +366,7 @@ getUserContactLinks db User {userId} =
       (userId, userId)
   where
     toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
-    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
+    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection vr connRow, UserContact {userContactLinkId, connReqContact, groupId})
 
 deleteUserAddress :: DB.Connection -> User -> IO ()
 deleteUserAddress db user@User {userId} = do
@@ -473,8 +474,8 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
       |]
       (userId, cReqSchema1, cReqSchema2)
 
-getContactWithoutConnViaAddress :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
-getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2) = do
+getContactWithoutConnViaAddress :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -487,7 +488,7 @@ getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2)
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         |]
         (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do
