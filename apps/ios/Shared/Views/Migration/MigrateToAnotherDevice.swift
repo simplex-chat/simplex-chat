@@ -387,7 +387,8 @@ struct MigrateToAnotherDevice: View {
                     .hidden()
 
                 Text(title)
-                    .font(.system(size: 60))
+                    .font(.system(size: 54))
+                    .bold()
                     .foregroundColor(.accentColor)
 
                 Text(description)
@@ -398,9 +399,9 @@ struct MigrateToAnotherDevice: View {
                 .trim(from: 0, to: CGFloat(value))
                 .stroke(
                     Color.accentColor,
-                    style: StrokeStyle(lineWidth: 30)
+                    style: StrokeStyle(lineWidth: 27)
                 )
-                .rotationEffect(.degrees(-90))
+                .rotationEffect(.degrees(180))
                 .animation(.linear, value: value)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal)
