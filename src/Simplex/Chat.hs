@@ -6151,15 +6151,14 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr pqSup, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded encodedInfo -> case pqSup of
-      PQSupportOn | B.length encodedInfo > maxCompressedInfoLength && v >= pqEncryptionCompressionVersion -> do
-        compressedInfo <- liftIO compressedBatchMsgBody
-        when (B.length compressedInfo > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
-        pure compressedInfo
-      _ -> pure encodedInfo
+    ECMEncoded connInfo -> case pqSup of
+      PQSupportOn | v >= pqEncryptionCompressionVersion && B.length connInfo > maxCompressedInfoLength -> do
+        connInfo' <- liftIO compressedBatchMsgBody
+        when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
+        pure connInfo'
+      _ -> pure connInfo
       where
-        compressedBatchMsgBody =
-          withCompressCtx (toEnum $ B.length encodedInfo) (`compressedBatchMsgBody_` encodedInfo)
+        compressedBatchMsgBody = withCompressCtx (toEnum $ B.length connInfo) (`compressedBatchMsgBody_` connInfo)
     ECMLarge -> throwChatError $ CEException "large info"
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, PQEncryption)
@@ -6185,16 +6184,18 @@ deliverMessagesB msgReqs = do
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \cctx -> do
-      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion}, msgFlags, msgBody, msgId) ->
-        case pqSupport of
-          PQSupportOn
-            | B.length msgBody > maxCompressedMsgLength && connChatVersion >= pqEncryptionCompressionVersion -> do
-                compressedBody <- compressedBatchMsgBody_ cctx msgBody
-                pure $ if B.length compressedBody > maxCompressedMsgLength
-                  then Left $ ChatError $ CEException "large compressed message"
-                  else Right (conn, msgFlags, compressedBody, msgId)
-          _ -> pure $ Right mr
+    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \cxt ->
+      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
+        runExceptT $ case pqSupport of
+          -- we only compress messages when:
+          -- 1) PQ support is enabled
+          -- 2) version is compatible with compression
+          -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
+          PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
+            msgBody' <- liftIO $ compressedBatchMsgBody_ cxt msgBody
+            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
+            pure (conn, msgFlags, msgBody', msgId)
+          _ -> pure mr
     toAgent = \case
       Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
