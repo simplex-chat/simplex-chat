@@ -393,27 +393,17 @@ struct MigrateFromAnotherDevice: View {
                         }
                     }
                 } header: {
-                    Text("Review .onion settings")
+                    Text("Confirm network setting")
                 } footer: {
-                    Text("Since you migrated the database between platforms, make sure settings for .onion hosts are correct.")
+                    Text("Please confirm that network settings are correct for this device.")
                         .font(.callout)
                 }
 
-                Section {
+                Section("Network settings") {
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }
                     .frame(height: 36)
-                } footer: {
-                    let text: LocalizedStringKey = switch onionHosts {
-                    case .no:
-                        "Selected No"
-                    case .prefer:
-                        "Selected Prefer"
-                    case .require:
-                        "Selected Require"
-                    }
-                    Text(text).font(.callout)
                 }
             }
         }
