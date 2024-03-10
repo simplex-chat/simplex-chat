@@ -6197,9 +6197,9 @@ deliverMessagesB msgReqs = do
           PQSupportOn
             | B.length msgBody > maxCompressedMsgLength && maybe False (>= pqEncryptionCompressionVersion) connChatVersion -> do
                 compressedBody <- compressedBatchMsgBody_ cctx msgBody
-                if B.length compressedBody > maxCompressedMsgLength
-                  then pure $ Left $ ChatError $ CEException "large compressed message"
-                  else pure $ Right (conn, msgFlags, compressedBody, msgId)
+                pure $ if B.length compressedBody > maxCompressedMsgLength
+                  then Left $ ChatError $ CEException "large compressed message"
+                  else Right (conn, msgFlags, compressedBody, msgId)
           _ -> pure $ Right mr
     toAgent = \case
       Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
