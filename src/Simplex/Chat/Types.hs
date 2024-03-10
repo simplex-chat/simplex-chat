@@ -1291,7 +1291,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
-    connChatVersion :: Maybe VersionChat,
+    connChatVersion :: VersionChat,
     peerChatVRange :: VersionRangeChat,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
@@ -1648,6 +1648,9 @@ pattern VersionChat v = Version v
 
 -- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
+
+compatibleChatVersion :: VersionRangeChat -> VersionRangeChat -> VersionChat
+compatibleChatVersion localVR peerVR = maybe (minVersion localVR) (\(Compatible v) -> v) (localVR `compatibleVersion` peerVR)
 
 initialChatVersion :: VersionChat
 initialChatVersion = VersionChat 1

@@ -55,7 +55,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
   where
     getConnection_ :: ExceptT StoreError IO Connection
     getConnection_ = ExceptT $ do
-      firstRow toConnection (SEConnectionNotFound agentConnId) $
+      firstRow (toConnection vr) (SEConnectionNotFound agentConnId) $
         DB.query
           db
           [sql|

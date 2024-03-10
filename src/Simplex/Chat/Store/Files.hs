@@ -116,6 +116,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Version
 import System.FilePath (takeFileName)
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
@@ -173,10 +174,10 @@ getPendingSndChunks db fileId connId =
       |]
       (fileId, connId)
 
-createSndDirectFTConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
-createSndDirectFTConnection db user@User {userId} fileId (cmdId, acId) subMode = do
+createSndDirectFTConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createSndDirectFTConnection db vr user@User {userId} fileId (cmdId, acId) subMode = do
   currentTs <- getCurrentTime
-  Connection {connId} <- createSndFileConnection_ db userId fileId acId subMode
+  Connection {connId} <- createSndFileConnection_ db vr userId fileId acId subMode
   setCommandConnId db user cmdId connId
   DB.execute
     db
@@ -193,10 +194,10 @@ createSndGroupFileTransfer db userId GroupInfo {groupId} filePath FileInvitation
   fileId <- insertedRowId db
   pure FileTransferMeta {fileId, xftpSndFile = Nothing, xftpRedirectFor = Nothing, fileName, filePath, fileSize, fileInline, chunkSize, cancelled = False}
 
-createSndGroupFileTransferConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> SubscriptionMode -> IO ()
-createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} subMode = do
+createSndGroupFileTransferConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> SubscriptionMode -> IO ()
+createSndGroupFileTransferConnection db vr user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} subMode = do
   currentTs <- getCurrentTime
-  Connection {connId} <- createSndFileConnection_ db userId fileId acId subMode
+  Connection {connId} <- createSndFileConnection_ db vr userId fileId acId subMode
   setCommandConnId db user cmdId connId
   DB.execute
     db
@@ -429,11 +430,10 @@ lookupChatRefByFileId db User {userId} fileId =
         (userId, fileId)
 
 -- TODO v6.0 remove
-createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
-createSndFileConnection_ db userId fileId agentConnId subMode = do
+createSndFileConnection_ :: DB.Connection -> (PQSupport -> VersionRangeChat) -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
+createSndFileConnection_ db vr userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
-  -- TODO PQ use range from minVersion of the current range?
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (Just initialChatVersion) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (minVersion $ vr PQSupportOff) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
@@ -707,10 +707,10 @@ acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus f
   setCommandConnId db user cmdId connId
   runExceptT $ getChatItemByFileId db vr user fileId
 
-getContactByFileId :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO Contact
-getContactByFileId db user@User {userId} fileId = do
+getContactByFileId :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> ExceptT StoreError IO Contact
+getContactByFileId db vr user@User {userId} fileId = do
   cId <- getContactIdByFileId
-  getContact db user cId
+  getContact db vr user cId
   where
     getContactIdByFileId =
       ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $

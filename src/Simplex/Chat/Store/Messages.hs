@@ -505,7 +505,7 @@ getChatPreviews db vr user withPCC pagination query = do
       PTBefore _ count -> take count . sortBy (comparing $ Down . ts)
     getChatPreview :: AChatPreviewData -> ExceptT StoreError IO AChat
     getChatPreview (ACPD cType cpd) = case cType of
-      SCTDirect -> getDirectChatPreview_ db user cpd
+      SCTDirect -> getDirectChatPreview_ db vr user cpd
       SCTGroup -> getGroupChatPreview_ db vr user cpd
       SCTLocal -> getLocalChatPreview_ db user cpd
       SCTContactRequest -> let (ContactRequestPD _ chat) = cpd in pure chat
@@ -619,9 +619,9 @@ findDirectChatPreviews_ db User {userId} pagination clq =
           )
           ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
 
-getDirectChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
-getDirectChatPreview_ db user (DirectChatPD _ contactId lastItemId_ stats) = do
-  contact <- getContact db user contactId
+getDirectChatPreview_ :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
+getDirectChatPreview_ db vr user (DirectChatPD _ contactId lastItemId_ stats) = do
+  contact <- getContact db vr user contactId
   lastItem <- case lastItemId_ of
     Just lastItemId -> (: []) <$> getDirectChatItem db user contactId lastItemId
     Nothing -> pure []
@@ -920,10 +920,10 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
           aChat = AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
        in ACPD SCTContactConnection $ ContactConnectionPD updatedAt aChat
 
-getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChat db user contactId pagination search_ = do
+getDirectChat :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChat db vr user contactId pagination search_ = do
   let search = fromMaybe "" search_
-  ct <- getContact db user contactId
+  ct <- getContact db vr user contactId
   liftIO $ case pagination of
     CPLast count -> getDirectChatLast_ db user ct count search
     CPAfter afterId count -> getDirectChatAfter_ db user ct afterId count search
@@ -2201,7 +2201,7 @@ getChatRefViaItemId db User {userId} itemId = do
 getAChatItem :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
 getAChatItem db vr user chatRef itemId = case chatRef of
   ChatRef CTDirect contactId -> do
-    ct <- getContact db user contactId
+    ct <- getContact db vr user contactId
     (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
   ChatRef CTGroup groupId -> do
@@ -2438,9 +2438,9 @@ createCIModeration db GroupInfo {groupId} moderatorMember itemMemberId itemShare
     |]
     (groupId, groupMemberId' moderatorMember, itemMemberId, itemSharedMId, msgId, moderatedAtTs)
 
-getCIModeration :: DB.Connection -> User -> GroupInfo -> MemberId -> Maybe SharedMsgId -> IO (Maybe CIModeration)
-getCIModeration _ _ _ _ Nothing = pure Nothing
-getCIModeration db user GroupInfo {groupId} itemMemberId (Just sharedMsgId) = do
+getCIModeration :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> GroupInfo -> MemberId -> Maybe SharedMsgId -> IO (Maybe CIModeration)
+getCIModeration _ _ _ _ _ Nothing = pure Nothing
+getCIModeration db vr user GroupInfo {groupId} itemMemberId (Just sharedMsgId) = do
   r_ <-
     maybeFirstRow id $
       DB.query
@@ -2454,7 +2454,7 @@ getCIModeration db user GroupInfo {groupId} itemMemberId (Just sharedMsgId) = do
         (groupId, itemMemberId, sharedMsgId)
   case r_ of
     Just (moderationId, moderatorId, createdByMsgId, moderatedAt) -> do
-      runExceptT (getGroupMember db user groupId moderatorId) >>= \case
+      runExceptT (getGroupMember db vr user groupId moderatorId) >>= \case
         Right moderatorMember -> pure (Just CIModeration {moderationId, moderatorMember, createdByMsgId, moderatedAt})
         _ -> pure Nothing
     _ -> pure Nothing
