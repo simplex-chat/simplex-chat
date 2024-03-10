@@ -579,13 +579,13 @@ pqRcvForContact :: TestCC -> ContactId -> IO PQEncryption
 pqRcvForContact = pqForContact_ pqRcvEnabled PQEncOff
 
 pqForContact :: TestCC -> ContactId -> IO PQEncryption
-pqForContact = pqForContact_ (Just . connPQEnabled) PQEncOff
+pqForContact = pqForContact_ (Just . connPQEnabled) (error "impossible")
 
 pqSupportForCt :: TestCC -> ContactId -> IO PQSupport
 pqSupportForCt = pqForContact_ (\Connection {pqSupport} -> Just pqSupport) PQSupportOff
 
 pqVerForContact :: TestCC -> ContactId -> IO VersionChat
-pqVerForContact = pqForContact_ connChatVersion (VersionChat 0)
+pqVerForContact = pqForContact_ (Just . connChatVersion) (error "impossible")
 
 pqForContact_ :: (Connection -> Maybe a) -> a -> TestCC -> ContactId -> IO a
 pqForContact_ pqSel def cc contactId = (fromMaybe def . pqSel) <$> getCtConn cc contactId
@@ -594,10 +594,11 @@ getCtConn :: TestCC -> ContactId -> IO Connection
 getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no connection") pure . contactConn
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
-getTestCCContact cc contactId =
+getTestCCContact cc contactId = do
+  let TestCC {chatController = ChatController {config = ChatConfig {chatVRange = vr}}} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db vr user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

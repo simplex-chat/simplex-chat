@@ -125,11 +125,11 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createAddressContactConnection :: DB.Connection -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO Contact
-createAddressContactConnection db user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode chatV pqSup = do
+createAddressContactConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO Contact
+createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode chatV pqSup = do
   PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode chatV pqSup
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
-  getContact db user contactId
+  getContact db vr user contactId
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
@@ -152,9 +152,9 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
 
-getConnReqContactXContactId :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
-getConnReqContactXContactId db user@User {userId} cReqHash = do
-  getContactByConnReqHash db user cReqHash >>= \case
+getConnReqContactXContactId :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
+getConnReqContactXContactId db vr user@User {userId} cReqHash = do
+  getContactByConnReqHash db vr user cReqHash >>= \case
     c@(Just _) -> pure (c, Nothing)
     Nothing -> (Nothing,) <$> getXContactId
   where
@@ -166,9 +166,9 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
           "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
           (userId, cReqHash)
 
-getContactByConnReqHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe Contact)
-getContactByConnReqHash db user@User {userId} cReqHash =
-  maybeFirstRow (toContact user) $
+getContactByConnReqHash :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ConnReqUriHash -> IO (Maybe Contact)
+getContactByConnReqHash db vr user@User {userId} cReqHash =
+  maybeFirstRow (toContact vr user) $
     DB.query
       db
       [sql|
@@ -278,13 +278,13 @@ setContactDeleted db user@User {userId} ct@Contact {contactId} = do
     currentTs <- getCurrentTime
     DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
 
-getDeletedContacts :: DB.Connection -> User -> IO [Contact]
-getDeletedContacts db user@User {userId} = do
+getDeletedContacts :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> IO [Contact]
+getDeletedContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)
-  rights <$> mapM (runExceptT . getDeletedContact db user) contactIds
+  rights <$> mapM (runExceptT . getDeletedContact db vr user) contactIds
 
-getDeletedContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getDeletedContact db user contactId = getContact_ db user contactId True
+getDeletedContact :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> ExceptT StoreError IO Contact
+getDeletedContact db vr user contactId = getContact_ db vr user contactId True
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -520,19 +520,19 @@ updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt 
     (newName, updatedAt, userId, contactId)
   safeDeleteLDN db user displayName
 
-getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db user localDisplayName = do
+getContactByName :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ContactName -> ExceptT StoreError IO Contact
+getContactByName db vr user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
-  getContact db user cId
+  getContact db vr user cId
 
-getUserContacts :: DB.Connection -> User -> IO [Contact]
-getUserContacts db user@User {userId} = do
+getUserContacts :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> IO [Contact]
+getUserContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
-  contacts <- rights <$> mapM (runExceptT . getContact db user) contactIds
+  contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
-createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
+createOrUpdateContactRequest :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ContactOrRequest
+createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
   liftIO (maybeM getContact' xContactId_) >>= \case
     Just contact -> pure $ CORContact contact
     Nothing -> CORRequest <$> createOrUpdate_
@@ -571,7 +571,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
-      maybeFirstRow (toContact user) $
+      maybeFirstRow (toContact vr user) $
         DB.query
           db
           [sql|
@@ -709,7 +709,7 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> Maybe VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
 createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
@@ -731,12 +731,12 @@ getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
 
-getContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact db user contactId = getContact_ db user contactId False
+getContact :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact db vr user contactId = getContact_ db vr user contactId False
 
-getContact_ :: DB.Connection -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
-getContact_ db user@User {userId} contactId deleted =
-  ExceptT . firstRow (toContact user) (SEContactNotFound contactId) $
+getContact_ :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
+getContact_ db vr user@User {userId} contactId deleted =
+  ExceptT . firstRow (toContact vr user) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
@@ -790,8 +790,8 @@ getPendingContactConnections db User {userId} = do
       |]
       [":user_id" := userId, ":conn_type" := ConnContact]
 
-getContactConnections :: DB.Connection -> UserId -> Contact -> IO [Connection]
-getContactConnections db userId Contact {contactId} =
+getContactConnections :: DB.Connection -> (PQSupport -> VersionRangeChat) -> UserId -> Contact -> IO [Connection]
+getContactConnections db vr userId Contact {contactId} =
   connections =<< liftIO getConnections_
   where
     getConnections_ =
@@ -808,11 +808,11 @@ getContactConnections db userId Contact {contactId} =
         |]
         (userId, userId, contactId)
     connections [] = pure []
-    connections rows = pure $ map toConnection rows
+    connections rows = pure $ map (toConnection vr) rows
 
-getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection
-getConnectionById db User {userId} connId = ExceptT $ do
-  firstRow toConnection (SEConnectionNotFoundById connId) $
+getConnectionById :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> ExceptT StoreError IO Connection
+getConnectionById db vr User {userId} connId = ExceptT $ do
+  firstRow (toConnection vr) (SEConnectionNotFoundById connId) $
     DB.query
       db
       [sql|
