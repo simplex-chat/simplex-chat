@@ -135,6 +135,7 @@ public enum ChatCommand {
     case deleteRemoteCtrl(remoteCtrlId: Int64)
     case apiUploadStandaloneFile(userId: Int64, file: CryptoFile)
     case apiDownloadStandaloneFile(userId: Int64, url: String, file: CryptoFile)
+    case apiStandaloneFileInfo(url: String)
     // misc
     case showVersion
     case string(String)
@@ -288,6 +289,7 @@ public enum ChatCommand {
             case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
             case let .apiUploadStandaloneFile(userId, file): return "/_upload \(userId) \(file.filePath)"
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
+            case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case .showVersion: return "/version"
             case let .string(str): return str
             }
@@ -417,6 +419,7 @@ public enum ChatCommand {
             case .deleteRemoteCtrl: return "deleteRemoteCtrl"
             case .apiUploadStandaloneFile: return "apiUploadStandaloneFile"
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
+            case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .showVersion: return "showVersion"
             case .string: return "console command"
             }
@@ -601,6 +604,7 @@ public enum ChatResponse: Decodable, Error {
     // receiving file events
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(user: UserRef, rcvFileTransfer: RcvFileTransfer)
+    case standaloneFileInfo(fileMeta: MigrationFileLinkData?)
     case rcvStandaloneFileCreated(user: UserRef, rcvFileTransfer: RcvFileTransfer)
     case rcvFileStart(user: UserRef, chatItem: AChatItem) // send by chats
     case rcvFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, receivedSize: Int64, totalSize: Int64, rcvFileTransfer: RcvFileTransfer)
@@ -760,6 +764,7 @@ public enum ChatResponse: Decodable, Error {
             case .newMemberContactReceivedInv: return "newMemberContactReceivedInv"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
+            case .standaloneFileInfo: return "standaloneFileInfo"
             case .rcvStandaloneFileCreated: return "rcvStandaloneFileCreated"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileProgressXFTP: return "rcvFileProgressXFTP"
@@ -918,6 +923,7 @@ public enum ChatResponse: Decodable, Error {
             case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
+            case let .standaloneFileInfo(fileMeta): return String(describing: fileMeta)
             case .rcvStandaloneFileCreated: return noDetails
             case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .rcvFileProgressXFTP(u, chatItem, receivedSize, totalSize, _): return withUser(u, "chatItem: \(String(describing: chatItem))\nreceivedSize: \(receivedSize)\ntotalSize: \(totalSize)")
@@ -1925,6 +1931,44 @@ public enum RemoteCtrlError: Decodable {
 //    case protocolError(protocolError: RemoteProtocolError)
 }
 
+public struct MigrationFileLinkData: Codable {
+    let networkConfig: NetworkConfig?
+
+    public init(networkConfig: NetworkConfig) {
+        self.networkConfig = networkConfig
+    }
+
+    public struct NetworkConfig: Codable {
+        let socksProxy: String?
+        let hostMode: HostMode?
+        let requiredHostMode: Bool?
+
+        public init(socksProxy: String?, hostMode: HostMode?, requiredHostMode: Bool?) {
+            self.socksProxy = socksProxy
+            self.hostMode = hostMode
+            self.requiredHostMode = requiredHostMode
+        }
+
+        public func transformToPlatformSupported() -> NetworkConfig {
+            return if let hostMode, let requiredHostMode {
+                NetworkConfig(
+                    socksProxy: nil,
+                    hostMode: hostMode == .onionViaSocks ? .onionHost : hostMode,
+                    requiredHostMode: requiredHostMode
+                )
+            } else { self }
+        }
+    }
+
+    public func addToLink(link: String) -> String {
+        "\(link)&data=\(encodeJSON(self).addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)"
+    }
+
+    public static func readFromLink(link: String) -> MigrationFileLinkData? {
+//        standaloneFileInfo(link)
+        nil
+    }
+}
 
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil

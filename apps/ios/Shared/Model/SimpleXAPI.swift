@@ -900,6 +900,16 @@ func downloadStandaloneFile(user: any UserLike, url: String, file: CryptoFile, c
     }
 }
 
+func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationFileLinkData? {
+    let r = await chatSendCmd(.apiStandaloneFileInfo(url: url), ctrl)
+    if case let .standaloneFileInfo(fileMeta) = r {
+        return fileMeta
+    } else {
+        logger.error("standaloneFileInfo error: \(String(describing: r))")
+        return nil
+    }
+}
+
 func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
     if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)

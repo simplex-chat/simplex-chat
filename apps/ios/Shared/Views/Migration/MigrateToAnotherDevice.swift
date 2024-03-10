@@ -487,8 +487,16 @@ struct MigrateToAnotherDevice: View {
                             migrationState = .linkCreation
                         }
                     case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
+                        let cfg = getNetCfg()
+                        let data = MigrationFileLinkData.init(
+                            networkConfig: MigrationFileLinkData.NetworkConfig(
+                                socksProxy: cfg.socksProxy,
+                                hostMode: cfg.hostMode,
+                                requiredHostMode: cfg.requiredHostMode
+                            )
+                        )
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: rcvURIs[0], archivePath: archivePath, ctrl: ctrl)
+                            migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: data.addToLink(link: rcvURIs[0]), archivePath: archivePath, ctrl: ctrl)
                         }
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
@@ -603,7 +611,7 @@ private struct PassphraseConfirmationView: View {
                             Text("Verify passphrase")
                         }
                     }
-                    .disabled(verifyingPassphrase)
+                    .disabled(verifyingPassphrase || currentKey.isEmpty)
                 } header: {
                     Text("Verify database passphrase")
                 } footer: {

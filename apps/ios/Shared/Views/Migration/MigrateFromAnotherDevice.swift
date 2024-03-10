@@ -66,8 +66,8 @@ enum MigrationFromState: Equatable {
     case archiveImport(archivePath: String)
     case archiveImportFailed(archivePath: String)
     case passphrase(passphrase: String)
-    case migrationConfirmation(status: DBMigrationResult, passphrase: String)
-    case migration(passphrase: String, confirmation: MigrationConfirmation)
+    case migrationConfirmation(status: DBMigrationResult, passphrase: String, useKeychain: Bool)
+    case migration(passphrase: String, confirmation: MigrationConfirmation, useKeychain: Bool)
     case onion(appSettings: AppSettings)
 }
 
@@ -128,10 +128,10 @@ struct MigrateFromAnotherDevice: View {
                 archiveImportFailedView(archivePath)
             case let .passphrase(passphrase):
                 PassphraseEnteringView(migrationState: $migrationState, currentKey: passphrase, alert: $alert)
-            case let .migrationConfirmation(status, passphrase):
-                migrationConfirmationView(status, passphrase)
-            case let .migration(passphrase, confirmation):
-                migrationView(passphrase, confirmation)
+            case let .migrationConfirmation(status, passphrase, useKeychain):
+                migrationConfirmationView(status, passphrase, useKeychain)
+            case let .migration(passphrase, confirmation, useKeychain):
+                migrationView(passphrase, confirmation, useKeychain)
             case let .onion(appSettings):
                 OnionView(appSettings: appSettings, finishMigration: finishMigration)
             }
@@ -313,7 +313,7 @@ struct MigrateFromAnotherDevice: View {
         }
     }
 
-    private func migrationConfirmationView(_ status: DBMigrationResult, _ passphrase: String) -> some View {
+    private func migrationConfirmationView(_ status: DBMigrationResult, _ passphrase: String, _ useKeychain: Bool) -> some View {
         List {
             let (header, button, footer, confirmation): (LocalizedStringKey, LocalizedStringKey?, String, MigrationConfirmation?) = switch status {
             case let .errorMigration(_, migrationError):
@@ -339,7 +339,7 @@ struct MigrateFromAnotherDevice: View {
             Section {
                 if let button, let confirmation {
                     Button(action: {
-                        migrationState = .migration(passphrase: passphrase, confirmation: confirmation)
+                        migrationState = .migration(passphrase: passphrase, confirmation: confirmation, useKeychain: useKeychain)
                     }) {
                         settingsRow("square.and.arrow.down") {
                             Text(button).foregroundColor(.accentColor)
@@ -357,7 +357,7 @@ struct MigrateFromAnotherDevice: View {
         }
     }
 
-    private func migrationView(_ passphrase: String, _ confirmation: MigrationConfirmation) -> some View {
+    private func migrationView(_ passphrase: String, _ confirmation: MigrationConfirmation, _ useKeychain: Bool) -> some View {
         ZStack {
             List {
                 Section {} header: {
@@ -367,7 +367,7 @@ struct MigrateFromAnotherDevice: View {
             progressView()
         }
         .onAppear {
-            startChat(passphrase, confirmation)
+            startChat(passphrase, confirmation, useKeychain)
         }
     }
 
@@ -393,7 +393,7 @@ struct MigrateFromAnotherDevice: View {
                         }
                     }
                 } header: {
-                    Text("Confirm network setting")
+                    Text("Confirm network settings")
                 } footer: {
                     Text("Please confirm that network settings are correct for this device.")
                         .font(.callout)
@@ -505,9 +505,13 @@ struct MigrateFromAnotherDevice: View {
         _ = await apiCancelFile(fileId: fileId, ctrl: ctrl)
     }
 
-    private func startChat(_ passphrase: String, _ confirmation: MigrationConfirmation) {
-        _ = kcDatabasePassword.set(passphrase)
-        storeDBPassphraseGroupDefault.set(true)
+    private func startChat(_ passphrase: String, _ confirmation: MigrationConfirmation, _ useKeychain: Bool) {
+        if useKeychain {
+            _ = kcDatabasePassword.set(passphrase)
+        } else {
+            _ = kcDatabasePassword.remove()
+        }
+        storeDBPassphraseGroupDefault.set(useKeychain)
         initialRandomDBPassphraseGroupDefault.set(false)
         AppChatState.shared.set(.active)
         Task {
@@ -516,8 +520,7 @@ struct MigrateFromAnotherDevice: View {
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
                 await MainActor.run {
-                    // LALAL
-                    if true/*appSettings.networkConfig?.socksProxy != nil*/ {
+                    if appSettings.networkConfig?.hostMode == .onionViaSocks || appSettings.networkConfig?.hostMode == .onionHost || appSettings.networkConfig?.socksProxy != nil {
                         appSettings.networkConfig?.socksProxy = nil
                         appSettings.networkConfig?.hostMode = .publicHost
                         appSettings.networkConfig?.requiredHostMode = true
@@ -563,7 +566,7 @@ struct MigrateFromAnotherDevice: View {
 
 private struct PassphraseEnteringView: View {
     @Binding var migrationState: MigrationFromState
-    @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var useKeychain = true
     @State var currentKey: String
     @State private var verifyingPassphrase: Bool = false
     @Binding var alert: MigrateFromAnotherDeviceViewAlert?
@@ -572,6 +575,10 @@ private struct PassphraseEnteringView: View {
         ZStack {
             List {
                 Section {
+                    settingsRow("key", color: .secondary) {
+                        Toggle("Save passphrase in Keychain", isOn: $useKeychain)
+                    }
+
                     PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
                     Button(action: {
                         verifyingPassphrase = true
@@ -584,11 +591,11 @@ private struct PassphraseEnteringView: View {
                             }
                             if success {
                                 await MainActor.run {
-                                    migrationState = .migration(passphrase: currentKey, confirmation: .yesUp)
+                                    migrationState = .migration(passphrase: currentKey, confirmation: .yesUp, useKeychain: useKeychain)
                                 }
                             } else if case .errorMigration = status {
                                 await MainActor.run {
-                                    migrationState = .migrationConfirmation(status: status, passphrase: currentKey)
+                                    migrationState = .migrationConfirmation(status: status, passphrase: currentKey, useKeychain: useKeychain)
                                 }
                             } else {
                                 showErrorOnMigrationIfNeeded(status, $alert)
@@ -600,7 +607,7 @@ private struct PassphraseEnteringView: View {
                             Text("Open chat")
                         }
                     }
-                    .disabled(verifyingPassphrase)
+                    .disabled(verifyingPassphrase || currentKey.isEmpty)
                 } header: {
                     Text("Enter passphrase")
                 } footer: {
