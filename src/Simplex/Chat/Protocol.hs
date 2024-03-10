@@ -573,6 +573,7 @@ parseChatMessages s = case B.head s of
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
+      -- TODO v5.7 don't reserve multiple large buffers when decoding batches
       Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxEncodedMsgLength compressed
 
 compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO ByteString
