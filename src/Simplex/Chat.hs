@@ -3219,7 +3219,7 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   vr <- chatVersionRange
-  withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
+  withStore' (`getUserByAConnId` AgentConnId connId) >>= \case -- XXX: critical, can miss acks
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
@@ -3409,7 +3409,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
 
 processAgentMessageConn :: forall m. ChatMonad m => VersionRange -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
-  entity <- withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
+  entity <- withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus -- XXX: critical, can miss acks
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
@@ -3492,7 +3492,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta -- XXX: critical? retry?
+          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta -- XXX: critical, retry or bsod?
           withAckMessage agentConnId conn msgMeta $ \cmdId -> do
             (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn msgMeta cmdId msgBody
             let ct' = ct {activeConn = Just conn'} :: Contact
@@ -4129,6 +4129,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> pure ()
         CON -> startReceivingFile user fileId
         MSG meta _ msgBody -> do
+          -- XXX: not all branches do ACK
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
           -- [async agent commands] continuation on receiving OK
