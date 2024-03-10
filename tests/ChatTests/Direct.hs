@@ -131,8 +131,8 @@ chatDirectTests = do
   describe "PQ tests" $ do
     describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
     describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
-    fdescribe "connect via invitation link with PQ encryption enabled" testPQVersionsViaLink
-    fdescribe "connect via contact address with PQ encryption enabled" testPQVersionsViaAddress
+    describe "connect via invitation link with PQ encryption enabled" testPQVersionsViaLink
+    describe "connect via contact address with PQ encryption enabled" testPQVersionsViaAddress
     it "should enable PQ after several messages in connection without PQ" testPQEnableContact
     it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
@@ -2827,14 +2827,14 @@ testPQVersionsViaLink :: HasCallStack => SpecWith FilePath
 testPQVersionsViaLink = pqVersionTestMatrix2 runTestPQVersionsViaLink
   where
     runTestPQVersionsViaLink alice bob pqExpected vExpected = do
-      -- img <- genProfileImg
-      -- let profileImage = "data:image/png;base64," <> B.unpack img
-      -- alice `send` ("/set profile image " <> profileImage)
-      -- _trimmedCmd1 <- getTermLine alice
-      -- alice <## "profile image updated"
-      -- bob `send` ("/set profile image " <> profileImage)
-      -- _trimmedCmd2 <- getTermLine bob
-      -- bob <## "profile image updated"
+      img <- genProfileImgLink
+      let profileImage = "data:image/png;base64," <> B.unpack img
+      alice `send` ("/set profile image " <> profileImage)
+      _trimmedCmd1 <- getTermLine alice
+      alice <## "profile image updated"
+      bob `send` ("/set profile image " <> profileImage)
+      _trimmedCmd2 <- getTermLine bob
+      bob <## "profile image updated"
 
       pqOn alice
       pqOn bob
@@ -2861,14 +2861,14 @@ testPQVersionsViaAddress :: HasCallStack => SpecWith FilePath
 testPQVersionsViaAddress = pqVersionTestMatrix2 runTestPQVersionsViaAddress
   where
     runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
-      -- img <- genProfileImg
-      -- let profileImage = "data:image/png;base64," <> B.unpack img
-      -- alice `send` ("/set profile image " <> profileImage)
-      -- _trimmedCmd1 <- getTermLine alice
-      -- alice <## "profile image updated"
-      -- bob `send` ("/set profile image " <> profileImage)
-      -- _trimmedCmd2 <- getTermLine bob
-      -- bob <## "profile image updated"
+      img <- genProfileImgAddress
+      let profileImage = "data:image/png;base64," <> B.unpack img
+      alice `send` ("/set profile image " <> profileImage)
+      _trimmedCmd1 <- getTermLine alice
+      alice <## "profile image updated"
+      bob `send` ("/set profile image " <> profileImage)
+      _trimmedCmd2 <- getTermLine bob
+      bob <## "profile image updated"
 
       pqOn alice
       pqOn bob
