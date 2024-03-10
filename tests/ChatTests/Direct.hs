@@ -23,7 +23,7 @@ import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion, supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, VersionChat, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Util (safeDecodeUtf8)
@@ -131,8 +131,8 @@ chatDirectTests = do
   describe "PQ tests" $ do
     describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
     describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
-    describe "connect via invitation link with PQ encryption enabled" testPQVersionsViaLink
-    describe "connect via contact address with PQ encryption enabled" testPQVersionsViaAddress
+    describe "connect via invitation link with PQ encryption enabled" $ pqVersionTestMatrix2 runTestPQVersionsViaLink
+    describe "connect via contact address with PQ encryption enabled" $ pqVersionTestMatrix2 runTestPQVersionsViaAddress
     it "should enable PQ after several messages in connection without PQ" testPQEnableContact
     it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
@@ -2823,82 +2823,78 @@ runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
     pqSend = if pqEnabled then (+#>) else (\#>)
     e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
 
-testPQVersionsViaLink :: HasCallStack => SpecWith FilePath
-testPQVersionsViaLink = pqVersionTestMatrix2 runTestPQVersionsViaLink
+runTestPQVersionsViaLink :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
+runTestPQVersionsViaLink alice bob pqExpected vExpected = do
+  img <- genProfileImgForLink
+  let profileImage = "data:image/png;base64," <> B.unpack img
+  alice `send` ("/set profile image " <> profileImage)
+  _trimmedCmd1 <- getTermLine alice
+  alice <## "profile image updated"
+  bob `send` ("/set profile image " <> profileImage)
+  _trimmedCmd2 <- getTermLine bob
+  bob <## "profile image updated"
+
+  pqOn alice
+  pqOn bob
+
+  connectUsers alice bob
+
+  (alice, "hi", vExpected) `pqSend` (bob, vExpected)
+  (bob, "hey", vExpected) `pqSend` (alice, vExpected)
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
   where
-    runTestPQVersionsViaLink alice bob pqExpected vExpected = do
-      img <- genProfileImgForLink
-      let profileImage = "data:image/png;base64," <> B.unpack img
-      alice `send` ("/set profile image " <> profileImage)
-      _trimmedCmd1 <- getTermLine alice
-      alice <## "profile image updated"
-      bob `send` ("/set profile image " <> profileImage)
-      _trimmedCmd2 <- getTermLine bob
-      bob <## "profile image updated"
+    pqSend = if pqExpected then (+:#>) else (\:#>)
+    e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
 
-      pqOn alice
-      pqOn bob
+runTestPQVersionsViaAddress :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
+runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
+  img <- genProfileImgForAddress
+  let profileImage = "data:image/png;base64," <> B.unpack img
+  alice `send` ("/set profile image " <> profileImage)
+  _trimmedCmd1 <- getTermLine alice
+  alice <## "profile image updated"
+  bob `send` ("/set profile image " <> profileImage)
+  _trimmedCmd2 <- getTermLine bob
+  bob <## "profile image updated"
 
-      connectUsers alice bob
+  pqOn alice
+  pqOn bob
 
-      (alice, "hi", vExpected) `pqSend` (bob, vExpected)
-      (bob, "hey", vExpected) `pqSend` (alice, vExpected)
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  bob ##> ("/c " <> cLink)
+  alice <#? bob
+  alice @@@ [("<@bob", "")]
+  alice ##> "/ac bob"
+  alice <## "bob (Bob): accepting contact request..."
+  concurrently_
+    (bob <## "alice (Alice): contact is connected")
+    (alice <## "bob (Bob): contact is connected")
 
-      alice ##> "/_get chat @2 count=100"
-      ra <- chat <$> getTermLine alice
-      ra `shouldContain` [(0, e2eeInfo)]
-      alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
+  (alice, "hi", vExpected) `pqSend` (bob, vExpected)
+  (bob, "hey", vExpected) `pqSend` (alice, vExpected)
 
-      bob ##> "/_get chat @2 count=100"
-      rb <- chat <$> getTermLine bob
-      rb `shouldContain` [(0, e2eeInfo)]
-      bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-      where
-        pqSend = if pqExpected then (+:#>) else (\:#>)
-        e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
 
-testPQVersionsViaAddress :: HasCallStack => SpecWith FilePath
-testPQVersionsViaAddress = pqVersionTestMatrix2 runTestPQVersionsViaAddress
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
   where
-    runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
-      img <- genProfileImgForAddress
-      let profileImage = "data:image/png;base64," <> B.unpack img
-      alice `send` ("/set profile image " <> profileImage)
-      _trimmedCmd1 <- getTermLine alice
-      alice <## "profile image updated"
-      bob `send` ("/set profile image " <> profileImage)
-      _trimmedCmd2 <- getTermLine bob
-      bob <## "profile image updated"
-
-      pqOn alice
-      pqOn bob
-
-      alice ##> "/ad"
-      cLink <- getContactLink alice True
-      bob ##> ("/c " <> cLink)
-      alice <#? bob
-      alice @@@ [("<@bob", "")]
-      alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
-      concurrently_
-        (bob <## "alice (Alice): contact is connected")
-        (alice <## "bob (Bob): contact is connected")
-
-      (alice, "hi", vExpected) `pqSend` (bob, vExpected)
-      (bob, "hey", vExpected) `pqSend` (alice, vExpected)
-
-      alice ##> "/_get chat @2 count=100"
-      ra <- chat <$> getTermLine alice
-      ra `shouldContain` [(0, e2eeInfo)]
-      alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-
-      bob ##> "/_get chat @2 count=100"
-      rb <- chat <$> getTermLine bob
-      rb `shouldContain` [(0, e2eeInfo)]
-      bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-      where
-        pqSend = if pqExpected then (+:#>) else (\:#>)
-        e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
+    pqSend = if pqExpected then (+:#>) else (\:#>)
+    e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
 
 testPQEnableContact :: HasCallStack => FilePath -> IO ()
 testPQEnableContact =
