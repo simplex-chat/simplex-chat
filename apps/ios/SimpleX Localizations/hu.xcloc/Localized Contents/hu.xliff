@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="%@ servers" xml:space="preserve" approved="no">
         <source>%@ servers</source>
-        <target state="translated">%@ szerver</target>
+        <target state="translated">%@ kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve" approved="no">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
         <source>%lld contact(s) selected</source>
-        <target state="translated">%lld névjegy kiválasztva</target>
+        <target state="translated">%lld ismerős kiválasztva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
@@ -319,12 +319,12 @@
       </trans-unit>
       <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
         <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
-        <target state="translated">**Kapcsolat hozzáadása**: új meghívó link létrehozásához, vagy egy kapott linken keresztül történő csatlakozáshoz.</target>
+        <target state="translated">**Ismerős hozzáadása**: új meghívó hivatkozás létrehozásához, vagy egy kapott linken keresztül történő csatlakozáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target state="translated">**Új kapcsolat hozzáadása**: egyszer használatos QR-kód vagy hivatkozás létrehozása a kapcsolattartóhoz.</target>
+        <target state="translated">**Új ismerős hozzáadása**: egyszer használatos QR-kód vagy hivatkozás létrehozása a kapcsolattartóhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
@@ -334,17 +334,17 @@
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
-        <target state="translated">**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat szerverrel, de az nem, hogy hány kapcsolatod vagy üzeneted van.</target>
+        <target state="translated">**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target state="translated">**Legprivátabb**: ne használja a SimpleX Chat értesítési szervert, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használod az alkalmazást).</target>
+        <target state="translated">**Legprivátabb**: ne használja a SimpleX Chat értesítési szervert, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target state="translated">**Kérjük, vedd figyelembe**: NEM tudod visszaállítani vagy megváltoztatni a jelmondatot, ha elveszíted azt.</target>
+        <target state="translated">**Figyelem**: NEM tudja visszaállítani vagy megváltoztatni jelmondatát, ha elveszíti azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
