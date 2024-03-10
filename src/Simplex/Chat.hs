@@ -6160,13 +6160,13 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
       PQSupportOn | B.length encodedInfo > maxCompressedInfoLength && maybe False (>= pqEncryptionCompressionVersion) v -> do
         compressedInfo <- liftIO compressedBatchMsgBody
         if B.length compressedInfo > maxCompressedInfoLength
-          then throwChatError $ CEException "large compressed message"
+          then throwChatError $ CEException "large compressed info"
           else pure compressedInfo
       _ -> pure encodedInfo
       where
         compressedBatchMsgBody =
           withCompressCtx (toEnum $ B.length encodedInfo) (`compressedBatchMsgBody_` encodedInfo)
-    ECMLarge -> throwChatError $ CEException "large message"
+    ECMLarge -> throwChatError $ CEException "large info"
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
