@@ -617,8 +617,18 @@ private struct PassphraseEnteringView: View {
                 } header: {
                     Text("Enter passphrase")
                 } footer: {
-                    Text("Passphrase will be stored on device in Keychain. It's required for notifications to work. You can change it later in settings.")
-                        .font(.callout)
+                    VStack(alignment: .leading, spacing: 16) {
+                        if useKeychain {
+                            Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
+                        } else {
+                            Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
+                            Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                            Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
+                        }
+                    }
+                    .font(.callout)
+                    .padding(.top, 1)
+                    .onTapGesture { keyboardVisible = false }
                 }
                 .onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
