@@ -49,6 +49,8 @@ data class MigrationFileLinkData(
     val hostMode: HostMode?,
     val requiredHostMode: Boolean?
   ) {
+    fun hasOnionConfigured(): Boolean = socksProxy != null || hostMode == HostMode.Onion
+
     fun transformToPlatformSupported(): NetworkConfig {
       return if (hostMode != null && requiredHostMode != null) {
         NetworkConfig(
