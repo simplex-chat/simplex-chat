@@ -564,7 +564,7 @@
     <string name="failed_to_create_user_title">Hiba a profil létrehozásakor!</string>
     <string name="error_adding_members">Hiba a tag(-ok) hozzáadásakor</string>
     <string name="icon_descr_file">Fájl</string>
-    <string name="group_members_can_send_files">Ccsoporttagok küldhetnek fájlokat és médiatartalmakat.</string>
+    <string name="group_members_can_send_files">Csoporttagok küldhetnek fájlokat és médiatartalmakat.</string>
     <string name="delete_after">Törlés miután</string>
     <string name="error_changing_message_deletion">Hiba a beállítás megváltoztatásakor</string>
     <string name="error_updating_link_for_group">Hiba a csoport link frissítésekor</string>
@@ -580,7 +580,7 @@
     <string name="v4_6_group_welcome_message">Csoport üdvözlő üzenete</string>
     <string name="group_display_name_field">Csoport neve:</string>
     <string name="error_sending_message_contact_invitation">Hiba a meghívó küldésekor</string>
-    <string name="display_name">Adja meg nevét::</string>
+    <string name="display_name">Adja meg nevét:</string>
     <string name="error_saving_user_password">Hiba a felhasználó jelszavának mentésekor</string>
     <string name="export_theme">Téma exportálása</string>
     <string name="enter_this_device_name">Eszköznév megadása…</string>
@@ -672,7 +672,7 @@
     <string name="error_creating_member_contact">Hiba az ismerőssel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy ismerőse megoszthat egy meghívó linket.</string>
-    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelszót, az összes alkalmazásadat visszafordíthatatlanul törlődik!</string>
+    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat visszafordíthatatlanul törlődik!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a linket.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a linket.</string>
     <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz csatlakozik.</string>
@@ -768,7 +768,7 @@
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion host-ok nem lesznek használva.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[A(z) <b>%s</b> eszközzel megszakadt a kapcsolat]]></string>
     <string name="custom_time_unit_months">hónap</string>
-    <string name="privacy_message_draft">Üzenet vázlat</string>
+    <string name="privacy_message_draft">Üzenetvázlat</string>
     <string name="v5_2_disappear_one_message">Egy üzenet eltüntetése</string>
     <string name="v4_3_irreversible_message_deletion">Visszafordíthatatlan üzenettörlés</string>
     <string name="videos_limit_desc">Egyszerre csak 10 videó küldhető el</string>
@@ -793,7 +793,7 @@
     <string name="only_owners_can_enable_files_and_media">Csak a csoporttulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">A fájl betöltése</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
-    <string name="v4_5_message_draft">Üzenet vázlat</string>
+    <string name="v4_5_message_draft">Üzenetvázlat</string>
     <string name="display_name_invited_to_connect">meghívott, hogy csatlakozzon</string>
     <string name="add_contact">Egyszer használatos meghívó link</string>
     <string name="notifications">Értesítések</string>
@@ -801,7 +801,7 @@
     <string name="feature_offered_item_with_param">ajánlott %s: %2s</string>
     <string name="not_compatible">Nem kompatibilis!</string>
     <string name="make_profile_private">Tegye priváttá profilját!</string>
-    <string name="message_delivery_error_title">Üzenet kézbesítési hiba</string>
+    <string name="message_delivery_error_title">Üzenetkézbesítési hiba</string>
     <string name="v4_5_multiple_chat_profiles">Több csevegőprofil</string>
     <string name="marked_deleted_description">töröltnek jelölve</string>
     <string name="user_mute">Elnémítás</string>
@@ -848,7 +848,7 @@
     <string name="info_row_moderated_at">Moderálva ekkor</string>
     <string name="v4_4_live_messages">Élő üzenetek</string>
     <string name="mark_code_verified">Ellenőrzöttként jelölve</string>
-    <string name="v5_2_message_delivery_receipts">Üzenet kézbesítési bizonylatok!</string>
+    <string name="v5_2_message_delivery_receipts">Üzenetkézbesítési bizonylatok!</string>
     <string name="image_descr_link_preview">hivatkozás előnézeti képe</string>
     <string name="leave_group_question">Csoport elhagyása?</string>
     <string name="chat_preferences_no">nem</string>
