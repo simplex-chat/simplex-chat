@@ -78,15 +78,17 @@ struct SimpleXInfo: View {
                 }
             }
             .sheet(isPresented: $migrateFromAnotherDevice) {
-                VStack(alignment: .leading) {
-                    Text("Migrate here")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .padding([.leading, .top, .trailing])
-                        .padding(.top)
-                    MigrateFromAnotherDevice(migrationState: migrationState ?? .pasteOrScanLink)
+                NavigationView {
+                    VStack(alignment: .leading) {
+                        Text("Migrate here")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .padding([.leading, .top, .trailing])
+                            .padding(.top)
+                        MigrateFromAnotherDevice(migrationState: migrationState ?? .pasteOrScanLink)
+                    }
+                    .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
                 }
-                .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
             }
             .sheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)

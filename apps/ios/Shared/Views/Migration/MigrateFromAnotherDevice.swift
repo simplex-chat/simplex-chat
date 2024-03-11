@@ -138,12 +138,16 @@ struct MigrateFromAnotherDevice: View {
         }
         .onAppear {
             backDisabled = switch migrationState {
+            case .linkDownloading: false
+            case .downloadProgress: false
             case .archiveImportFailed: false
             default: m.migrationState != nil
             }
         }
         .onChange(of: migrationState) { state in
             backDisabled = switch state {
+            case .linkDownloading: false
+            case .downloadProgress: false
             case .archiveImportFailed: false
             default: m.migrationState != nil
             }
@@ -569,6 +573,7 @@ private struct PassphraseEnteringView: View {
     @State private var useKeychain = true
     @State var currentKey: String
     @State private var verifyingPassphrase: Bool = false
+    @FocusState private var keyboardVisible: Bool
     @Binding var alert: MigrateFromAnotherDeviceViewAlert?
 
     var body: some View {
@@ -580,6 +585,7 @@ private struct PassphraseEnteringView: View {
                     }
 
                     PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+                        .focused($keyboardVisible)
                     Button(action: {
                         verifyingPassphrase = true
                         hideKeyboard()
@@ -613,6 +619,11 @@ private struct PassphraseEnteringView: View {
                 } footer: {
                     Text("Passphrase will be stored on device in Keychain. It's required for notifications to work. You can change it later in settings.")
                         .font(.callout)
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        keyboardVisible = true
+                    }
                 }
             }
             if verifyingPassphrase {

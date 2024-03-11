@@ -591,6 +591,7 @@ private struct PassphraseConfirmationView: View {
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var currentKey: String = ""
     @State private var verifyingPassphrase: Bool = false
+    @FocusState private var keyboardVisible: Bool
     @Binding var alert: MigrateToAnotherDeviceViewAlert?
 
     var body: some View {
@@ -599,6 +600,7 @@ private struct PassphraseConfirmationView: View {
                 chatStoppedView()
                 Section {
                     PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+                        .focused($keyboardVisible)
                     Button(action: {
                         verifyingPassphrase = true
                         hideKeyboard()
@@ -617,6 +619,11 @@ private struct PassphraseConfirmationView: View {
                 } footer: {
                     Text("Confirm that you remember database passphrase to migrate it.")
                         .font(.callout)
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        keyboardVisible = true
+                    }
                 }
             }
             if verifyingPassphrase {
