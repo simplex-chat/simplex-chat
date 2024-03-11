@@ -498,6 +498,9 @@ struct MigrateToAnotherDevice: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: data.addToLink(link: rcvURIs[0]), archivePath: archivePath, ctrl: ctrl)
                         }
+                    case .sndFileError:
+                        alert = .error(title: "Upload failed", error: "Check you internet connection and try again")
+                        migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
                     }
@@ -638,8 +641,13 @@ private struct PassphraseConfirmationView: View {
             await MainActor.run {
                 migrationState = .uploadConfirmation
             }
-        } catch {
-            showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
+        } catch let error {
+            logger.debug("LALAL ERROR \(String(describing: error))")
+            if case .chatCmdError(_, .errorDatabase(.errorOpen(.errorNotADatabase))) = error as? ChatResponse {
+                showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
+            } else {
+                alert = .error(title: "Error", error: NSLocalizedString("Error verifying passphrase:", comment: "") + " " + String(String(describing: error)))
+            }
         }
     }
 }
