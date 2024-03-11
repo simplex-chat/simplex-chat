@@ -13,6 +13,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.migration.MigrationFromAnotherDeviceState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -103,6 +104,8 @@ object ChatModel {
 
   // currently showing invitation
   val showingInvitation = mutableStateOf(null as ShowingInvitation?)
+
+  val migrationState: MutableState<MigrationFromAnotherDeviceState?> by lazy { mutableStateOf(MigrationFromAnotherDeviceState.transform()) }
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
@@ -2973,10 +2976,17 @@ enum class FormatColor(val color: String) {
 class SndFileTransfer() {}
 
 @Serializable
-class RcvFileTransfer() {}
+data class RcvFileTransfer(
+  val fileId: Long,
+)
 
 @Serializable
-class FileTransferMeta() {}
+data class FileTransferMeta(
+  val fileId: Long,
+  val fileName: String,
+  val filePath: String,
+  val fileSize: Long,
+)
 
 @Serializable
 enum class CICallStatus {

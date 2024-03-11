@@ -1,5 +1,6 @@
 package chat.simplex.common.platform
 
+import androidx.compose.runtime.Composable
 import chat.simplex.common.model.ChatId
 import chat.simplex.common.model.NotificationsMode
 
@@ -16,6 +17,7 @@ interface PlatformInterface {
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}
+  @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
 }
 /**

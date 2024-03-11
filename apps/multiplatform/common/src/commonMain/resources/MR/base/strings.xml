@@ -245,6 +245,7 @@
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
   <string name="auth_open_chat_profiles">Open chat profiles</string>
+  <string name="auth_open_migration_to_another_device">Open migration screen</string>
   <string name="lock_not_enabled">SimpleX Lock not enabled!</string>
   <string name="you_can_turn_on_lock">You can turn on SimpleX Lock via Settings.</string>
 
@@ -823,6 +824,7 @@
   <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol and code – anybody can run the servers.</string>
   <string name="create_your_profile">Create your profile</string>
   <string name="make_private_connection">Make a private connection</string>
+  <string name="migrate_from_another_device">Migrate from another device</string>
   <string name="how_it_works">How it works</string>
 
   <!-- How SimpleX Works -->
@@ -1081,6 +1083,7 @@
   <string name="confirm_new_passphrase">Confirm new passphrase…</string>
   <string name="update_database_passphrase">Update database passphrase</string>
   <string name="set_database_passphrase">Set database passphrase</string>
+  <string name="set_passphrase">Set passphrase</string>
   <string name="enter_correct_current_passphrase">Please enter correct current passphrase.</string>
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
   <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>
@@ -1842,4 +1845,64 @@
   <string name="agent_internal_error_title">Internal error</string>
   <string name="agent_internal_error_desc">Please report it to the developers: \n%s</string>
   <string name="restart_chat_button">Restart chat</string>
+
+
+  <!--  MigrateFromAnotherDevice.kt -->
+  <string name="migrate_here">Migrate here</string>
+  <string name="or_paste_archive_link">Or paste archive link</string>
+  <string name="paste_archive_link">Paste archive link</string>
+  <string name="invalid_file_link">Invalid link</string>
+  <string name="migration_from_device_migrating">Migrating</string>
+  <string name="migration_from_device_database_init">Preparing download</string>
+  <string name="migration_from_device_downloading_details">Downloading link details</string>
+  <string name="migration_from_device_downloading_archive">Downloading archive</string>
+  <string name="migration_from_device_bytes_downloaded">%s downloaded</string>
+  <string name="migration_from_device_download_failed">Download failed</string>
+  <string name="migration_from_device_repeat_download">Repeat download</string>
+  <string name="migration_from_device_try_again">You can give another try.</string>
+  <string name="migration_from_device_importing_archive">Importing archive</string>
+  <string name="migration_from_device_import_failed">Import failed</string>
+  <string name="migration_from_device_repeat_import">Repeat import</string>
+  <string name="migration_from_device_enter_passphrase">Enter passphrase</string>
+  <string name="migration_from_device_file_delete_or_link_invalid">File was deleted or link is invalid</string>
+  <string name="migration_from_device_error_downloading_archive">Error downloading the archive</string>
+  <string name="migration_from_device_chat_migrated">Chat migrated!</string>
+  <string name="migration_from_device_finalize_migration">Finalize migration on another device.</string>
+  <string name="migration_from_device_confirm_network_settings">Confirm network settings</string>
+  <string name="migration_from_device_confirm_network_settings_footer">Please confirm that network settings are correct for this device.</string>
+  <string name="migration_from_device_apply_onion">Apply</string>
+
+  <!--  MigrateToAnotherDevice.kt -->
+  <string name="migrate_to_device">Migrate to another device</string>
+  <string name="migrate_to_device_error_saving_settings">Error saving settings</string>
+  <string name="migrate_to_device_exported_file_doesnt_exist">Exported file doesn\'t exist</string>
+  <string name="migrate_to_device_error_exporting_archive">Error exporting chat database</string>
+  <string name="migration_to_device_database_init">Preparing upload</string>
+  <string name="migration_to_device_error_uploading_archive">Error uploading the archive</string>
+  <string name="migration_to_device_error_deleting_database">Error deleting database</string>
+  <string name="migration_to_device_stopping_chat">Stopping chat</string>
+  <string name="migration_to_device_chat_should_be_stopped">In order to continue, chat should be stopped.</string>
+  <string name="migration_to_device_archive_and_upload">Archive and upload</string>
+  <string name="migration_to_device_confirm_upload">Confirm upload</string>
+  <string name="migration_to_device_all_data_will_be_uploaded">All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</string>
+  <string name="migration_to_device_archiving_database">Archiving database</string>
+  <string name="migration_to_device_bytes_uploaded">%s uploaded</string>
+  <string name="migration_to_device_uploading_archive">Uploading archive</string>
+  <string name="migration_to_device_upload_failed">Upload failed</string>
+  <string name="migration_to_device_repeat_upload">Repeat upload</string>
+  <string name="migration_to_device_try_again">You can give another try.</string>
+  <string name="migration_to_device_creating_archive_link">Creating archive link</string>
+  <string name="migration_to_device_cancel_migration">Cancel migration</string>
+  <string name="migration_to_device_finalize_migration">Finalize migration</string>
+  <string name="migration_to_device_choose_migrate_from_another_device"><![CDATA[Choose <i>Migrate from another device</i> on the new device and scan QR code.]]></string>
+  <string name="migration_to_device_or_share_this_file_link">Or securely share this file link</string>
+  <string name="migration_to_device_delete_database_from_device">Delete database from this device</string>
+  <string name="migration_to_device_starting_chat_on_multiple_devices_unsupported">Warning: starting chat on multiple devices is not supported and will cause message delivery failures</string>
+  <string name="migration_to_device_start_chat">Start chat</string>
+  <string name="migration_to_device_migration_complete">Migration complete</string>
+  <string name="migration_to_device_you_must_not_start_database_on_two_device"><![CDATA[You <b>must not</b> use the same database on two devices.]]></string>
+  <string name="migration_to_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Please note</b>: using the same database on two devices will break the decryption of messages from your connections, as a security protection.]]></string>
+  <string name="migration_to_device_verify_database_passphrase">Verify database passphrase</string>
+  <string name="migration_to_device_verify_passphrase">Verify passphrase</string>
+  <string name="migration_to_device_confirm_you_remember_passphrase">Confirm that you remember database passphrase to migrate it.</string>
 </resources>
