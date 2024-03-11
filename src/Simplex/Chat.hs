@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -11,6 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat where
@@ -3295,9 +3297,10 @@ processAgentMessage corrId connId msg = do
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
-    handleDBError a = a `catchChatError` \case
-      e@(ChatErrorStore SEDatabaseError{}) -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
-      e -> throwError e -- XXX: connection w/o entity or entity details not found
+    handleDBError a =
+      a `catchChatError` \case
+        e@(ChatErrorStore SEDatabaseError {}) -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
+        e -> throwError e -- XXX: connection w/o entity or entity details not found
 
 processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
 processAgentMessageNoConn = \case
@@ -3486,8 +3489,12 @@ processAgentMsgRcvFile _corrId aFileId msg =
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
 
-processAgentMessageConn :: forall m. ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
-processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
+processAgentMessageConn :: ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
+processAgentMessageConn vr user corrId agentConnId agentMessage = runExceptT (processAgentMessageConn' vr user corrId agentConnId agentMessage) >>= either throwError pure
+
+-- | A version of processAgentMessageConn with MonadError materialized into explicit ExceptT over weaker ChatMonad'. The resulting `m` is still ChatMonad.
+processAgentMessageConn' :: forall m' m. (ChatMonad' m', m ~ ExceptT ChatError m') => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
+processAgentMessageConn' vr user@User {userId} corrId agentConnId agentMessage = do
   entity <- handleDBError $ withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
     END -> case entity of
@@ -3506,9 +3513,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       UserContactConnection conn uc ->
         processUserContactRequest agentMessage entity conn uc
   where
-    handleDBError a = a `catchChatError` \case
-      e@(ChatErrorStore SEDatabaseError{}) -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
-      e -> throwError e -- XXX: connection w/o entity or entity details not found
+    handleDBError a =
+      a `catchChatError` \case
+        e@(ChatErrorStore SEDatabaseError {}) -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
+        e -> throwError e -- XXX: connection w/o entity or entity details not found
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
       Just connStatus -> do
@@ -3590,11 +3598,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 forM_ contData $ \(hostConnId, xGrpMemIntroCont) ->
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
-        MSG msgMeta _msgFlags msgBody -> do
-          let MsgMeta {pqEncryption} = msgMeta
-          (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
-          checkIntegrityCreateItem (CDDirectRcv ct') msgMeta
+        MSG msgMeta _msgFlags msgBody ->
           withAckMessage agentConnId conn msgMeta $ \cmdId -> do
+            let MsgMeta {pqEncryption} = msgMeta
+            (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
+            checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
             (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta cmdId msgBody
             let ct'' = ct' {activeConn = Just conn''} :: Contact
             assertDirectAllowed user MDRcv ct'' $ toCMEventTag event
@@ -4000,20 +4008,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ sendDirectMemberMessage imConn (XGrpMemCon memberId) groupId
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
-        checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
-        let aChatMsgs = parseChatMessages msgBody -- XXX: evaluate here?
         withAckMessage agentConnId conn msgMeta $ \cmdId -> do
-          forM_ aChatMsgs $ \case
+          checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
+          forM_ aChatMsgs' $ \case
             Right (ACMsg _ chatMsg) ->
               processEvent cmdId chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
             Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
-          checkSendRcpt $ rights aChatMsgs
+          checkSendRcpt $ rights aChatMsgs'
         -- currently only a single message is forwarded
         let GroupMember {memberRole = membershipMemRole} = membership
-        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
+        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs' of
           [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
           _ -> pure ()
         where
+          aChatMsgs' = parseChatMessages msgBody
           brokerTs = metaBrokerTs msgMeta
           processEvent :: MsgEncodingI e => CommandId -> ChatMessage e -> m ()
           processEvent cmdId chatMsg = do
@@ -4813,7 +4821,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
       groupMsgToView gInfo ci'
 
-    blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
+    blockedMember :: Monad n => GroupMember -> ChatItem c d -> n (ChatItem c d) -> n (ChatItem c d)
     blockedMember m ci blockedCI
       | showMessages (memberSettings m) = pure ci
       | otherwise = blockedCI
@@ -5002,9 +5010,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
-      MsgError e ->
-        createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
-          `catchChatError` \_ -> pure ()
+      MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c p' = void $ processContactProfileUpdate c p' True
@@ -5724,7 +5730,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchChatError` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
@@ -5736,7 +5742,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     -- - getChatItemIdByAgentMsgId to return [ChatItemId]
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
-      checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
+      checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateGroupItemStatus gInfo m conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
