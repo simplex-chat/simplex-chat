@@ -3410,11 +3410,14 @@ public struct SndFileTransfer: Decodable {
 }
 
 public struct RcvFileTransfer: Decodable {
-
+    public let fileId: Int64
 }
 
 public struct FileTransferMeta: Decodable {
-    
+    public let fileId: Int64
+    public let fileName: String
+    public let filePath: String
+    public let fileSize: Int64
 }
 
 public enum CICallStatus: String, Decodable {
