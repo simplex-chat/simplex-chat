@@ -9,6 +9,7 @@ import qualified Data.Aeson.TH as J
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Parsers (dropPrefix, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
@@ -42,11 +43,13 @@ data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
   | RCERatchetSync {syncStatus :: RatchetSyncState}
   | RCEVerificationCodeReset
+  | RCEPqEnabled {enabled :: PQEncryption}
   deriving (Show)
 
 data SndConnEvent
   = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
   | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
+  | SCEPqEnabled {enabled :: PQEncryption}
   deriving (Show)
 
 data RcvDirectEvent

@@ -452,6 +452,11 @@ fun ChatItemView(
           is CIContent.SndModerated -> DeletedItem()
           is CIContent.RcvModerated -> DeletedItem()
           is CIContent.RcvBlocked -> DeletedItem()
+          // TODO proper items
+          is CIContent.SndDirectE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.RcvDirectE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.SndGroupE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.RcvGroupE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
           is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
         }
       }

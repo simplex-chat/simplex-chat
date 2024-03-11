@@ -199,14 +199,14 @@ testPaginationAllChatTypes =
 
       ts7 <- iso8601Show <$> getCurrentTime
 
-      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", "")]
+      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr)]
       getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("<@cath", "")]
-      getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", ""), (":3", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", ""), (":3", "")]
+      getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", e2eeInfoNoPQStr), (":3", "")]
+      getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", "")]
       getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
       getChats_ alice ("after=" <> ts7 <> " count=10") []
       getChats_ alice ("before=" <> ts1 <> " count=10") []
 
@@ -218,11 +218,11 @@ testPaginationAllChatTypes =
       alice ##> "/_settings #1 {\"enableNtfs\":\"all\",\"favorite\":true}"
       alice <## "ok"
 
-      getChats_ alice queryFavorite [("#team", ""), ("@bob", "hey")]
+      getChats_ alice queryFavorite [("#team", e2eeInfoNoPQStr), ("@bob", "hey")]
       getChats_ alice ("before=" <> ts4 <> " count=1 " <> queryFavorite) [("@bob", "hey")]
-      getChats_ alice ("before=" <> ts5 <> " count=1 " <> queryFavorite) [("#team", "")]
+      getChats_ alice ("before=" <> ts5 <> " count=1 " <> queryFavorite) [("#team", e2eeInfoNoPQStr)]
       getChats_ alice ("after=" <> ts1 <> " count=1 " <> queryFavorite) [("@bob", "hey")]
-      getChats_ alice ("after=" <> ts4 <> " count=1 " <> queryFavorite) [("#team", "")]
+      getChats_ alice ("after=" <> ts4 <> " count=1 " <> queryFavorite) [("#team", e2eeInfoNoPQStr)]
 
       let queryUnread = "{\"type\": \"filters\", \"favorite\": false, \"unread\": true}"
 

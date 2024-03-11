@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -29,6 +30,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
@@ -139,12 +141,20 @@ data CIContent (d :: MsgDirection) where
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
+  CISndDirectE2EEInfo :: E2EInfo -> CIContent 'MDSnd
+  CIRcvDirectE2EEInfo :: E2EInfo -> CIContent 'MDRcv
+  CISndGroupE2EEInfo :: E2EInfo -> CIContent 'MDSnd -- when new group is created
+  CIRcvGroupE2EEInfo :: E2EInfo -> CIContent 'MDRcv -- when enabled with some member
   CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
+
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
+
+data E2EInfo = E2EInfo {pqEnabled :: PQEncryption}
+  deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
 ciMsgContent = \case
@@ -195,6 +205,8 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
     CIRcvBlocked -> False
+    CIRcvDirectE2EEInfo _ -> False
+    CIRcvGroupE2EEInfo _ -> False
     CIInvalidJSON _ -> False
 
 newtype DBMsgErrorType = DBME MsgErrorType
@@ -250,7 +262,27 @@ ciContentToText = \case
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
   CIRcvBlocked -> "blocked"
+  CISndDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
+  CIRcvDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
+  CISndGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
+  CIRcvGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
   CIInvalidJSON _ -> "invalid content JSON"
+
+directE2EInfoToText :: E2EInfo -> Text
+directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
+  PQEncOn -> e2eInfoPQText
+  PQEncOff -> e2eInfoNoPQText
+
+groupE2EInfoToText :: E2EInfo -> Text
+groupE2EInfoToText _e2eeInfo = e2eInfoNoPQText
+
+e2eInfoNoPQText :: Text
+e2eInfoNoPQText =
+  "This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery."
+
+e2eInfoPQText :: Text
+e2eInfoPQText =
+  "This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery."
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
@@ -295,6 +327,9 @@ rcvConnEventToText = \case
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
   RCEVerificationCodeReset -> "security code changed"
+  RCEPqEnabled pqEnc -> case pqEnc of
+    PQEncOn -> "quantum resistant e2e encryption"
+    PQEncOff -> "standard end-to-end encryption"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case
@@ -312,6 +347,9 @@ sndConnEventToText = \case
     SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
   SCERatchetSync syncStatus m -> ratchetSyncStatusToText syncStatus <> forMember m
+  SCEPqEnabled pqEnc -> case pqEnc of
+    PQEncOn -> "quantum resistant e2e encryption"
+    PQEncOff -> "standard end-to-end encryption"
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
@@ -382,6 +420,10 @@ data JSONCIContent
   | JCISndModerated
   | JCIRcvModerated
   | JCIRcvBlocked
+  | JCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -412,6 +454,10 @@ jsonCIContent = \case
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
   CIRcvBlocked -> JCIRcvBlocked
+  CISndDirectE2EEInfo e2eeInfo -> JCISndDirectE2EEInfo e2eeInfo
+  CIRcvDirectE2EEInfo e2eeInfo -> JCIRcvDirectE2EEInfo e2eeInfo
+  CISndGroupE2EEInfo e2eeInfo -> JCISndGroupE2EEInfo e2eeInfo
+  CIRcvGroupE2EEInfo e2eeInfo -> JCIRcvGroupE2EEInfo e2eeInfo
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -442,6 +488,10 @@ aciContentJSON = \case
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
+  JCISndDirectE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
+  JCIRcvDirectE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
+  JCISndGroupE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
+  JCIRcvGroupE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -473,6 +523,10 @@ data DBJSONCIContent
   | DBJCISndModerated
   | DBJCIRcvModerated
   | DBJCIRcvBlocked
+  | DBJCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -503,6 +557,10 @@ dbJsonCIContent = \case
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
   CIRcvBlocked -> DBJCIRcvBlocked
+  CISndDirectE2EEInfo e2eeInfo -> DBJCISndDirectE2EEInfo e2eeInfo
+  CIRcvDirectE2EEInfo e2eeInfo -> DBJCIRcvDirectE2EEInfo e2eeInfo
+  CISndGroupE2EEInfo e2eeInfo -> DBJCISndGroupE2EEInfo e2eeInfo
+  CIRcvGroupE2EEInfo e2eeInfo -> DBJCIRcvGroupE2EEInfo e2eeInfo
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -533,6 +591,10 @@ aciContentDBJSON = \case
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
+  DBJCISndDirectE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
+  DBJCIRcvDirectE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
+  DBJCISndGroupE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
+  DBJCIRcvGroupE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -557,6 +619,8 @@ ciCallInfoText status duration = case status of
   CISCallProgress -> "in progress " <> durationText duration
   CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
+
+$(JQ.deriveJSON defaultJSON ''E2EInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
 
@@ -626,4 +690,8 @@ toCIContentTag ciContent = case ciContent of
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
   CIRcvBlocked -> "rcvBlocked"
+  CISndDirectE2EEInfo _ -> "sndDirectE2EEInfo"
+  CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
+  CISndGroupE2EEInfo _ -> "sndGroupE2EEInfo"
+  CIRcvGroupE2EEInfo _ -> "rcvGroupE2EEInfo"
   CIInvalidJSON _ -> "invalidJSON"
