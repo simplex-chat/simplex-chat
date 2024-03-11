@@ -56,7 +56,7 @@
     <string name="app_version_code">Az alkalmazás build száma: %s</string>
     <string name="audio_video_calls">Hang-/videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
-    <string name="allow_your_contacts_to_send_voice_messages">Hangüzenetek küldésének engedélyezése ismerősök számra</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Hangüzenetek küldésének engedélyezése ismerősök számára</string>
     <string name="settings_audio_video_calls">Hang- és videóhívások</string>
     <string name="v5_3_encrypt_local_files_descr">Az alkalmazás titkosítja a helyi fájlokat (a videók kivételével).</string>
     <string name="answer_call">Hívás fogadása</string>
@@ -88,7 +88,7 @@
     <string name="back">Vissza</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is megjelenítésre kerülnek amíg az alkalmazás fut.]]></string>
     <string name="v4_2_group_links_desc">Az adminok hivatkozásokat hozhatnak létre a csoportokhoz való csatlakozáshoz.</string>
-    <string name="call_on_lock_screen">Hívások a lezárási képernyőn:</string>
+    <string name="call_on_lock_screen">Hívások a zárolási képernyőn:</string>
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
     <string name="invite_prohibited">Ismerősök meghívása le van tiltva!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
@@ -178,7 +178,7 @@
     <string name="confirm_passcode">Jelkód megerősítése</string>
     <string name="confirm_password">Jelszó megerősítése</string>
     <string name="change_member_role_question">Csoport szerepkör megváltoztatása?</string>
-    <string name="change_lock_mode">Lezárási mód megváltoztatása</string>
+    <string name="change_lock_mode">Zárolási mód megváltoztatása</string>
     <string name="notification_contact_connected">Kapcsolódva</string>
     <string name="rcv_group_event_member_connected">kapcsolódva</string>
     <string name="connect_via_link_verb">Kapcsolódás</string>
@@ -357,7 +357,7 @@
     <string name="database_encryption_will_be_updated_in_settings">Adatbázis titkosítási jelmondat frissül és eltárolásra kerül a beállításokban.</string>
     <string name="info_row_database_id">Adatbázis ID</string>
     <string name="share_text_database_id">Adatbázis ID: %d</string>
-    <string name="developer_options">Adatbázis azonosítók és Átviteli izolációs beállítások.</string>
+    <string name="developer_options">Adatbázis azonosítók és átviteli izolációs beállítások.</string>
     <string name="database_encryption_will_be_updated">Az adatbázis titkosítás jelmondata megváltoztatásra és mentésre kerül a Keystore-ban.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Az adatbázis titkosításra kerül és a jelmondat eltárolásra a beállításokban.</string>
     <string name="smp_servers_delete_server">Kiszolgáló törlése</string>
@@ -460,7 +460,7 @@
     <string name="desktop_app_version_is_incompatible">Számítógép kliens verziója %s nem kompatibilis ezzel az alkalmazással.</string>
     <string name="delivery">Kézbesítés</string>
     <string name="total_files_count_and_size">%d fájl %s összméretben</string>
-    <string name="database_passphrase_is_required">Adatbázis jelmondat szükséges chat megnyitásához.</string>
+    <string name="database_passphrase_is_required">Adatbázis jelmondat szükséges a csevegés megnyitásához.</string>
     <string name="ttl_d">%dnap</string>
     <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki részére</string>
     <string name="delivery_receipts_are_disabled">Kézbesítési igazolások kikapcsolva!</string>
@@ -875,7 +875,7 @@
     <string name="new_database_archive">Új adatbázis-archívum</string>
     <string name="live_message">Élő üzenet!</string>
     <string name="invite_to_group_button">Meghívás a csoportba</string>
-    <string name="lock_after">Lezárás miután</string>
+    <string name="lock_after">Zárolás miután</string>
     <string name="incoming_audio_call">Bejövő hanghívás</string>
     <string name="keychain_error">Kulcstartó hiba</string>
     <string name="join_group_question">Csatlakozik a csoporthoz?</string>
