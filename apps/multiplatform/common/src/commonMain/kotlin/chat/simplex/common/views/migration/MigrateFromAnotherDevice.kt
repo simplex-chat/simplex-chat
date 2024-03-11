@@ -485,7 +485,7 @@ private suspend fun MutableState<MigrationState>.checkUserLink(link: String) {
     val hasOnionConfigured = data?.networkConfig?.hasOnionConfigured() ?: false
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
     // If any of iOS or Android had onion enabled, show onion screen
-    if (hasOnionConfigured && networkConfig?.hostMode != null && networkConfig.socksProxy != null && networkConfig.requiredHostMode != null) {
+    if (hasOnionConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
       state = MigrationState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
       MigrationFromAnotherDeviceState.save(MigrationFromAnotherDeviceState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
     } else {
