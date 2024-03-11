@@ -331,6 +331,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         activeCall.remoteStream?.add(renderer)
     }
 
+    func removeRemoteRenderer(_ activeCall: Call, _ renderer: RTCVideoRenderer) {
+        activeCall.remoteStream?.remove(renderer)
+    }
+
     func startCaptureLocalVideo(_ activeCall: Call) {
 #if targetEnvironment(simulator)
         guard
@@ -410,6 +414,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         guard let call = activeCall.wrappedValue else { return }
         logger.debug("WebRTCClient: ending the call")
         activeCall.wrappedValue = nil
+        (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         call.connection.close()
         call.connection.delegate = nil
         call.frameEncryptor?.delegate = nil

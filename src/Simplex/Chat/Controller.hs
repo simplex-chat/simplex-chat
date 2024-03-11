@@ -49,6 +49,7 @@ import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
@@ -59,6 +60,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
@@ -70,6 +72,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, PQSupport (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
@@ -78,7 +81,6 @@ import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
-import Simplex.Messaging.Version
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -120,7 +122,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    chatVRange :: VersionRange,
+    chatVRange :: PQSupport -> VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
@@ -128,8 +130,6 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
-    xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
-    tempDir :: Maybe FilePath,
     showReactions :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
@@ -204,10 +204,10 @@ data ChatController = ChatController
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
-    userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool
+    contactMergeEnabled :: TVar Bool,
+    pqExperimentalEnabled :: TVar PQSupport -- TODO v5.7 remove
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -242,14 +242,19 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetRemoteHostsFolder FilePath
-  | APISetXFTPConfig (Maybe XFTPFileConfig)
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
+  | APISetPQEncryption PQSupport
+  | APISetContactPQ ContactId PQEncryption
+  | SetContactPQ ContactName PQEncryption
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
+  | APISaveAppSettings AppSettings
+  | APIGetAppSettings (Maybe AppSettings)
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
+  | TestStorageEncryption DBEncryptionKey
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
@@ -452,6 +457,9 @@ data ChatCommand
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
+  | APIUploadStandaloneFile UserId CryptoFile
+  | APIDownloadStandaloneFile UserId FileDescriptionURI CryptoFile
+  | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -473,7 +481,6 @@ allowRemoteCommand = \case
   SetTempFolder _ -> False
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
-  APISetXFTPConfig _ -> False
   APISetEncryptLocalFiles _ -> False
   APIExportArchive _ -> False
   APIImportArchive _ -> False
@@ -592,21 +599,27 @@ data ChatResponse
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
-  | CRRcvFileStart {user :: User, chatItem :: AChatItem}
-  | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedSize :: Int64, totalSize :: Int64}
+  | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
+  | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
+  | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
+  | CRRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
-  | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvStandaloneFileComplete {user :: User, targetPath :: FilePath, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileError {user :: User, chatItem :: AChatItem, agentError :: AgentErrorType}
+  | CRRcvFileError {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
-  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CRSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndStandaloneFileCreated {user :: User, fileTransferMeta :: FileTransferMeta} -- returned by _upload
+  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta} -- not used
+  | CRSndFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CRSndFileRedirectStartXFTP {user :: User, fileTransferMeta :: FileTransferMeta, redirectMeta :: FileTransferMeta}
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileError {user :: User, chatItem :: AChatItem}
+  | CRSndStandaloneFileComplete {user :: User, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
+  | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
@@ -672,7 +685,7 @@ data ChatResponse
   | CRUserContactLinkSubscribed -- TODO delete
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
-  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
+  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
@@ -690,6 +703,8 @@ data ChatResponse
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
+  | CRContactPQAllowed {user :: User, contact :: Contact, pqEncryption :: PQEncryption}
+  | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -707,6 +722,7 @@ data ChatResponse
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
+  | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
 
@@ -934,22 +950,14 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
-data XFTPFileConfig = XFTPFileConfig
-  { minFileSize :: Integer
-  }
-  deriving (Show)
-
-defaultXFTPFileConfig :: XFTPFileConfig
-defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
-
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
 ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
 ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
 
-crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
-crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
+crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode, NtfServer) -> ChatResponse
+crNtfToken (token, status, ntfMode, ntfServer) = CRNtfToken {token, status, ntfMode, ntfServer}
 
 data SwitchProgress = SwitchProgress
   { queueDirection :: QueueDirection,
@@ -999,11 +1007,6 @@ data CoreVersionInfo = CoreVersionInfo
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
-  deriving (Show)
-
-data SendFileMode
-  = SendFileSMP (Maybe InlineFileMode)
-  | SendFileXFTP
   deriving (Show)
 
 data SlowSQLQuery = SlowSQLQuery
@@ -1257,6 +1260,14 @@ mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show
 {-# INLINE mkChatError #-}
 
+catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError IO a) -> ExceptT StoreError IO a
+catchStoreError = catchAllErrors mkStoreError
+{-# INLINE catchStoreError #-}
+
+mkStoreError :: SomeException -> StoreError
+mkStoreError = SEInternalError . show
+{-# INLINE mkStoreError #-}
+
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
 
@@ -1408,7 +1419,5 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
-
-$(JQ.deriveJSON defaultJSON ''XFTPFileConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)

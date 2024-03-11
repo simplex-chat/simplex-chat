@@ -213,7 +213,7 @@ fun ChatItemView(
                       showMenu.value = false
                     }
                     if (chatModel.connectedToRemote() && fileSource == null) {
-                      withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+                      withLongRunningApi(slow = 600_000) {
                         cItem.file?.loadRemoteFile(true)
                         fileSource = getLoadedFileSource(cItem.file)
                         shareIfExists()
@@ -452,6 +452,11 @@ fun ChatItemView(
           is CIContent.SndModerated -> DeletedItem()
           is CIContent.RcvModerated -> DeletedItem()
           is CIContent.RcvBlocked -> DeletedItem()
+          // TODO proper items
+          is CIContent.SndDirectE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.RcvDirectE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.SndGroupE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.RcvGroupE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
           is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
         }
       }

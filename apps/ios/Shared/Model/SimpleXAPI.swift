@@ -252,15 +252,21 @@ func apiSetFilesFolder(filesFolder: String) throws {
     throw r
 }
 
-func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
-    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
+func apiSetEncryptLocalFiles(_ enable: Bool) throws {
+    let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
     if case .cmdOk = r { return }
     throw r
 }
 
-func apiSetEncryptLocalFiles(_ enable: Bool) throws {
-    let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
+func apiSetPQEncryption(_ enable: Bool) throws {
+    let r = chatSendCmdSync(.apiSetPQEncryption(enable: enable))
     if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetContactPQ(_ contactId: Int64, _ enable: Bool) async throws -> Contact {
+    let r = await chatSendCmd(.apiSetContactPQ(contactId: contactId, enable: enable))
+    if case let .contactPQAllowed(_, contact, _) = r { return contact }
     throw r
 }
 
@@ -412,14 +418,14 @@ func apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64
     throw r
 }
 
-func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode, String?) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
-    case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
-    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
+    case let .ntfToken(token, status, ntfMode, ntfServer): return (token, status, ntfMode, ntfServer)
+    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off, nil)
     default:
         logger.debug("apiGetNtfToken response: \(String(describing: r))")
-        return (nil, nil, .off)
+        return (nil, nil, .off, nil)
     }
 }
 
@@ -1249,8 +1255,8 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     }
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-    try setXFTPConfig(getXFTPCfg())
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
+    try apiSetPQEncryption(pqExperimentalEnabledDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
@@ -1309,7 +1315,7 @@ func startChat(refreshInvitations: Bool = true) throws {
         if (refreshInvitations) {
             try refreshCallInvitations()
         }
-        (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
         // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
         // when it is called before startChat
         if let token = m.deviceToken {
@@ -1825,6 +1831,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         }
+    case let .contactPQEnabled(user, contact, _):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact)
+            }
+        }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }
@@ -1861,7 +1873,9 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cItem = aChatItem.chatItem
     if active(user) {
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
-            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            if cItem.showNotification {
+                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            }
         }
     }
 }

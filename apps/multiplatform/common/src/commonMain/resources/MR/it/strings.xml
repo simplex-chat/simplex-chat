@@ -1591,9 +1591,7 @@
     <string name="possible_slow_function_title">Funzione lenta</string>
     <string name="show_slow_api_calls">Mostra chiamate API lente</string>
     <string name="group_member_status_unknown_short">sconosciuto</string>
-    <string name="possible_deadlock_desc">L\'esecuzione del codice impiega troppo tempo: %1$d secondi. Probabilmente l\'app è congelata: %2$s</string>
     <string name="group_member_status_unknown">stato sconosciuto</string>
-    <string name="possible_deadlock_title">Stallo</string>
     <string name="developer_options_section">Opzioni sviluppatore</string>
     <string name="v5_5_private_notes">Note private</string>
     <string name="v5_5_new_interface_languages">Interfaccia in ungherese e turco</string>

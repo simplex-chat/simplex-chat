@@ -156,6 +156,7 @@ class AppPreferences {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
+  val pqExperimentalEnabled = mkBoolPreference(SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
@@ -312,6 +313,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
+    private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES = "Themes"
@@ -451,7 +453,21 @@ object ChatController {
         }
         try {
           val msg = recvMsg(ctrl)
-          if (msg != null) processReceivedMsg(msg)
+          if (msg != null) {
+            val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
+              processReceivedMsg(msg)
+            }
+            if (finishedWithoutTimeout == null) {
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.possible_slow_function_title),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  shareText = true
+                )
+              }
+            }
+          }
         } catch (e: Exception) {
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
         } catch (e: Throwable) {
@@ -617,13 +633,16 @@ object ChatController {
     throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
-    val r = sendCmd(null, CC.ApiSetXFTPConfig(cfg))
-    if (r is CR.CmdOk) return
-    throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
-  }
-
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
+
+  suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
+
+  suspend fun apiSetContactPQ(rh: Long?, contactId: Long, enable: Boolean): Contact? {
+    val r = sendCmd(rh, CC.ApiSetContactPQ(contactId, enable))
+    if (r is CR.ContactPQAllowed) return r.contact
+    apiErrorAlert("apiSetContactPQ", "Error allowing contact PQ", r)
+    return null
+  }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
     val r = sendCmd(null, CC.ApiExportArchive(config))
@@ -1685,7 +1704,7 @@ object ChatController {
           chatModel.networkStatuses[s.agentConnId] = s.networkStatus
         }
       }
-      is CR.NewChatItem -> {
+      is CR.NewChatItem -> withBGApi {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
@@ -1700,7 +1719,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withBGApi { receiveFile(rhId, r.user, file.fileId, auto = true) }
+          receiveFile(rhId, r.user, file.fileId, auto = true)
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -2008,6 +2027,10 @@ object ChatController {
           }
         }
       }
+      is CR.ContactPQEnabled ->
+        if (active(r.user)) {
+          chatModel.updateContact(rhId, r.contact)
+        }
       is CR.ChatCmdError -> when {
         r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
           chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
@@ -2157,10 +2180,6 @@ object ChatController {
     }
   }
 
-  fun getXFTPCfg(): XFTPFileConfig {
-    return XFTPFileConfig(minFileSize = 0)
-  }
-
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val proxyHostPort  = appPrefs.networkProxyHostPort.get()
@@ -2269,8 +2288,9 @@ sealed class CC {
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
-  class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
+  class ApiSetPQEncryption(val enable: Boolean): CC()
+  class ApiSetContactPQ(val contactId: Long, val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -2399,8 +2419,9 @@ sealed class CC {
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
-    is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
+    is ApiSetPQEncryption -> "/pq ${onOff(enable)}"
+    is ApiSetContactPQ -> "/_pq @$contactId ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -2534,8 +2555,9 @@ sealed class CC {
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
     is SetRemoteHostsFolder -> "setRemoteHostsFolder"
-    is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
+    is ApiSetPQEncryption -> "apiSetPQEncryption"
+    is ApiSetContactPQ -> "apiSetContactPQ"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -2699,9 +2721,6 @@ sealed class ChatPagination {
 
 @Serializable
 class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
-
-@Serializable
-class XFTPFileConfig(val minFileSize: Long)
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
@@ -4004,6 +4023,10 @@ sealed class CR {
   @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
   @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason): CR()
+  // pq
+  @Serializable @SerialName("contactPQAllowed") class ContactPQAllowed(val user: UserRef, val contact: Contact, val pqEncryption: Boolean): CR()
+  @Serializable @SerialName("contactPQEnabled") class ContactPQEnabled(val user: UserRef, val contact: Contact, val pqEnabled: Boolean): CR()
+  // misc
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
@@ -4153,6 +4176,8 @@ sealed class CR {
     is RemoteCtrlSessionCode -> "remoteCtrlSessionCode"
     is RemoteCtrlConnected -> "remoteCtrlConnected"
     is RemoteCtrlStopped -> "remoteCtrlStopped"
+    is ContactPQAllowed -> "contactPQAllowed"
+    is ContactPQEnabled -> "contactPQEnabled"
     is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
@@ -4317,6 +4342,8 @@ sealed class CR {
           "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
     is RemoteCtrlStopped -> noDetails()
+    is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
+    is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"

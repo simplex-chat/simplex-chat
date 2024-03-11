@@ -1606,7 +1606,6 @@
     <string name="remote_ctrl_error_bad_version">Komputer ma niewspieraną wersję. Proszę upewnić się, że używasz tych samych wersji na obu urządzeniach</string>
     <string name="blocked_by_admin_items_description">%d wiadomości zablokowanych przez admina</string>
     <string name="error_creating_message">Błąd tworzenia wiadomości</string>
-    <string name="possible_deadlock_desc">Wykonanie kodu zajmuje za dużo czasu: %1$d sekund. Prawdopodobnie aplikacja jest zamrożona: %2$s</string>
     <string name="possible_slow_function_desc">Wykonanie kodu zajmuje za dużo czasu: %1$d sekund: %2$s</string>
     <string name="note_folder_local_display_name">Prywatne notatki</string>
     <string name="group_member_status_unknown">nieznany status</string>
@@ -1621,7 +1620,6 @@
     <string name="remote_host_error_inactive"><![CDATA[Telefon <b>%s</b> jest nieaktywny]]></string>
     <string name="remote_host_error_bad_version"><![CDATA[Telefon <b>%s</b> ma niewspieraną wersję. Proszę, upewnij się, że używasz tej samej wersji na obydwu urządzeniach]]></string>
     <string name="group_member_status_unknown_short">nieznany</string>
-    <string name="possible_deadlock_title">Blokada</string>
     <string name="profile_update_event_contact_name_changed">kontakt %1$s zmieniony na %2$s</string>
     <string name="profile_update_event_removed_address">usunięto adres kontaktu</string>
     <string name="profile_update_event_removed_picture">usunięto zdjęcie profilu</string>

@@ -31,8 +31,9 @@ public enum ChatCommand {
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
-    case apiSetXFTPConfig(config: XFTPFileConfig?)
     case apiSetEncryptLocalFiles(enable: Bool)
+    case apiSetPQEncryption(enable: Bool)
+    case apiSetContactPQ(contactId: Int64, enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -162,12 +163,9 @@ public enum ChatCommand {
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
-            case let .apiSetXFTPConfig(cfg): if let cfg = cfg {
-                return "/_xftp on \(encodeJSON(cfg))"
-            } else {
-                return "/_xftp off"
-            }
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
+            case let .apiSetPQEncryption(enable): return "/pq \(onOff(enable))"
+            case let .apiSetContactPQ(contactId, enable): return "/_pq @\(contactId) \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -311,8 +309,9 @@ public enum ChatCommand {
             case .apiSuspendChat: return "apiSuspendChat"
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
-            case .apiSetXFTPConfig: return "apiSetXFTPConfig"
             case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
+            case .apiSetPQEncryption: return "apiSetPQEncryption"
+            case .apiSetContactPQ: return "apiSetContactPQ"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -613,7 +612,7 @@ public enum ChatResponse: Decodable, Error {
     case callEnded(user: UserRef, contact: Contact)
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
-    case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
+    case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
     case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
@@ -624,6 +623,9 @@ public enum ChatResponse: Decodable, Error {
     case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
+    // pq
+    case contactPQAllowed(user: UserRef, contact: Contact, pqEncryption: Bool)
+    case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
@@ -772,6 +774,8 @@ public enum ChatResponse: Decodable, Error {
             case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
             case .remoteCtrlConnected: return "remoteCtrlConnected"
             case .remoteCtrlStopped: return "remoteCtrlStopped"
+            case .contactPQAllowed: return "contactPQAllowed"
+            case .contactPQEnabled: return "contactPQAllowed"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
@@ -912,7 +916,7 @@ public enum ChatResponse: Decodable, Error {
             case let .callEnded(u, contact): return withUser(u, "contact: \(contact.id)")
             case let .callInvitations(invs): return String(describing: invs)
             case let .ntfTokenStatus(status): return String(describing: status)
-            case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
+            case let .ntfToken(token, status, ntfMode, ntfServer): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)\nntfServer: \(ntfServer)"
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
@@ -922,6 +926,8 @@ public enum ChatResponse: Decodable, Error {
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
+            case let .contactPQAllowed(u, contact, pqEncryption): return withUser(u, "contact: \(String(describing: contact))\npqEncryption: \(pqEncryption)")
+            case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
@@ -1003,10 +1009,6 @@ struct ComposedMessage: Encodable {
     var fileSource: CryptoFile?
     var quotedItemId: Int64?
     var msgContent: MsgContent
-}
-
-public struct XFTPFileConfig: Encodable {
-    var minFileSize: Int64
 }
 
 public struct ArchiveConfig: Encodable {

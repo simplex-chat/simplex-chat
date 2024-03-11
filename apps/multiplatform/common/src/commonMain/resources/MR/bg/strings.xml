@@ -1555,7 +1555,6 @@
     <string name="chat_is_stopped_you_should_transfer_database">Чатът е спрян. Ако вече сте използвали тази база данни на друго устройство, трябва да я прехвърлите обратно, преди да стартирате чата отново.</string>
     <string name="remote_ctrl_error_bad_invitation">Настолното устройство има грешен код за връзка</string>
     <string name="remote_ctrl_error_bad_version">Настолното устройство е с неподдържана версия. Моля, уверете се, че използвате една и съща версия и на двете устройства</string>
-    <string name="possible_deadlock_desc">Изпълнението на кода отнема твърде много време: %1$d секунди. Вероятно приложението е замразено: %2$s</string>
     <string name="possible_slow_function_title">Бавна функция</string>
     <string name="possible_slow_function_desc">Изпълнението на функцията отнема твърде много време: %1$d секунди: %2$s</string>
     <string name="show_internal_errors">Покажи вътрешните грешки</string>
@@ -1591,5 +1590,4 @@
 \nПрепоръчително е да рестартирате приложението.</string>
     <string name="developer_options_section">Опции за разработчици</string>
     <string name="show_slow_api_calls">Показване на бавни API заявки</string>
-    <string name="possible_deadlock_title">Грешка в заключено положение</string>
 </resources>

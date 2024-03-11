@@ -91,8 +91,8 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (appPlatform.isDesktop) {
       controller.apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
     }
-    controller.apiSetXFTPConfig(controller.getXFTPCfg())
     controller.apiSetEncryptLocalFiles(controller.appPrefs.privacyEncryptLocalFiles.get())
+    controller.apiSetPQEncryption(controller.appPrefs.pqExperimentalEnabled.get())
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)

@@ -54,6 +54,9 @@
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
+  <string name="e2ee_info_no_pq">This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery.</string>
+  <string name="e2ee_info_pq">This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery.</string>
+
   <!-- NoteFolder - ChatModel.kt -->
   <string name="note_folder_local_display_name">Private notes</string>
 
@@ -147,8 +150,6 @@
   <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
   <string name="error_updating_user_privacy">Error updating user privacy</string>
-  <string name="possible_deadlock_title">Deadlock</string>
-  <string name="possible_deadlock_desc">Execution of code takes too long time: %1$d seconds. Probably, the app is frozen: %2$s</string>
   <string name="possible_slow_function_title">Slow function</string>
   <string name="possible_slow_function_desc">Execution of function takes too long time: %1$d seconds: %2$s</string>
 
@@ -1241,6 +1242,8 @@
   <string name="snd_conn_event_ratchet_sync_started">agreeing encryption for %s…</string>
   <string name="snd_conn_event_ratchet_sync_agreed">encryption agreed for %s</string>
   <string name="rcv_conn_event_verification_code_reset">security code changed</string>
+  <string name="conn_event_enabled_pq">quantum resistant e2e encryption</string>
+  <string name="conn_event_disabled_pq">standard end-to-end encryption</string>
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_observer">observer</string>

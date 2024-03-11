@@ -387,25 +387,11 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    // revert from this:
-    SectionDividerSpaced(maxBottomPadding = false)
-    SectionView {
-      if (member.memberSettings.showMessages) {
-        BlockMemberButton(blockMember)
-      } else {
-        UnblockMemberButton(unblockMember)
-      }
-      if (member.canBeRemoved(groupInfo)) {
-        RemoveMemberButton(removeMember)
-      }
+    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+      AdminDestructiveSection()
+    } else {
+      NonAdminBlockSection()
     }
-    // revert to this: vvv
-//    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
-//      AdminDestructiveSection()
-//    } else {
-//      NonAdminBlockSection()
-//    }
-    // ^^^
 
     if (developerTools) {
       SectionDividerSpaced()

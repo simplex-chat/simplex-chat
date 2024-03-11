@@ -14,17 +14,27 @@ import chat.simplex.common.views.helpers.*
 import java.io.BufferedOutputStream
 import java.io.File
 import chat.simplex.res.MR
+import kotlin.math.min
 
 actual fun ClipboardManager.shareText(text: String) {
-  val sendIntent: Intent = Intent().apply {
-    action = Intent.ACTION_SEND
-    putExtra(Intent.EXTRA_TEXT, text)
-    type = "text/plain"
-    flags = FLAG_ACTIVITY_NEW_TASK
+  var text = text
+  for (i in 10 downTo 1) {
+    try {
+      val sendIntent: Intent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, text)
+        type = "text/plain"
+        flags = FLAG_ACTIVITY_NEW_TASK
+      }
+      val shareIntent = Intent.createChooser(sendIntent, null)
+      shareIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+      androidAppContext.startActivity(shareIntent)
+      break
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to share text: ${e.stackTraceToString()}")
+      text = text.substring(0, min(i * 1000, text.length))
+    }
   }
-  val shareIntent = Intent.createChooser(sendIntent, null)
-  shareIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
-  androidAppContext.startActivity(shareIntent)
 }
 
 actual fun shareFile(text: String, fileSource: CryptoFile) {
