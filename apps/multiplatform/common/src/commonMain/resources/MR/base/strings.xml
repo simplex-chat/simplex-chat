@@ -54,8 +54,10 @@
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
-  <string name="e2ee_info_no_pq">This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery.</string>
-  <string name="e2ee_info_pq">This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery.</string>
+  <string name="e2ee_info_no_pq"><![CDATA[Messages, files and calls are protected by <b>end-to-end encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
+  <string name="e2ee_info_pq"><![CDATA[Messages, files and calls are protected by <b>quantum resistant e2e encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
+  <string name="e2ee_info_no_pq_short">This chat is protected by end-to-end encryption.</string>
+  <string name="e2ee_info_pq_short">This chat is protected by quantum resistant end-to-end encryption.</string>
 
   <!-- NoteFolder - ChatModel.kt -->
   <string name="note_folder_local_display_name">Private notes</string>
