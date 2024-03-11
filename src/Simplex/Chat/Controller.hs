@@ -46,6 +46,7 @@ import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
+import Database.SQLite3 (SQLError)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -1294,7 +1295,7 @@ withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreEr
 withStoreCtx ctx_ action = do
   ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $ case ctx_ of
-    Nothing -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
+    Nothing -> withTransaction chatStore (runExceptT . action) `E.catches` handleInternal ""
     -- uncomment to debug store performance
     -- Just ctx -> do
     --   t1 <- liftIO getCurrentTime
@@ -1303,18 +1304,29 @@ withStoreCtx ctx_ action = do
     --   t2 <- liftIO getCurrentTime
     --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
     --   pure r
-    Just _ -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
+    Just _ -> withTransaction chatStore (runExceptT . action) `E.catches` handleInternal ""
   where
-    handleInternal :: String -> SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEDatabaseError $ show e <> ctxStr
+    -- Normalize exceptions to StoreError
+    handleInternal ctxStr =
+      [ E.Handler $ \storeErr -> pure $ Left storeErr, -- errors thrown by actions
+        E.Handler $ \(sqlErr :: SQLError) -> pure . Left . SEDatabaseError $ show sqlErr <> ctxStr, -- unhandled DB errors
+        E.Handler $ \(E.SomeException e) -> pure . Left . SEInternalError $ show e <> ctxStr -- unhandled IO errors
+      ]
+
+-- e = pure . Left . SEDatabaseError $ show e <> ctxStr
 
 withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
+  liftIO $ withTransaction chatStore $ mapM (`E.catches` handleInternal) . actions
   where
-    handleInternal :: E.SomeException -> IO (Either ChatError a)
-    handleInternal = pure . Left . ChatErrorDatabase . DBErrorInternal . show
+    -- Normalize exceptions to ChatError
+    handleInternal =
+      [ E.Handler $ \chatErr -> pure $ Left chatErr, -- errors thrown by actions
+        E.Handler $ \storeErr -> pure . Left $ ChatErrorStore storeErr, -- errors thrown by store funs inside actions
+        E.Handler $ \(sqlErr :: SQLError) -> pure . Left . ChatErrorStore . SEDatabaseError $ show sqlErr, -- unhandled DB errors
+        E.Handler $ \(E.SomeException e) -> pure . Left . ChatError . CEInternalError $ show e -- unhandled IO errors
+      ]
 
 withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
