@@ -523,11 +523,12 @@ struct MigrateFromAnotherDevice: View {
                 resetChatCtrl()
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+                let hasOnionConfigured = appSettings.networkConfig?.socksProxy != nil || appSettings.networkConfig?.hostMode == .onionHost
+                appSettings.networkConfig?.socksProxy = nil
+                appSettings.networkConfig?.hostMode = .publicHost
+                appSettings.networkConfig?.requiredHostMode = true
                 await MainActor.run {
-                    if appSettings.networkConfig?.hostMode == .onionViaSocks || appSettings.networkConfig?.hostMode == .onionHost || appSettings.networkConfig?.socksProxy != nil {
-                        appSettings.networkConfig?.socksProxy = nil
-                        appSettings.networkConfig?.hostMode = .publicHost
-                        appSettings.networkConfig?.requiredHostMode = true
+                    if hasOnionConfigured {
                         migrationState = .onion(appSettings: appSettings)
                     } else {
                         finishMigration(appSettings)
