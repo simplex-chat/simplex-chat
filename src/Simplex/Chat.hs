@@ -1,4 +1,3 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -3293,14 +3292,14 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   vr <- chatVersionRange
-  handleDBError (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
+  handleStoreException (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
-    handleDBError a =
+    handleStoreException a =
       a `catchChatError` \case
-        e@(ChatErrorStore SEDatabaseError {}) -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
-        e -> throwError e -- XXX: connection w/o entity or entity details not found
+        ChatErrorStore SEException {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+        e -> throwError e -- should not happen, getUserByAConnId is IO Maybe
 
 processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
 processAgentMessageNoConn = \case
@@ -3489,13 +3488,9 @@ processAgentMsgRcvFile _corrId aFileId msg =
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
 
-processAgentMessageConn :: ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
-processAgentMessageConn vr user corrId agentConnId agentMessage = runExceptT (processAgentMessageConn' vr user corrId agentConnId agentMessage) >>= either throwError pure
-
--- | A version of processAgentMessageConn with MonadError materialized into explicit ExceptT over weaker ChatMonad'. The resulting `m` is still ChatMonad.
-processAgentMessageConn' :: forall m' m. (ChatMonad' m', m ~ ExceptT ChatError m') => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
-processAgentMessageConn' vr user@User {userId} corrId agentConnId agentMessage = do
-  entity <- handleDBError $ withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
+processAgentMessageConn :: forall m . ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
+processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
+  entity <- handleStoreException $ withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
@@ -3513,9 +3508,9 @@ processAgentMessageConn' vr user@User {userId} corrId agentConnId agentMessage =
       UserContactConnection conn uc ->
         processUserContactRequest agentMessage entity conn uc
   where
-    handleDBError a =
+    handleStoreException a =
       a `catchChatError` \case
-        e@(ChatErrorStore SEDatabaseError {}) -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
+        ChatErrorStore SEException {message} -> throwError $ ChatErrorAgent (CRITICAL True $ message) Nothing
         e -> throwError e -- XXX: connection w/o entity or entity details not found
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
