@@ -160,6 +160,7 @@ class AppPreferences {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
+  val pqExperimentalEnabled = mkBoolPreference(SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
@@ -322,6 +323,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
+    private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES = "Themes"
@@ -656,16 +658,25 @@ object ChatController {
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
 
-   suspend fun apiSaveAppSettings(settings: AppSettings) {
-     val r = sendCmd(null, CC.ApiSaveSettings(settings))
-     if (r is CR.CmdOk) return
-     throw Error("failed to set app settings: ${r.responseType} ${r.details}")
+  suspend fun apiSaveAppSettings(settings: AppSettings) {
+    val r = sendCmd(null, CC.ApiSaveSettings(settings))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set app settings: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetAppSettings(settings: AppSettings): AppSettings {
     val r = sendCmd(null, CC.ApiGetSettings(settings))
     if (r is CR.AppSettingsR) return r.appSettings
     throw Error("failed to get app settings: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
+
+  suspend fun apiSetContactPQ(rh: Long?, contactId: Long, enable: Boolean): Contact? {
+    val r = sendCmd(rh, CC.ApiSetContactPQ(contactId, enable))
+    if (r is CR.ContactPQAllowed) return r.contact
+    apiErrorAlert("apiSetContactPQ", "Error allowing contact PQ", r)
+    return null
   }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
@@ -2098,6 +2109,10 @@ object ChatController {
           }
         }
       }
+      is CR.ContactPQEnabled ->
+        if (active(r.user)) {
+          chatModel.updateContact(rhId, r.contact)
+        }
       is CR.ChatCmdError -> when {
         r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
           chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
@@ -2348,6 +2363,8 @@ sealed class CC {
   class SetFilesFolder(val filesFolder: String): CC()
   class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
+  class ApiSetPQEncryption(val enable: Boolean): CC()
+  class ApiSetContactPQ(val contactId: Long, val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -2483,6 +2500,8 @@ sealed class CC {
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
+    is ApiSetPQEncryption -> "/pq ${onOff(enable)}"
+    is ApiSetContactPQ -> "/_pq @$contactId ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -2623,6 +2642,8 @@ sealed class CC {
     is SetFilesFolder -> "setFilesFolder"
     is SetRemoteHostsFolder -> "setRemoteHostsFolder"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
+    is ApiSetPQEncryption -> "apiSetPQEncryption"
+    is ApiSetContactPQ -> "apiSetContactPQ"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -4110,6 +4131,10 @@ sealed class CR {
   @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
   @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason): CR()
+  // pq
+  @Serializable @SerialName("contactPQAllowed") class ContactPQAllowed(val user: UserRef, val contact: Contact, val pqEncryption: Boolean): CR()
+  @Serializable @SerialName("contactPQEnabled") class ContactPQEnabled(val user: UserRef, val contact: Contact, val pqEnabled: Boolean): CR()
+  // misc
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
@@ -4268,6 +4293,8 @@ sealed class CR {
     is RemoteCtrlSessionCode -> "remoteCtrlSessionCode"
     is RemoteCtrlConnected -> "remoteCtrlConnected"
     is RemoteCtrlStopped -> "remoteCtrlStopped"
+    is ContactPQAllowed -> "contactPQAllowed"
+    is ContactPQEnabled -> "contactPQEnabled"
     is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
@@ -4441,6 +4468,8 @@ sealed class CR {
           "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
     is RemoteCtrlStopped -> noDetails()
+    is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
+    is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
