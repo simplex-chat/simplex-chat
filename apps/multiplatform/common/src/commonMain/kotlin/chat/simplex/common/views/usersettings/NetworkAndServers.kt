@@ -385,14 +385,26 @@ private fun UseOnionHosts(
     }
   }
 
-  SectionItemWithValue(
-    generalGetString(MR.strings.network_use_onion_hosts),
-    onionHosts,
-    values,
-    icon = painterResource(MR.images.ic_security),
-    enabled = enabled,
-    onSelected = onSelected
-  )
+  if (enabled.value) {
+    SectionItemWithValue(
+      generalGetString(MR.strings.network_use_onion_hosts),
+      onionHosts,
+      values,
+      icon = painterResource(MR.images.ic_security),
+      enabled = enabled,
+      onSelected = onSelected
+    )
+  } else {
+    // In reality, when socks proxy is disabled, this option acts like NEVER regardless of what was chosen before
+    SectionItemWithValue(
+      generalGetString(MR.strings.network_use_onion_hosts),
+      remember { mutableStateOf(OnionHosts.NEVER) },
+      listOf(ValueTitleDesc(OnionHosts.NEVER, generalGetString(MR.strings.network_use_onion_hosts_no), AnnotatedString(generalGetString(MR.strings.network_use_onion_hosts_no_desc)))),
+      icon = painterResource(MR.images.ic_security),
+      enabled = enabled,
+      onSelected = {}
+    )
+  }
 }
 
 @Composable
