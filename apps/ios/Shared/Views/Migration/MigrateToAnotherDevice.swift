@@ -499,7 +499,7 @@ struct MigrateToAnotherDevice: View {
                             migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: data.addToLink(link: rcvURIs[0]), archivePath: archivePath, ctrl: ctrl)
                         }
                     case .sndFileError:
-                        alert = .error(title: "Upload failed", error: "Check you internet connection and try again")
+                        alert = .error(title: "Upload failed", error: "Check your internet connection and try again")
                         migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
