@@ -379,6 +379,30 @@ fun ChatItemView(
           }
         }
 
+        @Composable
+        fun E2EEInfoNoPQText() {
+          Text(
+            buildAnnotatedString {
+              withStyle(chatEventStyle) { append(annotatedStringResource(MR.strings.e2ee_info_no_pq)) }
+            },
+            Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+          )
+        }
+
+        @Composable
+        fun DirectE2EEInfoText(e2EEInfo: E2EEInfo) {
+          if (e2EEInfo.pqEnabled) {
+            Text(
+              buildAnnotatedString {
+                withStyle(chatEventStyle) { append(annotatedStringResource(MR.strings.e2ee_info_pq)) }
+              },
+              Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+            )
+          } else {
+            E2EEInfoNoPQText()
+          }
+        }
+
         when (val c = cItem.content) {
           is CIContent.SndMsgContent -> ContentItem()
           is CIContent.RcvMsgContent -> ContentItem()
@@ -452,11 +476,10 @@ fun ChatItemView(
           is CIContent.SndModerated -> DeletedItem()
           is CIContent.RcvModerated -> DeletedItem()
           is CIContent.RcvBlocked -> DeletedItem()
-          // TODO proper items
-          is CIContent.SndDirectE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
-          is CIContent.RcvDirectE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
-          is CIContent.SndGroupE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
-          is CIContent.RcvGroupE2EEInfo -> CIEventView(buildAnnotatedString { append(cItem.content.text) })
+          is CIContent.SndDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
+          is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
+          is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
+          is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
           is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
         }
       }
