@@ -101,6 +101,7 @@ import Simplex.Chat.Migrations.M20240122_indexes
 import Simplex.Chat.Migrations.M20240214_redirect_file_id
 import Simplex.Chat.Migrations.M20240222_app_settings
 import Simplex.Chat.Migrations.M20240226_users_restrict
+import Simplex.Chat.Migrations.M20240228_pq
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -201,7 +202,8 @@ schemaMigrations =
     ("20240122_indexes", m20240122_indexes, Just down_m20240122_indexes),
     ("20240214_redirect_file_id", m20240214_redirect_file_id, Just down_m20240214_redirect_file_id),
     ("20240222_app_settings", m20240222_app_settings, Just down_m20240222_app_settings),
-    ("20240226_users_restrict", m20240226_users_restrict, Just down_m20240226_users_restrict)
+    ("20240226_users_restrict", m20240226_users_restrict, Just down_m20240226_users_restrict),
+    ("20240228_pq", m20240228_pq, Just down_m20240228_pq)
   ]
 
 -- | The list of migrations in ascending order by date

@@ -85,6 +85,8 @@ import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
@@ -323,37 +325,39 @@ createUserContactLink db User {userId} agentConnId cReq subMode =
       "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
       (userId, cReq, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
-getUserAddressConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
-getUserAddressConnections db User {userId} = do
+getUserAddressConnections :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ExceptT StoreError IO [Connection]
+getUserAddressConnections db vr User {userId} = do
   cs <- liftIO getUserAddressConnections_
   if null cs then throwError SEUserContactLinkNotFound else pure cs
   where
     getUserAddressConnections_ :: IO [Connection]
     getUserAddressConnections_ =
-      map toConnection
+      map (toConnection vr)
         <$> DB.query
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-              c.peer_chat_min_version, c.peer_chat_max_version
+              c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+              c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+              c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
             WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
           |]
           (userId, userId)
 
-getUserContactLinks :: DB.Connection -> User -> IO [(Connection, UserContact)]
-getUserContactLinks db User {userId} =
+getUserContactLinks :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> IO [(Connection, UserContact)]
+getUserContactLinks db vr User {userId} =
   map toUserContactConnection
     <$> DB.query
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.peer_chat_min_version, c.peer_chat_max_version,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
@@ -362,7 +366,7 @@ getUserContactLinks db User {userId} =
       (userId, userId)
   where
     toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
-    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
+    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection vr connRow, UserContact {userContactLinkId, connReqContact, groupId})
 
 deleteUserAddress :: DB.Connection -> User -> IO ()
 deleteUserAddress db user@User {userId} = do
@@ -470,8 +474,8 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
       |]
       (userId, cReqSchema1, cReqSchema2)
 
-getContactWithoutConnViaAddress :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
-getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2) = do
+getContactWithoutConnViaAddress :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -484,7 +488,7 @@ getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2)
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         |]
         (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do
