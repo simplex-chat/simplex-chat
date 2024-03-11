@@ -177,7 +177,7 @@ struct ChatItemContentView<Content: View>: View {
 
     private func directE2EEInfoText(_ info: E2EEInfo) -> Text {
         info.pqEnabled
-        ? Text("This conversation is protected by **quantum resistant end-to-end encryption**. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery.")
+        ? Text("Messages, files and calls are protected by **quantum resistant e2e encryption**. It has perfect forward secrecy, repudiation and break-in recovery.")
             .font(.caption)
             .foregroundColor(.secondary)
             .fontWeight(.light)
@@ -185,7 +185,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func e2eeInfoNoPQText() -> Text {
-        Text("This conversation is protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
+        Text("Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
             .font(.caption)
             .foregroundColor(.secondary)
             .fontWeight(.light)

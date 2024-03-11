@@ -2795,12 +2795,12 @@ public enum CIContent: Decodable, ItemContent {
 
     private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
         e2eeInfo.pqEnabled
-        ? NSLocalizedString("This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery.", comment: "E2EE info chat item")
+        ? NSLocalizedString("This chat is protected by quantum resistant end-to-end encryption.", comment: "E2EE info chat item")
         : e2eeInfoNoPQStr
     }
 
     private var e2eeInfoNoPQStr: String {
-        NSLocalizedString("This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery.", comment: "E2EE info chat item")
+        NSLocalizedString("This chat is protected by end-to-end encryption.", comment: "E2EE info chat item")
     }
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
