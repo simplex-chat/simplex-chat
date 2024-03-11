@@ -2784,22 +2784,22 @@ public enum CIContent: Decodable, ItemContent {
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
-            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoToText(e2eeInfo)
-            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoToText(e2eeInfo)
-            case .sndGroupE2EEInfo: return e2eeInfoNoPQText
-            case .rcvGroupE2EEInfo: return e2eeInfoNoPQText
+            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
+            case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }
     }
 
-    private func directE2EEInfoToText(_ e2eeInfo: E2EEInfo) -> String {
+    private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
         e2eeInfo.pqEnabled
         ? NSLocalizedString("This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery.", comment: "E2EE info chat item")
-        : e2eeInfoNoPQText
+        : e2eeInfoNoPQStr
     }
 
-    private var e2eeInfoNoPQText: String {
+    private var e2eeInfoNoPQStr: String {
         NSLocalizedString("This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery.", comment: "E2EE info chat item")
     }
 
