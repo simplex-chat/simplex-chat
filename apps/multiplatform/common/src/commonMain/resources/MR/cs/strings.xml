@@ -1596,4 +1596,33 @@
     <string name="remote_ctrl_was_disconnected_title">Spojení zastaveno</string>
     <string name="remote_ctrl_disconnected_with_reason">Odpojeno z důvodu: %s</string>
     <string name="agent_internal_error_title">Interní chyba</string>
+    <string name="v5_5_simpler_connect_ui_descr">Vyhledávání přijímá pozvánky.</string>
+    <string name="show_slow_api_calls">Zobrazit pomalé API volání</string>
+    <string name="profile_update_event_removed_address">odstraněna kontaktní adresa</string>
+    <string name="past_member_vName">Vložte člena %1$s</string>
+    <string name="v5_5_simpler_connect_ui">Vložte odkaz na připojení!</string>
+    <string name="v5_5_join_group_conversation_descr">Nejnovější historie a vylepšený directory bot.</string>
+    <string name="v5_5_private_notes">Soukromé poznámky</string>
+    <string name="remote_host_error_inactive">Mobilní <b>%s</b> je neaktivní</string>
+    <string name="remote_host_error_busy">Mobilní <b>%s</b> je zaneprázdněn</string>
+    <string name="remote_host_error_bad_version">Mobile <b>%s</b> má nepodporovanou verzi. Ujistěte se, že používáte stejnou verzi na obou zařízeních</string>
+    <string name="agent_internal_error_desc">Nahlaste to prosím vývojářům:
+\n%s</string>
+    <string name="show_internal_errors">Zobrazit interní chyby</string>
+    <string name="agent_critical_error_desc">Nahlaste to prosím vývojářům:
+\n%s
+\n
+\nDoporučuje se restartovat aplikaci.</string>
+    <string name="restart_chat_button">Restartovat chat</string>
+    <string name="remote_host_error_disconnected">Mobilní <b>%s</b> byl odpojen</string>
+    <string name="unable_to_open_browser_title">Chyba otevření prohlížeče</string>
+    <string name="profile_update_event_removed_picture">odstraněn profilový obrázek</string>
+    <string name="profile_update_event_set_new_address">nastavit novou kontaktní adresu</string>
+    <string name="profile_update_event_set_new_picture">nastavit nový profilový obrázek</string>
+    <string name="saved_message_title">Uložené zprávy</string>
+    <string name="possible_slow_function_title">Pomalá funkce</string>
+    <string name="note_folder_local_display_name">Soukromé poznámky</string>
+    <string name="call_service_notification_audio_call">Volání</string>
+    <string name="call_service_notification_end_call">Konec volání</string>
+    <string name="remote_host_error_missing">Mobilní <b>%s</b> chybí</string>
 </resources>
