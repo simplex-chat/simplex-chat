@@ -14,14 +14,23 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
     case archiveImport(archiveName: String)
     case passphrase
 
-    func makeMigrationState() -> MigrationFromState {
-        var initial: MigrationFromState = .pasteOrScanLink
-        //logger.debug("Inited with migrationState: \(String(describing: self))")
-        switch self {
-        case let .downloadProgress(link, archiveName):
+    // Here we check whether it's needed to show migration process after app restart or not
+    // It's important to NOT show the process when archive was corrupted/not fully downloaded
+    static func makeMigrationState() -> MigrationFromState? {
+        let state: MigrationFromAnotherDeviceState? = UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE) != nil ? decodeJSON(UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE)!) : nil
+        var initial: MigrationFromState? = .pasteOrScanLink
+        //logger.debug("Inited with migrationState: \(String(describing: state))")
+        switch state {
+        case nil:
+            initial = nil
+        case let .downloadProgress(_, archiveName):
             // iOS changes absolute directory every launch, check this way
             let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
-            initial = .downloadFailed(totalBytes: 0, link: link, archivePath: archivePath)
+            try? FileManager.default.removeItem(atPath: archivePath)
+            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
+            // No migration happens at the moment actually since archive were not downloaded fully
+            logger.debug("MigrateFromDevice: archive wasn't fully downloaded, removed broken file")
+            initial = nil
         case let .archiveImport(archiveName):
             let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
             initial = .archiveImportFailed(archivePath: archivePath)
@@ -31,44 +40,11 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
         return initial
     }
 
-    // Here we check whether it's needed to show migration process after app restart or not
-    // It's important to NOT show the process when archive was corrupted/not fully downloaded
-    static func transform() -> MigrationFromAnotherDeviceState? {
-        logger.debug("in transform ***")
-
-        let state: MigrationFromAnotherDeviceState? = UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE) != nil ? decodeJSON(UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE)!) : nil
-
-        logger.debug("transform *** \(String(describing: state))")
-
-        if case let .downloadProgress(_, archiveName) = state {
-            // iOS changes absolute directory every launch, check this way
-            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
-            try? FileManager.default.removeItem(atPath: archivePath)
-            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
-            // No migration happens at the moment actually since archive were not downloaded fully
-            logger.debug("MigrateFromDevice: archive wasn't fully downloaded, removed broken file")
-            return nil
-        }
-        return state
-    }
-
-    private static func save_(_ state: MigrationFromAnotherDeviceState?) {
+    static func save(_ state: MigrationFromAnotherDeviceState?) {
         if let state {
             UserDefaults.standard.setValue(encodeJSON(state), forKey: DEFAULT_MIGRATION_STAGE)
         } else {
             UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
-        }
-    }
-
-    static func save(_ state: MigrationFromAnotherDeviceState?) {
-        MigrationFromAnotherDeviceState.save_(state)
-        ChatModel.shared.migrationState = state
-    }
-
-    static func saveAsync(_ state: MigrationFromAnotherDeviceState?) async {
-        MigrationFromAnotherDeviceState.save_(state)
-        await MainActor.run {
-            ChatModel.shared.migrationState = state
         }
     }
 }
@@ -117,7 +93,7 @@ struct MigrateFromAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @Binding var migrationState: MigrationFromState
+    @Binding var migrationState: MigrationFromState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateFromAnotherDeviceViewAlert?
     private let tempDatabaseUrl = urlForTemporaryDatabase()
@@ -129,6 +105,7 @@ struct MigrateFromAnotherDevice: View {
     var body: some View {
         VStack {
             switch migrationState {
+            case nil: EmptyView()
             case .pasteOrScanLink:
                 pasteOrScanLinkView()
             case let .linkDownloading(link):
@@ -153,18 +130,14 @@ struct MigrateFromAnotherDevice: View {
         }
         .onAppear {
             backDisabled = switch migrationState {
-            case .linkDownloading: false
-            case .downloadProgress: false
-            case .archiveImportFailed: false
-            default: m.migrationState != nil
+            case nil, .pasteOrScanLink, .linkDownloading, .downloadProgress, .archiveImportFailed: false
+            case .downloadFailed, .archiveImport, .passphrase, .migrationConfirmation, .migration, .onion: true
             }
         }
         .onChange(of: migrationState) { state in
             backDisabled = switch state {
-            case .linkDownloading: false
-            case .downloadProgress: false
-            case .archiveImportFailed: false
-            default: m.migrationState != nil
+            case nil, .pasteOrScanLink, .linkDownloading, .downloadProgress, .archiveImportFailed: false
+            case .downloadFailed, .archiveImport, .passphrase, .migrationConfirmation, .migration, .onion: true
             }
         }
         .onDisappear {
@@ -179,7 +152,7 @@ struct MigrateFromAnotherDevice: View {
                 chatReceiver?.stopAndCleanUp()
                 if !backDisabled {
                     try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
-                    await MigrationFromAnotherDeviceState.saveAsync(nil)
+                    MigrationFromAnotherDeviceState.save(nil)
                 }
             }
         }
@@ -464,8 +437,13 @@ struct MigrateFromAnotherDevice: View {
                         MigrationFromAnotherDeviceState.save(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                     case .rcvStandaloneFileComplete:
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            migrationState = .archiveImport(archivePath: archivePath)
-                            MigrationFromAnotherDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
+                            // User closed the whole screen before new state was saved
+                            if migrationState == nil {
+                                MigrationFromAnotherDeviceState.save(nil)
+                            } else {
+                                migrationState = .archiveImport(archivePath: archivePath)
+                                MigrationFromAnotherDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
+                            }
                         }
                     case .rcvFileError:
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
@@ -585,7 +563,7 @@ struct MigrateFromAnotherDevice: View {
 }
 
 private struct PassphraseEnteringView: View {
-    @Binding var migrationState: MigrationFromState
+    @Binding var migrationState: MigrationFromState?
     @State private var useKeychain = true
     @State var currentKey: String
     @State private var verifyingPassphrase: Bool = false
