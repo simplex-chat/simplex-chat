@@ -24,13 +24,13 @@ void haskell_init(const char *eventlog, const char *heap_profile) {
     // argv[argc++] = "-M8G"; // keep memory usage under 8G, collecting more aggressively when approaching it (and crashing sooner rather than taking down the whole system)
     if (eventlog) {
         static char ol[1024] = "-ol";
-        (void)strncpy(ol[3], eventlog, sizeof(ol) - 3);
+        (void)strncpy(&ol[3], eventlog, sizeof(ol) - 3);
         argv[argc++] = "-olsimplex.eventlog"; // produce <eventlog> file relative to "current" directory
         argv[argc++] = "-l-agu"; // collect GC and user events
     }
     if (heap_profile) {
         static char po[1024] = "-po";
-        (void)strncpy(po[3], heap_profile, sizeof(po) - 3);
+        (void)strncpy(&po[3], heap_profile, sizeof(po) - 3);
         argv[argc++] = po; // produce <heap_profile>.hp relative to "current" directory
         argv[argc++] = "-hT"; // emit heap profile by closure type
     }
