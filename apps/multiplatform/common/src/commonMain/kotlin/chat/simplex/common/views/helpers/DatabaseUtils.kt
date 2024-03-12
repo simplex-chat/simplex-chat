@@ -64,7 +64,7 @@ object DatabaseUtils {
     return dbKey
   }
 
-  private fun randomDatabasePassword(): String {
+  fun randomDatabasePassword(): String {
     val s = ByteArray(32)
     SecureRandom().nextBytes(s)
     return s.toBase64StringForPassphrase().replace("\n", "")

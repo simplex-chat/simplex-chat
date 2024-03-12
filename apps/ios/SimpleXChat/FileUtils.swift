@@ -28,9 +28,9 @@ public let MAX_FILE_SIZE_SMP: Int64 = 8000000
 
 public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300)
 
-private let CHAT_DB: String = "_chat.db"
+let CHAT_DB: String = "_chat.db"
 
-private let AGENT_DB: String = "_agent.db"
+let AGENT_DB: String = "_agent.db"
 
 private let CHAT_DB_BAK: String = "_chat.db.bak"
 
@@ -83,6 +83,7 @@ public func deleteAppDatabaseAndFiles() {
     try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
     try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
     try? fm.removeItem(at: getTempFilesDirectory())
+    try? fm.removeItem(at: getMigrationTempFilesDirectory())
     try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
     deleteAppFiles()
     _ = kcDatabasePassword.remove()
@@ -181,6 +182,10 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
 
 public func getTempFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("temp_files", isDirectory: true)
+}
+
+public func getMigrationTempFilesDirectory() -> URL {
+    getDocumentsDirectory().appendingPathComponent("migration_temp_files", isDirectory: true)
 }
 
 public func getAppFilesDirectory() -> URL {

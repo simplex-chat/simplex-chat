@@ -19,17 +19,18 @@ import kotlin.math.min
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
+  enableClose: Boolean = true,
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
   if (showClose) {
-    BackHandler(onBack = close)
+    BackHandler(enabled = enableClose, onBack = close)
   }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      CloseSheetBar(close, showClose, endButtons = endButtons)
+      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
       Box(modifier) { content() }
     }
   }

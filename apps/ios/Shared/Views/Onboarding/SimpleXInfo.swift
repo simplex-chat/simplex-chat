@@ -7,11 +7,14 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
+    @State private var migrationState: MigrationFromState? = nil
+    @State private var migrateFromAnotherDevice: Bool = false
     var onboarding: Bool
 
     var body: some View {
@@ -44,6 +47,16 @@ struct SimpleXInfo: View {
                     if onboarding {
                         OnboardingActionButton()
                         Spacer()
+
+                        Button {
+                            migrationState = nil
+                            migrateFromAnotherDevice = true
+                        } label: {
+                            Label("Migrate from another device", systemImage: "tray.and.arrow.down")
+                                .font(.subheadline)
+                        }
+                        .padding(.bottom, 8)
+                        .frame(maxWidth: .infinity)
                     }
 
                     Button {
@@ -54,8 +67,24 @@ struct SimpleXInfo: View {
                     }
                     .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
+
                 }
                 .frame(minHeight: g.size.height)
+            }
+            .onAppear {
+                if m.migrationState != nil {
+                    migrationState = m.migrationState?.makeMigrationState()
+                    migrateFromAnotherDevice = true
+                }
+            }
+            .sheet(isPresented: $migrateFromAnotherDevice) {
+                NavigationView {
+                    VStack(alignment: .leading) {
+                        MigrateFromAnotherDevice(migrationState: migrationState ?? .pasteOrScanLink)
+                    }
+                    .navigationTitle("Migrate here")
+                    .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
+                }
             }
             .sheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)
@@ -87,6 +116,7 @@ struct SimpleXInfo: View {
 
 struct OnboardingActionButton: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         if m.currentUser == nil {
@@ -101,6 +131,21 @@ struct OnboardingActionButton: View {
             withAnimation {
                 onboardingStageDefault.set(onboarding)
                 m.onboardingStage = onboarding
+            }
+        } label: {
+            HStack {
+                Text(label).font(.title2)
+                Image(systemName: "greaterthan")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom)
+    }
+
+    private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation {
+                action()
             }
         } label: {
             HStack {
