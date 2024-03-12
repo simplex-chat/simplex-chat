@@ -60,4 +60,19 @@
     <string name="allow_calls_only_if">Cho phép gọi điện chỉ khi liên hệ của bạn cũng cho phép.</string>
     <string name="v5_3_new_interface_languages">6 ngôn ngữ giao diện mới</string>
     <string name="v5_1_self_destruct_passcode_descr">Tất cả dữ liệu sẽ bị xóa khi nó được nhập vào.</string>
+    <string name="allow_voice_messages_question">Cho phép tin nhắn thoại?</string>
+    <string name="allow_irreversible_message_deletion_only_if">Cho phép xóa tin nhắn theo cách không thể phục hồi chỉ khi liên hệ của bạn cũng cho phép điều đó. (24 giờ)</string>
+    <string name="allow_your_contacts_irreversibly_delete">Cho phép các liên hệ của bạn xóa tin nhắn đã gửi theo cách không thể phục hồi. (24 giờ)</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Cho phép các liên hệ của bạn gửi tin nhắn tự xóa.</string>
+    <string name="allow_message_reactions_only_if">Cho phép thả biểu tượng cảm xúc chỉ khi liên hệ của bạn cũng cho phép.</string>
+    <string name="allow_voice_messages_only_if">Cho phép tin nhắn thoại chỉ khi liên hệ của bạn cũng cho phép.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Cho phép liên hệ của bạn thả biểu tượng cảm xúc.</string>
+    <string name="allow_your_contacts_to_call">Cho phép các liên hệ của bạn gọi cho bạn.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Cho phép các liên hệ của bạn gửi tin nhắn thoại.</string>
+    <string name="allow_direct_messages">Cho phép gửi tin nhắn trực tiếp tới các thành viên.</string>
+    <string name="allow_to_delete_messages">Cho phép xóa tin nhắn đã gửi một cách không thể phục hồi. (24 giờ)</string>
+    <string name="allow_to_send_disappearing">Cho phép gửi tin nhắn tự xóa.</string>
+    <string name="allow_to_send_voice">Cho phép gửi tin nhắn thoại.</string>
+    <string name="allow_message_reactions">Cho phép thả biểu tượng cảm xúc.</string>
+    <string name="allow_to_send_files">Cho phép gửi các tập tin, ảnh và video.</string>
 </resources>
