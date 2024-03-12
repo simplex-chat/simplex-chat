@@ -13,6 +13,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.migration.MigrationFromAnotherDeviceState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -103,6 +104,8 @@ object ChatModel {
 
   // currently showing invitation
   val showingInvitation = mutableStateOf(null as ShowingInvitation?)
+
+  val migrationState: MutableState<MigrationFromAnotherDeviceState?> by lazy { mutableStateOf(MigrationFromAnotherDeviceState.transform()) }
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
@@ -2328,10 +2331,10 @@ sealed class CIContent: ItemContent {
       is SndModerated -> generalGetString(MR.strings.moderated_description)
       is RcvModerated -> generalGetString(MR.strings.moderated_description)
       is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
-      is SndDirectE2EEInfo -> directE2EEInfoToText(e2eeInfo)
-      is RcvDirectE2EEInfo -> directE2EEInfoToText(e2eeInfo)
-      is SndGroupE2EEInfo -> e2eeInfoNoPQText
-      is RcvGroupE2EEInfo -> e2eeInfoNoPQText
+      is SndDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
+      is RcvDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
+      is SndGroupE2EEInfo -> e2eeInfoNoPQStr
+      is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
       is InvalidJSON -> "invalid data"
     }
 
@@ -2350,14 +2353,14 @@ sealed class CIContent: ItemContent {
     }
 
   companion object {
-    fun directE2EEInfoToText(e2EEInfo: E2EEInfo): String =
+    fun directE2EEInfoStr(e2EEInfo: E2EEInfo): String =
       if (e2EEInfo.pqEnabled) {
-        generalGetString(MR.strings.e2ee_info_pq)
+        generalGetString(MR.strings.e2ee_info_pq_short)
       } else {
-        e2eeInfoNoPQText
+        e2eeInfoNoPQStr
       }
 
-    private val e2eeInfoNoPQText: String = generalGetString(MR.strings.e2ee_info_no_pq)
+    private val e2eeInfoNoPQStr: String = generalGetString(MR.strings.e2ee_info_no_pq_short)
 
     fun featureText(feature: Feature, enabled: String, param: Int?): String =
       if (feature.hasParam) {
@@ -2973,10 +2976,17 @@ enum class FormatColor(val color: String) {
 class SndFileTransfer() {}
 
 @Serializable
-class RcvFileTransfer() {}
+data class RcvFileTransfer(
+  val fileId: Long,
+)
 
 @Serializable
-class FileTransferMeta() {}
+data class FileTransferMeta(
+  val fileId: Long,
+  val fileName: String,
+  val filePath: String,
+  val fileSize: Long,
+)
 
 @Serializable
 enum class CICallStatus {

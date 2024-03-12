@@ -110,6 +110,13 @@ fun MainScreen() {
     val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
+      onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
+        // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
+        SimpleXInfo(chatModel, onboarding = true)
+        if (appPlatform.isDesktop) {
+          ModalManager.fullscreen.showInView()
+        }
+      }
       chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
       chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
       showChatDatabaseError -> {

@@ -3423,7 +3423,7 @@ processAgentMsgSndFile _corrId aFileId msg =
             liftIO $ updateFileCancelled db user fileId CIFSSndError
             lookupChatItemByFileId db vr user fileId
           withAgent (`xftpDeleteSndFileInternal` aFileId)
-          toView $ CRSndFileError user ci ft
+          toView $ CRSndFileError user ci ft err
 
 splitFileDescr :: ChatMonad m => RcvFileDescrText -> m (NonEmpty FileDescr)
 splitFileDescr rfdText = do

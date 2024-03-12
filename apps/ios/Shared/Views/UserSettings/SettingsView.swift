@@ -27,7 +27,7 @@ let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
-let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
@@ -51,12 +51,15 @@ let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
+let DEFAULT_MIGRATION_STAGE = "migrationStage"
 let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
 let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
 let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+
+let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -93,6 +96,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
+    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue
 ]
 
 // not used anymore
@@ -148,10 +152,14 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
+    @State private var showProgress: Bool = false
 
     var body: some View {
         ZStack {
             settingsView()
+            if showProgress {
+                progressView()
+            }
             if let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
             }
@@ -202,9 +210,17 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("desktopcomputer") { Text("Use from desktop") }
                     }
+
+                    NavigationLink {
+                        MigrateToAnotherDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
+                            .navigationTitle("Migrate device")
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
+                    }
                 }
                 .disabled(chatModel.chatRunning != true)
-                
+
                 Section("Settings") {
                     NavigationLink {
                         NotificationsView()
@@ -347,6 +363,13 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private func progressView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
     }
 
     private enum NotificationAlert {

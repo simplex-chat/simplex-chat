@@ -2784,23 +2784,23 @@ public enum CIContent: Decodable, ItemContent {
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
-            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoToText(e2eeInfo)
-            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoToText(e2eeInfo)
-            case .sndGroupE2EEInfo: return e2eeInfoNoPQText
-            case .rcvGroupE2EEInfo: return e2eeInfoNoPQText
+            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
+            case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }
     }
 
-    private func directE2EEInfoToText(_ e2eeInfo: E2EEInfo) -> String {
+    private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
         e2eeInfo.pqEnabled
-        ? NSLocalizedString("This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery.", comment: "E2EE info chat item")
-        : e2eeInfoNoPQText
+        ? NSLocalizedString("This chat is protected by quantum resistant end-to-end encryption.", comment: "E2EE info chat item")
+        : e2eeInfoNoPQStr
     }
 
-    private var e2eeInfoNoPQText: String {
-        NSLocalizedString("This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery.", comment: "E2EE info chat item")
+    private var e2eeInfoNoPQStr: String {
+        NSLocalizedString("This chat is protected by end-to-end encryption.", comment: "E2EE info chat item")
     }
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
@@ -3410,11 +3410,14 @@ public struct SndFileTransfer: Decodable {
 }
 
 public struct RcvFileTransfer: Decodable {
-
+    public let fileId: Int64
 }
 
 public struct FileTransferMeta: Decodable {
-    
+    public let fileId: Int64
+    public let fileName: String
+    public let filePath: String
+    public let fileSize: Int64
 }
 
 public enum CICallStatus: String, Decodable {

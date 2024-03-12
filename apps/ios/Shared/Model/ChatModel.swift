@@ -95,6 +95,7 @@ final class ChatModel: ObservableObject {
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation
     @Published var showingInvitation: ShowingInvitation?
+    @Published var migrationState: MigrationFromAnotherDeviceState? = MigrationFromAnotherDeviceState.transform()
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?

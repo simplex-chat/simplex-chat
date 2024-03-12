@@ -66,6 +66,8 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
   }
 }
 
+fun getMigrationTempFilesDirectory(): File = File(dataDir, "migration_temp_files")
+
 fun getAppFilePath(fileName: String): String {
   val rh = chatModel.currentRemoteHost.value
   val s = File.separator

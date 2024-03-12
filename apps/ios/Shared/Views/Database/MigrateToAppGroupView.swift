@@ -188,6 +188,7 @@ struct MigrateToAppGroupView: View {
         let config = ArchiveConfig(archivePath: getDocumentsDirectory().appendingPathComponent(archiveName).path)
         Task {
             do {
+                try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
@@ -204,7 +205,11 @@ struct MigrateToAppGroupView: View {
                 resetChatCtrl()
                 try await MainActor.run { try initializeChat(start: false) }
                 let _ = try await apiImportArchive(config: config)
-                await MainActor.run { setV3DBMigration(.migrated) }
+                let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+                await MainActor.run {
+                    appSettings.importIntoApp()
+                    setV3DBMigration(.migrated)
+                }
             } catch let error {
                 dbContainerGroupDefault.set(.documents)
                 await MainActor.run {
@@ -216,16 +221,22 @@ struct MigrateToAppGroupView: View {
     }
 }
 
-func exportChatArchive() async throws -> URL {
+func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
     let archiveTime = Date.now
     let ts = archiveTime.ISO8601Format(Date.ISO8601FormatStyle(timeSeparator: .omitted))
     let archiveName = "simplex-chat.\(ts).zip"
-    let archivePath = getDocumentsDirectory().appendingPathComponent(archiveName)
+    let archivePath = (storagePath ?? getDocumentsDirectory()).appendingPathComponent(archiveName)
     let config = ArchiveConfig(archivePath: archivePath.path)
+    // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
+    if !ChatModel.shared.chatDbChanged {
+        try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
+    }
     try await apiExportArchive(config: config)
-    deleteOldArchive()
-    UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
-    chatArchiveTimeDefault.set(archiveTime)
+    if storagePath == nil {
+        deleteOldArchive()
+        UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
+        chatArchiveTimeDefault.set(archiveTime)
+    }
     return archivePath
 }
 
