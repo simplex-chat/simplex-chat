@@ -169,6 +169,10 @@ private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) 
         m.currentUser = try apiCreateActiveUser(profile)
         if m.users.isEmpty {
             try startChat()
+            // Chat was started but no user data was loaded at the moment (it may happen after deleting the last user)
+            if m.chats.isEmpty {
+                try getUserChatData()
+            }
             withAnimation {
                 onboardingStageDefault.set(.step3_CreateSimpleXAddress)
                 m.onboardingStage = .step3_CreateSimpleXAddress
