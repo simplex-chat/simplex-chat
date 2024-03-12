@@ -553,6 +553,17 @@ private fun MutableState<MigrationToState?>.startDownloading(
             )
             state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg)
           }
+          is CR.ChatRespError -> {
+            if (msg.chatError is ChatError.ChatErrorChat && msg.chatError.errorType is ChatErrorType.NoRcvFileUser) {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.migrate_to_device_download_failed),
+                generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
+              )
+              state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg)
+            } else {
+              Log.d(TAG, "unsupported error: ${msg.responseType}")
+            }
+          }
           else -> Log.d(TAG, "unsupported event: ${msg.responseType}")
         }
     }
