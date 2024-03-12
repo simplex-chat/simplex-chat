@@ -148,7 +148,7 @@ private fun MigrateToAnotherDeviceLayout(
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).height(IntrinsicSize.Max),
   ) {
-    AppBarTitle(stringResource(MR.strings.migrate_from_device_to_another_device))
+    AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
   }
