@@ -23,11 +23,7 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
         switch state {
         case nil:
             initial = nil
-        case let .downloadProgress(_, archiveName):
-            // iOS changes absolute directory every launch, check this way
-            let archivePath = getMigrationTempFilesDirectory().path + "/" + archiveName
-            try? FileManager.default.removeItem(atPath: archivePath)
-            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
+        case .downloadProgress:
             // No migration happens at the moment actually since archive were not downloaded fully
             logger.debug("MigrateFromDevice: archive wasn't fully downloaded, removed broken file")
             initial = nil
@@ -36,6 +32,10 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
             initial = .archiveImportFailed(archivePath: archivePath)
         case .passphrase:
             initial = .passphrase(passphrase: "")
+        }
+        if initial == nil {
+            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
+            try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
         }
         return initial
     }
