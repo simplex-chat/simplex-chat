@@ -147,7 +147,8 @@ class AppPreferences {
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
-  val migrationStage = mkStrPreference(SHARED_PREFS_MIGRATION_FROM_STAGE, null)
+  val migrationToStage = mkStrPreference(SHARED_PREFS_MIGRATION_TO_STAGE, null)
+  val migrationFromStage = mkStrPreference(SHARED_PREFS_MIGRATION_FROM_STAGE, null)
   val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)

@@ -13,7 +13,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import chat.simplex.common.model.*
-import chat.simplex.common.model.AppPreferences.Companion.SHARED_PREFS_MIGRATION_FROM_STAGE
+import chat.simplex.common.model.AppPreferences.Companion.SHARED_PREFS_MIGRATION_TO_STAGE
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.startChat
 import chat.simplex.common.model.ChatCtrl
@@ -49,7 +49,7 @@ sealed class MigrationToDeviceState {
     // Here we check whether it's needed to show migration process after app restart or not
     // It's important to NOT show the process when archive was corrupted/not fully downloaded
     fun makeMigrationState(): MigrationToState? {
-      val stage = settings.getStringOrNull(SHARED_PREFS_MIGRATION_FROM_STAGE)
+      val stage = settings.getStringOrNull(SHARED_PREFS_MIGRATION_TO_STAGE)
       val state: MigrationToDeviceState? = if (stage != null) json.decodeFromString(stage) else null
       val initial: MigrationToState? = when(state) {
         null -> null
@@ -71,7 +71,7 @@ sealed class MigrationToDeviceState {
         is Passphrase -> MigrationToState.Passphrase("", state.netCfg)
       }
       if (initial == null) {
-        settings.remove(SHARED_PREFS_MIGRATION_FROM_STAGE)
+        settings.remove(SHARED_PREFS_MIGRATION_TO_STAGE)
         getMigrationTempFilesDirectory().deleteRecursively()
       }
       return initial
@@ -79,9 +79,9 @@ sealed class MigrationToDeviceState {
 
     fun save(state: MigrationToDeviceState?) {
       if (state != null) {
-        appPreferences.migrationStage.set(json.encodeToString(state))
+        appPreferences.migrationToStage.set(json.encodeToString(state))
       } else {
-        appPreferences.migrationStage.set(null)
+        appPreferences.migrationToStage.set(null)
       }
     }
   }
