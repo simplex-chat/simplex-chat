@@ -213,7 +213,7 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        MigrateToAnotherDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
+                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
                             .navigationBarTitleDisplayMode(.large)
                     } label: {

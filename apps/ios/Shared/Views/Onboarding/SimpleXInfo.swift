@@ -13,7 +13,6 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
-    @State private var migrateFromAnotherDevice: Bool = false
     var onboarding: Bool
 
     var body: some View {
@@ -73,11 +72,11 @@ struct SimpleXInfo: View {
                 get: { m.migrationState != nil },
                 set: { _ in
                     m.migrationState = nil
-                    MigrationFromAnotherDeviceState.save(nil) }
+                    MigrationToDeviceState.save(nil) }
             )) {
                 NavigationView {
                     VStack(alignment: .leading) {
-                        MigrateFromAnotherDevice(migrationState: $m.migrationState)
+                        MigrateToDevice(migrationState: $m.migrationState)
                     }
                     .navigationTitle("Migrate here")
                     .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
