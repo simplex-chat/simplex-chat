@@ -85,8 +85,8 @@
     <string name="v4_4_verify_connection_security_desc">Porovnejte bezpečnostní kódy se svými kontakty.</string>
     <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
-    <string name="connect_via_contact_link">Připojit přez adresu kontaktu?</string>
-    <string name="connect_via_invitation_link">Připojit přez jednorázovou pozvánku?</string>
+    <string name="connect_via_contact_link">Připojit přes kontaktní adresu?</string>
+    <string name="connect_via_invitation_link">Připojit přes jednorázovou pozvánku?</string>
     <string name="connect_via_group_link">Připojit se do skupiny?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Váš profil bude odeslán kontaktu, od kterého jste obdrželi tento odkaz.</string>
     <string name="server_connected">připojeno</string>
@@ -1461,7 +1461,7 @@
     <string name="linked_desktops">Připojená PC</string>
     <string name="discover_on_network">Objevit přes lokální síť</string>
     <string name="rcv_group_and_other_events">a %d jiných událostí</string>
-    <string name="connect_plan_connect_via_link">Připojit přez odkaz?</string>
+    <string name="connect_plan_connect_via_link">Připojit přes odkaz?</string>
     <string name="v5_4_incognito_groups">Inkognito skupiny</string>
     <string name="connect_plan_already_joining_the_group">Už se ke skupině připojujete!</string>
     <string name="group_members_n">%s, %s a %d členů</string>
@@ -1625,4 +1625,20 @@
     <string name="call_service_notification_audio_call">Volání</string>
     <string name="call_service_notification_end_call">Konec volání</string>
     <string name="remote_host_error_missing">Mobilní <b>%s</b> chybí</string>
+    <string name="snd_group_event_member_blocked">zablokovali jste %s</string>
+    <string name="snd_group_event_member_unblocked">odblokovaly jste %s</string>
+    <string name="group_member_status_unknown_short">neznámý</string>
+    <string name="v5_5_message_delivery_descr">Se sníženou spotřebou baterie.</string>
+    <string name="group_member_status_unknown">neznámý stav</string>
+    <string name="unblock_for_all_question">Odblokovat člena všem?</string>
+    <string name="unblock_for_all">Odblokovat pro všechny</string>
+    <string name="welcome_message_is_too_long">Uvítací zpráva je příliš dlouhá</string>
+    <string name="remote_host_error_timeout">Vypršel čas při připojování k mobilnímu <b>%s</b></string>
+    <string name="call_service_notification_video_call">Videohovor</string>
+    <string name="profile_update_event_updated_profile">profil aktualizován</string>
+    <string name="unable_to_open_browser_desc">Výchozí webový prohlížeč je vyžadován pro volání. Nakonfigurujte výchozí prohlížeč v systému a sdílejte s vývojáři více informací.</string>
+    <string name="rcv_group_event_member_unblocked">odblokované %s</string>
+    <string name="v5_5_private_notes_descr">S šifrovanými soubory a médii.</string>
+    <string name="remote_ctrl_error_timeout">Vypršel čas při připojování k desktopu</string>
+    <string name="failed_to_create_user_invalid_desc">Zobrazené jméno není platné. Prosím vyberte jiné.</string>
 </resources>
