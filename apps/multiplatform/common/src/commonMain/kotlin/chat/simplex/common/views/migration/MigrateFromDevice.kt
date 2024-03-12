@@ -131,7 +131,7 @@ fun MigrateFromDeviceView(close: () -> Unit) {
       close()
     },
   ) {
-    MigrateToAnotherDeviceLayout(
+    MigrateFromDeviceLayout(
       migrationState = migrationState,
       chatReceiver = chatReceiver
     )
@@ -139,7 +139,7 @@ fun MigrateFromDeviceView(close: () -> Unit) {
 }
 
 @Composable
-private fun MigrateToAnotherDeviceLayout(
+private fun MigrateFromDeviceLayout(
   migrationState: MutableState<MigrationFromState>,
   chatReceiver: MutableState<MigrationFromChatReceiver?>
 ) {

@@ -139,7 +139,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
       }
     },
   ) {
-    MigrateFromAnotherDeviceLayout(
+    MigrateToDeviceLayout(
       migrationState = migrationState,
       chatReceiver = chatReceiver,
       close = close,
@@ -148,7 +148,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
 }
 
 @Composable
-private fun ModalData.MigrateFromAnotherDeviceLayout(
+private fun ModalData.MigrateToDeviceLayout(
   migrationState: MutableState<MigrationToState?>,
   chatReceiver: MutableState<MigrationToChatReceiver?>,
   close: () -> Unit,
