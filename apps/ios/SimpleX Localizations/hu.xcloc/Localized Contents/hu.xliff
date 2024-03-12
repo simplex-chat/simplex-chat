@@ -1275,7 +1275,7 @@ Ez az egyszer használatos linkje!</target>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve" approved="no">
         <source>Connect with %@</source>
-        <target state="translated">Kapcsolódás %@-val/vel</target>
+        <target state="translated">Kapcsolódás ezzel: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected desktop" xml:space="preserve" approved="no">
@@ -1395,7 +1395,7 @@ Ez az egyszer használatos linkje!</target>
       </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve" approved="no">
         <source>Correct name to %@?</source>
-        <target state="translated">Név javítása %@-ra/re?</target>
+        <target state="translated">Név javítása erre: %@?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve" approved="no">
@@ -1623,7 +1623,7 @@ Ez az egyszer használatos linkje!</target>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve" approved="no">
         <source>Delete %lld messages?</source>
-        <target state="translated">Törölsz %lld üzenetet?</target>
+        <target state="translated">Töröl %lld üzenetet?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete Contact" xml:space="preserve" approved="no">
@@ -3385,7 +3385,7 @@ Ez az Te linked a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target state="translated">A tag szerepköre "%@"-ra fog változni. A csoport minden tagja értesítést kap.</target>
+        <target state="translated">A tag szerepköre erre fog változni: "%@". A tag új meghívást fog kapni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
@@ -3440,7 +3440,7 @@ Ez az Te linked a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Messages from %@ will be shown!" xml:space="preserve" approved="no">
         <source>Messages from %@ will be shown!</source>
-        <target state="translated">A %@-tól érkező üzenetek megjelennek!</target>
+        <target state="translated">A(z) %@ által írt üzenetek megjelennek!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve" approved="no">
