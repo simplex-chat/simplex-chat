@@ -192,6 +192,14 @@ public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
+public func getAppDebugProfilePath() -> URL {
+    getAppDirectory().appendingPathComponent("simplex_debug_profile", isDirectory: false)
+}
+
+public func getAppEventLogPath() -> URL {
+    getAppDirectory().appendingPathComponent("simplex_event_log", isDirectory: false)
+}
+
 public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
