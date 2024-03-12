@@ -11,7 +11,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat where
@@ -3292,11 +3291,23 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   vr <- chatVersionRange
+  -- getUserByAConnId never throws logical errors, only SEDBException can be thrown here
   critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
-  where
-    critical a = a `catchChatError` \e -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
+
+-- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
+-- SEDBException will only be thrown on IO exceptions or SQLError during DB queries, e.g. when database is locked or busy for longer than 3s.
+-- In this case there is no better mitigation than showing alert:
+-- - without ACK the message delivery will be stuck,
+-- - with ACK message will be lost, as it failed to be saved.
+-- Full app restart is likely to resolve database condition and the message will be received and processed again.
+-- Please note: SEDBException will be also thrown on invalid query syntax or parameter mismatch, so it's important all queries are tested.
+critical :: ChatMonad m => m a -> m a
+critical a =
+  a `catchChatError` \case
+    ChatErrorStore SEDBException {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+    e -> throwError e
 
 processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
 processAgentMessageNoConn = \case
@@ -3487,6 +3498,10 @@ processAgentMsgRcvFile _corrId aFileId msg =
 
 processAgentMessageConn :: forall m . ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
+  -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
+  -- as in this case no need to ACK message - we can't process messages for this connection anyway.
+  -- SEDBException will be re-trown as CRITICAL as it is likely to indicate a temporary database condition
+  -- that will be resolved with app restart.
   entity <- critical $ withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
     END -> case entity of
@@ -3505,10 +3520,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       UserContactConnection conn uc ->
         processUserContactRequest agentMessage entity conn uc
   where
-    critical a =
-      a `catchChatError` \case
-        ChatErrorStore SEException {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
-        e -> throwError e -- XXX: connection w/o entity or entity details not found
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
       Just connStatus -> do
@@ -3558,7 +3569,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO only acknowledge without saving message?
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
-          withAckMessage agentConnId conn meta $ \cmdId -> do
+          withAckMessage agentConnId conn meta False $ \cmdId -> do
             (_conn', _) <- saveDirectRcvMSG conn meta cmdId msgBody
             pure False
         SENT msgId ->
@@ -3591,7 +3602,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody ->
-          withAckMessage agentConnId conn msgMeta $ \cmdId -> do
+          withAckMessage agentConnId conn msgMeta True $ \cmdId -> do
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
@@ -4000,20 +4011,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ sendDirectMemberMessage imConn (XGrpMemCon memberId) groupId
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
-        withAckMessage agentConnId conn msgMeta $ \cmdId -> do
+        withAckMessage agentConnId conn msgMeta True $ \cmdId -> do
           checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
-          forM_ aChatMsgs' $ \case
+          forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
               processEvent cmdId chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
             Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
-          checkSendRcpt $ rights aChatMsgs'
+          checkSendRcpt $ rights aChatMsgs
         -- currently only a single message is forwarded
         let GroupMember {memberRole = membershipMemRole} = membership
-        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs' of
+        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
           [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
           _ -> pure ()
         where
-          aChatMsgs' = parseChatMessages msgBody
+          aChatMsgs = parseChatMessages msgBody
           brokerTs = metaBrokerTs msgMeta
           processEvent :: MsgEncodingI e => CommandId -> ChatMessage e -> m ()
           processEvent cmdId chatMsg = do
@@ -4050,12 +4061,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
           checkSendRcpt :: [AChatMessage] -> m Bool
-          checkSendRcpt aChatMsgs = do
+          checkSendRcpt aMsgs = do
             currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
             let GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
             pure $
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
-                && any aChatMsgHasReceipt aChatMsgs
+                && any aChatMsgHasReceipt aMsgs
                 && currentMemCount <= smallGroupsRcptsMemLimit
             where
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
@@ -4389,10 +4400,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     withAckMessage' :: ConnId -> Connection -> MsgMeta -> m () -> m ()
     withAckMessage' cId conn msgMeta action = do
-      withAckMessage cId conn msgMeta $ \_cmdId -> action $> False
+      withAckMessage cId conn msgMeta False $ \_cmdId -> action $> False
 
-    withAckMessage :: ConnId -> Connection -> MsgMeta -> (CommandId -> m Bool) -> m ()
-    withAckMessage cId conn msgMeta action = do
+    withAckMessage :: ConnId -> Connection -> MsgMeta -> Bool -> (CommandId -> m Bool) -> m ()
+    withAckMessage cId conn msgMeta showCritical action = do
       cmdId <- createAckCmd conn `catchChatError` \e -> throwError $ ChatErrorAgent (CRITICAL True $ show e) Nothing
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
@@ -4402,6 +4413,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- 3) show screen of death to the user asking to restart
       tryChatError (action cmdId) >>= \case
         Right withRcpt -> ackMsg cId cmdId msgMeta $ if withRcpt then Just "" else Nothing
+        -- If showCritical is True, then these errors don't result in ACK and show user visible alert
+        -- This prevents losing the message that failed to be processed.
+        -- TODO v5.6 possibly, this may result in permanent inability to receive messages from this connection (that comment relates to other CRITICAL as well),
+        -- we could modify the alert to give user the option to skip this message processing and ACK next time this exception happens in this connection.
+        Left (ChatErrorStore SEDBException {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> ackMsg cId cmdId msgMeta Nothing >> throwError e
 
     ackMsg :: ConnId -> CommandId -> MsgMeta -> Maybe MsgReceiptInfo -> m ()
@@ -4813,7 +4829,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
       groupMsgToView gInfo ci'
 
-    blockedMember :: Monad n => GroupMember -> ChatItem c d -> n (ChatItem c d) -> n (ChatItem c d)
+    blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
     blockedMember m ci blockedCI
       | showMessages (memberSettings m) = pure ci
       | otherwise = blockedCI

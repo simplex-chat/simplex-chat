@@ -95,7 +95,7 @@ data StoreError
   | SEUniqueID
   | SELargeMsg
   | SEInternalError {message :: String}
-  | SEException {message :: String}
+  | SEDBException {message :: String}
   | SEBadChatItem {itemId :: ChatItemId, itemTs :: Maybe ChatItemTs}
   | SEChatItemNotFound {itemId :: ChatItemId}
   | SEChatItemNotFoundByText {text :: Text}

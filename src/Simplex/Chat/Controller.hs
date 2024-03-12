@@ -1111,7 +1111,6 @@ data DatabaseError
   | DBErrorNoFile {dbFile :: String}
   | DBErrorExport {sqliteError :: SQLiteError}
   | DBErrorOpen {sqliteError :: SQLiteError}
-  | DBErrorInternal {message :: String}
   deriving (Show, Exception)
 
 data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
@@ -1312,16 +1311,15 @@ withStoreCtx ctx_ action = do
     Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEException $ show e <> ctxStr
+    handleInternal ctxStr e = pure . Left . SEDBException $ show e <> ctxStr
 
 withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
   liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
   where
-    -- Normalize exceptions to ChatError
     handleInternal :: E.SomeException -> IO (Either ChatError a)
-    handleInternal = pure . Left . ChatErrorStore . SEException . show
+    handleInternal = pure . Left . ChatErrorStore . SEDBException . show
 
 withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
