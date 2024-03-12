@@ -79,39 +79,49 @@ data class MigrationFileLinkData(
 
 
 @Serializable
-private sealed class MigrationToState {
-  @Serializable object ChatStopInProgress: MigrationToState()
-  @Serializable data class ChatStopFailed(val reason: String): MigrationToState()
-  @Serializable object PassphraseNotSet: MigrationToState()
-  @Serializable object PassphraseConfirmation: MigrationToState()
-  @Serializable object UploadConfirmation: MigrationToState()
-  @Serializable object Archiving: MigrationToState()
-  @Serializable data class DatabaseInit(val totalBytes: Long, val archivePath: String): MigrationToState()
-  @Serializable data class UploadProgress(val uploadedBytes: Long, val totalBytes: Long, val fileId: Long, val archivePath: String, val ctrl: ChatCtrl, val user: User): MigrationToState()
-  @Serializable data class UploadFailed(val totalBytes: Long, val archivePath: String): MigrationToState()
-  @Serializable object LinkCreation: MigrationToState()
-  @Serializable data class LinkShown(val fileId: Long, val link: String, val  ctrl: ChatCtrl): MigrationToState()
-  @Serializable data class Finished(val chatDeletion: Boolean): MigrationToState()
+private sealed class MigrationFromState {
+  @Serializable object ChatStopInProgress: MigrationFromState()
+  @Serializable data class ChatStopFailed(val reason: String): MigrationFromState()
+  @Serializable object PassphraseNotSet: MigrationFromState()
+  @Serializable object PassphraseConfirmation: MigrationFromState()
+  @Serializable object UploadConfirmation: MigrationFromState()
+  @Serializable object Archiving: MigrationFromState()
+  @Serializable data class DatabaseInit(val totalBytes: Long, val archivePath: String): MigrationFromState()
+  @Serializable data class UploadProgress(val uploadedBytes: Long, val totalBytes: Long, val fileId: Long, val archivePath: String, val ctrl: ChatCtrl, val user: User): MigrationFromState()
+  @Serializable data class UploadFailed(val totalBytes: Long, val archivePath: String): MigrationFromState()
+  @Serializable object LinkCreation: MigrationFromState()
+  @Serializable data class LinkShown(val fileId: Long, val link: String, val  ctrl: ChatCtrl): MigrationFromState()
+  @Serializable data class Finished(val chatDeletion: Boolean): MigrationFromState()
 }
 
-private var MutableState<MigrationToState>.state: MigrationToState
+private var MutableState<MigrationFromState>.state: MigrationFromState
   get() = value
   set(v) { value = v }
 
 @Composable
-fun MigrateToAnotherDeviceView(close: () -> Unit) {
-  val migrationState = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<MigrationToState>(MigrationToState.ChatStopInProgress) }
+fun MigrateFromDeviceView(close: () -> Unit) {
+  val migrationState = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<MigrationFromState>(MigrationFromState.ChatStopInProgress) }
   // Prevent from hiding the view until migration is finished or app deleted
   val backDisabled = remember {
     derivedStateOf {
-      migrationState.value is MigrationToState.DatabaseInit ||
-          migrationState.value is MigrationToState.Archiving ||
-          migrationState.value is MigrationToState.LinkCreation ||
-          migrationState.value is MigrationToState.LinkShown ||
-          migrationState.value is MigrationToState.Finished
+      when (migrationState.value) {
+        is MigrationFromState.ChatStopInProgress,
+        is MigrationFromState.DatabaseInit,
+        is MigrationFromState.Archiving,
+        is MigrationFromState.LinkShown,
+        is MigrationFromState.Finished -> true
+
+        is MigrationFromState.ChatStopFailed,
+        is MigrationFromState.PassphraseNotSet,
+        is MigrationFromState.PassphraseConfirmation,
+        is MigrationFromState.UploadConfirmation,
+        is MigrationFromState.UploadProgress,
+        is MigrationFromState.UploadFailed,
+        is MigrationFromState.LinkCreation -> false
+      }
     }
   }
-  val chatReceiver = remember { mutableStateOf(null as MigrationToChatReceiver?) }
+  val chatReceiver = remember { mutableStateOf(null as MigrationFromChatReceiver?) }
   ModalView(
     enableClose = !backDisabled.value,
     close = {
@@ -121,7 +131,7 @@ fun MigrateToAnotherDeviceView(close: () -> Unit) {
       close()
     },
   ) {
-    MigrateToAnotherDeviceLayout(
+    MigrateFromDeviceLayout(
       migrationState = migrationState,
       chatReceiver = chatReceiver
     )
@@ -129,16 +139,16 @@ fun MigrateToAnotherDeviceView(close: () -> Unit) {
 }
 
 @Composable
-private fun MigrateToAnotherDeviceLayout(
-  migrationState: MutableState<MigrationToState>,
-  chatReceiver: MutableState<MigrationToChatReceiver?>
+private fun MigrateFromDeviceLayout(
+  migrationState: MutableState<MigrationFromState>,
+  chatReceiver: MutableState<MigrationFromChatReceiver?>
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).height(IntrinsicSize.Max),
   ) {
-    AppBarTitle(stringResource(MR.strings.migrate_to_device))
+    AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
   }
@@ -147,30 +157,30 @@ private fun MigrateToAnotherDeviceLayout(
 
 @Composable
 private fun SectionByState(
-  migrationState: MutableState<MigrationToState>,
+  migrationState: MutableState<MigrationFromState>,
   tempDatabaseFile: File,
-  chatReceiver: MutableState<MigrationToChatReceiver?>
+  chatReceiver: MutableState<MigrationFromChatReceiver?>
 ) {
   when (val s = migrationState.value) {
-    is MigrationToState.ChatStopInProgress -> migrationState.ChatStopInProgressView()
-    is MigrationToState.ChatStopFailed -> migrationState.ChatStopFailedView(s.reason)
-    is MigrationToState.PassphraseNotSet -> migrationState.PassphraseNotSetView()
-    is MigrationToState.PassphraseConfirmation -> migrationState.PassphraseConfirmationView()
-    is MigrationToState.UploadConfirmation -> migrationState.UploadConfirmationView()
-    is MigrationToState.Archiving -> migrationState.ArchivingView()
-    is MigrationToState.DatabaseInit -> migrationState.DatabaseInitView(tempDatabaseFile, s.totalBytes, s.archivePath)
-    is MigrationToState.UploadProgress -> migrationState.UploadProgressView(s.uploadedBytes, s.totalBytes, s.ctrl, s.user, tempDatabaseFile, chatReceiver, s.archivePath)
-    is MigrationToState.UploadFailed -> migrationState.UploadFailedView(s.totalBytes, s.archivePath, chatReceiver.value)
-    is MigrationToState.LinkCreation -> LinkCreationView()
-    is MigrationToState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl)
-    is MigrationToState.Finished -> migrationState.FinishedView(s.chatDeletion)
+    is MigrationFromState.ChatStopInProgress -> migrationState.ChatStopInProgressView()
+    is MigrationFromState.ChatStopFailed -> migrationState.ChatStopFailedView(s.reason)
+    is MigrationFromState.PassphraseNotSet -> migrationState.PassphraseNotSetView()
+    is MigrationFromState.PassphraseConfirmation -> migrationState.PassphraseConfirmationView()
+    is MigrationFromState.UploadConfirmation -> migrationState.UploadConfirmationView()
+    is MigrationFromState.Archiving -> migrationState.ArchivingView()
+    is MigrationFromState.DatabaseInit -> migrationState.DatabaseInitView(tempDatabaseFile, s.totalBytes, s.archivePath)
+    is MigrationFromState.UploadProgress -> migrationState.UploadProgressView(s.uploadedBytes, s.totalBytes, s.ctrl, s.user, tempDatabaseFile, chatReceiver, s.archivePath)
+    is MigrationFromState.UploadFailed -> migrationState.UploadFailedView(s.totalBytes, s.archivePath, chatReceiver.value)
+    is MigrationFromState.LinkCreation -> LinkCreationView()
+    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl)
+    is MigrationFromState.Finished -> migrationState.FinishedView(s.chatDeletion)
   }
 }
 
 @Composable
-private fun MutableState<MigrationToState>.ChatStopInProgressView() {
+private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
   Box {
-    SectionView(stringResource(MR.strings.migration_to_device_stopping_chat).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat).uppercase()) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -179,7 +189,7 @@ private fun MutableState<MigrationToState>.ChatStopInProgressView() {
 }
 
 @Composable
-private fun MutableState<MigrationToState>.ChatStopFailedView(reason: String) {
+private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) {
   SectionView(stringResource(MR.strings.error_stopping_chat).uppercase()) {
     Text(reason)
     SectionSpacer()
@@ -189,22 +199,22 @@ private fun MutableState<MigrationToState>.ChatStopFailedView(reason: String) {
       textColor = MaterialTheme.colors.error,
       click = ::stopChat
     ){}
-    SectionTextFooter(stringResource(MR.strings.migration_to_device_chat_should_be_stopped))
+    SectionTextFooter(stringResource(MR.strings.migrate_from_device_chat_should_be_stopped))
   }
 }
 
 @Composable
-private fun MutableState<MigrationToState>.PassphraseNotSetView() {
+private fun MutableState<MigrationFromState>.PassphraseNotSetView() {
   DatabaseEncryptionView(chatModel, true)
   KeyChangeEffect(appPreferences.initialRandomDBPassphrase.state.value) {
     if (!appPreferences.initialRandomDBPassphrase.get()) {
-      state = MigrationToState.UploadConfirmation
+      state = MigrationFromState.UploadConfirmation
     }
   }
 }
 
 @Composable
-private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
+private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
   val useKeychain = remember { appPreferences.storeDBPassphrase.get() }
   val currentKey = rememberSaveable { mutableStateOf("") }
   val verifyingPassphrase = rememberSaveable { mutableStateOf(false) }
@@ -214,12 +224,12 @@ private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
       ChatStoppedView()
       SectionSpacer()
 
-      SectionView(stringResource(MR.strings.migration_to_device_verify_database_passphrase).uppercase()) {
+      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase).uppercase()) {
         PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey, requestFocus = true)
 
         SettingsActionItemWithContent(
           icon = painterResource(if (useKeychain) MR.images.ic_vpn_key_filled else MR.images.ic_lock),
-          text = stringResource(MR.strings.migration_to_device_verify_passphrase),
+          text = stringResource(MR.strings.migrate_from_device_verify_passphrase),
           textColor = MaterialTheme.colors.primary,
           disabled = verifyingPassphrase.value || currentKey.value.isEmpty(),
           click = {
@@ -231,7 +241,7 @@ private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
             }
           }
         ) {}
-        SectionTextFooter(stringResource(MR.strings.migration_to_device_confirm_you_remember_passphrase))
+        SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
       }
     }
     if (verifyingPassphrase.value) {
@@ -241,22 +251,22 @@ private fun MutableState<MigrationToState>.PassphraseConfirmationView() {
 }
 
 @Composable
-private fun MutableState<MigrationToState>.UploadConfirmationView() {
-  SectionView(stringResource(MR.strings.migration_to_device_confirm_upload).uppercase()) {
+private fun MutableState<MigrationFromState>.UploadConfirmationView() {
+  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload).uppercase()) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
-      text = stringResource(MR.strings.migration_to_device_archive_and_upload),
+      text = stringResource(MR.strings.migrate_from_device_archive_and_upload),
       textColor = MaterialTheme.colors.primary,
-      click = { state = MigrationToState.Archiving }
+      click = { state = MigrationFromState.Archiving }
     ){}
-    SectionTextFooter(stringResource(MR.strings.migration_to_device_all_data_will_be_uploaded))
+    SectionTextFooter(stringResource(MR.strings.migrate_from_device_all_data_will_be_uploaded))
   }
 }
 
 @Composable
-private fun MutableState<MigrationToState>.ArchivingView() {
+private fun MutableState<MigrationFromState>.ArchivingView() {
   Box {
-    SectionView(stringResource(MR.strings.migration_to_device_archiving_database).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database).uppercase()) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -265,9 +275,9 @@ private fun MutableState<MigrationToState>.ArchivingView() {
 }
 
 @Composable
-private fun MutableState<MigrationToState>.DatabaseInitView(tempDatabaseFile: File, totalBytes: Long, archivePath: String) {
+private fun MutableState<MigrationFromState>.DatabaseInitView(tempDatabaseFile: File, totalBytes: Long, archivePath: String) {
   Box {
-    SectionView(stringResource(MR.strings.migration_to_device_database_init).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_database_init).uppercase()) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -276,19 +286,19 @@ private fun MutableState<MigrationToState>.DatabaseInitView(tempDatabaseFile: Fi
 }
 
 @Composable
-private fun MutableState<MigrationToState>.UploadProgressView(
+private fun MutableState<MigrationFromState>.UploadProgressView(
   uploadedBytes: Long,
   totalBytes: Long,
   ctrl: ChatCtrl,
   user: User,
   tempDatabaseFile: File,
-  chatReceiver: MutableState<MigrationToChatReceiver?>,
+  chatReceiver: MutableState<MigrationFromChatReceiver?>,
   archivePath: String,
 ) {
   Box {
-    SectionView(stringResource(MR.strings.migration_to_device_uploading_archive).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive).uppercase()) {
       val ratio = uploadedBytes.toFloat() / max(totalBytes, 1)
-      LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migration_to_device_bytes_uploaded).format(formatBytes(uploadedBytes)))
+      LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migrate_from_device_bytes_uploaded).format(formatBytes(uploadedBytes)))
     }
   }
   LaunchedEffect(Unit) {
@@ -297,17 +307,17 @@ private fun MutableState<MigrationToState>.UploadProgressView(
 }
 
 @Composable
-private fun MutableState<MigrationToState>.UploadFailedView(totalBytes: Long, archivePath: String, chatReceiver: MigrationToChatReceiver?) {
-  SectionView(stringResource(MR.strings.migration_to_device_upload_failed).uppercase()) {
+private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, archivePath: String, chatReceiver: MigrationFromChatReceiver?) {
+  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed).uppercase()) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
-      text = stringResource(MR.strings.migration_to_device_repeat_upload),
+      text = stringResource(MR.strings.migrate_from_device_repeat_upload),
       textColor = MaterialTheme.colors.primary,
       click = {
-        state = MigrationToState.DatabaseInit(totalBytes, archivePath)
+        state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
       }
     ) {}
-    SectionTextFooter(stringResource(MR.strings.migration_to_device_try_again))
+    SectionTextFooter(stringResource(MR.strings.migrate_from_device_try_again))
   }
   LaunchedEffect(Unit) {
     chatReceiver?.stopAndCleanUp()
@@ -317,17 +327,17 @@ private fun MutableState<MigrationToState>.UploadFailedView(totalBytes: Long, ar
 @Composable
 private fun LinkCreationView() {
   Box {
-    SectionView(stringResource(MR.strings.migration_to_device_creating_archive_link).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link).uppercase()) {}
     ProgressView()
   }
 }
 
 @Composable
-private fun MutableState<MigrationToState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl) {
   SectionView {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_close),
-      text = stringResource(MR.strings.migration_to_device_cancel_migration),
+      text = stringResource(MR.strings.migrate_from_device_cancel_migration),
       textColor = MaterialTheme.colors.error,
       click = {
         cancelMigration(fileId, ctrl)
@@ -335,31 +345,32 @@ private fun MutableState<MigrationToState>.LinkShownView(fileId: Long, link: Str
     ) {}
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_check),
-      text = stringResource(MR.strings.migration_to_device_finalize_migration),
+      text = stringResource(MR.strings.migrate_from_device_finalize_migration),
       textColor = MaterialTheme.colors.primary,
       click = {
         finishMigration(fileId, ctrl)
       }
     ) {}
-    SectionTextFooter(annotatedStringResource(MR.strings.migration_to_device_choose_migrate_from_another_device))
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   }
   SectionSpacer()
   SectionView(stringResource(MR.strings.show_QR_code).uppercase()) {
     SimpleXLinkQRCode(link, onShare = {})
   }
   SectionSpacer()
-  SectionView(stringResource(MR.strings.migration_to_device_or_share_this_file_link).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link).uppercase()) {
     LinkTextView(link, true)
   }
 }
 
 @Composable
-private fun MutableState<MigrationToState>.FinishedView(chatDeletion: Boolean) {
+private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean) {
   Box {
-    SectionView(stringResource(MR.strings.migration_to_device_migration_complete).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete).uppercase()) {
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_delete_forever),
-        text = stringResource(MR.strings.migration_to_device_delete_database_from_device),
+        text = stringResource(MR.strings.migrate_from_device_delete_database_from_device),
         textColor = MaterialTheme.colors.primary,
         click = {
           AlertManager.shared.showAlertDialog(
@@ -375,21 +386,21 @@ private fun MutableState<MigrationToState>.FinishedView(chatDeletion: Boolean) {
 
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_play_arrow_filled),
-        text = stringResource(MR.strings.migration_to_device_start_chat),
+        text = stringResource(MR.strings.migrate_from_device_start_chat),
         textColor = MaterialTheme.colors.error,
         click = {
           AlertManager.shared.showAlertDialog(
             title = generalGetString(MR.strings.start_chat_question),
-            text = generalGetString(MR.strings.migration_to_device_starting_chat_on_multiple_devices_unsupported),
-            confirmText = generalGetString(MR.strings.migration_to_device_start_chat),
+            text = generalGetString(MR.strings.migrate_from_device_starting_chat_on_multiple_devices_unsupported),
+            confirmText = generalGetString(MR.strings.migrate_from_device_start_chat),
             onConfirm = {
               withLongRunningApi { startChatAndDismiss() }
             }
           )
         }
       ) {}
-      SectionTextFooter(annotatedStringResource(MR.strings.migration_to_device_you_must_not_start_database_on_two_device))
-      SectionTextFooter(annotatedStringResource(MR.strings.migration_to_device_using_on_two_device_breaks_encryption))
+      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     }
     if (chatDeletion) {
       ProgressView()
@@ -420,52 +431,58 @@ fun LargeProgressView(value: Float, title: String, description: String) {
   }
 }
 
-private fun MutableState<MigrationToState>.stopChat() {
+private fun MutableState<MigrationFromState>.stopChat() {
   withBGApi {
     try {
       stopChatAsync(chatModel)
       try {
         controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
-        state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationToState.PassphraseNotSet else MigrationToState.PassphraseConfirmation
+        state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationFromState.PassphraseNotSet else MigrationFromState.PassphraseConfirmation
       } catch (e: Exception) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.migrate_to_device_error_saving_settings),
+          title = generalGetString(MR.strings.migrate_from_device_error_saving_settings),
           text = e.stackTraceToString()
         )
-        state = MigrationToState.ChatStopFailed(reason = generalGetString(MR.strings.migrate_to_device_error_saving_settings))
+        state = MigrationFromState.ChatStopFailed(reason = generalGetString(MR.strings.migrate_from_device_error_saving_settings))
       }
     } catch (e: Exception) {
-      state = MigrationToState.ChatStopFailed(reason = e.stackTraceToString().take(10))
+      state = MigrationFromState.ChatStopFailed(reason = e.stackTraceToString().take(10))
     }
   }
 }
 
-private suspend fun MutableState<MigrationToState>.verifyDatabasePassphrase(dbKey: String) {
-  if (controller.testStorageEncryption(dbKey)) {
-    state = MigrationToState.UploadConfirmation
-  } else {
+private suspend fun MutableState<MigrationFromState>.verifyDatabasePassphrase(dbKey: String) {
+  val error = controller.testStorageEncryption(dbKey)
+  if (error == null) {
+    state = MigrationFromState.UploadConfirmation
+  } else if (((error.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorOpen)?.sqliteError is SQLiteError.ErrorNotADatabase) {
     showErrorOnMigrationIfNeeded(DBMigrationResult.ErrorNotADatabase(""))
+  } else {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.error),
+      text = generalGetString(MR.strings.migrate_from_device_error_verifying_passphrase) + " " + error.details
+    )
   }
 }
 
-private fun MutableState<MigrationToState>.exportArchive() {
+private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
       getMigrationTempFilesDirectory().mkdir()
       val archivePath = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
       val totalBytes = File(archivePath).length()
       if (totalBytes > 0L) {
-        state = MigrationToState.DatabaseInit(totalBytes, archivePath)
+        state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
       } else {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_to_device_exported_file_doesnt_exist))
-        state = MigrationToState.UploadConfirmation
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+        state = MigrationFromState.UploadConfirmation
       }
     } catch (e: Exception) {
       AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.migrate_to_device_error_exporting_archive),
+        title = generalGetString(MR.strings.migrate_from_device_error_exporting_archive),
         text = e.stackTraceToString()
       )
-      state = MigrationToState.UploadConfirmation
+      state = MigrationFromState.UploadConfirmation
     }
   }
 }
@@ -484,7 +501,7 @@ suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<
   return null
 }
 
-private fun MutableState<MigrationToState>.prepareDatabase(
+private fun MutableState<MigrationFromState>.prepareDatabase(
   tempDatabaseFile: File,
   totalBytes: Long,
   archivePath: String,
@@ -492,35 +509,35 @@ private fun MutableState<MigrationToState>.prepareDatabase(
   withLongRunningApi {
     val ctrlAndUser = initTemporaryDatabase(tempDatabaseFile, getNetCfg())
     if (ctrlAndUser == null) {
-      state = MigrationToState.UploadFailed(totalBytes, archivePath)
+      state = MigrationFromState.UploadFailed(totalBytes, archivePath)
       return@withLongRunningApi
     }
 
     val (ctrl, user) = ctrlAndUser
-    state = MigrationToState.UploadProgress(0L, totalBytes, 0L, archivePath, ctrl, user)
+    state = MigrationFromState.UploadProgress(0L, totalBytes, 0L, archivePath, ctrl, user)
   }
 }
 
-private fun MutableState<MigrationToState>.startUploading(
+private fun MutableState<MigrationFromState>.startUploading(
   totalBytes: Long,
   ctrl: ChatCtrl,
   user: User,
   tempDatabaseFile: File,
-  chatReceiver: MutableState<MigrationToChatReceiver?>,
+  chatReceiver: MutableState<MigrationFromChatReceiver?>,
   archivePath: String,
 ) {
   withBGApi {
-    chatReceiver.value = MigrationToChatReceiver(ctrl, tempDatabaseFile) { msg ->
+    chatReceiver.value = MigrationFromChatReceiver(ctrl, tempDatabaseFile) { msg ->
       when (msg) {
         is CR.SndFileProgressXFTP -> {
           val s = state
-          if (s is MigrationToState.UploadProgress && s.uploadedBytes != s.totalBytes) {
-            state = MigrationToState.UploadProgress(msg.sentSize, msg.totalSize, msg.fileTransferMeta.fileId, archivePath, ctrl, user)
+          if (s is MigrationFromState.UploadProgress && s.uploadedBytes != s.totalBytes) {
+            state = MigrationFromState.UploadProgress(msg.sentSize, msg.totalSize, msg.fileTransferMeta.fileId, archivePath, ctrl, user)
           }
         }
         is CR.SndFileRedirectStartXFTP -> {
           delay(500)
-          state = MigrationToState.LinkCreation
+          state = MigrationFromState.LinkCreation
         }
         is CR.SndStandaloneFileComplete -> {
           delay(500)
@@ -532,7 +549,14 @@ private fun MutableState<MigrationToState>.startUploading(
               requiredHostMode = cfg.requiredHostMode
             )
           )
-          state = MigrationToState.LinkShown(msg.fileTransferMeta.fileId, data.addToLink(msg.rcvURIs[0]), ctrl)
+          state = MigrationFromState.LinkShown(msg.fileTransferMeta.fileId, data.addToLink(msg.rcvURIs[0]), ctrl)
+        }
+        is CR.SndFileError -> {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.migrate_from_device_upload_failed),
+            generalGetString(MR.strings.migrate_from_device_check_connection_and_try_again)
+          )
+          state = MigrationFromState.UploadFailed(totalBytes, archivePath)
         }
         else -> {
           Log.d(TAG, "unsupported event: ${msg.responseType}")
@@ -544,13 +568,13 @@ private fun MutableState<MigrationToState>.startUploading(
 
     val (res, error) = controller.uploadStandaloneFile(user, CryptoFile.plain(File(archivePath).name), ctrl)
     if (res == null) {
-      state = MigrationToState.UploadFailed(totalBytes, archivePath)
+      state = MigrationFromState.UploadFailed(totalBytes, archivePath)
       return@withBGApi AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.migration_to_device_error_uploading_archive),
+        generalGetString(MR.strings.migrate_from_device_error_uploading_archive),
         error
       )
     }
-    state = MigrationToState.UploadProgress(0, res.fileSize, res.fileId, archivePath, ctrl, user)
+    state = MigrationFromState.UploadProgress(0, res.fileSize, res.fileId, archivePath, ctrl, user)
   }
 }
 
@@ -565,19 +589,19 @@ private fun cancelMigration(fileId: Long, ctrl: ChatCtrl) {
   }
 }
 
-private fun MutableState<MigrationToState>.finishMigration(fileId: Long, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl) {
   withBGApi {
     cancelUploadedArchive(fileId, ctrl)
-    state = MigrationToState.Finished(false)
+    state = MigrationFromState.Finished(false)
   }
 }
 
-private fun MutableState<MigrationToState>.deleteChatAndDismiss() {
+private fun MutableState<MigrationFromState>.deleteChatAndDismiss() {
   withBGApi {
     try {
       deleteChatAsync(chatModel)
       chatModel.chatDbChanged.value = true
-      state = MigrationToState.Finished(true)
+      state = MigrationFromState.Finished(true)
       try {
         initChatController(startChat = { CompletableDeferred(false) })
         chatModel.chatDbChanged.value = false
@@ -587,7 +611,7 @@ private fun MutableState<MigrationToState>.deleteChatAndDismiss() {
       }
     } catch (e: Exception) {
       AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.migration_to_device_error_deleting_database),
+        title = generalGetString(MR.strings.migrate_from_device_error_deleting_database),
         text = e.stackTraceToString()
       )
     }
@@ -615,14 +639,14 @@ private suspend fun startChatAndDismiss(dismiss: Boolean = true) {
   }
 }
 
-private suspend fun MutableState<MigrationToState>.cleanUpOnBack(chatReceiver: MigrationToChatReceiver?) {
+private suspend fun MutableState<MigrationFromState>.cleanUpOnBack(chatReceiver: MigrationFromChatReceiver?) {
   val s = state
-  if (s !is MigrationToState.LinkShown && s !is MigrationToState.Finished) {
+  if (s !is MigrationFromState.LinkShown && s !is MigrationFromState.Finished) {
     chatModel.switchingUsersAndHosts.value = true
     startChatAndDismiss(false)
     chatModel.switchingUsersAndHosts.value = false
   }
-  if (s is MigrationToState.UploadProgress) {
+  if (s is MigrationFromState.UploadProgress) {
     cancelUploadedArchive(s.fileId, s.ctrl)
   }
   chatReceiver?.stopAndCleanUp()
@@ -632,7 +656,7 @@ private suspend fun MutableState<MigrationToState>.cleanUpOnBack(chatReceiver: M
 private fun fileForTemporaryDatabase(): File =
   File(getMigrationTempFilesDirectory(), generateNewFileName("migration", "db", getMigrationTempFilesDirectory()))
 
-private class MigrationToChatReceiver(
+private class MigrationFromChatReceiver(
   val ctrl: ChatCtrl,
   val databaseUrl: File,
   var receiveMessages: Boolean = true,

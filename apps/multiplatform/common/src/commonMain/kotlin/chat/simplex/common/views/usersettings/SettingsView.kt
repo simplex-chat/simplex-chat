@@ -28,8 +28,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.migration.MigrateFromAnotherDeviceView
-import chat.simplex.common.views.migration.MigrateToAnotherDeviceView
+import chat.simplex.common.views.migration.MigrateFromDeviceView
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.remote.ConnectDesktopView
@@ -137,7 +136,7 @@ fun SettingsLayout(
         } else {
           SettingsActionItem(painterResource(MR.images.ic_desktop), stringResource(MR.strings.settings_section_title_use_from_desktop), showCustomModal{ it, close -> ConnectDesktopView(close) }, disabled = stopped, extraPadding = true)
         }
-        SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_to_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateToAnotherDeviceView(close) } }}, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } }}, disabled = stopped, extraPadding = true)
       }
       SectionDividerSpaced()
 
