@@ -108,11 +108,8 @@ struct MigrateToAnotherDevice: View {
         })
         .onChange(of: migrationState) { state in
             backDisabled = switch migrationState {
-            case .archiving: true
-            case .linkCreation: true
-            case .linkShown: true
-            case .finished: true
-            default: false
+            case .chatStopInProgress, .archiving, .linkShown, .finished: true
+            case .chatStopFailed, .passphraseNotSet, .passphraseConfirmation, .uploadConfirmation, .uploadProgress, .uploadFailed, .linkCreation: false
             }
         }
         .onAppear {
@@ -120,7 +117,7 @@ struct MigrateToAnotherDevice: View {
         }
         .onDisappear {
             Task {
-                if case .linkCreation = migrationState {} else if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
+                if !backDisabled {
                     await MainActor.run {
                         showProgressOnSettings = true
                     }
