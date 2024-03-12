@@ -642,7 +642,6 @@ private struct PassphraseConfirmationView: View {
                 migrationState = .uploadConfirmation
             }
         } catch let error {
-            logger.debug("LALAL ERROR \(String(describing: error))")
             if case .chatCmdError(_, .errorDatabase(.errorOpen(.errorNotADatabase))) = error as? ChatResponse {
                 showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
             } else {

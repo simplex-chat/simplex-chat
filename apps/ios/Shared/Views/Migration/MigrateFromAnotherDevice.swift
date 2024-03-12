@@ -117,7 +117,7 @@ struct MigrateFromAnotherDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State var migrationState: MigrationFromState
+    @Binding var migrationState: MigrationFromState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateFromAnotherDeviceViewAlert?
     private let tempDatabaseUrl = urlForTemporaryDatabase()
@@ -731,6 +731,6 @@ private class MigrationChatReceiver {
 
 struct MigrateFromAnotherDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateFromAnotherDevice(migrationState: .pasteOrScanLink)
+        MigrateFromAnotherDevice(migrationState: Binding.constant(.pasteOrScanLink))
     }
 }
