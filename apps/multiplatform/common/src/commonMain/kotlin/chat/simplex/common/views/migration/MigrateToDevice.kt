@@ -158,7 +158,7 @@ private fun ModalData.MigrateFromAnotherDeviceLayout(
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).height(IntrinsicSize.Max),
   ) {
-    AppBarTitle(stringResource(MR.strings.migrate_here))
+    AppBarTitle(stringResource(MR.strings.migrate_to_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)
     SectionBottomSpacer()
   }
@@ -642,6 +642,7 @@ private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit)
 
 private fun hideView(close: () -> Unit) {
   appPreferences.onboardingStage.set(OnboardingStage.OnboardingComplete)
+  chatModel.migrationState.value = null
   close()
 }
 
@@ -657,6 +658,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   chatReceiver?.stopAndCleanUp()
   getMigrationTempFilesDirectory().deleteRecursively()
   MigrationToDeviceState.save(null)
+  chatModel.migrationState.value = null
 }
 
 private fun strHasSimplexFileLink(text: String): Boolean =

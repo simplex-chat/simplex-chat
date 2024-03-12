@@ -1847,7 +1847,7 @@
   <string name="restart_chat_button">Restart chat</string>
 
   <!--  MigrateToDevice.kt -->
-  <string name="migrate_here">Migrate here</string>
+  <string name="migrate_to_device_title">Migrate here</string>
   <string name="or_paste_archive_link">Or paste archive link</string>
   <string name="paste_archive_link">Paste archive link</string>
   <string name="invalid_file_link">Invalid link</string>
