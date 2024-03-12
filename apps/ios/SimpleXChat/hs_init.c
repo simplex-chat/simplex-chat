@@ -7,7 +7,6 @@
 //
 
 #include "hs_init.h"
-#include <stdio.h>
 #include <string.h>
 
 extern void hs_init_with_rtsopts(int * argc, char **argv[]);
@@ -26,7 +25,6 @@ void haskell_init(const char *eventlog, const char *heap_profile) {
     if (eventlog) {
         static char ol[1024] = "-ol";
         (void)strncpy(&ol[3], eventlog, sizeof(ol) - 3);
-        printf("%s\n", ol);
         argv[argc++] = ol;
         argv[argc++] = "-l-agu"; // collect GC and user events
     }
