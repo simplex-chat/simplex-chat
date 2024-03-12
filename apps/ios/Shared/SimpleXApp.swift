@@ -22,7 +22,7 @@ struct SimpleXApp: App {
 
     init() {
         DispatchQueue.global(qos: .background).sync {
-            haskell_init()
+            haskell_init(getAppEventLogPath().path, getAppDebugProfilePath().path)
 //            hs_init(0, nil)
         }
         UserDefaults.standard.register(defaults: appDefaults)

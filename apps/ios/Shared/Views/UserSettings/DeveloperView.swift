@@ -46,6 +46,11 @@ struct DeveloperView: View {
 
                 if developerTools {
                     Section {
+                        exportDebugProfileButton()
+                        exportEventLogButton()
+                    }
+
+                    Section {
                         settingsRow("key") {
                             Toggle("Post-quantum E2EE", isOn: $pqExperimentalEnabled)
                                 .onChange(of: pqExperimentalEnabled) {
@@ -60,6 +65,24 @@ struct DeveloperView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder private func exportDebugProfileButton() -> some View {
+        let url = getAppDebugProfilePath()
+        settingsRow("square.and.arrow.up") {
+            Button("Export debugging profile") {
+                showShareSheet(items: [url])
+            }
+        }.disabled(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @ViewBuilder private func exportEventLogButton() -> some View {
+        let url = getAppEventLogPath()
+        settingsRow("square.and.arrow.up") {
+            Button("Export event log") {
+                showShareSheet(items: [url])
+            }
+        }.disabled(!FileManager.default.fileExists(atPath: url.path))
     }
 
     private func setPQExperimentalEnabled(_ enable: Bool) {
