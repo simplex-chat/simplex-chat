@@ -6248,14 +6248,14 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>admin</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
+      <trans-unit id="agreeing encryption for %@…" xml:space="preserve" approved="no">
         <source>agreeing encryption for %@…</source>
-        <target>accord sur le chiffrement pour %@…</target>
+        <target state="translated">négociation du chiffrement avec %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption…" xml:space="preserve">
+      <trans-unit id="agreeing encryption…" xml:space="preserve" approved="no">
         <source>agreeing encryption…</source>
-        <target>accord sur le chiffrement…</target>
+        <target state="translated">négociation du chiffrement…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
