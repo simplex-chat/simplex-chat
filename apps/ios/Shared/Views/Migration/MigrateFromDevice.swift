@@ -1,5 +1,5 @@
 //
-//  MigrateToAnotherDevice.swift
+//  MigrateFromDevice.swift
 //  SimpleX (iOS)
 //
 //  Created by Avently on 14.02.2024.
@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private enum MigrationToState: Equatable {
+private enum MigrationFromState: Equatable {
     case chatStopInProgress
     case chatStopFailed(reason: String)
     case passphraseNotSet
@@ -23,7 +23,7 @@ private enum MigrationToState: Equatable {
     case finished(chatDeletion: Bool)
 }
 
-private enum MigrateToAnotherDeviceViewAlert: Identifiable {
+private enum MigrateFromDeviceViewAlert: Identifiable {
     case deleteChat(_ title: LocalizedStringKey = "Delete chat profile?", _ text: LocalizedStringKey = "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.")
     case startChat(_ title: LocalizedStringKey = "Start chat?", _ text: LocalizedStringKey = "Warning: starting chat on multiple devices is not supported and will cause message delivery failures")
 
@@ -51,15 +51,15 @@ private enum MigrateToAnotherDeviceViewAlert: Identifiable {
     }
 }
 
-struct MigrateToAnotherDevice: View {
+struct MigrateFromDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
     @Binding var showProgressOnSettings: Bool
-    @State private var migrationState: MigrationToState = .chatStopInProgress
+    @State private var migrationState: MigrationFromState = .chatStopInProgress
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @AppStorage(GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE, store: groupDefaults) private var initialRandomDBPassphrase: Bool = false
-    @State private var alert: MigrateToAnotherDeviceViewAlert?
+    @State private var alert: MigrateFromDeviceViewAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
@@ -108,11 +108,8 @@ struct MigrateToAnotherDevice: View {
         })
         .onChange(of: migrationState) { state in
             backDisabled = switch migrationState {
-            case .archiving: true
-            case .linkCreation: true
-            case .linkShown: true
-            case .finished: true
-            default: false
+            case .chatStopInProgress, .archiving, .linkShown, .finished: true
+            case .chatStopFailed, .passphraseNotSet, .passphraseConfirmation, .uploadConfirmation, .uploadProgress, .uploadFailed, .linkCreation: false
             }
         }
         .onAppear {
@@ -120,7 +117,7 @@ struct MigrateToAnotherDevice: View {
         }
         .onDisappear {
             Task {
-                if case .linkCreation = migrationState {} else if case .linkShown = migrationState {} else if case .finished = migrationState {} else {
+                if !backDisabled {
                     await MainActor.run {
                         showProgressOnSettings = true
                     }
@@ -252,7 +249,7 @@ struct MigrateToAnotherDevice: View {
                 }
             }
             let ratio = Float(uploadedBytes) / Float(totalBytes)
-            MigrateToAnotherDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
+            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
         }
         .onAppear {
             startUploading(totalBytes, archivePath)
@@ -306,7 +303,10 @@ struct MigrateToAnotherDevice: View {
                     }
                 }
             } footer: {
-                Text("Choose _Migrate from another device_ on the new device and scan QR code.")
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("**Warning**: the archive will be removed.")
+                    Text("Choose _Migrate from another device_ on the new device and scan QR code.")
+                }
                 .font(.callout)
             }
             Section("Show QR code") {
@@ -498,6 +498,9 @@ struct MigrateToAnotherDevice: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: data.addToLink(link: rcvURIs[0]), archivePath: archivePath, ctrl: ctrl)
                         }
+                    case .sndFileError:
+                        alert = .error(title: "Upload failed", error: "Check your internet connection and try again")
+                        migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
                     }
@@ -587,12 +590,12 @@ struct MigrateToAnotherDevice: View {
 }
 
 private struct PassphraseConfirmationView: View {
-    @Binding var migrationState: MigrationToState
+    @Binding var migrationState: MigrationFromState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var currentKey: String = ""
     @State private var verifyingPassphrase: Bool = false
     @FocusState private var keyboardVisible: Bool
-    @Binding var alert: MigrateToAnotherDeviceViewAlert?
+    @Binding var alert: MigrateFromDeviceViewAlert?
 
     var body: some View {
         ZStack {
@@ -638,13 +641,17 @@ private struct PassphraseConfirmationView: View {
             await MainActor.run {
                 migrationState = .uploadConfirmation
             }
-        } catch {
-            showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
+        } catch let error {
+            if case .chatCmdError(_, .errorDatabase(.errorOpen(.errorNotADatabase))) = error as? ChatResponse {
+                showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
+            } else {
+                alert = .error(title: "Error", error: NSLocalizedString("Error verifying passphrase:", comment: "") + " " + String(String(describing: error)))
+            }
         }
     }
 }
 
-private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: Binding<MigrateToAnotherDeviceViewAlert?>) {
+private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: Binding<MigrateFromDeviceViewAlert?>) {
     switch status {
     case .invalidConfirmation:
         alert.wrappedValue = .invalidConfirmation()
@@ -720,8 +727,8 @@ private class MigrationChatReceiver {
     }
 }
 
-struct MigrateToAnotherDevice_Previews: PreviewProvider {
+struct MigrateFromDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateToAnotherDevice(showSettings: Binding.constant(true), showProgressOnSettings: Binding.constant(false))
+        MigrateFromDevice(showSettings: Binding.constant(true), showProgressOnSettings: Binding.constant(false))
     }
 }
