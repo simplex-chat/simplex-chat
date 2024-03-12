@@ -13,8 +13,6 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
-    @State private var migrationState: MigrationFromState? = nil
-    @State private var migrateFromAnotherDevice: Bool = false
     var onboarding: Bool
 
     var body: some View {
@@ -49,8 +47,7 @@ struct SimpleXInfo: View {
                         Spacer()
 
                         Button {
-                            migrationState = nil
-                            migrateFromAnotherDevice = true
+                            m.migrationState = .pasteOrScanLink
                         } label: {
                             Label("Migrate from another device", systemImage: "tray.and.arrow.down")
                                 .font(.subheadline)
@@ -71,16 +68,15 @@ struct SimpleXInfo: View {
                 }
                 .frame(minHeight: g.size.height)
             }
-            .onAppear {
-                if m.migrationState != nil {
-                    migrationState = m.migrationState?.makeMigrationState()
-                    migrateFromAnotherDevice = true
-                }
-            }
-            .sheet(isPresented: $migrateFromAnotherDevice) {
+            .sheet(isPresented: Binding(
+                get: { m.migrationState != nil },
+                set: { _ in
+                    m.migrationState = nil
+                    MigrationToDeviceState.save(nil) }
+            )) {
                 NavigationView {
                     VStack(alignment: .leading) {
-                        MigrateFromAnotherDevice(migrationState: migrationState ?? .pasteOrScanLink)
+                        MigrateToDevice(migrationState: $m.migrationState)
                     }
                     .navigationTitle("Migrate here")
                     .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)

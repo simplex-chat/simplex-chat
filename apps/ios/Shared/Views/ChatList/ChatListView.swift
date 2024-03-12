@@ -264,7 +264,9 @@ struct ChatListView: View {
         }
 
         func filtered(_ chat: Chat) -> Bool {
-            (chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+            (chat.chatInfo.chatSettings?.favorite ?? false) ||
+            chat.chatStats.unreadChat ||
+            (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
         }
 
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {

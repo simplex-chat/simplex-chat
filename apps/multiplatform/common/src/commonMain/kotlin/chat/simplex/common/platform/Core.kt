@@ -152,6 +152,10 @@ fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation:
 
 fun chatInitControllerRemovingDatabases() {
   val dbPath = dbAbsolutePrefixPath
+  // Remove previous databases, otherwise, can be .errorNotADatabase with null controller
+  File(dbPath + "_chat.db").delete()
+  File(dbPath + "_agent.db").delete()
+
   val dbKey = randomDatabasePassword()
   Log.d(TAG, "chatInitControllerRemovingDatabases path: $dbPath")
   val migrated = chatMigrateInit(dbPath, dbKey, MigrationConfirmation.Error.value)
