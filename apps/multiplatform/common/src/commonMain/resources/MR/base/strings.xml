@@ -1872,7 +1872,7 @@
   <string name="migrate_to_device_apply_onion">Apply</string>
 
   <!--  MigrateFromDevice.kt -->
-  <string name="migrate_from_device_to_another_device">Migrate to another device</string>
+  <string name="migrate_from_device_to_another_device">Migrate device</string>
   <string name="migrate_from_device_error_saving_settings">Error saving settings</string>
   <string name="migrate_from_device_exported_file_doesnt_exist">Exported file doesn\'t exist</string>
   <string name="migrate_from_device_error_exporting_archive">Error exporting chat database</string>
