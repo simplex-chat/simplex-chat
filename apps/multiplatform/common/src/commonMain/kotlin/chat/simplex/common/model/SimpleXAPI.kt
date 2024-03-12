@@ -147,7 +147,7 @@ class AppPreferences {
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
-  val migrationStage = mkStrPreference(SHARED_PREFS_MIGRATION_STAGE, null)
+  val migrationStage = mkStrPreference(SHARED_PREFS_MIGRATION_FROM_STAGE, null)
   val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
@@ -286,7 +286,8 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
-    const val SHARED_PREFS_MIGRATION_STAGE = "MigrationStage"
+    const val SHARED_PREFS_MIGRATION_TO_STAGE = "MigrationToStage"
+    const val SHARED_PREFS_MIGRATION_FROM_STAGE = "MigrationFromStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
@@ -704,9 +705,11 @@ object ChatController {
     throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
   }
 
-  suspend fun testStorageEncryption(key: String, ctrl: ChatCtrl? = null): Boolean {
+  suspend fun testStorageEncryption(key: String, ctrl: ChatCtrl? = null): CR.ChatCmdError? {
     val r = sendCmd(null, CC.TestStorageEncryption(key), ctrl)
-    return r is CR.CmdOk
+    if (r is CR.CmdOk) return null
+    else if (r is CR.ChatCmdError) return r
+    throw Exception("failed to test storage encryption: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetChats(rh: Long?): List<Chat> {

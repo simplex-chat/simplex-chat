@@ -14,6 +14,7 @@ import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationFromAnotherDeviceState
+import chat.simplex.common.views.migration.MigrationFromState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -105,7 +106,7 @@ object ChatModel {
   // currently showing invitation
   val showingInvitation = mutableStateOf(null as ShowingInvitation?)
 
-  val migrationState: MutableState<MigrationFromAnotherDeviceState?> by lazy { mutableStateOf(MigrationFromAnotherDeviceState.transform()) }
+  val migrationState: MutableState<MigrationFromState?> by lazy { mutableStateOf(MigrationFromAnotherDeviceState.makeMigrationState()) }
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)

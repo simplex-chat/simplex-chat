@@ -1905,4 +1905,7 @@
   <string name="migration_to_device_verify_database_passphrase">Verify database passphrase</string>
   <string name="migration_to_device_verify_passphrase">Verify passphrase</string>
   <string name="migration_to_device_confirm_you_remember_passphrase">Confirm that you remember database passphrase to migrate it.</string>
+  <string name="migration_to_device_check_connection_and_try_again">Check your internet connection and try again</string>
+  <string name="migration_to_device_archive_will_be_deleted"><![CDATA[<b>Warning</b>: the archive will be deleted.]]></string>
+  <string name="migration_to_device_error_verifying_passphrase">Error verifying passphrase:</string>
 </resources>

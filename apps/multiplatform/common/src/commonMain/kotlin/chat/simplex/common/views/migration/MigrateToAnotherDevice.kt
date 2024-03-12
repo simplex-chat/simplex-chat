@@ -104,11 +104,21 @@ fun MigrateToAnotherDeviceView(close: () -> Unit) {
   // Prevent from hiding the view until migration is finished or app deleted
   val backDisabled = remember {
     derivedStateOf {
-      migrationState.value is MigrationToState.DatabaseInit ||
-          migrationState.value is MigrationToState.Archiving ||
-          migrationState.value is MigrationToState.LinkCreation ||
-          migrationState.value is MigrationToState.LinkShown ||
-          migrationState.value is MigrationToState.Finished
+      when (migrationState.value) {
+        is MigrationToState.ChatStopInProgress,
+        is MigrationToState.DatabaseInit,
+        is MigrationToState.Archiving,
+        is MigrationToState.LinkShown,
+        is MigrationToState.Finished -> true
+
+        is MigrationToState.ChatStopFailed,
+        is MigrationToState.PassphraseNotSet,
+        is MigrationToState.PassphraseConfirmation,
+        is MigrationToState.UploadConfirmation,
+        is MigrationToState.UploadProgress,
+        is MigrationToState.UploadFailed,
+        is MigrationToState.LinkCreation -> false
+      }
     }
   }
   val chatReceiver = remember { mutableStateOf(null as MigrationToChatReceiver?) }
@@ -341,6 +351,7 @@ private fun MutableState<MigrationToState>.LinkShownView(fileId: Long, link: Str
         finishMigration(fileId, ctrl)
       }
     ) {}
+    SectionTextFooter(annotatedStringResource(MR.strings.migration_to_device_archive_will_be_deleted))
     SectionTextFooter(annotatedStringResource(MR.strings.migration_to_device_choose_migrate_from_another_device))
   }
   SectionSpacer()
@@ -441,10 +452,16 @@ private fun MutableState<MigrationToState>.stopChat() {
 }
 
 private suspend fun MutableState<MigrationToState>.verifyDatabasePassphrase(dbKey: String) {
-  if (controller.testStorageEncryption(dbKey)) {
+  val error = controller.testStorageEncryption(dbKey)
+  if (error == null) {
     state = MigrationToState.UploadConfirmation
-  } else {
+  } else if (((error.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorOpen)?.sqliteError is SQLiteError.ErrorNotADatabase) {
     showErrorOnMigrationIfNeeded(DBMigrationResult.ErrorNotADatabase(""))
+  } else {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.error),
+      text = generalGetString(MR.strings.migration_to_device_error_verifying_passphrase) + " " + error.details
+    )
   }
 }
 
@@ -533,6 +550,13 @@ private fun MutableState<MigrationToState>.startUploading(
             )
           )
           state = MigrationToState.LinkShown(msg.fileTransferMeta.fileId, data.addToLink(msg.rcvURIs[0]), ctrl)
+        }
+        is CR.SndFileError -> {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.migration_to_device_upload_failed),
+            generalGetString(MR.strings.migration_to_device_check_connection_and_try_again)
+          )
+          state = MigrationToState.UploadFailed(totalBytes, archivePath)
         }
         else -> {
           Log.d(TAG, "unsupported event: ${msg.responseType}")
