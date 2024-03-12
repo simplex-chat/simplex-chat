@@ -34,7 +34,11 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
     // Here we check whether it's needed to show migration process after app restart or not
     // It's important to NOT show the process when archive was corrupted/not fully downloaded
     static func transform() -> MigrationFromAnotherDeviceState? {
+        logger.debug("in transform ***")
+
         let state: MigrationFromAnotherDeviceState? = UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE) != nil ? decodeJSON(UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE)!) : nil
+
+        logger.debug("transform *** \(String(describing: state))")
 
         if case let .downloadProgress(_, archiveName) = state {
             // iOS changes absolute directory every launch, check this way
@@ -48,13 +52,24 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
         return state
     }
 
-    static func save(_ state: MigrationFromAnotherDeviceState?, apply: (MigrationFromAnotherDeviceState?) -> Void) {
+    private static func save_(_ state: MigrationFromAnotherDeviceState?) {
         if let state {
             UserDefaults.standard.setValue(encodeJSON(state), forKey: DEFAULT_MIGRATION_STAGE)
         } else {
             UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
         }
-        apply(state)
+    }
+
+    static func save(_ state: MigrationFromAnotherDeviceState?) {
+        MigrationFromAnotherDeviceState.save_(state)
+        ChatModel.shared.migrationState = state
+    }
+
+    static func saveAsync(_ state: MigrationFromAnotherDeviceState?) async {
+        MigrationFromAnotherDeviceState.save_(state)
+        await MainActor.run {
+            ChatModel.shared.migrationState = state
+        }
     }
 }
 
@@ -164,7 +179,7 @@ struct MigrateFromAnotherDevice: View {
                 chatReceiver?.stopAndCleanUp()
                 if !backDisabled {
                     try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
-                    MigrationFromAnotherDeviceState.save(nil) { m.migrationState = $0 }
+                    await MigrationFromAnotherDeviceState.saveAsync(nil)
                 }
             }
         }
@@ -280,7 +295,7 @@ struct MigrateFromAnotherDevice: View {
         .onAppear {
             chatReceiver?.stopAndCleanUp()
             try? FileManager.default.removeItem(atPath: archivePath)
-            MigrationFromAnotherDeviceState.save(nil) { m.migrationState = $0 }
+            MigrationFromAnotherDeviceState.save(nil)
         }
     }
 
@@ -446,11 +461,11 @@ struct MigrateFromAnotherDevice: View {
                     switch msg {
                     case let .rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer):
                         migrationState = .downloadProgress(downloadedBytes: receivedSize, totalBytes: totalSize, fileId: rcvFileTransfer.fileId, link: link, archivePath: archivePath, ctrl: ctrl)
-                        MigrationFromAnotherDeviceState.save(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent)) { m.migrationState = $0 }
+                        MigrationFromAnotherDeviceState.save(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                     case .rcvStandaloneFileComplete:
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             migrationState = .archiveImport(archivePath: archivePath)
-                            MigrationFromAnotherDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent)) { m.migrationState = $0 }
+                            MigrationFromAnotherDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                         }
                     case .rcvFileError:
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
@@ -487,7 +502,7 @@ struct MigrateFromAnotherDevice: View {
                     }
                     await MainActor.run {
                         migrationState = .passphrase(passphrase: "")
-                        MigrationFromAnotherDeviceState.save(.passphrase) { m.migrationState = $0 }
+                        MigrationFromAnotherDeviceState.save(.passphrase)
                     }
                 } catch let error {
                     await MainActor.run {
@@ -544,7 +559,7 @@ struct MigrateFromAnotherDevice: View {
     private func finishMigration(_ appSettings: AppSettings) {
         do {
             try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
-            MigrationFromAnotherDeviceState.save(nil) { m.migrationState = $0 }
+            MigrationFromAnotherDeviceState.save(nil)
             appSettings.importIntoApp()
             try SimpleX.startChat(refreshInvitations: true)
             AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
