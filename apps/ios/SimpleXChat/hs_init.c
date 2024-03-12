@@ -7,6 +7,7 @@
 //
 
 #include "hs_init.h"
+#include <string.h>
 
 extern void hs_init_with_rtsopts(int * argc, char **argv[]);
 
