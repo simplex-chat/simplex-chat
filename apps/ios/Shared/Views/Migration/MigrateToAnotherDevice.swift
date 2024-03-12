@@ -304,7 +304,7 @@ struct MigrateToAnotherDevice: View {
                 }
             } footer: {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("**Warning**: the archive will be removed from SimpleX servers immediately.")
+                    Text("**Warning**: the archive will be removed.")
                     Text("Choose _Migrate from another device_ on the new device and scan QR code.")
                 }
                 .font(.callout)

@@ -17,7 +17,7 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
     // Here we check whether it's needed to show migration process after app restart or not
     // It's important to NOT show the process when archive was corrupted/not fully downloaded
     static func makeMigrationState() -> MigrationFromState? {
-        let state: MigrationFromAnotherDeviceState? = UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE) != nil ? decodeJSON(UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_STAGE)!) : nil
+        let state: MigrationFromAnotherDeviceState? = UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_FROM_STAGE) != nil ? decodeJSON(UserDefaults.standard.string(forKey: DEFAULT_MIGRATION_FROM_STAGE)!) : nil
         var initial: MigrationFromState? = .pasteOrScanLink
         //logger.debug("Inited with migrationState: \(String(describing: state))")
         switch state {
@@ -34,7 +34,7 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
             initial = .passphrase(passphrase: "")
         }
         if initial == nil {
-            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
+            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_FROM_STAGE)
             try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
         }
         return initial
@@ -42,9 +42,9 @@ enum MigrationFromAnotherDeviceState: Codable, Equatable {
 
     static func save(_ state: MigrationFromAnotherDeviceState?) {
         if let state {
-            UserDefaults.standard.setValue(encodeJSON(state), forKey: DEFAULT_MIGRATION_STAGE)
+            UserDefaults.standard.setValue(encodeJSON(state), forKey: DEFAULT_MIGRATION_FROM_STAGE)
         } else {
-            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_STAGE)
+            UserDefaults.standard.removeObject(forKey: DEFAULT_MIGRATION_FROM_STAGE)
         }
     }
 }
