@@ -46,6 +46,8 @@ import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
+import Database.SQLite.Simple (SQLError)
+import qualified Database.SQLite.Simple as SQL
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -80,7 +82,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
+import Simplex.Messaging.Util (allFinally, catchAllErrors, liftIOEither, tryAllErrors, (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -1296,30 +1298,23 @@ withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
 withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
 
 withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStoreCtx ctx_ action = do
+withStoreCtx _ctx action = do
   ChatController {chatStore} <- ask
-  liftEitherError ChatErrorStore $ case ctx_ of
-    Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    -- uncomment to debug store performance
-    -- Just ctx -> do
-    --   t1 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
-    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
-    --   t2 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
-    --   pure r
-    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-  where
-    handleInternal :: String -> SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEDBException $ show e <> ctxStr
+  liftIOEither $ withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
 
 withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
-  where
-    handleInternal :: E.SomeException -> IO (Either ChatError a)
-    handleInternal = pure . Left . ChatErrorStore . SEDBException . show
+  liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
+
+handleDBErrors :: [E.Handler IO (Either ChatError a)]
+handleDBErrors =
+  [ E.Handler $ \(e :: SQLError) ->
+      let se = SQL.sqlError e
+          busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
+        in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
+    E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
+  ]
 
 withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions

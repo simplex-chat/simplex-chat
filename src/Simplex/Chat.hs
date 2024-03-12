@@ -3291,22 +3291,22 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   vr <- chatVersionRange
-  -- getUserByAConnId never throws logical errors, only SEDBException can be thrown here
+  -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
   critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
     Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
--- SEDBException will only be thrown on IO exceptions or SQLError during DB queries, e.g. when database is locked or busy for longer than 3s.
+-- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
+-- e.g. when database is locked or busy for longer than 3s.
 -- In this case there is no better mitigation than showing alert:
 -- - without ACK the message delivery will be stuck,
 -- - with ACK message will be lost, as it failed to be saved.
 -- Full app restart is likely to resolve database condition and the message will be received and processed again.
--- Please note: SEDBException will be also thrown on invalid query syntax or parameter mismatch, so it's important all queries are tested.
 critical :: ChatMonad m => m a -> m a
 critical a =
   a `catchChatError` \case
-    ChatErrorStore SEDBException {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+    ChatErrorStore SEDBBusyError {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
     e -> throwError e
 
 processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
@@ -4415,9 +4415,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         Right withRcpt -> ackMsg cId cmdId msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
-        -- TODO v5.6 possibly, this may result in permanent inability to receive messages from this connection (that comment relates to other CRITICAL as well),
-        -- we could modify the alert to give user the option to skip this message processing and ACK next time this exception happens in this connection.
-        Left (ChatErrorStore SEDBException {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> ackMsg cId cmdId msgMeta Nothing >> throwError e
 
     ackMsg :: ConnId -> CommandId -> MsgMeta -> Maybe MsgReceiptInfo -> m ()
