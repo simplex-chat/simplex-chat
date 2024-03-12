@@ -130,14 +130,14 @@ struct MigrateFromAnotherDevice: View {
         }
         .onAppear {
             backDisabled = switch migrationState {
-            case nil, .pasteOrScanLink, .linkDownloading, .downloadProgress, .archiveImportFailed: false
-            case .downloadFailed, .archiveImport, .passphrase, .migrationConfirmation, .migration, .onion: true
+            case nil, .pasteOrScanLink, .linkDownloading, .downloadProgress, .downloadFailed, .archiveImportFailed: false
+            case .archiveImport, .passphrase, .migrationConfirmation, .migration, .onion: true
             }
         }
         .onChange(of: migrationState) { state in
             backDisabled = switch state {
-            case nil, .pasteOrScanLink, .linkDownloading, .downloadProgress, .archiveImportFailed: false
-            case .downloadFailed, .archiveImport, .passphrase, .migrationConfirmation, .migration, .onion: true
+            case nil, .pasteOrScanLink, .linkDownloading, .downloadProgress, .downloadFailed, .archiveImportFailed: false
+            case .archiveImport, .passphrase, .migrationConfirmation, .migration, .onion: true
             }
         }
         .onDisappear {
