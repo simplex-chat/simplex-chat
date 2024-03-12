@@ -7,6 +7,7 @@
 //
 
 #include "hs_init.h"
+#include <stdio.h>
 #include <string.h>
 
 extern void hs_init_with_rtsopts(int * argc, char **argv[]);
@@ -25,13 +26,14 @@ void haskell_init(const char *eventlog, const char *heap_profile) {
     if (eventlog) {
         static char ol[1024] = "-ol";
         (void)strncpy(&ol[3], eventlog, sizeof(ol) - 3);
-        argv[argc++] = "-olsimplex.eventlog"; // produce <eventlog> file relative to "current" directory
+        printf("%s\n", ol);
+        argv[argc++] = ol;
         argv[argc++] = "-l-agu"; // collect GC and user events
     }
     if (heap_profile) {
         static char po[1024] = "-po";
         (void)strncpy(&po[3], heap_profile, sizeof(po) - 3);
-        argv[argc++] = po; // produce <heap_profile>.hp relative to "current" directory
+        argv[argc++] = po; // adds ".hp" extension
         argv[argc++] = "-hT"; // emit heap profile by closure type
     }
     int non_moving_gc = !heap_profile; // not compatible with heap profile

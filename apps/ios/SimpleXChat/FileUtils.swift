@@ -52,6 +52,10 @@ func getAppDirectory() -> URL {
 
 let DB_FILE_PREFIX = "simplex_v1"
 
+let DEBUG_PROFILE_PREFIX = "simplex_debug"
+
+let DEBUG_PROFILE_EXTENSION = ".hp"
+
 func getLegacyDatabasePath() -> URL {
     getDocumentsDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
 }
@@ -60,6 +64,18 @@ public func getAppDatabasePath() -> URL {
     dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
     : getLegacyDatabasePath()
+}
+
+public func getAppDebugProfilePrefixPath() -> URL {
+    getAppDirectory().appendingPathComponent(DEBUG_PROFILE_PREFIX, isDirectory: false)
+}
+
+public func getAppDebugProfilePath() -> URL {
+    getAppDirectory().appendingPathComponent(DEBUG_PROFILE_PREFIX + DEBUG_PROFILE_EXTENSION, isDirectory: false)
+}
+
+public func getAppEventLogPath() -> URL {
+    getAppDirectory().appendingPathComponent("simplex.eventlog", isDirectory: false)
 }
 
 func fileModificationDate(_ path: String) -> Date? {
@@ -190,14 +206,6 @@ public func getMigrationTempFilesDirectory() -> URL {
 
 public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
-}
-
-public func getAppDebugProfilePath() -> URL {
-    getAppDirectory().appendingPathComponent("simplex_debug_profile", isDirectory: false)
-}
-
-public func getAppEventLogPath() -> URL {
-    getAppDirectory().appendingPathComponent("simplex_event_log", isDirectory: false)
 }
 
 public func getAppFilePath(_ fileName: String) -> URL {
