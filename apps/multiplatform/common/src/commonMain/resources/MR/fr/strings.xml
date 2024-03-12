@@ -1282,7 +1282,7 @@
     <string name="snd_conn_event_ratchet_sync_required">renégociation de chiffrement requise pour %s</string>
     <string name="renegotiate_encryption">Renégocier le chiffrement</string>
     <string name="receipts_contacts_override_disabled">L\'envoi d\'accusés de réception est désactivé pour les contacts de %d</string>
-    <string name="snd_conn_event_ratchet_sync_started">accord sur le chiffrement pour %s…</string>
+    <string name="snd_conn_event_ratchet_sync_started">négociation du chiffrement avec %s…</string>
     <string name="receipts_section_contacts">Contacts</string>
     <string name="receipts_contacts_disable_for_all">Désactiver pour tous</string>
     <string name="receipts_contacts_disable_keep_overrides">Désactiver (conserver les remplacements)</string>
@@ -1305,7 +1305,7 @@
     <string name="receipts_contacts_title_enable">Activer les accusés de réception \?</string>
     <string name="receipts_contacts_title_disable">Désactiver les accusés de réception \?</string>
     <string name="receipts_contacts_override_enabled">L\'envoi d\'accusés de réception est activé pour les contacts de %d</string>
-    <string name="conn_event_ratchet_sync_started">accord sur le chiffrement…</string>
+    <string name="conn_event_ratchet_sync_started">négociation du chiffrement…</string>
     <string name="conn_event_ratchet_sync_agreed">chiffrement accepté</string>
     <string name="conn_event_ratchet_sync_ok">chiffrement OK</string>
     <string name="conn_event_ratchet_sync_allowed">renégociation de chiffrement autorisée</string>
