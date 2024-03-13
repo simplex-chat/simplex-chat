@@ -1,6 +1,6 @@
 # Blog
 
-Mar 14, 2024 [SimpleX Chat v5.6 (beta): adding quantum resistantce to Signal double ratchet algorithm](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
+Mar 14, 2024 [SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
 This is a major upgrade for SimpleX Chat messaging protocol stack, I am really proud to present this work of the whole team.
 
@@ -8,9 +8,9 @@ This post also covers various aspects of end-to-end encryption, compares differe
 
 - Why do we need end-to-end encryption?
 - Why encryption is even allowed?
-- End-to-end encryption security: attacks and defence.
+- End-to-end encryption security: attacks and defense.
 - How secure is encryption in different messengers?
-- Adding quantum resistantce to Signal double ratchet algorithm.
+- Adding quantum resistance to Signal double ratchet algorithm.
 - When can you start using quantum resistant chats?
 - Next for post-quantum crypto: all direct chats, small groups and security audit.
 
