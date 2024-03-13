@@ -1493,7 +1493,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
 
 testSetContactPrefs :: HasCallStack => FilePath -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
+  \alice bob -> withXFTPServer $ do
     alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
     bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
     createDirectoryIfMissing True "./tests/tmp/alice"
@@ -1528,15 +1528,24 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you")])
     alice ##> sendVoice
     alice <## voiceNotAllowed
+
+    -- sending voice message allowed
     bob ##> sendVoice
     bob <# "@alice voice message (00:10)"
     bob <# "/f @alice test.txt"
-    bob <## "completed sending file 1 (test.txt) to alice"
+    bob <## "use /fc 1 to cancel sending"
     alice <# "bob> voice message (00:10)"
     alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
-    alice <## "started receiving file 1 (test.txt) from bob"
+    alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "completed uploading file 1 (test.txt) for alice"
+    alice ##> "/fr 1"
+    alice
+      <### [ "saving file 1 from bob to test_1.txt",
+             "started receiving file 1 (test.txt) from bob"
+           ]
     alice <## "completed receiving file 1 (test.txt) from bob"
     (bob </)
+
     -- alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice ##> "/set voice no"
     alice <## "updated preferences:"

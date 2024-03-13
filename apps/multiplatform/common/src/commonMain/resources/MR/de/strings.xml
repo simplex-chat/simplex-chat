@@ -1672,9 +1672,7 @@
     <string name="possible_slow_function_title">Langsame Funktion</string>
     <string name="show_slow_api_calls">Zeige langsame API-Aufrufe an</string>
     <string name="group_member_status_unknown_short">unbekannt</string>
-    <string name="possible_deadlock_title">Blockade</string>
     <string name="developer_options_section">Optionen für Entwickler</string>
-    <string name="possible_deadlock_desc">Die Code-Ausführung dauert zu lange: %1$d Sekunden. Wahrscheinlich ist die App eingefroren: %2$s</string>
     <string name="group_member_status_unknown">unbekannter Gruppenmitglieds-Status</string>
     <string name="v5_5_private_notes_descr">Mit verschlüsselten Dateien und Medien.</string>
     <string name="v5_5_private_notes">Private Notizen</string>

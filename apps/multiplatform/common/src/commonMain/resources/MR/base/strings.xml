@@ -147,8 +147,6 @@
   <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
   <string name="error_updating_user_privacy">Error updating user privacy</string>
-  <string name="possible_deadlock_title">Deadlock</string>
-  <string name="possible_deadlock_desc">Execution of code takes too long time: %1$d seconds. Probably, the app is frozen: %2$s</string>
   <string name="possible_slow_function_title">Slow function</string>
   <string name="possible_slow_function_desc">Execution of function takes too long time: %1$d seconds: %2$s</string>
 

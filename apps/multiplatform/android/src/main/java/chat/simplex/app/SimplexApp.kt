@@ -71,7 +71,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-    withBGApi {
+    withLongRunningApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true

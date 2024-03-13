@@ -1680,8 +1680,6 @@
     <string name="error_showing_message">ошибка отображения сообщения</string>
     <string name="error_showing_content">ошибка отображения содержания</string>
     <string name="remote_ctrl_disconnected_with_reason">Отсоединён по причине: %s</string>
-    <string name="possible_deadlock_title">Взаимная блокировка</string>
-    <string name="possible_deadlock_desc">Выполнение задачи занимает долгое время: %1$d секунд. Возможно, приложение заблокировано: %2$s</string>
     <string name="possible_slow_function_desc">Выполнение задачи занимает долгое время: %1$d секунд: %2$s</string>
     <string name="possible_slow_function_title">Медленный вызов</string>
     <string name="profile_update_event_contact_name_changed">контакт %1$s изменён на %2$s</string>

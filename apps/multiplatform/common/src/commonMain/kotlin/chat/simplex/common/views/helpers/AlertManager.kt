@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +23,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -189,6 +191,7 @@ class AlertManager {
     title: String, text: String? = null,
     confirmText: String = generalGetString(MR.strings.ok),
     hostDevice: Pair<Long?, String>? = null,
+    shareText: Boolean? = null
   ) {
     showAlert {
       AlertDialog(
@@ -202,10 +205,19 @@ class AlertManager {
               delay(200)
               focusRequester.requestFocus()
             }
+            // Can pass shareText = false to prevent showing Share button if it's needed in a specific case
+            val showShareButton = text != null && (shareText == true || (shareText == null && text.length > 500))
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-              horizontalArrangement = Arrangement.Center
+              horizontalArrangement = if (showShareButton) Arrangement.SpaceBetween else Arrangement.Center
             ) {
+              val clipboard = LocalClipboardManager.current
+              if (showShareButton && text != null) {
+                TextButton(onClick = {
+                  clipboard.shareText(text)
+                  hideAlert()
+                }) { Text(stringResource(MR.strings.share_verb)) }
+              }
               TextButton(
                 onClick = {
                   hideAlert()

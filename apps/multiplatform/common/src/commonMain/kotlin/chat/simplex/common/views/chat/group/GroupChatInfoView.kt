@@ -152,7 +152,7 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
-      withBGApi {
+      withLongRunningApi(60_000) {
         chatModel.controller.leaveGroup(rhId, groupInfo.groupId)
         close?.invoke()
       }

@@ -1571,9 +1571,7 @@
     <string name="remote_ctrl_error_busy">PC版が処理中</string>
     <string name="remote_ctrl_error_disconnected">PC版が切断されました</string>
     <string name="remote_ctrl_error_bad_version">ご利用のPC版のバージョンがサポートされてません。両端末が同じバージョンかどうか、ご確認ください。</string>
-    <string name="possible_deadlock_title">デッドロック状態</string>
     <string name="developer_options_section">開発者向けの設定</string>
-    <string name="possible_deadlock_desc">処理時間が異常にかかるようです: %1$d 秒。アプリが固まった恐れがあります: %2$s</string>
     <string name="remote_host_error_busy"><![CDATA[携帯版 <b>%s</b> がただいま処理中]]></string>
     <string name="possible_slow_function_desc">機能の処理時間が以上にかかってます: %1$d 秒: %2$s</string>
     <string name="show_internal_errors">内部エラーを表示</string>

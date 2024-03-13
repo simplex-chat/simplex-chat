@@ -252,12 +252,6 @@ func apiSetFilesFolder(filesFolder: String) throws {
     throw r
 }
 
-func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
-    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
-    if case .cmdOk = r { return }
-    throw r
-}
-
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
     if case .cmdOk = r { return }
@@ -1249,7 +1243,6 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     }
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-    try setXFTPConfig(getXFTPCfg())
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1861,7 +1854,9 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cItem = aChatItem.chatItem
     if active(user) {
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
-            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            if cItem.showNotification {
+                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            }
         }
     }
 }

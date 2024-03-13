@@ -1067,7 +1067,7 @@ testChatWorking alice bob = do
   alice <# "bob> hello too"
 
 testMaintenanceModeWithFiles :: HasCallStack => FilePath -> IO ()
-testMaintenanceModeWithFiles tmp = do
+testMaintenanceModeWithFiles tmp = withXFTPServer $ do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
@@ -1075,12 +1075,26 @@ testMaintenanceModeWithFiles tmp = do
       alice ##> "/_files_folder ./tests/tmp/alice_files"
       alice <## "ok"
       connectUsers alice bob
-      startFileTransferWithDest' bob alice "test.jpg" "136.5 KiB / 139737 bytes" Nothing
-      bob <## "completed sending file 1 (test.jpg) to alice"
+
+      bob #> "/f @alice ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      alice <# "bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob <## "completed uploading file 1 (test.jpg) for alice"
+
+      alice ##> "/fr 1"
+      alice
+        <### [ "saving file 1 from bob to test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
       alice <## "completed receiving file 1 (test.jpg) from bob"
+
       src <- B.readFile "./tests/fixtures/test.jpg"
-      B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      dest <- B.readFile "./tests/tmp/alice_files/test.jpg"
+      dest `shouldBe` src
+
       threadDelay 500000
+
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"

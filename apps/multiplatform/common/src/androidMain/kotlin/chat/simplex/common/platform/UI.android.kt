@@ -114,7 +114,8 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
     Handler(Looper.getMainLooper()).post {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.app_was_crashed),
-        text = e.stackTraceToString()
+        text = e.stackTraceToString(),
+        shareText = true
       )
     }
   }

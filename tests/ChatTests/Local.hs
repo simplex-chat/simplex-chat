@@ -12,7 +12,6 @@ import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), default
 import System.Directory (copyFile, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
-import UnliftIO.Async (concurrently_)
 
 chatLocalChatsTests :: SpecWith FilePath
 chatLocalChatsTests = do
@@ -158,24 +157,24 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
 testOtherFiles :: FilePath -> IO ()
 testOtherFiles =
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
     connectUsers alice bob
     createCCNoteFolder bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
-    alice ##> "/_send @2 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/test.jpg\"}"
-    alice <# "@bob voice message (00:10)"
-    alice <# "/f @bob ./tests/fixtures/test.jpg"
-    -- below is not shown in "sent" mode
-    -- alice <## "use /fc 1 to cancel sending"
-    bob <# "alice> voice message (00:10)"
+
+    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    alice <## "use /fc 1 to cancel sending"
     bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-    -- below is not shown in "sent" mode
-    -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-    bob <## "started receiving file 1 (test.jpg) from alice"
-    concurrently_
-      (alice <## "completed sending file 1 (test.jpg) to bob")
-      (bob <## "completed receiving file 1 (test.jpg) from alice")
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    alice <## "completed uploading file 1 (test.jpg) for bob"
+
+    bob ##> "/fr 1"
+    bob
+      <### [ "saving file 1 from alice to test.jpg",
+              "started receiving file 1 (test.jpg) from alice"
+            ]
+    bob <## "completed receiving file 1 (test.jpg) from alice"
 
     bob /* "test"
     bob ##> "/tail *"

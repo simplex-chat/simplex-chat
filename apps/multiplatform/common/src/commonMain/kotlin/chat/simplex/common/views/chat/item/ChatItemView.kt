@@ -213,7 +213,7 @@ fun ChatItemView(
                       showMenu.value = false
                     }
                     if (chatModel.connectedToRemote() && fileSource == null) {
-                      withLongRunningApi(slow = 60_000, deadlock = 600_000) {
+                      withLongRunningApi(slow = 600_000) {
                         cItem.file?.loadRemoteFile(true)
                         fileSource = getLoadedFileSource(cItem.file)
                         shareIfExists()

@@ -1588,8 +1588,6 @@
     <string name="remote_ctrl_error_busy">سطح المكتب مشغول</string>
     <string name="remote_ctrl_error_bad_version">يحتوي سطح المكتب على إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين</string>
     <string name="past_member_vName">العضو السابق %1$s</string>
-    <string name="possible_deadlock_title">مأزق</string>
-    <string name="possible_deadlock_desc">يستغرق تنفيذ التعليمات البرمجية وقتًا طويلاً جدًا: %1$d ثانية. من المحتمل أن التطبيق مجمّد: %2$s</string>
     <string name="possible_slow_function_title">وظيفة بطيئة</string>
     <string name="developer_options_section">خيارات المطور</string>
     <string name="profile_update_event_member_name_changed">تغيّر العضو %1$s إلى %2$s</string>

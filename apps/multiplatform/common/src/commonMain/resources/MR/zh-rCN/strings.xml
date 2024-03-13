@@ -1586,8 +1586,6 @@
     <string name="remote_host_error_bad_state"><![CDATA[到移动主机 <b>%s</b>的连接状态不佳]]></string>
     <string name="remote_host_error_timeout"><![CDATA[连接到移动主机<b>%s</b>时超时]]></string>
     <string name="failed_to_create_user_invalid_desc">显示名无效。请另选一个名称。</string>
-    <string name="possible_deadlock_title">死锁</string>
-    <string name="possible_deadlock_desc">代码执行花费的时间过久：%1$d秒。应用可能卡住了：%2$s</string>
     <string name="possible_slow_function_title">慢函数</string>
     <string name="show_slow_api_calls">显示缓慢的 API 调用</string>
     <string name="past_member_vName">过往成员 %1$s</string>

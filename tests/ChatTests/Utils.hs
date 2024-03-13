@@ -19,7 +19,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
@@ -32,7 +32,6 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv, withArgs)
-import System.FilePath ((</>))
 import System.IO.Silently (capture_)
 import System.Info (os)
 import Test.Hspec hiding (it)
@@ -95,29 +94,6 @@ versionTestMatrix3 runTest = do
   it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
   it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
   it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
-
-inlineCfg :: Integer -> ChatConfig
-inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}
-
-fileTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-fileTestMatrix2 runTest = do
-  it "via connection" $ runTestCfg2 viaConn viaConn runTest
-  it "inline (accepting)" $ runTestCfg2 inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg2 inline viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg2 viaConn inline runTest
-  where
-    inline = inlineCfg 100
-    viaConn = inlineCfg 0
-
-fileTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-fileTestMatrix3 runTest = do
-  it "via connection" $ runTestCfg3 viaConn viaConn viaConn runTest
-  it "inline" $ runTestCfg3 inline inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg3 inline viaConn viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg3 viaConn inline inline runTest
-  where
-    inline = inlineCfg 100
-    viaConn = inlineCfg 0
 
 runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 runTestCfg2 aliceCfg bobCfg runTest tmp =
@@ -594,20 +570,6 @@ checkActionDeletesFile file action = do
   action
   fileExistsAfter <- doesFileExist file
   fileExistsAfter `shouldBe` False
-
-startFileTransferWithDest' :: HasCallStack => TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
-startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  cc1 #> ("/f @" <> name2 <> " ./tests/fixtures/" <> fileName)
-  cc1 <## "use /fc 1 to cancel sending"
-  cc2 <# (name1 <> "> sends file " <> fileName <> " (" <> fileSize <> ")")
-  cc2 <## "use /fr 1 [<dir>/ | <path>] to receive it"
-  cc2 ##> ("/fr 1" <> maybe "" (" " <>) fileDest_)
-  cc2 <## ("saving file 1 from " <> name1 <> " to " <> maybe id (</>) fileDest_ fileName)
-  concurrently_
-    (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
-    (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
 
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
