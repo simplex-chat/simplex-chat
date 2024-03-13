@@ -978,7 +978,7 @@
     <string name="v4_2_security_assessment">Biztonsági kiértékelés</string>
     <string name="color_title">Cím</string>
     <string name="icon_descr_send_message">Üzenet elküldése</string>
-    <string name="restore_database">Adatbázis mentés visszaállítása</string>
+    <string name="restore_database">Adatbázismentés visszaállítása</string>
     <string name="revoke_file__confirm">Visszavon</string>
     <string name="ask_your_contact_to_enable_voice">Ismerős felkérése, hogy engedélyezze a hangüzenetek küldését.</string>
     <string name="description_you_shared_one_time_link">egyszer használatos linket osztott meg</string>
@@ -1020,7 +1020,7 @@
     <string name="connect_use_current_profile">Jelenlegi profil használata</string>
     <string name="this_device">Ez az eszköz</string>
     <string name="share_address_with_contacts_question">Megosztja az azonosítót az ismerősökkel?</string>
-    <string name="profile_password">Profil jelszó</string>
+    <string name="profile_password">Profiljelszó</string>
     <string name="theme">Téma</string>
     <string name="remove_passphrase_from_settings">Jelmondat eltávolítása a beállításokból?</string>
     <string name="simplex_link_group">SimpleX csoport link</string>
@@ -1138,7 +1138,7 @@
     <string name="share_address">Azonosító megosztása</string>
     <string name="smp_servers_scan_qr">A kiszolgáló QR-kódjának beolvasása</string>
     <string name="stop_chat_confirmation">Megállítás</string>
-    <string name="stop_sharing_address">Leállítod a cím megosztását?</string>
+    <string name="stop_sharing_address">Címmegosztás megállítása?</string>
     <string name="auth_open_chat_profiles">Csevegés profilok megnyitása</string>
     <string name="connect_plan_repeat_join_request">Csatlakozási kérés megismétlése?</string>
     <string name="waiting_for_image">Képre várakozás</string>
@@ -1149,7 +1149,7 @@
     <string name="simplex_address">SimpleX azonosító</string>
     <string name="show_dev_options">Mutat:</string>
     <string name="callstate_received_answer">fogadott válasz…</string>
-    <string name="restore_database_alert_title">Adatbázis mentés visszaállítása?</string>
+    <string name="restore_database_alert_title">Adatbázismentés visszaállítása?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
     <string name="rcv_group_event_2_members_connected">%s és %s csatlakozva</string>
     <string name="you_are_observer">megfigyelő szerep</string>
@@ -1240,7 +1240,7 @@
     <string name="button_send_direct_message">Közvetlen üzenet küldése</string>
     <string name="reject">Elutasítás</string>
     <string name="send_verb">Küldés</string>
-    <string name="la_lock_mode_system">Rendszer hitelesítés</string>
+    <string name="la_lock_mode_system">Rendszerhitelesítés</string>
     <string name="simplex_link_mode_browser">Böngészőn keresztül</string>
     <string name="v4_6_hidden_chat_profiles_descr">Csevegési profiljok védelme jelszóval!</string>
     <string name="only_your_contact_can_send_disappearing">Csak az ismerős tud eltűnő üzeneteket küldeni.</string>
@@ -1524,7 +1524,7 @@
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti SimpleX ismerősök számára a Beállításokban.</string>
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagoknak.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott kód nem egy SimpleX link QR-kód.</string>
-    <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem SimpleX hivatkozás.</string>
+    <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX hivatkozás.</string>
     <string name="you_can_view_invitation_link_again">A meghívó linkjét újra megtekintheti a kapcsolat részleteinél.</string>
     <string name="start_chat_question">Csevegés indítása?</string>
     <string name="recent_history">Látható előzmények</string>
