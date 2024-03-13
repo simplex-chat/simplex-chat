@@ -19,7 +19,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.migration.MigrateFromAnotherDeviceView
+import chat.simplex.common.views.migration.MigrateToDeviceView
+import chat.simplex.common.views.migration.MigrationToState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 
@@ -71,7 +72,9 @@ fun SimpleXInfoLayout(
           .padding(top = DEFAULT_PADDING), contentAlignment = Alignment.Center
       ) {
         SimpleButtonDecorated(text = stringResource(MR.strings.migrate_from_another_device), icon = painterResource(MR.images.ic_download),
-          click = { ModalManager.fullscreen.showCustomModal { close -> MigrateFromAnotherDeviceView(chatModel.migrationState.value, close) } })
+          click = {
+            chatModel.migrationState.value = MigrationToState.PasteOrScanLink
+            ModalManager.fullscreen.showCustomModal { close -> MigrateToDeviceView(close) } })
       }
     }
 
@@ -85,9 +88,8 @@ fun SimpleXInfoLayout(
     }
   }
   LaunchedEffect(Unit) {
-    val state = chatModel.migrationState.value
-    if (state != null && !ModalManager.fullscreen.hasModalsOpen()) {
-      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateFromAnotherDeviceView(state, close) }
+    if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
+      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateToDeviceView(close) }
     }
   }
 }

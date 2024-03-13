@@ -68,14 +68,19 @@ public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation
 
 public func chatInitControllerRemovingDatabases() {
     let dbPath = getAppDatabasePath().path
+    let fm = FileManager.default
+    // Remove previous databases, otherwise, can be .errorNotADatabase with nil controller
+    try? fm.removeItem(atPath: dbPath + CHAT_DB)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB)
+
     let dbKey = randomDatabasePassword()
     logger.debug("chatInitControllerRemovingDatabases path: \(dbPath)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     var cConfirm = MigrationConfirmation.error.rawValue.cString(using: .utf8)!
     chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &chatController)
+
     // We need only controller, not databases
-    let fm = FileManager.default
     try? fm.removeItem(atPath: dbPath + CHAT_DB)
     try? fm.removeItem(atPath: dbPath + AGENT_DB)
 }

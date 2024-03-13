@@ -535,7 +535,9 @@ private fun filteredChats(
 }
 
 private fun filtered(chat: Chat): Boolean =
-  (chat.chatInfo.chatSettings?.favorite ?: false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  (chat.chatInfo.chatSettings?.favorite ?: false) ||
+      chat.chatStats.unreadChat ||
+      (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
 
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
   cInfo.chatViewName.lowercase().contains(s.lowercase())
