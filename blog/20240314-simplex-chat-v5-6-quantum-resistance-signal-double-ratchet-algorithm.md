@@ -1,26 +1,32 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat v5.6 (beta) adds quantum resistantce to Signal double ratchet algorithm."
+title: "SimpleX Chat v5.6 (beta): adding quantum resistantce to Signal double ratchet algorithm"
 date: 2024-03-14
 preview: v5.6 (Beta) already allows using it in direct chats via experimental toggle, both for the new and existing contacts.
 image: images/20230301-xftp.jpg
 imageWide: true
-permalink: "/blog/20230301-simplex-file-transfer-protocol.html"
+permalink: "/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html"
 ---
 
-# SimpleX Chat v5.6 (beta) adds quantum resistantce to Signal double ratchet algorithm.
+# SimpleX Chat v5.6 (beta): adding quantum resistantce to Signal double ratchet algorithm.
 
-This is a major upgrade for SimpleX Chat messaging protocol stack, so for the Pi day (which is also the International day of Mathematics) we are really proud to present this work.
+This is a major upgrade for SimpleX Chat messaging protocols, so I am really proud to present the results of the hard work of our whole team on the [Pi day](https://en.wikipedia.org/wiki/Pi_Day).
 
-This post is about various aspects of end-to-end encryption and about how quantum-resistant encryption is added to SimpleX Chat:
+This post also covers various aspects of end-to-end encryption, compares different messengers, and explains why and how quantum-resistant encryption is added to SimpleX Chat:
 
-- [why do we need end-to-end encryption](#why-do-we-need-end-to-end-encryption)?
-- [why encryption is even allowed](#why-encryption-is-even-allowed)?
+- [Why do we need end-to-end encryption](#why-do-we-need-end-to-end-encryption)?
+- [Why encryption is even allowed](#why-encryption-is-even-allowed)?
 - [End-to-end encryption security: attacks and defence](#end-to-end-encryption-security-attacks-and-defence).
+  1. Compromised message size - mitigated by padding messages to a fixed block size.
+  2. Compromised confidential messages - mitigated by repudiation.
+  3. Compromised message keys - mitigated by forward secrecy.
+  4. Compromised long-term or session keys - mitigated by break-in recovery.
+  5. Man-in-the-middle attack - mitigated by two-factor key exchange.
+  6. "Record now, decrypt later" attacks - mitigated by post-quantum cryptography.
 - [How secure is encryption in different messengers](#how-secure-is-end-to-end-encryption-in-different-messengers)?
 - [Adding quantum resistantce to Signal double ratchet algorithm](#adding-quantum-resistantce-to-signal-double-ratchet-algorithm).
-- [When can you have quantum resistance in SimpleX Chat](#when-can-you-have-quantum-resistance-in-simplex-chat)?
-- [Next for PQ crypto - all direct chats, small groups and security audit](#next-for-pq-crypto---all-direct-chats-small-groups-and-security-audit).
+- [When can you start using quantum resistant chats](#when-can-you-start-using-quantum-resistant-chats)?
+- [Next for post-quantum crypto - all direct chats, small groups and security audit](#next-for-post-quantum-crypto---all-direct-chats-small-groups-and-security-audit).
 
 ## Why do we need end-to-end encryption?
 
@@ -36,11 +42,13 @@ It's very sad to see the same people who keep their financial affairs private to
 
 ## Why encryption is even allowed?
 
+<img src="./images/20240314-djb.jpg" class="float-to-right">
+
 If encryption is such a powerful tool to protect our lives, it also can be used to conceal crimes, so why the governments don't consider it similar to arms, and don't heavily regulate its use?
 
 Prior to 1996 the cryptography was considered muntion, and its export from the United States was controlled under this category, [alongside flamethrowers and B-1 bombers](https://cr.yp.to/export/1995/0303-eff.txt). When [Daniel J. Bernstein](https://en.wikipedia.org/wiki/Daniel_J._Bernstein) (DJB), then a student of Mathematics at University of California, Berkeley, wanted to publish the paper and the source code of his Snuffle encryption system, the Office of Defense Trade Controls of the Department of State (DOS) after more than a year of correspondence requested that DJB registers as the exporter of munitions.
 
-In 1995 DJB represented by the Electronic Frontier Foundation brought a case against the DOS to overturn cryptography restrictions. The ruling in the case declared that the export control over cryptographic software and related technical data constitute [an impermissible infringement on speech in violation of the First Amendment](https://cr.yp.to/export/1996/1206-order.txt). This decision resulted in regulatory changes, reducing controls on encryption exports, perticularly for open-source software. The case continued until 2003, when it was put on hold after the commitment from the US government not to enforce any remaining regulations.
+In 1995 DJB represented by the Electronic Frontier Foundation brought a case against the DOS to overturn cryptography restrictions. The ruling in the case declared that the export control over cryptographic software and related technical data constitute [an impermissible infringement on speech in violation of the First Amendment](https://cr.yp.to/export/1996/1206-order.txt). This decision resulted in regulatory changes, reducing controls on encryption exports, particularly for open-source software. The case continued until 2003, when it was put on hold after the commitment from the US government not to enforce any remaining regulations.
 
 This case is very important for the whole industry, as to this day we can freely create and use open-source cryptography without export control restrictions. It also shows the importance of engaging with the system and challenging its views in an open dialogue, rather than either blindly complying or violating regulations.
 
@@ -50,15 +58,15 @@ DJB role for cryptogrpaphy and open-source goes beyond this case – many crypto
 - NaCL library with cryptobox and secretbox constructions that combine X25519 Diffie-Helman key agreement with Salsa20 encryption and Poly1305 authentication. We use cryptobox to encrypt messages in two of three encryption layers and secretbox to encrypt files.
 - Streamlined NTRU Prime algorithm for quantum resistant key agreement that we used in the protocol for linking mobile app with desktop, and now added to Signal (double ratchet) algorithm, as explained below.
 
-Without DJB's work the world would have been in a much worse place privacy- and security-wise - thank you and congratulations on the International Mathematics Day.
+Without DJB's work the world would have been in a much worse place privacy- and security-wise.
 
-TODO: insert DJB photo?
+Daniel, we are really grateful for the work you do - thank you, and congratulations on the International Mathematics Day!
 
 ## End-to-end encryption security: attacks and defence
 
 End-to-end encryption is offered by many messaging apps and protocols, but the security of different implementations are not the same. While many users know about the importance of forward secrecy - the quality of end-to-end encryption that preserves security of the encryption of the past and future messages, even if the keys used to encrypt some of the messages were compromised - there are many other qualities that protect from different attacks. Here I provide the overview of these attacks and the properties of end-to-end encryption schemes that mitigate these attacks.
 
-### Attacks based on message size - mitigated by padding messages to a fixed size
+### 1. Compromised message size - mitigated by padding messages to a fixed block size
 
 While the content encryption is the most important, concealing the actual message size is almost as important for several reasons:
 
@@ -69,7 +77,7 @@ The only effective mitigation to these attacks is to pad all messages to a fixed
 
 To the best of our knowledge the only messenger other than SimpleX Chat that padded all messages to a fixed packet size was Pond by AGL - we see SimpleX design as an evolution of it.
 
-### Compromised confidential messages - mitigated by repudiation
+### 2. Compromised confidential messages - mitigated by repudiation
 
 Many users are very interested in having ability to irreversibly delete sent messages from the recipients devices. But not only would this ability violate data sovereignty of device owners, it is also completely ineffective, as the recipients could simply put the device offline or use a modified client app to ignore message deletion request. While SimpleX Chat provides features like disappearing messages and ability to delete sent messages provided both parties agree to that, these are convenience features, and they cannot be seen as security measures.
 
@@ -81,13 +89,13 @@ Repudiation is still a rather new concept - the first off-the-record algorithms 
 
 Repudiation in messaging systems can be easily undermined by adding cryptographic signature to the protocol, and most messengers that use OTR encryption algorithms do exactly that. SimpleX Chat does not use signature in any part of client-client protocol, but the signature is currently used when authorising sender's messages to the relays. v5.7 will  enable a different authorization scheme that will provide full-stack repudiation in all protocol layers - it is already implemented.
 
-### Compromised message keys - mitigated by forward secrecy
+### 3. Compromised message keys - mitigated by forward secrecy
 
 The attacker who obtained or broke the keys used to encrypt individual messages, may try to use these keys to decrypt past messages or future messages. This attack is highly unlikely via simple message interception, and it is likely to require breaking into the device storage. But in any case, if the key was broken or obtained in some other way it's important that this key cannot be used to decrypt other messages - this is achieved by forward secrecy (also called perfect forward secrecy, to highlight the fact that each message is encrypted by the same key).
 
 This property is well understood by the users, and most messengers that focus on privacy and security (with the notable exception of Session) provide forward secrecy as part of their encryption schemes design.
 
-### Compromised long-term or session keys - mitigated by break-in recovery
+### 4. Compromised long-term or session keys - mitigated by break-in recovery
 
 This attack is much less understood by the users, and forward secrecy does not protect from it. Arguably, it's almost impossible to compromise individual message keys without compromising long-term or session keys. So the ability of the encryption scheme to recover from break-in (attacker making a copy of the device data without retaining the ongoing access) is both very important and pragmatic - break-ins are the most common attacks on mobile devices, and they are much simpler to execute during short-term device access than long-term ongoing compromise.
 
@@ -95,61 +103,91 @@ Out of all encryption algorithms known to us only Signal (double ratchet) algori
 
 Signal (double ratchet) algorithm is used in Signal, Cwtch and SimpleX Chat. This is why you cannot use SimpleX Chat profile on more than one device at the same time - the encryption scheme rotates the long term keys, randomly, and keys on another device become useless, as they would become useless for the attacker who stole them. Security always has some costs to the convenience.
 
-### Man-in-the-middle attack - mitigated by two-factor key exchange
+### 5. Man-in-the-middle attack - mitigated by two-factor key exchange
 
-End-to-end encryption is as secure as key exchange. While any intermediary passing the keys between senders and recipients cannot determine private keys by observing public keys, they can simply replace the passed keys with their own and then proxy all communication between the users having full access to decrypted messages. So instead of having one end-to-end encrypted channel, users would have to half-way encrypted channgels - with their communication intermediary.
+Many people incorrectly believe that security of end-to-end encryption cannot be broken by communication provider. But end-to-end encryption is as secure as key exchange is secure. While any intermediary passing the keys between senders and recipients cannot recover the private keys from the public keys, they can simply replace the passed public keys with their own and then proxy all communication between the users having full access to the original messages. So instead of having one end-to-end encrypted channel, users would have to half-way encrypted channgels - with their communication intermediary.
 
-TODO: insert picture of MITM attack from the old site
+Pictures below illustrate how this attack works for RSA encryption.
 
-The knowns solutions to mitigate this attack is to either pass each party key via a different channel, which is much more secure, or at least to verify the security of key exchange after it is completed, usually by comparing security codes. One of the effective approaches is to make user's key (or key fingerprint) part of the user address, thus making two-factor key exchange non-optional. This approach is used in Session, Cwtch and SimpleX Chat.
+#### 1) Alice sends the key to Bob (e.g. via p2p network or via the messaging server).
 
-A less secure approach is to provide users an optional way to compare security codes - this is what is done by Signal, Element, Briar, and many other messengers. The problem with this post-exchange validation is that it is optional, and can be skipped by the users, and that this security can change because the user changed the device or as a result of the attack via the operator. So when you see in the client app the notification that the security code changed it's meaningles to ask in the same messenger whether device was changed, as if it was an attack, the attacker would of course confirm it. Instead the security code needs to be re-validated again via another channel. Alternatively, the users should warn their communication partners about the intention to switch the device before switching.
+![Public key is shared](./images/20240314-mitm1.jpg)
 
-### "Record now, decrypt later", when quantum computers become available
+#### 2) Now Bob can send encrypted messages to Alice - he believes they are secure!
 
-This is the idea based on the assumption that commercially viable quantum computers will become viable during our life-times, and then they can use time-efficient [Shor's algorithm](https://en.wikipedia.org/wiki/Shor%27s_algorithm) developed in 1994 to break asymmetric encryption (symmetric encryption is not vulnerable to this algorithm).
+![Message is encrypted](./images/20240314-mitm2.jpg)
+
+#### 3) But the key could have been intercepted and substituted by Tom (the attacker, or a service provider).
+
+![Key is intercepted and replaced](./images/20240314-mitm3.jpg)
+
+#### 4) Now the attacker can read the messages without Alice and Bob knowing.
+
+![End-to-end encryption is compromised](./images/20240314-mitm4.jpg)
+
+The attack on Diffie-Hellman (or quantum-resistant) key exchange, when both parties send their public keys (or public key and ciphertext), requires the attacker to intercept and replace both keys, but the outcome remains the same - if all communication is passed via a single channel, as it is usually the case with communication services, then any attacker that has inside access to the service can selectively compromise some of the conversations. Two years ago I wrote the post about this [vulnerability of end-to-end encryption to MITM attacks](https://www.poberezkin.com/posts/2022-12-07-why-privacy-needs-to-be-redefined.html#e2e-encryption-is-not-bulletproof).
+
+All known mitigations of this attack require using the secondary communication channel to ensure that the keys have not been substituted. The most secure approach is to make user's key (or key fingerprint) a part of the user's address or connection link, thus making two-factor key exchange non-optional. This approach is used in Session, Cwtch and SimpleX Chat.
+
+A less secure approach is to provide users an optional way to compare security codes - this is what is done by Signal, Element, Briar, and many other messengers. The problem with this post-key-exchange verification is that it is optional, and is usually skipped by the majority of the users. Also, this security code can change because the user changed the device, or as a result of the attack via the operator. When you see in the client app the notification that the security code changed it's pointless to ask in the same messenger whether the device was changed, as if it was an attack, the attacker would simply confirm it. Instead, the security code needs to be re-validated again via another channel. A good security practice for the users would be to warn their communication partners about the intention to switch the device in advance, before security code is changed.
+
+### 6. "Record now, decrypt later" attacks - mitigated by post-quantum cryptography.
+
+This is the idea based on the assumption that commercially viable quantum computers will become available during the next 10 years, and then they can use time-efficient [Shor's algorithm](https://en.wikipedia.org/wiki/Shor%27s_algorithm) developed in 1994 to break asymmetric encryption (symmetric encryption is not vulnerable to this algorithm).
 
 Post-quantum cryptography, or encryption algorithms that are resistant to quantum computers, has been the area of ongoing research for several decades, and there are some algorithms that _might_ protect from quantum computers. It's important to account for these limitations:
 
-- none of the post-quantum algorithms are proven to be secure against quantum computers. They are usually referred to as "believed to be secure". There is continuous research to break post-quantum algorithms, or to prove their security, and many of them are broken every year, often with conventional computers.
-- because of the lack of proofs or guarantees that post-quantum algorithms deliver on their promise, they can only be used in hybrid schemes to augment conventional cryptography, never to replace it, contrary to many expert recommendations, as DJB explains in a [blog post](https://blog.cr.yp.to/20240102-hybrid.html).
-- they are much more computationally expensive and less space efficient, and the encryption schemes have to balance their usability and security, often opimising for usability.
+- _none of the post-quantum algorithms are proven to be secure_ against quantum or conventional computers. They are usually referred to as "believed to be secure" by the researchers and security experts. There is continuous research to break post-quantum algorithms, and to prove their security, and many of these algorithms are broken every year, often with conventional computers.
+- because of the lack of proofs or guarantees that post-quantum cryptography delivers on its promise, these algorithms can only be used in hybrid encryption schemes to augment conventional cryptography, and never to replace it, contrary to some expert recommendations, as DJB explains in this [blog post](https://blog.cr.yp.to/20240102-hybrid.html).
+- they are much more computationally expensive and less space efficient, and the encryption schemes have to balance their usability and security.
 - many of post-quantum algorithms have known patent claims, so any system deploying them accepts the risks of patent litigation.
-- the silver lining to this is that the risk of appearance of commercially viable quantum computers in the next decade may be strongly exaggerated in order to justify current R&D funding for both computer and algorithm development.
+- the silver lining to all these limitations is that the risk of appearance of commercially viable quantum computers in the next decade may be strongly exaggerated, possibly to justify the current R&D funding for both computers and algorithms development.
 
 So, to put it bluntly, post-quantum cryptography is a remedy against the decease nobody has without any guarantee that it will work. The closest anology in the field of medicine is _snake oil_, although, in fairness to snake oil, it was usually sold to cure the real deceases people already had, not the future ones.
 
+TODO insert photo of some really large datacenter?
+
+Does it mean that post-quantum cryptography is competely useless and should be ignored? Absolutely not. The risks of "record now, decrypt later" attacks are real, particularly for all high profile targets, that includes millions of people - all journalists, whitleblowers, freedom-fighters in oppressive regimes, and even some ordinary people who may become targets of information crimes. Large scale collection of encrypted communication data is ongoing, and this data may be used in the future. So having the solution that _might_ protect you (post-quantum cryptography), as long as it doesn't remove the solution that is _proven_ to protect you (conventional cryptography), is highly beneficial in any communication solution, and has already been deployed in many tools and in some messengers.
+
 ## How secure is end-to-end encryption in different messengers?
 
-TODO Insert table.
+This comparison may be incorrect in some colums with regards to our knowledge, this relies on publicly available documentation. We apologise if some of the points are incorrect, please let us so we can amend it!
 
-TODO write some commentary.
+The main objective here is to establish the framework for comparing the security of end-to-end encryption schemes, and to highlight any areas for improvement, not to criticise any implementations.
+
+![Messengers comparison](./images/20240314-comparison.jpg)
+
+<sup>1</sup> Repudiation in SimpleX Chat will include client-server protocol from v5.7 or v5.8. Currently it is implemented but not enabled yet, as its support requires releasing the servers that would break backward compatibility.
+
+<sup>2</sup> Post-quantum cryptography is available in beta version, as opt-in only in direct conversations. See below how it will be rolled-out.
+
+Some columns are marked with a yellow checkmark:
+- when messages are padded, but not to a fixed size.
+- when repudiation does not include client-server connection. In case of Cwtch it appears that the presense of cryptographic signatures achieves non-repudiation, but it needs to be clarified.
+- when 2-factor key exchange is optional, via security code verification.
+- when post-quantum cryptography is only added to the initial key agreement, and does not protect break-in recovery.
 
 ## Adding quantum resistantce to Signal double ratchet algorithm
 
-Does it mean that post-quantum cryptography is competely useless and should be ignored? Absolutely not. The risks of "record now, decrypt later" attacks are absolutely real, particularly for all high profile targets, that includes millions of people - all journalists, whitleblowers, freedom-fighters in oppressive regimes, and even some ordinary people may become targets of information crimes. Large scale collection of encrypted communication data is ongoing, and this data may be used in the future. So having the solution that _might_ protect you (PQ cryptography), as long as it doesn't remove the solution that is _proven_ to protect you (conventional cryptography), is highly beneficial in any communication solution, and has already been deployed in many tools and in some messengers.
+We have been exploring post-quantum cryptography since early 2022, when SimpleX Chat was first released, and we did not want to be pioneers here - cryptography is critically important to make it right.
 
-TODO insert photo of some really large datacenter?
-
-We have been exploring this subject since early 2022, when SimpleX Chat was first released, and we did not want to be pioneers here - cryptography is critically important to make it right.
-
-We hoped to adopt the algorithm that will be standardized by NIST, but the standardisation process turned out to be hugely disappointing and the ML-KEM algorithm that was accepted as a standard (called Crystals Kyber during NIST competition) was modified to remove a very important hashing step, that mitigates the attacks via a compromised random numbers generator, ignoring strong criticism from many expert cryptographers, including DJB.
+We hoped to adopt the algorithm that will be standardized by NIST, but the standardisation process turned out to be hugely disappointing and the ML-KEM algorithm that was accepted as a standard (called Crystals Kyber during NIST competition) was modified to remove a very important hashing step (see the lines 304-314 in [the published spec](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf))), that mitigates the attacks via a compromised random numbers generator, ignoring strong criticism from many expert cryptographers, including DJB (see [this discussion](https://groups.google.com/a/list.nist.gov/g/pqc-forum/c/WFRDl8DqYQ4) and [the comments NIST received](https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf)). To make it even worse, the calculation of security levels of Kyber appears to have been done incorrectly, and overall, the chosen Kyber seems worse than rejected NTRU according to [the analysis by Daniel Bernstein](https://blog.cr.yp.to/20231003-countcorrectly.html).
 
 We also analysed the encryption schemes proposed in Tutanota in 2021 and another scheme adopted by Signal last year, and published a design that we believe provides much better security than either of these schemes:
 
 - unlike Tutanota design, it augments rather than replaces conventional cryptography, and also avoids using signatures when new keys are agreed (ratchet steps).
-- unlike other messengers, we used Streamlined NTRU Prime algorithm (strnup761) that has no problems of ML-KEM, no known patent claims, and seems less likely to be compromised than other algorithms - exactly the same algorithm that is used in SSH.
-- unlike Signal design, that only added quantum resistance to the initial key exchange, replacing X3DH key agreement scheme with PQXDH, but did not change the actual Signal algorithm, our design added quantum-resistant key agreement in double ratchet algorithm, making its break-in recovery property also quantum resistant.
+- unlike all other messengers that adopted or plan to adopt ML-KEM, we used Streamlined NTRU Prime algorithm (specifically, strnup761) that has no problems of ML-KEM, no known patent claims, and seems less likely to be compromised than other algorithms - it is exactly the same algorithm that is used in SSH. You can review the comparison of [the risks of various post-quantum algorithms](https://ntruprime.cr.yp.to/warnings.html).
+- unlike Signal design that only added quantum resistance to the initial key exchange by replacing X3DH key agreement scheme with post-quantum [PQXDH](https://signal.org/docs/specifications/pqxdh/), but did not improve the Signal algorithm itself, our design added quantum-resistant key agreements inside double ratchet algorithm, making its break-in recovery property also quantum resistant.
 
-The reason we could make break-in recovery property of Signal algorithm, and why, probably, Signal didn't, is because irrespective of the message size SimpleX Chat uses a fixed block size of 16kb to provide security and privacy against any traffic observers and against messaging relays. So we had an extra space to accomodate additional ~2.2kb worth of keys in each message without any additional traffic costs.
+The reason we could make break-in recovery property of Signal algorithm quantum-resistant, and why, probably, Signal didn't, is because irrespective of the message size SimpleX Chat uses a fixed block size of 16kb to provide security and privacy against any traffic observers and against messaging relays. So we had an extra space to accomodate additional ~2.2kb worth of keys in each message without any additional traffic costs.
 
-In case when the message is larger than the remaining size, e.g. when the message contains image or link preview, or a long text, we used zstd compression to provide additional space for the requred keys without reducing image preview quality or creating additional traffic - our previously inefficient JSON encoding of messages was helpful in this case.
+In case when the message is larger than the remaining block size, e.g. when the message contains image or link preview, or a large text, we used [zstd compression](https://en.wikipedia.org/wiki/Zstd) to provide additional space for the requred keys without reducing image preview quality or creating additional traffic - our previously inefficient JSON encoding of chat messages was helpful in this case.
 
 TODO insert picture of double KEM key agreement
 
-The additional challenge in adding sntrup761 is that unlike Diffie-Hellman key exchange which is a non-interactive and symmetric (that is, the parties can share their public keys in any order and the shared secret can be computed from two public keys), sntrup761 is interactive key-encapsulation mechanism (KEM) that requires that one party shares its public key, and another party uses it to encrypt a random shared secret, and send it back - making it somewhat similar to RSA cryptography. But this asymmetric design does not fit the symmetric operation of Signal double ratchet algorithm, where both sides generate random public keys and both sides need to compute new shared secrets every time messaging direction changes for them. So to add symmetry back we had to use two KEM key agreements running in parallel, in a lock-step fashion, when both parties generate random public keys independently and also use the public key of another party to encapsulate the random shared secret. Effectively, it adds a double post-quantum key agreement to double ratchet algorithm!
+The additional challenge in adding sntrup761 is that unlike Diffie-Hellman key exchange which is a non-interactive and symmetric (that is, the parties can share their public keys in any order and the shared secret can be computed from two public keys), sntrup761 is interactive key-encapsulation mechanism (KEM) that requires that one party shares its public key, and another party uses it to encrypt a random shared secret, and send it back - making it somewhat similar to RSA cryptography. But this asymmetric design does not fit the symmetric operation of Signal double ratchet algorithm, where both sides generate random public keys and both sides need to compute new shared secrets every time messaging direction changes for them. So to achieve that symmetry we had to use two KEM key agreements running in parallel, in a lock-step fashion, when both parties generate random public keys independently and also use the public key of another party to encapsulate the random shared secret. Effectively, this design adds a double post-start quanwith key agreement to double ratchet algorithm.
 
-## When can you have quantum resistance in SimpleX Chat?
+## When can you start using quantum resistant chats?
 
 TODO insert photos of the conversation and settings pages
 
@@ -171,7 +209,7 @@ Once you have enabled it for the new contacts, you can also enable it for some o
 - tap Allow PQ encryption
 - exchange several messages back and forth with that contact - the quantum resistant double ratchet will kick in after 3-6 messages (depending on how many messages you send in each direction), you will see the notice in the chat once it enables.
 
-## Next for PQ crypto - all direct chats, small groups and security audit
+## Next for post-quantum crypto - all direct chats, small groups and security audit
 
 We will be making quantum resistance default for all direct chats in v5.7, and they will be upgraded for all users without any action.
 
