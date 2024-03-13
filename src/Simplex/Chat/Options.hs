@@ -41,6 +41,7 @@ data ChatOpts = ChatOpts
     chatCmdLog :: ChatCmdLog,
     chatServerPort :: Maybe String,
     optFilesFolder :: Maybe FilePath,
+    optTempDirectory :: Maybe FilePath,
     showReactions :: Bool,
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
@@ -258,6 +259,13 @@ chatOptsP appDir defaultDbFileName = do
             <> metavar "FOLDER"
             <> help "Folder to use for sent and received files"
         )
+  optTempDirectory <-
+    optional $
+      strOption
+        ( long "tmp-dir"
+            <> metavar "TMP_DIR"
+            <> help "Directory for temporary encrypted files (default: system temp directory)"
+        )
   showReactions <-
     switch
       ( long "reactions"
@@ -304,6 +312,7 @@ chatOptsP appDir defaultDbFileName = do
         chatCmdLog,
         chatServerPort,
         optFilesFolder,
+        optTempDirectory,
         showReactions,
         allowInstantFiles,
         autoAcceptFileSize,
