@@ -708,6 +708,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <ul>
 <li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
 <li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
+<li><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></li>
 </ul>
 </li>
 </ul>
@@ -720,7 +721,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <ul>
 <li>
 <p>Using offical binaries:</p>
-<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server
+<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server &amp;&amp; chmod +x /usr/local/bin/xftp-server
 </code></pre>
 </li>
 <li>
@@ -1063,6 +1064,66 @@ allow_local_mode = true
 </li>
 </ol>
 <p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
+<h1 id="updating-your-xftp-server" tabindex="-1">Updating your XFTP server</h1>
+<p>To update your XFTP server to latest version, choose your installation method and follow the steps:</p>
+<ul>
+<li>
+<p>Manual deployment</p>
+<ol>
+<li>Stop the server:<pre><code class="language-sh">sudo systemctl stop xftp-server
+</code></pre>
+</li>
+<li>Update the binary:<pre><code class="language-sh"> curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server &amp;&amp; chmod +x /usr/local/bin/xftp-server
+</code></pre>
+</li>
+<li>Start the server:<pre><code class="language-sh">sudo systemctl start xftp-server
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></p>
+<ol>
+<li>Execute the followin command:<pre><code class="language-sh">sudo simplex-servers-update
+</code></pre>
+</li>
+<li>Done!</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></p>
+<ol>
+<li>Stop and remove the container:<pre><code class="language-sh">docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/xftp-server --format=&quot;\{\{.ID\}\}&quot;))
+</code></pre>
+</li>
+<li>Pull latest image:<pre><code class="language-sh">docker pull simplexchat/xftp-server:latest
+</code></pre>
+</li>
+<li>Start new container:<pre><code class="language-sh">docker run -d \
+  -p 443:443 \
+  -v $HOME/simplex/xftp/config:/etc/opt/simplex-xftp:z \
+  -v $HOME/simplex/xftp/logs:/var/opt/simplex-xftp:z \
+  -v $HOME/simplex/xftp/files:/srv/xftp:z \
+  simplexchat/xftp-server:latest
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></p>
+<ol>
+<li>Pull latest images:<pre><code class="language-sh">docker-compose --project-directory /etc/docker/compose/simplex pull
+</code></pre>
+</li>
+<li>Restart the containers:<pre><code class="language-sh">docker-compose --project-directory /etc/docker/compose/simplex up -d --remove-orphans
+</code></pre>
+</li>
+<li>Remove obsolete images:<pre><code class="language-sh">docker image prune
+</code></pre>
+</li>
+</ol>
+</li>
+</ul>
 <h3 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h3>
 <p>Please see: <a href="server.html#configuring-the-app-to-use-the-server">SMP Server: Configuring the app to use the server</a>.</p>
 </div>

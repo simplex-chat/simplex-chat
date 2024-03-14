@@ -773,7 +773,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.</p>
 <p><em>Please note</em>: when you change the servers in the app configuration, it only affects which server will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using <a href="blog/20221108-simplex-chat-v4.2-security-audit-new-website.html#change-your-delivery-address-beta">&quot;Change receiving address&quot;</a> button in contact/member information pages – it will be automated soon.</p>
 <h2 id="installation" tabindex="-1">Installation</h2>
-<ol start="0">
+<ol>
 <li>
 <p>First, install <code>smp-server</code>:</p>
 <ul>
@@ -785,20 +785,20 @@ window.addEventListener('scroll',changeHeaderBg);
 <ul>
 <li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
 <li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
-<li><a href="https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode">Linode StackScript</a></li>
+<li><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ol>
 <p>Manual installation requires some preliminary actions:</p>
-<ol start="0">
+<ol>
 <li>
 <p>Install binary:</p>
 <ul>
 <li>
 <p>Using offical binaries:</p>
-<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server
+<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server &amp;&amp; chmod +x /usr/local/bin/smp-server
 </code></pre>
 </li>
 <li>
@@ -1114,13 +1114,15 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires pas
 </li>
 <li>
 <p>Allow local mode by appending following:</p>
+</li>
+</ol>
 <pre><code class="language-sh">[plugin.marcusolsson-csv-datasource]
 allow_local_mode = true
 </code></pre>
 <p>... to <code>/etc/grafana/grafana.ini</code></p>
-</li>
-<li>
-<p>Add a CSV data source:</p>
+<ol start="3">
+<li>Add a CSV data source:</li>
+</ol>
 <ul>
 <li>In the side menu, click the Configuration tab (cog icon)</li>
 <li>Click Add data source in the top-right corner of the Data Sources tab</li>
@@ -1128,12 +1130,69 @@ allow_local_mode = true
 <li>Click the search result that says &quot;CSV&quot;</li>
 <li>In URL, enter a file that points to CSV content</li>
 </ul>
-</li>
-<li>
-<p>You're done! You should be able to create your own dashboard with statistics.</p>
-</li>
+<ol start="4">
+<li>You're done! You should be able to create your own dashboard with statistics.</li>
 </ol>
 <p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
+<h1 id="updating-your-smp-server" tabindex="-1">Updating your SMP server</h1>
+<p>To update your smp-server to latest version, choose your installation method and follow the steps:</p>
+<ul>
+<li>
+<p>Manual deployment</p>
+<ol>
+<li>Stop the server:<pre><code class="language-sh">sudo systemctl stop smp-server
+</code></pre>
+</li>
+<li>Update the binary:<pre><code class="language-sh"> curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server &amp;&amp; chmod +x /usr/local/bin/smp-server
+</code></pre>
+</li>
+<li>Start the server:<pre><code class="language-sh">sudo systemctl start smp-server
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></p>
+<ol>
+<li>Execute the followin command:<pre><code class="language-sh">sudo simplex-servers-update
+</code></pre>
+</li>
+<li>Done!</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></p>
+<ol>
+<li>Stop and remove the container:<pre><code class="language-sh">docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/smp-server --format=&quot;\{\{.ID\}\}&quot;))
+</code></pre>
+</li>
+<li>Pull latest image:<pre><code class="language-sh">docker pull simplexchat/smp-server:latest
+</code></pre>
+</li>
+<li>Start new container:<pre><code class="language-sh">docker run -d \
+  -p 5223:5223 \
+  -v $HOME/simplex/smp/config:/etc/opt/simplex:z \
+  -v $HOME/simplex/smp/logs:/var/opt/simplex:z \
+  simplexchat/smp-server:latest
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></p>
+<ol>
+<li>Pull latest images:<pre><code class="language-sh">docker-compose --project-directory /etc/docker/compose/simplex pull
+</code></pre>
+</li>
+<li>Restart the containers:<pre><code class="language-sh">docker-compose --project-directory /etc/docker/compose/simplex up -d --remove-orphans
+</code></pre>
+</li>
+<li>Remove obsolete images:<pre><code class="language-sh">docker image prune
+</code></pre>
+</li>
+</ol>
+</li>
+</ul>
 <h3 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h3>
 <p>To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.</p>
 <p>It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.</p>
