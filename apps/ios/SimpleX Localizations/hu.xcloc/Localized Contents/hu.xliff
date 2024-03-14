@@ -319,7 +319,7 @@
       </trans-unit>
       <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
         <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
-        <target state="translated">**Ismerős hozzáadása**: új meghívó hivatkozás létrehozásához, vagy egy kapott linken keresztül történő csatlakozáshoz.</target>
+        <target state="translated">**Ismerős hozzáadása**: új meghívó hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő csatlakozáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
@@ -650,7 +650,7 @@
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target state="translated">Minden üzenet törlésre kerül - ezt nem vonható vissza! Az üzenetek CSAK az Ön számára törlődnek.</target>
+        <target state="translated">Minden üzenet törlésre kerül - ezt nem vonható vissza! Az üzenetek CSAK az ön számára törlődnek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve" approved="no">
@@ -1255,7 +1255,7 @@ Ez a SimpleX azonosítója!</target>
         <source>Connect to yourself?
 This is your own one-time link!</source>
         <target state="translated">Kapcsolódás saját magához?
-Ez az egyszer használatos linkje!</target>
+Ez az egyszer használatos hivatkozása!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve" approved="no">
@@ -1265,12 +1265,12 @@ Ez az egyszer használatos linkje!</target>
       </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve" approved="no">
         <source>Connect via link</source>
-        <target state="translated">Kapcsolódás egy linken keresztül</target>
+        <target state="translated">Kapcsolódás egy hivatkozáson keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
         <source>Connect via one-time link</source>
-        <target state="translated">Kapcsolódás egyszer használatos linken keresztül</target>
+        <target state="translated">Kapcsolódás egyszer használatos hivatkozáson keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve" approved="no">
@@ -1415,7 +1415,7 @@ Ez az egyszer használatos linkje!</target>
       </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve" approved="no">
         <source>Create an address to let people connect with you.</source>
-        <target state="translated">Azonosító létrehozása, hogy az emberek kapcsolatba léphessenek Önnel.</target>
+        <target state="translated">Azonosító létrehozása, hogy az emberek kapcsolatba léphessenek önnel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve" approved="no">
@@ -2250,7 +2250,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Error creating group link" xml:space="preserve" approved="no">
         <source>Error creating group link</source>
-        <target state="translated">Hiba a csoport linkjének létrehozásakor</target>
+        <target state="translated">Hiba a csoport hivatkozásának létrehozásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating member contact" xml:space="preserve" approved="no">
@@ -2440,7 +2440,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
         <source>Error updating group link</source>
-        <target state="translated">Hiba a csoport link frissítésekor</target>
+        <target state="translated">Hiba a csoport hivatkozás frissítésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating message" xml:space="preserve" approved="no">
@@ -2635,7 +2635,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Full link" xml:space="preserve" approved="no">
         <source>Full link</source>
-        <target state="translated">Teljes link</target>
+        <target state="translated">Teljes hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Full name (optional)" xml:space="preserve" approved="no">
@@ -2715,12 +2715,12 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve" approved="no">
         <source>Group link</source>
-        <target state="translated">Csoport link</target>
+        <target state="translated">Csoport hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group links" xml:space="preserve" approved="no">
         <source>Group links</source>
-        <target state="translated">Csoport linkek</target>
+        <target state="translated">Csoport hivatkozások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
@@ -2790,7 +2790,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target state="translated">A csoport törlésre kerül az Ön részére - ez nem vonható vissza!</target>
+        <target state="translated">A csoport törlésre kerül az ön részére - ez nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve" approved="no">
@@ -2875,7 +2875,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve" approved="no">
         <source>If you can't meet in person, show QR code in a video call, or share the link.</source>
-        <target state="translated">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a linket.</target>
+        <target state="translated">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a hivatkozást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
@@ -3057,7 +3057,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Invalid link" xml:space="preserve" approved="no">
         <source>Invalid link</source>
-        <target state="translated">Érvénytelen link</target>
+        <target state="translated">Érvénytelen hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid name!" xml:space="preserve" approved="no">
@@ -3122,7 +3122,7 @@ Ezt nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target state="translated">Ez akkor fordulhat elő, ha Ön vagy a kapcsolata régi adatbázis biztonsági mentést használt.</target>
+        <target state="translated">Ez akkor fordulhat elő, ha ön vagy a kapcsolata régi adatbázis biztonsági mentést használt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
@@ -3495,7 +3495,7 @@ Ez az ön hivatkozása a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve" approved="no">
         <source>Most likely this contact has deleted the connection with you.</source>
-        <target state="translated">Valószínűleg ez az ismerős törölte Önnel a kapcsolatot.</target>
+        <target state="translated">Valószínűleg ez az ismerős törölte önnel a kapcsolatot.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
@@ -3694,7 +3694,7 @@ Ez az ön hivatkozása a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
-        <target state="translated">Egyszer használatos meghívó link</target>
+        <target state="translated">Egyszer használatos meghívó hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve" approved="no">
@@ -3734,27 +3734,27 @@ Ez az ön hivatkozása a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
         <source>Only you can add message reactions.</source>
-        <target state="translated">Csak Ön adhat hozzá üzenetreakciókat.</target>
+        <target state="translated">Csak ön adhat hozzá üzenetreakciókat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</source>
-        <target state="translated">Visszafordíthatatlanul csak Ön törölhet üzeneteket (ismerőse csak törlésre jelölheti őket ). (24 óra)</target>
+        <target state="translated">Visszafordíthatatlanul csak ön törölhet üzeneteket (ismerőse csak törlésre jelölheti őket ). (24 óra)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
         <source>Only you can make calls.</source>
-        <target state="translated">Csak Ön tud hívásokat indítani.</target>
+        <target state="translated">Csak ön tud hívásokat indítani.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only you can send disappearing messages.</source>
-        <target state="translated">Csak Ön tud eltűnő üzeneteket küldeni.</target>
+        <target state="translated">Csak ön tud eltűnő üzeneteket küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve" approved="no">
         <source>Only you can send voice messages.</source>
-        <target state="translated">Csak Ön tud hangüzeneteket küldeni.</target>
+        <target state="translated">Csak ön tud hangüzeneteket küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
@@ -3899,7 +3899,7 @@ Ez az ön hivatkozása a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve" approved="no">
         <source>People can connect to you only via the links you share.</source>
-        <target state="translated">Az emberek csak az Ön által megosztott hivatkozáson keresztül kapcsolódhatnak.</target>
+        <target state="translated">Az emberek csak az ön által megosztott hivatkozáson keresztül kapcsolódhatnak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve" approved="no">
@@ -3929,7 +3929,7 @@ Ez az ön hivatkozása a %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve" approved="no">
         <source>Please check yours and your contact preferences.</source>
-        <target state="translated">Ellenőrizze az Ön és ismerőse beállításait.</target>
+        <target state="translated">Ellenőrizze az ön és ismerőse beállításait.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve" approved="no">
@@ -4541,7 +4541,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
         <source>Search or paste SimpleX link</source>
-        <target state="translated">Keresés, vagy SimpleX azonosító beillesztése</target>
+        <target state="translated">Keresés, vagy SimpleX hivatkozás beillesztése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve" approved="no">
@@ -4806,7 +4806,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="Share 1-time link" xml:space="preserve" approved="no">
         <source>Share 1-time link</source>
-        <target state="translated">Egyszer használatos link megosztása</target>
+        <target state="translated">Egyszer használatos hivatkozás megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share address" xml:space="preserve" approved="no">
@@ -4826,7 +4826,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve" approved="no">
         <source>Share this 1-time invite link</source>
-        <target state="translated">Egyszer használatos link megosztása</target>
+        <target state="translated">Egyszer használatos meghívó hivatkozás megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share with contacts" xml:space="preserve" approved="no">
@@ -4906,7 +4906,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="SimpleX group link" xml:space="preserve" approved="no">
         <source>SimpleX group link</source>
-        <target state="translated">SimpleX csoport link</target>
+        <target state="translated">SimpleX csoport hivatkozás</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX links" xml:space="preserve" approved="no">
@@ -5158,12 +5158,12 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve" approved="no">
         <source>The code you scanned is not a SimpleX link QR code.</source>
-        <target state="translated">A beolvasott kód nem egy SimpleX link QR-kód.</target>
+        <target state="translated">A beolvasott kód nem egy SimpleX hivatkozás QR-kód.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve" approved="no">
         <source>The connection you accepted will be cancelled!</source>
-        <target state="translated">Az Ön által elfogadott kapcsolat megszakad!</target>
+        <target state="translated">Az ön által elfogadott kapcsolat megszakad!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve" approved="no">
@@ -5288,7 +5288,7 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="This is your own one-time link!" xml:space="preserve" approved="no">
         <source>This is your own one-time link!</source>
-        <target state="translated">Ez az egyszer használatos linkje!</target>
+        <target state="translated">Ez az egyszer használatos hivatkozása!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
@@ -5837,7 +5837,7 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve" approved="no">
         <source>You are already connecting via this one-time link!</source>
-        <target state="translated">Már csatlakozik ezen az egyszer használatos linken keresztül!</target>
+        <target state="translated">Már csatlakozik ezen az egyszer használatos hivatkozáson keresztül!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already in group %@." xml:space="preserve" approved="no">
@@ -5852,12 +5852,12 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
       </trans-unit>
       <trans-unit id="You are already joining the group via this link!" xml:space="preserve" approved="no">
         <source>You are already joining the group via this link!</source>
-        <target state="translated">Már csatlakozott a csoporthoz ezen a linken keresztül!</target>
+        <target state="translated">Már csatlakozott a csoporthoz ezen a hivatkozáson keresztül!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group via this link." xml:space="preserve" approved="no">
         <source>You are already joining the group via this link.</source>
-        <target state="translated">Ezen a linken keresztül már csatlakozik a csoporthoz.</target>
+        <target state="translated">Ezen a hivatkozáson keresztül már csatlakozik a csoporthoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group!&#10;Repeat join request?" xml:space="preserve" approved="no">
@@ -5919,7 +5919,7 @@ Csatlakozási kérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target state="translated">Megoszthat egy linket vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</target>
+        <target state="translated">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve" approved="no">
@@ -5929,7 +5929,7 @@ Csatlakozási kérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve" approved="no">
         <source>You can share your address as a link or QR code - anybody can connect to you.</source>
-        <target state="translated">Megoszthatja azonosítóját linkként vagy QR-kódként – így bárki csatlakozhat Önhöz.</target>
+        <target state="translated">Megoszthatja azonosítóját hivatkozásként vagy QR-kódként – így bárki csatlakozhat önhöz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve" approved="no">
@@ -5949,7 +5949,7 @@ Csatlakozási kérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can view invitation link again in connection details." xml:space="preserve" approved="no">
         <source>You can view invitation link again in connection details.</source>
-        <target state="translated">A meghívó linket újra megtekintheti a kapcsolat részleteinél.</target>
+        <target state="translated">A meghívó hivatkozást újra megtekintheti a kapcsolat részleteinél.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve" approved="no">
@@ -6525,7 +6525,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="enabled for you" xml:space="preserve" approved="no">
         <source>enabled for you</source>
-        <target state="translated">engedélyezve az Ön számára</target>
+        <target state="translated">engedélyezve az ön számára</target>
         <note>enabled status</note>
       </trans-unit>
       <trans-unit id="encryption agreed" xml:space="preserve" approved="no">
@@ -6615,7 +6615,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
-        <target state="translated">inkognitó a kapcsolattartási címen keresztül</target>
+        <target state="translated">inkognitó a kapcsolattartási hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve" approved="no">
@@ -6625,7 +6625,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="incognito via one-time link" xml:space="preserve" approved="no">
         <source>incognito via one-time link</source>
-        <target state="translated">inkognitó egyszer használatos linken keresztül</target>
+        <target state="translated">inkognitó egyszer használatos hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="indirect (%d)" xml:space="preserve" approved="no">
@@ -6932,12 +6932,12 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve" approved="no">
         <source>via group link</source>
-        <target state="translated">csoport linken keresztül</target>
+        <target state="translated">csoport hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve" approved="no">
         <source>via one-time link</source>
-        <target state="translated">egyszer használatos linken keresztül</target>
+        <target state="translated">egyszer használatos hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via relay" xml:space="preserve" approved="no">
@@ -7022,12 +7022,12 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
-        <target state="translated">egyszer használatos linket osztott meg</target>
+        <target state="translated">egyszer használatos hivatkozást osztott meg</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you shared one-time link incognito" xml:space="preserve" approved="no">
         <source>you shared one-time link incognito</source>
-        <target state="translated">egyszer használatos linket osztott meg inkognitóban</target>
+        <target state="translated">egyszer használatos hivatkozást osztott meg inkognitóban</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you unblocked %@" xml:space="preserve" approved="no">
