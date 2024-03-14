@@ -82,9 +82,7 @@ public func deleteAppDatabaseAndFiles() {
     }
     try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
     try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
-    try? fm.removeItem(at: getTempFilesDirectory())
-    try? fm.removeItem(at: getMigrationTempFilesDirectory())
-    try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    deleteAppTempFiles()
     deleteAppFiles()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
@@ -98,6 +96,13 @@ public func deleteAppFiles() {
     } catch {
         logger.error("FileUtils deleteAppFiles error: \(error.localizedDescription)")
     }
+}
+
+public func deleteAppTempFiles() {
+    let fm = FileManager.default
+    try? fm.removeItem(at: getTempFilesDirectory())
+    try? fm.removeItem(at: getMigrationTempFilesDirectory())
+    try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
 }
 
 public func fileSize(_ url: URL) -> Int? { // in bytes
