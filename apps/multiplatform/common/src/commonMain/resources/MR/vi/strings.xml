@@ -75,4 +75,10 @@
     <string name="allow_to_send_voice">Cho phép gửi tin nhắn thoại.</string>
     <string name="allow_message_reactions">Cho phép thả biểu tượng cảm xúc.</string>
     <string name="allow_to_send_files">Cho phép gửi các tập tin, ảnh và video.</string>
+    <string name="notifications_mode_service">Luôn luôn bật</string>
+    <string name="all_your_contacts_will_remain_connected">Tất cả liên hệ của bạn vẫn sẽ được giữ kết nối.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Tất cả liên hệ của bạn vẫn sẽ được giữ kết nối. Bản cập nhật hồ sơ sẽ được gửi tới các liên hệ của bạn.</string>
+    <string name="chat_preferences_always">luôn luôn</string>
+    <string name="connect_plan_already_connecting">Đã kết nối rồi!</string>
+    <string name="connect_plan_already_joining_the_group">Đã tham gia nhóm rồi!</string>
 </resources>
