@@ -6179,23 +6179,23 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: forall m. ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- compressBodies
+  msgReqs' <- if any (either (const False) shouldCompress) msgReqs then compressBodies else pure msgReqs
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \cxt ->
-      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
-        runExceptT $ case pqSupport of
-          -- we only compress messages when:
-          -- 1) PQ support is enabled
-          -- 2) version is compatible with compression
-          -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
-          PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
-            msgBody' <- liftIO $ compressedBatchMsgBody_ cxt msgBody
-            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure (conn, msgFlags, msgBody', msgId)
-          _ -> pure mr
+    -- we only compress messages when:
+    -- 1) PQ support is enabled
+    -- 2) version is compatible with compression
+    -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
+    shouldCompress (Connection {pqSupport, connChatVersion = v}, _, msgBody, _) =
+      pqSupport == PQSupportOn && v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength
+    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \ctx ->
+      forME msgReqs $ \mr -> if shouldCompress mr then compress ctx mr else pure (Right mr)
+    compress ctx (conn, msgFlags, msgBody, msgId) = runExceptT $ do
+      msgBody' <- liftIO $ compressedBatchMsgBody_ ctx msgBody
+      when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
+      pure (conn, msgFlags, msgBody', msgId)
     toAgent = \case
       Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
