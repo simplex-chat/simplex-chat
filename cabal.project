@@ -49,3 +49,8 @@ source-repository-package
     type: git
     location: https://github.com/simplex-chat/zip.git
     tag: bd421c6b19cc4c465cd7af1f6f26169fb8ee1ebc
+
+source-repository-package
+    type: git
+    location: https://github.com/luispedro/hs-zstd.git
+    tag: f6c85c2c5c7b7b8713e078a23a74356c0282b162

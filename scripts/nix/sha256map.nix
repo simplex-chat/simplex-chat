@@ -7,4 +7,5 @@
   "https://github.com/simplex-chat/haskell-terminal.git"."f708b00009b54890172068f168bf98508ffcd495" = "0zmq7lmfsk8m340g47g5963yba7i88n4afa6z93sg9px5jv1mijj";
   "https://github.com/simplex-chat/android-support.git"."9aa09f148089d6752ce563b14c2df1895718d806" = "0pbf2pf13v2kjzi397nr13f1h3jv0imvsq8rpiyy2qyx5vd50pqn";
   "https://github.com/simplex-chat/zip.git"."bd421c6b19cc4c465cd7af1f6f26169fb8ee1ebc" = "1csqfjhvc8wb5h4kxxndmb6iw7b4ib9ff2n81hrizsmnf45a6gg0";
+  "https://github.com/luispedro/hs-zstd.git"."f6c85c2c5c7b7b8713e078a23a74356c0282b162" = "14fha786ld5mbfknmq8czkcivfaxnrfg7vv23a501pqgxppbkcjk";
 }
