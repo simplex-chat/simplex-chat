@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en"
     
@@ -35,24 +34,30 @@
         
     >
 
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Hosting your own XFTP Server</title>
-        <meta name="Content-Type" content="text/html;charset=utf-8"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SimpleX blog: SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm</title>
+    <meta name="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html" />
+    <meta property="og:url" content="https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm" />
+    
+      <meta property="og:image" content="https://simplex.chat/blog/images/20240314-kem.jpg" />
+    
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blog.css" />
+    <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
+    <link href="/css/style.css" rel="stylesheet" />
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+  </head>
 
-        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
-        <link href="/css/tailwind.css" rel="stylesheet"/>
-        <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
-        <link href="/css/style.css" rel="stylesheet"/>
-        <link rel="stylesheet" href="/css/doc.css"/>
-        <script async defer src="https://buttons.github.io/buttons.js"></script>
-    </head>
-
-    <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
-        <section class="w-full bg-transparent fixed top-0 z-50">
-            
+  <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+    
 
 
     
@@ -181,7 +186,7 @@
                             
                                 <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Host SMP Server</a></li>
                             
-                                <li><a href="/docs/xftp-server.html" class="active lg:px-[20px] inline-block whitespace-nowrap">Host XFTP Server</a></li>
+                                <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Host XFTP Server</a></li>
                             
                                 <li><a href="/docs/webrtc.html" class=" lg:px-[20px] inline-block whitespace-nowrap">WebRTC servers</a></li>
                             
@@ -247,93 +252,6 @@
             </div>
         </nav>
 
-        
-        <div class="nav-link relative flag-container">
-            <a href="javascript:void(0);" class="flex items-center justify-end ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 h-6 w-8 whitespace-nowrap">
-                
-                    
-                        
-                            <img src="/img/flags/en.svg" alt="" srcset="">
-                        
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-            </a>
-            
-            <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">
-                
-                    
-                        
-                            
-                                <li>
-                                    
-                                        <a href="/docs/xftp-server.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/en.svg" alt="" srcset="">
-                                            <p>English</p>
-                                        </a>
-                                     
-                                </li>
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                    
-                
-            </ul>
-        </div>
         
 
         <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ltr:ml-8 ltr:lg:ml-4 ltr:xl:ml-8 rtl:mr-8 rtl:lg:mr-4 rtl:xl:mr-8 theme-switch-btn">
@@ -446,629 +364,174 @@ const changeHeaderBg = ()=>{
 
 window.addEventListener('scroll',changeHeaderBg);
 </SCript>
-        </section>
 
-        <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
-            <div>
-                <main>
-                    <aside class="sidebar px-4 lg:px-7">
-                        <div class="h-[66px] lg:h-0">
-                            <a href="/" class="h-full flex dark:hidden lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo"/></a>
-                            <a href="/" class="h-full hidden dark:flex dark:lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo"/></a>
-                        </div>
-                        <ul class="!my-4">
-                            
-                                
-                                
-                                    
-                                        
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
+    <div class="container px-5">
+      <a class="inline-block text-grey-black dark:text-white my-5 underline underline-offset-2" href="/blog"><&nbsp;Back to list</a>
+    </div>
 
-                                
-                                    
-                                        <p class="">Guide</p>
-                                        <ul>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/readme.html">Quick start</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/secret-groups.html">Secret groups</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/chat-profiles.html">Chat profiles</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/managing-data.html">Managing data</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video Calls</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/privacy-security.html">Privacy &amp; security</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/app-settings.html">App settings</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
-                                                </li>
-                                            
-                                        </ul>
-                                    
-                                
-                            
-                                
-                                
-                                    
-                                
-                                    
-                                        
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
-
-                                
-                                    
-                                        <p class="">Reference</p>
-                                        <ul>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/simplex.html">SimpleX platform</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/android.html">Accessing files in Android app</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/cli.html">Terminal CLI</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/contributing.html">Contributing guide</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/server.html">Hosting your own SMP Server</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/translations.html">Contributing translations to SimpleX Chat</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/webrtc.html">Using custom WebRTC ICE servers in SimpleX Chat</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="active" href="/docs/xftp-server.html">Hosting your own XFTP Server</a>
-                                                </li>
-                                            
-                                                <li>
-                                                    <a class="" href="/downloads/">Download SimpleX apps</a>
-                                                </li>
-                                            
-                                        </ul>
-                                    
-                                
-                            
-                                
-                                
-                                    
-                                
-                                    
-                                        
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
-
-                                
-                                    
-                                
-                            
-                                
-                                
-                                    
-                                
-                                    
-                                        
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
-
-                                
-                                    
-                                
-                            
-                                
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                
-                                    
-                                        
-                                    
-                                
-
-                                
-                                    
-                                        <p class="">Protocol</p>
-                                        <ul>
-                                            
-                                                <li>
-                                                    <a class="" href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>
-                                                </li>
-                                            
-                                        </ul>
-                                    
-                                
-                            
-                    </ul>
-                </aside>
-                <article class="content px-4 lg:px-7">
-
-                    
-
-                    <div class="sticky top-[66px] bg-white dark:bg-[#17203D] z-[49] !py-2 lg:hidden">
-                        <div class="relative flex items-center justify-between">
-                            <button class="menu flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="menu-icon h-4 w-4 fill-[rgb(60,60,60)] dark:fill-white">
-                                    <path d="M17,11H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,11,17,11z"></path>
-                                    <path d="M21,7H3C2.4,7,2,6.6,2,6s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,7,21,7z"></path>
-                                    <path d="M21,15H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,15,21,15z"></path>
-                                    <path d="M17,19H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,19,17,19z"></path>
-                                </svg>
-                                <span class="!text-[rgb(60,60,60)] dark:!text-white">Menu</span>
-                            </button>
-
-                            <div class="nav-link">
-                                <a href="javascript:void(0);" class="flex items-center gap-2 !no-underline !text-[rgb(60,60,60)] dark:!text-white">
-                                    <span class="">On this page</span>
-                                    <span href="" id="btn-mobile" class="flex items-center justify-center h-auto w-auto mt-1">
-                                        <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                                        </svg>
-                                    </span>
-                                </a>
-
-                                <ul class="flex flex-col items-start gap-2 absolute bg-white dark:bg-black top-full left-0 right-0 mt-[10px] w-full h-auto rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu hash-list">
-                                    <li class="mb-5">
-                                        <a href="#" id="back-to-top">Back to top</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div><h1 id="hosting-your-own-xftp-server" tabindex="-1">Hosting your own XFTP Server</h1>
-<h2 id="overview" tabindex="-1">Overview</h2>
-<p>XFTP is a new file transfer protocol focussed on meta-data protection - it is based on the same principles as SimpleX Messaging Protocol used in SimpleX Chat messenger:</p>
+    <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
+      <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v56-beta-adding-quantum-resistance-to-signal-double-ratchet-algorithm" tabindex="-1">SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm</h1>
+<p>This is a major upgrade for SimpleX messaging protocols, we are really proud to present the results of the hard work of our whole team on the <a href="https://en.wikipedia.org/wiki/Pi_Day">Pi day</a>.</p>
+<p>This post also covers various aspects of end-to-end encryption, compares different messengers, and explains why and how quantum-resistant encryption is added to SimpleX Chat:</p>
 <ul>
-<li>asynchronous file delivery - the sender does not need to be online for file to be received, it is stored on XFTP relays for a limited time (currently, it is 48 hours) or until deleted by the sender.</li>
-<li>padded e2e encryption of file content.</li>
-<li>content padding and fixed size chunks sent via different XFTP relays, assembled back into the original file by the receiving client.</li>
-<li>efficient sending to multiple recipients (the file needs to be uploaded only once).</li>
-<li>no identifiers or ciphertext in common between sent and received relay traffic, same as for messages delivered by SMP relays.</li>
-<li>protection of sender IP address from the recipients.</li>
-</ul>
-<h2 id="installation" tabindex="-1">Installation</h2>
-<ol start="0">
-<li>
-<p>First, install <code>xftp-server</code>:</p>
+<li><a href="#why-do-we-need-end-to-end-encryption">Why do we need end-to-end encryption?</a></li>
+<li><a href="#why-encryption-is-even-allowed">Why encryption is even allowed?</a></li>
+<li><a href="#end-to-end-encryption-security-attacks-and-defense">End-to-end encryption security: attacks and defense.</a>
 <ul>
-<li>
-<p>Manual deployment (see below)</p>
-</li>
-<li>
-<p>Semi-automatic deployment:</p>
-<ul>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
+<li>Compromised message size - mitigated by padding messages to a fixed block size.</li>
+<li>Compromised confidentiality - mitigated by repudiation (deniability).</li>
+<li>Compromised message keys - mitigated by forward secrecy.</li>
+<li>Compromised long-term or session - mitigated by break-in recovery.</li>
+<li>Man-in-the-middle attack - mitigated by two-factor key exchange.</li>
+<li>&quot;Record now, decrypt later&quot; attacks - mitigated by post-quantum cryptography.</li>
 </ul>
 </li>
+<li><a href="#how-secure-is-end-to-end-encryption-in-different-messengers">How secure is encryption in different messengers?</a></li>
+<li><a href="#adding-quantum-resistance-to-signal-double-ratchet-algorithm">Adding quantum resistance to Signal double ratchet algorithm.</a></li>
+<li><a href="#when-can-you-start-using-quantum-resistant-chats">When can you start using quantum resistant chats?</a></li>
+<li><a href="#next-for-post-quantum-crypto---all-direct-chats-small-groups-and-security-audit">Next for post-quantum crypto - all direct chats, small groups and security audit.</a></li>
 </ul>
-</li>
-</ol>
-<p>Manual installation requires some preliminary actions:</p>
-<ol start="0">
-<li>
-<p>Install binary:</p>
+<h2 id="why-do-we-need-end-to-end-encryption" tabindex="-1">Why do we need end-to-end encryption?</h2>
+<p>The objective of end-to-end encryption is to make any potential attackers, such as traffic observers or communication providers who pass the messages between senders and recipients, unable to recover <em>any</em> message content or meaningful information about the messages, even if these attackers possess very advanced computing and mathematical capabilities.</p>
+<p>While human eyes are unable to see any difference between simply scrambled and encrypted messages, the difference between unreadable scrambling and unbreakable encryption can be as huge as just a few seconds to unscramble a message on an average laptop and more time than the Universe existed required to break the encryption on the most powerful computer in the world.</p>
+<p>Achieving the latter requires a lot of mathematical precision in both the cryptographic algorithms and in how they are used, and effectively makes encrypted messages indistinguishable from random noise, without any discoverable patterns or statistical irregularities that a computer could use to break the message encryption any faster than it it would take to try every possible combination of bits in the key.</p>
+<p>End-to-end encryption is an important component of our individual and business security, privacy and sovereignty. Having our private communications protected from any observers is both the natural condition and our inalienable human right.</p>
+<p>It's very sad to see the same people who keep their financial affairs private to protect from financial crimes, lock their doors to protect from thieves, and curtain their windows to protect from the occasional prying eyes, when it comes to protecting their personal lives from the data criminals say &quot;we don't care about privacy, we have nothing to hide&quot;. Everybody's safety depends on keeping their affairs and relations private, not visible to a vast and ruthless data gathering machines, that abuse our data for commercial gain, without any regard to our interests or even <a href="https://nmdoj.gov/press-release/attorney-general-raul-torrez-files-lawsuit-against-meta-platforms-and-mark-zuckerberg-to-protect-children-from-sexual-abuse-and-human-trafficking/">the safety of our families and children</a>.</p>
+<h2 id="why-encryption-is-even-allowed" tabindex="-1">Why encryption is even allowed?</h2>
+<img src="./images/20240314-djb.jpg" class="float-to-right">
+<p>If encryption is such a powerful tool to protect our lives, it also can be used to conceal crimes, so why the governments don't consider it similar to arms, and don't heavily regulate its use?</p>
+<p>Prior to 1996 the cryptography was considered munition, and its export from the United States was controlled under this category, <a href="https://cr.yp.to/export/1995/0303-eff.txt">alongside flamethrowers and B-1 bombers</a>. When <a href="https://en.wikipedia.org/wiki/Daniel_J._Bernstein">Daniel J. Bernstein</a> (DJB), then a student of Mathematics at University of California, Berkeley, wanted to publish the paper and the source code of his Snuffle encryption system, the Office of Defense Trade Controls of the Department of State (DOS) after more than a year of correspondence requested that DJB registers as the arms dealer.</p>
+<p>In 1995 DJB represented by the Electronic Frontier Foundation brought a case against the DOS to overturn cryptography restrictions. The ruling in the case declared that the export control over cryptographic software and related technical data constitute <a href="https://cr.yp.to/export/1996/1206-order.txt">an impermissible infringement on speech in violation of the First Amendment</a>. This decision resulted in regulatory changes, reducing controls on encryption exports, particularly for open-source algorithms. The case continued until 2003, when it was put on hold after the commitment from the US government not to enforce any remaining regulations.</p>
+<p>This case is very important for the whole industry, as to this day we can freely create and use open-source cryptography without export control restrictions. It also shows the importance of engaging with the system and challenging its views in an open dialogue, rather than either blindly complying or violating regulations.</p>
+<p>DJB role for cryptography and open-source goes beyond this case – many cryptographic algorithms that are considered to be the most advanced, and many of which we use in SimpleX Chat, were designed and developed by him:</p>
 <ul>
-<li>
-<p>Using offical binaries:</p>
-<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server
-</code></pre>
-</li>
-<li>
-<p>Compiling from source:</p>
-<p>Please refer to <a href="https://github.com/simplex-chat/simplexmq#using-your-distribution">Build from source: Using your distribution</a></p>
-</li>
+<li>Ed25519 cryptographic signature algorithm we use to authorize commands to the servers.</li>
+<li>NaCL library with cryptobox and secretbox constructions that combine X25519 Diffie-Hellman key agreement with Salsa20 encryption and Poly1305 authentication. We use cryptobox to encrypt messages in two of three encryption layers and secretbox to encrypt files.</li>
+<li>Streamlined NTRU Prime algorithm for quantum resistant key agreement that we used in the protocol for linking mobile app with desktop, and now added to Signal double ratchet algorithm, as explained below.</li>
 </ul>
-</li>
-<li>
-<p>Create user and group for <code>xftp-server</code>:</p>
-<pre><code class="language-sh">sudo useradd -m xftp
-</code></pre>
-</li>
-<li>
-<p>Create necessary directories and assign permissions:</p>
-<pre><code class="language-sh">sudo mkdir -p /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
-sudo chown xftp:xftp /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
-</code></pre>
-</li>
-<li>
-<p>Allow xftp-server port in firewall:</p>
-<pre><code class="language-sh"># For Ubuntu
-sudo ufw allow 443/tcp
-# For Fedora
-sudo firewall-cmd --permanent --add-port=443/tcp &amp;&amp; \
-sudo firewall-cmd --reload
-</code></pre>
-</li>
-<li>
-<p><strong>Optional</strong> — If you're using distribution with <code>systemd</code>, create <code>/etc/systemd/system/xftp-server.service</code> file with the following content:</p>
-<pre><code class="language-sh">[Unit]
-Description=XFTP server systemd service
-
-[Service]
-User=xftp
-Group=xftp
-Type=simple
-ExecStart=/usr/local/bin/xftp-server start +RTS -N -RTS
-ExecStopPost=/usr/bin/env sh -c '[ -e &quot;/var/opt/simplex-xftp/file-server-store.log&quot; ] &amp;&amp; cp &quot;/var/opt/simplex-xftp/file-server-store.log&quot; &quot;/var/opt/simplex-xftp/file-server-store.log.$(date +'%FT%T')&quot;'
-LimitNOFILE=65535
-KillSignal=SIGINT
-TimeoutStopSec=infinity
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-   
-[Install]
-WantedBy=multi-user.target
-</code></pre>
-<p>And execute <code>sudo systemctl daemon-reload</code>.</p>
-</li>
-</ol>
-<h2 id="tor-installation" tabindex="-1">Tor installation</h2>
-<p>xftp-server can also be deployed to serve from <a href="https://www.torproject.org">tor</a> network. Run the following commands as <code>root</code> user.</p>
-<ol>
-<li>
-<p>Install tor:</p>
-<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<p>Without DJB's work the world would have been in a much worse place privacy- and security-wise.</p>
+<p>Daniel, we are really grateful for the work you did and continue doing. Thank you, and congratulations on the International Mathematics Day!</p>
+<h2 id="end-to-end-encryption-security-attacks-and-defense" tabindex="-1">End-to-end encryption security: attacks and defense</h2>
+<p>End-to-end encryption is offered by many messaging apps and protocols, but the security of different implementations are not the same. While many users know about the importance of forward secrecy - the quality of end-to-end encryption that preserves security of the encryption of the past messages, even if the keys used to encrypt some of the messages were compromised - there are many other qualities that protect from different attacks. Below there is the overview of these attacks and the properties of end-to-end encryption schemes that mitigate these attacks.</p>
+<h3 id="1-compromised-message-size-mitigated-by-padding-messages-to-a-fixed-block-size" tabindex="-1">1. Compromised message size - mitigated by padding messages to a fixed block size</h3>
+<p>While the content encryption is the most important, concealing the actual message size is almost as important for several reasons:</p>
 <ul>
-<li>
-<p>Configure offical Tor PPA repository:</p>
-<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
-echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
-deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
-</code></pre>
-</li>
-<li>
-<p>Import repository key:</p>
-<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null
-</code></pre>
-</li>
-<li>
-<p>Update repository index:</p>
-<pre><code class="language-sh">apt update
-</code></pre>
-</li>
-<li>
-<p>Install <code>tor</code> package:</p>
-<pre><code class="language-sh">apt install -y tor deb.torproject.org-keyring
-</code></pre>
-</li>
+<li>attacker able to observe even approximate message sizes can use these sizes as an additional signal for machine learning to de-anonymise the users and to categorize the relationships between the users.</li>
+<li>if a messenger conceals the routing of the messages to hide the transport identities (IP addresses) of senders and recipients, message sizes can be used by traffic observers to confirm the fact of communication with a much higher degree of certainty.</li>
 </ul>
-</li>
-<li>
-<p>Configure tor:</p>
+<p>The only effective mitigation to these attacks is to pad all messages to a fixed size. Using space-efficient schemes like Padme, or padding to encryption block size is ineffective for mitigating these attacks, as they still allow differentiating message sizes.</p>
+<p>To the best of our knowledge the only messenger other than SimpleX Chat that padded all messages to a fixed packet size was <a href="https://github.com/agl/pond">Pond</a> - SimpleX design as an evolution of it.</p>
+<h3 id="2-compromised-confidential-messages-mitigated-by-repudiation-deniability" tabindex="-1">2. Compromised confidential messages - mitigated by repudiation (deniability)</h3>
+<p>Many users are very interested in having ability to irreversibly delete sent messages from the recipients devices. But not only would this ability violate data sovereignty of device owners, it is also completely ineffective, as the recipients could simply put the device offline or use a modified client app to ignore message deletion requests. While SimpleX Chat provides such features as <a href="20230103-simplex-chat-v4.4-disappearing-messages.html#disappearing-messages">disappearing messages</a> and the ability to <a href="20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion">irreversibly delete sent messages</a> provided both parties agree to that, these are convenience features, and they cannot be considered security measures.</p>
+<p>The solution to that is well known to cryptographers - it is the quality of the encryption algorithms called &quot;repudiation&quot;, sometimes also called &quot;deniability&quot;. This is the ability of the senders to plausibly deny having sent any messages, because cryptographic algorithms used to encrypt allow recipients forging these messages on their devices, so while the encryption proves authenticity of the message to the recipient, it cannot be used as a proof to any third party.</p>
+<p>Putting it all in a simpler language - a sender can claim that the recipient forged messages on their device, and deny ever having sent them. The recipient will not be able to provide any cryptographic proof. This quality makes digital conversation having the same qualities as private off-the-record conversation - that's why the family of algorithms that provide these qualities are called off-the-record (OTR) encryption.</p>
+<p>Repudiation is still a rather new concept - the first off-the-record algorithms were proposed in 2004 and were only offered to a wide range of users in Signal messenger. This concept is still quite badly understood by users and society, and yet to have been used as the defense in any public court cases, as legal systems evolve much slower than technology. In high profile cases repudiation can be used as an effective evidence for the defense.</p>
+<p>Repudiation in messaging systems can be undermined by adding cryptographic signature to the protocol, and many messengers that use OTR encryption algorithms do exactly that, unfortunately. SimpleX Chat does not use signature in any part of client-client protocol, but the signature is currently used when authorizing sender's messages to the relays. v5.7 will improve deniability by enabling a different authorization scheme that will provide full-stack repudiation in all protocol layers.</p>
+<h3 id="3-compromised-message-keys-mitigated-by-forward-secrecy" tabindex="-1">3. Compromised message keys - mitigated by forward secrecy</h3>
+<p>The attacker who obtained or broke the keys used to encrypt individual messages, may try to use these keys to decrypt past or future messages. This attack is unlikely to succeed via message interception, and it is likely to require breaking into the device storage. But in any case, if the key was broken or obtained in some other way it's important that this key cannot be used to decrypt other messages - this is achieved by forward secrecy.</p>
+<p>This property is well understood by the users, and most messengers that focus on privacy and security, with the exception of Session, provide forward secrecy as part of their encryption schemes design.</p>
+<h3 id="4-compromised-long-term-or-session-mitigated-by-break-in-recovery" tabindex="-1">4. Compromised long-term or session - mitigated by break-in recovery</h3>
+<p>This attack is much less understood by the users, and forward secrecy does not protect from it. Arguably, it's almost impossible to compromise individual message keys without compromising long-term or session keys. So the ability of the encryption to recover from break-in (attacker making a copy of the device data without retaining the ongoing access) is both very and pragmatic - break-in attacks are simpler to execute on mobile devices during short-term device access than long-term ongoing compromise.</p>
+<p>Out of all encryption algorithms known to us only Signal double ratchet algorithm provides the ability to encryption security after break-ins. This recovery happens automatically and transparently to the users, without them doing anything special even knowing about break-in, by simply sending messages. Every time one of the communication parties replies to another party message, new random keys are generated and previously stolen keys become useless.</p>
+<p>Signal double ratchet algorithm is used in Signal, Cwtch and SimpleX Chat. This is why you cannot use SimpleX Chat profile on more than one device at the same time - the encryption scheme rotates the long term keys, randomly, and keys on another device become useless, as they would become useless for the attacker who stole them. Security always has some costs to the convenience.</p>
+<h3 id="5-man-in-the-middle-attack-mitigated-by-two-factor-key-exchange" tabindex="-1">5. Man-in-the-middle attack - mitigated by two-factor key exchange</h3>
+<p>Many people incorrectly believe that security of end-to-end encryption cannot be broken by communication provider. But end-to-end encryption is as secure as key exchange. While any intermediary passing the keys between senders and recipients cannot recover the private keys from the public keys, they can simply replace the passed public keys with their own and then proxy all communication between the users having full access to the original messages. So instead of having an end-to-end encrypted channel, users would have two half-way encrypted channels - between users and their communication intermediary.</p>
+<p>Pictures below illustrate how this attack works for RSA encryption.</p>
+<h4 id="1-alice-sends-the-key-to-bob-eg-via-p2p-network-or-via-the-messaging-server" tabindex="-1">1) Alice sends the key to Bob (e.g. via p2p network or via the messaging server).</h4>
+<p><img src="./images/20240314-mitm1.jpg" alt="Public key is shared"></p>
+<h4 id="2-now-bob-can-send-encrypted-messages-to-alice-he-believes-they-are-secure" tabindex="-1">2) Now Bob can send encrypted messages to Alice - he believes they are secure!</h4>
+<p><img src="./images/20240314-mitm2.jpg" alt="Message is encrypted"></p>
+<h4 id="3-but-the-key-could-have-been-intercepted-and-substituted-by-tom-the-attacker-or-a-service-provider" tabindex="-1">3) But the key could have been intercepted and substituted by Tom (the attacker, or a service provider).</h4>
+<p><img src="./images/20240314-mitm3.jpg" alt="Key is intercepted and replaced"></p>
+<h4 id="4-now-the-attacker-can-read-the-messages-without-alice-and-bob-knowing" tabindex="-1">4) Now the attacker can read the messages without Alice and Bob knowing.</h4>
+<p><img src="./images/20240314-mitm4.jpg" alt="End-to-end encryption is compromised"></p>
+<p>The attack on Diffie-Hellman (or on quantum-resistant) key exchange, when both parties send their public keys (or public key and ciphertext), requires the attacker to intercept and replace both keys, but the outcome remains the same - if all communication is passed via a single channel, as it is usually the case with communication services, then any attacker that has inside access to the service can selectively compromise some of the conversations. Two years ago I wrote the post about this <a href="https://www.poberezkin.com/posts/2022-12-07-why-privacy-needs-to-be-redefined.html#e2e-encryption-is-not-bulletproof">vulnerability of end-to-end encryption to MITM attacks</a>.</p>
+<p>All known mitigations of this attack require using the secondary communication channel to ensure that the keys have not been substituted. The most secure approach is to make user's key (or key fingerprint) a part of the user's address or connection link, thus making two-factor key exchange non-optional. This approach is used in Session, Cwtch and SimpleX Chat.</p>
+<p>A less secure approach is to provide users an optional way to compare security codes - this is what is done by Signal, Element and many other messengers. The problem with this post-key-exchange verification is that it is optional, and is usually skipped by the majority of the users. Also, this security code can change because the user changed the device, or as a result of the attack via the service provider. When you see in the client app the notification that the security code changed, it's pointless to ask in the same messenger whether the device was changed, as if it were an attack, the attacker would simply confirm it. Instead, the security code needs to be re-validated again via another channel. A good security practice for the users would be to warn their communication partners about the intention to switch the device in advance, before the security code is changed.</p>
+<h3 id="6-record-now-decrypt-later-attacks-mitigated-by-post-quantum-cryptography" tabindex="-1">6. &quot;Record now, decrypt later&quot; attacks - mitigated by post-quantum cryptography.</h3>
+<p>This is the idea based on the assumption that commercially viable quantum computers will become available during the next 10 years, and then they can use time-efficient <a href="https://en.wikipedia.org/wiki/Shor%27s_algorithm">Shor's algorithm</a> developed in 1994 to break asymmetric encryption with quantum computer (symmetric encryption is not vulnerable to this algorithm).</p>
+<p>Post-quantum cryptography, or encryption algorithms that are resistant to quantum computers, has been the area of ongoing research for several decades, and there are some algorithms that <em>might</em> protect from quantum computers. It's important to account for these limitations:</p>
 <ul>
-<li>
-<p>File configuration:</p>
-<p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
-<pre><code class="language-sh">vim /etc/tor/torrc
-</code></pre>
-<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
-<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seemd to deploy onion address)
-Log notice file /var/log/tor/notices.log
-# Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside xftp-server and onion address will be displayed in clients, this is totally fine)
-SOCKSPort 0
-HiddenServiceNonAnonymousMode 1
-HiddenServiceSingleHopMode 1
-# xftp-server hidden service host directory and port mappings
-HiddenServiceDir /var/lib/tor/simplex-xftp/
-HiddenServicePort 443 localhost:443
-</code></pre>
-</li>
-<li>
-<p>Create directories:</p>
-<pre><code class="language-sh">mkdir /var/lib/tor/simplex-xftp/ &amp;&amp; chown debian-tor:debian-tor /var/lib/tor/simplex-xftp/ &amp;&amp; chmod 700 /var/lib/tor/simplex-xftp/
-</code></pre>
-</li>
+<li><em>none of the post-quantum algorithms are proven to be secure</em> against quantum or conventional computers. They are usually referred to as &quot;believed to be secure&quot; by the researchers and security experts. There is continuous research to break post-quantum algorithms, and to prove their security, and many of these algorithms are broken every year, often by conventional computers.</li>
+<li>because of the lack of proofs or guarantees that post-quantum cryptography delivers on its promise, these algorithms can only be used in hybrid encryption schemes to augment conventional cryptography, and never to replace it, contrary to some expert recommendations, as DJB explains in this <a href="https://blog.cr.yp.to/20240102-hybrid.html">blog post</a>.</li>
+<li>they are much more computationally expensive and less space efficient, and the encryption schemes have to balance their usability and security.</li>
+<li>many of post-quantum algorithms have known patent claims, so any system deploying them accepts the risks of patent litigation.</li>
+<li>the silver lining to these limitations is that the risk of appearance of commercially viable quantum computers in the next decade may be exaggerated.</li>
 </ul>
-</li>
-<li>
-<p>Start tor:</p>
-<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.</p>
-<pre><code class="language-sh">systemctl enable tor &amp;&amp; systemctl start tor &amp;&amp; systemctl restart tor
-</code></pre>
-</li>
-<li>
-<p>Display onion host:</p>
-<p>Execute the following command to display your onion host address:</p>
-<pre><code class="language-sh">cat /var/lib/tor/simplex-xftp/hostname
-</code></pre>
-</li>
-</ol>
-<h2 id="configuration" tabindex="-1">Configuration</h2>
-<p>To see which options are available, execute <code>xftp-server</code> without flags:</p>
-<pre><code class="language-sh">sudo su xftp -c xftp-server
-
-...
-Available commands:
-  init                     Initialize server - creates /etc/opt/simplex-xftp and
-                           /var/opt/simplex-xftp directories and configuration
-                           files
-  start                    Start server (configuration:
-                           /etc/opt/simplex-xftp/file-server.ini)
-  delete                   Delete configuration and log files
-
-</code></pre>
-<p>You can get further help by executing <code>su xftp -c &quot;xftp-server &lt;command&gt; -h&quot;</code></p>
-<p>After that, we need to configure <code>xftp-server</code>:</p>
-<pre><code class="language-sh">sudo su xftp -c &quot;xftp-server init -h&quot;
-
-...
-Available options:
-  -l,--store-log           Enable store log for persistence
-  -a,--sign-algorithm ALG  Signature algorithm used for TLS certificates:
-                           ED25519, ED448 (default: ED448)
-  --ip IP                  Server IP address, used as Common Name for TLS online
-                           certificate if FQDN is not supplied
-                           (default: &quot;127.0.0.1&quot;)
-  -n,--fqdn FQDN           Server FQDN used as Common Name for TLS online
-                           certificate
-  -p,--path PATH           Path to the directory to store files
-  -q,--quota QUOTA         File storage quota (e.g. 100gb)
-  -h,--help                Show this help text
-</code></pre>
-<p>You should determine which flags are needed for your use-case and then execute <code>xftp-server init</code>:</p>
-<pre><code class="language-sh">sudo su xftp -c &quot;xftp-server init -&lt;your flag&gt; &lt;your option&gt;&quot;
-</code></pre>
-<p>For example, run:</p>
-<pre><code class="language-sh">sudo su xftp -c &quot;xftp-server init -l --ip 192.168.1.5 -q '20gb' -p /srv/xftp/&quot;
-</code></pre>
-<p>to initialize your <code>xftp-server</code> configuration with:</p>
+<p>So, to put it bluntly and provocatively, post-quantum cryptography can be compared with a remedy against the illness that nobody has, without any guarantee that it will work. The closest analogy in the history of medicine is <em>snake oil</em>.</p>
+<img src="./images/20240314-datacenter.jpg" width="400" class="float-to-right">
+<p>Does it mean that post-quantum cryptography is useless and should be ignored? Absolutely not. The risks of &quot;record now, decrypt later&quot; attacks are real, particularly for high profile targets, including millions of people - journalists, whistle-blowers, freedom-fighters in oppressive regimes, and even some ordinary people who may become targets of information crimes. Large scale collection of encrypted communication data is ongoing, and this data may be used in the future. So having the solution that <em>may</em> protect you (post-quantum cryptography), as long as it doesn't replace the solution that is <em>proven</em> to protect you (conventional cryptography), is highly beneficial in any communication solution, and has already been deployed in many tools and in some messengers.</p>
+<h2 id="how-secure-is-end-to-end-encryption-in-different-messengers" tabindex="-1">How secure is end-to-end encryption in different messengers?</h2>
+<p>This comparison may be incorrect in some of the columns. We apologize if some of the points are incorrect, please let us know about any mistakes so we can amend them!</p>
+<p>The main objective here is to establish the framework for comparing the security of end-to-end encryption schemes, and to highlight any areas for improvement, not to criticize any implementations.</p>
+<p><img src="./images/20240314-comparison.jpg" alt="Messengers comparison"></p>
+<p><sup>1</sup> Repudiation in SimpleX Chat will include client-server protocol from v5.7 or v5.8. Currently it is implemented but not enabled yet, as its support requires releasing the relay protocol that breaks backward compatibility.</p>
+<p><sup>2</sup> Post-quantum cryptography is available in beta version, as opt-in only for direct conversations. See below how it will be rolled-out further.</p>
+<p>Some columns are marked with a yellow checkmark:</p>
 <ul>
-<li>restoring connections when the server is restarted (<code>-l</code> flag),</li>
-<li>IP address <code>192.168.1.5</code> (<code>--ip</code> flag),</li>
-<li>set overall storage quota to 10Gb (<code>-q</code> flag),</li>
-<li>store files in <code>/srv/xftp</code> directory (<code>-p</code> flag).</li>
+<li>when messages are padded, but not to a fixed size.</li>
+<li>when repudiation does not include client-server connection. In case of Cwtch it appears that the presence of cryptographic signatures compromises repudiation (deniability), but it needs to be clarified.</li>
+<li>when 2-factor key exchange is optional, via security code verification.</li>
+<li>when post-quantum cryptography is only added to the initial key agreement, does not protect break-in recovery.</li>
 </ul>
-<p>To password-protect your <code>xftp-server</code>, change it in the configuration:</p>
-<ol>
-<li>
-<p>Open configuration with:</p>
-<pre><code class="language-sh">sudo su xftp -c &quot;vim /etc/opt/simplex-xftp/file-server.ini&quot;
-</code></pre>
-</li>
-<li>
-<p>Under <code>[AUTH]</code> section uncomment <code>create_password</code> and change it:</p>
-<pre><code class="language-sh">...
-[AUTH]
-# Set new_files option to off to completely prohibit uploading new files.
-# This can be useful when you want to decommission the server, but still allow downloading the existing files.
-new_files: on
-
-# Use create_password option to enable basic auth to upload new files.
-# The password should be used as part of server address in client configuration:
-# xftp://fingerprint:password@host1,host2
-# The password will not be shared with file recipients, you must share it only
-# with the users who you want to allow uploading files to your server.
-create_password: your_very_secure_password
-...
-</code></pre>
-</li>
-</ol>
-<hr>
-<p>After that, your installation is complete and you should see in your teminal output something like this:</p>
-<pre><code class="language-sh">Certificate request self-signature ok
-subject=CN = 192.168.1.5
-Server initialized, you can modify configuration in /etc/opt/simplex-xftp/file-server.ini.
-Run `file-server start` to start server.
-----------
-You should store CA private key securely and delete it from the server.
-If server TLS credential is compromised this key can be used to sign a new one, keeping the same server identity and established connections.
-CA private key location:
-/etc/opt/simplex-xftp/ca.key
-----------
-SimpleX XFTP server v0.1.0
-Fingerprint: ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=
-Server address: xftp://ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=@&lt;hostnames&gt;
-</code></pre>
-<p>The server address above should be used in your client configuration and if you added server password it should only be shared with the other people when you want to allow them to use your server to upload files. If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace <code>&lt;hostnames&gt;</code> with the actual server addresses.</p>
-<h2 id="documentation" tabindex="-1">Documentation</h2>
-<p>All necessary files for <code>xftp-server</code> are located in <code>/etc/opt/simplex-xftp/</code> folder.</p>
-<p>Stored messages, connections, statistics and server log are located in <code>/var/opt/simplex-xftp/</code> folder.</p>
-<p>Location of uploaded files is configured by the user. In our guide we're using <code>/srv/xftp/</code></p>
-<h3 id="xftp-server-address" tabindex="-1">XFTP server address</h3>
-<p>XFTP server address has the following format:</p>
-<pre><code>xftp://&lt;fingerprint&gt;[:&lt;password&gt;]@&lt;public_hostname&gt;[,&lt;onion_hostname&gt;]
-</code></pre>
+<h2 id="adding-quantum-resistance-to-signal-double-ratchet-algorithm" tabindex="-1">Adding quantum resistance to Signal double ratchet algorithm</h2>
+<p>We have been exploring post-quantum cryptography since early 2022, when SimpleX Chat was first released, and we did not want to be pioneers here - cryptography is critically important to make it right.</p>
+<p>We hoped to adopt the algorithm that will be standardized by NIST, but the standardization process turned out to be hugely disappointing, and the ML-KEM (Kyber) algorithm that was accepted as a standard was modified to remove an important hashing step (see the lines 304-314 in <a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf">the published spec</a>)), that mitigates the attacks via a compromised random numbers generator, ignoring strong criticism from many expert cryptographers, including DJB (see <a href="https://groups.google.com/a/list.nist.gov/g/pqc-forum/c/WFRDl8DqYQ4">this discussion</a> and <a href="https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf">the comments NIST received</a>). To make it even worse, the calculation of security levels of Kyber appears to have been done incorrectly, and overall, the chosen Kyber seems worse than rejected NTRU according to <a href="https://blog.cr.yp.to/20231003-countcorrectly.html">the analysis by DJB</a>.</p>
+<p>We also analyzed the encryption schemes proposed in Tutanota in 2021, and another scheme adopted by Signal last year, and published the design of <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2023-09-30-pq-double-ratchet.md">quantum resistant double ratchet algorithm</a> that we believe provides better security than these schemes:</p>
 <ul>
-<li>
-<p><code>&lt;fingerprint&gt;</code></p>
-<p>Your <code>xftp-server</code> fingerprint of certificate. You can check your certificate fingerprint in <code>/etc/opt/simplex-xftp/fingerprint</code>.</p>
-</li>
-<li>
-<p><strong>optional</strong> <code>&lt;password&gt;</code></p>
-<p>Your configured password of <code>xftp-server</code>. You can check your configured pasword in <code>/etc/opt/simplex-xftp/file-server.ini</code>, under <code>[AUTH]</code> section in <code>create_password:</code> field.</p>
-</li>
-<li>
-<p><code>&lt;public_hostname&gt;</code>, <strong>optional</strong> <code>&lt;onion_hostname&gt;</code></p>
-<p>Your configured hostname(s) of <code>xftp-server</code>. You can check your configured hosts in <code>/etc/opt/simplex-xftp/file-server.ini</code>, under <code>[TRANSPORT]</code> section in <code>host:</code> field.</p>
-</li>
+<li>unlike Tutanota design, it augments rather than replaces conventional cryptography, and also avoids using signatures when the new keys are agreed (ratchet steps).</li>
+<li>unlike other messengers that adopted or plan to adopt ML-KEM, we used Streamlined NTRU Prime algorithm (specifically, strnup761) that has no problems of ML-KEM, no known patent claims, and seems less likely to be compromised than other algorithms - it is exactly the same algorithm that is used in SSH. You can review the comparison of <a href="https://ntruprime.cr.yp.to/warnings.html">the risks of various post-quantum algorithms</a>.</li>
+<li>unlike Signal design that only added quantum resistance to the initial key exchange by replacing X3DH key agreement scheme with post-quantum <a href="https://signal.org/docs/specifications/pqxdh/">PQXDH</a>, but did not improve Signal algorithm itself, our design added quantum-resistant key agreements inside double algorithm, making its break-in recovery property also quantum resistant.</li>
 </ul>
-<h3 id="systemd-commands" tabindex="-1">Systemd commands</h3>
-<p>To start <code>xftp-server</code> on host boot, run:</p>
-<pre><code class="language-sh">sudo systemctl enable xftp-server.service
-
-Created symlink /etc/systemd/system/multi-user.target.wants/xftp-server.service → /etc/systemd/system/xftp-server.service.
-</code></pre>
-<p>To start <code>xftp-server</code>, run:</p>
-<pre><code class="language-sh">sudo systemctl start xftp-server.service
-</code></pre>
-<p>To check status of <code>xftp-server</code>, run:</p>
-<pre><code class="language-sh">sudo systemctl status xftp-server.service
-
-● xftp-server.service - XFTP server systemd service
-     Loaded: loaded (/etc/systemd/system/xftp-server.service; enabled; vendor preset: enabled)
-     Active: active (running) since Sat 2023-03-11 13:11:55 UTC; 1 months 10 days ago
-   Main PID: 110770 (xftp-server)
-      Tasks: 14 (limit: 4611)
-     Memory: 2.4G
-     CGroup: /system.slice/xftp-server.service
-             └─110770 /usr/local/bin/xftp-server start +RTS -N -RTS
-
-Feb 27 19:21:11 localhost systemd[1]: Started XFTP server systemd service.
-Feb 27 19:21:11 localhost xftp-server[2350]: SimpleX XFTP server v0.1.0
-Feb 27 19:21:11 localhost xftp-server[2350]: Fingerprint: ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=
-Feb 27 19:21:11 localhost xftp-server[2350]: Server address: xftp://ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=@&lt;hostnames&gt;
-Feb 27 19:21:11 localhost xftp-server[2350]: Store log: /var/opt/simplex-xftp/file-server-store.log
-Feb 27 19:21:11 localhost xftp-server[2350]: Uploading new files allowed.
-Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
-Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
-</code></pre>
-<p>To stop <code>xftp-server</code>, run:</p>
-<pre><code class="language-sh">sudo systemctl stop xftp-server.service
-</code></pre>
-<p>To check tail of <code>xftp-server</code> log, run:</p>
-<pre><code class="language-sh">sudo journalctl -fu xftp-server.service
-
-Feb 27 19:21:11 localhost systemd[1]: Started XFTP server systemd service.
-Feb 27 19:21:11 localhost xftp-server[2350]: SimpleX XFTP server v0.1.0
-Feb 27 19:21:11 localhost xftp-server[2350]: Fingerprint: ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=
-Feb 27 19:21:11 localhost xftp-server[2350]: Server address: xftp://ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=@&lt;hostnames&gt;
-Feb 27 19:21:11 localhost xftp-server[2350]: Store log: /var/opt/simplex-xftp/file-server-store.log
-Feb 27 19:21:11 localhost xftp-server[2350]: Uploading new files allowed.
-Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
-Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
-</code></pre>
-<h3 id="monitoring" tabindex="-1">Monitoring</h3>
-<p>You can enable <code>xftp-server</code> statistics for <code>Grafana</code> dashboard by setting value <code>on</code> in <code>/etc/opt/simplex-xftp/file-server.ini</code>, under <code>[STORE_LOG]</code> section in <code>log_stats:</code> field.</p>
-<p>Logs will be stored as <code>csv</code> file in <code>/var/opt/simplex-xftp/file-server-stats.daily.log</code>. Fields for the <code>csv</code> file are:</p>
-<pre><code class="language-sh">fromTime,filesCreated,fileRecipients,filesUploaded,filesDeleted,dayCount,weekCount,monthCount,fileDownloads,fileDownloadAcks,filesCount,filesSize
-</code></pre>
+<p>The we could make break-in recovery property of Signal algorithm quantum-resistant, and why, probably, Signal didn't, is because irrespective of the message size SimpleX Chat uses a fixed block size of 16kb to provide security and privacy against any traffic observers and against messaging relays. So we had an extra space to accommodate additional ~2.2kb worth of keys in each message without any additional traffic costs.</p>
+<p>In case when the message is larger than the remaining block size, e.g. when the message contains image or link preview, or a large text, we used <a href="https://en.wikipedia.org/wiki/Zstd">zstd compression</a> to provide additional space for the required keys without reducing image preview quality or creating additional traffic - our previously inefficient JSON encoding of chat messages was helpful in this case.</p>
+<image src="./images/20240314-kem.jpg" alt="Double KEM agreement" width="500" class="float-to-right">
+<p>The additional challenge in adding sntrup761 was that unlike Diffie-Hellman key exchange, which is symmetric (that is, the parties can share their public keys in any order and the shared secret can be computed from two public keys), sntrup761 is interactive key-encapsulation mechanism (KEM) that requires that one party shares its public key, and another party uses it to encapsulate (which is a fancy term for &quot;encrypt&quot; - that is why it has asterisks in the image) a random shared secret, and sends it back - making it somewhat similar to RSA cryptography. But this asymmetric design does not fit the symmetric operation of Signal double ratchet algorithm, where both sides need to generate random public keys and to compute new shared secrets every time messaging direction changes for them. So to achieve that symmetry we had to use two KEM key agreements running in parallel, in a lock-step fashion, as shown on the diagram. In this case both parties generate random public keys and also use the public key of another party to encapsulate the random shared secret. Effectively, this design adds a double quantum-resistant key agreement to double ratchet algorithm steps that provide break-in recovery.</p>
+<h2 id="when-can-you-start-using-quantum-resistant-chats" tabindex="-1">When can you start using quantum resistant chats?</h2>
+<p><img src="./images/20240314-pq1.png" width="288"> <img src="./images/20240314-pq2.png" width="288"> <img src="./images/20240314-pq3.png" width="288"></p>
+<p>Quantum resistant double ratchet algorithm is already available in v5.6 (beta) of SimpleX Chat as an optional feature that can be enabled for the new and, separately, for the existing direct conversations.</p>
+<p>The reason it is released as opt-in is because once the conversation is upgraded to be quantum resistant, it will no longer work in the previous version of the app, and we see this ability to downgrade the app if something is not working correctly as very important for the users who use the app for critical communications.</p>
+<p><strong>To enable quantum resistance for the new conversations</strong>:</p>
 <ul>
-<li>
-<p><code>fromTime</code> - timestamp; date and time of event</p>
-</li>
-<li>
-<p><code>filesCreated</code> - int; chunks created</p>
-</li>
-<li>
-<p><code>fileRecipients</code> - int; number of file chunks recipients</p>
-</li>
-<li>
-<p><code>filesUploaded</code> - int; chunks uploaded</p>
-</li>
-<li>
-<p><code>filesDeleted</code> - int; chunks deleted</p>
-</li>
-<li>
-<p><code>dayCount</code> - int; uploaded chunks in a day</p>
-</li>
-<li>
-<p><code>weekCount</code> - int; uploaded chunks in a week</p>
-</li>
-<li>
-<p><code>monthCount</code> - int; uploaded chunks in a month</p>
-</li>
-<li>
-<p><code>fileDownloads</code> - int; chunks downloaded</p>
-</li>
-<li>
-<p><code>filesCount</code> - int; count of stored file chunks</p>
-</li>
-<li>
-<p><code>filesSize</code> - int; total size of uploaded file chunks</p>
-</li>
+<li>open the app settings (tap user avatar in the top left corner).</li>
+<li>scroll down to <em>Developer tools</em> and open them.</li>
+<li>enable <em>Show developer options</em> toggle.</li>
+<li>now you will see <em>Post-quantum E2EE</em> toggle - enable it as well.</li>
 </ul>
-<p>To import <code>csv</code> to <code>Grafana</code> one should:</p>
-<ol>
-<li>
-<p>Install Grafana plugin: <a href="https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/">Grafana - CSV datasource</a></p>
-</li>
-<li>
-<p>Allow local mode by appending following:</p>
-<pre><code class="language-sh">[plugin.marcusolsson-csv-datasource]
-allow_local_mode = true
-</code></pre>
-<p>... to <code>/etc/grafana/grafana.ini</code></p>
-</li>
-<li>
-<p>Add a CSV data source:</p>
+<p>Now all new contacts you add to the app will use quantum resistant Signal double ratchet algorithm.</p>
+<p>Once you have enabled it for the new contacts, you can also <strong>enable it for some of the existing contacts</strong>:</p>
 <ul>
-<li>In the side menu, click the Configuration tab (cog icon)</li>
-<li>Click Add data source in the top-right corner of the Data Sources tab</li>
-<li>Enter &quot;CSV&quot; in the search box to find the CSV data source</li>
-<li>Click the search result that says &quot;CSV&quot;</li>
-<li>In URL, enter a file that points to CSV content</li>
+<li>open the chat with the contact you want to upgrade to be quantum resistant.</li>
+<li>tap contact name above the chat.</li>
+<li>tap Allow PQ encryption.</li>
+<li>exchange several messages back and forth with that contact - the quantum resistant double ratchet will kick in after 3-5 messages (depending on how many messages you send in each direction), and you will see the notice in the chat once it enables.</li>
 </ul>
-</li>
-<li>
-<p>You're done! You should be able to create your own dashboard with statistics.</p>
-</li>
-</ol>
-<p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
-<h3 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h3>
-<p>Please see: <a href="server.html#configuring-the-app-to-use-the-server">SMP Server: Configuring the app to use the server</a>.</p>
+<h2 id="next-for-post-quantum-crypto-all-direct-chats-small-groups-and-security-audit" tabindex="-1">Next for post-quantum crypto - all direct chats, small groups and security audit</h2>
+<p>We will be making quantum resistance default for all direct chats in v5.7, and they will be upgraded for all users without any action.</p>
+<p>We will also be adding quantum resistance to small groups up to 10-20 members. Computing cryptographic keys is much slower, in comparison, and it would be very inefficient (and completely unnecessary) for large public groups.</p>
+<p>We have also arranged a 3rd party cryptographic review of our protocol and encryption schemes design for June/July 2024 - it will cover the additions to SimpleX protocols since <a href="20221108-simplex-chat-v4.2-security-audit-new-website.html">the previous security audit</a> in November 2022, including <a href="20230301-simplex-file-transfer-protocol.html">XFTP protocol</a> we use for file transfers and quantum resistant Signal double ratchet algorithm we just released in this beta version.</p>
+<p>In November 2024 we will be conducting further implementation audit, with double the scope of our 2022 audit.</p>
+<p>Security audits are very expensive, as they require employing exceptionally competent engineers and cryptographers, and it does stretch our budgets - so any donations to help us cover the costs would be hugely helpful.</p>
+<p>That's it for now!</p>
+<p>Thank you for helping us improve the app, and look forward to your feedback.</p>
+<h2 id="simplex-network" tabindex="-1">SimpleX network</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<p>Please also see our <a href="https://simplex.chat">website</a>.</p>
+<h2 id="help-us-with-donations" tabindex="-1">Help us with donations</h2>
+<p>Huge thank you to everybody who donates to SimpleX Chat!</p>
+<p>As I wrote, we are planning a 3rd party security audit for the protocols and cryptography design, and also for an app implementation, and it would hugely help us if some part of this $50,000+ expense is covered with donations.</p>
+<p>We are prioritizing users privacy and security - it would be impossible without your support.</p>
+<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX network based on the same principles as email and web, but much more private and secure.</p>
+<p>Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.</p>
+<p>See <a href="https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations">this section</a> for the ways to donate.</p>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
 </div>
-                </article>
-            </main>
-        </div>
     </section>
 
     
@@ -1195,9 +658,7 @@ allow_local_mode = true
     </div>
 </section>
 
-
-    <script src="/js/docs.js"></script>
     <script src="/js/prism.min.js"></script>
-</body>
+  </body>
 
 </html>
