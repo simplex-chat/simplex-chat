@@ -80,6 +80,7 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      optTempDirectory = Nothing,
       showReactions = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
