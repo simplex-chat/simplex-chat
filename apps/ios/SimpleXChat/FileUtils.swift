@@ -100,9 +100,17 @@ public func deleteAppFiles() {
 
 public func deleteAppTempFiles() {
     let fm = FileManager.default
-    try? fm.removeItem(at: getTempFilesDirectory())
-    try? fm.removeItem(at: getMigrationTempFilesDirectory())
-    try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    do {
+        try fm.removeItem(at: getTempFilesDirectory())
+        try fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    } catch {
+        logger.error("FileUtils deleteAppTempFiles error: \(error.localizedDescription)")
+    }
+    do {
+        try fm.removeItem(at: getMigrationTempFilesDirectory())
+    } catch {
+        logger.error("FileUtils deleteAppTempFiles fm.removeItem(at: getMigrationTempFilesDirectory()) error: \(error.localizedDescription)")
+    }
 }
 
 public func fileSize(_ url: URL) -> Int? { // in bytes
