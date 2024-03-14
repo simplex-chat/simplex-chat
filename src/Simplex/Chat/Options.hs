@@ -262,9 +262,9 @@ chatOptsP appDir defaultDbFileName = do
   optTempDirectory <-
     optional $
       strOption
-        ( long "tmp-dir"
-            <> metavar "TMP_DIR"
-            <> help "Directory for temporary encrypted files (default: system temp directory)"
+        ( long "temp-folder"
+            <> metavar "FOLDER"
+            <> help "Folder for temporary encrypted files (default: system temp directory)"
         )
   showReactions <-
     switch
