@@ -11,26 +11,26 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func uiKitContextMenu(menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
-            self.overlay {
-                if allowMenu.wrappedValue {
-                    self.overlay(Color(uiColor: .systemBackground)).overlay(InteractionView(content: self, menu: menu))
-                }
-            }
+    func uiKitContextMenu(maxWidth: CGFloat, menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
+        InteractionView(content: self, maxWidth: maxWidth, menu: menu, allowMenu: allowMenu)
+        .fixedSize(horizontal: true, vertical: false)
     }
 }
 
-private struct InteractionConfig<Content: View> {
-    let content: Content
-    let menu: UIMenu
+private class HostingViewHolder: UIView {
+    var contentSize: CGSize = CGSizeMake(0, 0)
+    override var intrinsicContentSize: CGSize { get { contentSize } }
 }
 
-private struct InteractionView<Content: View>: UIViewRepresentable {
+struct InteractionView<Content: View>: UIViewRepresentable {
     let content: Content
+    var maxWidth: CGFloat
     @Binding var menu: UIMenu
+    @Binding var allowMenu: Bool
 
     func makeUIView(context: Context) -> UIView {
-        let view = UIView()
+        let view = HostingViewHolder()
+        view.contentSize = CGSizeMake(maxWidth, .infinity)
         view.backgroundColor = .clear
         let hostView = UIHostingController(rootView: content)
         hostView.view.translatesAutoresizingMaskIntoConstraints = false
@@ -44,12 +44,21 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
         ]
         view.addSubview(hostView.view)
         view.addConstraints(constraints)
+        view.layer.cornerRadius = 18
         let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
         view.addInteraction(menuInteraction)
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {
+        (uiView as! HostingViewHolder).contentSize = uiView.subviews[0].sizeThatFits(CGSizeMake(maxWidth, .infinity))
+        if allowMenu && uiView.interactions.isEmpty {
+            let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
+            uiView.addInteraction(menuInteraction)
+        } else if !allowMenu, let interaction = uiView.interactions.last {
+            uiView.removeInteraction(interaction)
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
