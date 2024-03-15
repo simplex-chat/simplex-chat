@@ -125,7 +125,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
-import Data.List (sortBy)
+import Data.List (sortBy, sortOn)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
@@ -2554,18 +2554,19 @@ testZstd :: DB.Connection -> IO [ZstdRow]
 testZstd db = do
   samples <- fromOnly <$$> DB.query_ db "SELECT msg_body FROM messages"
   let totalSize = sum $ map B.length samples
-      minDictSize = totalSize `div` 100
+      maxDictSize = totalSize `div` 100
+  dict16k <- either fail pure $ Zstd.trainFromSamples (1024 * 16) samples
   dict100k <- either fail pure $ Zstd.trainFromSamples (1024 * 100) samples
-  -- dictMin <- either fail pure $ Zstd.trainFromSamples minDictSize samples
-  traceShowM ('D', Zstd.getDictID dict100k, (totalSize, minDictSize))
-  pure $ map (process dict100k) samples
+  dictMax <- either fail pure $ Zstd.trainFromSamples maxDictSize samples
+  traceShowM ('D', Zstd.getDictID dict100k, (totalSize, maxDictSize))
+  pure $ sortOn raw $ map (process dict16k dict100k dictMax) samples
   where
-    process dict msg_body =
+    process dict1 dict2 dict3 msg_body =
       ZstdRow
         { raw = B.length msg_body,
           z1 = B.length $ Zstd.compress 1 msg_body,
-          z3 = B.length $ Zstd.compressUsingDict dict 1 msg_body,
-          z6 = B.length $ Zstd.compress 9 msg_body,
-          z9 = B.length $ Zstd.compressUsingDict dict 9 msg_body,
+          z3 = B.length $ Zstd.compressUsingDict dict1 1 msg_body,
+          z6 = B.length $ Zstd.compressUsingDict dict2 1 msg_body,
+          z9 = B.length $ Zstd.compressUsingDict dict3 1 msg_body,
           z = B.length $ Zstd.compress Zstd.maxCLevel msg_body
         }
