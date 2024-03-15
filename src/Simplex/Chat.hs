@@ -2872,8 +2872,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
     createInPassedDirectory :: FilePath -> m FilePath
     createInPassedDirectory fPathDir = do
       fPath <- fPathDir `uniqueCombine` fn
-      createEmptyFile fPath
-      pure fPath
+      createEmptyFile fPath $> fPath
     createEmptyFile :: FilePath -> m ()
     createEmptyFile fPath = emptyFile `catchThrow` (ChatError . CEFileWrite fPath . show)
       where
