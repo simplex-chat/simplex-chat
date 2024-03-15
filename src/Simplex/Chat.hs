@@ -2855,8 +2855,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       Nothing -> do
         defaultFolder <- getDefaultFilesFolder
         fPath <- defaultFolder `uniqueCombine` fn
-        createEmptyFile fPath
-        pure fPath
+        createEmptyFile fPath $> fPath
       Just filesFolder -> do
         fPath <- filesFolder `uniqueCombine` fn
         createEmptyFile fPath
