@@ -6927,7 +6927,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
-        <target state="translated">ismerős azonosító hivatkozásán keresztül</target>
+        <target state="translated">ismerős azonosítójának hivatkozásán keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve" approved="no">
