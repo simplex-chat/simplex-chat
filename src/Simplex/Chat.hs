@@ -98,7 +98,6 @@ import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
-import Simplex.Messaging.Compression (withCompressCtx)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -6128,7 +6127,7 @@ sendGroupMemberMessages user conn events groupId = do
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
     -- TODO v5.7 based on version (?)
     -- let shouldCompress = False
-    -- batched <- if shouldCompress then batchSndMessagesBinary msgs' else pure $ batchSndMessagesJSON msgs'
+    -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
     let batched = batchSndMessagesJSON msgs'
     let (errs', msgBatches) = partitionEithers batched
     -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
@@ -6146,12 +6145,9 @@ processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = d
 batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
 batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
 
--- batchSndMessagesBinary :: forall m. ChatMonad m => NonEmpty SndMessage -> m [Either ChatError MsgBatch]
--- batchSndMessagesBinary msgs = do
---   compressed <- liftIO $ withCompressCtx maxChatMsgSize $ \cctx -> mapM (compressForBatch cctx) msgs
---   pure . map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength) $ L.zip compressed msgs
+-- batchSndMessagesBinary :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
+-- batchSndMessagesBinary msgs = map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength) $ L.zip (map compress1 msgs) msgs
 --   where
---     compressForBatch cctx SndMessage {msgBody} = bimap (const TELargeMsg) smpEncode <$> compress cctx msgBody
 --     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
 --     toMsgBatch = \case
 --       SMP.TBTransmissions combined _n sms -> Right $ MsgBatch (markCompressedBatch combined) sms
@@ -6170,12 +6166,10 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
   case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded connInfo -> case pqSup of
       PQSupportOn | v >= pqEncryptionCompressionVersion && B.length connInfo > maxCompressedInfoLength -> do
-        connInfo' <- liftIO compressedBatchMsgBody
+        let connInfo' = compressedBatchMsgBody_ connInfo
         when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
         pure connInfo'
       _ -> pure connInfo
-      where
-        compressedBatchMsgBody = withCompressCtx (toEnum $ B.length connInfo) (`compressedBatchMsgBody_` connInfo)
     ECMLarge -> throwChatError $ CEException "large info"
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, PQEncryption)
@@ -6196,12 +6190,12 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: forall m. ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- compressBodies
+  msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \cxt ->
+    compressBodies =
       forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
         runExceptT $ case pqSupport of
           -- we only compress messages when:
@@ -6209,7 +6203,7 @@ deliverMessagesB msgReqs = do
           -- 2) version is compatible with compression
           -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
           PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
-            msgBody' <- liftIO $ compressedBatchMsgBody_ cxt msgBody
+            let msgBody' =compressedBatchMsgBody_ msgBody
             when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
             pure (conn, msgFlags, msgBody', msgId)
           _ -> pure mr
