@@ -12,6 +12,7 @@ import SimpleXChat
 struct DeveloperView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
+    @AppStorage(GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED, store: groupDefaults) private var pqExperimentalEnabled = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -43,25 +44,30 @@ struct DeveloperView: View {
                     (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
                 }
 
-//                Section {
-//                    settingsRow("arrow.up.doc") {
-//                        Toggle("Send videos and files via XFTP", isOn: $xftpSendEnabled)
-//                            .onChange(of: xftpSendEnabled) { _ in
-//                                do {
-//                                    try setXFTPConfig(getXFTPCfg())
-//                                } catch {
-//                                    logger.error("setXFTPConfig: cannot set XFTP config \(responseError(error))")
-//                                }
-//                            }
-//                    }
-//                } header: {
-//                    Text("Experimental")
-//                } footer: {
-//                    if xftpSendEnabled {
-//                        Text("v4.6.1+ is required to receive via XFTP.")
-//                    }
-//                }
+                if developerTools {
+                    Section {
+                        settingsRow("key") {
+                            Toggle("Post-quantum E2EE", isOn: $pqExperimentalEnabled)
+                                .onChange(of: pqExperimentalEnabled) {
+                                    setPQExperimentalEnabled($0)
+                                }
+                        }
+                    } header: {
+                        Text(String("Experimental"))
+                    } footer: {
+                        Text(String("In this version applies only to new contacts."))
+                    }
+                }
             }
+        }
+    }
+
+    private func setPQExperimentalEnabled(_ enable: Bool) {
+        do {
+            try apiSetPQEncryption(enable)
+        } catch let error {
+            let err = responseError(error)
+            logger.error("apiSetPQEncryption \(err)")
         }
     }
 }

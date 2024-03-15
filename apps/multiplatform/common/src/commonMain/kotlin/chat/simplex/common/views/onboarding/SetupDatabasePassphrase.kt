@@ -58,7 +58,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         prefs.storeDBPassphrase.set(false)
 
         val newKeyValue = newKey.value
-        val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator)
+        val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator, false)
         if (success) {
           startChat(newKeyValue)
           nextStep()

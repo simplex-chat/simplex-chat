@@ -1,5 +1,21 @@
 # Blog
 
+Mar 14, 2024 [SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
+
+This is a major upgrade for SimpleX Chat messaging protocol stack, I am really proud to present this work of the whole team.
+
+This post also covers various aspects of end-to-end encryption, compares different messengers, and explains how and why quantum-resistant encryption is added to SimpleX Chat:
+
+- Why do we need end-to-end encryption?
+- Why encryption is even allowed?
+- End-to-end encryption security: attacks and defense.
+- How secure is encryption in different messengers?
+- Adding quantum resistance to Signal double ratchet algorithm.
+- When can you start using quantum resistant chats?
+- Next for post-quantum crypto: all direct chats, small groups and security audit.
+
+---
+
 Jan 24, 2024 [SimpleX Chat: free infrastructure from Linode, v5.5 released](./20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
 
 SimpleX Chat infrastructure on Linode:
@@ -146,7 +162,7 @@ November reviews:
 - [Privacy Guides](https://www.privacyguides.org/real-time-communication/#simplex-chat) recommendations.
 - [Review by Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/).
 - [The messenger matrix](https://www.messenger-matrix.de).
-- [Supernova review](https://supernova.tilde.team/detailed_reviews.html#simplex) and [messenger ratings](https://supernova.tilde.team/messengers.html).
+- [Supernova review](https://supernovas.space/detailed_reviews.html#simplex) and [messenger ratings](https://supernovas.space/messengers.html).
 
 ---
 

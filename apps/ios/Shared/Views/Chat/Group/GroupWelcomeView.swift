@@ -24,7 +24,7 @@ struct GroupWelcomeView: View {
         VStack {
             if groupInfo.canEdit {
                 editorView()
-                    .modifier(BackButton {
+                    .modifier(BackButton(disabled: Binding.constant(false)) {
                         if welcomeTextUnchanged() {
                             dismiss()
                         } else {

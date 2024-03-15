@@ -453,7 +453,6 @@ var receiverStarted = false
 let startLock = DispatchSemaphore(value: 1)
 let suspendLock = DispatchSemaphore(value: 1)
 var networkConfig: NetCfg = getNetCfg()
-let xftpConfig: XFTPFileConfig? = getXFTPCfg()
 
 // startChat uses semaphore startLock to ensure that only one didReceive thread can start chat controller
 // Subsequent calls to didReceive will be waiting on semaphore and won't start chat again, as it will be .active
@@ -499,7 +498,6 @@ func doStartChat() -> DBMigrationResult? {
             try setNetworkConfig(networkConfig)
             try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
             try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-            try setXFTPConfig(xftpConfig)
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             // prevent suspension while starting chat
             suspendLock.wait()
@@ -642,7 +640,9 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
         cleanupDirectFile(aChatItem)
         return nil
     case let .sndFileRcvCancelled(_, aChatItem, _):
-        cleanupDirectFile(aChatItem)
+        if let aChatItem = aChatItem {
+            cleanupDirectFile(aChatItem)
+        }
         return nil
     case let .sndFileCompleteXFTP(_, aChatItem, _):
         cleanupFile(aChatItem)
@@ -729,12 +729,6 @@ func apiSetTempFolder(tempFolder: String) throws {
 
 func apiSetFilesFolder(filesFolder: String) throws {
     let r = sendSimpleXCmd(.setFilesFolder(filesFolder: filesFolder))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
-    let r = sendSimpleXCmd(.apiSetXFTPConfig(config: cfg))
     if case .cmdOk = r { return }
     throw r
 }

@@ -14,7 +14,6 @@ module Simplex.Chat.Store.Files
   ( getLiveSndFileTransfers,
     getLiveRcvFileTransfers,
     getPendingSndChunks,
-    createSndDirectFileTransfer,
     createSndDirectFTConnection,
     createSndGroupFileTransfer,
     createSndGroupFileTransferConnection,
@@ -115,8 +114,9 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Version (VersionRange)
+import Simplex.Messaging.Version
 import System.FilePath (takeFileName)
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
@@ -174,27 +174,10 @@ getPendingSndChunks db fileId connId =
       |]
       (fileId, connId)
 
-createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> SubscriptionMode -> IO FileTransferMeta
-createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize subMode = do
+createSndDirectFTConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createSndDirectFTConnection db vr user@User {userId} fileId (cmdId, acId) subMode = do
   currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-    ((userId, contactId, fileName, filePath, fileSize, chunkSize) :. (fileInline, CIFSSndStored, FPSMP, currentTs, currentTs))
-  fileId <- insertedRowId db
-  forM_ acId_ $ \acId -> do
-    Connection {connId} <- createSndFileConnection_ db userId fileId acId subMode
-    let fileStatus = FSNew
-    DB.execute
-      db
-      "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (fileId, fileStatus, fileInline, connId, currentTs, currentTs)
-  pure FileTransferMeta {fileId, xftpSndFile = Nothing, xftpRedirectFor = Nothing, fileName, filePath, fileSize, fileInline, chunkSize, cancelled = False}
-
-createSndDirectFTConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
-createSndDirectFTConnection db user@User {userId} fileId (cmdId, acId) subMode = do
-  currentTs <- getCurrentTime
-  Connection {connId} <- createSndFileConnection_ db userId fileId acId subMode
+  Connection {connId} <- createSndFileConnection_ db vr userId fileId acId subMode
   setCommandConnId db user cmdId connId
   DB.execute
     db
@@ -211,10 +194,10 @@ createSndGroupFileTransfer db userId GroupInfo {groupId} filePath FileInvitation
   fileId <- insertedRowId db
   pure FileTransferMeta {fileId, xftpSndFile = Nothing, xftpRedirectFor = Nothing, fileName, filePath, fileSize, fileInline, chunkSize, cancelled = False}
 
-createSndGroupFileTransferConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> SubscriptionMode -> IO ()
-createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} subMode = do
+createSndGroupFileTransferConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> SubscriptionMode -> IO ()
+createSndGroupFileTransferConnection db vr user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} subMode = do
   currentTs <- getCurrentTime
-  Connection {connId} <- createSndFileConnection_ db userId fileId acId subMode
+  Connection {connId} <- createSndFileConnection_ db vr userId fileId acId subMode
   setCommandConnId db user cmdId connId
   DB.execute
     db
@@ -446,10 +429,11 @@ lookupChatRefByFileId db User {userId} fileId =
         |]
         (userId, fileId)
 
-createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
-createSndFileConnection_ db userId fileId agentConnId subMode = do
+-- TODO v6.0 remove
+createSndFileConnection_ :: DB.Connection -> (PQSupport -> VersionRangeChat) -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
+createSndFileConnection_ db vr userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (minVersion $ vr PQSupportOff) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
@@ -711,7 +695,7 @@ getRcvFileTransfer_ db userId fileId = do
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
-acceptRcvFileTransfer :: DB.Connection -> VersionRange -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
+acceptRcvFileTransfer :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
   currentTs <- getCurrentTime
   acceptRcvFT_ db user fileId filePath Nothing currentTs
@@ -723,16 +707,16 @@ acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus f
   setCommandConnId db user cmdId connId
   runExceptT $ getChatItemByFileId db vr user fileId
 
-getContactByFileId :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO Contact
-getContactByFileId db user@User {userId} fileId = do
+getContactByFileId :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> ExceptT StoreError IO Contact
+getContactByFileId db vr user@User {userId} fileId = do
   cId <- getContactIdByFileId
-  getContact db user cId
+  getContact db vr user cId
   where
     getContactIdByFileId =
       ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $
         DB.query db "SELECT contact_id FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
 
-acceptRcvInlineFT :: DB.Connection -> VersionRange -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db vr user fileId
@@ -741,7 +725,7 @@ startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Mayb
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
   acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-xftpAcceptRcvFT :: DB.Connection -> VersionRange -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 xftpAcceptRcvFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath Nothing =<< getCurrentTime
   getChatItemByFileId db vr user fileId
@@ -1016,7 +1000,7 @@ getLocalCryptoFile db userId fileId sent =
       pure $ CryptoFile filePath fileCryptoArgs
     _ -> throwError $ SEFileNotFound fileId
 
-updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRange -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
+updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db vr user fileId fileStatus = do
   aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db vr user fileId
   case (cType, testEquality d $ msgDirection @d) of

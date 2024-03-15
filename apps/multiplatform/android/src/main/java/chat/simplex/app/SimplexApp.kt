@@ -1,10 +1,16 @@
 package chat.simplex.app
 
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import chat.simplex.common.platform.Log
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.media.AudioManager
 import android.os.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
@@ -18,8 +24,7 @@ import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.DefaultTheme
-import chat.simplex.common.views.call.RcvCallInvitation
-import chat.simplex.common.views.call.activeCallDestroyWebView
+import chat.simplex.common.views.call.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -65,7 +70,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+    // Present screen for continue migration if it wasn't finished yet
+    if (chatModel.migrationState.value != null) {
+      // It's important, otherwise, user may be locked in undefined state
+      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+    } else if (DatabaseUtils.ksAppPassword.get() == null || DatabaseUtils.ksSelfDestructPassword.get() == null) {
       initChatControllerAndRunMigrations()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
@@ -280,6 +289,21 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidCallEnded() {
         activeCallDestroyWebView()
+      }
+
+      @SuppressLint("SourceLockedOrientationActivity")
+      @Composable
+      override fun androidLockPortraitOrientation() {
+        val context = LocalContext.current
+        DisposableEffect(Unit) {
+          val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+          // Lock orientation to portrait in order to have good experience with calls
+          activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+          onDispose {
+            // Unlock orientation
+            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+          }
+        }
       }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {

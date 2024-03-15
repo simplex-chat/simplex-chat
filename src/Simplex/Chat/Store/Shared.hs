@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
@@ -36,6 +37,8 @@ import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
@@ -92,6 +95,8 @@ data StoreError
   | SEUniqueID
   | SELargeMsg
   | SEInternalError {message :: String}
+  | SEDBException {message :: String}
+  | SEDBBusyError {message :: String}
   | SEBadChatItem {itemId :: ChatItemId, itemTs :: Maybe ChatItemTs}
   | SEChatItemNotFound {itemId :: ChatItemId}
   | SEChatItemNotFoundByText {text :: Text}
@@ -111,6 +116,7 @@ data StoreError
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
+  | SEProhibitedDeleteUser {userId :: UserId, contactId :: ContactId}
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
@@ -147,17 +153,38 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, Bool, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Int, Version, Version)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, Bool, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, PQSupport, PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Int, Maybe VersionChat, VersionChat, VersionChat)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Int, Maybe Version, Maybe Version)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
 
-toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer)) =
-  let entityId = entityId_ connType
-      connectionCode = SecurityCode <$> code_ <*> verifiedAt_
-      peerChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias, entityId, connectionCode, authErrCounter, createdAt}
+toConnection :: (PQSupport -> VersionRangeChat) -> ConnectionRow -> Connection
+toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, chatV, minVer, maxVer)) =
+  Connection
+    { connId,
+      agentConnId = AgentConnId acId,
+      connChatVersion = fromMaybe (vr pqSupport `peerConnChatVersion` peerChatVRange) chatV,
+      peerChatVRange = peerChatVRange,
+      connLevel,
+      viaContact,
+      viaUserContactLink,
+      viaGroupLink,
+      groupLinkId,
+      customUserProfileId,
+      connStatus,
+      connType,
+      contactConnInitiated,
+      localAlias,
+      entityId = entityId_ connType,
+      connectionCode = SecurityCode <$> code_ <*> verifiedAt_,
+      pqSupport,
+      pqEncryption,
+      pqSndEnabled,
+      pqRcvEnabled,
+      authErrCounter,
+      createdAt
+    }
   where
+    peerChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
     entityId_ ConnMember = groupMemberId
@@ -165,13 +192,13 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
     entityId_ ConnSndFile = sndFileId
     entityId_ ConnUserContact = userContactLinkId
 
-toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just authErrCounter, Just minVer, Just maxVer)) =
-  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer))
-toMaybeConnection _ = Nothing
+toMaybeConnection :: (PQSupport -> VersionRangeChat) -> MaybeConnectionRow -> Maybe Connection
+toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just pqSupport, Just pqEncryption, pqSndEnabled_, pqRcvEnabled_, Just authErrCounter, connChatVersion, Just minVer, Just maxVer)) =
+  Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, connChatVersion, minVer, maxVer))
+toMaybeConnection _ _ = Nothing
 
-createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRange -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> IO Connection
-createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode = do
+createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> IO Connection
+createConnection_ db userId connType entityId acId connChatVersion peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
     maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   let viaGroupLink = isJust viaLinkGroupId
@@ -181,15 +208,39 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at,
-        peer_chat_min_version, peer_chat_max_version, to_subscribe
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        conn_chat_version, peer_chat_min_version, peer_chat_max_version, to_subscribe, pq_support, pq_encryption
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, customUserProfileId, ConnNew, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
-        :. (minV, maxV, subMode == SMOnlyCreate)
+        :. (connChatVersion, minV, maxV, subMode == SMOnlyCreate, pqSup, pqSup)
     )
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange = JVersionRange peerChatVRange, connType, contactConnInitiated = False, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
+  pure
+    Connection
+      { connId,
+        agentConnId = AgentConnId acId,
+        connChatVersion,
+        peerChatVRange,
+        connType,
+        contactConnInitiated = False,
+        entityId,
+        viaContact,
+        viaUserContactLink,
+        viaGroupLink,
+        groupLinkId = Nothing,
+        customUserProfileId,
+        connLevel,
+        connStatus = ConnNew,
+        localAlias = "",
+        createdAt = currentTs,
+        connectionCode = Nothing,
+        pqSupport = pqSup,
+        pqEncryption = CR.pqSupportToEnc pqSup,
+        pqSndEnabled = Nothing,
+        pqRcvEnabled = Nothing,
+        authErrCounter = 0
+      }
   where
     ent ct = if connType == ct then entityId else Nothing
 
@@ -204,18 +255,62 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
     (displayName, fullName, image, userId, Just True, createdAt, createdAt)
   insertedRowId db
 
-setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
-setPeerChatVRange db connId (VersionRange minVer maxVer) =
+updateConnSupportPQ :: DB.Connection -> Int64 -> PQSupport -> PQEncryption -> IO ()
+updateConnSupportPQ db connId pqSup pqEnc =
   DB.execute
     db
     [sql|
       UPDATE connections
-      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      SET pq_support = ?, pq_encryption = ?
       WHERE connection_id = ?
     |]
-    (minVer, maxVer, connId)
+    (pqSup, pqEnc, connId)
 
-setMemberChatVRange :: DB.Connection -> GroupMemberId -> VersionRange -> IO ()
+updateConnPQSndEnabled :: DB.Connection -> Int64 -> PQEncryption -> IO ()
+updateConnPQSndEnabled db connId pqSndEnabled =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET pq_snd_enabled = ?
+      WHERE connection_id = ?
+    |]
+    (pqSndEnabled, connId)
+
+updateConnPQRcvEnabled :: DB.Connection -> Int64 -> PQEncryption -> IO ()
+updateConnPQRcvEnabled db connId pqRcvEnabled =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET pq_rcv_enabled = ?
+      WHERE connection_id = ?
+    |]
+    (pqRcvEnabled, connId)
+
+updateConnPQEnabledCON :: DB.Connection -> Int64 -> PQEncryption -> IO ()
+updateConnPQEnabledCON db connId pqEnabled =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET pq_snd_enabled = ?, pq_rcv_enabled = ?
+      WHERE connection_id = ?
+    |]
+    (pqEnabled, pqEnabled, connId)
+
+setPeerChatVRange :: DB.Connection -> Int64 -> VersionChat -> VersionRangeChat -> IO ()
+setPeerChatVRange db connId chatV (VersionRange minVer maxVer) =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET conn_chat_version = ?, peer_chat_min_version = ?, peer_chat_max_version = ?
+      WHERE connection_id = ?
+    |]
+    (chatV, minVer, maxVer, connId)
+
+setMemberChatVRange :: DB.Connection -> GroupMemberId -> VersionRangeChat -> IO ()
 setMemberChatVRange db mId (VersionRange minVer maxVer) =
   DB.execute
     db
@@ -278,10 +373,10 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
 
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool)
 
-toContact :: User -> ContactRow :. MaybeConnectionRow -> Contact
-toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent)) :. connRow) =
+toContact :: (PQSupport -> VersionRangeChat) -> User -> ContactRow :. MaybeConnectionRow -> Contact
+toContact vr user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-      activeConn = toMaybeConnection connRow
+      activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
@@ -302,13 +397,13 @@ getProfileById db userId profileId =
     toProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences) -> LocalProfile
     toProfile (displayName, fullName, image, contactLink, localAlias, preferences) = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact) :. (Maybe XContactId, Maybe Preferences, UTCTime, UTCTime, Version, Version)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact) :. (Maybe XContactId, PQSupport, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, preferences, createdAt, updatedAt, minVer, maxVer)) = do
+toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, preferences, createdAt, updatedAt, minVer, maxVer)) = do
   let profile = Profile {displayName, fullName, image, contactLink, preferences}
-      cReqChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, createdAt, updatedAt}
+      cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, createdAt, updatedAt}
 
 userQuery :: Query
 userQuery =
@@ -402,3 +497,33 @@ createWithRandomBytes' size gVar create = tryCreate 3
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
+
+assertNotUser :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
+assertNotUser db User {userId} Contact {contactId, localDisplayName} = do
+  r :: (Maybe Int64) <-
+    -- This query checks that the foreign keys in the users table
+    -- are not referencing the contact about to be deleted.
+    -- With the current schema it would cause cascade delete of user,
+    -- with mofified schema (in v5.6.0-beta.0) it would cause foreign key violation error.
+    liftIO . maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT 1 FROM users
+          WHERE (user_id = ? AND local_display_name = ?)
+             OR contact_id = ?
+          LIMIT 1
+        |]
+        (userId, localDisplayName, contactId)
+  when (isJust r) $ throwError $ SEProhibitedDeleteUser userId contactId
+
+safeDeleteLDN :: DB.Connection -> User -> ContactName -> IO ()
+safeDeleteLDN db User {userId} localDisplayName = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE user_id = ? AND local_display_name = ?
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
+    |]
+    (userId, localDisplayName, userId)

@@ -301,7 +301,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 }
 
 @Composable
-private fun LinkTextView(link: String, share: Boolean) {
+fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
   Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.weight(1f).clickable {

@@ -23,7 +23,7 @@
 module Simplex.Chat.Types where
 
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -38,6 +38,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
+import Data.Word (Word16)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
 import Database.SQLite.Simple.FromField (FromField (..), returnError)
 import Database.SQLite.Simple.Internal (Field (..))
@@ -46,13 +47,15 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
+import Simplex.Messaging.Version.Internal
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -211,6 +214,9 @@ contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
+contactPQEnabled :: Contact -> PQEncryption
+contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
+
 data ContactStatus
   = CSActive
   | CSDeleted -- contact deleted by contact
@@ -272,13 +278,14 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
-    cReqChatVRange :: JVersionRange,
+    cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    xContactId :: Maybe XContactId
+    xContactId :: Maybe XContactId,
+    pqSupport :: PQSupport
   }
   deriving (Eq, Show)
 
@@ -563,7 +570,8 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
-    groupLinkId :: Maybe GroupLinkId
+    groupLinkId :: Maybe GroupLinkId,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -571,7 +579,8 @@ data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile,
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -600,7 +609,7 @@ memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo
     { memberId,
       memberRole,
-      v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
+      v = ChatVersionRange . peerChatVRange <$> activeConn,
       profile = redactedMemberProfile $ fromLocalProfile memberProfile
     }
 
@@ -682,7 +691,7 @@ data GroupMember = GroupMember
     -- member chat protocol version range; if member has active connection, its version range is preferred;
     -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
     -- but it's correctly set on read (see toGroupInfo)
-    memberChatVRange :: JVersionRange
+    memberChatVRange :: VersionRangeChat
   }
   deriving (Eq, Show)
 
@@ -699,11 +708,13 @@ memberConn GroupMember {activeConn} = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
-memberChatVRange' :: GroupMember -> VersionRange
-memberChatVRange' GroupMember {activeConn, memberChatVRange} =
-  fromJVersionRange $ case activeConn of
-    Just Connection {peerChatVRange} -> peerChatVRange
-    Nothing -> memberChatVRange
+memberChatVRange' :: GroupMember -> VersionRangeChat
+memberChatVRange' GroupMember {activeConn, memberChatVRange} = case activeConn of
+  Just Connection {peerChatVRange} -> peerChatVRange
+  Nothing -> memberChatVRange
+
+supportsVersion :: GroupMember -> VersionChat -> Bool
+supportsVersion m v = maxVersion (memberChatVRange' m) >= v
 
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
@@ -1142,7 +1153,7 @@ instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
 
-newtype AgentSndFileId = AgentSndFileId ConnId
+newtype AgentSndFileId = AgentSndFileId SndFileId
   deriving (Eq, Show)
 
 instance StrEncoding AgentSndFileId where
@@ -1161,7 +1172,7 @@ instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromFie
 
 instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
 
-newtype AgentRcvFileId = AgentRcvFileId ConnId
+newtype AgentRcvFileId = AgentRcvFileId RcvFileId
   deriving (Eq, Show)
 
 instance StrEncoding AgentRcvFileId where
@@ -1280,7 +1291,8 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
-    peerChatVRange :: JVersionRange,
+    connChatVersion :: VersionChat,
+    peerChatVRange :: VersionRangeChat,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
@@ -1293,6 +1305,10 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
+    pqSupport :: PQSupport,
+    pqEncryption :: PQEncryption,
+    pqSndEnabled :: Maybe PQEncryption,
+    pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
     createdAt :: UTCTime
   }
@@ -1326,6 +1342,10 @@ aConnId Connection {agentConnId = AgentConnId cId} = cId
 
 connIncognito :: Connection -> Bool
 connIncognito Connection {customUserProfileId} = isJust customUserProfileId
+
+connPQEnabled :: Connection -> PQEncryption
+connPQEnabled Connection {pqSndEnabled = Just (PQEncryption s), pqRcvEnabled = Just (PQEncryption r)} = PQEncryption $ s && r
+connPQEnabled _ = PQEncOff
 
 data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,
@@ -1615,10 +1635,32 @@ data ServerCfg p = ServerCfg
   }
   deriving (Show)
 
-newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
+data ChatVersion
 
-chatInitialVRange :: VersionRange
-chatInitialVRange = versionToRange 1
+instance VersionScope ChatVersion
+
+type VersionChat = Version ChatVersion
+
+type VersionRangeChat = VersionRange ChatVersion
+
+pattern VersionChat :: Word16 -> VersionChat
+pattern VersionChat v = Version v
+
+-- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
+newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
+
+-- TODO v6.0 review
+peerConnChatVersion :: VersionRangeChat -> VersionRangeChat -> VersionChat
+peerConnChatVersion _local@(VersionRange lmin lmax) _peer@(VersionRange rmin rmax)
+  | lmin <= rmax && rmin <= lmax = min lmax rmax -- compatible
+  | rmin > lmax = rmin
+  | otherwise = rmax
+
+initialChatVersion :: VersionChat
+initialChatVersion = VersionChat 1
+
+chatInitialVRange :: VersionRangeChat
+chatInitialVRange = versionToRange initialChatVersion
 
 instance FromJSON ChatVersionRange where
   parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
@@ -1626,18 +1668,6 @@ instance FromJSON ChatVersionRange where
 instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
-
-newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} deriving (Eq, Show)
-
-instance FromJSON JVersionRange where
-  parseJSON = J.withObject "JVersionRange" $ \o -> do
-    minv <- o .: "minVersion"
-    maxv <- o .: "maxVersion"
-    maybe (fail "bad version range") (pure . JVersionRange) $ safeVersionRange minv maxv
-
-instance ToJSON JVersionRange where
-  toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
-  toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
 
 $(JQ.deriveJSON defaultJSON ''UserContact)
 

@@ -5,7 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,8 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.migration.MigrateToDeviceView
+import chat.simplex.common.views.migration.MigrationToState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 
@@ -62,15 +65,31 @@ fun SimpleXInfoLayout(
         OnboardingActionButton(user, onboardingStage)
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
+
+      Box(
+        Modifier
+          .fillMaxWidth()
+          .padding(top = DEFAULT_PADDING), contentAlignment = Alignment.Center
+      ) {
+        SimpleButtonDecorated(text = stringResource(MR.strings.migrate_from_another_device), icon = painterResource(MR.images.ic_download),
+          click = {
+            chatModel.migrationState.value = MigrationToState.PasteOrScanLink
+            ModalManager.fullscreen.showCustomModal { close -> MigrateToDeviceView(close) } })
+      }
     }
 
     Box(
       Modifier
         .fillMaxWidth()
-        .padding(bottom = DEFAULT_PADDING.times(1.5f), top = DEFAULT_PADDING), contentAlignment = Alignment.Center
+        .padding(bottom = DEFAULT_PADDING.times(1.5f), top = if (onboardingStage == null) DEFAULT_PADDING else 0.dp), contentAlignment = Alignment.Center
     ) {
       SimpleButtonDecorated(text = stringResource(MR.strings.how_it_works), icon = painterResource(MR.images.ic_info),
         click = showModal { HowItWorks(user, onboardingStage) })
+    }
+  }
+  LaunchedEffect(Unit) {
+    if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
+      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateToDeviceView(close) }
     }
   }
 }

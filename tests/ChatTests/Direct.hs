@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -9,18 +10,23 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Text as T
+import Simplex.Chat.AppSettings (defaultAppSettings)
+import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion, supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (authErrDisableCount, sameVerificationCode, verificationCode)
+import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, VersionChat, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
@@ -84,8 +90,9 @@ chatDirectTests = do
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
-  describe "chat item expiration" $ do
-    it "set chat item TTL" testSetChatItemTTL
+  describe "settings" $ do
+    it "set chat item expiration TTL" testSetChatItemTTL
+    it "save/get app settings" testAppSettings
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
@@ -109,18 +116,25 @@ chatDirectTests = do
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "negotiate connection peer chat protocol version range" $ do
     describe "peer version range correctly set for new connection via invitation" $ do
-      testInvVRange supportedChatVRange supportedChatVRange
-      testInvVRange supportedChatVRange vr11
-      testInvVRange vr11 supportedChatVRange
+      testInvVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
+      testInvVRange (supportedChatVRange PQSupportOff) vr11
+      testInvVRange vr11 (supportedChatVRange PQSupportOff)
       testInvVRange vr11 vr11
     describe "peer version range correctly set for new connection via contact request" $ do
-      testReqVRange supportedChatVRange supportedChatVRange
-      testReqVRange supportedChatVRange vr11
-      testReqVRange vr11 supportedChatVRange
+      testReqVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
+      testReqVRange (supportedChatVRange PQSupportOff) vr11
+      testReqVRange vr11 (supportedChatVRange PQSupportOff)
       testReqVRange vr11 vr11
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
+  describe "PQ tests" $ do
+    describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
+    describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
+    describe "connect via invitation link with PQ encryption enabled" $ pqVersionTestMatrix2 runTestPQVersionsViaLink
+    describe "connect via contact address with PQ encryption enabled" $ pqVersionTestMatrix2 runTestPQVersionsViaAddress
+    it "should enable PQ after several messages in connection without PQ" testPQEnableContact
+    it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -628,13 +642,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/6] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/7] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/7]"
+    bob <# "alice> [LIVE started] use /show [on/off/8]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -1067,7 +1081,7 @@ testChatWorking alice bob = do
   alice <# "bob> hello too"
 
 testMaintenanceModeWithFiles :: HasCallStack => FilePath -> IO ()
-testMaintenanceModeWithFiles tmp = do
+testMaintenanceModeWithFiles tmp = withXFTPServer $ do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
@@ -1075,12 +1089,26 @@ testMaintenanceModeWithFiles tmp = do
       alice ##> "/_files_folder ./tests/tmp/alice_files"
       alice <## "ok"
       connectUsers alice bob
-      startFileTransferWithDest' bob alice "test.jpg" "136.5 KiB / 139737 bytes" Nothing
-      bob <## "completed sending file 1 (test.jpg) to alice"
+
+      bob #> "/f @alice ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      alice <# "bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob <## "completed uploading file 1 (test.jpg) for alice"
+
+      alice ##> "/fr 1"
+      alice
+        <### [ "saving file 1 from bob to test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
       alice <## "completed receiving file 1 (test.jpg) from bob"
+
       src <- B.readFile "./tests/fixtures/test.jpg"
-      B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      dest <- B.readFile "./tests/tmp/alice_files/test.jpg"
+      dest `shouldBe` src
+
       threadDelay 500000
+
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
@@ -2064,15 +2092,16 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items count=10"
       alice <##? chatHistory
-      alice ##> "/_get items before=11 count=10"
+      alice ##> "/_get items before=13 count=10"
       alice
-        <##? [ "bob> Disappearing messages: allowed",
+        <##? [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+               "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items after=10 count=10"
+      alice ##> "/_get items after=12 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -2136,7 +2165,8 @@ testUserPrivacy =
       alice <## "messages are shown"
       alice <## "profile is visible"
     chatHistory =
-      [ "bob> Disappearing messages: allowed",
+      [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+        "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
@@ -2180,6 +2210,24 @@ testSetChatItemTTL =
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
+
+testAppSettings :: HasCallStack => FilePath -> IO ()
+testAppSettings tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
+        settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
+    -- app-provided defaults
+    alice ##> ("/_get app settings " <> settingsApp)
+    alice <## ("app settings: " <> settingsApp)
+    -- parser defaults fallback
+    alice ##> "/_get app settings"
+    alice <## ("app settings: " <> settings)
+    -- store
+    alice ##> ("/_save app settings " <> settingsApp)
+    alice <## "ok"
+    -- read back
+    alice ##> "/_get app settings"
+    alice <## ("app settings: " <> settingsApp)
 
 testSwitchContact :: HasCallStack => FilePath -> IO ()
 testSwitchContact =
@@ -2232,7 +2280,7 @@ testSwitchGroupMember =
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
@@ -2263,7 +2311,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
@@ -2617,10 +2665,10 @@ testConfigureDeliveryReceipts tmp =
       cc2 <# (name1 <> "> " <> msg)
       cc1 <// 50000
 
-testConnInvChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnInvChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnInvChatVRange ct1VRange ct2VRange tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = const ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = const ct2VRange} "bob" bobProfile $ \bob -> do
       connectUsers alice bob
 
       alice ##> "/i bob"
@@ -2629,10 +2677,10 @@ testConnInvChatVRange ct1VRange ct2VRange tmp =
       bob ##> "/i alice"
       contactInfoChatVRange bob ct1VRange
 
-testConnReqChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnReqChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnReqChatVRange ct1VRange ct2VRange tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = const ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = const ct2VRange} "bob" bobProfile $ \bob -> do
       alice ##> "/ad"
       cLink <- getContactLink alice True
       bob ##> ("/c " <> cLink)
@@ -2659,7 +2707,7 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob supportedChatVRange
+      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
 
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2668,10 +2716,10 @@ testUpdatePeerChatVRange tmp =
       alice <# "bob> hello 1"
 
       alice ##> "/i bob"
-      contactInfoChatVRange alice supportedChatVRange
+      contactInfoChatVRange alice (supportedChatVRange PQSupportOff)
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob supportedChatVRange
+      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
 
     withTestChatCfg tmp cfg11 "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2683,9 +2731,9 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob supportedChatVRange
+      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
   where
-    cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
+    cfg11 = testCfg {chatVRange = const vr11} :: ChatConfig
 
 testGetNetworkStatuses :: HasCallStack => FilePath -> IO ()
 testGetNetworkStatuses tmp = do
@@ -2701,10 +2749,10 @@ testGetNetworkStatuses tmp = do
   where
     cfg = testCfg {coreApi = True}
 
-vr11 :: VersionRange
-vr11 = mkVersionRange 1 1
+vr11 :: VersionRangeChat
+vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)
 
-contactInfoChatVRange :: TestCC -> VersionRange -> IO ()
+contactInfoChatVRange :: TestCC -> VersionRangeChat -> IO ()
 contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "contact ID: 2"
   cc <## "receiving messages via: localhost"
@@ -2712,3 +2760,253 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+
+runTestPQConnectViaLink :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
+runTestPQConnectViaLink (alice, aPQ) (bob, bPQ) = do
+  when aPQ $ pqOn alice
+  when bPQ $ pqOn bob
+
+  connectUsers alice bob
+
+  (alice, "hi") `pqSend` bob
+  (bob, "hey") `pqSend` alice
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+  where
+    pqEnabled = aPQ && bPQ
+    pqSend = if pqEnabled then (+#>) else (\#>)
+    e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
+
+pqOn :: TestCC -> IO ()
+pqOn cc = do
+  cc ##> "/pq on"
+  cc <## "ok"
+
+runTestPQConnectViaAddress :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
+runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
+  when aPQ $ pqOn alice
+  when bPQ $ pqOn bob
+
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  bob ##> ("/c " <> cLink)
+  alice <#? bob
+  alice @@@ [("<@bob", "")]
+  alice ##> "/ac bob"
+  alice <## "bob (Bob): accepting contact request..."
+  concurrently_
+    (bob <## "alice (Alice): contact is connected")
+    (alice <## "bob (Bob): contact is connected")
+
+  (alice, "hi") `pqSend` bob
+  (bob, "hey") `pqSend` alice
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
+  where
+    pqEnabled = aPQ && bPQ
+    pqSend = if pqEnabled then (+#>) else (\#>)
+    e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
+
+runTestPQVersionsViaLink :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
+runTestPQVersionsViaLink alice bob pqExpected vExpected = do
+  img <- genProfileImg
+  let profileImage = "data:image/png;base64," <> B.unpack img
+  alice `send` ("/set profile image " <> profileImage)
+  _trimmedCmd1 <- getTermLine alice
+  alice <## "profile image updated"
+  bob `send` ("/set profile image " <> profileImage)
+  _trimmedCmd2 <- getTermLine bob
+  bob <## "profile image updated"
+
+  pqOn alice
+  pqOn bob
+
+  connectUsers alice bob
+
+  (alice, "hi", vExpected) `pqSend` (bob, vExpected)
+  (bob, "hey", vExpected) `pqSend` (alice, vExpected)
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
+  where
+    pqSend = if pqExpected then (+:#>) else (\:#>)
+    e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
+
+runTestPQVersionsViaAddress :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
+runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
+  img <- genProfileImg
+  let profileImage = "data:image/png;base64," <> B.unpack img
+  alice `send` ("/set profile image " <> profileImage)
+  _trimmedCmd1 <- getTermLine alice
+  alice <## "profile image updated"
+  bob `send` ("/set profile image " <> profileImage)
+  _trimmedCmd2 <- getTermLine bob
+  bob <## "profile image updated"
+
+  pqOn alice
+  pqOn bob
+
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  bob ##> ("/c " <> cLink)
+  alice <#? bob
+  alice @@@ [("<@bob", "")]
+  alice ##> "/ac bob"
+  alice <## "bob (Bob): accepting contact request..."
+  concurrently_
+    (bob <## "alice (Alice): contact is connected")
+    (alice <## "bob (Bob): contact is connected")
+
+  (alice, "hi", vExpected) `pqSend` (bob, vExpected)
+  (bob, "hey", vExpected) `pqSend` (alice, vExpected)
+
+  alice ##> "/_get chat @2 count=100"
+  ra <- chat <$> getTermLine alice
+  ra `shouldContain` [(0, e2eeInfo)]
+  alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
+
+  bob ##> "/_get chat @2 count=100"
+  rb <- chat <$> getTermLine bob
+  rb `shouldContain` [(0, e2eeInfo)]
+  bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
+  where
+    pqSend = if pqExpected then (+:#>) else (\:#>)
+    e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
+
+testPQEnableContact :: HasCallStack => FilePath -> IO ()
+testPQEnableContact =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    (alice, "hi") \#> bob
+    (bob, "hey") \#> alice
+
+    alice ##> "/_get chat @2 count=100"
+    ra <- chat <$> getTermLine alice
+    ra `shouldContain` [(0, e2eeInfoNoPQStr)]
+    PQEncOff <- alice `pqForContact` 2
+
+    bob ##> "/_get chat @2 count=100"
+    rb <- chat <$> getTermLine bob
+    rb `shouldContain` [(0, e2eeInfoNoPQStr)]
+    PQEncOff <- bob `pqForContact` 2
+
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    -- enabling experimental flags doesn't enable PQ in previously created connection
+    pqOn alice
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    pqOn bob
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    -- if only one contact allows PQ, it's not enabled
+    alice ##> "/pq @bob on"
+    alice <## "bob: enable quantum resistant end-to-end encryption"
+    sendMany PQEncOff alice bob
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    -- both contacts have to allow PQ to enable it
+    bob ##> "/pq @alice on"
+    bob <## "alice: enable quantum resistant end-to-end encryption"
+
+    (alice, "1") \#> bob
+    (bob, "2") \#> alice
+    (alice, "3") \#> bob
+    (bob, "4") \#> alice
+    (alice, "5") +#> bob
+
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+
+    (bob, "6") ++#> alice
+    -- equivalent to:
+    -- bob `send` "@alice 6"
+    -- bob <## "alice: quantum resistant end-to-end encryption enabled"
+    -- bob <# "@alice 6"
+    -- alice <## "bob: quantum resistant end-to-end encryption enabled"
+    -- alice <# "bob> 6"
+
+    PQEncOn <- alice `pqForContact` 2
+    alice #$> ("/_get chat @2 count=2", chat, [(0, e2eeInfoPQStr), (0, "6")])
+
+    PQEncOn <- bob `pqForContact` 2
+    bob #$> ("/_get chat @2 count=2", chat, [(1, e2eeInfoPQStr), (1, "6")])
+
+    (alice, "6") +#> bob
+    (bob, "7") +#> alice
+
+    sendMany PQEncOn alice bob
+
+    PQEncOn <- alice `pqForContact` 2
+    PQEncOn <- bob `pqForContact` 2
+    pure ()
+
+sendMany :: PQEncryption -> TestCC -> TestCC -> IO ()
+sendMany pqEnc alice bob =
+  forM_ [(1 :: Int) .. 10] $ \i -> do
+    sndRcv pqEnc False (alice, show i) bob
+    sndRcv pqEnc False (bob, show i) alice
+
+testPQEnableContactCompression :: HasCallStack => FilePath -> IO ()
+testPQEnableContactCompression =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    (alice, "hi") \#> bob
+    (bob, "hey") \#> alice
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+    (alice, "lrg 1", v) \:#> (bob, v)
+    (bob, "lrg 2", v) \:#> (alice, v)
+    PQSupportOff <- alice `pqSupportForCt` 2
+    alice ##> "/pq @bob on"
+    alice <## "bob: enable quantum resistant end-to-end encryption"
+    PQSupportOn <- alice `pqSupportForCt` 2
+    (alice, "lrg 3", v) \:#> (bob, v)
+    (bob, "lrg 4", v) \:#> (alice, v)
+    PQSupportOff <- bob `pqSupportForCt` 2
+    bob ##> "/pq @alice on"
+    bob <## "alice: enable quantum resistant end-to-end encryption"
+    PQSupportOn <- bob `pqSupportForCt` 2
+    (alice, "lrg 1", v) \:#> (bob, v')
+    (bob, "lrg 2", v') \:#> (alice, v')
+    (alice, "lrg 3", v') \:#> (bob, v')
+    (bob, "lrg 4", v') \:#> (alice, v')
+    (alice, "lrg 5", v') +:#> (bob, v')
+    PQEncOff <- alice `pqForContact` 2
+    PQEncOff <- bob `pqForContact` 2
+    (bob, "lrg 6", v') ++:#> (alice, v')
+    (alice, "lrg 7", v') +:#> (bob, v')
+    (bob, "lrg 8", v') +:#> (alice, v')
+  where
+    v = currentChatVersion
+    v' = pqEncryptionCompressionVersion
