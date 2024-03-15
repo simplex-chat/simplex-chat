@@ -2864,16 +2864,17 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Just fPath ->
     ifM
       (doesDirectoryExist fPath)
-      ( do
-          fPath' <- fPath `uniqueCombine` fn
-          createEmptyFile fPath'
-          pure fPath'
-      )
+      (createInPassedDirectory fPath)
       $ ifM
         (doesFileExist fPath)
         (throwChatError $ CEFileAlreadyExists fPath)
         (createEmptyFile fPath $> fPath)
   where
+    createInPassedDirectory :: FilePath -> m FilePath
+    createInPassedDirectory fPathDir = do
+      fPath <- fPathDir `uniqueCombine` fn
+      createEmptyFile fPath
+      pure fPath
     createEmptyFile :: FilePath -> m ()
     createEmptyFile fPath = emptyFile `catchThrow` (ChatError . CEFileWrite fPath . show)
       where
