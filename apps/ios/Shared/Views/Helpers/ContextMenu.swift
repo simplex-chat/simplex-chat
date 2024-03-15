@@ -12,8 +12,14 @@ import SwiftUI
 
 extension View {
     func uiKitContextMenu(maxWidth: CGFloat, menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
-        InteractionView(content: self, maxWidth: maxWidth, menu: menu, allowMenu: allowMenu)
-        .fixedSize(horizontal: true, vertical: false)
+        Group {
+            if allowMenu.wrappedValue {
+                InteractionView(content: self, maxWidth: maxWidth, menu: menu)
+                    .fixedSize(horizontal: true, vertical: false)
+            } else {
+                self
+            }
+        }
     }
 }
 
@@ -26,7 +32,6 @@ struct InteractionView<Content: View>: UIViewRepresentable {
     let content: Content
     var maxWidth: CGFloat
     @Binding var menu: UIMenu
-    @Binding var allowMenu: Bool
 
     func makeUIView(context: Context) -> UIView {
         let view = HostingViewHolder()
@@ -52,12 +57,6 @@ struct InteractionView<Content: View>: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         (uiView as! HostingViewHolder).contentSize = uiView.subviews[0].sizeThatFits(CGSizeMake(maxWidth, .infinity))
-        if allowMenu && uiView.interactions.isEmpty {
-            let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
-            uiView.addInteraction(menuInteraction)
-        } else if !allowMenu, let interaction = uiView.interactions.last {
-            uiView.removeInteraction(interaction)
-        }
     }
 
     func makeCoordinator() -> Coordinator {
