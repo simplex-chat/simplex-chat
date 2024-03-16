@@ -81,4 +81,8 @@
     <string name="chat_preferences_always">luôn luôn</string>
     <string name="connect_plan_already_connecting">Đã kết nối rồi!</string>
     <string name="connect_plan_already_joining_the_group">Đã tham gia nhóm rồi!</string>
+    <string name="always_use_relay">Luôn sử dụng relay</string>
+    <string name="rcv_group_and_other_events">và %d sự kiện khác</string>
+    <string name="keychain_is_storing_securely">Android Keystore được sử dụng để lưu trữ passphrase - nó cho phép dịch vụ thông báo hoạt động.</string>
+    <string name="keychain_allows_to_receive_ntfs">Android Keystore sẽ được sử dụng để lưu trữ passphrase một cách an toàn sau khi bạn khởi động lại ứng dụng hoặc thay đổi passphrase - nó cho phép tiếp nhận thông báo.</string>
 </resources>
