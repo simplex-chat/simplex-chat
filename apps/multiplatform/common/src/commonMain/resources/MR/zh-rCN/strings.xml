@@ -64,7 +64,7 @@
     <string name="info_row_connection">连接</string>
     <string name="connect_via_invitation_link">通过一次性链接进行连接？</string>
     <string name="connect_via_contact_link">通过联系人地址进行连接？</string>
-    <string name="connect_via_group_link">加群吗？</string>
+    <string name="connect_via_group_link">加入群组？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
     <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不不可逆地删除已发送消息。（24小时）</string>
