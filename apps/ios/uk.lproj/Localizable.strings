@@ -65,7 +65,13 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Зірка на GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
+"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Додати контакт**: створити нове посилання-запрошення або підключитися за отриманим посиланням.";
+
+/* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Додати новий контакт**: щоб створити одноразовий QR-код або посилання для свого контакту.";
+
+/* No comment provided by engineer. */
+"**Create group**: to create a new group." = "**Створити групу**: створити нову групу.";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e encrypted** аудіодзвінок";
@@ -195,6 +201,9 @@
 
 /* No comment provided by engineer. */
 "%lld messages blocked" = "%lld повідомлень заблоковано";
+
+/* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld повідомлень заблоковано адміністратором";
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld повідомлень позначено як видалені";
@@ -339,6 +348,9 @@
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Додайте адресу до свого профілю, щоб ваші контакти могли поділитися нею з іншими людьми. Повідомлення про оновлення профілю буде надіслано вашим контактам.";
 
 /* No comment provided by engineer. */
+"Add contact" = "Додати контакт";
+
+/* No comment provided by engineer. */
 "Add preset servers" = "Додавання попередньо встановлених серверів";
 
 /* No comment provided by engineer. */
@@ -388,6 +400,9 @@
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Всі учасники групи залишаться на зв'язку.";
+
+/* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone!" = "Усі повідомлення будуть видалені - цю дію не можна скасувати!";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Всі повідомлення будуть видалені - це неможливо скасувати! Повідомлення будуть видалені ТІЛЬКИ для вас.";
@@ -567,13 +582,22 @@
 "Block" = "Блокувати";
 
 /* No comment provided by engineer. */
+"Block for all" = "Заблокувати для всіх";
+
+/* No comment provided by engineer. */
 "Block group members" = "Учасники групи блокування";
 
 /* No comment provided by engineer. */
 "Block member" = "Заблокувати користувача";
 
 /* No comment provided by engineer. */
+"Block member for all?" = "Заблокувати учасника для всіх?";
+
+/* No comment provided by engineer. */
 "Block member?" = "Заблокувати користувача?";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Заблокований адміністратором";
 
 /* No comment provided by engineer. */
 "bold" = "жирний";
@@ -613,6 +637,9 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Дзвінки";
+
+/* No comment provided by engineer. */
+"Camera not available" = "Камера недоступна";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Не вдається запросити контакт!";
@@ -698,6 +725,9 @@
 
 /* No comment provided by engineer. */
 "Chat is stopped" = "Чат зупинено";
+
+/* No comment provided by engineer. */
+"Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Чат зупинено. Якщо ви вже використовували цю базу даних на іншому пристрої, перенесіть її назад перед запуском чату.";
 
 /* No comment provided by engineer. */
 "Chat preferences" = "Налаштування чату";
@@ -2127,7 +2157,7 @@
 /* copied message info */
 "Moderated at: %@" = "Модерується за: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "модерується %@";
 
 /* time unit */
