@@ -4539,9 +4539,9 @@ Fout: %@</target>
         <target>Zoekbalk accepteert uitnodigingslinks.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
         <source>Search or paste SimpleX link</source>
-        <target>Zoek of plak een SimpleX link</target>
+        <target state="translated">Zoeken of plak een SimpleX link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
@@ -6613,9 +6613,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>iOS-keychain wordt gebruikt om het wachtwoord veilig op te slaan nadat u de app opnieuw hebt opgestart of het wachtwoord hebt gewijzigd, hiermee kunt u push meldingen ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve">
+      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
-        <target>incognito via contactadres link</target>
+        <target state="translated">incognito via contact adres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -6683,9 +6683,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>deelnemen als %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target>verlaten</target>
+        <target state="translated">is vertrokken</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -6925,9 +6925,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
-        <target>via contactadres link</target>
+        <target state="translated">via contact adres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">

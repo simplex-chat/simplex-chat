@@ -89,7 +89,7 @@
     <string name="periodic_notifications_desc">L\'application récupère périodiquement les nouveaux messages - elle utilise un peu votre batterie chaque jour. L\'application n\'utilise pas les notifications push - les données de votre appareil ne sont pas envoyées aux serveurs.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b>SimpleX service de fond</b> - il utilise quelques pour cent de la batterie par jour.]]></string>
     <string name="hide_notification">Cacher</string>
-    <string name="settings_notification_preview_mode_title">Montrer l\'aperçu</string>
+    <string name="settings_notification_preview_mode_title">Afficher l\'aperçu</string>
     <string name="notification_preview_mode_contact">Nom du contact</string>
     <string name="notification_preview_somebody">Contact masqué :</string>
     <string name="notification_preview_new_message">nouveau message</string>
@@ -410,7 +410,7 @@
     <string name="smp_servers_your_server_address">Votre adresse de serveur</string>
     <string name="smp_servers_invalid_address">Adresse de serveur invalide !</string>
     <string name="smp_servers_check_address">Vérifiez l\'adresse du serveur et réessayez.</string>
-    <string name="using_simplex_chat_servers">Utilise les serveurs SimpleX Chat.</string>
+    <string name="using_simplex_chat_servers">Vous utilisez les serveurs SimpleX.</string>
     <string name="how_to">Comment faire</string>
     <string name="enter_one_ICE_server_per_line">Serveurs ICE (un par ligne)</string>
     <string name="error_saving_ICE_servers">Erreur lors de la sauvegarde des serveurs ICE</string>
@@ -584,7 +584,7 @@
     <string name="your_calls">Vos appels</string>
     <string name="always_use_relay">Se connecter via relais</string>
     <string name="call_on_lock_screen">Appels en écran verrouillé :</string>
-    <string name="show_call_on_lock_screen">Montrer</string>
+    <string name="show_call_on_lock_screen">Afficher</string>
     <string name="no_call_on_lock_screen">Désactiver</string>
     <string name="your_ice_servers">Vos serveurs ICE</string>
     <string name="webrtc_ice_servers">Serveurs WebRTC ICE</string>
@@ -684,7 +684,7 @@
     <string name="snd_group_event_changed_role_for_yourself">vous avez modifié votre rôle pour %s</string>
     <string name="snd_group_event_user_left">vous avez quitté</string>
     <string name="snd_group_event_group_profile_updated">mise à jour du profil de groupe</string>
-    <string name="rcv_conn_event_switch_queue_phase_completed">adresse modifiée pour vous</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">changement de l\'adresse du contact</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">changement d\'adresse pour %s…</string>
     <string name="snd_conn_event_switch_queue_phase_changing">changement d\'adresse…</string>
     <string name="group_member_role_member">membre</string>
@@ -1117,10 +1117,10 @@
     <string name="opening_database">Ouverture de la base de données…</string>
     <string name="learn_more_about_address">À propos de l\'adresse SimpleX</string>
     <string name="learn_more">En savoir plus</string>
-    <string name="you_can_share_your_address">Vous pouvez partager votre adresse sous la forme d\'un lien ou d\'un code QR - tout le monde peut se connecter à vous.</string>
+    <string name="you_can_share_your_address">Vous pouvez partager votre adresse sous la forme d\'un lien ou d\'un code QR - tout le monde peut l\'utiliser pour vous contacter.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Vous ne perdrez pas vos contacts si vous supprimez votre adresse ultérieurement.</string>
     <string name="simplex_address">Adresse SimpleX</string>
-    <string name="you_can_accept_or_reject_connection">Lorsque des personnes demandent à se connecter, vous pouvez les accepter ou les refuser.</string>
+    <string name="you_can_accept_or_reject_connection">Vous pouvez accepter ou refuser les demandes de contacts.</string>
     <string name="theme_colors_section_title">COULEURS DU THÈME</string>
     <string name="your_contacts_will_remain_connected">Vos contacts resteront connectés.</string>
     <string name="share_address_with_contacts_question">Partager l\'adresse avec vos contacts \?</string>
@@ -1155,7 +1155,7 @@
     <string name="customize_theme_title">Personnaliser le thème</string>
     <string name="continue_to_next_step">Continuer</string>
     <string name="error_setting_address">Erreur lors du réglage de l\'adresse</string>
-    <string name="create_address_and_let_people_connect">Créez une adresse pour permettre aux gens de vous contacter.</string>
+    <string name="create_address_and_let_people_connect">Vous pouvez créer une adresse pour permettre aux autres utilisateurs de vous contacter.</string>
     <string name="enter_welcome_message">Entrez un message de bienvenue…</string>
     <string name="you_can_create_it_later">Vous pouvez la créer plus tard</string>
     <string name="email_invite_body">Bonjour !
@@ -1282,7 +1282,7 @@
     <string name="snd_conn_event_ratchet_sync_required">renégociation de chiffrement requise pour %s</string>
     <string name="renegotiate_encryption">Renégocier le chiffrement</string>
     <string name="receipts_contacts_override_disabled">L\'envoi d\'accusés de réception est désactivé pour les contacts de %d</string>
-    <string name="snd_conn_event_ratchet_sync_started">accord sur le chiffrement pour %s…</string>
+    <string name="snd_conn_event_ratchet_sync_started">négociation du chiffrement avec %s…</string>
     <string name="receipts_section_contacts">Contacts</string>
     <string name="receipts_contacts_disable_for_all">Désactiver pour tous</string>
     <string name="receipts_contacts_disable_keep_overrides">Désactiver (conserver les remplacements)</string>
@@ -1305,7 +1305,7 @@
     <string name="receipts_contacts_title_enable">Activer les accusés de réception \?</string>
     <string name="receipts_contacts_title_disable">Désactiver les accusés de réception \?</string>
     <string name="receipts_contacts_override_enabled">L\'envoi d\'accusés de réception est activé pour les contacts de %d</string>
-    <string name="conn_event_ratchet_sync_started">accord sur le chiffrement…</string>
+    <string name="conn_event_ratchet_sync_started">négociation du chiffrement…</string>
     <string name="conn_event_ratchet_sync_agreed">chiffrement accepté</string>
     <string name="conn_event_ratchet_sync_ok">chiffrement OK</string>
     <string name="conn_event_ratchet_sync_allowed">renégociation de chiffrement autorisée</string>
@@ -1398,7 +1398,7 @@
     <string name="compose_send_direct_message_to_connect">Envoyer un message direct pour vous connecter</string>
     <string name="member_contact_send_direct_message">envoyer un message direct</string>
     <string name="rcv_group_event_member_created_contact">s\'est connecté.e de manière directe</string>
-    <string name="expand_verb">Développer</string>
+    <string name="expand_verb">Étendre</string>
     <string name="connect_plan_repeat_connection_request">Répéter la demande de connexion ?</string>
     <string name="rcv_direct_event_contact_deleted">contact supprimé</string>
     <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Vous êtes déjà connecté(e) à <b>%1$s</b>.]]></string>
@@ -1612,9 +1612,31 @@
     <string name="profile_update_event_member_name_changed">le membre %1$s est devenu %2$s</string>
     <string name="profile_update_event_removed_address">suppression de l\'adresse de contact</string>
     <string name="profile_update_event_removed_picture">suppression de la photo de profil</string>
-    <string name="profile_update_event_set_new_address">définir une nouvelle adresse de contact</string>
-    <string name="profile_update_event_set_new_picture">définir une nouvelle image de profil</string>
+    <string name="profile_update_event_set_new_address">a changé d\'adresse de contact</string>
+    <string name="profile_update_event_set_new_picture">a changé d\'image de profil</string>
     <string name="profile_update_event_updated_profile">profil mis à jour</string>
     <string name="clear_note_folder_question">Effacer les notes privées ?</string>
     <string name="saved_message_title">Message enregistré</string>
+    <string name="block_for_all">Bloqué pour tous</string>
+    <string name="member_blocked_by_admin">Bloqué par l\'administrateur</string>
+    <string name="member_info_member_blocked">bloqué</string>
+    <string name="error_blocking_member_for_all">Erreur lors du blocage du membre pour tous</string>
+    <string name="blocked_by_admin_items_description">%d messages bloqués par l\'administrateur</string>
+    <string name="blocked_by_admin_item_description">bloqué par l\'administrateur</string>
+    <string name="rcv_group_event_member_blocked">%s bloqué</string>
+    <string name="rcv_group_event_member_unblocked">%s débloqué</string>
+    <string name="snd_group_event_member_blocked">vous avez bloqué %s</string>
+    <string name="snd_group_event_member_unblocked">vous avez débloqué %s</string>
+    <string name="message_too_large">Message trop volumineux</string>
+    <string name="unblock_for_all">Débloquer pour tous</string>
+    <string name="block_for_all_question">Bloquer le membre pour tous ?</string>
+    <string name="database_migration_in_progress">La migration de la base de données est en cours.
+\nCela peut prendre quelques minutes.</string>
+    <string name="unblock_for_all_question">Débloquer le membre pour tous ?</string>
+    <string name="welcome_message_is_too_long">Le message de bienvenue est trop long</string>
+    <string name="call_service_notification_video_call">Appel vidéo</string>
+    <string name="call_service_notification_end_call">Fin de l\'appel</string>
+    <string name="call_service_notification_audio_call">Appel audio</string>
+    <string name="unable_to_open_browser_desc">Le navigateur web par défaut est requis pour les appels. Veuillez configurer le navigateur par défaut dans le système et partager plus d\'informations avec les développeurs.</string>
+    <string name="unable_to_open_browser_title">Erreur lors de l\'ouverture du navigateur</string>
 </resources>

@@ -6171,9 +6171,9 @@ Puoi annullare questa connessione e rimuovere il contatto (e riprovare più tard
         <target>Il tuo profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
+      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve" approved="no">
         <source>Your profile **%@** will be shared.</source>
-        <target>Il tuo profilo **%@** verrà condiviso.</target>
+        <target state="translated">Verrà condiviso il tuo profilo **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">

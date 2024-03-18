@@ -4534,9 +4534,9 @@ Fehler: %@</target>
         <target>Suche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search bar accepts invitation links." xml:space="preserve">
+      <trans-unit id="Search bar accepts invitation links." xml:space="preserve" approved="no">
         <source>Search bar accepts invitation links.</source>
-        <target>Von der Suchleiste werden Einladungslinks akzeptiert.</target>
+        <target state="translated">In der Suchleiste werden nun auch Einladungslinks akzeptiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -6423,9 +6423,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Verbindung:%@</target>
         <note>connection information</note>
       </trans-unit>
-      <trans-unit id="contact %@ changed to %@" xml:space="preserve">
+      <trans-unit id="contact %@ changed to %@" xml:space="preserve" approved="no">
         <source>contact %1$@ changed to %2$@</source>
-        <target>Der Kontaktname %1$@ wurde auf %2$@ geändert</target>
+        <target state="translated">Der Kontaktname wurde von %1$@ auf %2$@ geändert</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
@@ -6698,9 +6698,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Mitglied</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="member %@ changed to %@" xml:space="preserve">
+      <trans-unit id="member %@ changed to %@" xml:space="preserve" approved="no">
         <source>member %1$@ changed to %2$@</source>
-        <target>Der Mitgliedsname %1$@ wurde auf %2$@ geändert</target>
+        <target state="translated">Der Mitgliedsname von %1$@ wurde auf %2$@ geändert</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
@@ -6825,14 +6825,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>hat %@ aus der Gruppe entfernt</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="removed contact address" xml:space="preserve">
+      <trans-unit id="removed contact address" xml:space="preserve" approved="no">
         <source>removed contact address</source>
-        <target>Kontaktadresse wurde entfernt</target>
+        <target state="translated">Die Kontaktadresse wurde entfernt</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="removed profile picture" xml:space="preserve">
+      <trans-unit id="removed profile picture" xml:space="preserve" approved="no">
         <source>removed profile picture</source>
-        <target>Profil-Bild wurde entfernt</target>
+        <target state="translated">Das Profil-Bild wurde entfernt</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
@@ -6865,14 +6865,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Direktnachricht senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="set new contact address" xml:space="preserve">
+      <trans-unit id="set new contact address" xml:space="preserve" approved="no">
         <source>set new contact address</source>
-        <target>Neue Kontaktadresse wurde festgelegt</target>
+        <target state="translated">Es wurde eine neue Kontaktadresse festgelegt</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="set new profile picture" xml:space="preserve">
+      <trans-unit id="set new profile picture" xml:space="preserve" approved="no">
         <source>set new profile picture</source>
-        <target>Neues Profil-Bild wurde festgelegt</target>
+        <target state="translated">Es wurde ein neues Profil-Bild festgelegt</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
