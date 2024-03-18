@@ -105,12 +105,15 @@ fun SettingsLayout(
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
   Box(Modifier.fillMaxSize()) {
+    val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
+    val scrollState = rememberScrollState()
     Column(
       Modifier
         .fillMaxSize()
-        .verticalScroll(rememberScrollState())
+        .verticalScroll(scrollState)
         .themedBackground(theme.value.base)
         .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
+        .then(if (appPlatform.isDesktop) scrollModifier else Modifier)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -172,6 +175,7 @@ fun SettingsLayout(
       SectionBottomSpacer()
     }
     if (appPlatform.isDesktop) {
+      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
       Box(
         Modifier
         .fillMaxWidth()

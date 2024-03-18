@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -907,7 +909,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
+  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
+  LazyColumn(Modifier.align(Alignment.BottomCenter).then(if (appPlatform.isDesktop) scrollModifier else Modifier), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1060,6 +1063,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
+  platform.desktopScrollBar(listState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, true)
   FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
 }
 

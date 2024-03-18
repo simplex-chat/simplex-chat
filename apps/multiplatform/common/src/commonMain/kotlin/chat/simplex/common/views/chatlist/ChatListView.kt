@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -447,7 +448,8 @@ private fun ErrorSettingsView() {
 private var lazyListState = 0 to 0
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
+private fun BoxScope.ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
+  val scope = rememberCoroutineScope()
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -460,8 +462,9 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.toList())
+  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
   LazyColumn(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().then(if (appPlatform.isDesktop) scrollModifier else Modifier),
     listState
   ) {
     stickyHeader {
@@ -488,6 +491,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       ChatListNavLinkView(chat, nextChatSelected)
     }
   }
+  platform.desktopScrollBar(listState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
   if (chats.isEmpty() && chatModel.chats.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
