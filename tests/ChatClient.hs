@@ -74,6 +74,7 @@ testOpts =
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      optTempDirectory = Nothing,
       showReactions = True,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
