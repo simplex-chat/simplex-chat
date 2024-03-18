@@ -213,27 +213,27 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    if let user_ = jError["user_"] {
-                        let user: UserRef? = try? decodeObject(user_ as Any)
-                        return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
-                    } else {
-                        return .chatCmdError(user_: nil, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
-                    }
+                    let user = decodeUser_(jError)
+                    return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
                 }
             } else if type == "chatError" {
                 if let jError = jResp["chatError"] as? NSDictionary {
-                    if let user_ = jError["user_"] {
-                        let user: UserRef? = try? decodeObject(user_ as Any)
-                        return .chatError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
-                    } else {
-                        return .chatError(user_: nil, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
-                    }
+                    let user = decodeUser_(jError)
+                    return .chatError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
                 }
             }
         }
         json = prettyJSON(j)
     }
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
+}
+
+private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
+    guard let user_ = jDict["user_"] else {
+        return nil
+    }
+    let user: UserRef? = try? decodeObject(user_ as Any)
+    return user
 }
 
 func parseChatData(_ jChat: Any) throws -> ChatData {
