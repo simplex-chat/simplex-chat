@@ -107,6 +107,10 @@
         <target>%@ połączony</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve">
+        <source>%@ downloaded</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
         <source>%@ is connected!</source>
         <target>%@ jest połączony!</target>
@@ -125,6 +129,10 @@
       <trans-unit id="%@ servers" xml:space="preserve">
         <source>%@ servers</source>
         <target>%@ serwery</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve">
+        <source>%@ uploaded</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
@@ -342,6 +350,10 @@
         <target>**Najbardziej prywatny**: nie korzystaj z serwera powiadomień SimpleX Chat, sprawdzaj wiadomości okresowo w tle (zależy jak często korzystasz z aplikacji).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
+        <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
         <target>**Uwaga**: NIE będziesz w stanie odzyskać lub zmienić hasła, jeśli je stracisz.</target>
@@ -355,6 +367,10 @@
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
         <target>**Uwaga**: Natychmiastowe powiadomienia push wymagają hasła zapisanego w Keychain.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve">
+        <source>**Warning**: the archive will be removed.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
@@ -668,6 +684,10 @@
         <target>Wszystkie Twoje kontakty pozostaną połączone. Aktualizacja profilu zostanie wysłana do Twoich kontaktów.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+        <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
         <source>Allow</source>
         <target>Pozwól</target>
@@ -826,6 +846,18 @@
       <trans-unit id="Appearance" xml:space="preserve">
         <source>Appearance</source>
         <target>Wygląd</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Apply" xml:space="preserve">
+        <source>Apply</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Archive and upload" xml:space="preserve">
+        <source>Archive and upload</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Archiving database" xml:space="preserve">
+        <source>Archiving database</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -1018,6 +1050,10 @@
         <target>Anuluj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Cancel migration" xml:space="preserve">
+        <source>Cancel migration</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
         <source>Cannot access keychain to save database password</source>
         <target>Nie można uzyskać dostępu do pęku kluczy, aby zapisać hasło do bazy danych</target>
@@ -1119,6 +1155,10 @@
         <target>Czat został zatrzymany. Jeśli korzystałeś już z tej bazy danych na innym urządzeniu, powinieneś przenieść ją z powrotem przed rozpoczęciem czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat migrated!" xml:space="preserve">
+        <source>Chat migrated!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
         <source>Chat preferences</source>
         <target>Preferencje czatu</target>
@@ -1137,6 +1177,10 @@
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
         <target>Chiński i hiszpański interfejs</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve">
+        <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -1209,6 +1253,10 @@
         <target>Potwierdź aktualizacje bazy danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Confirm network settings" xml:space="preserve">
+        <source>Confirm network settings</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
         <source>Confirm new passphrase…</source>
         <target>Potwierdź nowe hasło…</target>
@@ -1217,6 +1265,14 @@
       <trans-unit id="Confirm password" xml:space="preserve">
         <source>Confirm password</source>
         <target>Potwierdź hasło</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
+        <source>Confirm that you remember database passphrase to migrate it.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm upload" xml:space="preserve">
+        <source>Confirm upload</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1478,6 +1534,10 @@ To jest twój jednorazowy link!</target>
         <target>Utworzony w dniu %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Creating archive link" xml:space="preserve">
+        <source>Creating archive link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Creating link…" xml:space="preserve">
         <source>Creating link…</source>
         <target>Tworzenie linku…</target>
@@ -1696,6 +1756,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="Delete database" xml:space="preserve">
         <source>Delete database</source>
         <target>Usuń bazę danych</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete database from this device" xml:space="preserve">
+        <source>Delete database from this device</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete file" xml:space="preserve">
@@ -1988,10 +2052,22 @@ To nie może być cofnięte!</target>
         <target>Obniż wersję i otwórz czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Download failed" xml:space="preserve">
+        <source>Download failed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Download file" xml:space="preserve">
         <source>Download file</source>
         <target>Pobierz plik</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Downloading archive" xml:space="preserve">
+        <source>Downloading archive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Downloading link details" xml:space="preserve">
+        <source>Downloading link details</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
         <source>Duplicate display name!</source>
@@ -2163,6 +2239,10 @@ To nie może być cofnięte!</target>
         <target>Wpisz nazwę grupy…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enter passphrase" xml:space="preserve">
+        <source>Enter passphrase</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter passphrase…" xml:space="preserve">
         <source>Enter passphrase…</source>
         <target>Wprowadź hasło…</target>
@@ -2221,6 +2301,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Błąd dodawania członka(ów)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve">
+        <source>Error allowing contact PQ encryption</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -2313,6 +2397,10 @@ To nie może być cofnięte!</target>
         <target>Błąd usuwania profilu użytkownika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error downloading the archive" xml:space="preserve">
+        <source>Error downloading the archive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
         <source>Error enabling delivery receipts!</source>
         <target>Błąd włączania potwierdzeń dostawy!</target>
@@ -2388,6 +2476,10 @@ To nie może być cofnięte!</target>
         <target>Błąd zapisu hasła do pęku kluczy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving settings" xml:space="preserve">
+        <source>Error saving settings</source>
+        <note>when migrating</note>
+      </trans-unit>
       <trans-unit id="Error saving user password" xml:space="preserve">
         <source>Error saving user password</source>
         <target>Błąd zapisu hasła użytkownika</target>
@@ -2458,6 +2550,14 @@ To nie może być cofnięte!</target>
         <target>Błąd aktualizacji prywatności użytkownika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error uploading the archive" xml:space="preserve">
+        <source>Error uploading the archive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error verifying passphrase:" xml:space="preserve">
+        <source>Error verifying passphrase:</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error: " xml:space="preserve">
         <source>Error: </source>
         <target>Błąd: </target>
@@ -2506,6 +2606,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="Exported database archive." xml:space="preserve">
         <source>Exported database archive.</source>
         <target>Wyeksportowane archiwum bazy danych.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Exported file doesn't exist" xml:space="preserve">
+        <source>Exported file doesn't exist</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exporting database archive…" xml:space="preserve">
@@ -2576,6 +2680,14 @@ To nie może być cofnięte!</target>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
         <source>Filter unread and favorite chats.</source>
         <target>Filtruj nieprzeczytane i ulubione czaty.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Finalize migration" xml:space="preserve">
+        <source>Finalize migration</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Finalize migration on another device." xml:space="preserve">
+        <source>Finalize migration on another device.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2933,6 +3045,14 @@ To nie może być cofnięte!</target>
         <target>Importuj bazę danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Import failed" xml:space="preserve">
+        <source>Import failed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Importing archive" xml:space="preserve">
+        <source>Importing archive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
         <source>Improved message delivery</source>
         <target>Ulepszona dostawa wiadomości</target>
@@ -2946,6 +3066,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="Improved server configuration" xml:space="preserve">
         <source>Improved server configuration</source>
         <target>Ulepszona konfiguracja serwera</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In order to continue, chat should be stopped." xml:space="preserve">
+        <source>In order to continue, chat should be stopped.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="In reply to" xml:space="preserve">
@@ -3058,6 +3182,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="Invalid link" xml:space="preserve">
         <source>Invalid link</source>
         <target>Nieprawidłowy link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invalid migration confirmation" xml:space="preserve">
+        <source>Invalid migration confirmation</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid name!" xml:space="preserve">
@@ -3428,6 +3556,10 @@ To jest twój link do grupy %@!</target>
         <target>Tekst wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message too large" xml:space="preserve">
+        <source>Message too large</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Messages" xml:space="preserve">
         <source>Messages</source>
         <target>Wiadomości</target>
@@ -3443,9 +3575,41 @@ To jest twój link do grupy %@!</target>
         <target>Wiadomości od %@ zostaną pokazane!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+        <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+        <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrate device" xml:space="preserve">
+        <source>Migrate device</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrate from another device" xml:space="preserve">
+        <source>Migrate from another device</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrate here" xml:space="preserve">
+        <source>Migrate here</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrate to another device" xml:space="preserve">
+        <source>Migrate to another device</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrating" xml:space="preserve">
+        <source>Migrating</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">
         <source>Migrating database archive…</source>
         <target>Migrowanie archiwum bazy danych…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migration complete" xml:space="preserve">
+        <source>Migration complete</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">
@@ -3807,6 +3971,10 @@ To jest twój link do grupy %@!</target>
         <target>Grupa otwarta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Open migration to another device" xml:space="preserve">
+        <source>Open migration to another device</source>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
         <source>Open user profiles</source>
         <target>Otwórz profile użytkownika</target>
@@ -3822,9 +3990,17 @@ To jest twój link do grupy %@!</target>
         <target>Otwieranie aplikacji…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Or paste archive link" xml:space="preserve">
+        <source>Or paste archive link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Or scan QR code" xml:space="preserve">
         <source>Or scan QR code</source>
         <target>Lub zeskanuj kod QR</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Or securely share this file link" xml:space="preserve">
+        <source>Or securely share this file link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or show this code" xml:space="preserve">
@@ -3932,6 +4108,10 @@ To jest twój link do grupy %@!</target>
         <target>Proszę sprawdzić preferencje Twoje i Twojego kontaktu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please confirm that network settings are correct for this device." xml:space="preserve">
+        <source>Please confirm that network settings are correct for this device.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
         <source>Please contact developers.
 Error: %@</source>
@@ -3988,6 +4168,10 @@ Błąd: %@</target>
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
         <target>Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy</target>
         <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Post-quantum E2EE" xml:space="preserve">
+        <source>Post-quantum E2EE</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
@@ -4122,6 +4306,10 @@ Błąd: %@</target>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Powiadomienia push</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Push server" xml:space="preserve">
+        <source>Push server</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4309,9 +4497,21 @@ Błąd: %@</target>
         <target>Powtórzyć prośbę połączenia?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Repeat download" xml:space="preserve">
+        <source>Repeat download</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Repeat import" xml:space="preserve">
+        <source>Repeat import</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Repeat join request?" xml:space="preserve">
         <source>Repeat join request?</source>
         <target>Powtórzyć prośbę dołączenia?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Repeat upload" xml:space="preserve">
+        <source>Repeat upload</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -4779,6 +4979,10 @@ Błąd: %@</target>
         <target>Ustaw pin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set passphrase" xml:space="preserve">
+        <source>Set passphrase</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
         <source>Set passphrase to export</source>
         <target>Ustaw hasło do eksportu</target>
@@ -4832,6 +5036,10 @@ Błąd: %@</target>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
         <target>Udostępnij kontaktom</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show QR code" xml:space="preserve">
+        <source>Show QR code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show calls in phone history" xml:space="preserve">
@@ -4974,6 +5182,10 @@ Błąd: %@</target>
         <target>Zatrzymaj SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Stop chat" xml:space="preserve">
+        <source>Stop chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
         <source>Stop chat to enable database actions</source>
         <target>Zatrzymaj czat, aby umożliwić działania na bazie danych</target>
@@ -5012,6 +5224,10 @@ Błąd: %@</target>
       <trans-unit id="Stop sharing address?" xml:space="preserve">
         <source>Stop sharing address?</source>
         <target>Przestać udostępniać adres?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Stopping chat" xml:space="preserve">
+        <source>Stopping chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -5260,6 +5476,14 @@ Może się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skom
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
         <target>Tego działania nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
+        <source>This chat is protected by end-to-end encryption.</source>
+        <note>E2EE info chat item</note>
+      </trans-unit>
+      <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve">
+        <source>This chat is protected by quantum resistant end-to-end encryption.</source>
+        <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
         <source>This device name</source>
@@ -5555,10 +5779,18 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
         <target>Zaktualizuj i otwórz czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Upload failed" xml:space="preserve">
+        <source>Upload failed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Upload file" xml:space="preserve">
         <source>Upload file</source>
         <target>Prześlij plik</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Uploading archive" xml:space="preserve">
+        <source>Uploading archive</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
         <source>Use .onion hosts</source>
@@ -5643,6 +5875,14 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Verify connections" xml:space="preserve">
         <source>Verify connections</source>
         <target>Zweryfikuj połączenia</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify database passphrase" xml:space="preserve">
+        <source>Verify database passphrase</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify passphrase" xml:space="preserve">
+        <source>Verify passphrase</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify security code" xml:space="preserve">
@@ -5735,6 +5975,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
         <target>Oczekiwanie na film</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve">
+        <source>Warning: starting chat on multiple devices is not supported and will cause message delivery failures</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
         <source>Warning: you may lose some data!</source>
         <target>Uwaga: możesz stracić niektóre dane!</target>
@@ -5753,6 +5997,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Welcome message" xml:space="preserve">
         <source>Welcome message</source>
         <target>Wiadomość powitalna</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Welcome message is too long" xml:space="preserve">
+        <source>Welcome message is too long</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -5808,6 +6056,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="You" xml:space="preserve">
         <source>You</source>
         <target>Ty</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
+        <source>You **must not** use the same database on two devices.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You accepted connection" xml:space="preserve">
@@ -5895,6 +6147,10 @@ Powtórzyć prośbę dołączenia?</target>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
         <source>You can enable them later via app Privacy &amp; Security settings.</source>
         <target>Możesz je włączyć później w ustawieniach Prywatności i Bezpieczeństwa aplikacji.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can give another try." xml:space="preserve">
+        <source>You can give another try.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
@@ -6291,7 +6547,7 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
       <trans-unit id="blocked" xml:space="preserve">
         <source>blocked</source>
         <target>zablokowany</target>
-        <note>No comment provided by engineer.</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="blocked %@" xml:space="preserve">
         <source>blocked %@</source>
@@ -6301,7 +6557,7 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>zablokowany przez admina</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
@@ -6731,7 +6987,7 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
       <trans-unit id="moderated by %@" xml:space="preserve">
         <source>moderated by %@</source>
         <target>moderowany przez %@</target>
-        <note>No comment provided by engineer.</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="months" xml:space="preserve">
         <source>months</source>
@@ -6799,6 +7055,10 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
         <source>peer-to-peer</source>
         <target>peer-to-peer</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
+        <source>quantum resistant e2e encryption</source>
+        <note>chat item text</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
         <source>received answer…</source>
@@ -6874,6 +7134,10 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
         <source>set new profile picture</source>
         <target>ustaw nowe zdjęcie profilu</target>
         <note>profile update event chat item</note>
+      </trans-unit>
+      <trans-unit id="standard end-to-end encryption" xml:space="preserve">
+        <source>standard end-to-end encryption</source>
+        <note>chat item text</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
