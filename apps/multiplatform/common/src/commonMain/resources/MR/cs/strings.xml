@@ -1436,14 +1436,14 @@
     <string name="v5_4_block_group_members">Blokovat členy skupin</string>
     <string name="connect_plan_repeat_connection_request">Opakovat žádost o připojení?</string>
     <string name="encryption_renegotiation_error">Chyba opětovného vyjednávání šifrování</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Již se připojujete k <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Již se připojujete k <b>%1$s</b>.]]></string>
     <string name="v5_4_incognito_groups_descr">Vytvořit skupinu pomocí náhodného profilu.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Již se připojujete ke skupině prostřednictvím tohoto odkazu.</string>
     <string name="refresh_qr_code">Obnovit</string>
     <string name="new_mobile_device">Nový telefon</string>
     <string name="only_one_device_can_work_at_the_same_time">Pouze jedno zařízení může pracovat současně</string>
     <string name="you_can_make_address_visible_via_settings">Můžete ji svým SimpleX kontaktům zviditelnit v Nastavení.</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Již se připojujete ke skupině <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Již se připojujete ke skupině <b>%1$s</b>.]]></string>
     <string name="v5_4_link_mobile_desktop">Propojit mobilní a stolní aplikace! 🔗</string>
     <string name="connect_plan_this_is_your_own_one_time_link">To je váš vlastní jednorázový odkaz!</string>
     <string name="marked_deleted_items_description">%d zpráv označeno jako smazaná</string>
@@ -1475,7 +1475,7 @@
     <string name="linked_mobiles">Připojené telefony</string>
     <string name="connected_to_desktop">Připojeno k PC</string>
     <string name="contact_tap_to_connect">Klepněte na Připojit se</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Již jste ve skupině <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Již jste ve skupině <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">To je vaše vlastní SimpleX adresa!</string>
     <string name="loading_remote_file_title">Načítám soubor</string>
     <string name="connecting_to_desktop">Připojuji k PC</string>
@@ -1510,7 +1510,7 @@
     <string name="disconnect_remote_hosts">Odpojit mobilní telefony</string>
     <string name="block_member_question">Blokovat člena?</string>
     <string name="rcv_group_events_count">%d skupinových událostí</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">To je váš odkaz pro skupinu <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[To je váš odkaz pro skupinu <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">Ověřit kód s PC</string>
     <string name="scan_qr_code_from_desktop">Skenovat QR kód z PC</string>
     <string name="unblock_member_confirmation">Odblokovat</string>
@@ -1557,7 +1557,6 @@
     <string name="recent_history_is_not_sent_to_new_members">Historie není odeslána novým členům.</string>
     <string name="recent_history_is_sent_to_new_members">Až 100 poslední zprávy je odesláno novým členům.</string>
     <string name="chat_is_stopped_you_should_transfer_database">Chat je zastaven. Pokud jste již použili tuto databázi na jiném zařízení, měli byste ji před zahájením chatu převést zpět.</string>
-    <string name="possible_deadlock_desc">Provedení kódu trvá příliš dlouho: %1$d vteřin. Aplikace pravděpodobně zamrzla: %2$s</string>
     <string name="possible_slow_function_desc">Provedení funkce trvá příliš dlouho: %1$d vteřin: %2$s</string>
     <string name="v5_5_join_group_conversation">Připojit se ke skupině</string>
     <string name="blocked_by_admin_item_description">blokováno adminem</string>
@@ -1575,7 +1574,7 @@
     <string name="error_blocking_member_for_all">Chyba blokování člena všem</string>
     <string name="v5_5_message_delivery">Vylepšené doručovaní zpráv</string>
     <string name="v5_5_new_interface_languages">Maďarské a Turecké uživatelské rozhraní</string>
-    <string name="remote_host_error_bad_state">Připojení k mobilu <b>%s</b> je ve špatném stavu</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Připojení k mobilu <b>%s</b> je ve špatném stavu]]></string>
     <string name="remote_ctrl_error_inactive">PC je neaktivní</string>
     <string name="remote_ctrl_error_bad_state">Připojení k PC je ve špatném stavu</string>
     <string name="remote_ctrl_error_busy">PC je zaneprázdněno</string>
@@ -1591,7 +1590,7 @@
     <string name="member_blocked_by_admin">Blokováno adminem</string>
     <string name="share_text_created_at">Vytvořeno v: %s</string>
     <string name="message_too_large">Zpráva příliš velká</string>
-    <string name="remote_host_disconnected_from">Odpojeno z mobilu <b>%s</b> z důvodu: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Odpojeno z mobilu <b>%s</b> z důvodu: %s]]></string>
     <string name="remote_host_was_disconnected_title">Spojení zastaveno</string>
     <string name="remote_ctrl_was_disconnected_title">Spojení zastaveno</string>
     <string name="remote_ctrl_disconnected_with_reason">Odpojeno z důvodu: %s</string>
@@ -1603,9 +1602,9 @@
     <string name="v5_5_simpler_connect_ui">Vložte odkaz na připojení!</string>
     <string name="v5_5_join_group_conversation_descr">Nejnovější historie a vylepšený directory bot.</string>
     <string name="v5_5_private_notes">Soukromé poznámky</string>
-    <string name="remote_host_error_inactive">Mobilní <b>%s</b> je neaktivní</string>
-    <string name="remote_host_error_busy">Mobilní <b>%s</b> je zaneprázdněn</string>
-    <string name="remote_host_error_bad_version">Mobile <b>%s</b> má nepodporovanou verzi. Ujistěte se, že používáte stejnou verzi na obou zařízeních</string>
+    <string name="remote_host_error_inactive"><![CDATA[Mobilní <b>%s</b> je neaktivní]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Mobilní <b>%s</b> je zaneprázdněn]]></string>
+    <string name="remote_host_error_bad_version"><![CDATA[Mobile <b>%s</b> má nepodporovanou verzi. Ujistěte se, že používáte stejnou verzi na obou zařízeních]]></string>
     <string name="agent_internal_error_desc">Nahlaste to prosím vývojářům:
 \n%s</string>
     <string name="show_internal_errors">Zobrazit interní chyby</string>
@@ -1614,7 +1613,7 @@
 \n
 \nDoporučuje se restartovat aplikaci.</string>
     <string name="restart_chat_button">Restartovat chat</string>
-    <string name="remote_host_error_disconnected">Mobilní <b>%s</b> byl odpojen</string>
+    <string name="remote_host_error_disconnected"><![CDATA[Mobilní <b>%s</b> byl odpojen]]></string>
     <string name="unable_to_open_browser_title">Chyba otevření prohlížeče</string>
     <string name="profile_update_event_removed_picture">odstraněn profilový obrázek</string>
     <string name="profile_update_event_set_new_address">nastavit novou kontaktní adresu</string>
@@ -1624,7 +1623,7 @@
     <string name="note_folder_local_display_name">Soukromé poznámky</string>
     <string name="call_service_notification_audio_call">Volání</string>
     <string name="call_service_notification_end_call">Konec volání</string>
-    <string name="remote_host_error_missing">Mobilní <b>%s</b> chybí</string>
+    <string name="remote_host_error_missing"><![CDATA[Mobilní <b>%s</b> chybí]]></string>
     <string name="snd_group_event_member_blocked">zablokovali jste %s</string>
     <string name="snd_group_event_member_unblocked">odblokovaly jste %s</string>
     <string name="group_member_status_unknown_short">neznámý</string>
@@ -1633,7 +1632,7 @@
     <string name="unblock_for_all_question">Odblokovat člena všem?</string>
     <string name="unblock_for_all">Odblokovat pro všechny</string>
     <string name="welcome_message_is_too_long">Uvítací zpráva je příliš dlouhá</string>
-    <string name="remote_host_error_timeout">Vypršel čas při připojování k mobilnímu <b>%s</b></string>
+    <string name="remote_host_error_timeout"><![CDATA[Vypršel čas při připojování k mobilnímu <b>%s</b>]]></string>
     <string name="call_service_notification_video_call">Videohovor</string>
     <string name="profile_update_event_updated_profile">profil aktualizován</string>
     <string name="unable_to_open_browser_desc">Výchozí webový prohlížeč je vyžadován pro volání. Nakonfigurujte výchozí prohlížeč v systému a sdílejte s vývojáři více informací.</string>
@@ -1641,5 +1640,4 @@
     <string name="v5_5_private_notes_descr">S šifrovanými soubory a médii.</string>
     <string name="remote_ctrl_error_timeout">Vypršel čas při připojování k desktopu</string>
     <string name="failed_to_create_user_invalid_desc">Zobrazené jméno není platné. Prosím vyberte jiné.</string>
-    <string name="possible_deadlock_title">Deadlock</string>
 </resources>

@@ -1558,8 +1558,8 @@
     <string name="v5_5_message_delivery_descr">Azaltılmış pil kullanımı ile birlikte.</string>
     <string name="v5_5_message_delivery">İyileştirilmiş mesaj iletimi</string>
     <string name="v5_5_new_interface_languages">Macarca ve Türkçe arayüz</string>
-    <string name="remote_host_error_timeout">Telefona bağlanırken zaman aşımına uğranıldı <b>%s</b></string>
-    <string name="remote_host_error_disconnected">Telefon <b>%s</b> bağlantısı kesildi</string>
+    <string name="remote_host_error_timeout"><![CDATA[Telefona bağlanırken zaman aşımına uğranıldı <b>%s</b>]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[Telefon <b>%s</b> bağlantısı kesildi]]></string>
     <string name="remote_ctrl_error_disconnected">Masaüstünün bağlantısı kesilmiş</string>
     <string name="blocked_by_admin_item_description">yönetici tarafından engellendi</string>
     <string name="blocked_by_admin_items_description">%d mesaj yönetici tarafından engellendi</string>
@@ -1583,8 +1583,8 @@
     <string name="unblock_for_all">Herkes için engelini kaldır</string>
     <string name="saved_message_title">Kaydedilmiş mesaj</string>
     <string name="remote_host_was_disconnected_title">Bağlantı durduruldu</string>
-    <string name="remote_host_error_bad_state">Telefona bağlantı <b>%s</b> kötü durumda</string>
-    <string name="remote_host_disconnected_from">Telefon bağlantısı <b>%s</b> şu nedenle kesildi: %s</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Telefona bağlantı <b>%s</b> kötü durumda]]></string>
+    <string name="remote_host_disconnected_from"><![CDATA[Telefon bağlantısı <b>%s</b> şu nedenle kesildi: %s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">Nedeniyle birlikte bağlantı kesildi: %s</string>
     <string name="v5_5_private_notes_descr">Şifrelenmiş dosyalar ve medya ile birlikte.</string>
     <string name="v5_5_join_group_conversation">Grup sohbetlerine katıl</string>
@@ -1595,10 +1595,10 @@
     <string name="member_info_member_blocked">engellendi</string>
     <string name="block_for_all_question">Üye herkes için engellensin mi?</string>
     <string name="unblock_for_all_question">Üyenin engeli herkes için kaldırılsın mı?</string>
-    <string name="remote_host_error_bad_version">Mobil <b>%s</b> desteklenmeyen bir sürüme sahip. Lütfen her iki cihazda da aynı sürümü kullandığınızdan emin olun</string>
-    <string name="remote_host_error_busy">Telefon <b>%s</b> meşgul</string>
-    <string name="remote_host_error_inactive">Telefon <b>%s</b> aktif değil</string>
-    <string name="remote_host_error_missing">Telefon <b>%s</b> kayıp</string>
+    <string name="remote_host_error_bad_version"><![CDATA[Mobil <b>%s</b> desteklenmeyen bir sürüme sahip. Lütfen her iki cihazda da aynı sürümü kullandığınızdan emin olun]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Telefon <b>%s</b> meşgul]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Telefon <b>%s</b> aktif değil]]></string>
+    <string name="remote_host_error_missing"><![CDATA[Telefon <b>%s</b> kayıp]]></string>
     <string name="remote_ctrl_error_inactive">Masaüstü aktif değil</string>
     <string name="remote_ctrl_error_bad_state">Masaüstüne bağlantı kötü durumda</string>
     <string name="remote_ctrl_error_busy">Masaüstü meşgul</string>
@@ -1619,8 +1619,6 @@
 \nLütfen başka bir ad seç.</string>
     <string name="failed_to_create_user_invalid_title">Geçersiz görünen ad!</string>
     <string name="remote_ctrl_was_disconnected_title">Bağlantı durduruldu</string>
-    <string name="possible_deadlock_title">Kördüğüm</string>
-    <string name="possible_deadlock_desc">Kodun yürütülmesi çok uzun zaman alıyor: %1$d saniye. Muhtemelen uygulama dondu: %2$s</string>
     <string name="possible_slow_function_desc">İşlevin yürütülmesi çok uzun zaman alıyor: %1$d saniye: %2$s</string>
     <string name="possible_slow_function_title">Yavaş fonksiyon</string>
     <string name="profile_update_event_contact_name_changed">kişi %1$s olarak değişti %2$s</string>

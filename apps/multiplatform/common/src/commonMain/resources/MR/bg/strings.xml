@@ -1590,7 +1590,6 @@
 \nПрепоръчително е да рестартирате приложението.</string>
     <string name="developer_options_section">Опции за разработчици</string>
     <string name="show_slow_api_calls">Показване на бавни API заявки</string>
-    <string name="possible_deadlock_title">Грешка в заключено положение</string>
     <string name="v5_5_private_notes_descr">С криптирани файлове и медия.</string>
     <string name="v5_5_simpler_connect_ui">Поставете линк, за да се свържете!</string>
     <string name="v5_5_private_notes">Лични бележки</string>

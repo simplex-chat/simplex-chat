@@ -41,7 +41,7 @@
     <string name="answer_call">Atender chamada</string>
     <string name="integrity_msg_bad_hash">hash de mensagem incorreta</string>
     <string name="integrity_msg_bad_id">ID de mensagem incorreta</string>
-    <string name="impossible_to_recover_passphrase"><b>Atenção</b>: você NÃO poderá recuperar ou alterar a senha se a perder.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Atenção</b>: você NÃO poderá recuperar ou alterar a senha se a perder.]]></string>
     <string name="cannot_receive_file">Não é possível receber o arquivo</string>
     <string name="icon_descr_cancel_image_preview">Cancelar visualização da imagem</string>
     <string name="icon_descr_close_button">Botão de fechar</string>
@@ -72,8 +72,8 @@
     <string name="cancel_verb">Cancelar</string>
     <string name="chat_console">Console de bate-papo</string>
     <string name="smp_servers_check_address">Verifique o endereço do servidor e tente novamente.</string>
-    <string name="network_session_mode_user_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de bate-papo que você tiver no aplicativo</b>.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (SEM o serviço em segundo plano).</string>
+    <string name="network_session_mode_user_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de bate-papo que você tiver no aplicativo</b>.]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (SEM o serviço em segundo plano).]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações são exibidas assim que as mensagens estiverem disponíveis.]]></string>
     <string name="settings_section_title_chats">BATE-PAPOS</string>
     <string name="settings_section_title_icon">ÍCONE DO APLICATIVO</string>
@@ -245,7 +245,7 @@
     <string name="v4_5_transport_isolation_descr">Por perfil de bate-papo (padrão) ou por conexão (BETA).</string>
     <string name="accept_contact_incognito_button">Aceitar anônimo</string>
     <string name="delete_messages_after">Excluir mensagens após</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: Escaneie o QR code exibido no aplicativo, via <b>Escanear QR code</b></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: Escaneie o QR code exibido no aplicativo, via <b>Escanear QR code</b>]]></string>
     <string name="delete_pending_connection__question">Excluir conexão pendente\?</string>
     <string name="simplex_link_mode_description">Descrição</string>
     <string name="smp_servers_delete_server">Excluir servidor</string>
@@ -388,15 +388,15 @@
     <string name="notification_display_mode_hidden_desc">Ocultar contato e mensagem</string>
     <string name="how_to_use_simplex_chat">Como usar</string>
     <string name="how_to_use_markdown">Como usar markdown</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Se você não puder se encontrar pessoalmente, <b>mostre o QR code na video chamada</b> ou compartilhe o link.</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Se você não puder encontrar pessoalmente, você pode <b>escanear o QR code na video chamada</b> ou seu contato pode compartilhar um link de convite.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Se você não puder se encontrar pessoalmente, <b>mostre o QR code na video chamada</b> ou compartilhe o link.]]></string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Se você não puder encontrar pessoalmente, você pode <b>escanear o QR code na video chamada</b> ou seu contato pode compartilhar um link de convite.]]></string>
     <string name="network_disable_socks_info">Se você confirmar, os servidores de mensagens poderão ver seu endereço IP e seu provedor - e quais servidores você está se conectando.</string>
     <string name="image_descr">Imagem</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu o link de convite SimpleX Chat, você pode abri-lo em seu navegador:</string>
     <string name="image_saved">Imagem salva na Galeria</string>
     <string name="description_via_group_link_incognito">anônimo via link do grupo</string>
     <string name="incoming_video_call">Chamada de vídeo recebida</string>
-    <string name="turn_off_battery_optimization">Para usá-lo, por favor <b>permite que o SimpleX funcione em segundo plano</b> na próxima caixa de diálogo. Caso contrário, as notificações serão desabilitadas.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Para usá-lo, por favor <b>permite que o SimpleX funcione em segundo plano</b> na próxima caixa de diálogo. Caso contrário, as notificações serão desabilitadas.]]></string>
     <string name="share_one_time_link">Gerar um link de convite de uso único</string>
     <string name="file_not_found">Arquivo não encontrado</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se você optar por rejeitar o remetente NÃO será notificado.</string>
@@ -560,7 +560,7 @@
     <string name="sender_may_have_deleted_the_connection_request">O remetente pode ter excluído a solicitação de conexão.</string>
     <string name="periodic_notifications_disabled">Notificações periódicas estão desativadas!</string>
     <string name="service_notifications_disabled">As notificações instantâneas estão desativadas!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar sua privacidade, em vez de notificações push, o aplicativo tem um<b>serviço em segundo plano SimpleX</b> - ele usa uma porcentagem da bateria por dia.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Para preservar sua privacidade, em vez de notificações push, o aplicativo tem um<b>serviço em segundo plano SimpleX</b> - ele usa uma porcentagem da bateria por dia.]]></string>
     <string name="notifications_mode_off">Executa quando o aplicativo está aberto</string>
     <string name="icon_descr_sent_msg_status_sent">enviado</string>
     <string name="icon_descr_sent_msg_status_send_failed">o envio falhou</string>
@@ -650,7 +650,7 @@
 \nAtenção: você não será capaz de se conectar aos servidores sem um endereço .onion</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Os hosts Onion serão necessários para a conexão.</string>
     <string name="core_version">Versão principal: v%s</string>
-    <string name="read_more_in_github_with_link">Leia mais no nosso &lt;font color=#0088ff&gt;repositório do GitHub&lt;/font&gt;.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Leia mais no nosso <font color="#0088ff">repositório do GitHub</font>.]]></string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser mudado mais tarde via configurações.</string>
     <string name="contact_wants_to_connect_via_call">%1$s quer se conectar com você via</string>
     <string name="status_no_e2e_encryption">sem criptografia ponta-a-ponta</string>
@@ -948,7 +948,7 @@
     <string name="user_unhide">Mostrar</string>
     <string name="user_unmute">Desmutar</string>
     <string name="v4_3_voice_messages">Mensagens de voz</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Você pode &lt;font color=#0088ff&gt;se conectar aos desenvolvedores do SimpleX Chat para fazer qualquer pergunta e receber atualizações&lt;/font&gt;.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Você pode <font color="#0088ff">se conectar aos desenvolvedores do SimpleX Chat para fazer qualquer pergunta e receber atualizações</font>.]]></string>
     <string name="connection_you_accepted_will_be_cancelled">A conexão que você aceitou será cancelada!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">O contato com o qual você compartilhou este link NÃO será capaz de se conectar!</string>
     <string name="icon_descr_simplex_team">Equipe SimpleX</string>
@@ -1021,7 +1021,7 @@
     <string name="settings_section_title_support">APOIE SIMPLEX CHAT</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens enviadas com <b>criptografia de ponta a ponta em duas camadas</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens enviadas com <b>criptografia de ponta a ponta em duas camadas</b>.]]></string>
     <string name="thank_you_for_installing_simplex">Obrigado por instalar o SimpleX Chat!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
     <string name="invite_prohibited_description">Você está tentando convidar um contato com quem compartilhou um perfil anônimo para o grupo no qual está usando seu perfil principal</string>
@@ -1345,7 +1345,7 @@
     <string name="privacy_message_draft">Rascunho de mensagem</string>
     <string name="send_receipts_disabled">desativado</string>
     <string name="system_restricted_background_desc">SimpleX não pode ser executado em segundo plano. Você receberá as notificações somente quando o aplicativo estiver em execução.</string>
-    <string name="system_restricted_background_warn">Para ativar notificações, selecione <b>Uso de bateria do aplicativo</b> / <b>Irrestrito</b> nas configurações do aplicativo.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Para ativar notificações, selecione <b>Uso de bateria do aplicativo</b> / <b>Irrestrito</b> nas configurações do aplicativo.]]></string>
     <string name="v5_3_new_interface_languages">6 novos idiomas de interface</string>
     <string name="v5_5_private_notes">Notas privadas</string>
     <string name="v5_5_private_notes_descr">Com arquivos criptografados e mídia</string>
@@ -1358,7 +1358,7 @@
     <string name="rcv_group_event_member_created_contact">diretamente conectado</string>
     <string name="connect_plan_this_is_your_own_simplex_address">Este é o seu próprio endereço SimpleX!</string>
     <string name="desktop_connection_terminated">Conexão terminada</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Este link é seu link para o grupo <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Este link é seu link para o grupo <b>%1$s</b>!]]></string>
     <string name="remote_ctrl_was_disconnected_title">Conexão interrompida</string>
     <string name="remote_ctrl_error_busy">Desktop está ocupado</string>
     <string name="blocked_by_admin_items_description">%d mensagens bloqueadas pelo admnistrador</string>
@@ -1366,7 +1366,7 @@
     <string name="note_folder_local_display_name">Notas privadas</string>
     <string name="system_restricted_background_in_call_desc">O aplicativo pode ser fechado após 1 minuto em segundo plano.</string>
     <string name="search_or_paste_simplex_link">Procurar e colar link SimpleX</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Adicionar contato</b>: para criar um novo link de convite, ou conectar pelo link que você recebeu.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Adicionar contato</b>: para criar um novo link de convite, ou conectar pelo link que você recebeu.]]></string>
     <string name="share_this_1_time_link">Compartilhe este link de convite único</string>
     <string name="alert_text_encryption_renegotiation_failed">Renegociação de criptografia falhou.</string>
     <string name="rcv_group_and_other_events">e %d outros eventos</string>
@@ -1379,13 +1379,13 @@
     <string name="waiting_for_desktop">Aguardando o desktop…</string>
     <string name="connected_desktop">Desktop conectado</string>
     <string name="linked_desktops">Desktops vínculados</string>
-    <string name="remote_host_error_missing">Dispositivo Móvel <b>%s</b> está faltando</string>
+    <string name="remote_host_error_missing"><![CDATA[Dispositivo Móvel <b>%s</b> está faltando]]></string>
     <string name="open_port_in_firewall_title">Abrir porta na firewall</string>
     <string name="open_port_in_firewall_desc">Para permitir que um aplicativo móvel se conecte ao desktop, abra esta porta em seu firewall, se estiver ativado</string>
-    <string name="remote_host_error_timeout">Tempo limite atingido durante a conexão com o móvel <b>%s</b></string>
-    <string name="remote_host_error_busy">Dispositivo Móvel <b>%s</b> está ocupado</string>
-    <string name="remote_host_error_inactive">Dispositivo Móvel <b>%s</b> está inativo</string>
-    <string name="remote_host_error_bad_state">A conexão com o dispositivo móvel <b>%s</b> está em mau estado</string>
+    <string name="remote_host_error_timeout"><![CDATA[Tempo limite atingido durante a conexão com o móvel <b>%s</b>]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Dispositivo Móvel <b>%s</b> está ocupado]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Dispositivo Móvel <b>%s</b> está inativo]]></string>
+    <string name="remote_host_error_bad_state"><![CDATA[A conexão com o dispositivo móvel <b>%s</b> está em mau estado]]></string>
     <string name="remote_ctrl_error_bad_state">A conexão com o desktop está em mau estado</string>
     <string name="remote_ctrl_error_disconnected">Desktop foi desconectado</string>
     <string name="remote_ctrl_error_bad_invitation">Desktop tem um código de convite errado</string>
@@ -1397,7 +1397,7 @@
     <string name="you_can_enable_delivery_receipts_later">Você pode habilitar mais tarde nas configurações</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Você pode habilitá-los mais tarde pelo aplicativo nas configurações de Privacidade &amp; Segurança</string>
     <string name="verify_code_with_desktop">Verificar código com o desktop</string>
-    <string name="new_desktop"><i>(novo)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(novo)</i>]]></string>
     <string name="connect_plan_repeat_join_request">Repetir o pedido para se juntar?</string>
     <string name="in_developing_desc">Este recurso ainda não é compatível. Experimente o próximo lançamento.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Você já pediu para se conectar por este endereço!</string>
@@ -1431,7 +1431,7 @@
     <string name="welcome_message_is_too_long">Mensagem de boas vindas é muito grande</string>
     <string name="v5_3_simpler_incognito_mode_descr">Alterne para navegação anônima ao conectar.</string>
     <string name="linked_mobiles">Dispositivos móveis vínculados</string>
-    <string name="remote_host_disconnected_from">Desconectado do dispositivo móvel &lt;b&gt;%s&lt;b&gt; pelo motivo: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Desconectado do dispositivo móvel <b>%s</b> pelo motivo: %s]]></string>
     <string name="bad_desktop_address">Endereço de desktop incorreto</string>
     <string name="waiting_for_mobile_to_connect">Aguardando o dispositivo móvel conectar:</string>
     <string name="verify_connections">Verificar conexões</string>
@@ -1440,14 +1440,14 @@
     <string name="connect_use_new_incognito_profile">Usar novo perfil anônimo</string>
     <string name="error_creating_message">Erro ao criar mensagem</string>
     <string name="connect_plan_group_already_exists">Grupo já existe!</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Você já está no grupo <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Você já está no grupo <b>%1$s</b>.]]></string>
     <string name="show_internal_errors">Mostrar erros internos</string>
     <string name="receipts_groups_override_enabled">O envio de recibos está habilitado para %d grupos</string>
     <string name="start_chat_question">Iniciar bate-papo?</string>
     <string name="recent_history_is_not_sent_to_new_members">Histórico não é enviado para novos membros.</string>
     <string name="v5_3_discover_join_groups">Descobrir e se juntar a grupos</string>
     <string name="refresh_qr_code">Recarregar</string>
-    <string name="remote_host_error_bad_version">Dispositivo Móvel <b>%s</b> tem uma versão não suportada. Por favor, certifique-se de usar a mesma versão em ambos os dispositivos</string>
+    <string name="remote_host_error_bad_version"><![CDATA[Dispositivo Móvel <b>%s</b> tem uma versão não suportada. Por favor, certifique-se de usar a mesma versão em ambos os dispositivos]]></string>
     <string name="failed_to_create_user_invalid_title">Nome de exibição inválido!</string>
     <string name="failed_to_create_user_invalid_desc">Este nome de exibição é inválido. Por favor escolha outro nome.</string>
     <string name="blocked_item_description">bloqueado</string>
@@ -1466,7 +1466,7 @@
     <string name="moderated_items_description">%1$d mensagens moderadas por %2$s</string>
     <string name="blocked_items_description">%d mensagens bloqueadas</string>
     <string name="error_deleting_note_folder">Erro ao deletar notas privadas</string>
-    <string name="system_restricted_background_in_call_warn">Para fazer ligações no plano de fundo, escolha <b>Uso de bateria do aplicativo</b> / <b>Irrestrito</b> nas configurações do aplicativo.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Para fazer ligações no plano de fundo, escolha <b>Uso de bateria do aplicativo</b> / <b>Irrestrito</b> nas configurações do aplicativo.]]></string>
     <string name="send_receipts_disabled_alert_msg">Este grupo tem mais de %1$d membros, recibos de entrega não são enviados.</string>
     <string name="loading_remote_file_title">Carregando o arquivo</string>
     <string name="rcv_direct_event_contact_deleted">contato deletado</string>
@@ -1499,13 +1499,13 @@
     <string name="connected_to_mobile">Conectado ao dispositivo móvel</string>
     <string name="disconnect_remote_hosts">Desconectar dispositivos móveis</string>
     <string name="v5_5_new_interface_languages">UI húngara e turca</string>
-    <string name="this_device_version"><i>(este dispositivo v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(este dispositivo v%s)</i>]]></string>
     <string name="scan_from_mobile">Escanear pelo dispositivo móvel</string>
     <string name="remote_ctrl_disconnected_with_reason">Desconectado pelo motivo: %s</string>
     <string name="connecting_to_desktop">Conectando ao desktop</string>
     <string name="connect_to_desktop">Conectar ao desktop</string>
     <string name="desktop_incompatible_version">Versão incompatível</string>
-    <string name="open_on_mobile_and_scan_qr_code">Abra <i>Use no desktop</i> no aplicativo móvel e escaneie o QR code.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Abra <i>Use no desktop</i> no aplicativo móvel e escaneie o QR code.]]></string>
     <string name="paste_desktop_address">Colar o endereço de desktop</string>
     <string name="no_connected_mobile">Nenhum celular conectado</string>
     <string name="connect_plan_join_your_group">Se juntar ao seu grupo?</string>
@@ -1534,7 +1534,7 @@
     <string name="block_member_desc">Todas as novas mensagens de %s serão ocultadas!</string>
     <string name="member_blocked_by_admin">Bloqueado pelo admnistrador</string>
     <string name="rcv_group_event_member_blocked">bloqueado %s</string>
-    <string name="create_group_button_to_create_new_group"><b>Criar grupo</b>: para criar um novo grupo.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Criar grupo</b>: para criar um novo grupo.]]></string>
     <string name="block_member_confirmation">Bloquear</string>
     <string name="member_info_member_blocked">bloqueado</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">O código que você escaneou não é um QR code SimpleX.</string>
@@ -1546,9 +1546,9 @@
     <string name="recent_history_is_sent_to_new_members">Até as 100 últimas mensagens são enviadas para novos membros.</string>
     <string name="snd_group_event_member_blocked">você bloqueou %s</string>
     <string name="connect__your_profile_will_be_shared">Seu perfil %1$s será compartilhado.</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Você já está se conectando ao grupo <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Você já está se conectando ao grupo <b>%1$s</b>.]]></string>
     <string name="block_member_question">Bloquear membro?</string>
-    <string name="socks_proxy_setting_limitations"><b>Atenção</b>: retransmissões de mensagens e arquivos são conectadas via proxy SOCKS. As chamadas e o envio de visualizações de links usam conexão direta.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Atenção</b>: retransmissões de mensagens e arquivos são conectadas via proxy SOCKS. As chamadas e o envio de visualizações de links usam conexão direta.]]></string>
     <string name="camera_not_available">Câmera não disponível</string>
     <string name="connected_mobile">Dispositivo móvel conectado</string>
     <string name="chat_is_stopped_you_should_transfer_database">O bate-papo foi interrompido. Se você já usou esse banco de dados em outro dispositivo, deverá transferi-lo de volta antes de iniciar o bate-papo.</string>
@@ -1569,8 +1569,8 @@
     <string name="unable_to_open_browser_title">Erro ao abrir o navegador</string>
     <string name="error_sending_message_contact_invitation">Erro ao enviar o convite</string>
     <string name="loading_chats">Carregando bate-papos…</string>
-    <string name="remote_host_was_disconnected_toast">Dispositivo Móvel <b>%s</b> foi desconectado</string>
-    <string name="remote_host_error_disconnected">Dispositivo Móvel <b>%s</b> foi desconectado</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Dispositivo Móvel <b>%s</b> foi desconectado]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[Dispositivo Móvel <b>%s</b> foi desconectado]]></string>
     <string name="only_one_device_can_work_at_the_same_time">Apenas um dispositivo pode funcionar ao mesmo tempo</string>
     <string name="rcv_group_event_open_chat">Abrir</string>
     <string name="past_member_vName">Ex-membro %1$s</string>
@@ -1613,16 +1613,14 @@
     <string name="verify_connection">Verificar conexão</string>
     <string name="linked_desktop_options">Opções de desktop vinculada</string>
     <string name="scan_qr_code_from_desktop">Escanear QR code pelo desktop</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Você já está se conectando à <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Você já está se conectando à <b>%1$s</b>.]]></string>
     <string name="group_member_role_author">autor</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="multicast_connect_automatically">Conectar automaticamente</string>
     <string name="desktop_devices">Dispositivos desktop</string>
     <string name="multicast_discoverable_via_local_network">Descobrível via rede local</string>
     <string name="possible_slow_function_desc">A execução da função está demorando muito: %1$d segundos: %2$s</string>
-    <string name="possible_deadlock_desc">A execução do código está demorando muito: %1$d segundos. Provavelmente o aplicativo está travado: %2$s</string>
     <string name="possible_slow_function_title">Função lenta</string>
-    <string name="possible_deadlock_title">Impasse</string>
     <string name="member_contact_send_direct_message">enviar mensagem direta</string>
     <string name="retry_verb">Tentar novamente</string>
     <string name="open_database_folder">Abrir a pasta do banco de dados</string>

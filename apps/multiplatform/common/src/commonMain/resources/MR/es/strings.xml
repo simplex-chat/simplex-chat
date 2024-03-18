@@ -476,7 +476,7 @@
     <string name="settings_notifications_mode_title">Servicio</string>
     <string name="delete_message_mark_deleted_warning">El mensaje se marcará para eliminar. El destinatario o destinatarios podrán revelar este mensaje.</string>
     <string name="live_message">¡Mensaje en vivo!</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 móvil: pulsa <b>Abrir en aplicación móvil</b>, después pulsa <b>Conectar</b> en la aplicación.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 móvil: pulsa <b>Abrir en aplicación móvil</b>, después pulsa <b>Conectar</b> en la aplicación.]]></string>
     <string name="mark_read">Marcar como leído</string>
     <string name="mark_unread">Marcar como no leído</string>
     <string name="invalid_QR_code">Código QR no válido</string>
@@ -1577,14 +1577,14 @@
     <string name="member_blocked_by_admin">Bloqueado por el administrador</string>
     <string name="error_blocking_member_for_all">Error al bloqear el miembro para todos</string>
     <string name="v5_5_private_notes_descr">Con cifrado de archivos y multimedia.</string>
-    <string name="remote_host_error_timeout">Tiempo de espera para conectar con el móvil <b>%s</b> agotado</string>
+    <string name="remote_host_error_timeout"><![CDATA[Tiempo de espera para conectar con el móvil <b>%s</b> agotado]]></string>
     <string name="chat_is_stopped_you_should_transfer_database">Chat detenido. Si has usado esta base de datos en otro dispositivo, deberías transferirla de vuelta antes de iniciar el chat.</string>
     <string name="failed_to_create_user_invalid_desc">Éste nombre mostrado no es válido. Por favor, elije otro nombre.</string>
     <string name="remote_host_was_disconnected_title">Conexión detenida</string>
     <string name="remote_ctrl_was_disconnected_title">Conexión detenida</string>
-    <string name="remote_host_disconnected_from">Desconectado del móvil <b>%s</b> debido a: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Desconectado del móvil <b>%s</b> debido a: %s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">Desconectado debido a: %s</string>
-    <string name="remote_host_error_bad_state">La conexión con el móvil <b>%s</b> es deficiente</string>
+    <string name="remote_host_error_bad_state"><![CDATA[La conexión con el móvil <b>%s</b> es deficiente]]></string>
     <string name="remote_ctrl_error_bad_state">La conexión al ordenador es deficiente</string>
     <string name="remote_ctrl_error_inactive">El ordenador está inactivo</string>
     <string name="remote_ctrl_error_busy">El ordenador está ocupado</string>
@@ -1595,7 +1595,6 @@
     <string name="remote_ctrl_error_timeout">Tiempo de espera para conectar con el ordenador agotado</string>
     <string name="remote_ctrl_error_bad_invitation">El ordenador tiene un código de invitación incorrecto</string>
     <string name="remote_ctrl_error_disconnected">El ordenador ha sido desconectado</string>
-    <string name="possible_deadlock_title">Bloqueo</string>
     <string name="group_member_status_unknown">estado desconocido</string>
     <string name="database_migration_in_progress">Migración de la base de datos en progreso.
 \nPuede tardar varios minutos.</string>
@@ -1604,7 +1603,7 @@
     <string name="profile_update_event_updated_profile">perfil actualizado</string>
     <string name="v5_5_private_notes">Notas privadas</string>
     <string name="v5_5_message_delivery">Entrega de mensajes mejorada</string>
-    <string name="remote_host_error_bad_version">El móvil <b>%s</b> tiene una versión sin soporte. Por favor, asegúrate de usar la misma versión en ambos dispositivos</string>
+    <string name="remote_host_error_bad_version"><![CDATA[El móvil <b>%s</b> tiene una versión sin soporte. Por favor, asegúrate de usar la misma versión en ambos dispositivos]]></string>
     <string name="note_folder_local_display_name">Notas privadas</string>
     <string name="possible_slow_function_desc">La ejecución de la función está tardando mucho: %1$d segundos: %2$s</string>
     <string name="possible_slow_function_title">Función lenta</string>
@@ -1615,9 +1614,9 @@
     <string name="v5_5_join_group_conversation">Unirse a la conversación del grupo</string>
     <string name="v5_5_join_group_conversation_descr">Historial reciente y bot del directorio mejorado.</string>
     <string name="v5_5_new_interface_languages">Interfaz en Turco y en Húngaro</string>
-    <string name="remote_host_error_inactive">El móvil <b>%s</b> está inactivo</string>
-    <string name="remote_host_error_missing">El móvil <b>%s</b> no se encuentra</string>
-    <string name="remote_host_error_busy">El móvil <b>%s</b> está ocupado</string>
+    <string name="remote_host_error_inactive"><![CDATA[El móvil <b>%s</b> está inactivo]]></string>
+    <string name="remote_host_error_missing"><![CDATA[El móvil <b>%s</b> no se encuentra]]></string>
+    <string name="remote_host_error_busy"><![CDATA[El móvil <b>%s</b> está ocupado]]></string>
     <string name="agent_internal_error_title">Error interno</string>
     <string name="show_internal_errors">Mostrar errores internos</string>
     <string name="failed_to_create_user_invalid_title">¡Nombre mostrado no válido!</string>
@@ -1626,12 +1625,11 @@
 \n
 \nSe recomienda reiniciar la aplicación.</string>
     <string name="message_too_large">Mensaje demasiado largo</string>
-    <string name="remote_host_error_disconnected">El móvil <b>%s</b> se ha desconectado</string>
+    <string name="remote_host_error_disconnected"><![CDATA[El móvil <b>%s</b> se ha desconectado]]></string>
     <string name="agent_internal_error_desc">Por favor, informa a los desarrolladores:
 \n%s</string>
     <string name="restart_chat_button">Reiniciar chat</string>
     <string name="past_member_vName">Miembro pasado %1$s</string>
-    <string name="possible_deadlock_desc">La ejecución del código está tardando mucho: %1$d segundos. Probablemente la aplicación está congelada: %2$s</string>
     <string name="profile_update_event_member_name_changed">el miembro %1$s ha cambiado a %2$s</string>
     <string name="profile_update_event_removed_address">dirección de contacto eliminada</string>
     <string name="profile_update_event_removed_picture">imagen de perfil eliminada</string>

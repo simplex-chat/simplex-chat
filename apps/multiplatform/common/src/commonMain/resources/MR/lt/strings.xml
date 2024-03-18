@@ -521,7 +521,7 @@
     <string name="v5_0_large_files_support">Vaizdo įrašai ir failai iki 1GB</string>
     <string name="search_verb">Ieškoti</string>
     <string name="la_mode_off">Išjungta</string>
-    <string name="network_session_mode_user_description"><b>Kiekvienam programėlėje esančiam pokalbių profiliui</b> bus naudojamas atskiras TCP ryšys (ir SOCKS prisijungimo duomenys).</string>
+    <string name="network_session_mode_user_description"><![CDATA[<b>Kiekvienam programėlėje esančiam pokalbių profiliui</b> bus naudojamas atskiras TCP ryšys (ir SOCKS prisijungimo duomenys).]]></string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Nepavyko iššifruoti %1$d žinučių.</string>
     <string name="button_add_welcome_message">Pridėti sveikinimo žinutę</string>
     <string name="v5_2_more_things">Dar keletas dalykų</string>
@@ -529,7 +529,7 @@
     <string name="authentication_cancelled">Tapatybės patvirtinimo atsisakyta</string>
     <string name="always_use_relay">Visada naudoti retransliavimą</string>
     <string name="send_disappearing_message_5_minutes">5 minutės</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Mažiausios akumuliatoriaus sąnaudos</b>. Jūs gausite pranešimus tik tada, kai programėlė bus atverta (BE foninės tarnybos).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Mažiausios akumuliatoriaus sąnaudos</b>. Jūs gausite pranešimus tik tada, kai programėlė bus atverta (BE foninės tarnybos).]]></string>
     <string name="abort_switch_receiving_address">Nutraukti adreso keitimą</string>
     <string name="v4_2_auto_accept_contact_requests">Automatiškai priimti adresatų užklausas</string>
     <string name="v5_1_self_destruct_passcode_descr">Jį įrašius visi duomenys bus pašalinti.</string>
@@ -722,7 +722,7 @@
     <string name="prohibit_calls">Uždrausti garso/vaizdo skambučius.</string>
     <string name="only_you_can_send_disappearing">Tik jūs galite siųsti išnykstančias žinutes.</string>
     <string name="only_your_contact_can_send_disappearing">Tik jūsų adresatas gali siųsti išnykstančias žinutes.</string>
-    <string name="this_device_version"><i>(šis įrenginys v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(šis įrenginys v%s)</i>]]></string>
     <string name="only_one_device_can_work_at_the_same_time">Vienu metu gali veikti tik vienas įrenginys</string>
     <string name="not_compatible">Nesuderinama!</string>
     <string name="rcv_group_event_open_chat">Atverti</string>
