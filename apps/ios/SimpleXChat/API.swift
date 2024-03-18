@@ -213,13 +213,21 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    let user: UserRef? = (try? decodeObject(jError["user_"] as Any)) ?? nil
-                    return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    if let user_ = jError["user_"] {
+                        let user: UserRef? = try? decodeObject(user_ as Any)
+                        return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    } else {
+                        return .chatCmdError(user_: nil, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    }
                 }
             } else if type == "chatError" {
                 if let jError = jResp["chatError"] as? NSDictionary {
-                    let user: UserRef? = (try? decodeObject(jError["user_"] as Any)) ?? nil
-                    return .chatError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    if let user_ = jError["user_"] {
+                        let user: UserRef? = try? decodeObject(user_ as Any)
+                        return .chatError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    } else {
+                        return .chatError(user_: nil, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    }
                 }
             }
         }
