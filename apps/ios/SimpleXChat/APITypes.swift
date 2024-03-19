@@ -1887,6 +1887,8 @@ public enum RCErrorType: Decodable {
     case `internal`(internalErr: String)
     case identity
     case noLocalAddress
+    case newController
+    case notDiscovered
     case tlsStartFailed
     case exception(exception: String)
     case ctrlAuth
