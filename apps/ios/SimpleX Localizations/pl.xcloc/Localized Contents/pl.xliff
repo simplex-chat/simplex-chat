@@ -629,6 +629,10 @@
         <target>Zmiana adresu zostanie przerwana. Użyty zostanie stary adres odbiorczy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
+        <source>Admins can block a member for all.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Administratorzy mogą tworzyć linki do dołączania do grup.</target>
@@ -811,6 +815,10 @@
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>Kompilacja aplikacji: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve">
+        <source>App data migration</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -2124,6 +2132,10 @@ To nie może być cofnięte!</target>
         <target>Włącz dla wszystkich</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+        <source>Enable in direct chats (BETA)!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>Włączyć natychmiastowe powiadomienia?</target>
@@ -2980,6 +2992,10 @@ To nie może być cofnięte!</target>
         <target>Jak korzystać z Twoich serwerów</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hungarian interface" xml:space="preserve">
+        <source>Hungarian interface</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
         <target>Serwery ICE (po jednym na linię)</target>
@@ -3599,6 +3615,10 @@ To jest twój link do grupy %@!</target>
         <source>Migrate to another device</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+        <source>Migrate to another device via QR code.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
         <source>Migrating</source>
         <note>No comment provided by engineer.</note>
@@ -4088,6 +4108,10 @@ To jest twój link do grupy %@!</target>
         <target>Stały błąd odszyfrowania</target>
         <note>message decrypt error item</note>
       </trans-unit>
+      <trans-unit id="Picture-in-picture calls" xml:space="preserve">
+        <source>Picture-in-picture calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
         <target>Poproś Twój kontakt o włączenie wysyłania wiadomości głosowych.</target>
@@ -4310,6 +4334,10 @@ Błąd: %@</target>
       </trans-unit>
       <trans-unit id="Push server" xml:space="preserve">
         <source>Push server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Quantum resistant encryption" xml:space="preserve">
+        <source>Quantum resistant encryption</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4612,6 +4640,10 @@ Błąd: %@</target>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>Serwery SMP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Safer groups" xml:space="preserve">
+        <source>Safer groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -5840,6 +5872,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
         <target>Użyj serwera</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use the app while in the call." xml:space="preserve">
+        <source>Use the app while in the call.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">

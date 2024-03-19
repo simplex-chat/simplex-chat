@@ -288,6 +288,9 @@
 		5C35CFC727B2782E00FB6C6D /* BGManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGManager.swift; sourceTree = "<group>"; };
 		5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NtfManager.swift; sourceTree = "<group>"; };
 		5C36027227F47AD5009F19D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		5C371E4E2BA9AAA200100AD3 /* hu */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hu; path = hu.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C371E4F2BA9AB6400100AD3 /* hu */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hu; path = "hu.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C371E502BA9AB6400100AD3 /* hu */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hu; path = hu.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetermineWidth.swift; sourceTree = "<group>"; };
 		5C3A88D027DF57800060F1C2 /* FramedItemView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FramedItemView.swift; sourceTree = "<group>"; };
 		5C3CCFCB2AE6BD3100C3F0C3 /* ConnectDesktopView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConnectDesktopView.swift; sourceTree = "<group>"; };
@@ -1060,6 +1063,7 @@
 				uk,
 				bg,
 				tr,
+				hu,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1351,6 +1355,7 @@
 				5C636F672AAB3D2400751C84 /* uk */,
 				5C5B67932ABAF56000DA9412 /* bg */,
 				5C245F3E2B501F13001CC39F /* tr */,
+				5C371E502BA9AB6400100AD3 /* hu */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1374,6 +1379,7 @@
 				5CE6C7B42AAB1527007F345C /* uk */,
 				5C5B67912ABAF4B500DA9412 /* bg */,
 				5C245F3C2B501E98001CC39F /* tr */,
+				5C371E4E2BA9AAA200100AD3 /* hu */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1396,6 +1402,7 @@
 				5C636F662AAB3D2400751C84 /* uk */,
 				5C5B67922ABAF56000DA9412 /* bg */,
 				5C245F3D2B501F13001CC39F /* tr */,
+				5C371E4F2BA9AB6400100AD3 /* hu */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";

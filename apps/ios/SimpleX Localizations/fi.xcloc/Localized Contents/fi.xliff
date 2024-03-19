@@ -609,6 +609,10 @@
         <target>Osoitteenmuutos keskeytetään. Käytetään vanhaa vastaanotto-osoitetta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
+        <source>Admins can block a member for all.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Ylläpitäjät voivat luoda linkkejä ryhmiin liittymiseen.</target>
@@ -787,6 +791,10 @@
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>Sovellusversio: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve">
+        <source>App data migration</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -2055,6 +2063,10 @@ This cannot be undone!</source>
         <target>Salli kaikille</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+        <source>Enable in direct chats (BETA)!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>Salli välittömät ilmoitukset?</target>
@@ -2892,6 +2904,10 @@ This cannot be undone!</source>
         <target>Miten käytät palvelimiasi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hungarian interface" xml:space="preserve">
+        <source>Hungarian interface</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
         <target>ICE-palvelimet (yksi per rivi)</target>
@@ -3491,6 +3507,10 @@ This is your link for group %@!</source>
         <source>Migrate to another device</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+        <source>Migrate to another device via QR code.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
         <source>Migrating</source>
         <note>No comment provided by engineer.</note>
@@ -3967,6 +3987,10 @@ This is your link for group %@!</source>
         <target>Pysyvä salauksen purkuvirhe</target>
         <note>message decrypt error item</note>
       </trans-unit>
+      <trans-unit id="Picture-in-picture calls" xml:space="preserve">
+        <source>Picture-in-picture calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
         <target>Pyydä kontaktiasi sallimaan ääniviestien lähettäminen.</target>
@@ -4184,6 +4208,10 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Push server" xml:space="preserve">
         <source>Push server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Quantum resistant encryption" xml:space="preserve">
+        <source>Quantum resistant encryption</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4481,6 +4509,10 @@ Error: %@</source>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>SMP-palvelimet</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Safer groups" xml:space="preserve">
+        <source>Safer groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -5677,6 +5709,10 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
         <target>Käytä palvelinta</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use the app while in the call." xml:space="preserve">
+        <source>Use the app while in the call.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
