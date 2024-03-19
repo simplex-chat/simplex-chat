@@ -107,6 +107,9 @@
 "%@ %@" = "%@ %@";
 
 /* No comment provided by engineer. */
+"%@ and %@" = "%@ と %@";
+
+/* No comment provided by engineer. */
 "%@ and %@ connected" = "%@ と %@ は接続中";
 
 /* copied message info, <sender> at <time> */
@@ -2061,7 +2064,7 @@
 /* copied message info */
 "Moderated at: %@" = "モデレーターによって介入済み: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "%@ によってモデレートされた";
 
 /* time unit */

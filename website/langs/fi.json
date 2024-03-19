@@ -27,7 +27,7 @@
     "hero-overlay-1-title": "Kuinka SimpleX toimii?",
     "hero-overlay-2-title": "Miksi käyttäjätunnukset ovat huonoja yksityisyydelle?",
     "feature-1-title": "Päästä päähän salattuja viestejä markdownin ja muokkaamisen kera",
-    "feature-2-title": "Päästä päähän salattuja<br>kuvia ja tiedostoja",
+    "feature-2-title": "Päästä päähän salattuja<br>kuvia, videoita ja tiedostoja",
     "feature-3-title": "Hajautetut salaiset ryhmät &mdash;<br>vain käyttäjät tietävät niiden olemassaolosta",
     "feature-4-title": "Päästä päähän salattuja ääniviestejä",
     "feature-5-title": "Katoavia viestejä",
@@ -243,5 +243,7 @@
     "menu": "Valikko",
     "simplex-chat-via-f-droid": "SimpleX Chat F-Droidin kautta",
     "stable-and-beta-versions-built-by-developers": "Kehittäjien luomat vakaat ja beta-versiot",
-    "f-droid-page-simplex-chat-repo-section-text": "Lisätäksesi sen F-Droid-asiakkaaseesi, <span class='hide-on-mobile'>skannaa QR-koodi tai</span> käytä tätä URL-osoitetta:"
+    "f-droid-page-simplex-chat-repo-section-text": "Lisätäksesi sen F-Droid-asiakkaaseesi, <span class='hide-on-mobile'>skannaa QR-koodi tai</span> käytä tätä URL-osoitetta:",
+    "jobs": "Liity tiimiin",
+    "docs-dropdown-9": "Lataukset"
 }

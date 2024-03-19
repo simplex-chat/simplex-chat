@@ -1630,4 +1630,13 @@
     <string name="remote_host_error_timeout"><![CDATA[Osiągnięto limit czasu podczas łączenia z telefonem <b>%s</b>]]></string>
     <string name="remote_ctrl_error_inactive">Komputer jest nieaktywny</string>
     <string name="remote_host_error_disconnected"><![CDATA[Telefon <b>%s</b> został rozłączony]]></string>
+    <string name="welcome_message_is_too_long">Wiadomość powitalna jest zbyt długa</string>
+    <string name="database_migration_in_progress">Proces migracji bazy danych jest w toku.
+\nMoże to potrwać kilka minut.</string>
+    <string name="message_too_large">Wiadomość jest zbyt duża</string>
+    <string name="call_service_notification_audio_call">Połączenie audio</string>
+    <string name="call_service_notification_end_call">Zakończ połączenie</string>
+    <string name="call_service_notification_video_call">Połączenie wideo</string>
+    <string name="unable_to_open_browser_title">Błąd podczas otwierania przeglądarki</string>
+    <string name="unable_to_open_browser_desc">Do połączeń wymagana jest domyślna przeglądarka. Proszę skonfigurować domyślną przeglądarkę systemową, i podzielić się informacją z twórcami.</string>
 </resources>
