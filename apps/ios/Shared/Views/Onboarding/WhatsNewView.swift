@@ -369,6 +369,11 @@ private let versionDescriptions: [VersionDescription] = [
                 title: "Safer groups",
                 description: "Admins can block a member for all."
             ),
+            FeatureDescription(
+                icon: "character",
+                title: "Hungarian interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+            ),
         ]
     )
 ]
