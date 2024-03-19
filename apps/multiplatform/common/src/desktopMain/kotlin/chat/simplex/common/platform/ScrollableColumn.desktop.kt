@@ -120,7 +120,8 @@ fun DesktopScrollBar(adapter: androidx.compose.foundation.v2.ScrollbarAdapter, m
     style = LocalScrollbarStyle.current.copy(
       thickness = if (isHovered || isDragged) 10.dp else 6.dp,
       shape = RoundedCornerShape(if (isHovered || isDragged) 5.dp else 3.dp),
-      unhoverColor = if (MaterialTheme.colors.isLight) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.7f) else MaterialTheme.colors.onBackground.mixWith(MaterialTheme.colors.background, 0.3f)
+      unhoverColor = if (MaterialTheme.colors.isLight) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.7f) else MaterialTheme.colors.onBackground.mixWith(MaterialTheme.colors.background, 0.3f),
+      hoverColor = if (MaterialTheme.colors.isLight) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.6f) else MaterialTheme.colors.onBackground.mixWith(MaterialTheme.colors.background, 0.4f)
     ),
     adapter = adapter,
     interactionSource = interactionSource
