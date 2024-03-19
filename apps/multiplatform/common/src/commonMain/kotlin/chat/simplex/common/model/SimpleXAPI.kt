@@ -5281,28 +5281,39 @@ sealed class RemoteCtrlError {
     is BadState -> "badState"
     is Busy -> "busy"
     is Timeout -> "timeout"
+    is NoKnownControllers -> "noKnownControllers"
+    is BadController -> "badController"
     is Disconnected -> "disconnected"
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
+    is HTTP2Error -> "http2Error"
+    is ProtocolError -> "protocolError"
   }
   val localizedString: String get() = when (this) {
     is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
     is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
     is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
     is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is NoKnownControllers -> "no known controllers"
+    is BadController -> "bad controller"
     is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
     is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
     is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+    is HTTP2Error -> "HTTP2 error"
+    is ProtocolError -> "protocol error"
   }
 
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
+  @Serializable @SerialName("noKnownControllers") object NoKnownControllers: RemoteCtrlError()
+  @Serializable @SerialName("badController") object BadController: RemoteCtrlError()
   @Serializable @SerialName("disconnected") class Disconnected(val remoteCtrlId: Long, val reason: String): RemoteCtrlError()
   @Serializable @SerialName("badInvitation") object BadInvitation: RemoteCtrlError()
   @Serializable @SerialName("badVersion") data class BadVersion(val appVersion: String): RemoteCtrlError()
-  //@Serializable @SerialName("protocolError") data class ProtocolError(val protocolError: RemoteProtocolError): RemoteCtrlError()
+  @Serializable @SerialName("hTTP2Error") data class HTTP2Error(val http2Error: String): RemoteCtrlError()
+  @Serializable @SerialName("protocolError") object ProtocolError: RemoteCtrlError()
 }
 
 enum class NotificationsMode() {
