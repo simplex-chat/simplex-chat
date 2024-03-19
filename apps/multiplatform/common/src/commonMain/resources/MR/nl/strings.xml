@@ -1650,4 +1650,18 @@
     <string name="migrate_from_device_choose_migrate_from_another_device">Kies <i>Migreren vanaf een ander apparaat</i> op het nieuwe apparaat en scan de QR-code.</string>
     <string name="v5_6_safer_groups_descr">Beheerders kunnen een lid voor iedereen blokkeren.</string>
     <string name="v5_6_app_data_migration">Migratie van app-gegevens</string>
+    <string name="migrate_from_device_creating_archive_link">Archief link maken</string>
+    <string name="migrate_from_device_delete_database_from_device">Verwijder de database van dit apparaat</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Bevestig dat u het wachtwoord voor de database onthoudt om deze te migreren.</string>
+    <string name="v5_6_quantum_resistant_encryption_descr">Activeer in directe chats (BETA)!</string>
+    <string name="migrate_to_device_downloading_details">Link gegevens downloaden</string>
+    <string name="migrate_from_device_error_saving_settings">Fout bij opslaan van instellingen</string>
+    <string name="migrate_from_device_error_deleting_database">Fout bij verwijderen database</string>
+    <string name="migrate_from_device_confirm_upload">Bevestig het uploaden</string>
+    <string name="migrate_to_device_download_failed">Download mislukt</string>
+    <string name="migrate_to_device_downloading_archive">Archief downloaden</string>
+    <string name="migrate_to_device_enter_passphrase">Voer het wachtwoord in</string>
+    <string name="migrate_to_device_error_downloading_archive">Fout bij het downloaden van het archief</string>
+    <string name="migrate_from_device_error_exporting_archive">Fout bij het exporteren van de chat database</string>
+    <string name="migrate_from_device_error_uploading_archive">Fout bij het uploaden van het archief</string>
 </resources>
