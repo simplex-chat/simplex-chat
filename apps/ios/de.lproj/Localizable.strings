@@ -602,13 +602,13 @@
 /* No comment provided by engineer. */
 "Block member?" = "Mitglied blockieren?";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "blocked" = "Blockiert";
 
 /* rcv group event chat item */
 "blocked %@" = "%@ wurde blockiert";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "wurde vom Administrator blockiert";
 
 /* No comment provided by engineer. */
@@ -913,7 +913,7 @@
 "connection:%@" = "Verbindung:%@";
 
 /* profile update event chat item */
-"contact %@ changed to %@" = "Der Kontaktname %1$@ wurde auf %2$@ geändert";
+"contact %@ changed to %@" = "Der Kontaktname wurde von %1$@ auf %2$@ geändert";
 
 /* No comment provided by engineer. */
 "Contact allows" = "Der Kontakt erlaubt";
@@ -2293,7 +2293,7 @@
 "Member" = "Mitglied";
 
 /* profile update event chat item */
-"member %@ changed to %@" = "Der Mitgliedsname %1$@ wurde auf %2$@ geändert";
+"member %@ changed to %@" = "Der Mitgliedsname von %1$@ wurde auf %2$@ geändert";
 
 /* rcv group event chat item */
 "member connected" = "ist der Gruppe beigetreten";
@@ -2373,7 +2373,7 @@
 /* copied message info */
 "Moderated at: %@" = "Moderiert um: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "Von %@ moderiert";
 
 /* time unit */
@@ -2913,10 +2913,10 @@
 "removed %@" = "hat %@ aus der Gruppe entfernt";
 
 /* profile update event chat item */
-"removed contact address" = "Kontaktadresse wurde entfernt";
+"removed contact address" = "Die Kontaktadresse wurde entfernt";
 
 /* profile update event chat item */
-"removed profile picture" = "Profil-Bild wurde entfernt";
+"removed profile picture" = "Das Profil-Bild wurde entfernt";
 
 /* rcv group event chat item */
 "removed you" = "hat Sie aus der Gruppe entfernt";
@@ -3066,7 +3066,7 @@
 "Search" = "Suche";
 
 /* No comment provided by engineer. */
-"Search bar accepts invitation links." = "Von der Suchleiste werden Einladungslinks akzeptiert.";
+"Search bar accepts invitation links." = "In der Suchleiste werden nun auch Einladungslinks akzeptiert.";
 
 /* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Suchen oder fügen Sie den SimpleX-Link ein";
@@ -3225,10 +3225,10 @@
 "Set it instead of system authentication." = "Anstelle der System-Authentifizierung festlegen.";
 
 /* profile update event chat item */
-"set new contact address" = "Neue Kontaktadresse wurde festgelegt";
+"set new contact address" = "Es wurde eine neue Kontaktadresse festgelegt";
 
 /* profile update event chat item */
-"set new profile picture" = "Neues Profil-Bild wurde festgelegt";
+"set new profile picture" = "Es wurde ein neues Profil-Bild festgelegt";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Zugangscode einstellen";
