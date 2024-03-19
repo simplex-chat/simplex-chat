@@ -601,6 +601,10 @@
         <target>การเปลี่ยนแปลงที่อยู่จะถูกยกเลิก จะใช้ที่อยู่เก่าของผู้รับ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
+        <source>Admins can block a member for all.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>ผู้ดูแลระบบสามารถสร้างลิงก์เพื่อเข้าร่วมกลุ่มต่างๆได้</target>
@@ -779,6 +783,10 @@
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>รุ่นแอป: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve">
+        <source>App data migration</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -2042,6 +2050,10 @@ This cannot be undone!</source>
         <target>เปิดใช้งานสําหรับทุกคน</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+        <source>Enable in direct chats (BETA)!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>เปิดใช้งานการแจ้งเตือนทันที?</target>
@@ -2877,6 +2889,10 @@ This cannot be undone!</source>
         <target>วิธีใช้เซิร์ฟเวอร์ของคุณ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hungarian interface" xml:space="preserve">
+        <source>Hungarian interface</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
         <target>เซิร์ฟเวอร์ ICE (หนึ่งเครื่องต่อสาย)</target>
@@ -3474,6 +3490,10 @@ This is your link for group %@!</source>
         <source>Migrate to another device</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+        <source>Migrate to another device via QR code.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
         <source>Migrating</source>
         <note>No comment provided by engineer.</note>
@@ -3948,6 +3968,10 @@ This is your link for group %@!</source>
         <target>ข้อผิดพลาดในการถอดรหัสอย่างถาวร</target>
         <note>message decrypt error item</note>
       </trans-unit>
+      <trans-unit id="Picture-in-picture calls" xml:space="preserve">
+        <source>Picture-in-picture calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
         <target>โปรดขอให้ผู้ติดต่อของคุณเปิดใช้งานการส่งข้อความเสียง</target>
@@ -4165,6 +4189,10 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Push server" xml:space="preserve">
         <source>Push server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Quantum resistant encryption" xml:space="preserve">
+        <source>Quantum resistant encryption</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4460,6 +4488,10 @@ Error: %@</source>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>เซิร์ฟเวอร์ SMP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Safer groups" xml:space="preserve">
+        <source>Safer groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -5649,6 +5681,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
         <target>ใช้เซิร์ฟเวอร์</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use the app while in the call." xml:space="preserve">
+        <source>Use the app while in the call.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">

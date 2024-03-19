@@ -633,6 +633,11 @@
         <target>Address change will be aborted. Old receiving address will be used.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
+        <source>Admins can block a member for all.</source>
+        <target>Admins can block a member for all.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Admins can create the links to join groups.</target>
@@ -816,6 +821,11 @@
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>App build: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve">
+        <source>App data migration</source>
+        <target>App data migration</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -2143,6 +2153,11 @@ This cannot be undone!</target>
         <target>Enable for all</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+        <source>Enable in direct chats (BETA)!</source>
+        <target>Enable in direct chats (BETA)!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>Enable instant notifications?</target>
@@ -3008,6 +3023,11 @@ This cannot be undone!</target>
         <target>How to use your servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hungarian interface" xml:space="preserve">
+        <source>Hungarian interface</source>
+        <target>Hungarian interface</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
         <target>ICE servers (one per line)</target>
@@ -3638,6 +3658,11 @@ This is your link for group %@!</target>
         <target>Migrate to another device</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+        <source>Migrate to another device via QR code.</source>
+        <target>Migrate to another device via QR code.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
         <source>Migrating</source>
         <target>Migrating</target>
@@ -4132,6 +4157,11 @@ This is your link for group %@!</target>
         <target>Permanent decryption error</target>
         <note>message decrypt error item</note>
       </trans-unit>
+      <trans-unit id="Picture-in-picture calls" xml:space="preserve">
+        <source>Picture-in-picture calls</source>
+        <target>Picture-in-picture calls</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
         <target>Please ask your contact to enable sending voice messages.</target>
@@ -4357,6 +4387,11 @@ Error: %@</target>
       <trans-unit id="Push server" xml:space="preserve">
         <source>Push server</source>
         <target>Push server</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Quantum resistant encryption" xml:space="preserve">
+        <source>Quantum resistant encryption</source>
+        <target>Quantum resistant encryption</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4662,6 +4697,11 @@ Error: %@</target>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>SMP servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Safer groups" xml:space="preserve">
+        <source>Safer groups</source>
+        <target>Safer groups</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -5898,6 +5938,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
         <target>Use server</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use the app while in the call." xml:space="preserve">
+        <source>Use the app while in the call.</source>
+        <target>Use the app while in the call.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">

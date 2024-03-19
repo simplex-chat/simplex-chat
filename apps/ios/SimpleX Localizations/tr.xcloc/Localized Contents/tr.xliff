@@ -629,6 +629,10 @@
         <target>Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
+        <source>Admins can block a member for all.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Yöneticiler gruplara katılmak için bağlantılar oluşturabilir.</target>
@@ -811,6 +815,10 @@
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>Uygulama sürümü: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve">
+        <source>App data migration</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -2124,6 +2132,10 @@ Bu geri alınamaz!</target>
         <target>Herkes için etkinleştir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+        <source>Enable in direct chats (BETA)!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>Anlık bildirimler etkinleştirilsin mi?</target>
@@ -2980,6 +2992,10 @@ Bu geri alınamaz!</target>
         <target>Sunucularını nasıl kullanabilirsin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hungarian interface" xml:space="preserve">
+        <source>Hungarian interface</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
         <target>ICE sunucuları (her satıra bir tane)</target>
@@ -3599,6 +3615,10 @@ Bu senin grup için bağlantın %@!</target>
         <source>Migrate to another device</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+        <source>Migrate to another device via QR code.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
         <source>Migrating</source>
         <note>No comment provided by engineer.</note>
@@ -4088,6 +4108,10 @@ Bu senin grup için bağlantın %@!</target>
         <target>Kalıcı şifre çözümü hatası</target>
         <note>message decrypt error item</note>
       </trans-unit>
+      <trans-unit id="Picture-in-picture calls" xml:space="preserve">
+        <source>Picture-in-picture calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
         <target>Lütfen konuştuğunuz kişiden sesli mesaj göndermeyi etkinleştirmesini isteyin.</target>
@@ -4310,6 +4334,10 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Push server" xml:space="preserve">
         <source>Push server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Quantum resistant encryption" xml:space="preserve">
+        <source>Quantum resistant encryption</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4612,6 +4640,10 @@ Hata: %@</target>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>SMP sunucuları</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Safer groups" xml:space="preserve">
+        <source>Safer groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -5841,6 +5873,10 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
         <target>Sunucu kullan</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use the app while in the call." xml:space="preserve">
+        <source>Use the app while in the call.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
