@@ -5201,6 +5201,8 @@ sealed class RCErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is IDENTITY -> "IDENTITY"
     is NO_LOCAL_ADDRESS -> "NO_LOCAL_ADDRESS"
+    is NEW_CONTROLLER -> "NEW_CONTROLLER"
+    is NOT_DISCOVERED -> "NOT_DISCOVERED"
     is TLS_START_FAILED -> "TLS_START_FAILED"
     is EXCEPTION -> "EXCEPTION $EXCEPTION"
     is CTRL_AUTH -> "CTRL_AUTH"
@@ -5215,6 +5217,8 @@ sealed class RCErrorType {
   @Serializable @SerialName("internal") data class INTERNAL(val internalErr: String): RCErrorType()
   @Serializable @SerialName("identity") object IDENTITY: RCErrorType()
   @Serializable @SerialName("noLocalAddress") object NO_LOCAL_ADDRESS: RCErrorType()
+  @Serializable @SerialName("newController") object NEW_CONTROLLER: RCErrorType()
+  @Serializable @SerialName("notDiscovered") object NOT_DISCOVERED: RCErrorType()
   @Serializable @SerialName("tlsStartFailed") object TLS_START_FAILED: RCErrorType()
   @Serializable @SerialName("exception") data class EXCEPTION(val exception: String): RCErrorType()
   @Serializable @SerialName("ctrlAuth") object CTRL_AUTH: RCErrorType()
