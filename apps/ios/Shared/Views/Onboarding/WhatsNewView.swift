@@ -344,6 +344,37 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
+    ),
+    VersionDescription(
+        version: "v5.6",
+        post: URL(string: "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"),
+        features: [
+            FeatureDescription(
+                icon: "key",
+                title: "Quantum resistant encryption",
+                description: "Enable in direct chats (BETA)!"
+            ),
+            FeatureDescription(
+                icon: "tray.and.arrow.up",
+                title: "App data migration",
+                description: "Migrate to another device via QR code."
+            ),
+            FeatureDescription(
+                icon: "phone",
+                title: "Picture-in-picture calls",
+                description: "Use the app while in the call."
+            ),
+            FeatureDescription(
+                icon: "hand.raised",
+                title: "Safer groups",
+                description: "Admins can block a member for all."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Hungarian interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+            ),
+        ]
     )
 ]
 

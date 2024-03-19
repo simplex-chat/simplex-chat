@@ -602,13 +602,13 @@
 /* No comment provided by engineer. */
 "Block member?" = "Lid blokkeren?";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "blocked" = "geblokkeerd";
 
 /* rcv group event chat item */
 "blocked %@" = "geblokkeerd %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
@@ -1999,7 +1999,7 @@
 "Incognito mode protects your privacy by using a new random profile for each contact." = "Incognito -modus beschermt uw privacy met behulp van een nieuw willekeurig profiel voor elk contact.";
 
 /* chat list item description */
-"incognito via contact address link" = "incognito via contactadres link";
+"incognito via contact address link" = "incognito via contact adres link";
 
 /* chat list item description */
 "incognito via group link" = "incognito via groep link";
@@ -2206,7 +2206,7 @@
 "Leave group?" = "Groep verlaten?";
 
 /* rcv group event chat item */
-"left" = "verlaten";
+"left" = "is vertrokken";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Laten we praten in SimpleX Chat";
@@ -2373,7 +2373,7 @@
 /* copied message info */
 "Moderated at: %@" = "Gemodereerd op: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "gemodereerd door %@";
 
 /* time unit */
@@ -3069,7 +3069,7 @@
 "Search bar accepts invitation links." = "Zoekbalk accepteert uitnodigingslinks.";
 
 /* No comment provided by engineer. */
-"Search or paste SimpleX link" = "Zoek of plak een SimpleX link";
+"Search or paste SimpleX link" = "Zoeken of plak een SimpleX link";
 
 /* network option */
 "sec" = "sec";
@@ -3789,7 +3789,7 @@
 "Via browser" = "Via browser";
 
 /* chat list item description */
-"via contact address link" = "via contactadres link";
+"via contact address link" = "via contact adres link";
 
 /* chat list item description */
 "via group link" = "via groep link";

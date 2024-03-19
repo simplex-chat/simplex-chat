@@ -203,6 +203,9 @@
 "%lld messages blocked" = "%lld messages bloqués";
 
 /* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld messages bloqués par l'administrateur";
+
+/* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld messages marqués comme supprimés";
 
 /* No comment provided by engineer. */
@@ -381,10 +384,10 @@
 "Advanced network settings" = "Paramètres réseau avancés";
 
 /* chat item text */
-"agreeing encryption for %@…" = "accord sur le chiffrement pour %@…";
+"agreeing encryption for %@…" = "négociation du chiffrement avec %@…";
 
 /* chat item text */
-"agreeing encryption…" = "accord sur le chiffrement…";
+"agreeing encryption…" = "négociation du chiffrement…";
 
 /* No comment provided by engineer. */
 "All app data is deleted." = "Toutes les données de l'application sont supprimées.";
@@ -585,16 +588,31 @@
 "Block" = "Bloquer";
 
 /* No comment provided by engineer. */
+"Block for all" = "Bloqué pour tous";
+
+/* No comment provided by engineer. */
 "Block group members" = "Bloquer des membres d'un groupe";
 
 /* No comment provided by engineer. */
 "Block member" = "Bloquer ce membre";
 
 /* No comment provided by engineer. */
-"Block member?" = "Bloquer ce membre ?";
+"Block member for all?" = "Bloquer le membre pour tous ?";
 
 /* No comment provided by engineer. */
+"Block member?" = "Bloquer ce membre ?";
+
+/* marked deleted chat item preview text */
 "blocked" = "blocké";
+
+/* rcv group event chat item */
+"blocked %@" = "%@ bloqué";
+
+/* marked deleted chat item preview text */
+"blocked by admin" = "bloqué par l'administrateur";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Bloqué par l'administrateur";
 
 /* No comment provided by engineer. */
 "bold" = "gras";
@@ -688,7 +706,7 @@
 "Change self-destruct passcode" = "Modifier le code d'autodestruction";
 
 /* chat item text */
-"changed address for you" = "adresse modifiée pour vous";
+"changed address for you" = "changement de l'adresse du contact";
 
 /* rcv group event chat item */
 "changed role of %@ to %@" = "a modifié le rôle de %1$@ pour %2$@";
@@ -949,7 +967,7 @@
 "Create a group using a random profile." = "Création de groupes via un profil aléatoire.";
 
 /* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Créez une adresse pour permettre aux gens de vous contacter.";
+"Create an address to let people connect with you." = "Vous pouvez créer une adresse pour permettre aux autres utilisateurs de vous contacter.";
 
 /* server test step */
 "Create file" = "Créer un fichier";
@@ -1681,7 +1699,7 @@
 "Exit without saving" = "Quitter sans enregistrer";
 
 /* chat item action */
-"Expand" = "Développer";
+"Expand" = "Étendre";
 
 /* No comment provided by engineer. */
 "Export database" = "Exporter la base de données";
@@ -2355,7 +2373,7 @@
 /* copied message info */
 "Moderated at: %@" = "Modéré à : %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "modéré par %@";
 
 /* time unit */
@@ -3207,10 +3225,10 @@
 "Set it instead of system authentication." = "Il permet de remplacer l'authentification du système.";
 
 /* profile update event chat item */
-"set new contact address" = "définir une nouvelle adresse de contact";
+"set new contact address" = "a changé d'adresse de contact";
 
 /* profile update event chat item */
-"set new profile picture" = "définir une nouvelle image de profil";
+"set new profile picture" = "a changé d'image de profil";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Définir le code d'accès";
@@ -3258,7 +3276,7 @@
 "Show last messages" = "Voir les derniers messages";
 
 /* No comment provided by engineer. */
-"Show preview" = "Montrer l'aperçu";
+"Show preview" = "Afficher l'aperçu";
 
 /* No comment provided by engineer. */
 "Show:" = "Afficher :";
@@ -3597,10 +3615,19 @@
 "Unblock" = "Débloquer";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Débloquer pour tous";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Débloquer ce membre";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Débloquer le membre pour tous ?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Débloquer ce membre ?";
+
+/* rcv group event chat item */
+"unblocked %@" = "%@ débloqué";
 
 /* item status description */
 "Unexpected error: %@" = "Erreur inattendue : %@";
@@ -3735,7 +3762,7 @@
 "Using .onion hosts requires compatible VPN provider." = "L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Utilisation des serveurs SimpleX Chat.";
+"Using SimpleX Chat servers." = "Vous utilisez les serveurs SimpleX.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -3855,7 +3882,7 @@
 "When available" = "Quand disponible";
 
 /* No comment provided by engineer. */
-"When people request to connect, you can accept or reject it." = "Lorsque des personnes demandent à se connecter, vous pouvez les accepter ou les refuser.";
+"When people request to connect, you can accept or reject it." = "Vous pouvez accepter ou refuser les demandes de contacts.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Lorsque vous partagez un profil incognito avec quelqu'un, ce profil sera utilisé pour les groupes auxquels il vous invite.";
@@ -3929,6 +3956,9 @@
 /* No comment provided by engineer. */
 "you are observer" = "vous êtes observateur";
 
+/* snd group event chat item */
+"you blocked %@" = "vous avez bloqué %@";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Vous pouvez accepter des appels à partir de l'écran de verrouillage, sans authentification de l'appareil ou de l'application.";
 
@@ -3960,7 +3990,7 @@
 "You can share this address with your contacts to let them connect with **%@**." = "Vous pouvez partager cette adresse avec vos contacts pour leur permettre de se connecter avec **%@**.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or QR code - anybody can connect to you." = "Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous.";
+"You can share your address as a link or QR code - anybody can connect to you." = "Vous pouvez partager votre adresse sous la forme d'un lien ou d'un code QR - tout le monde peut l'utiliser pour vous contacter.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Vous pouvez lancer le chat via Paramètres / Base de données ou en redémarrant l'app";
@@ -4039,6 +4069,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "vous avez partagé un lien unique en incognito";
+
+/* snd group event chat item */
+"you unblocked %@" = "vous avez débloqué %@";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Vous serez connecté·e au groupe lorsque l'appareil de l'hôte sera en ligne, veuillez attendre ou vérifier plus tard !";

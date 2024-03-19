@@ -45,10 +45,10 @@
     "home": "Strona główna",
     "developers": "Deweloperzy",
     "simplex-explained-tab-1-text": "1. Jakie są doświadczenia użytkowników",
-    "simplex-explained-tab-1-p-1": "Można tworzyć kontakty i grupy oraz prowadzić dwukierunkowe rozmowy, jak w każdym innym komunikatorze.",
+    "simplex-explained-tab-1-p-1": "Możesz tworzyć kontakty i grupy oraz prowadzić dwukierunkowe rozmowy, jak w każdym innym komunikatorze.",
     "simplex-explained-tab-2-p-2": "Serwery przekazują wiadomości tylko w jedną stronę, nie mając pełnego obrazu konwersacji i połączeń użytkownika.",
     "simplex-explained-tab-3-p-2": "Użytkownicy mogą jeszcze bardziej zwiększyć prywatność metadanych, używając Tor do uzyskania dostępu do serwerów, co zapobiega korelacji na podstawie adresu IP.",
-    "hero-p-1": "Inne aplikacje mają identyfikatory użytkowników (ID): Signal, Matrix, Session, Briar, Jami, Cwtch itp.<br> SimpleX nie, <strong>nie ma nawet losowych numerów</strong>.<br> To radykalnie poprawia Twoją prywatność.",
+    "hero-p-1": "Inne aplikacje posiadają identyfikatory użytkowników (ID): Signal, Matrix, Session, Briar, Jami, Cwtch itp.<br> SimpleX nie, <strong>nie posiada nawet losowych numerów</strong>.<br> To radykalnie poprawia Twoją prywatność.",
     "feature-2-title": "Obrazy, wideo i pliki<br>zaszyfrowane przez E2E",
     "feature-8-title": "Tryb incognito &mdash;<br>unikalny dla SimpleX Chat",
     "simplex-network-overlay-1-title": "Porównanie z protokołami komunikacyjnymi P2P",
@@ -250,5 +250,7 @@
     "jobs": "Dołącz do zespołu",
     "hero-overlay-3-textlink": "Ocena bezpieczeństwa",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> jest wiodącą firmą konsultingową w zakresie bezpieczeństwa i technologii, której klientami są duże firmy technologiczne, agencje rządowe i główne projekty blockchain.",
-    "docs-dropdown-9": "Pliki do pobrania"
+    "docs-dropdown-9": "Pliki do pobrania",
+    "please-enable-javascript": "Prosimy o włączenie JavaScript w celu wyświetlenia kodu QR.",
+    "please-use-link-in-mobile-app": "Prosimy o skorzystanie z linku w aplikacji mobilnej"
 }

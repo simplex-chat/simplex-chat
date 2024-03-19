@@ -250,5 +250,7 @@
     "jobs": "Treten Sie dem Team bei",
     "hero-overlay-3-textlink": "Sicherheits-Gutachten",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> ist eine führende Security- und Technologie-Unternehmensberatung, deren Kunden aus den Bereichen Big-Tech, Regierungsbehörden und großen Blockchain-Projekten stammen.",
-    "docs-dropdown-9": "Downloads"
+    "docs-dropdown-9": "Downloads",
+    "please-enable-javascript": "Bitte aktivieren Sie JavaScript, um den QR-Code zu sehen.",
+    "please-use-link-in-mobile-app": "Bitte nutzen Sie den Link in der Mobiltelefon-App"
 }
