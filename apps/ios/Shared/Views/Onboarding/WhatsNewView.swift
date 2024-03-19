@@ -344,6 +344,32 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
+    ),
+    VersionDescription(
+        version: "v5.6",
+        post: URL(string: "https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html"),
+        features: [
+            FeatureDescription(
+                icon: "key",
+                title: "Quantum resistant E2EE",
+                description: "Enable in direct chats (BETA)!"
+            ),
+            FeatureDescription(
+                icon: "tray.and.arrow.up",
+                title: "App data migration",
+                description: "Transfer to new device via QR code."
+            ),
+            FeatureDescription(
+                icon: "phone",
+                title: "Picture-in-picture calls",
+                description: "Use app during audio and video calls."
+            ),
+            FeatureDescription(
+                icon: "person.2",
+                title: "Improvements to groups",
+                description: "- admins can block a member for all.\n- faster leave and delete."
+            ),
+        ]
     )
 ]
 
