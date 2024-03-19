@@ -1878,6 +1878,7 @@ public enum XFTPErrorType: Decodable {
     case NO_FILE
     case HAS_FILE
     case FILE_IO
+    case REDIRECT(redirectError: String)
     case INTERNAL
 }
 
