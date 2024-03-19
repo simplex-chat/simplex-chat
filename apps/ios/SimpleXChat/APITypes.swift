@@ -1827,6 +1827,7 @@ public enum AgentErrorType: Decodable {
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
+    case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
 }
 
