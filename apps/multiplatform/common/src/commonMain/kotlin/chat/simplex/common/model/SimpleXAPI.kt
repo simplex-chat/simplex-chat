@@ -5011,8 +5011,8 @@ sealed class AgentErrorType {
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
-    is INACTIVE -> "INACTIVE"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
+    is INACTIVE -> "INACTIVE"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -5023,8 +5023,8 @@ sealed class AgentErrorType {
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
-  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
+  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
 }
 
 @Serializable
