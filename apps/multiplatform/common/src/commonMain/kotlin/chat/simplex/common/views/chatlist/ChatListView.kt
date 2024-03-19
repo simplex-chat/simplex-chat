@@ -447,8 +447,7 @@ private fun ErrorSettingsView() {
 private var lazyListState = 0 to 0
 
 @Composable
-private fun BoxScope.ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
-  val scope = rememberCoroutineScope()
+private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
