@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -462,9 +461,8 @@ private fun BoxScope.ChatList(chatModel: ChatModel, searchText: MutableState<Tex
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.toList())
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  LazyColumn(
-    Modifier.fillMaxWidth().then(if (appPlatform.isDesktop) scrollModifier else Modifier),
+  LazyColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     listState
   ) {
     stickyHeader {
@@ -491,7 +489,6 @@ private fun BoxScope.ChatList(chatModel: ChatModel, searchText: MutableState<Tex
       ChatListNavLinkView(chat, nextChatSelected)
     }
   }
-  platform.desktopScrollBar(listState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
   if (chats.isEmpty() && chatModel.chats.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)

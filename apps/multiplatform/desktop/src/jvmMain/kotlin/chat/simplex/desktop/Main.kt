@@ -5,14 +5,10 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.*
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
@@ -45,7 +41,7 @@ private fun initHaskell() {
   //discoverVlcLibs(File(File(vlcDir, "vlc"), "plugins").absolutePath)
   initHS()
 
-  platform = object : PlatformInterface {
+  platform = object: PlatformInterface {
     @Composable
     override fun desktopScrollBarComponents(): Triple<Animatable<Float, AnimationVector1D>, Modifier, MutableState<Job>> {
       val scope = rememberCoroutineScope()
@@ -70,47 +66,12 @@ private fun initHaskell() {
 
     @Composable
     override fun desktopScrollBar(state: LazyListState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      desktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
+      DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
     }
 
     @Composable
     override fun desktopScrollBar(state: ScrollState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      desktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
-    }
-
-    @Composable
-    private fun desktopScrollBar(adapter: androidx.compose.foundation.v2.ScrollbarAdapter, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      val scope = rememberCoroutineScope()
-      val interactionSource = remember { MutableInteractionSource() }
-      val isHovered by interactionSource.collectIsHoveredAsState()
-      val isDragged by interactionSource.collectIsDraggedAsState()
-      LaunchedEffect(isHovered, isDragged) {
-        scrollJob.value.cancel()
-        if (isHovered || isDragged) {
-          scrollBarAlpha.animateTo(1f)
-        } else {
-          scrollJob.value = scope.launch {
-            delay(1000L)
-            scrollBarAlpha.animateTo(0f)
-          }
-        }
-      }
-      VerticalScrollbar(
-        modifier = modifier.graphicsLayer { alpha = scrollBarAlpha.value }
-          .onPointerEvent(PointerEventType.Enter) {
-            scrollJob.value.cancel()
-            scope.launch {
-              scrollBarAlpha.animateTo(1f)
-            }
-          },
-        reverseLayout = reversed,
-        style = LocalScrollbarStyle.current.copy(
-          thickness = if (isHovered || isDragged) 10.dp else 6.dp,
-          unhoverColor = if (MaterialTheme.colors.isLight) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.7f) else MaterialTheme.colors.onBackground.mixWith(MaterialTheme.colors.background, 0.3f)
-        ),
-        adapter = adapter,
-        interactionSource = interactionSource
-      )
+      DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
     }
   }
 }

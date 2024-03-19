@@ -56,8 +56,8 @@ fun NotificationsSettingsLayout(
   val modes = remember { notificationModes() }
   val previewModes = remember { notificationPreviewModes() }
 
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.notifications))
     SectionView(null) {
@@ -90,7 +90,7 @@ fun NotificationsModeView(
   onNotificationsModeSelected: (NotificationsMode) -> Unit,
 ) {
   val modes = remember { notificationModes() }
-  Column(
+  ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
@@ -104,7 +104,7 @@ fun NotificationPreviewView(
   onNotificationPreviewModeSelected: (NotificationPreviewMode) -> Unit,
 ) {
   val previewModes = remember { notificationPreviewModes() }
-  Column(
+  ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.settings_notification_preview_title))

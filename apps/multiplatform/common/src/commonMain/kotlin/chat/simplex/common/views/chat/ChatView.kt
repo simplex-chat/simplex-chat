@@ -475,7 +475,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       }
       is ChatInfo.InvalidJSON -> {
         val close = { chatModel.chatId.value = null }
-        ModalView(close, showClose = appPlatform.isAndroid, content = {
+        ModalView(close, showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(chat.chatInfo.json) } }, content = {
           InvalidJSONView(chat.chatInfo.json)
         })
         LaunchedEffect(chat.id) {
@@ -909,8 +909,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  LazyColumn(Modifier.align(Alignment.BottomCenter).then(if (appPlatform.isDesktop) scrollModifier else Modifier), state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1063,7 +1062,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
-  platform.desktopScrollBar(listState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, true)
   FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
 }
 

@@ -98,8 +98,8 @@ private fun SetupDatabasePassphraseLayout(
   onConfirmEncrypt: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     AppBarTitle(stringResource(MR.strings.setup_database_passphrase))

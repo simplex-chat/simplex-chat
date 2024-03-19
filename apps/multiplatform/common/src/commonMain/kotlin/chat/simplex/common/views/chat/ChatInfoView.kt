@@ -319,10 +319,9 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(scrollState)
   ) {
     Row(
       Modifier.fillMaxWidth(),

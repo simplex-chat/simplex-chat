@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,12 +13,10 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.SettingsViewState
-import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.Chat
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.BackHandler
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -146,7 +143,7 @@ private fun ShareList(chatModel: ChatModel, search: String) {
       if (search.isEmpty()) chatModel.chats.toList().filter { it.chatInfo.ready } else chatModel.chats.toList().filter { it.chatInfo.ready }.filter(filter)
     }
   }
-  LazyColumn(
+  LazyColumnWithScrollBar(
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chats) { chat ->

@@ -29,6 +29,7 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatJsonLength
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.res.MR
@@ -91,8 +92,8 @@ private fun GroupWelcomeLayout(
   linkMode: SimplexLinkMode,
   save: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(MR.strings.group_welcome_title))

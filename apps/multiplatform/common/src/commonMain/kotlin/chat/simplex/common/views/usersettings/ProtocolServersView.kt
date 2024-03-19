@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 
@@ -191,10 +192,9 @@ private fun ProtocolServersLayout(
   saveSMPServers: () -> Unit,
   showServer: (ServerCfg) -> Unit,
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
   ) {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
 

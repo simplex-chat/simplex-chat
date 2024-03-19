@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
@@ -151,8 +152,8 @@ fun NetworkAndServersView() {
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   val m = chatModel
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
@@ -276,10 +277,9 @@ fun SockProxySettings(
   networkProxyHostPort: SharedPreference<String?> = m.controller.appPrefs.networkProxyHostPort,
   migration: Boolean,
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
   ) {
     val defaultHostPort = remember { "localhost:9050" }
     AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
@@ -376,7 +376,7 @@ private fun UseOnionHosts(
   }
   val onSelected = {
     showModal {
-      Column(
+      ColumnWithScrollBar(
         Modifier.fillMaxWidth(),
       ) {
         AppBarTitle(stringResource(MR.strings.network_use_onion_hosts))
@@ -430,7 +430,7 @@ private fun SessionModePicker(
     icon = painterResource(MR.images.ic_safety_divider),
     onSelected = {
       showModal {
-        Column(
+        ColumnWithScrollBar(
           Modifier.fillMaxWidth(),
         ) {
           AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))

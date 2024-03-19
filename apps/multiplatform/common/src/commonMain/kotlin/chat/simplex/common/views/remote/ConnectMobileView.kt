@@ -91,8 +91,8 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
@@ -181,8 +181,8 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     if (title != null) {
