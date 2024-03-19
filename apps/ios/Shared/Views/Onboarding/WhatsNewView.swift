@@ -350,7 +350,7 @@ private let versionDescriptions: [VersionDescription] = [
         post: URL(string: "https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html"),
         features: [
             FeatureDescription(
-                icon: "lock",
+                icon: "key",
                 title: "Quantum resistant encryption",
                 description: "Enable in direct chats (BETA)!"
             ),
@@ -362,7 +362,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "phone",
                 title: "Picture-in-picture calls",
-                description: "Use the app during audio and video calls."
+                description: "Use the app while in the call."
             ),
             FeatureDescription(
                 icon: "hand.raised",
