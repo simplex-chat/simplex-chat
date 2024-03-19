@@ -1945,10 +1945,13 @@ public enum RemoteCtrlError: Decodable {
     case badState
     case busy
     case timeout
+    case noKnownControllers
+    case badController
     case disconnected(remoteCtrlId: Int64, reason: String)
     case badInvitation
     case badVersion(appVersion: String)
-//    case protocolError(protocolError: RemoteProtocolError)
+    case hTTP2Error(http2Error: String)
+    case protocolError
 }
 
 public struct MigrationFileLinkData: Codable {
