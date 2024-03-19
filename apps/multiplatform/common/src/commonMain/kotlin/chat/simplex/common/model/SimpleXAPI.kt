@@ -5139,10 +5139,12 @@ sealed class SMPHandshakeError {
     is PARSE -> "PARSE"
     is VERSION -> "VERSION"
     is IDENTITY -> "IDENTITY"
+    is BAD_AUTH -> "BAD_AUTH"
   }
   @Serializable @SerialName("PARSE") class PARSE: SMPHandshakeError()
   @Serializable @SerialName("VERSION") class VERSION: SMPHandshakeError()
   @Serializable @SerialName("IDENTITY") class IDENTITY: SMPHandshakeError()
+  @Serializable @SerialName("BAD_AUTH") class BAD_AUTH: SMPHandshakeError()
 }
 
 @Serializable
