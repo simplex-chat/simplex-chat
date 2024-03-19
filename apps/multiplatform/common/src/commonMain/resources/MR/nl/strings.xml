@@ -1498,7 +1498,7 @@
     <string name="v5_4_block_group_members">Groepsleden blokkeren</string>
     <string name="v5_4_incognito_groups_descr">Maak een groep met een willekeurig profiel.</string>
     <string name="v5_4_link_mobile_desktop">Koppel mobiele en desktop-apps! 🔗</string>
-    <string name="v5_4_link_mobile_desktop_descr">Via een beveiligd kwantumbestendig protocol.</string>
+    <string name="v5_4_link_mobile_desktop_descr">Via een beveiligd quantum bestendig protocol.</string>
     <string name="v5_4_block_group_members_descr">Om ongewenste berichten te verbergen.</string>
     <string name="v5_4_better_groups">Betere groepen</string>
     <string name="v5_4_incognito_groups">Incognitogroepen</string>
@@ -1674,7 +1674,7 @@
     <string name="migrate_from_device_finalize_migration">Voltooi de migratie</string>
     <string name="migrate_from_device_start_chat">Chat starten</string>
     <string name="migrate_from_device_error_verifying_passphrase">Fout bij het verifiëren van het wachtwoord:</string>
-    <string name="v5_6_quantum_resistant_encryption">Kwantumbestendige encryptie</string>
+    <string name="v5_6_quantum_resistant_encryption">quantum bestendige encryptie</string>
     <string name="v5_6_picture_in_picture_calls">Beeld-in-beeld oproepen</string>
     <string name="v5_6_safer_groups">Veiligere groepen</string>
     <string name="v5_6_picture_in_picture_calls_descr">Gebruik de app tijdens het gesprek.</string>
@@ -1699,7 +1699,7 @@
     <string name="migrate_to_device_import_failed">Importeren is mislukt</string>
     <string name="invalid_file_link">Ongeldige link</string>
     <string name="e2ee_info_no_pq">Berichten, bestanden en oproepen worden beschermd door <b>end-to-end-codering</b> met perfecte voorwaartse geheimhouding, afwijzing en inbraakherstel.</string>
-    <string name="e2ee_info_pq">Berichten, bestanden en oproepen worden beschermd door <b>kwantumbestendige e2e-encryptie</b> met perfecte voorwaartse geheimhouding, afwijzing en inbraakherstel.</string>
+    <string name="e2ee_info_pq">Berichten, bestanden en oproepen worden beschermd door <b>quantum bestendige e2e-encryptie</b> met perfecte voorwaartse geheimhouding, afwijzing en inbraakherstel.</string>
     <string name="migrate_from_another_device">Migreer vanaf een ander apparaat</string>
     <string name="migrate_to_device_title">Migreer hierheen</string>
     <string name="v5_6_app_data_migration_descr">Migreer naar een ander apparaat via QR-code.</string>
@@ -1709,8 +1709,8 @@
     <string name="paste_archive_link">Archief link plakken</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Controleer of de netwerk instellingen correct zijn voor dit apparaat.</string>
     <string name="migrate_from_device_database_init">Uploaden voorbereiden</string>
-    <string name="conn_event_enabled_pq">kwantumbestendige e2e-codering</string>
+    <string name="conn_event_enabled_pq">quantum bestendige e2e-codering</string>
     <string name="migrate_to_device_bytes_downloaded">%s gedownload</string>
     <string name="set_passphrase">Wachtwoord instellen</string>
-    <string name="e2ee_info_pq_short">Deze chat wordt beschermd door kwantumbestendige end-to-end codering.</string>
+    <string name="e2ee_info_pq_short">Deze chat wordt beschermd door quantum bestendige end-to-end codering.</string>
 </resources>
