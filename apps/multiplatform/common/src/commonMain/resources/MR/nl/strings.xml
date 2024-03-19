@@ -1648,4 +1648,6 @@
     <string name="migrate_to_device_chat_migrated">Chat gemigreerd!</string>
     <string name="migrate_from_device_check_connection_and_try_again">Controleer uw internetverbinding en probeer het opnieuw</string>
     <string name="migrate_from_device_choose_migrate_from_another_device">Kies <i>Migreren vanaf een ander apparaat</i> op het nieuwe apparaat en scan de QR-code.</string>
+    <string name="v5_6_safer_groups_descr">Beheerders kunnen een lid voor iedereen blokkeren.</string>
+    <string name="v5_6_app_data_migration">Migratie van app-gegevens</string>
 </resources>
