@@ -446,6 +446,7 @@ xftpServerConfig =
       allowNewFiles = True,
       newFileBasicAuth = Nothing,
       fileExpiration = Just defaultFileExpiration,
+      fileTimeout = 10000000,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
