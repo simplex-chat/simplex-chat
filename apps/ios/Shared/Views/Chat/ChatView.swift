@@ -646,7 +646,7 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
-                .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
+                .uiKitContextMenu(maxWidth: maxWidth, menu: uiMenu, allowMenu: $allowMenu)
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)
