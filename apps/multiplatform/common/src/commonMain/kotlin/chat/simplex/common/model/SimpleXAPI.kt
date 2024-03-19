@@ -5175,6 +5175,7 @@ sealed class XFTPErrorType {
     is NO_FILE -> "NO_FILE"
     is HAS_FILE -> "HAS_FILE"
     is FILE_IO -> "FILE_IO"
+    is REDIRECT -> "REDIRECT"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
@@ -5188,6 +5189,7 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
   @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
   @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
+  @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
 }
 
