@@ -5123,11 +5123,13 @@ sealed class SMPTransportError {
     is BadBlock -> "badBlock"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
+    is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
+  @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
   @Serializable @SerialName("handshake") class Handshake(val handshakeErr: SMPHandshakeError): SMPTransportError()
 }
 
