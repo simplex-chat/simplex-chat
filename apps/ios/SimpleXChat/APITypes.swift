@@ -1914,6 +1914,7 @@ public enum ProtocolTransportError: Decodable {
     case badBlock
     case largeMsg
     case badSession
+    case noServerAuth
     case handshake(handshakeErr: SMPHandshakeError)
 }
 
