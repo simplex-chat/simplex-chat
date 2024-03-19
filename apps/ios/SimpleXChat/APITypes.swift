@@ -1922,6 +1922,7 @@ public enum SMPHandshakeError: Decodable {
     case PARSE
     case VERSION
     case IDENTITY
+    case BAD_AUTH
 }
 
 public enum SMPAgentError: Decodable {
