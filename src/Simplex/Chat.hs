@@ -6204,7 +6204,7 @@ deliverMessagesB msgReqs = do
           -- 2) version is compatible with compression
           -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
           PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
-            let msgBody' =compressedBatchMsgBody_ msgBody
+            let msgBody' = compressedBatchMsgBody_ msgBody
             when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
             pure (conn, msgFlags, msgBody', msgId)
           _ -> pure mr
