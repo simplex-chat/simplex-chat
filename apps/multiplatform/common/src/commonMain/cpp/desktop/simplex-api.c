@@ -10,10 +10,10 @@ JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
 #ifdef _WIN32
     int argc = 4;
-    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", NULL}; // non-moving GC is broken on windows with GHC 9.4-9.6.3
+    char *argv[] = {"simplex", "+RTS", "-A64m", "-H64m", NULL}; // non-moving GC is broken on windows with GHC 9.4-9.6.3
 #else
     int argc = 5;
-    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", "-xn", NULL}; // see android/simplex-api.c for details
+    char *argv[] = {"simplex", "+RTS", "-A64m", "-H64m", "-xn", NULL}; // see android/simplex-api.c for details
 #endif
     char **pargv = argv;
     hs_init_with_rtsopts(&argc, &pargv);
