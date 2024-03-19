@@ -50,6 +50,7 @@ struct InteractionView<Content: View>: UIViewRepresentable {
         view.addSubview(hostView.view)
         view.addConstraints(constraints)
         view.layer.cornerRadius = 18
+        hostView.view.layer.cornerRadius = 18
         let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
         view.addInteraction(menuInteraction)
         return view
