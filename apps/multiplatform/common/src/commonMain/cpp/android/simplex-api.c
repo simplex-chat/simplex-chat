@@ -36,7 +36,7 @@ Java_chat_simplex_common_platform_CoreKt_initHS(__unused JNIEnv *env, __unused j
     char *argv[] = {
         "simplex",
         "+RTS", // requires `hs_init_with_rtsopts`
-        "-A16m", // chunk size for new allocations
+        "-A64m", // chunk size for new allocations
         "-H64m", // initial heap size
         "-xn", // non-moving GC
         NULL

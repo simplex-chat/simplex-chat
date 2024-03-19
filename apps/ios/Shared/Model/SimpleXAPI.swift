@@ -1473,14 +1473,12 @@ class ChatReceiver {
     }
 
     func receiveMsgLoop() async {
-        // TODO use function that has timeout
-        if let msg = await chatRecvMsg() {
-            self._lastMsgTime = .now
-            await processReceivedMsg(msg)
-        }
-        if self.receiveMessages {
+        while self.receiveMessages {
+            if let msg = await chatRecvMsg() {
+                self._lastMsgTime = .now
+                await processReceivedMsg(msg)
+            }
             _ = try? await Task.sleep(nanoseconds: 7_500_000)
-            await receiveMsgLoop()
         }
     }
 

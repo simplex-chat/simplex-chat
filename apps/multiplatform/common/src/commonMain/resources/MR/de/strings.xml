@@ -1687,7 +1687,7 @@
     <string name="v5_5_simpler_connect_ui">Zum Verbinden den Link einfügen!</string>
     <string name="v5_5_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
     <string name="v5_5_join_group_conversation_descr">Aktueller Nachrichtenverlauf und verbesserter Gruppenverzeichnis-Bot.</string>
-    <string name="v5_5_simpler_connect_ui_descr">Von der Suchleiste werden Einladungslinks akzeptiert.</string>
+    <string name="v5_5_simpler_connect_ui_descr">In der Suchleiste werden nun auch Einladungslinks akzeptiert.</string>
     <string name="unblock_for_all">Für Alle freigeben</string>
     <string name="unblock_for_all_question">Mitglied für Alle freigeben?</string>
     <string name="member_info_member_blocked">wurde blockiert</string>
@@ -1703,12 +1703,21 @@
     <string name="v5_5_message_delivery">Verbesserte Zustellung von Nachrichten</string>
     <string name="v5_5_join_group_conversation">Gruppenunterhaltungen beitreten</string>
     <string name="v5_5_new_interface_languages">Ungarische und türkische Bedienoberfläche</string>
-    <string name="profile_update_event_contact_name_changed">Kontaktname %1$s wurde auf %2$s geändert</string>
-    <string name="profile_update_event_member_name_changed">Mitgliedsname %1$s wurde auf %2$s geändert</string>
-    <string name="profile_update_event_set_new_address">Neue Kontaktadresse wurde festgelegt</string>
-    <string name="profile_update_event_set_new_picture">Neues Profil-Bild wurde festgelegt</string>
+    <string name="profile_update_event_contact_name_changed">Der Kontaktname wurde von %1$s auf %2$s geändert</string>
+    <string name="profile_update_event_member_name_changed">Der Mitgliedsname von %1$s wurde auf %2$s geändert</string>
+    <string name="profile_update_event_set_new_address">Es wurde eine neue Kontaktadresse festgelegt</string>
+    <string name="profile_update_event_set_new_picture">Es wurde ein neues Profil-Bild festgelegt</string>
     <string name="profile_update_event_updated_profile">Das Profil wurde aktualisiert</string>
-    <string name="profile_update_event_removed_picture">Profil-Bild wurde entfernt</string>
-    <string name="profile_update_event_removed_address">Kontaktadresse wurde entfernt</string>
+    <string name="profile_update_event_removed_picture">Das Profil-Bild wurde entfernt</string>
+    <string name="profile_update_event_removed_address">Die Kontaktadresse wurde entfernt</string>
     <string name="note_folder_local_display_name">Private Notizen</string>
+    <string name="database_migration_in_progress">Momentan wird eine Datenbank-Migration durchgeführt.
+\nDies kann einige Minuten andauern.</string>
+    <string name="message_too_large">Die Nachricht ist zu lang</string>
+    <string name="welcome_message_is_too_long">Die Begrüßungsmeldung ist zu lang</string>
+    <string name="call_service_notification_audio_call">Audioanruf</string>
+    <string name="call_service_notification_end_call">Anruf beenden</string>
+    <string name="call_service_notification_video_call">Videoanruf</string>
+    <string name="unable_to_open_browser_title">Fehler beim Öffnen des Browsers</string>
+    <string name="unable_to_open_browser_desc">Für Anrufe ist ein Default-Webbrowser erforderlich. Bitte konfigurieren Sie einen Default-Browser für das System und teilen Sie den Entwicklern mehr Informationen dazu mit.</string>
 </resources>

@@ -64,7 +64,7 @@
     <string name="info_row_connection">连接</string>
     <string name="connect_via_invitation_link">通过一次性链接进行连接？</string>
     <string name="connect_via_contact_link">通过联系人地址进行连接？</string>
-    <string name="connect_via_group_link">加群吗？</string>
+    <string name="connect_via_group_link">加入群组？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
     <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不不可逆地删除已发送消息。（24小时）</string>
@@ -1630,4 +1630,13 @@
     <string name="member_info_member_blocked">已封禁</string>
     <string name="snd_group_event_member_blocked">你封禁了 %s</string>
     <string name="snd_group_event_member_unblocked">你解封了 %s</string>
+    <string name="welcome_message_is_too_long">欢迎消息太大了</string>
+    <string name="database_migration_in_progress">正在进行数据库迁移。
+\n可能需要几分钟时间。</string>
+    <string name="message_too_large">消息太大了</string>
+    <string name="call_service_notification_video_call">视频通话</string>
+    <string name="call_service_notification_audio_call">语音通话</string>
+    <string name="call_service_notification_end_call">结束通话</string>
+    <string name="unable_to_open_browser_title">打开浏览器出错</string>
+    <string name="unable_to_open_browser_desc">没有默认网络浏览器无法使用通话功能。请在系统中配置默认浏览器并和开发者分享更多信息。</string>
 </resources>

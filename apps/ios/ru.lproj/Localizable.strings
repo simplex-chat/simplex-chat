@@ -602,13 +602,13 @@
 /* No comment provided by engineer. */
 "Block member?" = "Заблокировать члена группы?";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "blocked" = "заблокировано";
 
 /* rcv group event chat item */
 "blocked %@" = "%@ заблокирован";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "заблокировано администратором";
 
 /* No comment provided by engineer. */
@@ -2373,7 +2373,7 @@
 /* copied message info */
 "Moderated at: %@" = "Модерировано: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "удалено %@";
 
 /* time unit */
