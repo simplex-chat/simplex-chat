@@ -130,7 +130,7 @@ fun TerminalLog() {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
-  LazyColumn(state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "

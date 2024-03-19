@@ -18,6 +18,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -105,11 +106,10 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   val v = versionDescriptions[currentVersion.value]
 
   ModalView(close = close) {
-    Column(
+    ColumnWithScrollBar(
       Modifier
         .fillMaxSize()
-        .padding(horizontal = DEFAULT_PADDING)
-        .verticalScroll(rememberScrollState()),
+        .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING.times(0.75f))
     ) {
       AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)

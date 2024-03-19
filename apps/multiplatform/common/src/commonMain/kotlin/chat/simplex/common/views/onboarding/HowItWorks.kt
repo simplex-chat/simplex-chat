@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
@@ -22,7 +23,7 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  Column(Modifier
+  ColumnWithScrollBar(Modifier
     .fillMaxWidth()
     .padding(horizontal = DEFAULT_PADDING),
   ) {

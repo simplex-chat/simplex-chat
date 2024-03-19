@@ -98,9 +98,8 @@ fun UserProfileLayout(
         }
       }
       ModalView(close = closeWithAlert) {
-        Column(
+        ColumnWithScrollBar(
           Modifier
-            .verticalScroll(scrollState)
             .padding(horizontal = DEFAULT_PADDING),
         ) {
           AppBarTitle(stringResource(MR.strings.your_current_profile))

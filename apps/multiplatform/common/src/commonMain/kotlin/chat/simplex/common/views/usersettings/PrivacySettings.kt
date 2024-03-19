@@ -30,8 +30,7 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.AppPlatform
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 
 enum class LAMode {
   SYSTEM,
@@ -55,8 +54,8 @@ fun PrivacySettingsView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(MR.strings.your_privacy))
@@ -473,8 +472,8 @@ fun SimplexLockView(
     }
   }
 
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView {
@@ -580,8 +579,8 @@ fun SimplexLockView(
 
 @Composable
 private fun SelfDestructInfoView() {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
   ) {
     AppBarTitle(stringResource(MR.strings.self_destruct), withPadding = false)
     ReadableText(stringResource(MR.strings.if_you_enter_self_destruct_code))

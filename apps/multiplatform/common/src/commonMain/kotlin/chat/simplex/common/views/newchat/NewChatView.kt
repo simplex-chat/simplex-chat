@@ -141,10 +141,10 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
     }
 
     HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { index ->
-      Column(
+      // LALAL SCROLLBAR DOESN'T WORK
+      ColumnWithScrollBar(
         Modifier
-          .fillMaxSize()
-          .verticalScroll(rememberScrollState()),
+          .fillMaxSize(),
         verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top) {
         Spacer(Modifier.height(DEFAULT_PADDING))
         when (index) {
@@ -232,14 +232,7 @@ private fun AddContactLearnMoreButton() {
     {
       if (appPlatform.isDesktop) ModalManager.end.closeModals()
       ModalManager.end.showModalCloseable { close ->
-        Column(
-          Modifier
-            .fillMaxHeight()
-            .padding(horizontal = DEFAULT_PADDING),
-          verticalArrangement = Arrangement.SpaceBetween
-        ) {
-          AddContactLearnMore(close)
-        }
+        AddContactLearnMore(close)
       }
     }
   ) {

@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chatlist.ChatHelpView
@@ -20,10 +21,9 @@ fun HelpView(userDisplayName: String) {
 
 @Composable
 fun HelpLayout(userDisplayName: String) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING),
   ){
     AppBarTitle(String.format(stringResource(MR.strings.personal_welcome), userDisplayName), withPadding = false)
