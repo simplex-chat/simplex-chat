@@ -251,5 +251,7 @@
     "jobs": "Rejoignez notre équipe",
     "hero-overlay-3-textlink": "Évaluation de sécurité",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> est un cabinet leader dans le secteur de la sécurité et des technologies qui compte parmi ses clients des grandes entreprises de la tech, des agences gouvernementales et d'importants projets de blockchain.",
-    "docs-dropdown-9": "Téléchargements"
+    "docs-dropdown-9": "Téléchargements",
+    "please-enable-javascript": "Veuillez activer JavaScript pour voir le code QR.",
+    "please-use-link-in-mobile-app": "Veuillez utiliser le lien dans l'application mobile"
 }

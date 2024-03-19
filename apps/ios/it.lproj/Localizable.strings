@@ -602,13 +602,13 @@
 /* No comment provided by engineer. */
 "Block member?" = "Bloccare il membro?";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "blocked" = "bloccato";
 
 /* rcv group event chat item */
 "blocked %@" = "ha bloccato %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "bloccato dall'amministratore";
 
 /* No comment provided by engineer. */
@@ -2373,7 +2373,7 @@
 /* copied message info */
 "Moderated at: %@" = "Moderato il: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "moderato da %@";
 
 /* time unit */
@@ -4155,7 +4155,7 @@
 "Your profile" = "Il tuo profilo";
 
 /* No comment provided by engineer. */
-"Your profile **%@** will be shared." = "Il tuo profilo **%@** verrà condiviso.";
+"Your profile **%@** will be shared." = "Verrà condiviso il tuo profilo **%@**.";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti.\nI server di SimpleX non possono vedere il tuo profilo.";

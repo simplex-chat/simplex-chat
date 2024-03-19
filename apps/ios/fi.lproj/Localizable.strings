@@ -2046,7 +2046,7 @@
 /* copied message info */
 "Moderated at: %@" = "Moderoitu klo: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "%@ moderoi";
 
 /* time unit */

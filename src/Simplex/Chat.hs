@@ -2851,35 +2851,36 @@ getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> S
 getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Nothing ->
     chatReadVar filesFolder >>= \case
-      Nothing ->
-        getDefaultFilesFolder
-          >>= (`uniqueCombine` fn)
-          >>= createEmptyFile
-      Just filesFolder ->
-        filesFolder `uniqueCombine` fn
-          >>= createEmptyFile
-          >>= pure <$> takeFileName
+      Nothing -> do
+        defaultFolder <- getDefaultFilesFolder
+        fPath <- defaultFolder `uniqueCombine` fn
+        createEmptyFile fPath $> fPath
+      Just filesFolder -> do
+        fPath <- filesFolder `uniqueCombine` fn
+        createEmptyFile fPath
+        pure $ takeFileName fPath
   Just fPath ->
     ifM
       (doesDirectoryExist fPath)
-      (fPath `uniqueCombine` fn >>= createEmptyFile)
+      (createInPassedDirectory fPath)
       $ ifM
         (doesFileExist fPath)
         (throwChatError $ CEFileAlreadyExists fPath)
-        (createEmptyFile fPath)
+        (createEmptyFile fPath $> fPath)
   where
-    createEmptyFile :: FilePath -> m FilePath
-    createEmptyFile fPath = emptyFile fPath `catchThrow` (ChatError . CEFileWrite fPath . show)
-    emptyFile :: FilePath -> m FilePath
-    emptyFile fPath = do
-      h <-
-        if keepHandle
-          then getFileHandle fileId fPath rcvFiles AppendMode
-          else getTmpHandle fPath
-      liftIO $ B.hPut h "" >> hFlush h
-      pure fPath
-    getTmpHandle :: FilePath -> m Handle
-    getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
+    createInPassedDirectory :: FilePath -> m FilePath
+    createInPassedDirectory fPathDir = do
+      fPath <- fPathDir `uniqueCombine` fn
+      createEmptyFile fPath $> fPath
+    createEmptyFile :: FilePath -> m ()
+    createEmptyFile fPath = emptyFile `catchThrow` (ChatError . CEFileWrite fPath . show)
+      where
+        emptyFile :: m ()
+        emptyFile
+          | keepHandle = do
+              h <- getFileHandle fileId fPath rcvFiles AppendMode
+              liftIO $ B.hPut h "" >> hFlush h
+          | otherwise = liftIO $ B.writeFile fPath ""
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognitoProfile contactUsed = do
@@ -3495,7 +3496,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
 
-processAgentMessageConn :: forall m . ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
+processAgentMessageConn :: forall m. ChatMonad m => (PQSupport -> VersionRangeChat) -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
   -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
   -- as in this case no need to ACK message - we can't process messages for this connection anyway.

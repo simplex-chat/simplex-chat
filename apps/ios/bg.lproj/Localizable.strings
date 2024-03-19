@@ -203,6 +203,9 @@
 "%lld messages blocked" = "%lld блокирани съобщения";
 
 /* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld съобщения, блокирани от администратора";
+
+/* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld съобщения, маркирани като изтрити";
 
 /* No comment provided by engineer. */
@@ -399,6 +402,9 @@
 "All group members will remain connected." = "Всички членове на групата ще останат свързани.";
 
 /* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone!" = "Всички съобщения ще бъдат изтрити - това не може да бъде отменено!";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Всички съобщения ще бъдат изтрити - това не може да бъде отменено! Съобщенията ще бъдат изтрити САМО за вас.";
 
 /* No comment provided by engineer. */
@@ -582,16 +588,31 @@
 "Block" = "Блокирай";
 
 /* No comment provided by engineer. */
+"Block for all" = "Блокирай за всички";
+
+/* No comment provided by engineer. */
 "Block group members" = "Блокиране на членове на групата";
 
 /* No comment provided by engineer. */
 "Block member" = "Блокирай член";
 
 /* No comment provided by engineer. */
-"Block member?" = "Блокирай члена?";
+"Block member for all?" = "Блокиране на член за всички?";
 
 /* No comment provided by engineer. */
+"Block member?" = "Блокирай члена?";
+
+/* marked deleted chat item preview text */
 "blocked" = "блокиран";
+
+/* rcv group event chat item */
+"blocked %@" = "блокиран %@";
+
+/* marked deleted chat item preview text */
+"blocked by admin" = "блокиран от админ";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Блокиран от админ";
 
 /* No comment provided by engineer. */
 "bold" = "удебелен";
@@ -685,7 +706,7 @@
 "Change self-destruct passcode" = "Промени кода за достъп за самоунищожение";
 
 /* chat item text */
-"changed address for you" = "променен е адреса за вас";
+"changed address for you" = "адреса за изпращане е променен";
 
 /* rcv group event chat item */
 "changed role of %@ to %@" = "променена роля от %1$@ на %2$@";
@@ -749,6 +770,9 @@
 
 /* No comment provided by engineer. */
 "Clear conversation?" = "Изчисти разговора?";
+
+/* No comment provided by engineer. */
+"Clear private notes?" = "Изчистване на лични бележки?";
 
 /* No comment provided by engineer. */
 "Clear verification" = "Изчисти проверката";
@@ -888,6 +912,9 @@
 /* connection information */
 "connection:%@" = "връзка:%@";
 
+/* profile update event chat item */
+"contact %@ changed to %@" = "името на контакта %1$@ е променено на %2$@";
+
 /* No comment provided by engineer. */
 "Contact allows" = "Контактът позволява";
 
@@ -971,6 +998,12 @@
 
 /* No comment provided by engineer. */
 "Create your profile" = "Създай своя профил";
+
+/* No comment provided by engineer. */
+"Created at" = "Създаден на";
+
+/* copied message info */
+"Created at: %@" = "Създаден на: %@";
 
 /* No comment provided by engineer. */
 "Created on %@" = "Създаден на %@";
@@ -1291,7 +1324,7 @@
 "Discover and join groups" = "Открийте и се присъединете към групи";
 
 /* No comment provided by engineer. */
-"Discover via local network" = "Открий през локалната мрежа";
+"Discover via local network" = "Откриване през локалната мрежа";
 
 /* No comment provided by engineer. */
 "Do it later" = "Отложи";
@@ -1523,6 +1556,9 @@
 
 /* No comment provided by engineer. */
 "Error creating member contact" = "Грешка при създаване на контакт с член";
+
+/* No comment provided by engineer. */
+"Error creating message" = "Грешка при създаване на съобщение";
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Грешка при създаване на профил!";
@@ -1939,6 +1975,9 @@
 "Import database" = "Импортиране на база данни";
 
 /* No comment provided by engineer. */
+"Improved message delivery" = "Подобрена доставка на съобщения";
+
+/* No comment provided by engineer. */
 "Improved privacy and security" = "Подобрена поверителност и сигурност";
 
 /* No comment provided by engineer. */
@@ -2116,6 +2155,9 @@
 "Join group" = "Влез в групата";
 
 /* No comment provided by engineer. */
+"Join group conversations" = "Присъединяване към групи";
+
+/* No comment provided by engineer. */
 "Join group?" = "Влез в групата?";
 
 /* No comment provided by engineer. */
@@ -2250,6 +2292,9 @@
 /* No comment provided by engineer. */
 "Member" = "Член";
 
+/* profile update event chat item */
+"member %@ changed to %@" = "името на члена %1$@ е променено на %2$@";
+
 /* rcv group event chat item */
 "member connected" = "свързан";
 
@@ -2328,7 +2373,7 @@
 /* copied message info */
 "Moderated at: %@" = "Модерирано в: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "модерирано от %@";
 
 /* time unit */
@@ -2594,11 +2639,17 @@
 /* No comment provided by engineer. */
 "Password to show" = "Парола за показване";
 
+/* past/unknown group member */
+"Past member %@" = "Бивш член %@";
+
 /* No comment provided by engineer. */
 "Paste desktop address" = "Постави адрес на настолно устройство";
 
 /* No comment provided by engineer. */
 "Paste image" = "Постави изображение";
+
+/* No comment provided by engineer. */
+"Paste link to connect!" = "Поставете линк, за да се свържете!";
 
 /* No comment provided by engineer. */
 "Paste the link you received" = "Постави получения линк";
@@ -2686,6 +2737,9 @@
 
 /* No comment provided by engineer. */
 "Private filenames" = "Поверителни имена на файлове";
+
+/* name of notes to self */
+"Private notes" = "Лични бележки";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Профилни и сървърни връзки";
@@ -2802,6 +2856,9 @@
 "Receiving via" = "Получаване чрез";
 
 /* No comment provided by engineer. */
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Скорошна история и подобрен [bot за директория за групи](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPd jdLW3%23%2F%3Fv%3D1-2% 26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Получателите виждат актуализации, докато ги въвеждате.";
 
 /* No comment provided by engineer. */
@@ -2854,6 +2911,12 @@
 
 /* rcv group event chat item */
 "removed %@" = "отстранен %@";
+
+/* profile update event chat item */
+"removed contact address" = "премахнат адрес за контакт";
+
+/* profile update event chat item */
+"removed profile picture" = "премахната профилна снимка";
 
 /* rcv group event chat item */
 "removed you" = "ви острани";
@@ -2978,6 +3041,9 @@
 /* No comment provided by engineer. */
 "Save welcome message?" = "Запази съобщението при посрещане?";
 
+/* message info title */
+"Saved message" = "Запазено съобщение";
+
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Запазените WebRTC ICE сървъри ще бъдат премахнати";
 
@@ -2998,6 +3064,9 @@
 
 /* No comment provided by engineer. */
 "Search" = "Търсене";
+
+/* No comment provided by engineer. */
+"Search bar accepts invitation links." = "Лентата за търсене приема линк за връзка.";
 
 /* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Търсене или поставяне на SimpleX линк";
@@ -3154,6 +3223,12 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Задайте го вместо системната идентификация.";
+
+/* profile update event chat item */
+"set new contact address" = "зададен нов адрес за контакт";
+
+/* profile update event chat item */
+"set new profile picture" = "зададена нова профилна снимка";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Задай kод за достъп";
@@ -3525,6 +3600,9 @@
 "Trying to connect to the server used to receive messages from this contact." = "Опит за свързване със сървъра, използван за получаване на съобщения от този контакт.";
 
 /* No comment provided by engineer. */
+"Turkish interface" = "Турски интерфейс";
+
+/* No comment provided by engineer. */
 "Turn off" = "Изключи";
 
 /* No comment provided by engineer. */
@@ -3537,10 +3615,19 @@
 "Unblock" = "Отблокирай";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Отблокирай за всички";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Отблокирай член";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Отблокиране на член за всички?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Отблокирай член?";
+
+/* rcv group event chat item */
+"unblocked %@" = "отблокиран %@";
 
 /* item status description */
 "Unexpected error: %@" = "Неочаквана грешка: %@";
@@ -3574,6 +3661,9 @@
 
 /* No comment provided by engineer. */
 "Unknown error" = "Непозната грешка";
+
+/* No comment provided by engineer. */
+"unknown status" = "неизвестен статус";
 
 /* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Освен ако не използвате интерфейса за повикване на iOS, активирайте режима \"Не безпокой\", за да избегнете прекъсвания.";
@@ -3619,6 +3709,9 @@
 
 /* rcv group event chat item */
 "updated group profile" = "актуализиран профил на групата";
+
+/* profile update event chat item */
+"updated profile" = "актуализиран профил";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Актуализирането на настройките ще свърже отново клиента към всички сървъри.";
@@ -3678,19 +3771,19 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"Verify code with desktop" = "Потвръди кода с настолното устройство";
+"Verify code with desktop" = "Потвърди кода с настолното устройство";
 
 /* No comment provided by engineer. */
-"Verify connection" = "Потвръди връзките";
+"Verify connection" = "Потвърди връзка";
 
 /* No comment provided by engineer. */
-"Verify connection security" = "Потвръди сигурността на връзката";
+"Verify connection security" = "Потвърди сигурността на връзката";
 
 /* No comment provided by engineer. */
-"Verify connections" = "Потвръди връзките";
+"Verify connections" = "Потвърждение за свързване";
 
 /* No comment provided by engineer. */
-"Verify security code" = "Потвръди кода за сигурност";
+"Verify security code" = "Потвърди кода за сигурност";
 
 /* No comment provided by engineer. */
 "Via browser" = "Чрез браузър";
@@ -3795,7 +3888,13 @@
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когато споделяте инкогнито профил с някого, този профил ще се използва за групите, в които той ви кани.";
 
 /* No comment provided by engineer. */
+"With encrypted files and media." = "С криптирани файлове и медия.";
+
+/* No comment provided by engineer. */
 "With optional welcome message." = "С незадължително съобщение при посрещане.";
+
+/* No comment provided by engineer. */
+"With reduced battery usage." = "С намален разход на батерията.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Грешна парола за базата данни";
@@ -3857,6 +3956,9 @@
 /* No comment provided by engineer. */
 "you are observer" = "вие сте наблюдател";
 
+/* snd group event chat item */
+"you blocked %@" = "вие блокирахте %@";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Можете да приемате обаждания от заключен екран, без идентификация на устройство и приложението.";
 
@@ -3906,10 +4008,10 @@
 "You can't send messages!" = "Не може да изпращате съобщения!";
 
 /* chat item text */
-"you changed address" = "променихте адреса";
+"you changed address" = "адреса за получаване е променен";
 
 /* chat item text */
-"you changed address for %@" = "променихте адреса за %@";
+"you changed address for %@" = "променихте адреса получаване за %@";
 
 /* snd group event chat item */
 "you changed role for yourself to %@" = "променихте ролята си на %@";
@@ -3967,6 +4069,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "споделихте еднократен инкогнито линк за връзка";
+
+/* snd group event chat item */
+"you unblocked %@" = "вие отблокирахте %@";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Ще бъдете свързани с групата, когато устройството на домакина на групата е онлайн, моля, изчакайте или проверете по-късно!";

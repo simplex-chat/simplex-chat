@@ -794,7 +794,7 @@
     <string name="updating_settings_will_reconnect_client_to_all_servers">設定を更新すると、全サーバにクライントの再接続が行われます。</string>
     <string name="save_color">色を保存</string>
     <string name="chat_preferences_you_allow">あなたが次を許可しています：</string>
-    <string name="chat_preferences_yes">はい</string>
+    <string name="chat_preferences_yes">オン</string>
     <string name="set_group_preferences">グループ設定を行う</string>
     <string name="your_preferences">あなたの設定</string>
     <string name="voice_prohibited_in_this_chat">このチャットでは音声メッセージが使用禁止です。</string>
@@ -1346,7 +1346,7 @@
     <string name="receipts_groups_disable_for_all">すべてのグループで無効にする</string>
     <string name="privacy_message_draft">メッセージの下書き</string>
     <string name="privacy_show_last_messages">最新のメッセージを表示</string>
-    <string name="send_receipts">配信通知の送信</string>
+    <string name="send_receipts">送信完了表示</string>
     <string name="rcv_group_event_n_members_connected">%s, %s および %d 人の他のメンバーが接続しています。</string>
     <string name="rcv_group_event_3_members_connected">%s, %s と %s は接続中</string>
     <string name="in_developing_desc">この機能はまだサポートされていません。次のリリースをお試しください。</string>

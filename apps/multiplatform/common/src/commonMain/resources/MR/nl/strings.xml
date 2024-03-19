@@ -440,8 +440,8 @@
     <string name="chat_item_ttl_none">nooit</string>
     <string name="no_received_app_files">Geen ontvangen of verzonden bestanden</string>
     <string name="alert_title_group_invitation_expired">Uitnodiging verlopen!</string>
-    <string name="rcv_group_event_member_left">verlaten</string>
-    <string name="group_member_status_left">verlaten</string>
+    <string name="rcv_group_event_member_left">is vertrokken</string>
+    <string name="group_member_status_left">vertrokken</string>
     <string name="group_member_status_invited">uitgenodigd</string>
     <string name="button_leave_group">Groep verlaten</string>
     <string name="info_row_local_name">Lokale naam</string>
@@ -523,7 +523,7 @@
     <string name="rcv_group_event_invited_via_your_group_link">uitgenodigd via je groep link</string>
     <string name="incognito">Incognito</string>
     <string name="icon_descr_call_missed">Gemiste oproep</string>
-    <string name="description_via_contact_address_link_incognito">incognito via contactadres link</string>
+    <string name="description_via_contact_address_link_incognito">incognito via contact adres link</string>
     <string name="description_via_group_link_incognito">incognito via groep link</string>
     <string name="description_via_one_time_link_incognito">incognito via eenmalige link</string>
     <string name="invalid_chat">ongeldige gesprek</string>
@@ -933,7 +933,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
     <string name="unknown_message_format">onbekend berichtformaat</string>
     <string name="simplex_link_mode_browser">Via browser</string>
-    <string name="description_via_contact_address_link">via contactadres link</string>
+    <string name="description_via_contact_address_link">via contact adres link</string>
     <string name="description_via_group_link">via groep link</string>
     <string name="description_via_one_time_link">via een eenmalige link</string>
     <string name="simplex_link_connection">via %1$s</string>
@@ -1551,7 +1551,7 @@
     <string name="tap_to_scan">Tik om te scannen</string>
     <string name="keep_invitation_link">Bewaar</string>
     <string name="tap_to_paste_link">Tik om de link te plakken</string>
-    <string name="search_or_paste_simplex_link">Zoek of plak een SimpleX link</string>
+    <string name="search_or_paste_simplex_link">Zoeken of plak een SimpleX link</string>
     <string name="chat_is_stopped_you_should_transfer_database">De chat is gestopt. Als u deze database al op een ander apparaat heeft gebruikt, moet u deze terugzetten voordat u met chatten begint.</string>
     <string name="start_chat_question">Begin chat?</string>
     <string name="show_internal_errors">Toon interne fouten</string>
@@ -1628,4 +1628,13 @@
     <string name="unblock_for_all_question">Lid voor iedereen deblokkeren?</string>
     <string name="snd_group_event_member_blocked">je hebt %s geblokkeerd</string>
     <string name="snd_group_event_member_unblocked">je hebt %s gedeblokkeerd</string>
+    <string name="message_too_large">Bericht te groot</string>
+    <string name="welcome_message_is_too_long">Welkomstbericht is te lang</string>
+    <string name="database_migration_in_progress">De databasemigratie wordt uitgevoerd.
+\nDit kan enkele minuten duren.</string>
+    <string name="call_service_notification_audio_call">Audio oproep</string>
+    <string name="call_service_notification_end_call">Ophangen</string>
+    <string name="call_service_notification_video_call">Video oproep</string>
+    <string name="unable_to_open_browser_title">Fout bij het openen van de browser</string>
+    <string name="unable_to_open_browser_desc">Voor oproepen is de standaard webbrowser vereist. Configureer de standaard browser in het systeem en deel meer informatie met de ontwikkelaars.</string>
 </resources>
