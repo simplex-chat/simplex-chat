@@ -495,6 +495,32 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v5.6",
+    post = "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_vpn_key_filled,
+        titleId = MR.strings.v5_6_quantum_resistant_encryption,
+        descrId = MR.strings.v5_6_quantum_resistant_encryption_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_ios_share,
+        titleId = MR.strings.v5_6_app_data_migration,
+        descrId = MR.strings.v5_6_app_data_migration_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_call,
+        titleId = MR.strings.v5_6_picture_in_picture_calls,
+        descrId = MR.strings.v5_6_picture_in_picture_calls_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_back_hand,
+        titleId = MR.strings.v5_6_safer_groups,
+        descrId = MR.strings.v5_6_safer_groups_descr
+      )
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version
