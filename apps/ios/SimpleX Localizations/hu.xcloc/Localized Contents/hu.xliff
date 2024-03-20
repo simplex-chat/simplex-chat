@@ -3630,12 +3630,12 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target state="translated">Az üzeneteket, fájlokat és hívásokat **végpontok közötti titkosítással** és PFS (perfect forward secrecy) titkosítással védi, visszautasítással és behatolás utáni helyreállítással.</target>
+        <target state="translated">Az üzeneteket, fájlokat és hívásokat **végpontok közötti titkosítással** és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target state="translated">Az üzeneteket, fájlokat és hívásokat **végpontok közötti kvantumrezisztens titkosítással** és PFS (perfect forward secrecy) titkosítással védi, visszautasítással és behatolás utáni helyreállítással.</target>
+        <target state="translated">Az üzeneteket, fájlokat és hívásokat **végpontok közötti kvantumrezisztens titkosítással** és PFS sérülés utáni titkosságvédelemmel, visszautasítással és behatolás utáni helyreállítással védi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve" approved="no">
