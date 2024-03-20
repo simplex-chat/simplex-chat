@@ -774,7 +774,7 @@ struct ChatView: View {
                     menu.append(viewInfoUIAction(ci))
                 }
                 if revealed {
-                    menu.append(hideUIAction())
+                    menu.append(hideUIAction(range))
                 }
                 if ci.meta.itemDeleted == nil && !ci.localNote,
                    let file = ci.file,
@@ -789,9 +789,9 @@ struct ChatView: View {
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
-                    menu.append(hideUIAction())
+                    menu.append(hideUIAction(range))
                 } else if !ci.isDeletedContent {
-                    menu.append(revealUIAction())
+                    menu.append(revealUIAction(range))
                 } else if range != nil {
                     menu.append(expandUIAction())
                 }
@@ -974,14 +974,19 @@ struct ChatView: View {
             }
         }
 
-        private func hideUIAction() -> UIAction {
+        private func hideUIAction(_ range: ClosedRange<Int>?) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
-                //withAnimation {
+                // Animation on only one item looks bad because of UIKit context menu involved
+                if (range?.count ?? 0) > 1 {
+                    withAnimation {
+                        revealed = false
+                    }
+                } else {
                     revealed = false
-                //}
+                }
             }
         }
         
@@ -1045,14 +1050,19 @@ struct ChatView: View {
             }
         }
 
-        private func revealUIAction() -> UIAction {
+        private func revealUIAction(_ range: ClosedRange<Int>?) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
                 image: UIImage(systemName: "eye")
             ) { _ in
-                //withAnimation {
+                // Animation on only one item looks bad because of UIKit context menu involved
+                if (range?.count ?? 0) > 1 {
+                    withAnimation {
+                        revealed = true
+                    }
+                } else {
                     revealed = true
-                //}
+                }
             }
         }
 
@@ -1061,9 +1071,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Expand", comment: "chat item action"),
                 image: UIImage(systemName: "arrow.up.and.line.horizontal.and.arrow.down")
             ) { _ in
-                //withAnimation {
+                withAnimation {
                     revealed = true
-                //}
+                }
             }
         }
 
@@ -1072,9 +1082,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "arrow.down.and.line.horizontal.and.arrow.up")
             ) { _ in
-                //withAnimation {
+                withAnimation {
                     revealed = false
-                //}
+                }
             }
         }
 
