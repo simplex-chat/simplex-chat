@@ -1710,8 +1710,8 @@
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>Nie możesz</b> używać tej samej bazy na dwóch urządzeniach.</string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Plik został usunięty lub łącze jest nieprawidłowe</string>
     <string name="migrate_from_device_finalize_migration">Dokończ migrację</string>
-    <string name="e2ee_info_pq">Wiadomości, pliki i połączenia są chronione przez <b> kwantowo odporne szyfrowanie end-to-end</b> z doskonałym utajnianiem z wyprzedzeniem i odzyskiem po złamaniu.</string>
-    <string name="v5_6_app_data_migration_descr">Zmigruj do innego urządzenia przez kod QR</string>
+    <string name="e2ee_info_pq">Wiadomości, pliki i połączenia są chronione przez <b>kwantowo odporne szyfrowanie end-to-end</b> z doskonałym utajnianiem z wyprzedzeniem i odzyskiem po złamaniu.</string>
+    <string name="v5_6_app_data_migration_descr">Zmigruj do innego urządzenia przez kod QR.</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Proszę potwierdzić, że ustawienia sieciowe są prawidłowe dla tego urządzenia.</string>
     <string name="conn_event_enabled_pq">kwantowo odporne szyfrowanie e2e</string>
     <string name="v5_6_quantum_resistant_encryption">Kwantowo odporne szyfrowanie</string>
