@@ -1637,4 +1637,10 @@
     <string name="call_service_notification_end_call">أنهيّ المكالمة</string>
     <string name="unable_to_open_browser_desc">متصفح الويب الافتراضي مطلوب للمكالمات. يُرجى تضبيط المتصفح الافتراضي في النظام، ومشاركة المزيد من المعلومات مع المطورين.</string>
     <string name="unable_to_open_browser_title">حدث خطأ أثناء فتح المتصفح</string>
+    <string name="migrate_from_device_archive_and_upload">أرشفة و رفع</string>
+    <string name="v5_6_safer_groups_descr">يمكن للمشرفين حظر عضو للجميع.</string>
+    <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
+    <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن وتحميلها في أجزاء إلى مُرحلات XFTP التي ضبطت.</string>
+    <string name="migrate_to_device_apply_onion">طبّق</string>
 </resources>
