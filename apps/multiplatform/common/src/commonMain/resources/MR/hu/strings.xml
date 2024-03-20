@@ -1361,7 +1361,7 @@
     <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Már csatlakozik a következőhöz: <b>%1$s</b>.]]></string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a hivatkozás nem érvényes kapcsolati hivatkozás!</string>
-    <string name="to_verify_compare">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (,vagy szkennelje be) az ismerőse eszközén lévő kódot.</string>
+    <string name="to_verify_compare">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy szkennelje be) az ismerőse eszközén lévő kódot.</string>
     <string name="you_must_use_the_most_recent_version_of_database">A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerősétől.</string>
     <string name="messages_section_description">Ez a beállítás a jelenlegi csevegési profilban lévő üzenetekre érvényes</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Meghívást kapott a csoportba. Csatlakozzon, hogy kapcsolatba léphessen a csoport tagjaival.</string>
@@ -1382,7 +1382,7 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz csatlakoztatva, ha a csatlakozási kérelme elfogadásra került, várjon, vagy ellenőrizze később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva ebben a csoportban.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
-    <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantum ellenálló protokoll által.</string>
+    <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumrezisztens protokollon keresztül.</string>
     <string name="v5_1_better_messages_descr">- hangüzenetek 5 percig.
 \n- egyedi eltűnési időhatár
 \n- előzmény szerkesztése</string>
@@ -1410,7 +1410,7 @@
     <string name="to_reveal_profile_enter_password">Rejtett profiljának felfedéséhez írja be a teljes jelszót a Csevegési profilok oldal keresőmezőjébe.</string>
     <string name="upgrade_and_open_chat">A csevegés frissítése és megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – A kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.</string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoport tagja.]]></string>
     <string name="snd_conn_event_switch_queue_phase_completed">Azonosítója megváltoztatva</string>
     <string name="v4_3_irreversible_message_deletion_desc">Ismerősei engedélyezhetik a teljes üzenet törlést.</string>
@@ -1708,4 +1708,6 @@
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">A költöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
+    <string name="e2ee_info_no_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és PFS (perfect forward secrecy) titkosítással védi, visszautasítással és behatolás utáni helyreállítással.</string>
+    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és PFS (perfect forward secrecy) titkosítással védi, visszautasítással és behatolás utáni helyreállítással.</string>
 </resources>
