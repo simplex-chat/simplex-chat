@@ -184,3 +184,7 @@ address: asfeahsd
 # maybe there should also be some field for the source of funds
 amount: 0.5
 ```
+
+## Other platforms
+
+It is tempting to avoid using file-based approach on the platfroms that allow simple service calls. But that would result in the need for alternative parallel service specification, and would complicate and increase the scope for development and testing. Both desktop systems and Android have similar primitives to allow file updates. The trade-off here is between havinf a single file-based protocol on all platforms, that would simplify testing and development, and security of files - the latter can be mitigated by using encryption for these files that is agreed during initial handshake between provider and consumer apps.
