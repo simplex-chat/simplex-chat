@@ -6,7 +6,7 @@ SimpleX Chat can provide messaging functionality to other apps. While one of the
 
 SimpleX Chat can consume functionalities from other apps. Payments is the most interesting case where it would be interesting, and it is frequently requested by the users. While simple integration via URIs is possible, in many cases consuming functionalities of other apps may require some interactive rpc protocol that is not possible in this way.
 
-Depending on the platform this integration can be more or less complex. Desktop and Android platforms are simple - apps can expose serives via the local TCP ports (e.g., with WebSockets encoding) and via Android services, - iOS platform is more complex as there is no generally usable service layer for iOS platform and there are various restrictions to background execution that need to be taken into account.
+Depending on the platform this integration can be more or less complex. Desktop and Android platforms are simple - apps can expose services via the local TCP ports (e.g., with WebSockets encoding) and via Android services, - iOS platform is more complex as there is no generally usable service layer for iOS platform and there are various restrictions to background execution that need to be taken into account.
 
 ## Possible technologies for iOS platform
 
@@ -30,7 +30,7 @@ While it's commonly used to share content and to send messages, it can also be u
 
 ### App groups
 
-App group is a shared container that can be accessed by multiple apps or multiple parts on one app. Traditionally it is used for sharing data with the app extensions (e.g., Share or Notification service extensions) and for sharing data between the multiple apps of the same developers. It can also be used by sharing the information via files and also communicating between two different running processes via file coordinnator notifications.
+App group is a shared container that can be accessed by multiple apps or multiple parts on one app. Traditionally it is used for sharing data with the app extensions (e.g., Share or Notification service extensions) and for sharing data between the multiple apps of the same developers. It can also be used by sharing the information via files and also communicating between two different running processes via file coordinator notifications.
 
 While this approach can be used for sharing files and communication between active processes, it has these limitations:
 - the name of the app group requires some management, as it has to be common for two apps.
@@ -55,7 +55,7 @@ The good thing about payment services is that using files to expose the service 
 
 ## Proposed solution for payment provider integration
 
-The assumption here is that it is desirable to provide the most friction-less user experience, where the payment can be started and completed in SimpleX Chat, without switching back and forth between the apps, including the negotiation of one-off payment addressess, payment confirmations, confirming commisions, etc.
+The assumption here is that it is desirable to provide the most friction-less user experience, where the payment can be started and completed in SimpleX Chat, without switching back and forth between the apps, including the negotiation of one-off payment addresses, payment confirmations, confirming commissions, etc.
 
 While this approach might be seen as reducing the "engagement" with payment provider app, at the same time it may 10x the number of payments that the users are making and also 10x the size of the payment network - via simplified automatic payment address discovery and negotiation, and payment confirmation, without the need to publish a permanent payment address on the user's profile (which most users of communication solutions do not want to do).
 
@@ -70,11 +70,11 @@ The service provider would "publish" a "service catalogue", as the list of pre-d
 
 Service catalogue would include the file with the list of services (to allow the app to provide more than one service for the future extensibility, so "Payments" and "Messaging" each would be a separate service, provided by payments/wallet app and messenger app, respectively) and each service definition files would exist in a separate catalogue.
 
-Catalogue for a service would contain the file with the list of "Request template" files and "Endpoint" files - request template file itself could be an end-point. This follows from the design of the XPC service of File provider extension where each requst should be made in the context of some file.
+Catalogue for a service would contain the file with the list of "Request template" files and "Endpoint" files - request template file itself could be an end-point. This follows from the design of the XPC service of File provider extension where each request should be made in the context of some file.
 
 While it's tempting to simply use directory as the list of such files, it makes it harder to test some new functions by adding the new files without exposing them to the consumer apps, plus having the list of endpoints and templates in a separate file allows to associate additional metadata with each one. The most human- and machine-readable format for this list and also for templates and for endpoints is YAML, a specific specification needs to be defined, e.g. using RFC 8927 spec for JSON Type definitions - as we only likely need the subset of YAML that is simply a syntactically different JSON.
 
-A sample directory structure for service catalagoe:
+A sample directory structure for service catalogue:
 
 ```
 .services/
@@ -92,7 +92,7 @@ A sample directory structure for service catalagoe:
       chat.simplex.app/
         20240320110125_payment_order.yml # a specific payment order from SimpleX Chat
     proof_requests/
-    statemet_requests/
+    statement_requests/
 ```
 
 This folder structure would allow using file provider extension for exposing the files to Files app, alongside the `.services` folder (we could come up with some fancier name to make it more distinct).
@@ -104,7 +104,7 @@ spec: Services
 versions: 1
 services:
   - spec: payments # this name should be reserved and managed as specification name
-    versions: 1-2 # single supported version or version range that service provider can accomodate
+    versions: 1-2 # single supported version or version range that service provider can accommodate
     folder: payments
     status: enabled # optional, could be also "experimental", "disabled"
     countries: [!CHN] # optional, but may be required at some point to disable the service in some countries, to avoid removal from these countries App store.
@@ -120,7 +120,7 @@ versions: 1-2 # optional, should match services.yml file
 status: enabled # optional, should match services.yml file
 countries: [!CHN] # optional, should match services.yml file
 requests: # request templates
-  - spec: invoice_request # spec contains standardised template name that defines file schema
+  - spec: invoice_request # spec contains standardized template name that defines file schema
     versions: 1-3 # optional, to allow independently version specific templates and endpoints
     file: invoice_request.yml # app-defined name for template
     folder: invoice_requests # folder where consumer app would submit invoices
@@ -132,7 +132,7 @@ requests: # request templates
     folder: proof_requests
   - spec: statement_request
     file: statement_request.yml
-    folder: statemet_requests
+    folder: statement_requests
 endpoints:
   - spec: connect_app
     file: connect_app.yml # some XPC request in the context of that file could perform the initial handshake to agree app signature, and optionally, encryption keys, and to provide folder for the consumer app to submit requests
@@ -140,7 +140,7 @@ endpoints:
 
 While it's tempting to define the whole service as a single endpoint, without any request files (like we did in the POC for SimpleX Chat XPC service), it will make it very hard to justify using File provider extension in this case - Apple guidelines are very clear that the extensions should be used for their intended purposes. With request files it seems very legitimate. So possibly the initial service spec should not contain any endpoints, only request templates.
 
-I am not a cryptocurrencies expert, so below are just examples that require changing / extending to accomodate various cryptocurrency conventions, and, possibly some currencies may require completely separate request structures. These examples are just to review this file-based request approach.
+I am not a cryptocurrencies expert, so below are just examples that require changing / extending to accommodate various cryptocurrency conventions, and, possibly some currencies may require completely separate request structures. These examples are just to review this file-based request approach.
 
 `invoice_request.yml`
 
@@ -189,4 +189,4 @@ amount: 0.5
 
 ## Other platforms
 
-It is tempting to avoid using file-based approach on the platfroms that allow simple service calls. But that would result in the need for alternative parallel service specification, and would complicate and increase the scope for development and testing. Both desktop systems and Android have similar primitives to allow file updates. The trade-off here is between havinf a single file-based protocol on all platforms, that would simplify testing and development, and security of files - the latter can be mitigated by using encryption for these files that is agreed during initial handshake between provider and consumer apps.
+It is tempting to avoid using file-based approach on the platforms that allow simple service calls. But that would result in the need for alternative parallel service specification, and would complicate and increase the scope for development and testing. Both desktop systems and Android have similar primitives to allow file updates. The trade-off here is between having a single file-based protocol on all platforms, that would simplify testing and development, and potentially lower security of files - the latter can be mitigated by using encryption for these files that is agreed during initial handshake between provider and consumer apps.
