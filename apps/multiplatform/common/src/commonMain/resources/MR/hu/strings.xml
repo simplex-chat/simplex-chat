@@ -56,7 +56,7 @@
     <string name="app_version_code">Az alkalmazás build száma: %s</string>
     <string name="audio_video_calls">Hang-/videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
-    <string name="allow_your_contacts_to_send_voice_messages">Hangüzenetek küldésének engedélyezése az ismerősei számára</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Hangüzenetek küldésének engedélyezése az ismerősei számára.</string>
     <string name="settings_audio_video_calls">Hang- és videóhívások</string>
     <string name="v5_3_encrypt_local_files_descr">Az alkalmazás titkosítja a helyi fájlokat (a videók kivételével).</string>
     <string name="answer_call">Hívás fogadása</string>
@@ -1690,4 +1690,18 @@
     <string name="migrate_from_device_uploading_archive">Archívum feltöltése</string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Figyelmeztetés: a csevegés elindítása egyszerre több eszközön nem támogatott, továbbá üzenetkézbesítési hibákat okozhat</string>
     <string name="migrate_to_device_repeat_import">Importálás ismét</string>
+    <string name="conn_event_disabled_pq">szabványos végpontok közötti titkosítás</string>
+    <string name="migrate_to_device_title">Átköltöztetés ide</string>
+    <string name="migrate_from_device_title">Eszköz átköltöztetése</string>
+    <string name="migrate_from_device_to_another_device">Átköltöztetés egy másik eszközre</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>Figyelem</b>: az archívum törlésre kerül.</string>
+    <string name="migrate_from_another_device">Átköltöztetés egy másik eszközről</string>
+    <string name="v5_6_quantum_resistant_encryption">Kvantumrezisztens titkosítás</string>
+    <string name="migrate_from_device_try_again">Megpróbálhatja még egyszer.</string>
+    <string name="migrate_from_device_migration_complete">Átköltöztetés befejezve</string>
+    <string name="v5_6_app_data_migration_descr">Átköltöztetés egy másik eszközre QR-kód használatával.</string>
+    <string name="migrate_to_device_migrating">Átköltöztetés</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Megjegyzés</b>: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a kapcsolataiból érkező üzenetek visszafejtését.</string>
+    <string name="migrate_to_device_try_again">Megpróbálhatja még egyszer.</string>
+    <string name="invalid_file_link">Hibás hivatkozás</string>
 </resources>
