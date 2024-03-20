@@ -253,6 +253,7 @@ struct FramedItemView: View {
                 ciQuotedMsgTextView(qi, lines: 3)
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
         .padding(.horizontal, 12)
     }

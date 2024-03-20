@@ -46,7 +46,7 @@ fun ChatArchiveLayout(
   saveArchive: () -> Unit,
   deleteArchiveAlert: () -> Unit
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(title)

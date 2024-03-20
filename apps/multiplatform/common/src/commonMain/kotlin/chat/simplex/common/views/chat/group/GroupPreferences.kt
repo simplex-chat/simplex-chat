@@ -18,6 +18,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
 @Composable
@@ -72,8 +73,8 @@ private fun GroupPreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.group_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }

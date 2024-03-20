@@ -24,11 +24,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -186,7 +185,8 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun HistoryTab() {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
       val versions = ciInfo.itemVersions
@@ -210,7 +210,8 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
       SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -267,7 +268,8 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)

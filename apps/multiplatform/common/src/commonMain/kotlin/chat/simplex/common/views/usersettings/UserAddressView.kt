@@ -7,9 +7,7 @@ import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -91,14 +89,7 @@ fun UserAddressView(
       },
       learnMore = {
         ModalManager.start.showModal {
-          Column(
-            Modifier
-              .fillMaxHeight()
-              .padding(horizontal = DEFAULT_PADDING),
-            verticalArrangement = Arrangement.SpaceBetween
-          ) {
-            UserAddressLearnMore()
-          }
+          UserAddressLearnMore()
         }
       },
       share = { userAddress: String -> clipboard.shareText(userAddress) },
@@ -182,9 +173,7 @@ private fun UserAddressLayout(
   deleteAddress: () -> Unit,
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
 ) {
-  Column(
-    Modifier.verticalScroll(rememberScrollState()),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId), withPadding = false)
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),

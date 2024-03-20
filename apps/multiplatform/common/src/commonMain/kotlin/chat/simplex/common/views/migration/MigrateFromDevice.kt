@@ -145,12 +145,19 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
+  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
+  val scrollState = rememberScrollState()
   Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).height(IntrinsicSize.Max),
+    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).height(IntrinsicSize.Max),
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
+  }
+  if (appPlatform.isDesktop) {
+    Box(Modifier.fillMaxSize()) {
+      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+    }
   }
   platform.androidLockPortraitOrientation()
 }

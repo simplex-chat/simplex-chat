@@ -19,7 +19,7 @@ void haskell_init(const char *eventlog, const char *heap_profile) {
     argv[argc++] = "simplex"; // fake program name
     argv[argc++] = "+RTS"; // start adding RTS options
     argv[argc++] = "-T"; // make GC counters available from inside the program
-    argv[argc++] = "-A16m"; // chunk size for new allocations (less frequent GC)
+    argv[argc++] = "-A64m"; // chunk size for new allocations (less frequent GC)
     argv[argc++] = "-H64m"; // larger heap size on start (faster boot)
     // argv[argc++] = "-M8G"; // keep memory usage under 8G, collecting more aggressively when approaching it (and crashing sooner rather than taking down the whole system)
     if (eventlog) {

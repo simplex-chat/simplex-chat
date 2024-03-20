@@ -1355,7 +1355,7 @@
     <string name="turn_off_system_restriction_button">Apri impostazioni app</string>
     <string name="system_restricted_background_in_call_desc">L\'app potrebbe venire chiusa dopo 1 minuto in secondo piano.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Incolla il link che hai ricevuto per connetterti con il contatto…</string>
-    <string name="connect__your_profile_will_be_shared">Il tuo profilo %1$s verrà condiviso.</string>
+    <string name="connect__your_profile_will_be_shared">Verrà condiviso il tuo profilo %1$s.</string>
     <string name="connect__a_new_random_profile_will_be_shared">Verrà condiviso un nuovo profilo casuale.</string>
     <string name="disable_notifications_button">Disattiva le notifiche</string>
     <string name="system_restricted_background_in_call_title">Nessuna chiamata in secondo piano</string>
@@ -1630,4 +1630,13 @@
     <string name="block_for_all_question">Bloccare il membro per tutti?</string>
     <string name="error_blocking_member_for_all">Errore nel blocco del membro per tutti</string>
     <string name="snd_group_event_member_blocked">hai bloccato %s</string>
+    <string name="welcome_message_is_too_long">Il messaggio di benvenuto è troppo lungo</string>
+    <string name="message_too_large">Messaggio troppo grande</string>
+    <string name="database_migration_in_progress">Migrazione database in corso.
+\nPuò richiedere qualche minuto.</string>
+    <string name="call_service_notification_audio_call">Chiamata audio</string>
+    <string name="call_service_notification_end_call">Termina chiamata</string>
+    <string name="call_service_notification_video_call">Videochiamata</string>
+    <string name="unable_to_open_browser_title">Errore di apertura del browser</string>
+    <string name="unable_to_open_browser_desc">Il browser predefinito è necessario per le chiamate. Configura il browser predefinito nel sistema, poi condividi più informazioni con gli sviluppatori.</string>
 </resources>

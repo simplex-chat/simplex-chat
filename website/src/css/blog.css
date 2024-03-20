@@ -210,4 +210,9 @@ h6{
     float: left;
     margin-right: 3rem;
   }
+
+  #article .float-to-right{
+    float: right;
+    margin-left: 3rem;
+  }
 }

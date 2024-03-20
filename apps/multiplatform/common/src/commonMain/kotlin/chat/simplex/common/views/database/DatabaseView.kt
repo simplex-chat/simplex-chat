@@ -7,8 +7,6 @@ import SectionItemView
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,7 +25,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import java.io.*
@@ -158,8 +155,8 @@ fun DatabaseLayout(
   val stopped = !runChat
   val operationsDisabled = (!stopped || progressIndicator) && !chatModel.desktopNoUserNoRemote
 
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 

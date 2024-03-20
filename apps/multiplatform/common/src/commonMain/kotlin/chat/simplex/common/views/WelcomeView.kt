@@ -49,8 +49,8 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ColumnWithScrollBar(
+        modifier = Modifier.fillMaxSize()
       ) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
@@ -120,8 +120,8 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ColumnWithScrollBar(
+        modifier = Modifier.fillMaxSize()
       ) {
         /*CloseSheetBar(close = {
           if (chatModel.users.isEmpty()) {
