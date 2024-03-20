@@ -774,7 +774,7 @@ struct ChatView: View {
                     menu.append(viewInfoUIAction(ci))
                 }
                 if revealed {
-                    menu.append(hideUIAction(range))
+                    menu.append(hideUIAction())
                 }
                 if ci.meta.itemDeleted == nil && !ci.localNote,
                    let file = ci.file,
@@ -789,9 +789,9 @@ struct ChatView: View {
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
-                    menu.append(hideUIAction(range))
+                    menu.append(hideUIAction())
                 } else if !ci.isDeletedContent {
-                    menu.append(revealUIAction(range))
+                    menu.append(revealUIAction())
                 } else if range != nil {
                     menu.append(expandUIAction())
                 }
@@ -974,19 +974,13 @@ struct ChatView: View {
             }
         }
 
-        private func hideUIAction(_ range: ClosedRange<Int>?) -> UIAction {
+        private func hideUIAction() -> UIAction {
             UIAction(
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
-                // Animation on only one item looks bad because of UIKit context menu involved
-                if (range?.count ?? 0) > 1 {
-                    withAnimation {
-                        revealed = false
-                    }
-                } else {
-                    revealed = false
-                }
+                // With animation it looks bad because of UIKit context menu involved
+                revealed = false
             }
         }
         
@@ -1050,19 +1044,13 @@ struct ChatView: View {
             }
         }
 
-        private func revealUIAction(_ range: ClosedRange<Int>?) -> UIAction {
+        private func revealUIAction() -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
                 image: UIImage(systemName: "eye")
             ) { _ in
-                // Animation on only one item looks bad because of UIKit context menu involved
-                if (range?.count ?? 0) > 1 {
-                    withAnimation {
-                        revealed = true
-                    }
-                } else {
-                    revealed = true
-                }
+                // With animation it looks bad because of UIKit context menu involved
+                revealed = true
             }
         }
 
