@@ -1704,4 +1704,8 @@
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Megjegyzés</b>: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a kapcsolataiból érkező üzenetek visszafejtését.</string>
     <string name="migrate_to_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="invalid_file_link">Hibás hivatkozás</string>
+    <string name="conn_event_enabled_pq">végpontok közötti kvantumrezisztens titkosítás</string>
+    <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
+    <string name="auth_open_migration_to_another_device">A költöztetési párbeszédablak megnyitása</string>
+    <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
 </resources>
