@@ -333,14 +333,14 @@ struct MigrateFromDevice: View {
         ZStack {
             List {
                 Section {
-                    Button(action: { alert = .deleteChat() }) {
-                        settingsRow("trash.fill") {
-                            Text("Delete database from this device").foregroundColor(.accentColor)
-                        }
-                    }
                     Button(action: { alert = .startChat() }) {
                         settingsRow("play.fill") {
                             Text("Start chat").foregroundColor(.red)
+                        }
+                    }
+                    Button(action: { alert = .deleteChat() }) {
+                        settingsRow("trash.fill") {
+                            Text("Delete database from this device").foregroundColor(.accentColor)
                         }
                     }
                 } header: {
