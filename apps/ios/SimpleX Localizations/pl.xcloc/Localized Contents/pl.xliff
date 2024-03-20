@@ -107,8 +107,9 @@
         <target>%@ połączony</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ downloaded" xml:space="preserve">
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
         <source>%@ downloaded</source>
+        <target state="translated">%@ pobrane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -131,8 +132,9 @@
         <target>%@ serwery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ uploaded" xml:space="preserve">
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
         <source>%@ uploaded</source>
+        <target state="translated">%@ wgrane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
@@ -350,8 +352,9 @@
         <target>**Najbardziej prywatny**: nie korzystaj z serwera powiadomień SimpleX Chat, sprawdzaj wiadomości okresowo w tle (zależy jak często korzystasz z aplikacji).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
+        <target state="translated">*Uwaga*: używanie tej samej bazy danych na dwóch urządzeniach zepsuje odszyfrowywanie wiadomości twoich połączeń, jako zabezpieczenie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
