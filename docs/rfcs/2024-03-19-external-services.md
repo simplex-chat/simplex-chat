@@ -49,6 +49,8 @@ The advantage of File provider extension over App group is that the provider app
 
 We made a working proof of concept to move shared logic of SimpleX Chat core into a File provider extension so that both the app and Notification service extension could use the same database and network access. That used "fake file" though, and we didn't manage to make it work withing 25mb - for full chat core it's really hard to fit in this memory limit. Some subset of functions can certainly fit in this memory limit, both for SimpleX Chat, if it's a provider, and for payment provider app.
 
+You can see this POC here: https://github.com/simplex-chat/simplex-chat/tree/_archived-ep/ios-file-provider/apps/ios (the folders to look at are "SimpleX Service" and "SimpleXServiceProtocol") - it all worked surprisingly well, till it hit 25mb memory limit.
+
 The good thing about payment services is that using files to expose the service and communicate service requests and results is quite natural, as making payment orders into documents rather than API calls has its advantages for debugging etc. Also providing transaction statements as PDF or text files is also quite traditional for payment providers.
 
 ## Proposed solution for payment provider integration
