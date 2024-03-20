@@ -557,7 +557,12 @@ struct ChatView: View {
                         chatItemView(ci, nil, prev)
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
+                    if revealed {
+                        chatItemView(chatItem, range, prevItem)
+                    } else {
+                        chatItemView(chatItem, range, prevItem)
+                    }
                 }
             }
         }
@@ -974,9 +979,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
-                withAnimation {
+                //withAnimation {
                     revealed = false
-                }
+                //}
             }
         }
         
@@ -1045,9 +1050,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
                 image: UIImage(systemName: "eye")
             ) { _ in
-                withAnimation {
+                //withAnimation {
                     revealed = true
-                }
+                //}
             }
         }
 
@@ -1056,9 +1061,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Expand", comment: "chat item action"),
                 image: UIImage(systemName: "arrow.up.and.line.horizontal.and.arrow.down")
             ) { _ in
-                withAnimation {
+                //withAnimation {
                     revealed = true
-                }
+                //}
             }
         }
 
@@ -1067,9 +1072,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "arrow.down.and.line.horizontal.and.arrow.up")
             ) { _ in
-                withAnimation {
+                //withAnimation {
                     revealed = false
-                }
+                //}
             }
         }
 
