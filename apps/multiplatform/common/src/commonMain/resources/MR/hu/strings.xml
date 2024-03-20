@@ -1708,6 +1708,6 @@
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">A költöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
-    <string name="e2ee_info_no_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és PFS (perfect forward secrecy) titkosítással védi, visszautasítással és behatolás utáni helyreállítással.</string>
-    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és PFS (perfect forward secrecy) titkosítással védi, visszautasítással és behatolás utáni helyreállítással.</string>
+    <string name="e2ee_info_no_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</string>
+    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</string>
 </resources>
