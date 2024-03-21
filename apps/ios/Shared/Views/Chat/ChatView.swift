@@ -979,7 +979,6 @@ struct ChatView: View {
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
-                // With animation it looks bad because of UIKit context menu involved
                 withAnimation {
                     revealed = false
                 }
@@ -1051,7 +1050,6 @@ struct ChatView: View {
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
                 image: UIImage(systemName: "eye")
             ) { _ in
-                // With animation it looks bad because of UIKit context menu involved
                 withAnimation {
                     revealed = true
                 }
