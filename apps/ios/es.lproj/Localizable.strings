@@ -86,6 +86,9 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Más privado**: no se usa el servidor de notificaciones de SimpleX Chat, los mensajes se comprueban periódicamente en segundo plano (dependiendo de la frecuencia con la que utilices la aplicación).";
 
 /* No comment provided by engineer. */
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Tenga en cuenta**: usar la misma base de datos en dos dispositivos interrumpirá el descifrado de mensajes de sus conexiones, como protección de seguridad.";
+
+/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Atención**: NO podrás recuperar o cambiar la contraseña si la pierdes.";
 
 /* No comment provided by engineer. */
@@ -93,6 +96,9 @@
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Advertencia**: Las notificaciones automáticas instantáneas requieren una contraseña guardada en Keychain.";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**Atención**: el archivo será eliminado.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*bold*";
@@ -135,6 +141,9 @@
 
 /* No comment provided by engineer. */
 "%@ connected" = "%@ conectado";
+
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ downloaded";
 
 /* notification title */
 "%@ is connected!" = "%@ ¡está conectado!";
@@ -378,6 +387,9 @@
 "admin" = "administrador";
 
 /* No comment provided by engineer. */
+"Admins can block a member for all." = "Los admins pueden bloquear un miembro por todos.";
+
+/* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Los administradores pueden crear enlaces para unirse a grupos.";
 
 /* No comment provided by engineer. */
@@ -415,6 +427,9 @@
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Todos tus contactos permanecerán conectados. La actualización del perfil se enviará a tus contactos.";
+
+/* No comment provided by engineer. */
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Todos sus contactos, conversaciones y archivos se cifrarán de forma segura y se subirán en fragmentos hacia puntos XFTP configurados.";
 
 /* No comment provided by engineer. */
 "Allow" = "Se permite";
@@ -498,6 +513,9 @@
 "App build: %@" = "Compilación app: %@";
 
 /* No comment provided by engineer. */
+"App data migration" = "Migración de datos de la aplicación";
+
+/* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "Cifrado de los nuevos archivos locales (excepto vídeos).";
 
 /* No comment provided by engineer. */
@@ -517,6 +535,15 @@
 
 /* No comment provided by engineer. */
 "Appearance" = "Apariencia";
+
+/* No comment provided by engineer. */
+"Apply" = "Aplicar";
+
+/* No comment provided by engineer. */
+"Archive and upload" = "Archivar y transferir";
+
+/* No comment provided by engineer. */
+"Archiving database" = "Archivando base de datos";
 
 /* No comment provided by engineer. */
 "Attach" = "Adjuntar";
@@ -665,6 +692,9 @@
 /* No comment provided by engineer. */
 "Cancel" = "Cancelar";
 
+/* No comment provided by engineer. */
+"Cancel migration" = "Cancelar migración";
+
 /* feature offered item */
 "cancelled %@" = "cancelado %@";
 
@@ -745,6 +775,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Chat está detenido. Si estás usando esta base de datos en otro dispositivo, deberías transferirla de vuelta antes de iniciarlo.";
 
 /* No comment provided by engineer. */
+"Chat migrated!" = "Chat transferido !";
+
+/* No comment provided by engineer. */
 "Chat preferences" = "Preferencias de Chat";
 
 /* No comment provided by engineer. */
@@ -755,6 +788,9 @@
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Interfaz en chino y español";
+
+/* No comment provided by engineer. */
+"Choose _Migrate from another device_ on the new device and scan QR code." = "Elija _Migrar desde otro dispositivo_ en el nuevo dispositivo y escanee el código QR.";
 
 /* No comment provided by engineer. */
 "Choose file" = "Elije archivo";
@@ -802,6 +838,9 @@
 "Confirm database upgrades" = "Confirmar actualizaciones de la bases de datos";
 
 /* No comment provided by engineer. */
+"Confirm network settings" = "Confirmar los ajustes de red";
+
+/* No comment provided by engineer. */
 "Confirm new passphrase…" = "Confirme nueva contraseña…";
 
 /* No comment provided by engineer. */
@@ -809,6 +848,9 @@
 
 /* No comment provided by engineer. */
 "Confirm password" = "Confirmar contraseña";
+
+/* No comment provided by engineer. */
+"Confirm that you remember database passphrase to migrate it." = "Confirme que recuerda la frase secreta de la base de datos para migrarla.";
 
 /* server test step */
 "Connect" = "Conectar";
