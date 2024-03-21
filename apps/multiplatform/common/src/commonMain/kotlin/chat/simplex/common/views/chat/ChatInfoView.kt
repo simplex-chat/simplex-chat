@@ -145,7 +145,7 @@ fun ChatInfoView(
            withBGApi {
              val ct = chatModel.controller.apiSetContactPQ(chatRh, contact.contactId, true)
              if (ct != null) {
-               chatModel.updateContact(chatRh, contact)
+               chatModel.updateContact(chatRh, ct)
              }
              close.invoke()
            }
