@@ -1640,7 +1640,7 @@
     <string name="unable_to_open_browser_title">Błąd podczas otwierania przeglądarki</string>
     <string name="unable_to_open_browser_desc">Do połączeń wymagana jest domyślna przeglądarka. Proszę skonfigurować domyślną przeglądarkę systemową, i podzielić się informacją z twórcami.</string>
     <string name="e2ee_info_pq_short">Ten czat jest chroniony przez kwantowo odporne szyfrowanie end-to-end.</string>
-    <string name="e2ee_info_no_pq">Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z doskonałym utajnianiem z wyprzedzeniem i odzyskiem po złamaniu.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z doskonałym utajnianiem z wyprzedzeniem i odzyskiem po złamaniu.]]></string>
     <string name="auth_open_migration_to_another_device">Otwórz ekran migrowania</string>
     <string name="migrate_from_another_device">Zmigruj z innego urządzenia</string>
     <string name="set_passphrase">Ustaw hasło</string>
@@ -1688,10 +1688,10 @@
     <string name="migrate_from_device_check_connection_and_try_again">Sprawdź swoje połączenie z internetem i spróbuj ponownie</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">Wszystkie twoje kontakty, konwersacje i pliki będą bezpiecznie szyfrowane i wgrywane w kawałkach do skonfigurowanych przekaźników XFTP.</string>
     <string name="migrate_from_device_archive_and_upload">Archiwizuj i prześlij</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Uwaga</b>: używanie tej samej bazy danych na dwóch urządzeniach zepsuje odszyfrowywanie wiadomości twoich połączeń, jako zabezpieczenie.</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Ostrzeżenie</b>: archiwum zostanie usunięte.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Uwaga</b>: używanie tej samej bazy danych na dwóch urządzeniach zepsuje odszyfrowywanie wiadomości twoich połączeń, jako zabezpieczenie.]]></string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Ostrzeżenie</b>: archiwum zostanie usunięte.]]></string>
     <string name="migrate_from_device_cancel_migration">Anuluj migrację</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Wybierz <i>Zmigruj z innego urządzenia</i> na nowym urządzeniu i zeskanuj kod QR.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Wybierz <i>Zmigruj z innego urządzenia</i> na nowym urządzeniu i zeskanuj kod QR.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Potwierdź ustawienia sieciowe</string>
     <string name="migrate_from_device_delete_database_from_device">Usuń bazę danych z tego urządzenia</string>
     <string name="migrate_to_device_download_failed">Pobieranie nie udane</string>
@@ -1707,10 +1707,10 @@
     <string name="e2ee_info_no_pq_short">Ten czat jest chroniony przez szyfrowanie end-to-end.</string>
     <string name="migrate_from_device_verify_passphrase">Zweryfikuj hasło</string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Ostrzeżenie: rozpoczęcie czatu na wielu urządzeniach nie jest wspierane i spowoduje niepowodzenia dostarczania wiadomości</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>Nie możesz</b> używać tej samej bazy na dwóch urządzeniach.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Nie możesz</b> używać tej samej bazy na dwóch urządzeniach.]]></string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Plik został usunięty lub łącze jest nieprawidłowe</string>
     <string name="migrate_from_device_finalize_migration">Dokończ migrację</string>
-    <string name="e2ee_info_pq">Wiadomości, pliki i połączenia są chronione przez <b>kwantowo odporne szyfrowanie end-to-end</b> z doskonałym utajnianiem z wyprzedzeniem i odzyskiem po złamaniu.</string>
+    <string name="e2ee_info_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>kwantowo odporne szyfrowanie end-to-end</b> z doskonałym utajnianiem z wyprzedzeniem i odzyskiem po złamaniu.]]></string>
     <string name="v5_6_app_data_migration_descr">Zmigruj do innego urządzenia przez kod QR.</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Proszę potwierdzić, że ustawienia sieciowe są prawidłowe dla tego urządzenia.</string>
     <string name="conn_event_enabled_pq">kwantowo odporne szyfrowanie e2e</string>

@@ -1694,18 +1694,18 @@
     <string name="migrate_from_device_delete_database_from_device">从这部设备上删除数据库</string>
     <string name="migrate_from_device_or_share_this_file_link">或安全地分享此文件链接</string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">警告：不支持在多部设备上启动聊天，这么做会导致消息传送失败。</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">你 <b>不能</b> 在两部设备上使用同一数据库。</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[你 <b>不能</b> 在两部设备上使用同一数据库。]]></string>
     <string name="migrate_from_device_migration_complete">迁移完毕</string>
     <string name="migrate_from_device_start_chat">启动聊天</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">请在迁移前确认你记得数据库的密码短语。</string>
     <string name="migrate_from_device_verify_passphrase">验证密码短语</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>警告</b>：该存档将被删除。</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>警告</b>：该存档将被删除。]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">检查你的互联网连接并重试</string>
     <string name="migrate_from_device_error_verifying_passphrase">验证密码短语出错：</string>
-    <string name="e2ee_info_no_pq">消息、文件和通话受带完全前向保密、可否认性和试验性恢复的<b>端到端加密</b>保护。</string>
+    <string name="e2ee_info_no_pq"><![CDATA[消息、文件和通话受带完全前向保密、可否认性和试验性恢复的<b>端到端加密</b>保护。]]></string>
     <string name="migrate_from_device_title">迁移设备</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">在新设备上选择 <i>从一部设备迁移</i> 并扫描二维码。</string>
-    <string name="e2ee_info_pq">消息、文件和通话受带完全前向保密、可否认性和试验性恢复的<b>抗量子端到端加密</b>保护。</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[在新设备上选择 <i>从一部设备迁移</i> 并扫描二维码。]]></string>
+    <string name="e2ee_info_pq"><![CDATA[消息、文件和通话受带完全前向保密、可否认性和试验性恢复的<b>抗量子端到端加密</b>保护。]]></string>
     <string name="v5_6_safer_groups_descr">管理员可以为所有人封禁一名成员。</string>
     <string name="migrate_to_device_downloading_details">正在下载链接详情</string>
     <string name="v5_6_quantum_resistant_encryption_descr">在私聊中开启（公测）！</string>
@@ -1714,5 +1714,5 @@
     <string name="conn_event_enabled_pq">抗量子端到端加密</string>
     <string name="migrate_to_device_try_again">你可以再试一次。</string>
     <string name="migrate_from_device_try_again">你可以再试一次。</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>请注意</b>: 作为安全保护措施，在两部设备上使用同一数据库会破坏解密来自你联系人的消息。</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>请注意</b>: 作为安全保护措施，在两部设备上使用同一数据库会破坏解密来自你联系人的消息。]]></string>
 </resources>

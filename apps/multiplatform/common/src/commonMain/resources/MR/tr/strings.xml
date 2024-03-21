@@ -1640,7 +1640,7 @@
     <string name="call_service_notification_video_call">Görüntülü arama</string>
     <string name="call_service_notification_end_call">Aramayı bitir</string>
     <string name="unable_to_open_browser_title">Tarayıcıyı açarken hata</string>
-    <string name="e2ee_info_no_pq">Mesajlar, dosyalar ve aramalar, mükemmel ileriye dönük gizlilik, reddetme ve izinsiz giriş kurtarması ile <b>uçtan uca şifreleme</b> ile korunmaktadır.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Mesajlar, dosyalar ve aramalar, mükemmel ileriye dönük gizlilik, reddetme ve izinsiz giriş kurtarması ile <b>uçtan uca şifreleme</b> ile korunmaktadır.]]></string>
     <string name="e2ee_info_no_pq_short">Bu sohbet uçtan uca şifrelemeyle korunmaktadır.</string>
     <string name="auth_open_migration_to_another_device">Taşıma ekranını aç</string>
     <string name="migrate_from_another_device">Başka bir cihazdan taşı</string>
@@ -1685,7 +1685,7 @@
     <string name="migrate_from_device_bytes_uploaded">%s yüklendi</string>
     <string name="migrate_from_device_upload_failed">Yükleme başarısız</string>
     <string name="migrate_from_device_uploading_archive">Arşiv yükleniyor</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Lütfen dikkat</b>: aynı veritabanını iki cihazda kullanmak, bir güvenlik koruması olarak bağlantılarınızdaki mesajların şifresinin çözülmesini engelleyecektir.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Lütfen dikkat</b>: aynı veritabanını iki cihazda kullanmak, bir güvenlik koruması olarak bağlantılarınızdaki mesajların şifresinin çözülmesini engelleyecektir.]]></string>
     <string name="migrate_from_device_cancel_migration">Taşımayı iptal et</string>
     <string name="migrate_from_device_creating_archive_link">Arşiv bağlantısı oluşturuluyor</string>
     <string name="migrate_from_device_migration_complete">Taşıma işlemi tamamlandı</string>
@@ -1696,7 +1696,7 @@
     <string name="migrate_from_device_verify_passphrase">Parolayı doğrulayın</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP rölelerine parçalar halinde yüklenir.</string>
     <string name="migrate_from_device_archive_and_upload">Arşivle ve yükle</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Uyarı</b>: arşiv silinecektir.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Uyarı</b>: arşiv silinecektir.]]></string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Taşımak için veritabanı parolasını hatırladığınızı doğrulayın.</string>
     <string name="migrate_from_device_check_connection_and_try_again">İnternet bağlantınızı kontrol edip tekrar deneyin</string>
     <string name="migrate_to_device_confirm_network_settings">Ağ ayarlarını onaylayın</string>
@@ -1706,14 +1706,14 @@
     <string name="migrate_from_device_error_verifying_passphrase">Parola doğrulanırken hata oluştu:</string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Dosya silindi veya bağlantı geçersiz</string>
     <string name="invalid_file_link">Geçersiz link</string>
-    <string name="e2ee_info_pq">Mesajlar, dosyalar ve aramalar, mükemmel iletme gizliliği, reddetme ve izinsiz giriş kurtarma özellikleriyle <b>kuantum dirençli e2e şifreleme</b> ile korunmaktadır.</string>
+    <string name="e2ee_info_pq"><![CDATA[Mesajlar, dosyalar ve aramalar, mükemmel iletme gizliliği, reddetme ve izinsiz giriş kurtarma özellikleriyle <b>kuantum dirençli e2e şifreleme</b> ile korunmaktadır.]]></string>
     <string name="migrate_to_device_migrating">Taşınıyor</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Lütfen bu cihaz için ağ ayarlarının doğru olduğunu onaylayın.</string>
     <string name="conn_event_enabled_pq">kuantum dirençli e2e şifreleme</string>
     <string name="conn_event_disabled_pq">standart uçtan uca şifreleme</string>
     <string name="migrate_from_device_stopping_chat">Sohbet durduruluyor</string>
     <string name="e2ee_info_pq_short">Bu sohbet kuantum dirençli uçtan uca şifrelemeyle korunmaktadır.</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">Aynı veritabanını iki cihazda <b>kullanmamalısınız</b>.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Aynı veritabanını iki cihazda <b>kullanmamalısınız</b>.]]></string>
     <string name="migrate_from_device_try_again">Bir kez daha deneyebilirsiniz.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Yeni cihazda <i>Başka bir cihazdan taşı</i>\'yı seçin ve QR kodunu tarayın.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Yeni cihazda <i>Başka bir cihazdan taşı</i>\'yı seçin ve QR kodunu tarayın.]]></string>
 </resources>

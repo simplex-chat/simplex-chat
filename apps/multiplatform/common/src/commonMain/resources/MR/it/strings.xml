@@ -1652,12 +1652,12 @@
     <string name="v5_6_app_data_migration">Migrazione dati dell\'app</string>
     <string name="migrate_to_device_apply_onion">Applica</string>
     <string name="migrate_from_device_archiving_database">Archiviazione del database</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Nota bene</b>: usare lo stesso database su due dispositivi bloccherà la decifrazione dei messaggi dalle tue connessioni, come misura di sicurezza.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Nota bene</b>: usare lo stesso database su due dispositivi bloccherà la decifrazione dei messaggi dalle tue connessioni, come misura di sicurezza.]]></string>
     <string name="migrate_from_device_cancel_migration">Annulla migrazione</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Attenzione</b>: l\'archivio verrà eliminato.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Attenzione</b>: l\'archivio verrà eliminato.]]></string>
     <string name="migrate_to_device_chat_migrated">Chat migrata!</string>
     <string name="migrate_from_device_check_connection_and_try_again">Controlla la tua connessione internet e riprova</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Scegli <i>Migra da un altro dispositivo</i> sul nuovo dispositivo e scansione il codice QR</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Scegli <i>Migra da un altro dispositivo</i> sul nuovo dispositivo e scansione il codice QR]]></string>
     <string name="migrate_to_device_confirm_network_settings">Conferma le impostazioni di rete</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Conferma che ricordi la password del database da migrare.</string>
     <string name="migrate_from_device_confirm_upload">Conferma caricamento</string>
@@ -1679,8 +1679,8 @@
     <string name="migrate_to_device_finalize_migration">Finalizza la migrazione su un altro dispositivo.</string>
     <string name="migrate_to_device_importing_archive">Importazione archivio</string>
     <string name="invalid_file_link">Link non valido</string>
-    <string name="e2ee_info_no_pq">I messaggi, i file e le chiamate sono protetti da <b>crittografia end-to-end</b> con perfect forward secrecy, ripudio e recupero da intrusione.</string>
-    <string name="e2ee_info_pq">I messaggi, i file e le chiamate sono protetti da <b>crittografia e2e resistente al quantistico</b> con perfect forward secrecy, ripudio e recupero da intrusione.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[I messaggi, i file e le chiamate sono protetti da <b>crittografia end-to-end</b> con perfect forward secrecy, ripudio e recupero da intrusione.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[I messaggi, i file e le chiamate sono protetti da <b>crittografia e2e resistente al quantistico</b> con perfect forward secrecy, ripudio e recupero da intrusione.]]></string>
     <string name="migrate_from_device_title">Migra dispositivo</string>
     <string name="migrate_from_another_device">Migra da un altro dispositivo</string>
     <string name="migrate_from_device_to_another_device">Migra ad un altro dispositivo</string>
@@ -1712,7 +1712,7 @@
     <string name="migrate_from_device_verify_passphrase">Verifica password</string>
     <string name="migrate_from_device_verify_database_passphrase">Verifica password del database</string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Attenzione: avviare la chat su più dispositivi non è supportato e provocherà problemi di recapito dei messaggi</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>Non devi</b> usare lo stesso database su due dispositivi.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Non devi</b> usare lo stesso database su due dispositivi.]]></string>
     <string name="migrate_to_device_try_again">Puoi fare un altro tentativo.</string>
     <string name="migrate_from_device_try_again">Puoi fare un altro tentativo.</string>
 </resources>

@@ -93,7 +93,7 @@
     <string name="invite_prohibited">Ismerősök meghívása le van tiltva!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
     <string name="v4_2_auto_accept_contact_requests">Ismerős jelölések automatikus elfogadása</string>
-    <string name="impossible_to_recover_passphrase"><b>Figyelem</b>: NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Figyelem</b>: NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.]]></string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos</string>
     <string name="smp_servers_add_to_another_device">Hozzáadás egy másik eszközhöz</string>
@@ -133,7 +133,7 @@
     <string name="turning_off_service_and_periodic">Az akkumulátor optimalizálása aktív, mely kikapcsolja a háttérszolgáltatást és az új üzenetek rendszeres kérését. A beállításokon keresztül újra engedélyezhetők.</string>
     <string name="block_member_question">Tag letiltása?</string>
     <string name="callstatus_ended">%1$s hívása befejeződött</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Jó akkumulátoridő</b>. A háttérszolgáltatás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. A háttérszolgáltatás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.]]></string>
     <string name="group_member_role_author">szerző</string>
     <string name="allow_your_contacts_irreversibly_delete">Elküldött üzenetek visszafordíthatatlan törlésének engedélyezése az ismerősei számára. (24 óra)</string>
     <string name="cancel_verb">Megszakítás</string>
@@ -671,7 +671,7 @@
     <string name="hide_dev_options">Elrejt:</string>
     <string name="error_creating_member_contact">Hiba az ismerőssel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívó hivatkozást.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívó hivatkozást.]]></string>
     <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat visszafordíthatatlanul törlődik!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a hivatkozást.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a hivatkozást.]]></string>
@@ -1410,7 +1410,7 @@
     <string name="to_reveal_profile_enter_password">Rejtett profiljának felfedéséhez írja be a teljes jelszót a Csevegési profilok oldal keresőmezőjébe.</string>
     <string name="upgrade_and_open_chat">A csevegés frissítése és megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoport tagja.]]></string>
     <string name="snd_conn_event_switch_queue_phase_completed">Azonosítója megváltoztatva</string>
     <string name="v4_3_irreversible_message_deletion_desc">Ismerősei engedélyezhetik a teljes üzenet törlést.</string>
@@ -1678,9 +1678,9 @@
     <string name="migrate_from_device_stopping_chat">Csevegés leállítása</string>
     <string name="migrate_from_device_or_share_this_file_link">Vagy ossza meg biztonságosan ezt a fájl hivatkozást</string>
     <string name="migrate_from_device_start_chat">Csevegés indítása</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>Nem szabad</b> ugyanazt az adatbázist használni egyszerre két eszközön.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Nem szabad</b> ugyanazt az adatbázist használni egyszerre két eszközön.]]></string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Erősítse meg, hogy emlékszik az adatbázis jelmondatára az átköltöztetéshez.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Válassza az <i>Átköltöztetés egy másik eszközről</i> opciót az új eszközön és szkennelje be a QR-kódot.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Válassza az <i>Átköltöztetés egy másik eszközről</i> opciót az új eszközön és szkennelje be a QR-kódot.]]></string>
     <string name="migrate_from_device_finalize_migration">Az átköltöztetés véglegesítése</string>
     <string name="migrate_to_device_finalize_migration">Az átköltöztetés véglegesítése egy másik eszközön.</string>
     <string name="migrate_to_device_database_init">Letöltés előkészítése</string>
@@ -1694,20 +1694,20 @@
     <string name="migrate_to_device_title">Átköltöztetés ide</string>
     <string name="migrate_from_device_title">Eszköz átköltöztetése</string>
     <string name="migrate_from_device_to_another_device">Átköltöztetés egy másik eszközre</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Figyelem</b>: az archívum törlésre kerül.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Figyelem</b>: az archívum törlésre kerül.]]></string>
     <string name="migrate_from_another_device">Átköltöztetés egy másik eszközről</string>
     <string name="v5_6_quantum_resistant_encryption">Kvantumrezisztens titkosítás</string>
     <string name="migrate_from_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="migrate_from_device_migration_complete">Átköltöztetés befejezve</string>
     <string name="v5_6_app_data_migration_descr">Átköltöztetés egy másik eszközre QR-kód használatával.</string>
     <string name="migrate_to_device_migrating">Átköltöztetés</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Megjegyzés</b>: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a kapcsolataiból érkező üzenetek visszafejtését.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Megjegyzés</b>: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a kapcsolataiból érkező üzenetek visszafejtését.]]></string>
     <string name="migrate_to_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="invalid_file_link">Hibás hivatkozás</string>
     <string name="conn_event_enabled_pq">végpontok közötti kvantumrezisztens titkosítás</string>
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">A költöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
-    <string name="e2ee_info_no_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</string>
-    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
 </resources>

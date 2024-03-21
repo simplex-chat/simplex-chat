@@ -1722,7 +1722,7 @@
     <string name="unable_to_open_browser_desc">Für Anrufe ist ein Default-Webbrowser erforderlich. Bitte konfigurieren Sie einen Default-Browser für das System und teilen Sie den Entwicklern mehr Informationen dazu mit.</string>
     <string name="migrate_to_device_chat_migrated">Chat wurde migriert!</string>
     <string name="migrate_from_device_creating_archive_link">Archiv-Link erzeugen</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Wählen Sie auf dem neuen Gerät <i>Von einem anderen Gerät migrieren</i> und scannen Sie den QR-Code.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Wählen Sie auf dem neuen Gerät <i>Von einem anderen Gerät migrieren</i> und scannen Sie den QR-Code.]]></string>
     <string name="migrate_from_device_delete_database_from_device">Datenbank auf diesem Gerät löschen</string>
     <string name="v5_6_app_data_migration">App-Daten-Migration</string>
     <string name="v5_6_safer_groups_descr">Administratoren können für ein Mitglied alle Funktionen blockieren.</string>
@@ -1731,17 +1731,17 @@
     <string name="migrate_to_device_apply_onion">Anwenden</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Server hochgeladen.</string>
     <string name="migrate_from_device_archive_and_upload">Archivieren und Hochladen</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Warnung</b>: Das Archiv wird gelöscht.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Warnung</b>: Das Archiv wird gelöscht.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Überprüfen Sie Ihre Internet-Verbindung und probieren Sie es nochmals</string>
     <string name="migrate_from_device_archiving_database">Datenbank wird archiviert</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Bitte beachten Sie</b>: Aus Sicherheitsgründen wird die Nachrichtenentschlüsselung Ihrer Verbindungen abgebrochen, wenn Sie die gleiche Datenbank auf zwei Geräten nutzen.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Bitte beachten Sie</b>: Aus Sicherheitsgründen wird die Nachrichtenentschlüsselung Ihrer Verbindungen abgebrochen, wenn Sie die gleiche Datenbank auf zwei Geräten nutzen.]]></string>
     <string name="migrate_from_device_cancel_migration">Migration abbrechen</string>
     <string name="migrate_to_device_confirm_network_settings">Bestätigen Sie die Netzwerkeinstellungen</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Für die Migration bestätigen Sie bitte, dass Sie sich an das Datenbank-Passwort erinnern.</string>
     <string name="migrate_from_device_confirm_upload">Hochladen bestätigen</string>
     <string name="migrate_to_device_download_failed">Herunterladen fehlgeschlagen</string>
-    <string name="e2ee_info_no_pq">Nachrichten, Dateien und Anrufe sind durch <b>Ende-zu-Ende-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.</string>
-    <string name="e2ee_info_pq">Nachrichten, Dateien und Anrufe sind durch <b>Quantum-resistente E2E-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Ende-zu-Ende-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Quantum-resistente E2E-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.]]></string>
     <string name="e2ee_info_no_pq_short">Dieser Chat ist durch Ende-zu-Ende-Verschlüsselung geschützt.</string>
     <string name="e2ee_info_pq_short">Dieser Chat ist durch Quantum-resistente Ende-zu-Ende-Verschlüsselung geschützt.</string>
     <string name="auth_open_migration_to_another_device">Migrationsansicht öffnen</string>
@@ -1795,5 +1795,5 @@
     <string name="migrate_from_device_migration_complete">Migration abgeschlossen</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Bitte bestätigen Sie, dass die Netzwerkeinstellungen auf diesem Gerät richtig sind.</string>
     <string name="conn_event_disabled_pq">Standard-Ende-zu-Ende-Verschlüsselung</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">Sie dürfen die selbe Datenbank <b>nicht</b> auf zwei Geräten nutzen.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Sie dürfen die selbe Datenbank <b>nicht</b> auf zwei Geräten nutzen.]]></string>
 </resources>

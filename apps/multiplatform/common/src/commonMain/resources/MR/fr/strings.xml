@@ -1648,13 +1648,13 @@
     <string name="migrate_to_device_apply_onion">Appliquer</string>
     <string name="migrate_from_device_archive_and_upload">Archiver et transférer</string>
     <string name="migrate_from_device_archiving_database">Archivage de la base de données</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Avertissement</b> : l\'archive sera supprimée.</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Remarque</b> : l\'utilisation d\'une même base de données sur deux appareils interrompra le déchiffrement des messages provenant de vos connexions, par mesure de sécurité.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Avertissement</b> : l\'archive sera supprimée.]]></string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Remarque</b> : l\'utilisation d\'une même base de données sur deux appareils interrompra le déchiffrement des messages provenant de vos connexions, par mesure de sécurité.]]></string>
     <string name="migrate_from_device_cancel_migration">Annuler le transfert</string>
     <string name="migrate_to_device_chat_migrated">Messagerie transférée !</string>
     <string name="migrate_from_device_check_connection_and_try_again">Vérifiez votre connexion internet et réessayez</string>
     <string name="migrate_to_device_download_failed">Échec du téléchargement</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Sélectionnez <i>Transférer depuis un autre appareil</i> sur le nouvel appareil et scanner le code QR.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Sélectionnez <i>Transférer depuis un autre appareil</i> sur le nouvel appareil et scanner le code QR.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Confirmer les paramètres réseau</string>
     <string name="migrate_from_device_confirm_upload">Confirmer la transmission</string>
     <string name="migrate_from_device_creating_archive_link">Création d\'un lien d\'archive</string>
@@ -1668,8 +1668,8 @@
     <string name="migrate_to_device_error_downloading_archive">Erreur lors du téléchargement de l\'archive</string>
     <string name="migrate_from_device_error_saving_settings">Erreur lors de l\'enregistrement des paramètres</string>
     <string name="migrate_from_device_error_verifying_passphrase">Erreur lors de la vérification de la phrase secrète :</string>
-    <string name="e2ee_info_no_pq">Les messages, fichiers et appels sont protégés par un <b>chiffrement de bout en bout</b> avec une confidentialité persistante, une répudiation et une récupération en cas d\'effraction.</string>
-    <string name="e2ee_info_pq">Les messages, fichiers et appels sont protégés par un <b>chiffrement e2e résistant post-quantique</b> avec une confidentialité persistante, une répudiation et une récupération en cas d\'effraction.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Les messages, fichiers et appels sont protégés par un <b>chiffrement de bout en bout</b> avec une confidentialité persistante, une répudiation et une récupération en cas d\'effraction.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Les messages, fichiers et appels sont protégés par un <b>chiffrement e2e résistant post-quantique</b> avec une confidentialité persistante, une répudiation et une récupération en cas d\'effraction.]]></string>
     <string name="e2ee_info_no_pq_short">Cette discussion est protégée par un chiffrement de bout en bout.</string>
     <string name="e2ee_info_pq_short">Cette discussion est protégée par un chiffrement de bout en bout résistant post-quantique.</string>
     <string name="auth_open_migration_to_another_device">Accéder à l\'écran de transfert</string>
@@ -1699,7 +1699,7 @@
     <string name="migrate_from_device_finalize_migration">Finaliser le transfert</string>
     <string name="migrate_from_device_migration_complete">Transfert terminé</string>
     <string name="migrate_from_device_start_chat">Démarrer le chat</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">Vous <b>ne devez pas</b> utiliser la même base de données sur deux appareils.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Vous <b>ne devez pas</b> utiliser la même base de données sur deux appareils.]]></string>
     <string name="migrate_from_device_verify_database_passphrase">Vérifier la phrase secrète de la base de données</string>
     <string name="migrate_to_device_repeat_download">Répéter le téléchargement</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Veuillez confirmer que les paramètres réseau de cet appareil sont corrects.</string>
