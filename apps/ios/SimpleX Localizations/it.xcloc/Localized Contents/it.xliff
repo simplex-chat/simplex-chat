@@ -3635,7 +3635,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target state="translated">I messaggi, i file e le chiamate sono protetti da **crittografia e2e resistente al quantico** con perfect forward secrecy, ripudio e recupero da intrusione.</target>
+        <target state="translated">I messaggi, i file e le chiamate sono protetti da **crittografia e2e resistente al quantistico** con perfect forward secrecy, ripudio e recupero da intrusione.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve" approved="no">
@@ -4246,7 +4246,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Post-quantum E2EE" xml:space="preserve" approved="no">
         <source>Post-quantum E2EE</source>
-        <target state="translated">E2EE post-quantica</target>
+        <target state="translated">E2EE post-quantistica</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -4391,7 +4391,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Quantum resistant encryption" xml:space="preserve" approved="no">
         <source>Quantum resistant encryption</source>
-        <target state="translated">Crittografia resistente al quantico</target>
+        <target state="translated">Crittografia resistente al quantistico</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -5578,7 +5578,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve" approved="no">
         <source>This chat is protected by quantum resistant end-to-end encryption.</source>
-        <target state="translated">Questa chat è protetta da crittografia end-to-end resistente al quantico.</target>
+        <target state="translated">Questa chat è protetta da crittografia end-to-end resistente al quantistico.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
@@ -6000,9 +6000,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Via browser</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve">
+      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve" approved="no">
         <source>Via secure quantum resistant protocol.</source>
-        <target>Tramite protocollo sicuro resistente alla quantistica.</target>
+        <target state="translated">Tramite protocollo sicuro resistente al quantistico.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
@@ -7167,7 +7167,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve" approved="no">
         <source>quantum resistant e2e encryption</source>
-        <target state="translated">crittografia e2e resistente al quantico</target>
+        <target state="translated">crittografia e2e resistente al quantistico</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
