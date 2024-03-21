@@ -980,7 +980,9 @@ struct ChatView: View {
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
                 // With animation it looks bad because of UIKit context menu involved
-                revealed = false
+                withAnimation {
+                    revealed = false
+                }
             }
         }
         
@@ -1050,7 +1052,9 @@ struct ChatView: View {
                 image: UIImage(systemName: "eye")
             ) { _ in
                 // With animation it looks bad because of UIKit context menu involved
-                revealed = true
+                withAnimation {
+                    revealed = true
+                }
             }
         }
 
