@@ -154,7 +154,7 @@ actual fun ActiveCallView() {
                 setCallSound(call.soundSpeaker, audioViaBluetooth)
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
-            } catch (e: Error) {
+            } catch (e: Throwable) {
               Log.d(TAG,"call status ${r.state.connectionState} not used")
             }
           is WCallResponse.Connected -> {

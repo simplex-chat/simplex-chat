@@ -94,10 +94,9 @@ fun AddGroupLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = close) {
-        Column(
+        ColumnWithScrollBar(
           Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
           AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))

@@ -42,7 +42,7 @@ fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
       }
     }
     showToast(generalGetString(MR.strings.file_saved))
-  } catch (e: Error) {
+  } catch (e: Throwable) {
     showToast(generalGetString(MR.strings.error_saving_file))
     Log.e(TAG, "copyFileToFile error saving file $e")
   } finally {
@@ -58,7 +58,7 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
       }
     }
     showToast(generalGetString(MR.strings.file_saved))
-  } catch (e: Error) {
+  } catch (e: Throwable) {
     showToast(generalGetString(MR.strings.error_saving_file))
     Log.e(TAG, "copyBytesToFile error saving file $e")
   } finally {

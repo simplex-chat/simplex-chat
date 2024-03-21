@@ -460,7 +460,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.toList())
-  LazyColumn(
+  LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     listState
   ) {

@@ -61,9 +61,8 @@ fun <T> SectionViewSelectable(
   onSelected: (T) -> Unit,
 ) {
   SectionView(title) {
-    LazyColumn {
-      items(values.size) { index ->
-        val item = values[index]
+    Column {
+      values.forEach { item ->
         SectionItemViewSpaceBetween({ onSelected(item.value) }) {
           Text(item.title)
           if (currentValue.value == item.value) {

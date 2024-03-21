@@ -145,7 +145,7 @@ fun ChatInfoView(
            withBGApi {
              val ct = chatModel.controller.apiSetContactPQ(chatRh, contact.contactId, true)
              if (ct != null) {
-               chatModel.updateContact(chatRh, contact)
+               chatModel.updateContact(chatRh, ct)
              }
              close.invoke()
            }
@@ -319,10 +319,9 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(scrollState)
   ) {
     Row(
       Modifier.fillMaxWidth(),

@@ -557,7 +557,12 @@ struct ChatView: View {
                         chatItemView(ci, nil, prev)
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
+                    if revealed {
+                        chatItemView(chatItem, range, prevItem)
+                    } else {
+                        chatItemView(chatItem, range, prevItem)
+                    }
                 }
             }
         }
@@ -974,9 +979,8 @@ struct ChatView: View {
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
-                withAnimation {
-                    revealed = false
-                }
+                // With animation it looks bad because of UIKit context menu involved
+                revealed = false
             }
         }
         
@@ -1045,9 +1049,8 @@ struct ChatView: View {
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
                 image: UIImage(systemName: "eye")
             ) { _ in
-                withAnimation {
-                    revealed = true
-                }
+                // With animation it looks bad because of UIKit context menu involved
+                revealed = true
             }
         }
 

@@ -16,6 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
 @Composable
@@ -35,8 +36,8 @@ fun CallSettingsLayout(
   callOnLockScreen: SharedPreference<CallOnLockScreen>,
   editIceServers: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(MR.strings.your_calls))

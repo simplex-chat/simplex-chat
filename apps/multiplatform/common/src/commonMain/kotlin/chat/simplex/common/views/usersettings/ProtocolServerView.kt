@@ -5,7 +5,6 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionView
-import chat.simplex.common.platform.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -20,13 +19,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.TAG
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -76,10 +75,9 @@ private fun ProtocolServerLayout(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
   ) {
     AppBarTitle(stringResource(if (server.preset) MR.strings.smp_servers_preset_server else MR.strings.smp_servers_your_server))
 
