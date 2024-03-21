@@ -150,7 +150,7 @@ struct MigrateFromDevice: View {
                 return Alert(
                     title: Text(title),
                     message: Text(text),
-                    primaryButton: .destructive(Text("Delete")) {
+                    primaryButton: .default(Text("Delete")) {
                         deleteChatAndDismiss()
                     },
                     secondaryButton: .cancel()

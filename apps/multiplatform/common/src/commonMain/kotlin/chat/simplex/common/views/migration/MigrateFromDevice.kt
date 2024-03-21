@@ -386,7 +386,8 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
             confirmText = generalGetString(MR.strings.migrate_from_device_start_chat),
             onConfirm = {
               withLongRunningApi { startChatAndDismiss() }
-            }
+            },
+            destructive = true
           )
         }
       ) {}

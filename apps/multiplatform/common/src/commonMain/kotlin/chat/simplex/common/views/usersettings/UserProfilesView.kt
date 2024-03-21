@@ -356,6 +356,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
           m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
           m.controller.changeActiveUser_(user.remoteHostId, null, null)
           if (appPlatform.isAndroid) {
+            m.controller.apiStopChat()
             controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
             ModalManager.closeAllModalsEverywhere()
           }
