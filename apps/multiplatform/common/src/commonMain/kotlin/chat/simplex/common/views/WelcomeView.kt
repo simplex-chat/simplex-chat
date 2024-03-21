@@ -214,7 +214,8 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
     ) ?: return@withBGApi
     chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
-    if (chatModel.users.isEmpty()) {
+    // No users or no visible users
+    if (chatModel.users.none { u -> !u.user.hidden }) {
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
