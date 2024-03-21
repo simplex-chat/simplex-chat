@@ -1640,4 +1640,12 @@
     <string name="call_service_notification_video_call">Videollamada</string>
     <string name="unable_to_open_browser_title">Error al abrir el navegador</string>
     <string name="unable_to_open_browser_desc">Para llamadas se requiere el navegador web predeterminado. Por favor, configura el navegador predeterminado en el sistema y comparte más información con los desarrolladores.</string>
+    <string name="migrate_from_device_archiving_database">Archivando base de datos</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Todos tus contactos, conversaciones y archivos serán cifrados, divididos y subidos de forma segura a los servidores XFTP configurados.</string>
+    <string name="v5_6_safer_groups_descr">Los administradores pueden bloquear un miembro para el resto</string>
+    <string name="migrate_to_device_chat_migrated">Chat migrado!</string>
+    <string name="v5_6_app_data_migration">Migración de los datos de la app</string>
+    <string name="migrate_to_device_apply_onion">Aplicar</string>
+    <string name="migrate_from_device_archive_and_upload">Archivar y subir</string>
+    <string name="migrate_from_device_cancel_migration">Cancelar migración</string>
 </resources>
