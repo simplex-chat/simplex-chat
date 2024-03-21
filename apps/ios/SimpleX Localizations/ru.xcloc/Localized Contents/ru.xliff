@@ -695,7 +695,7 @@
       </trans-unit>
       <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target>Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены по частям на выбранные XFTP серверы.</target>
+        <target>Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP серверы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -1291,7 +1291,7 @@
       </trans-unit>
       <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target>Подтвердите, что вы помните пароль базы данных для ее миграции.</target>
+        <target>Подтвердите, что Вы помните пароль базы данных для ее миграции.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
@@ -3630,12 +3630,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Сообщения, файлы и звонки защищены **end-to-end шифрованием** с идеальной прямой тайной (PFS), отказуемостью (repudiation) и восстановлением от взлома (break-in recovery).</target>
+        <target>Сообщения, файлы и звонки защищены **end-to-end шифрованием** с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Сообщения, файлы и звонки защищены **квантово-устойчивым end-to-end шифрованием** с идеальной прямой тайной (PFS), отказуемостью (repudiation) и восстановлением от взлома (break-in recovery).</target>
+        <target>Сообщения, файлы и звонки защищены **квантово-устойчивым end-to-end шифрованием** с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
