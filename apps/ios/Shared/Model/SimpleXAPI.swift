@@ -1380,6 +1380,7 @@ func startChat(refreshInvitations: Bool = true) throws {
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    AppChatState.shared.set(.active)
 }
 
 func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
