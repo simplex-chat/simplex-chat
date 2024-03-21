@@ -432,7 +432,7 @@
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Все Ваши контакты сохранятся. Обновленный профиль будет отправлен Вашим контактам.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены по частям на выбранные XFTP серверы.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP серверы.";
 
 /* No comment provided by engineer. */
 "Allow" = "Разрешить";
@@ -853,7 +853,7 @@
 "Confirm password" = "Подтвердить пароль";
 
 /* No comment provided by engineer. */
-"Confirm that you remember database passphrase to migrate it." = "Подтвердите, что вы помните пароль базы данных для ее миграции.";
+"Confirm that you remember database passphrase to migrate it." = "Подтвердите, что Вы помните пароль базы данных для ее миграции.";
 
 /* No comment provided by engineer. */
 "Confirm upload" = "Подтвердить загрузку";
@@ -2452,10 +2452,10 @@
 "Messages from %@ will be shown!" = "Сообщения от %@ будут показаны!";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Сообщения, файлы и звонки защищены **end-to-end шифрованием** с идеальной прямой тайной (PFS), отказуемостью (repudiation) и восстановлением от взлома (break-in recovery).";
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Сообщения, файлы и звонки защищены **end-to-end шифрованием** с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Сообщения, файлы и звонки защищены **квантово-устойчивым end-to-end шифрованием** с идеальной прямой тайной (PFS), отказуемостью (repudiation) и восстановлением от взлома (break-in recovery).";
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Сообщения, файлы и звонки защищены **квантово-устойчивым end-to-end шифрованием** с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.";
 
 /* No comment provided by engineer. */
 "Migrate device" = "Мигрировать устройство";
