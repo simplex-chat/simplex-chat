@@ -168,7 +168,8 @@ private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) 
     do {
         AppChatState.shared.set(.active)
         m.currentUser = try apiCreateActiveUser(profile)
-        if m.users.filter({ !$0.user.hidden }).isEmpty {
+        // .isEmpty check is redundant here, but it makes it clearer what is going on
+        if m.users.isEmpty || m.users.allSatisfy({ $0.user.hidden }) {
             try startChat()
             withAnimation {
                 onboardingStageDefault.set(.step3_CreateSimpleXAddress)
