@@ -388,7 +388,7 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
       platform.androidChatStartedAfterBeingOff()
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       m.chatRunning.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
     } finally {
