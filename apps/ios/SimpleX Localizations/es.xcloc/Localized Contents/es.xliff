@@ -107,9 +107,9 @@
         <target>%@ conectado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+      <trans-unit id="%@ downloaded" xml:space="preserve">
         <source>%@ downloaded</source>
-        <target state="translated">%@ downloaded</target>
+        <target>%@ downloaded</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -351,9 +351,9 @@
         <target>**Más privado**: no se usa el servidor de notificaciones de SimpleX Chat, los mensajes se comprueban periódicamente en segundo plano (dependiendo de la frecuencia con la que utilices la aplicación).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
-        <target state="translated">**Tenga en cuenta**: usar la misma base de datos en dos dispositivos interrumpirá el descifrado de mensajes de sus conexiones, como protección de seguridad.</target>
+        <target>**Tenga en cuenta**: usar la misma base de datos en dos dispositivos interrumpirá el descifrado de mensajes de sus conexiones, como protección de seguridad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
@@ -371,9 +371,9 @@
         <target>**Advertencia**: Las notificaciones automáticas instantáneas requieren una contraseña guardada en Keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve" approved="no">
+      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve">
         <source>**Warning**: the archive will be removed.</source>
-        <target state="translated">**Atención**: el archivo será eliminado.</target>
+        <target>**Atención**: el archivo será eliminado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
@@ -632,9 +632,9 @@
         <target>El cambio de dirección se cancelará. Se usará la antigua dirección de recepción.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
         <source>Admins can block a member for all.</source>
-        <target state="translated">Los admins pueden bloquear un miembro por todos.</target>
+        <target>Los admins pueden bloquear un miembro por todos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -692,9 +692,9 @@
         <target>Todos tus contactos permanecerán conectados. La actualización del perfil se enviará a tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target state="translated">Todos sus contactos, conversaciones y archivos se cifrarán de forma segura y se subirán en fragmentos hacia puntos XFTP configurados.</target>
+        <target>Todos sus contactos, conversaciones y archivos se cifrarán de forma segura y se subirán en fragmentos hacia puntos XFTP configurados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -822,9 +822,9 @@
         <target>Compilación app: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App data migration" xml:space="preserve" approved="no">
+      <trans-unit id="App data migration" xml:space="preserve">
         <source>App data migration</source>
-        <target state="translated">Migración de datos de la aplicación</target>
+        <target>Migración de datos de la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -862,19 +862,19 @@
         <target>Apariencia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Apply" xml:space="preserve" approved="no">
+      <trans-unit id="Apply" xml:space="preserve">
         <source>Apply</source>
-        <target state="translated">Aplicar</target>
+        <target>Aplicar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive and upload" xml:space="preserve" approved="no">
+      <trans-unit id="Archive and upload" xml:space="preserve">
         <source>Archive and upload</source>
-        <target state="translated">Archivar y transferir</target>
+        <target>Archivar y transferir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archiving database" xml:space="preserve" approved="no">
+      <trans-unit id="Archiving database" xml:space="preserve">
         <source>Archiving database</source>
-        <target state="translated">Archivando base de datos</target>
+        <target>Archivando base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -1067,9 +1067,9 @@
         <target>Cancelar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
+      <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
-        <target state="translated">Cancelar migración</target>
+        <target>Cancelar migración</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -1173,9 +1173,9 @@
         <target>Chat está detenido. Si estás usando esta base de datos en otro dispositivo, deberías transferirla de vuelta antes de iniciarlo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat migrated!" xml:space="preserve" approved="no">
+      <trans-unit id="Chat migrated!" xml:space="preserve">
         <source>Chat migrated!</source>
-        <target state="translated">Chat transferido !</target>
+        <target>Chat transferido !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
@@ -1198,9 +1198,9 @@
         <target>Interfaz en chino y español</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve">
         <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
-        <target state="translated">Elija _Migrar desde otro dispositivo_ en el nuevo dispositivo y escanee el código QR.</target>
+        <target>Elija _Migrar desde otro dispositivo_ en el nuevo dispositivo y escanee el código QR.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -1273,9 +1273,9 @@
         <target>Confirmar actualizaciones de la bases de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm network settings" xml:space="preserve" approved="no">
+      <trans-unit id="Confirm network settings" xml:space="preserve">
         <source>Confirm network settings</source>
-        <target state="translated">Confirmar los ajustes de red</target>
+        <target>Confirmar los ajustes de red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
@@ -1288,9 +1288,9 @@
         <target>Confirmar contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target state="translated">Confirme que recuerda la frase secreta de la base de datos para migrarla.</target>
+        <target>Confirme que recuerda la frase secreta de la base de datos para migrarla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
