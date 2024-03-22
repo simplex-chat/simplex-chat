@@ -86,6 +86,9 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Confidentiel** : ne pas utiliser le serveur de notifications SimpleX, vérification de nouveaux messages periodiquement en arrière plan (dépend de l'utilisation de l'app).";
 
 /* No comment provided by engineer. */
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Remarque** : l'utilisation de la même base de données sur deux appareils interrompt le déchiffrement des messages provenant de vos connexions, par mesure de sécurité.";
+
+/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Veuillez noter** : vous NE pourrez PAS récupérer ou modifier votre phrase secrète si vous la perdez.";
 
 /* No comment provided by engineer. */
@@ -93,6 +96,9 @@
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Avertissement** : les notifications push instantanées nécessitent une phrase secrète enregistrée dans la keychain.";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**Avertissement** : l'archive sera supprimée.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*gras*";
@@ -136,6 +142,9 @@
 /* No comment provided by engineer. */
 "%@ connected" = "%@ connecté(e)";
 
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ téléchargé";
+
 /* notification title */
 "%@ is connected!" = "%@ est connecté·e !";
 
@@ -147,6 +156,9 @@
 
 /* No comment provided by engineer. */
 "%@ servers" = "Serveurs %@";
+
+/* No comment provided by engineer. */
+"%@ uploaded" = "%@ envoyé";
 
 /* notification title */
 "%@ wants to connect!" = "%@ veut se connecter !";
@@ -201,6 +213,9 @@
 
 /* No comment provided by engineer. */
 "%lld messages blocked" = "%lld messages bloqués";
+
+/* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld messages bloqués par l'administrateur";
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld messages marqués comme supprimés";
@@ -375,16 +390,19 @@
 "admin" = "admin";
 
 /* No comment provided by engineer. */
+"Admins can block a member for all." = "Les admins peuvent bloquer un membre pour tous.";
+
+/* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Les admins peuvent créer les liens qui permettent de rejoindre les groupes.";
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Paramètres réseau avancés";
 
 /* chat item text */
-"agreeing encryption for %@…" = "accord sur le chiffrement pour %@…";
+"agreeing encryption for %@…" = "négociation du chiffrement avec %@…";
 
 /* chat item text */
-"agreeing encryption…" = "accord sur le chiffrement…";
+"agreeing encryption…" = "négociation du chiffrement…";
 
 /* No comment provided by engineer. */
 "All app data is deleted." = "Toutes les données de l'application sont supprimées.";
@@ -412,6 +430,9 @@
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Tous vos contacts resteront connectés. La mise à jour du profil sera envoyée à vos contacts.";
+
+/* No comment provided by engineer. */
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Tous vos contacts, conversations et fichiers seront chiffrés en toute sécurité et transférés par morceaux vers les relais XFTP configurés.";
 
 /* No comment provided by engineer. */
 "Allow" = "Autoriser";
@@ -495,6 +516,9 @@
 "App build: %@" = "Build de l'app : %@";
 
 /* No comment provided by engineer. */
+"App data migration" = "Transfert des données de l'application";
+
+/* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "L'application chiffre les nouveaux fichiers locaux (sauf les vidéos).";
 
 /* No comment provided by engineer. */
@@ -514,6 +538,15 @@
 
 /* No comment provided by engineer. */
 "Appearance" = "Apparence";
+
+/* No comment provided by engineer. */
+"Apply" = "Appliquer";
+
+/* No comment provided by engineer. */
+"Archive and upload" = "Archiver et transférer";
+
+/* No comment provided by engineer. */
+"Archiving database" = "Archivage de la base de données";
 
 /* No comment provided by engineer. */
 "Attach" = "Attacher";
@@ -585,16 +618,31 @@
 "Block" = "Bloquer";
 
 /* No comment provided by engineer. */
+"Block for all" = "Bloqué pour tous";
+
+/* No comment provided by engineer. */
 "Block group members" = "Bloquer des membres d'un groupe";
 
 /* No comment provided by engineer. */
 "Block member" = "Bloquer ce membre";
 
 /* No comment provided by engineer. */
-"Block member?" = "Bloquer ce membre ?";
+"Block member for all?" = "Bloquer le membre pour tous ?";
 
 /* No comment provided by engineer. */
+"Block member?" = "Bloquer ce membre ?";
+
+/* marked deleted chat item preview text */
 "blocked" = "blocké";
+
+/* rcv group event chat item */
+"blocked %@" = "%@ bloqué";
+
+/* marked deleted chat item preview text */
+"blocked by admin" = "bloqué par l'administrateur";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Bloqué par l'administrateur";
 
 /* No comment provided by engineer. */
 "bold" = "gras";
@@ -647,6 +695,9 @@
 /* No comment provided by engineer. */
 "Cancel" = "Annuler";
 
+/* No comment provided by engineer. */
+"Cancel migration" = "Annuler le transfert";
+
 /* feature offered item */
 "cancelled %@" = "annulé %@";
 
@@ -688,7 +739,7 @@
 "Change self-destruct passcode" = "Modifier le code d'autodestruction";
 
 /* chat item text */
-"changed address for you" = "adresse modifiée pour vous";
+"changed address for you" = "changement de l'adresse du contact";
 
 /* rcv group event chat item */
 "changed role of %@ to %@" = "a modifié le rôle de %1$@ pour %2$@";
@@ -727,6 +778,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Le chat est arrêté. Si vous avez déjà utilisé cette base de données sur un autre appareil, vous devez la transférer à nouveau avant de démarrer le chat.";
 
 /* No comment provided by engineer. */
+"Chat migrated!" = "Messagerie transférée !";
+
+/* No comment provided by engineer. */
 "Chat preferences" = "Préférences de chat";
 
 /* No comment provided by engineer. */
@@ -737,6 +791,9 @@
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Interface en chinois et en espagnol";
+
+/* No comment provided by engineer. */
+"Choose _Migrate from another device_ on the new device and scan QR code." = "Choisissez _Transferer depuis un autre appareil_ sur le nouvel appareil et scannez le code QR.";
 
 /* No comment provided by engineer. */
 "Choose file" = "Choisir le fichier";
@@ -784,6 +841,9 @@
 "Confirm database upgrades" = "Confirmer la mise à niveau de la base de données";
 
 /* No comment provided by engineer. */
+"Confirm network settings" = "Confirmer les paramètres réseau";
+
+/* No comment provided by engineer. */
 "Confirm new passphrase…" = "Confirmer la nouvelle phrase secrète…";
 
 /* No comment provided by engineer. */
@@ -791,6 +851,12 @@
 
 /* No comment provided by engineer. */
 "Confirm password" = "Confirmer le mot de passe";
+
+/* No comment provided by engineer. */
+"Confirm that you remember database passphrase to migrate it." = "Confirmer que vous vous souvenez de la phrase secrète de la base de données pour la transférer.";
+
+/* No comment provided by engineer. */
+"Confirm upload" = "Confirmer la transmission";
 
 /* server test step */
 "Connect" = "Se connecter";
@@ -949,7 +1015,7 @@
 "Create a group using a random profile." = "Création de groupes via un profil aléatoire.";
 
 /* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Créez une adresse pour permettre aux gens de vous contacter.";
+"Create an address to let people connect with you." = "Vous pouvez créer une adresse pour permettre aux autres utilisateurs de vous contacter.";
 
 /* server test step */
 "Create file" = "Créer un fichier";
@@ -989,6 +1055,9 @@
 
 /* No comment provided by engineer. */
 "Created on %@" = "Créé le %@";
+
+/* No comment provided by engineer. */
+"Creating archive link" = "Création d'un lien d'archive";
 
 /* No comment provided by engineer. */
 "Creating link…" = "Création d'un lien…";
@@ -1136,6 +1205,9 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Supprimer la base de données";
+
+/* No comment provided by engineer. */
+"Delete database from this device" = "Supprimer la base de données de cet appareil";
 
 /* server test step */
 "Delete file" = "Supprimer le fichier";
@@ -1329,8 +1401,17 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Rétrograder et ouvrir le chat";
 
+/* No comment provided by engineer. */
+"Download failed" = "Échec du téléchargement";
+
 /* server test step */
 "Download file" = "Télécharger le fichier";
+
+/* No comment provided by engineer. */
+"Downloading archive" = "Téléchargement de l'archive";
+
+/* No comment provided by engineer. */
+"Downloading link details" = "Téléchargement des détails du lien";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Nom d'affichage en double !";
@@ -1364,6 +1445,9 @@
 
 /* No comment provided by engineer. */
 "Enable for all" = "Activer pour tous";
+
+/* No comment provided by engineer. */
+"Enable in direct chats (BETA)!" = "Activé dans les conversations directes (BETA) !";
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Activer les notifications instantanées ?";
@@ -1480,6 +1564,9 @@
 "Enter Passcode" = "Entrer le code d'accès";
 
 /* No comment provided by engineer. */
+"Enter passphrase" = "Entrer la phrase secrète";
+
+/* No comment provided by engineer. */
 "Enter passphrase…" = "Entrez la phrase secrète…";
 
 /* No comment provided by engineer. */
@@ -1517,6 +1604,9 @@
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Erreur lors de l'ajout de membre·s";
+
+/* No comment provided by engineer. */
+"Error allowing contact PQ encryption" = "Erreur lors de la négociation du chiffrement PQ";
 
 /* No comment provided by engineer. */
 "Error changing address" = "Erreur de changement d'adresse";
@@ -1573,6 +1663,9 @@
 "Error deleting user profile" = "Erreur lors de la suppression du profil utilisateur";
 
 /* No comment provided by engineer. */
+"Error downloading the archive" = "Erreur lors du téléchargement de l'archive";
+
+/* No comment provided by engineer. */
 "Error enabling delivery receipts!" = "Erreur lors de l'activation des accusés de réception !";
 
 /* No comment provided by engineer. */
@@ -1617,6 +1710,9 @@
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Erreur lors de l'enregistrement de la phrase de passe dans la keychain";
 
+/* when migrating */
+"Error saving settings" = "Erreur lors de l'enregistrement des paramètres";
+
 /* No comment provided by engineer. */
 "Error saving user password" = "Erreur d'enregistrement du mot de passe de l'utilisateur";
 
@@ -1660,6 +1756,12 @@
 "Error updating user privacy" = "Erreur de mise à jour de la confidentialité de l'utilisateur";
 
 /* No comment provided by engineer. */
+"Error uploading the archive" = "Erreur lors de l'envoi de l'archive";
+
+/* No comment provided by engineer. */
+"Error verifying passphrase:" = "Erreur lors de la vérification de la phrase secrète :";
+
+/* No comment provided by engineer. */
 "Error: " = "Erreur : ";
 
 /* No comment provided by engineer. */
@@ -1681,7 +1783,7 @@
 "Exit without saving" = "Quitter sans enregistrer";
 
 /* chat item action */
-"Expand" = "Développer";
+"Expand" = "Étendre";
 
 /* No comment provided by engineer. */
 "Export database" = "Exporter la base de données";
@@ -1691,6 +1793,9 @@
 
 /* No comment provided by engineer. */
 "Exported database archive." = "Archive de la base de données exportée.";
+
+/* No comment provided by engineer. */
+"Exported file doesn't exist" = "Le fichier exporté n'existe pas";
 
 /* No comment provided by engineer. */
 "Exporting database archive…" = "Exportation de l'archive de la base de données…";
@@ -1733,6 +1838,12 @@
 
 /* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Filtrer les messages non lus et favoris.";
+
+/* No comment provided by engineer. */
+"Finalize migration" = "Finaliser le transfert";
+
+/* No comment provided by engineer. */
+"Finalize migration on another device." = "Finalisez le transfert sur l'autre appareil.";
 
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "Enfin, les voilà ! 🚀";
@@ -1918,6 +2029,9 @@
 "How to use your servers" = "Comment utiliser vos serveurs";
 
 /* No comment provided by engineer. */
+"Hungarian interface" = "Interface en hongrois";
+
+/* No comment provided by engineer. */
 "ICE servers (one per line)" = "Serveurs ICE (un par ligne)";
 
 /* No comment provided by engineer. */
@@ -1957,6 +2071,12 @@
 "Import database" = "Importer la base de données";
 
 /* No comment provided by engineer. */
+"Import failed" = "Échec de l'importation";
+
+/* No comment provided by engineer. */
+"Importing archive" = "Importation de l'archive";
+
+/* No comment provided by engineer. */
 "Improved message delivery" = "Amélioration de la transmission des messages";
 
 /* No comment provided by engineer. */
@@ -1964,6 +2084,9 @@
 
 /* No comment provided by engineer. */
 "Improved server configuration" = "Configuration de serveur améliorée";
+
+/* No comment provided by engineer. */
+"In order to continue, chat should be stopped." = "Pour continuer, le chat doit être interrompu.";
 
 /* No comment provided by engineer. */
 "In reply to" = "En réponse à";
@@ -2048,6 +2171,9 @@
 
 /* No comment provided by engineer. */
 "Invalid link" = "Lien invalide";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Confirmation de migration invalide";
 
 /* No comment provided by engineer. */
 "Invalid name!" = "Nom invalide !";
@@ -2314,6 +2440,9 @@
 "Message text" = "Texte du message";
 
 /* No comment provided by engineer. */
+"Message too large" = "Message trop volumineux";
+
+/* No comment provided by engineer. */
 "Messages" = "Messages";
 
 /* No comment provided by engineer. */
@@ -2323,7 +2452,34 @@
 "Messages from %@ will be shown!" = "Les messages de %@ seront affichés !";
 
 /* No comment provided by engineer. */
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Les messages, fichiers et appels sont protégés par un chiffrement **de bout en bout** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.";
+
+/* No comment provided by engineer. */
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Les messages, fichiers et appels sont protégés par un chiffrement **2e2 résistant post-quantique** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.";
+
+/* No comment provided by engineer. */
+"Migrate device" = "Transférer l'appareil";
+
+/* No comment provided by engineer. */
+"Migrate from another device" = "Transférer depuis un autre appareil";
+
+/* No comment provided by engineer. */
+"Migrate here" = "Transférer ici";
+
+/* No comment provided by engineer. */
+"Migrate to another device" = "Transférer vers un autre appareil";
+
+/* No comment provided by engineer. */
+"Migrate to another device via QR code." = "Transférer vers un autre appareil via un code QR.";
+
+/* No comment provided by engineer. */
+"Migrating" = "Transfert";
+
+/* No comment provided by engineer. */
 "Migrating database archive…" = "Migration de l'archive de la base de données…";
+
+/* No comment provided by engineer. */
+"Migration complete" = "Transfert terminé";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Erreur de migration :";
@@ -2355,7 +2511,7 @@
 /* copied message info */
 "Moderated at: %@" = "Modéré à : %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "modéré par %@";
 
 /* time unit */
@@ -2582,6 +2738,9 @@
 /* No comment provided by engineer. */
 "Open group" = "Ouvrir le groupe";
 
+/* authentication reason */
+"Open migration to another device" = "Ouvrir le transfert vers un autre appareil";
+
 /* No comment provided by engineer. */
 "Open Settings" = "Ouvrir les Paramètres";
 
@@ -2595,7 +2754,13 @@
 "Opening app…" = "Ouverture de l'app…";
 
 /* No comment provided by engineer. */
+"Or paste archive link" = "Ou coller le lien de l'archive";
+
+/* No comment provided by engineer. */
 "Or scan QR code" = "Ou scanner le code QR";
+
+/* No comment provided by engineer. */
+"Or securely share this file link" = "Ou partagez en toute sécurité le lien de ce fichier";
 
 /* No comment provided by engineer. */
 "Or show this code" = "Ou présenter ce code";
@@ -2649,6 +2814,9 @@
 "Permanent decryption error" = "Erreur de déchiffrement";
 
 /* No comment provided by engineer. */
+"Picture-in-picture calls" = "Appels picture-in-picture";
+
+/* No comment provided by engineer. */
 "PING count" = "Nombre de PING";
 
 /* No comment provided by engineer. */
@@ -2665,6 +2833,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Veuillez vérifier vos préférences ainsi que celles de votre contact.";
+
+/* No comment provided by engineer. */
+"Please confirm that network settings are correct for this device." = "Veuillez confirmer que les paramètres réseau de cet appareil sont corrects.";
 
 /* No comment provided by engineer. */
 "Please contact developers.\nError: %@" = "Veuillez contacter les développeurs.\nErreur : %@";
@@ -2698,6 +2869,9 @@
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
+
+/* No comment provided by engineer. */
+"Post-quantum E2EE" = "E2EE post-quantique";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserver le brouillon du dernier message, avec les pièces jointes.";
@@ -2779,6 +2953,15 @@
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notifications push";
+
+/* No comment provided by engineer. */
+"Push server" = "Serveur Push";
+
+/* chat item text */
+"quantum resistant e2e encryption" = "chiffrement e2e résistant post-quantique";
+
+/* No comment provided by engineer. */
+"Quantum resistant encryption" = "Chiffrement résistant post-quantique";
 
 /* No comment provided by engineer. */
 "Rate the app" = "Évaluer l'app";
@@ -2916,7 +3099,16 @@
 "Repeat connection request?" = "Répéter la demande de connexion ?";
 
 /* No comment provided by engineer. */
+"Repeat download" = "Répéter le téléchargement";
+
+/* No comment provided by engineer. */
+"Repeat import" = "Répéter l'importation";
+
+/* No comment provided by engineer. */
 "Repeat join request?" = "Répéter la requête d'adhésion ?";
+
+/* No comment provided by engineer. */
+"Repeat upload" = "Répéter l'envoi";
 
 /* chat item action */
 "Reply" = "Répondre";
@@ -2974,6 +3166,9 @@
 
 /* No comment provided by engineer. */
 "Run chat" = "Exécuter le chat";
+
+/* No comment provided by engineer. */
+"Safer groups" = "Groupes plus sûrs";
 
 /* chat item action */
 "Save" = "Enregistrer";
@@ -3207,13 +3402,16 @@
 "Set it instead of system authentication." = "Il permet de remplacer l'authentification du système.";
 
 /* profile update event chat item */
-"set new contact address" = "définir une nouvelle adresse de contact";
+"set new contact address" = "a changé d'adresse de contact";
 
 /* profile update event chat item */
-"set new profile picture" = "définir une nouvelle image de profil";
+"set new profile picture" = "a changé d'image de profil";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Définir le code d'accès";
+
+/* No comment provided by engineer. */
+"Set passphrase" = "Définir une phrase secrète";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Définir la phrase secrète pour l'export";
@@ -3258,7 +3456,10 @@
 "Show last messages" = "Voir les derniers messages";
 
 /* No comment provided by engineer. */
-"Show preview" = "Montrer l'aperçu";
+"Show preview" = "Afficher l'aperçu";
+
+/* No comment provided by engineer. */
+"Show QR code" = "Afficher le code QR";
 
 /* No comment provided by engineer. */
 "Show:" = "Afficher :";
@@ -3320,6 +3521,9 @@
 /* notification title */
 "Somebody" = "Quelqu'un";
 
+/* chat item text */
+"standard end-to-end encryption" = "chiffrement de bout en bout standard";
+
 /* No comment provided by engineer. */
 "Start chat" = "Démarrer le chat";
 
@@ -3334,6 +3538,9 @@
 
 /* No comment provided by engineer. */
 "Stop" = "Arrêter";
+
+/* No comment provided by engineer. */
+"Stop chat" = "Arrêter le chat";
 
 /* No comment provided by engineer. */
 "Stop chat to enable database actions" = "Arrêter le chat pour permettre des actions sur la base de données";
@@ -3361,6 +3568,9 @@
 
 /* authentication reason */
 "Stop SimpleX" = "Arrêter SimpleX";
+
+/* No comment provided by engineer. */
+"Stopping chat" = "Arrêt du chat";
 
 /* No comment provided by engineer. */
 "strike" = "barré";
@@ -3512,6 +3722,12 @@
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Cette action ne peut être annulée - votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.";
 
+/* E2EE info chat item */
+"This chat is protected by end-to-end encryption." = "Cette discussion est protégée par un chiffrement de bout en bout.";
+
+/* E2EE info chat item */
+"This chat is protected by quantum resistant end-to-end encryption." = "Cette discussion est protégée par un chiffrement de bout en bout résistant post-quantique.";
+
 /* notification title */
 "this contact" = "ce contact";
 
@@ -3597,10 +3813,19 @@
 "Unblock" = "Débloquer";
 
 /* No comment provided by engineer. */
+"Unblock for all" = "Débloquer pour tous";
+
+/* No comment provided by engineer. */
 "Unblock member" = "Débloquer ce membre";
 
 /* No comment provided by engineer. */
+"Unblock member for all?" = "Débloquer le membre pour tous ?";
+
+/* No comment provided by engineer. */
 "Unblock member?" = "Débloquer ce membre ?";
+
+/* rcv group event chat item */
+"unblocked %@" = "%@ débloqué";
 
 /* item status description */
 "Unexpected error: %@" = "Erreur inattendue : %@";
@@ -3695,8 +3920,14 @@
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Mettre à niveau et ouvrir le chat";
 
+/* No comment provided by engineer. */
+"Upload failed" = "Échec de l'envoi";
+
 /* server test step */
 "Upload file" = "Transférer le fichier";
+
+/* No comment provided by engineer. */
+"Uploading archive" = "Envoi de l'archive";
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Utiliser les hôtes .onions";
@@ -3729,13 +3960,16 @@
 "Use SimpleX Chat servers?" = "Utiliser les serveurs SimpleX Chat ?";
 
 /* No comment provided by engineer. */
+"Use the app while in the call." = "Utiliser l'application pendant l'appel.";
+
+/* No comment provided by engineer. */
 "User profile" = "Profil d'utilisateur";
 
 /* No comment provided by engineer. */
 "Using .onion hosts requires compatible VPN provider." = "L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Utilisation des serveurs SimpleX Chat.";
+"Using SimpleX Chat servers." = "Vous utilisez les serveurs SimpleX.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -3754,6 +3988,12 @@
 
 /* No comment provided by engineer. */
 "Verify connections" = "Vérifier les connexions";
+
+/* No comment provided by engineer. */
+"Verify database passphrase" = "Vérifier la phrase secrète de la base de données";
+
+/* No comment provided by engineer. */
+"Verify passphrase" = "Vérifier la phrase secrète";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Vérifier le code de sécurité";
@@ -3834,6 +4074,9 @@
 "wants to connect to you!" = "veut établir une connexion !";
 
 /* No comment provided by engineer. */
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Attention : démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages";
+
+/* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Attention : vous risquez de perdre des données !";
 
 /* No comment provided by engineer. */
@@ -3849,13 +4092,16 @@
 "Welcome message" = "Message de bienvenue";
 
 /* No comment provided by engineer. */
+"Welcome message is too long" = "Le message de bienvenue est trop long";
+
+/* No comment provided by engineer. */
 "What's new" = "Quoi de neuf ?";
 
 /* No comment provided by engineer. */
 "When available" = "Quand disponible";
 
 /* No comment provided by engineer. */
-"When people request to connect, you can accept or reject it." = "Lorsque des personnes demandent à se connecter, vous pouvez les accepter ou les refuser.";
+"When people request to connect, you can accept or reject it." = "Vous pouvez accepter ou refuser les demandes de contacts.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Lorsque vous partagez un profil incognito avec quelqu'un, ce profil sera utilisé pour les groupes auxquels il vous invite.";
@@ -3883,6 +4129,9 @@
 
 /* No comment provided by engineer. */
 "You" = "Vous";
+
+/* No comment provided by engineer. */
+"You **must not** use the same database on two devices." = "Vous **ne devez pas** utiliser la même base de données sur deux appareils.";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "Vous avez accepté la connexion";
@@ -3929,6 +4178,9 @@
 /* No comment provided by engineer. */
 "you are observer" = "vous êtes observateur";
 
+/* snd group event chat item */
+"you blocked %@" = "vous avez bloqué %@";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Vous pouvez accepter des appels à partir de l'écran de verrouillage, sans authentification de l'appareil ou de l'application.";
 
@@ -3940,6 +4192,9 @@
 
 /* No comment provided by engineer. */
 "You can enable them later via app Privacy & Security settings." = "Vous pouvez les activer ultérieurement via les paramètres de Confidentialité et Sécurité de l'application.";
+
+/* No comment provided by engineer. */
+"You can give another try." = "Vous pouvez faire un nouvel essai.";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Vous pouvez masquer ou mettre en sourdine un profil d'utilisateur - faites-le glisser vers la droite.";
@@ -3960,7 +4215,7 @@
 "You can share this address with your contacts to let them connect with **%@**." = "Vous pouvez partager cette adresse avec vos contacts pour leur permettre de se connecter avec **%@**.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or QR code - anybody can connect to you." = "Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous.";
+"You can share your address as a link or QR code - anybody can connect to you." = "Vous pouvez partager votre adresse sous la forme d'un lien ou d'un code QR - tout le monde peut l'utiliser pour vous contacter.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Vous pouvez lancer le chat via Paramètres / Base de données ou en redémarrant l'app";
@@ -4039,6 +4294,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "vous avez partagé un lien unique en incognito";
+
+/* snd group event chat item */
+"you unblocked %@" = "vous avez débloqué %@";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Vous serez connecté·e au groupe lorsque l'appareil de l'hôte sera en ligne, veuillez attendre ou vérifier plus tard !";

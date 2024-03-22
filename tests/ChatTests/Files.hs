@@ -9,9 +9,11 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Logger.Simple
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Network.HTTP.Types.URI (urlEncode)
 import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Mobile.File
@@ -19,7 +21,6 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import Test.Hspec hiding (it)
 
@@ -50,6 +51,14 @@ chatFileTests = do
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
+  describe "file transfer over XFTP without chat items" $ do
+    it "send and receive small standalone file" testXFTPStandaloneSmall
+    it "send and receive small standalone file with extra information" testXFTPStandaloneSmallInfo
+    it "send and receive large standalone file" testXFTPStandaloneLarge
+    it "send and receive large standalone file with extra information" testXFTPStandaloneLargeInfo
+    it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
+    xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
+    it "removes received temporary files" testXFTPStandaloneCancelRcv
 
 runTestMessageWithFile :: HasCallStack => FilePath -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
@@ -838,5 +847,206 @@ testProhibitFiles =
     (bob </)
     (cath </)
 
-waitFileExists :: HasCallStack => FilePath -> IO ()
-waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
+testXFTPStandaloneSmall :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/fixtures/logo.jpg"
+    src <## "started standalone uploading file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (logo.jpg) upload complete. download with:"
+    -- file description fits, enjoy the direct URIs
+    _uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/logo.jpg"
+    dst ##> ("/_download 1 " <> uri3 <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (logo.jpg)"
+    srcBody <- B.readFile "./tests/fixtures/logo.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneSmallInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/fixtures/logo.jpg"
+    src <## "started standalone uploading file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (logo.jpg) upload complete. download with:"
+    -- file description fits, enjoy the direct URIs
+    _uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+    let uri = uri3 <> "&data=" <> B.unpack (urlEncode False . LB.toStrict . J.encode $ J.object ["secret" J..= J.String "*********"])
+
+    logNote "info"
+    dst ##> ("/_download info " <> uri)
+    dst <## "{\"secret\":\"*********\"}"
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/logo.jpg"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile) -- download sucessfully discarded extra info
+    dst <## "started standalone receiving file 1 (logo.jpg)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (logo.jpg)"
+    srcBody <- B.readFile "./tests/fixtures/logo.jpg"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneLarge :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (testfile.out)"
+    srcBody <- B.readFile "./tests/tmp/testfile.in"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneLargeInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLargeInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri1 <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+    let uri = uri1 <> "&data=" <> B.unpack (urlEncode False . LB.toStrict . J.encode $ J.object ["secret" J..= J.String "*********"])
+
+    logNote "info"
+    dst ##> ("/_download info " <> uri)
+    dst <## "{\"secret\":\"*********\"}"
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (testfile.out)"
+    srcBody <- B.readFile "./tests/tmp/testfile.in"
+    B.readFile dstFile `shouldReturn` srcBody
+
+testXFTPStandaloneCancelSnd :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "cancelling"
+    src ##> "/fc 1"
+    src <## "cancelled sending file 1 (testfile.in)"
+    threadDelay 1000000
+
+    logNote "trying to receive cancelled"
+    dst ##> ("/_download 1 " <> uri <> " " <> "./tests/tmp/should.not.extist")
+    dst <## "started standalone receiving file 1 (should.not.extist)"
+    threadDelay 100000
+    logWarn "no error?"
+    dst <## "error receiving file 1 (should.not.extist)"
+    dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
+
+testXFTPStandaloneRelativePaths :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneRelativePaths = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    logNote "sending"
+    src #$> ("/_files_folder ./tests/tmp/src_files", id, "ok")
+    src #$> ("/_temp_folder ./tests/tmp/src_xftp_temp", id, "ok")
+
+    xftpCLI ["rand", "./tests/tmp/src_files/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/src_files/testfile.in"]
+
+    src ##> "/_upload 1 testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    dst #$> ("/_files_folder ./tests/tmp/dst_files", id, "ok")
+    dst #$> ("/_temp_folder ./tests/tmp/dst_xftp_temp", id, "ok")
+    dst ##> ("/_download 1 " <> uri <> " testfile.out")
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    -- silent progress events
+    threadDelay 250000
+    dst <## "completed standalone receiving file 1 (testfile.out)"
+    srcBody <- B.readFile "./tests/tmp/src_files/testfile.in"
+    B.readFile "./tests/tmp/dst_files/testfile.out" `shouldReturn` srcBody
+
+testXFTPStandaloneCancelRcv :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
+  withXFTPServer $ do
+    xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
+
+    logNote "sending"
+    src ##> "/_upload 1 ./tests/tmp/testfile.in"
+    src <## "started standalone uploading file 1 (testfile.in)"
+    -- silent progress events
+    threadDelay 250000
+    src <## "file 1 (testfile.in) uploaded, preparing redirect file 2"
+    src <## "file 1 (testfile.in) upload complete. download with:"
+    uri <- getTermLine src
+    _uri2 <- getTermLine src
+    _uri3 <- getTermLine src
+    _uri4 <- getTermLine src
+
+    logNote "receiving"
+    let dstFile = "./tests/tmp/testfile.out"
+    dst ##> ("/_download 1 " <> uri <> " " <> dstFile)
+    dst <## "started standalone receiving file 1 (testfile.out)"
+    threadDelay 25000 -- give workers some time to avoid internal errors from starting tasks
+    logNote "cancelling"
+    dst ##> "/fc 1"
+    dst <## "cancelled receiving file 1 (testfile.out)"
+    threadDelay 25000
+    doesFileExist dstFile `shouldReturn` False

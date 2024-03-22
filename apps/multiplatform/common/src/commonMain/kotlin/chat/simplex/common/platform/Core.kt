@@ -5,10 +5,12 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
+import chat.simplex.common.views.helpers.DatabaseUtils.randomDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
+import java.io.File
 import java.nio.ByteBuffer
 
 // ghc's rts
@@ -92,6 +94,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       controller.apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
     }
     controller.apiSetEncryptLocalFiles(controller.appPrefs.privacyEncryptLocalFiles.get())
+    controller.apiSetPQEncryption(controller.appPrefs.pqExperimentalEnabled.get())
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)
@@ -134,6 +137,37 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     chatModel.ctrlInitInProgress.value = false
     chatModel.dbMigrationInProgress.value = false
   }
+}
+
+fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation: MigrationConfirmation = MigrationConfirmation.Error): Pair<DBMigrationResult, ChatCtrl?> {
+  val dbKey = key ?: randomDatabasePassword()
+  Log.d(TAG, "chatInitTemporaryDatabase path: $dbPath")
+  val migrated = chatMigrateInit(dbPath, dbKey, confirmation.value)
+  val res = runCatching {
+    json.decodeFromString<DBMigrationResult>(migrated[0] as String)
+  }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+
+  return res to migrated[1] as ChatCtrl
+}
+
+fun chatInitControllerRemovingDatabases() {
+  val dbPath = dbAbsolutePrefixPath
+  // Remove previous databases, otherwise, can be .errorNotADatabase with null controller
+  File(dbPath + "_chat.db").delete()
+  File(dbPath + "_agent.db").delete()
+
+  val dbKey = randomDatabasePassword()
+  Log.d(TAG, "chatInitControllerRemovingDatabases path: $dbPath")
+  val migrated = chatMigrateInit(dbPath, dbKey, MigrationConfirmation.Error.value)
+  val res = runCatching {
+    json.decodeFromString<DBMigrationResult>(migrated[0] as String)
+  }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+
+  val ctrl = migrated[1] as Long
+  chatController.ctrl = ctrl
+  // We need only controller, not databases
+  File(dbPath + "_chat.db").delete()
+  File(dbPath + "_agent.db").delete()
 }
 
 fun showStartChatAfterRestartAlert(): CompletableDeferred<Boolean> {

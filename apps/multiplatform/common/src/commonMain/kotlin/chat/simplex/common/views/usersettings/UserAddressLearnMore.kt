@@ -1,9 +1,10 @@
 package chat.simplex.common.views.usersettings
 
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.ReadableText
@@ -12,8 +13,9 @@ import chat.simplex.res.MR
 
 @Composable
 fun UserAddressLearnMore() {
-  Column(
-    Modifier.verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(Modifier
+    .fillMaxHeight()
+    .padding(horizontal = DEFAULT_PADDING)
   ) {
     AppBarTitle(stringResource(MR.strings.simplex_address))
     ReadableText(MR.strings.you_can_share_your_address)

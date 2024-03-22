@@ -76,8 +76,8 @@ fun DatabaseErrorView(
     Text(String.format(generalGetString(MR.strings.database_migrations), ms.joinToString(", ")))
   }
 
-  Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize(),
     verticalArrangement = Arrangement.Center,
   ) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
@@ -206,6 +206,14 @@ private fun runChat(
     is DBMigrationResult.OK -> {
       platform.androidChatStartedAfterBeingOff()
     }
+    null -> {}
+    else -> showErrorOnMigrationIfNeeded(status)
+  }
+}
+
+fun showErrorOnMigrationIfNeeded(status: DBMigrationResult) =
+  when (status) {
+    is DBMigrationResult.OK -> {}
     is DBMigrationResult.ErrorNotADatabase ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.wrong_passphrase_title), generalGetString(MR.strings.enter_correct_passphrase))
     is DBMigrationResult.ErrorSQL ->
@@ -217,9 +225,7 @@ private fun runChat(
     is DBMigrationResult.InvalidConfirmation ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.invalid_migration_confirmation))
     is DBMigrationResult.ErrorMigration -> {}
-    null -> {}
   }
-}
 
 private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
@@ -246,7 +252,7 @@ private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPref
   }
 }
 
-private fun mtrErrorDescription(err: MTRError): String =
+fun mtrErrorDescription(err: MTRError): String =
   when (err) {
     is MTRError.NoDown ->
       String.format(generalGetString(MR.strings.mtr_error_no_down_migration), err.dbMigrations.joinToString(", "))

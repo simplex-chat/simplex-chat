@@ -24,6 +24,7 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
    - Semi-automatic deployment:
      - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
      - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+     - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
 Manual installation requires some preliminary actions:
 
@@ -32,7 +33,7 @@ Manual installation requires some preliminary actions:
    - Using offical binaries:
 
      ```sh
-     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server
+     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server && chmod +x /usr/local/bin/xftp-server
      ```
 
    - Compiling from source:
@@ -417,6 +418,65 @@ To import `csv` to `Grafana` one should:
 4. You're done! You should be able to create your own dashboard with statistics.
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
+
+
+# Updating your XFTP server
+
+To update your XFTP server to latest version, choose your installation method and follow the steps:
+
+   - Manual deployment
+     1. Stop the server:
+        ```sh
+        sudo systemctl stop xftp-server
+        ```
+     2. Update the binary:
+        ```sh
+         curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server && chmod +x /usr/local/bin/xftp-server
+        ```
+     3. Start the server:
+        ```sh
+        sudo systemctl start xftp-server
+        ```
+
+   - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+     1. Execute the followin command:
+        ```sh
+        sudo simplex-servers-update
+        ```
+     2. Done!
+
+   - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+     1. Stop and remove the container:
+        ```sh
+        docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/xftp-server --format="\{\{.ID\}\}"))
+        ```
+     2. Pull latest image:
+        ```sh
+        docker pull simplexchat/xftp-server:latest
+        ```
+     3. Start new container:
+        ```sh
+        docker run -d \
+          -p 443:443 \
+          -v $HOME/simplex/xftp/config:/etc/opt/simplex-xftp:z \
+          -v $HOME/simplex/xftp/logs:/var/opt/simplex-xftp:z \
+          -v $HOME/simplex/xftp/files:/srv/xftp:z \
+          simplexchat/xftp-server:latest
+        ```
+
+   - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+     1. Pull latest images:
+        ```sh
+        docker-compose --project-directory /etc/docker/compose/simplex pull
+        ```
+     2. Restart the containers:
+        ```sh
+        docker-compose --project-directory /etc/docker/compose/simplex up -d --remove-orphans
+        ```
+     3. Remove obsolete images:
+        ```sh
+        docker image prune
+        ```
 
 ### Configuring the app to use the server
 

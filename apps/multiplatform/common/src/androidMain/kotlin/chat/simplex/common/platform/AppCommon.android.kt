@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.LocalServerSocket
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.common.*
 import chat.simplex.common.platform.*
@@ -25,7 +26,8 @@ val defaultLocale: Locale = Locale.getDefault()
 
 @SuppressLint("StaticFieldLeak")
 lateinit var androidAppContext: Context
-lateinit var mainActivity: WeakReference<FragmentActivity>
+var mainActivity: WeakReference<FragmentActivity> = WeakReference(null)
+var callActivity: WeakReference<ComponentActivity> = WeakReference(null)
 
 fun initHaskell() {
   val socketName = "chat.simplex.app.local.socket.address.listen.native.cmd2" + Random.nextLong(100000)

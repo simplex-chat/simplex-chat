@@ -16,6 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -118,9 +119,8 @@ fun GroupLinkLayout(
     )
   }
 
-  Column(
-    Modifier
-      .verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier,
   ) {
     AppBarTitle(stringResource(MR.strings.group_link))
     Text(

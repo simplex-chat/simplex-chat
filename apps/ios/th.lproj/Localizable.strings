@@ -1989,7 +1989,7 @@
 /* copied message info */
 "Moderated at: %@" = "กลั่นกรองที่: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "กลั่นกรองโดย %@";
 
 /* time unit */

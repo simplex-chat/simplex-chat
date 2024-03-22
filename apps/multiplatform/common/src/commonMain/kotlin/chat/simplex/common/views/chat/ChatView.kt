@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -301,7 +303,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             withBGApi {
               val cInfo = chat.chatInfo
               if (cInfo is ChatInfo.Direct) {
-                chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+                val contactInfo = chatModel.controller.apiContactInfo(chat.remoteHostId, cInfo.contact.contactId)
+                val profile = contactInfo?.second ?: chatModel.currentUser.value?.profile?.toProfile() ?: return@withBGApi
+                chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media, userProfile = profile)
                 chatModel.showCallView.value = true
                 chatModel.callCommand.add(WCallCommand.Capabilities(media))
               }
@@ -471,7 +475,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       }
       is ChatInfo.InvalidJSON -> {
         val close = { chatModel.chatId.value = null }
-        ModalView(close, showClose = appPlatform.isAndroid, content = {
+        ModalView(close, showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(chat.chatInfo.json) } }, content = {
           InvalidJSONView(chat.chatInfo.json)
         })
         LaunchedEffect(chat.id) {
@@ -673,7 +677,7 @@ fun ChatInfoToolbar(
           }
         }
       }
-    } else if (activeCall?.contact?.id == chat.id) {
+    } else if (activeCall?.contact?.id == chat.id && appPlatform.isDesktop) {
       barButtons.add {
         val call = remember { chatModel.activeCall }.value
         val connectedAt = call?.connectedAt
@@ -905,7 +909,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.

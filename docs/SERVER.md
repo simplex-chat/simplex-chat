@@ -17,43 +17,43 @@ _Please note_: when you change the servers in the app configuration, it only aff
 
 ## Installation
 
-0. First, install `smp-server`:
+1. First, install `smp-server`:
 
    - Manual deployment (see below)
 
    - Semi-automatic deployment:
      - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
      - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
-     - [Linode StackScript](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)
+     - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
 Manual installation requires some preliminary actions:
 
-0. Install binary:
+1. Install binary:
 
    - Using offical binaries:
 
      ```sh
-     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server
+     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
      ```
 
    - Compiling from source:
 
      Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
 
-1. Create user and group for `smp-server`:
+2. Create user and group for `smp-server`:
 
    ```sh
    sudo useradd -m smp
    ```
 
-2. Create necessary directories and assign permissions:
+3. Create necessary directories and assign permissions:
 
    ```sh
    sudo mkdir -p /var/opt/simplex /etc/opt/simplex
    sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
    ```
 
-3. Allow `smp-server` port in firewall:
+4. Allow `smp-server` port in firewall:
 
    ```sh
    # For Ubuntu
@@ -63,7 +63,7 @@ Manual installation requires some preliminary actions:
    sudo firewall-cmd --reload
    ```
 
-4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
+5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
 
    ```sh
    [Unit]
@@ -398,24 +398,81 @@ To import `csv` to `Grafana` one should:
 
 2. Allow local mode by appending following:
 
-   ```sh
-   [plugin.marcusolsson-csv-datasource]
-   allow_local_mode = true
-   ```
+  ```sh
+  [plugin.marcusolsson-csv-datasource]
+  allow_local_mode = true
+  ```
 
-   ... to `/etc/grafana/grafana.ini`
+  ... to `/etc/grafana/grafana.ini`
 
 3. Add a CSV data source:
 
-   - In the side menu, click the Configuration tab (cog icon)
-   - Click Add data source in the top-right corner of the Data Sources tab
-   - Enter "CSV" in the search box to find the CSV data source
-   - Click the search result that says "CSV"
-   - In URL, enter a file that points to CSV content
+  - In the side menu, click the Configuration tab (cog icon)
+  - Click Add data source in the top-right corner of the Data Sources tab
+  - Enter "CSV" in the search box to find the CSV data source
+  - Click the search result that says "CSV"
+  - In URL, enter a file that points to CSV content
 
 4. You're done! You should be able to create your own dashboard with statistics.
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
+
+# Updating your SMP server
+
+To update your smp-server to latest version, choose your installation method and follow the steps:
+
+   - Manual deployment
+     1. Stop the server:
+        ```sh
+        sudo systemctl stop smp-server
+        ```
+     2. Update the binary:
+        ```sh
+         curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
+        ```
+     3. Start the server:
+        ```sh
+        sudo systemctl start smp-server
+        ```
+
+   - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+     1. Execute the followin command:
+        ```sh
+        sudo simplex-servers-update
+        ```
+     2. Done!
+
+   - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+     1. Stop and remove the container:
+        ```sh
+        docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/smp-server --format="\{\{.ID\}\}"))
+        ```
+     2. Pull latest image:
+        ```sh
+        docker pull simplexchat/smp-server:latest
+        ```
+     3. Start new container:
+        ```sh
+        docker run -d \
+          -p 5223:5223 \
+          -v $HOME/simplex/smp/config:/etc/opt/simplex:z \
+          -v $HOME/simplex/smp/logs:/var/opt/simplex:z \
+          simplexchat/smp-server:latest
+        ```
+
+   - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+     1. Pull latest images:
+        ```sh
+        docker-compose --project-directory /etc/docker/compose/simplex pull
+        ```
+     2. Restart the containers:
+        ```sh
+        docker-compose --project-directory /etc/docker/compose/simplex up -d --remove-orphans
+        ```
+     3. Remove obsolete images:
+        ```sh
+        docker image prune
+        ```
 
 ### Configuring the app to use the server
 

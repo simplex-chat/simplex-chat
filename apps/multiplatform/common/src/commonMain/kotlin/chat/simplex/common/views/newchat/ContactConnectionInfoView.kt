@@ -65,14 +65,7 @@ fun ContactConnectionInfoView(
     share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
       ModalManager.end.showModalCloseable { close ->
-        Column(
-          Modifier
-            .fillMaxHeight()
-            .padding(horizontal = DEFAULT_PADDING),
-          verticalArrangement = Arrangement.SpaceBetween
-        ) {
-          AddContactLearnMore(close)
-        }
+        AddContactLearnMore(close)
       }
     }
   )
@@ -111,9 +104,8 @@ private fun ContactConnectionInfoLayout(
     }
   }
 
-  Column(
-    Modifier
-      .verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier,
   ) {
     AppBarTitle(
       stringResource(

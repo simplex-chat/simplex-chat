@@ -151,7 +151,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
   alice ##> "/clear *"
   alice ##> "/fs 1"
-  alice <## "chat db error: SEChatItemNotFoundByFileId {fileId = 1}"
+  alice <## "file 1 not found"
   alice ##> "/tail"
   doesFileExist stored `shouldReturn` False
 

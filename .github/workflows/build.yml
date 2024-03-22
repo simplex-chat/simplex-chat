@@ -270,7 +270,7 @@ jobs:
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
-        timeout-minutes: 30
+        timeout-minutes: 40
         shell: bash
         run: cabal test --test-show-details=direct
 

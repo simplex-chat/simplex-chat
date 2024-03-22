@@ -411,7 +411,7 @@ expect fun ByteArray.toBase64StringForPassphrase(): String
 
 // Android's default implementation that was used before multiplatform, adds non-needed characters at the end of string
 // which can be bypassed by:
-// fun String.toByteArrayFromBase64(): ByteArray = Base64.getDecoder().decode(this.trimEnd { it == '\n' || it == ' ' })
+// fun String.toByteArrayFromBase64(): ByteArray = Base64.getMimeDecoder().decode(this.trimEnd { it == '\n' || it == ' ' })
 expect fun String.toByteArrayFromBase64ForPassphrase(): ByteArray
 
 val LongRange.Companion.saver

@@ -103,7 +103,7 @@ build() {
 
   for arch in $arches; do
 
-    tag_full="$(git tag --points-at HEAD)"
+    tag_full="$(git tag --points-at HEAD | head -n1)"
     tag_version="${tag_full%%-*}"
 
     if [ "$arch" = "armv7a" ] && [ -n "$tag_full" ] ; then

@@ -75,8 +75,8 @@ private fun CreateSimpleXAddressLayout(
   createAddress: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     AppBarTitle(stringResource(MR.strings.simplex_address))
@@ -169,7 +169,8 @@ private fun ProgressIndicator() {
 }
 
 private fun prepareChatBeforeAddressCreation(rhId: Long?) {
-  if (chatModel.users.isNotEmpty()) return
+  // No visible users but may have hidden. In this case chat should be started anyway because it's stopped on this stage with hidden users
+  if (chatModel.users.any { u -> !u.user.hidden }) return
   withBGApi {
     val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withBGApi
     chatModel.currentUser.value = user

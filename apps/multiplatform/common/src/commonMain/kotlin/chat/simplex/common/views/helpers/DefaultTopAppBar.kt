@@ -44,10 +44,10 @@ fun DefaultTopAppBar(
 }
 
 @Composable
-fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
+fun NavigationButtonBack(onButtonClicked: (() -> Unit)?, tintColor: Color = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary) {
   IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
-      painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+      painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), tint = tintColor
     )
   }
 }
