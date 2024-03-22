@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 set -eu
 
@@ -17,9 +17,9 @@ else
   echo "downloading the latest version of SimpleX Chat ..."
 fi
 
-if [ $PLATFORM == "Darwin" ]; then
+if [ $PLATFORM = "Darwin" ]; then
   PLATFORM="macos-x86-64"
-elif [ $PLATFORM == "Linux" ]; then
+elif [ $PLATFORM = "Linux" ]; then
   PLATFORM="ubuntu-20_04-x86-64"
 else
   echo "Scripted installation on your platform is not supported."
@@ -30,25 +30,25 @@ fi
 # / Prepare to upgrade from v0 to v1
 
 # Determine path of chat binary
-if [[ -n "$(which $APP_NAME)" ]]; then
+if [ -n "$(which $APP_NAME)" ]; then
   binary=$(which $APP_NAME)
-elif [[ -f "$BIN_PATH" ]]; then
+elif [ -f "$BIN_PATH" ]; then
   binary=$BIN_PATH
 else
   binary=""
 fi
 
 # If chat binary not found, check v0 initial migration and offer to abort or continue
-if [[ -z $binary ]]; then
+if [ -z $binary ]; then
   agent_db="$HOME/.simplex/simplex.agent.db"
-  if [[ \
-    -f "$agent_db" && \
-    $(echo "select * from migrations;" | sqlite3 $agent_db | grep 20210101_initial) \
-  ]]; then
+  if [ -f "$agent_db" ] && \
+    echo "select * from migrations;" | sqlite3 $agent_db | grep -q 20210101_initial
+  then
     echo "Warning: found SimpleX Chat database, the current version is not backwards compatible."
     echo "If you continue, the current version will be installed as $APP_NAME with a clean database, the old database will be preserved."
     while true; do
-      read -p "Please choose to (a)bort or (c)ontinue: " yn < /dev/tty
+      echo "Please choose to (a)bort or (c)ontinue: " 
+      read -r yn < /dev/tty
       case $yn in
           [Aa]* ) exit 1 ;;
           [Cc]* ) break ;;
@@ -57,11 +57,12 @@ if [[ -z $binary ]]; then
     done
   fi
 # If chat binary found, check version and offer to abort or continue, on continue rename chat binary
-elif [[ ! $($binary -h | grep v1) ]]; then
+elif ! $binary -h | grep -q v1; then
   echo "Warning: found a previous version of SimpleX Chat, the current version is not backwards compatible."
   echo "If you continue, it will be renamed to $APP_NAME-v0, and the new version will be installed as $APP_NAME with a clean database."
   while true; do
-    read -p "Please choose (a)bort or (c)ontinue: " yn < /dev/tty
+    echo "Please choose to (a)bort or (c)ontinue: " 
+    read -r yn < /dev/tty
     case $yn in
         [Aa]* ) exit 1 ;;
         [Cc]* )
@@ -76,7 +77,7 @@ elif [[ ! $($binary -h | grep v1) ]]; then
 fi
 # Prepare to upgrade from v0 to v1 /
 
-[[ ! -d $BIN_DIR ]] && mkdir -p $BIN_DIR
+[ ! -d $BIN_DIR ] && mkdir -p $BIN_DIR
 
 if [ -n "$(command -v curl)" ]; then
   curl -L -o $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
@@ -92,17 +93,29 @@ chmod +x $BIN_PATH
 echo "$APP_NAME installed successfully!"
 
 if [ -z "$(command -v $APP_NAME)" ]; then
-  if [ -n "$($SHELL -c 'echo $ZSH_VERSION')" ]; then
-    SHELL_FILE="$HOME/.zshrc"
-  elif [ -n "$($SHELL -c 'echo $BASH_VERSION')" ]; then
-    SHELL_FILE="$HOME/.bashrc"
-  else
+  case "$SHELL" in
+  *zsh) SHELL_FILE="$HOME/.zshrc" ;;
+  *bash) SHELL_FILE="$HOME/.bashrc" ;;
+  *fish)
+    IS_FISH=1
+    SHELL_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish" ;;
+  *)
     echo "Unknown shell - cannot add $APP_NAME folder to PATH"
     echo "Please add $BIN_DIR to PATH variable"
     echo "Or you can run $APP_NAME via full path: $BIN_PATH"
-  fi
-  if [ -n "$SHELL_FILE" ]; then
-    echo "export PATH=\$PATH:$BIN_DIR" >> $SHELL_FILE
+    ;;
+esac
+  if [ -n "${SHELL_FILE:-}" ]; then
+    case "$PATH" in
+      *"$BIN_DIR"*) ;;
+      *)
+        if [ -n "${IS_FISH:-}" ]; then
+          echo "set -gx PATH \$PATH:$BIN_DIR" >> $SHELL_FILE
+        else
+          echo "export PATH=\$PATH:$BIN_DIR" >> $SHELL_FILE
+        fi
+        ;;
+    esac
     echo "Source your $SHELL_FILE or open a new shell and type $APP_NAME to run it"
   fi
 else
