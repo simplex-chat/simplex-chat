@@ -871,6 +871,9 @@ testGroupRemoveAdd =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+
+      threadDelay 100000
+
       -- remove member
       alice ##> "/rm team bob"
       concurrentlyN_
