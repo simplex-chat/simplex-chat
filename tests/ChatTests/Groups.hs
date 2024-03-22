@@ -880,6 +880,9 @@ testGroupRemoveAdd =
             bob <## "use /d #team to delete the group",
           cath <## "#team: alice removed bob from the group"
         ]
+
+      threadDelay 100000
+
       alice ##> "/a team bob"
       alice <## "invitation to join the group #team sent to bob"
       bob <## "#team_1: alice invites you to join the group as member"
@@ -1915,6 +1918,8 @@ testGroupLink =
       concurrently_
         (alice <# "#team cath> hey team")
         (bob <# "#team cath> hey team")
+
+      threadDelay 100000
 
       -- leaving team removes link
       alice ##> "/l team"

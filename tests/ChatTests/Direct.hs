@@ -3001,6 +3001,7 @@ testPQEnableContactCompression =
     (bob, "lrg 2", v') \:#> (alice, v')
     (alice, "lrg 3", v') \:#> (bob, v')
     (bob, "lrg 4", v') \:#> (alice, v')
+    threadDelay 100000
     (alice, "lrg 5", v') +:#> (bob, v')
     PQEncOff <- alice `pqForContact` 2
     PQEncOff <- bob `pqForContact` 2
