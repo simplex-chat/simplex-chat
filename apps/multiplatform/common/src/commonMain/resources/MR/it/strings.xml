@@ -1500,7 +1500,7 @@
     <string name="v5_4_block_group_members">Blocca i membri dei gruppi</string>
     <string name="v5_4_incognito_groups_descr">Crea un gruppo usando un profilo casuale.</string>
     <string name="v5_4_link_mobile_desktop">Collega le app mobile e desktop! 🔗</string>
-    <string name="v5_4_link_mobile_desktop_descr">Tramite protocollo sicuro resistente al quantistico.</string>
+    <string name="v5_4_link_mobile_desktop_descr">Tramite protocollo sicuro resistente alla quantistica.</string>
     <string name="v5_4_block_group_members_descr">Per nascondere messaggi indesiderati.</string>
     <string name="v5_4_better_groups">Gruppi migliorati</string>
     <string name="v5_4_incognito_groups">Gruppi in incognito</string>
@@ -1640,7 +1640,7 @@
     <string name="unable_to_open_browser_title">Errore di apertura del browser</string>
     <string name="unable_to_open_browser_desc">Il browser predefinito è necessario per le chiamate. Configura il browser predefinito nel sistema, poi condividi più informazioni con gli sviluppatori.</string>
     <string name="e2ee_info_no_pq_short">Questa chat è protetta da crittografia end-to-end.</string>
-    <string name="e2ee_info_pq_short">Questa chat è protetta da crittografia end-to-end resistente al quantistico.</string>
+    <string name="e2ee_info_pq_short">Questa chat è protetta da crittografia end-to-end resistente alla quantistica.</string>
     <string name="migrate_from_device_start_chat">Avvia chat</string>
     <string name="migrate_to_device_title">Migra qui</string>
     <string name="migrate_to_device_downloading_details">Scaricamento dettagli del link</string>
@@ -1680,7 +1680,7 @@
     <string name="migrate_to_device_importing_archive">Importazione archivio</string>
     <string name="invalid_file_link">Link non valido</string>
     <string name="e2ee_info_no_pq"><![CDATA[I messaggi, i file e le chiamate sono protetti da <b>crittografia end-to-end</b> con perfect forward secrecy, ripudio e recupero da intrusione.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[I messaggi, i file e le chiamate sono protetti da <b>crittografia e2e resistente al quantistico</b> con perfect forward secrecy, ripudio e recupero da intrusione.]]></string>
+    <string name="e2ee_info_pq">I messaggi, i file e le chiamate sono protetti da <b>crittografia e2e resistente alla quantistica</b> con perfect forward secrecy, ripudio e recupero da intrusione.</string>
     <string name="migrate_from_device_title">Migra dispositivo</string>
     <string name="migrate_from_another_device">Migra da un altro dispositivo</string>
     <string name="migrate_from_device_to_another_device">Migra ad un altro dispositivo</string>
@@ -1694,10 +1694,10 @@
     <string name="v5_6_picture_in_picture_calls">Chiamate picture-in-picture</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Conferma che le impostazioni di rete sono corrette per questo dispositivo.</string>
     <string name="migrate_from_device_database_init">Preparazione del caricamento</string>
-    <string name="conn_event_enabled_pq">crittografia e2e resistente al quantistico</string>
+    <string name="conn_event_enabled_pq">crittografia e2e resistente alla quantistica</string>
     <string name="migrate_to_device_repeat_import">Ripeti importazione</string>
     <string name="migrate_to_device_database_init">Preparazione dello scaricamento</string>
-    <string name="v5_6_quantum_resistant_encryption">Crittografia resistente al quantistico</string>
+    <string name="v5_6_quantum_resistant_encryption">Crittografia resistente alla quantistica</string>
     <string name="migrate_to_device_repeat_download">Ripeti scaricamento</string>
     <string name="migrate_from_device_repeat_upload">Ripeti caricamento</string>
     <string name="v5_6_safer_groups">Gruppi più sicuri</string>
