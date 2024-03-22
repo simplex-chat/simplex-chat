@@ -3265,9 +3265,9 @@ Ezt nem vonható vissza!</target>
         <target>A meghívó lejárt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite friends" xml:space="preserve">
+      <trans-unit id="Invite friends" xml:space="preserve" approved="no">
         <source>Invite friends</source>
-        <target>Barátok meghívása</target>
+        <target state="translated">Ismerősök meghívása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
@@ -3927,19 +3927,19 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Egyszer használatos meghívó hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
-        <target>A csatlakozáshoz Onion host-okra lesz szükség. VPN engedélyezése szükséges.</target>
+        <target state="translated">A csatlakozáshoz Onion kiszolgálókra lesz szükség. Egy VPN szolgáltatás engedélyezése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>Onion host-ok használata, ha azok rendelkezésre állnak. VPN engedélyezése szükséges.</target>
+        <target state="translated">Onion kiszolgálók használata, ha azok rendelkezésre állnak. Egy VPN szolgáltatás engedélyezése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will not be used." xml:space="preserve">
+      <trans-unit id="Onion hosts will not be used." xml:space="preserve" approved="no">
         <source>Onion hosts will not be used.</source>
-        <target>Onion host-ok nem lesznek használva.</target>
+        <target state="translated">Onion kiszolgálók nem lesznek használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
@@ -4354,9 +4354,9 @@ Hiba: %@</target>
         <target>Fájlok- és a médiatartalom küldés letiltása.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
+      <trans-unit id="Prohibit sending voice messages." xml:space="preserve" approved="no">
         <source>Prohibit sending voice messages.</source>
-        <target>Hangüzenetek küldésének letiltása.</target>
+        <target state="translated">Hangüzenetek küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -4749,9 +4749,9 @@ Hiba: %@</target>
         <target>Jelmondat elmentése és csevegés megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
+      <trans-unit id="Save passphrase in Keychain" xml:space="preserve" approved="no">
         <source>Save passphrase in Keychain</source>
-        <target>Jelmondat mentése a kulcstárban</target>
+        <target state="translated">Jelmondat mentése a kulcstárba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save preferences?" xml:space="preserve">
@@ -5840,9 +5840,9 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
         <target>Frissítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
+      <trans-unit id="Update .onion hosts setting?" xml:space="preserve" approved="no">
         <source>Update .onion hosts setting?</source>
-        <target>Tor .onion host beállítások frissítése?</target>
+        <target state="translated">Tor .onion kiszolgálók beállításainak frissítése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update database passphrase" xml:space="preserve">
@@ -5890,9 +5890,9 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
         <target state="translated">Archívum feltöltése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use .onion hosts" xml:space="preserve">
+      <trans-unit id="Use .onion hosts" xml:space="preserve" approved="no">
         <source>Use .onion hosts</source>
-        <target>Tor .onion hostok használata</target>
+        <target state="translated">Tor .onion kiszolgálók használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -5950,9 +5950,9 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
         <target>Felhasználói profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
+      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve" approved="no">
         <source>Using .onion hosts requires compatible VPN provider.</source>
-        <target>A .onion hosztok használatához kompatibilis VPN szolgáltatóra van szükség.</target>
+        <target state="translated">Az .onion kiszolgálók használatához egy kompatibilis VPN szolgáltatóra van szükség.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
