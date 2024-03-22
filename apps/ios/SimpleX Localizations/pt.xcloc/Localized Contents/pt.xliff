@@ -15,20 +15,24 @@
 Available in v5.1</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" " xml:space="preserve">
+      <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
+        <target state="translated"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="  " xml:space="preserve">
+      <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve">
+      <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (" xml:space="preserve">
+      <trans-unit id=" (" xml:space="preserve" approved="no">
         <source> (</source>
+        <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -4161,6 +4165,11 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="## In reply to" xml:space="preserve" approved="no">
+        <source>## In reply to</source>
+        <target state="translated">## Em resposta a</target>
+        <note>copied message info</note>
       </trans-unit>
     </body>
   </file>
