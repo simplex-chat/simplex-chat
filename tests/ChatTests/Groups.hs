@@ -37,7 +37,7 @@ chatGroupTests = do
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
     it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
-    fit "remove contact from group and add again" testGroupRemoveAdd
+    it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
@@ -55,7 +55,7 @@ chatGroupTests = do
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
-    fit "create group link, join via group link" testGroupLink
+    it "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
