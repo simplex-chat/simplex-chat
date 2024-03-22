@@ -78,6 +78,7 @@ chatGroupTests = do
     it "invitee incognito" testGroupLinkNoContactInviteeIncognito
     it "host profile received" testGroupLinkNoContactHostProfileReceived
     it "existing contact merged" testGroupLinkNoContactExistingContactMerged
+    it "group link is deleted if user role lowers below admin" testGroupLinkUserRoleLowers
   describe "group links without contact connection plan" $ do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
@@ -3108,6 +3109,60 @@ testGroupLinkNoContactExistingContactMerged =
       alice <## "bob (Bob)"
       bob ##> "/contacts"
       bob <## "alice (Alice)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+testGroupLinkUserRoleLowers :: HasCallStack => FilePath -> IO ()
+testGroupLinkUserRoleLowers =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+
+      -- lowering role from owner to admin - link works
+      alice ##> "/mr #team alice admin"
+      alice <## "#team: you changed your role from owner to admin"
+
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+      alice ##> "/mr #team bob admin"
+      alice <## "#team: you changed the role of bob from member to admin"
+      bob <## "#team: alice changed your role from member to admin"
+
+      -- lowering role below admin - link is deleted
+      bob ##> "/mr #team alice member"
+      bob <## "#team: you changed the role of alice from admin to member"
+      alice <## "#team: bob changed your role from admin to member"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      cath ##> "/gs"
+      cath <## "you have no groups!"
+      cath <## "to create: /g <name>"
 
       alice #> "#team hello"
       bob <# "#team alice> hello"
