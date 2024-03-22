@@ -34,7 +34,7 @@ Features currently not supporting communicating rejection:
 
 - Both sync and async versions of agent functions are required, as contact rejection will be user action, while group join rejection will be automated (in case, for example, if link host is no longer admin).
 
-  - Group requests non-automatic approval is a separate matter and requires UI consideration, but if it was added it would also use sync function.
+  - Group requests non-automatic approval is a separate matter and requires UI consideration, but if it was added it would use sync function.
 
   - For sync function either new API can be added, or rejectContact can be parameterized.
 
