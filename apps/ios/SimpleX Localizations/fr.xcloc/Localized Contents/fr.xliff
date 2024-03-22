@@ -3633,9 +3633,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Les messages, fichiers et appels sont protégés par un chiffrement **de bout en bout** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Les messages, fichiers et appels sont protégés par un chiffrement **2e2 résistant post-quantique** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.</target>
+        <target state="translated">Les messages, fichiers et appels sont protégés par un chiffrement **e2e résistant post-quantique** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
