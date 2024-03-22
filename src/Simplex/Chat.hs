@@ -1665,7 +1665,9 @@ processChatCommand' vr = \case
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
     if memberId == groupMemberId' membership
-      then changeMemberRole user gInfo members membership $ SGEUserRole memRole
+      then do
+        when (memRole < GRAdmin) $ deleteGroupLinkIfExists user gInfo
+        changeMemberRole user gInfo members membership $ SGEUserRole memRole
       else case find ((== memberId) . groupMemberId') members of
         Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId (fromLocalProfile $ memberProfile m) memRole
         _ -> throwChatError CEGroupMemberNotFound
@@ -5490,21 +5492,28 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg brokerTs
       | membershipMemId == memId =
-          let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-           in changeMemberRole gInfo' membership $ RGEUserRole memRole
+          checkRole membership $ do
+            let gInfo' = gInfo {membership = membership {memberRole = memRole}}
+            when (memRole < GRAdmin) $ deleteGroupLinkIfExists user gInfo
+            changeMemberRole gInfo' membership $ RGEUserRole memRole
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+            Right member ->
+              checkRole member $ do
+                let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+                changeMemberRole gInfo member gEvent
             Left _ -> messageError "x.grp.mem.role with unknown member ID"
       where
         GroupMember {memberId = membershipMemId} = membership
-        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
-          | senderRole < GRAdmin || senderRole < fromRole = messageError "x.grp.mem.role with insufficient member permissions"
-          | otherwise = do
-              withStore' $ \db -> updateGroupMemberRole db user member memRole
-              ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
-              groupMsgToView gInfo ci
-              toView CRMemberRole {user, groupInfo = gInfo', byMember = m, member = member {memberRole = memRole}, fromRole, toRole = memRole}
+        checkRole GroupMember {memberRole = fromRole} a
+          | senderRole < GRAdmin || senderRole < fromRole =
+              messageError "x.grp.mem.role with insufficient member permissions"
+          | otherwise = a
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent = do
+          withStore' $ \db -> updateGroupMemberRole db user member memRole
+          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
+          groupMsgToView gInfo ci
+          toView CRMemberRole {user, groupInfo = gInfo', byMember = m, member = member {memberRole = memRole}, fromRole, toRole = memRole}
 
     checkHostRole :: GroupMember -> GroupMemberRole -> m ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
