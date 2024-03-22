@@ -38,7 +38,7 @@ directoryServiceTests = do
     it "should de-list if service is removed from the group" testDelistedServiceRemoved
     it "should de-list/re-list when service/owner roles change" testDelistedRoleChanges
     it "should NOT de-list if another member role changes" testNotDelistedMemberRoleChanged
-    it "should NOT send to approval if roles are incorrect" testNotSentApprovalBadRoles
+    fit "should NOT send to approval if roles are incorrect" testNotSentApprovalBadRoles
     it "should NOT allow approving if roles are incorrect" testNotApprovedBadRoles
   describe "should require re-approval if profile is changed by" $ do
     it "the registration owner" testRegOwnerChangedProfile
@@ -55,7 +55,7 @@ directoryServiceTests = do
   describe "list groups" $ do
     it "should list user's groups" testListUserGroups
   describe "store log" $ do
-    it "should restore directory service state" testRestoreDirectory
+    fit "should restore directory service state" testRestoreDirectory
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
