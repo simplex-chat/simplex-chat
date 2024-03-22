@@ -5493,8 +5493,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg brokerTs
       | membershipMemId == memId =
           checkRole membership $ do
-            let gInfo' = gInfo {membership = membership {memberRole = memRole}}
             when (memRole < GRAdmin) $ deleteGroupLinkIfExists user gInfo
+            let gInfo' = gInfo {membership = membership {memberRole = memRole}}
             changeMemberRole gInfo' membership $ RGEUserRole memRole
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
