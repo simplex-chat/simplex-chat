@@ -139,6 +139,9 @@ dependencies {
 
     implementation("com.jakewharton:process-phoenix:2.1.2")
 
+    //Camera Permission
+    implementation("com.google.accompanist:accompanist-permissions:0.23.0")
+
     //implementation("androidx.compose.material:material-icons-extended:$compose_version")
     //implementation("androidx.compose.ui:ui-util:$compose_version")
 
