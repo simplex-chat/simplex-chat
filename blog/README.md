@@ -1,5 +1,19 @@
 # Blog
 
+Mar 23, 2024 [SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration](./20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
+
+SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance:
+- community and business interests are aligned.
+- the journey to the decentralized non-profit protocol governance.
+- welcome, Esra’a!
+
+What's new in v5.6:
+- quantum resistant end-to-end encryption (BETA) – enable it for the new contacts.
+- use the app during the audio and video calls.
+- migrate all app data to another device via QR code.
+
+---
+
 Mar 14, 2024 [SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
 This is a major upgrade for SimpleX Chat messaging protocol stack, I am really proud to present this work of the whole team.
