@@ -2135,4 +2135,114 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;/image&gt;</content>
             
         </entry>
+        <entry>
+            <title>SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration</title>
+            <link href="https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"/>
+            
+            <updated>23 Mar 2024</updated>
+            <id>https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html</id>
+            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-network-real-privacy-and-stable-profits-non-profits-for-protocols-v56-released-with-quantum-resistant-e2e-encryption-and-simple-profile-migration&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Mar 23, 2024&lt;/p&gt;
+&lt;p&gt;SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#community-and-business-interests-are-aligned&quot;&gt;community and business interests are aligned&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#the-journey-to-the-decentralized-non-profit-protocol-governance&quot;&gt;the journey to the decentralized non-profit protocol governance&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#welcome-esraa&quot;&gt;welcome, Esra’a&lt;/a&gt;!&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;What&#39;s new in v5.6:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#quantum-resistant-end-to-end-encryption-beta&quot;&gt;quantum resistant end-to-end encryption&lt;/a&gt; (BETA) – enable it for the new contacts.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#use-the-app-during-the-audio-and-video-calls&quot;&gt;use the app during the audio and video calls&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#migrate-all-app-data-to-another-device-via-qr-code&quot;&gt;migrate all app data to another device via QR code&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;There are many other improvements and fixes in this release:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;group admins can block a member for all other members.&lt;/li&gt;
+&lt;li&gt;filtering chats no longer includes muted chats with unread messages.&lt;/li&gt;
+&lt;li&gt;and more - see the &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/tag/v5.6.0&quot;&gt;release notes&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;simplex-network-deliver-real-privacy-via-a-profitable-business-and-non-profit-protocol-governance&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance&lt;/h2&gt;
+&lt;h3 id=&quot;community-and-business-interests-are-aligned&quot; tabindex=&quot;-1&quot;&gt;Community and business interests are aligned&lt;/h3&gt;
+&lt;p&gt;Some people in our users&#39; community believe that there is a conflict between the business and the community interests. This view fails to see a bigger picture of how these interests are aligned. I wrote a blog post about it &lt;a href=&quot;https://www.poberezkin.com/posts/2023-10-31-why-privacy-impossible-without-venture-funding.html&quot;&gt;here&lt;/a&gt;. Our goal is to grow the network and the ecosystem while enriching all stakeholders involved, both the community and the business shareholders. This strategy relies on the strengths and opportunities of both the business and the decentralized network we build, with its vibrant community of individuals and organizations. It positions the business not as a controller but as a supporter of the community growth, resilience and sustainability.&lt;/p&gt;
+&lt;p&gt;By leveraging access to investment resources, its ability to provide stock-based incentives beyond salaries, operating as a business will satisfy users&#39; and community needs more effectively, ensuring the long-term viability and growth of the network, while remaining true to the mission. A purely nonprofit model with no avenue to sustain this growth is simply not possible. Sustainability requires profits, that is simply spending less than earning, as every responsible individual and organization should aim for, and these profits must be based on users&#39; payments, and not on some other sources of revenue or funds. And building the software product that customers are willing to pay for requires substantial business investments. We will accomplish it while maintaining transparency and the commitment to keep SimpleX network and its protocols open and free to use.&lt;/p&gt;
+&lt;h3 id=&quot;the-journey-to-the-decentralized-non-profit-protocol-governance&quot; tabindex=&quot;-1&quot;&gt;The journey to the decentralized non-profit protocol governance&lt;/h3&gt;
+&lt;p&gt;At the current early stage of network growth the protocols will benefit most from the rapid evolution and centralized design. Many protocols that decentralized their evolution too early failed to evolve and to adapt to the product requirements of the majority of users, causing them to stall in growth. Even the open web became possible only thanks to Netscape, a venture funded company, that developed browsers and web server software taking it upon themselves to rapidly evolve web specification to make it into a robust application platform as we now know it. It is very unlikely that it would have happened if it was managed by a nonprofit or community, in a decentralized way.&lt;/p&gt;
+&lt;p&gt;Once SimpleX network protocols stabilize and reach the required maturity, we plan to transition its governance to several new nonprofit entities, ensuring its continued evolution aligns more closely with our vision of community-driven, independent and transparent governance. We and our investors believe that this is a win-win strategy. It both maximizes the business value, by creating a product built on protecting privacy and users&#39; trust - a model that we see as the only viable path forward. It also maximizes the value created for the user community.&lt;/p&gt;
+&lt;h3 id=&quot;welcome-esraa&quot; tabindex=&quot;-1&quot;&gt;Welcome, Esra’a!&lt;/h3&gt;
+&lt;p&gt;To help us deliver these goals, Esra’a Al Shafei joined SimpleX Chat team - we are excited to welcome her!&lt;/p&gt;
+&lt;p&gt;Esra&#39;a is a longtime privacy and human rights advocate from Bahrain. She is the founder of &lt;a href=&quot;http://majal.org/&quot;&gt;Majal.org&lt;/a&gt;, a network of platforms that amplify under-reported and marginalized voices in the Middle East and North Africa. She is also the co-founder of the &lt;a href=&quot;https://numun.fund/&quot;&gt;Numun Fund&lt;/a&gt;, the first dedicated fund for women-led tech in the Global South. Esra’a is currently the Vice Chair of the Board at the &lt;a href=&quot;https://wikimediafoundation.org/&quot;&gt;Wikimedia Foundation&lt;/a&gt;, the nonprofit which hosts Wikipedia. She is also on the Board of the &lt;a href=&quot;https://www.torproject.org/&quot;&gt;Tor Project&lt;/a&gt;, developers of one of the world’s strongest tools for privacy and freedom online. Previously, she served on the Board of &lt;a href=&quot;https://www.accessnow.org/&quot;&gt;Access Now&lt;/a&gt;, an international nonprofit dedicated to an open and free Internet.&lt;/p&gt;
+&lt;p&gt;In her own words: &lt;em&gt;&amp;quot;Privacy and security have been the center of my work as a human rights advocate for the last 20 years in one of the most surveilled countries in the world where staying safe remains a burden. Our privacy is our dignity. It is something that belongs to us and something we should treasure - as people, as companies, as governments. Despite messaging being the most intimate aspect of our digital lives, the leading protocols in this space are centralized and we deserve a web that operates on the core principles of genuine privacy and security in a fully decentralized framework. SimpleX network will play a critical role towards that vision.&amp;quot;&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Executing the plan towards decentralized nonprofit protocol governance will be Esra’a’s primary responsibility. Our primary objective with this plan is to ensure that no single entity can control or have unrestricted ownership of the protocols, so it can maintain its integrity.&lt;/p&gt;
+&lt;h2 id=&quot;whats-new-in-v56&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v5.6&lt;/h2&gt;
+&lt;h3 id=&quot;quantum-resistant-end-to-end-encryption-beta&quot; tabindex=&quot;-1&quot;&gt;Quantum resistant end-to-end encryption (BETA)&lt;/h3&gt;
+&lt;p&gt;Adding post-quantum resistance to the double ratchet end-to-end encryption algorithm in SimpleX Chat is a major upgrade to messaging protocols, and it creates the security against the future quantum computers.&lt;/p&gt;
+&lt;p&gt;I wrote in detail in the previous post about various properties of end-to-end encryption and how exactly quantum resistance is implemented in SimpleX Chat - currently SimpleX Chat has &lt;a href=&quot;https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html#how-secure-is-end-to-end-encryption-in-different-messengers&quot;&gt;the most secure end-to-end encryption design&lt;/a&gt; against the present and future attacks.&lt;/p&gt;
+&lt;p&gt;We plan to perform a security audit of this design and implementation later this year.&lt;/p&gt;
+&lt;p&gt;Post-quantum encryption is currently added as opt-in and has to be separately enabled to be active for the new contacts, and, additionally, can be enabled for the existing contacts.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240314-pq1.png&quot; width=&quot;288&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240314-pq2.png&quot; width=&quot;288&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240314-pq3.png&quot; width=&quot;288&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;To enable quantum resistance for the new conversations&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;open the app settings (tap user avatar in the top left corner).&lt;/li&gt;
+&lt;li&gt;scroll down to &lt;em&gt;Developer tools&lt;/em&gt; and open them.&lt;/li&gt;
+&lt;li&gt;enable &lt;em&gt;Show developer options&lt;/em&gt; toggle.&lt;/li&gt;
+&lt;li&gt;now you will see &lt;em&gt;Post-quantum E2EE&lt;/em&gt; toggle - enable it as well.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Now all new contacts you add to the app will use quantum resistant Signal double ratchet algorithm.&lt;/p&gt;
+&lt;p&gt;Once you have enabled it for the new contacts, you can also &lt;strong&gt;enable it for some of the existing contacts&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;open the chat with the contact you want to upgrade to be quantum resistant.&lt;/li&gt;
+&lt;li&gt;tap contact name above the chat.&lt;/li&gt;
+&lt;li&gt;tap Allow PQ encryption.&lt;/li&gt;
+&lt;li&gt;exchange several messages back and forth with that contact - the quantum resistant double ratchet will kick in after 3-5 messages (depending on how many messages you send in each direction), and you will see the notice in the chat once it enables.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We will be making quantum resistance default for all direct chats in v5.7, and we plan that all existing direct chats will be automatically upgraded when both contacts install v5.7.&lt;/p&gt;
+&lt;h3 id=&quot;use-the-app-during-the-audio-and-video-calls&quot; tabindex=&quot;-1&quot;&gt;Use the app during the audio and video calls&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240323-call1.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-call2.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Since we added the audio and video calls in 2022 a lot of work was done to improve the stability of calls. One of the usability downsides until this release was that it was impossible to use the app during the call.&lt;/p&gt;
+&lt;p&gt;This version solved this problem - now you can return back to the app without interrupting the call and use any of the app functions - for example, you can send the messages or files to the person you are in the call with. If this is a video call, you will continue seeing your contact in a small picture-in-picture view.&lt;/p&gt;
+&lt;h3 id=&quot;migrate-all-app-data-to-another-device-via-qr-code&quot; tabindex=&quot;-1&quot;&gt;Migrate all app data to another device via QR code&lt;/h3&gt;
+&lt;p&gt;We always believed that cross-platform data portability is very important for any software. Users own their data, and they should have a way to export it from any software they use. So from the version of SimpleX Chat &lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#database-export-and-import&quot;&gt;released in July 2022&lt;/a&gt; it was possible to export the database as a self-contained file, including all contacts, messages and files, and import it on a new device.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;&amp;quot;How can I migrate my data to another device?&amp;quot;&lt;/em&gt; was one of the most frequent user questions, but until this release this process was &lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html&quot;&gt;quite complex&lt;/a&gt;, requiring too many steps, and most non-technical users were not willing to try it, as even though it was reliable, it appeared risky.&lt;/p&gt;
+&lt;p&gt;This release made the app data migration very simple, see the steps below.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Start the migration on the source device&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-from1.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-from2.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-from3.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-from4.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-from5.png&quot; width=&quot;170&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;On the device you migrate your app data from, follow these steps:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;choose &lt;em&gt;Migrate to another device&lt;/em&gt;,&lt;/li&gt;
+&lt;li&gt;if necessary, set the database passphrase (initially, the database is encrypted with a random passphrase), or, if it&#39;s already set, verify it - for security and to ensure that the archive will be usable on the new device,&lt;/li&gt;
+&lt;li&gt;tap &lt;em&gt;Archive and upload&lt;/em&gt; to and upload the app data in chunks to the XFTP servers configured in the app,&lt;/li&gt;
+&lt;li&gt;the app will show the QR code that should be scanned from the new device.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Migrate data to the target device&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-to1.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-to2.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-to3.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-to4.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-to5.png&quot; width=&quot;170&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;On the device you migrate your data to, follow these steps:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;on the first app page choose &lt;em&gt;Migrate from another device&lt;/em&gt;,&lt;/li&gt;
+&lt;li&gt;scan the QR code shown on the source device,&lt;/li&gt;
+&lt;li&gt;once the archive downloads, enter the database passphrase and tap &lt;em&gt;Open chat&lt;/em&gt;,&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Finalize migration on the source device&lt;/strong&gt;&lt;/p&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240323-migrate-from6.png&quot; width=&quot;170&quot; class=&quot;float-to-left&quot; /&gt;
+&lt;p&gt;When the chat starts on the target device, make sure to tap &lt;em&gt;Finalize migration&lt;/em&gt; and then &lt;em&gt;Delete database&lt;/em&gt; on the source device.&lt;/p&gt;
+&lt;p&gt;The database cannot be used on two devices at the same time, doing so would make it impossible to decrypt the received messages. This is a security measure - the break-in recovery property of double ratchet algorithm.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX network&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions&quot;&gt;How SimpleX is different from Session, Matrix, Signal, etc.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donates to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;As I wrote, we are planning a 3rd party security audit for the protocols and cryptography design, and also for an app implementation, and it would hugely help us if some part of this $50,000+ expense is covered with donations.&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX network based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</content>
+            
+        </entry>
 </feed>
