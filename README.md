@@ -379,8 +379,9 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Using mobile profiles from the desktop app.
 - ✅ Private notes.
 - ✅ Improve sending videos (including encryption of locally stored videos).
+- ✅ Post-quantum resistant key exchange in double ratchet protocol.
+- 🏗 Improve stability and reduce battery usage.
 - 🏗 Improve experience for the new users.
-- 🏗 Post-quantum resistant key exchange in double ratchet protocol.
 - 🏗 Large groups, communities and public channels.
 - 🏗 Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - Privacy & security slider - a simple way to set all settings at once.
