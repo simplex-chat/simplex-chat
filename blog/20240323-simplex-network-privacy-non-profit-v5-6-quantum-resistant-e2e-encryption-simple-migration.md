@@ -37,9 +37,9 @@ By leveraging access to investment resources, its ability to provide stock-based
 
 ### The journey to the decentralized non-profit protocol governance
 
-At the current early stage of network growth the protocols will benefit most from the rapid evolution and centralized management. Many protocols that decentralized their evolution too early failed to evolve to the product requirements of the majority of the users. Even the open web became possible only thanks to Netscape, a venture funded company, that developed browsers and web server software taking it upon themselves to rapidly evolve web specification to make it into a robust application platform as we now know it. It is very unlikely if it would have happened if it was managed by a nonprofit or community, in a decentralized way.
+At the current early stage of network growth the protocols will benefit most from the rapid evolution and centralized design. Many protocols that decentralized their evolution too early failed to evolve and to adapt to the product requirements of the majority of users, causing them to stall in growth. Even the open web became possible only thanks to Netscape, a venture funded company, that developed browsers and web server software taking it upon themselves to rapidly evolve web specification to make it into a robust application platform as we now know it. It is very unlikely that it would have happened if it was managed by a nonprofit or community, in a decentralized way.
 
-Once SimpleX network protocols stabilize and reach the maturity, we plan to transition its governance to several new nonprofit entities, ensuring its continued evolution aligns more closely with our vision of community-driven, independent and transparent governance. It's wrong to thing that we are doing it from the altruistic reasons - we and our investors believe that this is a win-win strategy that will both maximize the business value, by creating a business built on protecting privacy and users' trust, that we believe is the only viable strategy in the long term, and also maximizing the value to the users' community.
+Once SimpleX network protocols stabilize and reach the required maturity, we plan to transition its governance to several new nonprofit entities, ensuring its continued evolution aligns more closely with our vision of community-driven, independent and transparent governance. We and our investors believe that this is a win-win strategy. It both maximizes the business value, by creating a product built on protecting privacy and users' trust - a model that we see as the only viable path forward. It also maximizes the value created for the user community.
 
 ### Welcome, Esra’a!
 
@@ -49,7 +49,7 @@ Esra'a is a longtime privacy and human rights advocate from Bahrain. She is the 
 
 In her own words: *"Privacy and security have been the center of my work as a human rights advocate for the last 20 years in one of the most surveilled countries in the world where staying safe remains a burden. Our privacy is our dignity. It is something that belongs to us and something we should treasure - as people, as companies, as governments. Despite messaging being the most intimate aspect of our digital lives, the leading protocols in this space are centralized and we deserve a web that operates on the core principles of genuine privacy and security in a fully decentralized framework. SimpleX network will play a critical role towards that vision."*
 
-Executing the plan towards decentralized nonprofit protocol governance will be Esra’a’s primary responsibility. Our primary objective with this plan is to ensure that no single entity can control or have unrestricted ownership of the protocols, so it can maintain its uncompromising integrity.
+Executing the plan towards decentralized nonprofit protocol governance will be Esra’a’s primary responsibility. Our primary objective with this plan is to ensure that no single entity can control or have unrestricted ownership of the protocols, so it can maintain its integrity.
 
 ## What's new in v5.6
 
