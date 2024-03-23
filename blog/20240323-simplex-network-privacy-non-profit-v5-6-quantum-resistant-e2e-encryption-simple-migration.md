@@ -1,16 +1,14 @@
 ---
 layout: layouts/article.html
-title: "SimpleX network: real privacy and stable profits, non-profit protocol governance, v5.6 released with quantum resistant e2e encryption and simple profile migration"
+title: "SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration"
 date: 2024-03-23
-# previewBody: blog_previews/20240314.html
-preview: TODO
-draft: true
-# image: images/20240314-kem.jpg
-# imageWide: true
+previewBody: blog_previews/20240323.html
+image: images/20240323-post-preview.png
+imageBottom: true
 permalink: "/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"
 ---
 
-# SimpleX network: real privacy and stable profits, non-profit protocol governance, v5.6 released with quantum resistant e2e encryption and simple profile migration
+# SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration
 
 **Published:** Mar 23, 2024
 
@@ -21,11 +19,11 @@ SimpleX network: deliver real privacy via a profitable business and non-profit p
 
 What's new in v5.6:
 - [quantum resistant end-to-end encryption](#quantum-resistant-end-to-end-encryption-beta) (BETA) – enable it for the new contacts.
-- [migrate all app data to another device via QR code](#migrate-all-app-data-to-another-device-via-qr-code).
 - [use the app during the audio and video calls](#use-the-app-during-the-audio-and-video-calls).
+- [migrate all app data to another device via QR code](#migrate-all-app-data-to-another-device-via-qr-code).
 
-There are many [other improvements](#other-improvements) and fixes in this release:
-- admins can block a member for all other members.
+There are many other improvements and fixes in this release:
+- group admins can block a member for all other members.
 - filtering chats no longer includes muted chats with unread messages.
 - and more - see the [release notes](https://github.com/simplex-chat/simplex-chat/releases/tag/v5.6.0).
 
@@ -43,7 +41,7 @@ At the current early stage of network growth the protocols will benefit most fro
 
 Once SimpleX network protocols stabilize and reach the maturity, we plan to transition its governance to several new nonprofit entities, ensuring its continued evolution aligns more closely with our vision of community-driven, independent and transparent governance. It's wrong to thing that we are doing it from the altruistic reasons - we and our investors believe that this is a win-win strategy that will both maximize the business value, by creating a business built on protecting privacy and users' trust, that we believe is the only viable strategy in the long term, and also maximizing the value to the users' community.
 
-### Welcome, Esra’a
+### Welcome, Esra’a!
 
 To help us deliver these goals, Esra’a Al Shafei joined SimpleX Chat team - we are excited to welcome her!
 
@@ -59,7 +57,7 @@ Executing the plan towards decentralized nonprofit protocol governance will be E
 
 Adding post-quantum resistance to the double ratchet end-to-end encryption algorithm in SimpleX Chat is a major upgrade to messaging protocols, and it creates the security against the future quantum computers.
 
-We wrote in detail in the recent post about various properties of end-to-end encryption and how exactly quantum resistance is implemented in SimpleX Chat - currently SimpleX Chat has [the most secure end-to-end encryption design](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md#how-secure-is-end-to-end-encryption-in-different-messengers) against the present and future attacks.
+I wrote in detail in the previous post about various properties of end-to-end encryption and how exactly quantum resistance is implemented in SimpleX Chat - currently SimpleX Chat has [the most secure end-to-end encryption design](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md#how-secure-is-end-to-end-encryption-in-different-messengers) against the present and future attacks.
 
 We plan to perform a security audit of this design and implementation later this year.
 
@@ -83,24 +81,48 @@ Once you have enabled it for the new contacts, you can also **enable it for some
 
 We will be making quantum resistance default for all direct chats in v5.7, and we plan that all existing direct chats will be automatically upgraded when both contacts install v5.7.
 
+### Use the app during the audio and video calls
+
+<img src="./images/20240323-call1.png" width="220" class="float-to-left"> <img src="./images/20240323-call2.png" width="220" class="float-to-left">
+
+Since we added the audio and video calls in 2022 a lot of work was done to improve the stability of calls. One of the usability downsides until this release was that it was impossible to use the app during the call.
+
+This version solved this problem - now you can return back to the app without interrupting the call and use any of the app functions - for example, you can send the messages or files to the person you are in the call with. If this is a video call, you will continue seeing your contact in a small picture-in-picture view.
+
 ### Migrate all app data to another device via QR code
 
 We always believed that cross-platform data portability is very important for any software. Users own their data, and they should have a way to export it from any software they use. So from the version of SimpleX Chat [released in July 2022](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#database-export-and-import) it was possible to export the database as a self-contained file, including all contacts, messages and files, and import it on a new device.
 
 _"How can I migrate my data to another device?"_ was one of the most frequent user questions, but until this release this process was [quite complex](), requiring too many steps, and most non-technical users were not willing to try it, as even though it was reliable, it appeared risky.
 
-This release made the app data migration into a simple guided process that includes all the necessary steps:
-- the chat is automatically stopped when you choose _Migrate to another device_,
-- if necessary, the user is asked to set the database passphrase (initially, the database is encrypted with a random passphrase), or, if it's already set, the user is asked to verify it - both for security and to ensure that the archive will be usable on the new device,
-- then the archive is created and uploaded in chunks to the XFTP servers that the user has configured in the app,
-- then the app shows the QR code that should be scanned from the new device,
-- once the chat starts on the new device, the user is reminded to delete the data from the old device, as the database cannot be used on two devices at the same time - doing so would make it impossible to decrypt the received messages, as a security measure - the break-in recovery property of double ratchet algorithm.
+This release made the app data migration very simple, see the steps below.
 
-TODO pics
+**Start the migration on the source device**
 
-### Use the app during the audio and video calls
+<img src="./images/20240323-migrate-from1.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-from2.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-from3.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-from4.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-from5.png" width="170">
 
-TODO
+On the device you migrate your app data from, follow these steps:
+- choose _Migrate to another device_,
+- if necessary, set the database passphrase (initially, the database is encrypted with a random passphrase), or, if it's already set, verify it - for security and to ensure that the archive will be usable on the new device,
+- tap _Archive and upload_ to and upload the app data in chunks to the XFTP servers configured in the app,
+- the app will show the QR code that should be scanned from the new device.
+
+**Migrate data to the target device**
+
+<img src="./images/20240323-migrate-to1.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-to2.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-to3.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-to4.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20240323-migrate-to5.png" width="170">
+
+On the device you migrate your data to, follow these steps:
+- on the first app page choose _Migrate from another device_,
+- scan the QR code shown on the source device,
+- once the archive downloads, enter the database passphrase and tap _Open chat_,
+
+**Finalize migration on the source device**
+
+<img src="./images/20240323-migrate-from6.png" width="170" class="float-to-left">
+
+When the chat starts on the target device, make sure to tap _Finalize migration_ and then _Delete database_ on the source device.
+
+The database cannot be used on two devices at the same time, doing so would make it impossible to decrypt the received messages. This is a security measure - the break-in recovery property of double ratchet algorithm.
 
 ## SimpleX network
 
