@@ -249,5 +249,8 @@
     "hero-overlay-3-title": "Turvallisuuden arviointi",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> on johtava turvallisuus- ja teknologiakonsultointiyritys, jonka asiakkaita ovat muun muassa suuret teknologiayritykset, valtion virastot ja suuret lohkoketjuprojektit.",
     "hero-overlay-3-textlink": "Turvallisuusarviointi",
-    "hero-overlay-card-3-p-2": "Trail of Bits tarkasteli SimpleX-alustan salaus- ja verkkokomponentteja marraskuussa 2022."
+    "hero-overlay-card-3-p-2": "Trail of Bits tarkasteli SimpleX-alustan salaus- ja verkkokomponentteja marraskuussa 2022.",
+    "hero-overlay-card-3-p-3": "Lue lisää <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">ilmoituksesta</a>.",
+    "please-enable-javascript": "Ota JavaScript käyttöön nähdäksesi QR-koodin.",
+    "please-use-link-in-mobile-app": "Käytä mobiilisovelluksessa olevaa linkkiä"
 }
