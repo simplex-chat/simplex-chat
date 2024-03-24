@@ -2153,9 +2153,9 @@ Cette opération ne peut être annulée !</target>
         <target>Activer pour tous</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve" approved="no">
         <source>Enable in direct chats (BETA)!</source>
-        <target>Activé dans les conversations directes (BETA) !</target>
+        <target state="translated">Activer dans les conversations directes (BETA) !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -5576,9 +5576,9 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target>Cette discussion est protégée par un chiffrement de bout en bout.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve">
+      <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve" approved="no">
         <source>This chat is protected by quantum resistant end-to-end encryption.</source>
-        <target>Cette discussion est protégée par un chiffrement de bout en bout résistant post-quantique.</target>
+        <target state="translated">Cette discussion est protégée par un chiffrement de bout en bout résistant aux technologies quantiques.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
@@ -6080,9 +6080,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>En attente de la vidéo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve">
+      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve" approved="no">
         <source>Warning: starting chat on multiple devices is not supported and will cause message delivery failures</source>
-        <target>Attention : démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages</target>
+        <target state="translated">Attention: démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
