@@ -358,12 +358,11 @@ executable simplex-broadcast-bot
   main-is: Main.hs
   hs-source-dirs:
       apps/simplex-broadcast-bot
+      apps/simplex-broadcast-bot/src
   other-modules:
       Broadcast.Bot
       Broadcast.Options
       Paths_simplex_chat
-  hs-source-dirs:
-      apps/simplex-broadcast-bot/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
@@ -486,6 +485,7 @@ executable simplex-directory-service
   main-is: Main.hs
   hs-source-dirs:
       apps/simplex-directory-service
+      apps/simplex-directory-service/src
   other-modules:
       Directory.Events
       Directory.Options
@@ -493,8 +493,6 @@ executable simplex-directory-service
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  hs-source-dirs:
-      apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
