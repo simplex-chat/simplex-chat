@@ -490,7 +490,7 @@
     <string name="custom_time_unit_hours">ساعات</string>
     <string name="edit_history">السجل</string>
     <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عند اكتمال تحميل جهة اتصالك.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز الاستجابة السريعة في مكالمة الفيديو</b>، أو شارك الرابط.]]></string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز QR في مكالمة الفيديو</b>، أو شارك الرابط.</string>
     <string name="install_simplex_chat_for_terminal">ثبّت SimpleX Chat لطرفية</string>
     <string name="network_disable_socks_info">إذا قمت بالتأكيد، فستتمكن خوادم المراسلة من رؤية عنوان IP الخاص بك ومزود الخدمة الخاص بك - أي الخوادم التي تتصل بها.</string>
     <string name="hide_dev_options">إخفاء:</string>
@@ -520,7 +520,7 @@
     <string name="image_will_be_received_when_contact_is_online">سيتم استلام الصورة عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="image_saved">حُفظت الصورة في المعرض</string>
     <string name="gallery_image_button">صورة</string>
-    <string name="if_you_cant_meet_in_person">إذا لم تتمكن من الالتقاء شخصيًا، اعرض رمز الاستجابة السريعة في مكالمة الفيديو، أو شارك الرابط.</string>
+    <string name="if_you_cant_meet_in_person">إذا لم تتمكن من الالتقاء شخصيًا، اعرض رمز QR في مكالمة الفيديو، أو شارك الرابط.</string>
     <string name="settings_section_title_incognito">وضع التخفي</string>
     <string name="incognito">التخفي</string>
     <string name="import_theme_error">خطأ في استيراد السمة</string>
@@ -957,7 +957,7 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(امسح أو ألصق من الحافظة)</string>
     <string name="network_option_seconds_label">ثانية</string>
     <string name="sender_may_have_deleted_the_connection_request">قد يكون المرسل قد ألغى طلب الاتصال</string>
-    <string name="scan_QR_code">مسح رمز الاستجابة السريعة</string>
+    <string name="scan_QR_code">مسح رمز QR</string>
     <string name="send_us_an_email">أرسل لنا بريداً</string>
     <string name="scan_code_from_contacts_app">مسح رمز الأمان من تطبيق جهة الاتصال</string>
     <string name="share_invitation_link">مشاركة رابط ذو استخدام واحد</string>
@@ -1643,4 +1643,6 @@
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن وتحميلها في أجزاء إلى مُرحلات XFTP التي ضبطت.</string>
     <string name="migrate_to_device_apply_onion">طبّق</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>تحذير</b>: سيتم حذف الأرشيف.</string>
 </resources>
