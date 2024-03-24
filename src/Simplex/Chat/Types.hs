@@ -26,11 +26,13 @@ import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -53,7 +55,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
-import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 
@@ -174,9 +176,27 @@ data Contact = Contact
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
-    contactGrpInvSent :: Bool
+    contactGrpInvSent :: Bool,
+    customData :: CustomData
   }
   deriving (Eq, Show)
+
+newtype CustomData = CustomData J.Object
+  deriving (Eq, Show)
+
+emptyObject :: CustomData
+emptyObject = CustomData JM.empty
+
+instance ToJSON CustomData where
+  toJSON (CustomData v) = toJSON v
+  toEncoding (CustomData v) = toEncoding v
+
+instance FromJSON CustomData where
+  parseJSON = J.withObject "CustomData" (pure . CustomData)
+
+instance ToField CustomData where toField (CustomData v) = toField . safeDecodeUtf8 . LB.toStrict $ J.encode v
+
+instance FromField CustomData where fromField = fromTextField_ $ eitherToMaybe . J.eitherDecodeStrict . encodeUtf8
 
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
@@ -356,7 +376,8 @@ data GroupInfo = GroupInfo
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    userMemberProfileSentAt :: Maybe UTCTime
+    userMemberProfileSentAt :: Maybe UTCTime,
+    customData :: CustomData
   }
   deriving (Eq, Show)
 

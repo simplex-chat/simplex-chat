@@ -73,6 +73,7 @@ CREATE TABLE contacts(
   REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
+  custom_data TEXT NOT NULL DEFAULT '{}',
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -120,7 +121,8 @@ CREATE TABLE groups(
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
-  user_member_profile_sent_at TEXT, -- received
+  user_member_profile_sent_at TEXT,
+  custom_data TEXT NOT NULL DEFAULT '{}', -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

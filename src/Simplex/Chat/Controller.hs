@@ -144,8 +144,31 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     coreApi :: Bool,
     highlyAvailable :: Bool,
-    deviceNameForRemote :: Text
+    deviceNameForRemote :: Text,
+    chatHooks :: ChatHooks
   }
+
+-- The hooks can be used to extend or customize chat core in mobile or CLI clients.
+data ChatHooks = ChatHooks
+  { -- preCmdHook can be used to process or modify the commands before they are processed.
+    -- This hook should be used to process CustomChatCommand.
+    -- if this hook returns ChatResponse, the command processing and postCmdHook will be skipped.
+    preCmdHook :: ChatCommand -> IO (Either ChatResponse ChatCommand),
+    -- postCmdHook can be used to modify command responses,
+    -- it is called after the command was processed.
+    postCmdHook :: ChatCommand -> ChatResponse -> IO ChatResponse,
+    -- eventHook can be used to additionally process or modify events,
+    -- it is called before the event is sent to the user (or to the UI).
+    eventHook :: ChatResponse -> IO ChatResponse
+  }
+
+defaultChatHooks :: ChatHooks
+defaultChatHooks =
+  ChatHooks
+    { preCmdHook = pure . Right,
+      postCmdHook = const pure,
+      eventHook = pure
+    }      
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
@@ -471,6 +494,9 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
+  -- The parser will return this command for strings that start from "//".
+  -- This command should be processed in preCmdHook
+  | CustomChatCommand ByteString
   deriving (Show)
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
@@ -1278,9 +1304,10 @@ throwChatError = throwError . ChatError
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
+toView ev = do
   localQ <- asks outputQ
   session <- asks remoteCtrlSession
+  event <- liftIO . ($ ev) =<< asks (eventHook . chatHooks . config)
   atomically $
     readTVar session >>= \case
       Just (_, RCSessionConnected {remoteOutputQ})

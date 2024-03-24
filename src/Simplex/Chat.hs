@@ -161,7 +161,8 @@ defaultChatConfig =
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
       coreApi = False,
       highlyAvailable = False,
-      deviceNameForRemote = ""
+      deviceNameForRemote = "",
+      chatHooks = defaultChatHooks
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -424,7 +425,9 @@ execChatCommand rh s = do
       Just rhId
         | allowRemoteCommand cmd -> execRemoteCommand u rhId cmd s
         | otherwise -> pure $ CRChatCmdError u $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
-      _ -> execChatCommand_ u cmd
+      _ -> do
+        ChatHooks {preCmdHook, postCmdHook} <- asks $ chatHooks . config
+        liftIO (preCmdHook cmd) >>= either pure (execChatCommand_ u >=> liftIO . postCmdHook cmd)
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
@@ -2073,6 +2076,9 @@ processChatCommand' vr = \case
             SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
             _ -> m
   GetAgentSubsDetails -> CRAgentSubsDetails <$> withAgent getAgentSubscriptions
+  -- this command is unsupported, it can be processed in preCmdHook
+  -- in a modified CLI app or core - the hook should return Left ChatResponse
+  CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action
     -- below code would make command responses asynchronous where they can be slow
@@ -7034,7 +7040,8 @@ chatCommandP =
       "/get subs" $> GetAgentSubs,
       "/get subs details" $> GetAgentSubsDetails,
       "/get workers" $> GetAgentWorkers,
-      "/get workers details" $> GetAgentWorkersDetails
+      "/get workers details" $> GetAgentWorkersDetails,
+      "//" *> (CustomChatCommand <$> A.takeByteString)
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
