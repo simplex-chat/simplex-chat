@@ -1687,4 +1687,6 @@
     <string name="v5_5_new_interface_languages">ハンガリー語、トルコ語</string>
     <string name="v5_5_message_delivery_descr">バッテリー使用量低減</string>
     <string name="v5_5_join_group_conversation_descr">最近のメッセージ履歴送信機能追加とディレクトリボットの改善が行われました。</string>
+    <string name="migrate_to_device_downloading_details">リンクの詳細をダウンロード中</string>
+    <string name="migrate_to_device_downloading_archive">アーカイブをダウンロード中</string>
 </resources>
