@@ -105,7 +105,7 @@ executables:
 
   simplex-broadcast-bot:
     source-dirs: apps/simplex-broadcast-bot/src
-    main: ../Main.hs
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
@@ -113,7 +113,7 @@ executables:
 
   simplex-directory-service:
     source-dirs: apps/simplex-directory-service/src
-    main: ../Main.hs
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
