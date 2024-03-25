@@ -152,22 +152,18 @@ data ChatConfig = ChatConfig
 data ChatHooks = ChatHooks
   { -- preCmdHook can be used to process or modify the commands before they are processed.
     -- This hook should be used to process CustomChatCommand.
-    -- if this hook returns ChatResponse, the command processing and postCmdHook will be skipped.
-    preCmdHook :: ChatCommand -> IO (Either ChatResponse ChatCommand),
-    -- postCmdHook can be used to modify command responses,
-    -- it is called after the command was processed.
-    postCmdHook :: ChatCommand -> ChatResponse -> IO ChatResponse,
+    -- if this hook returns ChatResponse, the command processing will be skipped.
+    preCmdHook :: ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand),
     -- eventHook can be used to additionally process or modify events,
     -- it is called before the event is sent to the user (or to the UI).
-    eventHook :: ChatResponse -> IO ChatResponse
+    eventHook :: ChatController -> ChatResponse -> IO ChatResponse
   }
 
 defaultChatHooks :: ChatHooks
 defaultChatHooks =
   ChatHooks
-    { preCmdHook = pure . Right,
-      postCmdHook = const pure,
-      eventHook = pure
+    { preCmdHook = \_ -> pure . Right,
+      eventHook = \_ -> pure
     }      
 
 data DefaultAgentServers = DefaultAgentServers
@@ -623,10 +619,9 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
-  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem}
+  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
   | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
   | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
   | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
@@ -1305,9 +1300,8 @@ throwChatError = throwError . ChatError
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView ev = do
-  localQ <- asks outputQ
-  session <- asks remoteCtrlSession
-  event <- liftIO . ($ ev) =<< asks (eventHook . chatHooks . config)
+  cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
+  event <- liftIO $ eventHook chatHooks cc ev
   atomically $
     readTVar session >>= \case
       Just (_, RCSessionConnected {remoteOutputQ})

@@ -81,7 +81,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Int64, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool, CustomData)] -> Either StoreError Contact
+    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Int64, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool, Maybe CustomData)] -> Either StoreError Contact
     toContact' contactId conn [(profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, customData)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}

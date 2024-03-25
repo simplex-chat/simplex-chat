@@ -168,6 +168,7 @@ library
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
       Simplex.Chat.Terminal.Input
+      Simplex.Chat.Terminal.Main
       Simplex.Chat.Terminal.Notification
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types

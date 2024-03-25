@@ -149,7 +149,7 @@ import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, CustomData) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe CustomData) :. GroupMemberRow
 
 type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
@@ -346,7 +346,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           updatedAt = currentTs,
           chatTs = Just currentTs,
           userMemberProfileSentAt = Just currentTs,
-          customData = emptyObject
+          customData = Nothing
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -412,7 +412,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   updatedAt = currentTs,
                   chatTs = Just currentTs,
                   userMemberProfileSentAt = Just currentTs,
-                  customData = emptyObject
+                  customData = Nothing
                 },
               groupMemberId
             )
@@ -1954,7 +1954,7 @@ createMemberContact
               authErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, customData = emptyObject}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -1991,7 +1991,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, customData = emptyObject}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, customData = Nothing}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where
@@ -2192,7 +2192,7 @@ updateUserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =
     "UPDATE groups SET user_member_profile_sent_at = ? WHERE user_id = ? AND group_id = ?"
     (sentTs, userId, groupId)
 
-setGroupCustomData :: DB.Connection -> GroupInfo -> CustomData -> IO ()
+setGroupCustomData :: DB.Connection -> GroupInfo -> Maybe CustomData -> IO ()
 setGroupCustomData db GroupInfo {groupId} customData = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET custom_data = ?, updated_at = ? WHERE group_id = ?" (customData, updatedAt, groupId)
