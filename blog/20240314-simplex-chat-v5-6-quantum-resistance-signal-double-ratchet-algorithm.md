@@ -15,7 +15,7 @@ This is a major upgrade for SimpleX messaging protocols, we are really proud to 
 This post also covers various aspects of end-to-end encryption, compares different messengers, and explains why and how quantum-resistant encryption is added to SimpleX Chat:
 
 - [Why do we need end-to-end encryption?](#why-do-we-need-end-to-end-encryption)
-- [Why encryption is even allowed?](#why-encryption-is-even-allowed)
+- [Why is encryption even allowed?](#why-is-encryption-even-allowed)
 - [End-to-end encryption security: attacks and defense.](#end-to-end-encryption-security-attacks-and-defense)
   - Compromised message size - mitigated by padding messages to a fixed block size.
   - Compromised confidentiality - mitigated by repudiation (deniability).
@@ -40,7 +40,7 @@ End-to-end encryption is an important component of our individual and business s
 
 It's very sad to see the same people who keep their financial affairs private to protect from financial crimes, lock their doors to protect from thieves, and curtain their windows to protect from the occasional prying eyes, when it comes to protecting their personal lives from the data criminals say "we don't care about privacy, we have nothing to hide". Everybody's safety depends on keeping their affairs and relations private, not visible to a vast and ruthless data gathering machines, that abuse our data for commercial gain, without any regard to our interests or even [the safety of our families and children](https://nmdoj.gov/press-release/attorney-general-raul-torrez-files-lawsuit-against-meta-platforms-and-mark-zuckerberg-to-protect-children-from-sexual-abuse-and-human-trafficking/).
 
-## Why encryption is even allowed?
+## Why is encryption even allowed?
 
 <img src="./images/20240314-djb.jpg" class="float-to-right">
 
@@ -75,7 +75,7 @@ While the content encryption is the most important, concealing the actual messag
 
 The only effective mitigation to these attacks is to pad all messages to a fixed size. Using space-efficient schemes like Padme, or padding to encryption block size is ineffective for mitigating these attacks, as they still allow differentiating message sizes.
 
-To the best of our knowledge the only messenger other than SimpleX Chat that padded all messages to a fixed packet size was [Pond](https://github.com/agl/pond) - SimpleX design as an evolution of it.
+To the best of our knowledge, the only messengers other than SimpleX Chat that pad all messages to a fixed packet size are Cwtch and no longer developed [Pond](https://github.com/agl/pond) - SimpleX design can be seen as an evolution of Pond design.
 
 ### 2. Compromised confidential messages - mitigated by repudiation (deniability)
 
@@ -97,15 +97,15 @@ This property is well understood by the users, and most messengers that focus on
 
 ### 4. Compromised long-term or session - mitigated by break-in recovery
 
-This attack is much less understood by the users, and forward secrecy does not protect from it. Arguably, it's almost impossible to compromise individual message keys without compromising long-term or session keys. So the ability of the encryption to recover from break-in (attacker making a copy of the device data without retaining the ongoing access) is both very and pragmatic - break-in attacks are simpler to execute on mobile devices during short-term device access than long-term ongoing compromise.
+This attack is much less understood by the users, and forward secrecy does not protect from it. Arguably, it's almost impossible to compromise individual message keys without compromising long-term or session keys. So the ability of the encryption to recover from break-in (attacker making a copy of the device data without retaining the ongoing access) is both very important and pragmatic - break-in attacks are simpler to execute on mobile devices during short-term device access than long-term ongoing compromise.
 
-Out of all encryption algorithms known to us only Signal double ratchet algorithm provides the ability to encryption security after break-ins. This recovery happens automatically and transparently to the users, without them doing anything special even knowing about break-in, by simply sending messages. Every time one of the communication parties replies to another party message, new random keys are generated and previously stolen keys become useless.
+Out of all encryption algorithms known to us only _Signal double ratchet algorithm_ (also referred to as _Signal algorithm_ or _double ratchet algorithm_, which is not the same as Signal messaging platform and protocols) provides the ability for the encryption security to recover after break-ins attacks. This recovery happens automatically and transparently to the users, without them doing anything special or even knowing about break-in, by simply sending messages. Every time one of the communication parties replies to another party message, new random keys are generated and previously stolen keys become useless.
 
-Signal double ratchet algorithm is used in Signal, Cwtch and SimpleX Chat. This is why you cannot use SimpleX Chat profile on more than one device at the same time - the encryption scheme rotates the long term keys, randomly, and keys on another device become useless, as they would become useless for the attacker who stole them. Security always has some costs to the convenience.
+Double ratchet algorithm is used in Signal, Cwtch and SimpleX Chat. This is why you cannot use SimpleX Chat profile on more than one device at the same time - the encryption scheme rotates the long term keys, randomly, and keys on another device become useless, as they would become useless for the attacker who stole them. Security always has some costs to the convenience.
 
 ### 5. Man-in-the-middle attack - mitigated by two-factor key exchange
 
-Many people incorrectly believe that security of end-to-end encryption cannot be broken by communication provider. But end-to-end encryption is as secure as key exchange. While any intermediary passing the keys between senders and recipients cannot recover the private keys from the public keys, they can simply replace the passed public keys with their own and then proxy all communication between the users having full access to the original messages. So instead of having an end-to-end encrypted channel, users would have two half-way encrypted channels - between users and their communication intermediary.
+Many people incorrectly believe that security of end-to-end encryption cannot be broken by communication provider. But end-to-end encryption is only as secure as key exchange. While any intermediary passing the keys between senders and recipients cannot recover the private keys from the public keys, they can simply replace the passed public keys with their own and then proxy all communication between the users having full access to the original messages. So instead of having an end-to-end encrypted channel, users would have two half-way encrypted channels - between users and their communication intermediary.
 
 Pictures below illustrate how this attack works for RSA encryption.
 
@@ -143,7 +143,7 @@ Post-quantum cryptography, or encryption algorithms that are resistant to quantu
 - many of post-quantum algorithms have known patent claims, so any system deploying them accepts the risks of patent litigation.
 - the silver lining to these limitations is that the risk of appearance of commercially viable quantum computers in the next decade may be exaggerated.
 
-So, to put it bluntly and provocatively, post-quantum cryptography can be compared with a remedy against the illness that nobody has, without any guarantee that it will work. The closest analogy in the history of medicine is _snake oil_.
+So, to say it provocatively, post-quantum cryptography can be compared with a remedy against the illness that nobody has, without any guarantee that it will work. While there is a reasonable hope that it _might_ work, so it's not exactly a _snake oil_, these limitations and risks have to be much better communicated to the end users than they are.
 
 <img src="./images/20240314-datacenter.jpg" width="400" class="float-to-right">
 
@@ -164,8 +164,8 @@ The main objective here is to establish the framework for comparing the security
 Some columns are marked with a yellow checkmark:
 - when messages are padded, but not to a fixed size.
 - when repudiation does not include client-server connection. In case of Cwtch it appears that the presence of cryptographic signatures compromises repudiation (deniability), but it needs to be clarified.
-- when 2-factor key exchange is optional, via security code verification.
-- when post-quantum cryptography is only added to the initial key agreement, does not protect break-in recovery.
+- when 2-factor key exchange is optional (via security code verification).
+- when post-quantum cryptography is only added to the initial key agreement and does not protect break-in recovery.
 
 ## Adding quantum resistance to Signal double ratchet algorithm
 
@@ -201,7 +201,7 @@ The reason it is released as opt-in is because once the conversation is upgraded
 - enable _Show developer options_ toggle.
 - now you will see _Post-quantum E2EE_ toggle - enable it as well.
 
-Now all new contacts you add to the app will use quantum resistant Signal double ratchet algorithm.
+Now all new contacts you add to the app will use quantum resistant double ratchet algorithm.
 
 Once you have enabled it for the new contacts, you can also **enable it for some of the existing contacts**:
 - open the chat with the contact you want to upgrade to be quantum resistant.
@@ -211,7 +211,7 @@ Once you have enabled it for the new contacts, you can also **enable it for some
 
 ## Next for post-quantum crypto - all direct chats, small groups and security audit
 
-We will be making quantum resistance default for all direct chats in v5.7, and they will be upgraded for all users without any action.
+We will be making quantum resistance default for all direct chats in v5.7, and we plan that all existing direct chats will be automatically upgraded when both contacts install v5.7.
 
 We will also be adding quantum resistance to small groups up to 10-20 members. Computing cryptographic keys is much slower, in comparison, and it would be very inefficient (and completely unnecessary) for large public groups.
 

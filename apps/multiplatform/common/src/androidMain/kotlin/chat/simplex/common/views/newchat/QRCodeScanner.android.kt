@@ -11,6 +11,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -27,6 +28,7 @@ import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.common.util.concurrent.ListenableFuture
 import dev.icerock.moko.resources.compose.painterResource
@@ -65,7 +67,7 @@ actual fun QRCodeScanner(
       .widthIn(max = 400.dp)
       .aspectRatio(1f)
     val showScanner = remember { showQRCodeScanner }
-    if (showScanner.value && cameraPermissionState.hasPermission) {
+    if (showScanner.value && cameraPermissionState.status == PermissionStatus.Granted) {
       AndroidView(
         factory = { AndroidViewContext ->
           PreviewView(AndroidViewContext).apply {
@@ -126,20 +128,22 @@ actual fun QRCodeScanner(
         disabledBackgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.9f),
         disabledContentColor = MaterialTheme.colors.primary,
       )
+      var permissionRequested by rememberSaveable { mutableStateOf(false) }
       when {
-        !cameraPermissionState.hasPermission && !cameraPermissionState.permissionRequested && showScanner.value -> {
+        cameraPermissionState.status is PermissionStatus.Denied && !permissionRequested && showScanner.value -> {
           LaunchedEffect(Unit) {
+            permissionRequested = true
             cameraPermissionState.launchPermissionRequest()
           }
         }
-        !cameraPermissionState.hasPermission -> {
+        cameraPermissionState.status is PermissionStatus.Denied -> {
           Button({ cameraPermissionState.launchPermissionRequest() }, modifier = modifier, colors = buttonColors) {
             Icon(painterResource(MR.images.ic_camera_enhance), null)
             Spacer(Modifier.width(DEFAULT_PADDING_HALF))
             Text(stringResource(MR.strings.enable_camera_access))
           }
         }
-        cameraPermissionState.hasPermission -> {
+        cameraPermissionState.status == PermissionStatus.Granted -> {
           Button({ showQRCodeScanner.value = true }, modifier = modifier, colors = buttonColors) {
             Icon(painterResource(MR.images.ic_qr_code), null)
             Spacer(Modifier.width(DEFAULT_PADDING_HALF))

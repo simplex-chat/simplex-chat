@@ -4,10 +4,10 @@ permalink: /downloads/index.html
 revision: 11.02.2024
 ---
 
-| Updated 11.02.2024 | Languages: EN |
+| Updated 23.03.2024 | Languages: EN |
 # Download SimpleX apps
 
-The latest stable version is v5.5.3.
+The latest stable version is v5.6.
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
 

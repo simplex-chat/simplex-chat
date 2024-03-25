@@ -234,6 +234,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
+
 [Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
 [Jan 24, 2024. SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.](./blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
@@ -377,8 +379,9 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Using mobile profiles from the desktop app.
 - ✅ Private notes.
 - ✅ Improve sending videos (including encryption of locally stored videos).
+- ✅ Post-quantum resistant key exchange in double ratchet protocol.
+- 🏗 Improve stability and reduce battery usage.
 - 🏗 Improve experience for the new users.
-- 🏗 Post-quantum resistant key exchange in double ratchet protocol.
 - 🏗 Large groups, communities and public channels.
 - 🏗 Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - Privacy & security slider - a simple way to set all settings at once.
