@@ -747,6 +747,7 @@ data ChatResponse
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
+  | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
 -- some of these can only be used as command responses
