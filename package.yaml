@@ -104,16 +104,20 @@ executables:
       - -threaded
 
   simplex-broadcast-bot:
-    source-dirs: apps/simplex-broadcast-bot/src
-    main: ../Main.hs
+    source-dirs:
+      - apps/simplex-broadcast-bot
+      - apps/simplex-broadcast-bot/src
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
       - -threaded
 
   simplex-directory-service:
-    source-dirs: apps/simplex-directory-service/src
-    main: ../Main.hs
+    source-dirs:
+      - apps/simplex-directory-service
+      - apps/simplex-directory-service/src
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
