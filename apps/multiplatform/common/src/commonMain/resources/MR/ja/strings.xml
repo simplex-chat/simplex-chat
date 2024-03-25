@@ -191,7 +191,7 @@
     <string name="v4_3_improved_server_configuration">サーバ設定の向上</string>
     <string name="v4_3_improved_privacy_and_security">プライバシーとセキュリティ強化</string>
     <string name="settings_section_title_incognito">シークレットモード</string>
-    <string name="new_in_version">%s バージョンアップで新しい</string>
+    <string name="new_in_version">%s の新機能</string>
     <string name="new_passphrase">新しい暗証フレーズ</string>
     <string name="chat_item_ttl_none">一度も</string>
     <string name="notification_preview_new_message">新しいメッセージ</string>
@@ -838,7 +838,7 @@
     <string name="you_are_invited_to_group">グループ招待が届きました</string>
     <string name="network_option_seconds_label">秒</string>
     <string name="network_option_tcp_connection_timeout">TCP接続タイムアウト</string>
-    <string name="save_group_profile">保存グループのプロフィール</string>
+    <string name="save_group_profile">グループプロフィールの保存</string>
     <string name="v4_3_irreversible_message_deletion_desc">連絡先がメッセージの完全削除を許可できます。</string>
     <string name="failed_to_create_user_duplicate_desc">同じ表示名前のチャットプロフィールが既にあります。別のを選んでください。</string>
     <string name="smp_server_test_secure_queue">セキュアな未送信メッセージ</string>
@@ -1689,4 +1689,21 @@
     <string name="v5_5_join_group_conversation_descr">最近のメッセージ履歴送信機能追加とディレクトリボットの改善が行われました。</string>
     <string name="migrate_to_device_downloading_details">リンクの詳細をダウンロード中</string>
     <string name="migrate_to_device_downloading_archive">アーカイブをダウンロード中</string>
+    <string name="error_creating_message">メッセージ作成エラー</string>
+    <string name="rcv_group_event_member_unblocked">%s のブロックを解除</string>
+    <string name="profile_update_event_removed_address">アドレスが削除されました</string>
+    <string name="or_paste_archive_link">アーカイブリンクを貼り付け</string>
+    <string name="paste_archive_link">アーカイブリンクの貼り付け</string>
+    <string name="migrate_to_device_repeat_import">再インポート</string>
+    <string name="migrate_from_device_try_again">もう一度お試し下さい。</string>
+    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">警告：複数端末でのチャット利用はサポートされていません。</string>
+    <string name="profile_update_event_set_new_address">新しいアドレスが設定されました</string>
+    <string name="error_blocking_member_for_all">メンバーブロックエラー</string>
+    <string name="rcv_group_event_member_blocked">%s をブロック済</string>
+    <string name="conn_event_disabled_pq">標準的のエンドツーエンド暗号化</string>
+    <string name="conn_event_enabled_pq">耐量子エンドツーエンド暗号化</string>
+    <string name="migrate_from_device_repeat_upload">再アップロード</string>
+    <string name="profile_update_event_contact_name_changed">連絡先 %1$s が %2$s に変更されました</string>
+    <string name="profile_update_event_set_new_picture">新しいプロフィール画像が設定されました</string>
+    <string name="profile_update_event_removed_picture">プロフィール画像が削除されました</string>
 </resources>
