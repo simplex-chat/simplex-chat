@@ -885,7 +885,7 @@ resetContactConnInitiated db User {userId} Connection {connId} = do
     |]
     (updatedAt, userId, connId)
 
-setContactCustomData :: DB.Connection -> Contact -> Maybe CustomData -> IO ()
-setContactCustomData db Contact {contactId} customData = do
+setContactCustomData :: DB.Connection -> User -> Contact -> Maybe CustomData -> IO ()
+setContactCustomData db User {userId} Contact {contactId} customData = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET custom_data = ?, updated_at = ? WHERE contact_id = ?" (customData, updatedAt, contactId)
+  DB.execute db "UPDATE contacts SET custom_data = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (customData, updatedAt, userId, contactId)

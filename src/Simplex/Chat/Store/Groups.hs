@@ -2192,7 +2192,7 @@ updateUserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =
     "UPDATE groups SET user_member_profile_sent_at = ? WHERE user_id = ? AND group_id = ?"
     (sentTs, userId, groupId)
 
-setGroupCustomData :: DB.Connection -> GroupInfo -> Maybe CustomData -> IO ()
-setGroupCustomData db GroupInfo {groupId} customData = do
+setGroupCustomData :: DB.Connection -> User -> GroupInfo -> Maybe CustomData -> IO ()
+setGroupCustomData db User {userId} GroupInfo {groupId} customData = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE groups SET custom_data = ?, updated_at = ? WHERE group_id = ?" (customData, updatedAt, groupId)
+  DB.execute db "UPDATE groups SET custom_data = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (customData, updatedAt, userId, groupId)
