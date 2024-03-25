@@ -1374,7 +1374,7 @@
     <string name="error_creating_member_contact">שגיאה ביצירת איש קשר</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>שימו לב</b>: ממסרי הודעות וקבצים מחוברים דרך פרוקסי SOCKS. שיחות ושליחת תצוגות מקדימות של קישורים משתמשים בחיבור ישיר.]]></string>
     <string name="encrypt_local_files">הצפין קבצים מקומיים</string>
-    <string name="v5_3_new_desktop_app">אפליקציית שולחן עבודה חדשה!</string>
+    <string name="v5_3_new_desktop_app">אפליקציה חדשה למחשב השולחני!</string>
     <string name="v5_3_new_interface_languages">6 שפות ממשק חדשות</string>
     <string name="v5_3_encrypt_local_files_descr">האפליקציה מצפינה קבצים מקומיים חדשים (למעט סרטונים).</string>
     <string name="you_can_change_it_later">ביטוי סיסמה אקראי מאוחסן בהגדרות כטקסט רגיל.
@@ -1435,7 +1435,7 @@
     <string name="v5_4_incognito_groups_descr">צור קבוצה באמצעות פרופיל רנדומלי.</string>
     <string name="v5_4_better_groups_descr">הצטרפות מהירה יותר והודעות אמינות יותר.</string>
     <string name="v5_4_incognito_groups">קבוצות חשאיות</string>
-    <string name="v5_4_link_mobile_desktop">קשר בין אפליקציית נייד לשולחן עבודה! 🔗</string>
+    <string name="v5_4_link_mobile_desktop">קשר בין האפליקציות במכשיר הנייד והמחשב השולחני! 🔗</string>
     <string name="v5_5_simpler_connect_ui">הדבק קישור כדי להתחבר!</string>
     <string name="v5_5_join_group_conversation_descr">היסטוריה אחרונה ובוט משופר.</string>
     <string name="v5_4_link_mobile_desktop_descr">דרך פרוטוקול מאובטח עמיד בפני מחשוב קוונטי</string>
@@ -1454,14 +1454,14 @@
     <string name="scan_from_mobile">סרוק מהנייד</string>
     <string name="this_device_version"><i>(גרסת המכשיר הזה %s)</i></string>
     <string name="unlink_desktop_question">האם לבטל את הקישור למחשב השולחני?</string>
-    <string name="verify_code_with_desktop">אמת קוד עם שולחן עבודה</string>
-    <string name="linked_desktops">שולחנות עבודה מקושרות</string>
+    <string name="verify_code_with_desktop">אמת קוד עם המחשב השולחני</string>
+    <string name="linked_desktops">מחשבים שולחניים מקושרים</string>
     <string name="not_compatible">לא תואם!</string>
     <string name="random_port">אקראי</string>
     <string name="remote_host_error_inactive">הנייד <b>%s</b> לא פעיל</string>
     <string name="open_port_in_firewall_title">פתח פורט בחומת האש</string>
-    <string name="remote_ctrl_error_busy">שולחן עבודה עמוס</string>
-    <string name="remote_ctrl_error_disconnected">שולחן העבודה מנותק</string>
+    <string name="remote_ctrl_error_busy">המחשב השולחני עמוס</string>
+    <string name="remote_ctrl_error_disconnected">המחשב השולחני מנותק</string>
     <string name="connect_plan_you_are_already_connecting_to_vName">אתה כבר מתחבר אל <b>%1$s</b>.</string>
     <string name="connect_plan_this_is_your_own_one_time_link">זה הקישור חד-פעמי שלך!</string>
     <string name="connect_plan_this_is_your_link_for_group_vName">זהו הקישור שלך לקבוצה <b>%1$s</b>!</string>
@@ -1486,9 +1486,9 @@
     <string name="migrate_from_device_chat_should_be_stopped">כדי להמשיך, יש לעצור את הצ\'אט.</string>
     <string name="migrate_from_device_database_init">מכין את העלאה</string>
     <string name="migrate_from_device_stopping_chat">עצירת צ׳אט</string>
-    <string name="migrate_from_device_archive_and_upload">העבר לארכיב והעלאה</string>
+    <string name="migrate_from_device_archive_and_upload">העבר לארכיון והעלאה</string>
     <string name="migrate_from_device_confirm_upload">אשר העלאה</string>
-    <string name="migrate_from_device_archiving_database">העברת בסיס נתונים לארכיב</string>
+    <string name="migrate_from_device_archiving_database">העברת בסיס נתונים לארכיון</string>
     <string name="migrate_from_device_bytes_uploaded">%s העלה</string>
     <string name="migrate_from_device_uploading_archive">העלאת ארכיון</string>
     <string name="migrate_from_device_cancel_migration">בטל העברה</string>
@@ -1528,7 +1528,7 @@
     <string name="v5_5_simpler_connect_ui_descr">שורת החיפוש מקבלת קישורי הזמנה.</string>
     <string name="v5_5_join_group_conversation">הצטרף לשיחות קבוצתיות</string>
     <string name="v5_5_message_delivery">שיפור במסירת הודעות</string>
-    <string name="remote_ctrl_error_inactive">שולחן עבודה לא פעיל</string>
+    <string name="remote_ctrl_error_inactive">מחשב שולחני לא פעיל</string>
     <string name="connect_plan_connect_via_link">להתחבר דרך קישור?</string>
     <string name="agent_internal_error_desc">אנא דווח על כך למפתחים:
 \n%s</string>
@@ -1537,7 +1537,7 @@
     <string name="call_service_notification_end_call">סיום שיחה</string>
     <string name="tap_to_scan">לחץ לסריקה</string>
     <string name="create_group_button_to_create_new_group"><b>צור קבוצה</b>: כדי ליצור קבוצה חדשה.</string>
-    <string name="clear_note_folder_question">למחוק הודעות פרטיות?</string>
+    <string name="clear_note_folder_question">למחוק הערות פרטיות?</string>
     <string name="add_contact_tab">הוסף איש קשר</string>
     <string name="you_can_view_invitation_link_again">תוכל לראות את קישור ההזמנה שוב בפרטי החיבור.</string>
     <string name="keep_unused_invitation_question">האם לשמור הזמנה שלא נעשה בה שימוש?</string>
@@ -1566,14 +1566,14 @@
     <string name="migrate_from_device_choose_migrate_from_another_device">בחר <i>העבר ממכשיר אחר</i> במכשיר החדש וסרוק קוד QR.</string>
     <string name="migrate_to_device_confirm_network_settings">אשר הגדרות רשת</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">אשר שאתה זוכר את סיסמת מסד הנתונים כדי להעביר אותו.</string>
-    <string name="connected_desktop">התחבר לשולחן העבודה</string>
-    <string name="migrate_from_device_creating_archive_link">צור קישור ארכיב</string>
+    <string name="connected_desktop">התחבר למחשב השולחני</string>
+    <string name="migrate_from_device_creating_archive_link">יוצר קישור ארכיון</string>
     <string name="creating_link">יוצר קישור…</string>
     <string name="delete_and_notify_contact">מחק והודע לאיש קשר</string>
     <string name="delete_messages__question">האם למחוק %d הודעות?</string>
-    <string name="remote_ctrl_error_bad_version">לשולחן העבודה יש גרסה שאינה נתמכת. אנא, ודא שאתה משתמש באותה גרסה על שני המכשירים</string>
-    <string name="remote_ctrl_error_bad_invitation">לשולחן העבודה יש קוד הזמנה שגוי</string>
-    <string name="migrate_to_device_downloading_archive">מוריד ארכיב</string>
+    <string name="remote_ctrl_error_bad_version">למחשב השולחני יש גרסה שאינה נתמכת. אנא, ודא שאתה משתמש באותה גרסה על שני המכשירים</string>
+    <string name="remote_ctrl_error_bad_invitation">למחשב השולחני יש קוד הזמנה שגוי</string>
+    <string name="migrate_to_device_downloading_archive">מוריד ארכיון</string>
     <string name="enable_camera_access">אפשר גישה למצלמה</string>
     <string name="encryption_renegotiation_error">שגיאת משא ומתן מחדש של הצפנה</string>
     <string name="alert_text_encryption_renegotiation_failed">המשא ומתן מחדש של ההצפנה נכשל.</string>
@@ -1634,11 +1634,11 @@
     <string name="loading_remote_file_desc">אנא המתן בזמן שהקובץ נטען מהמכשיר הנייד המקושר</string>
     <string name="button_remove_member_question">האם להסיר משתתף?</string>
     <string name="disconnect_remote_host">מנותק</string>
-    <string name="disconnect_desktop_question">האם לנתק את שולחן העבודה?</string>
+    <string name="disconnect_desktop_question">האם לנתק את המחשב השולחני?</string>
     <string name="disconnect_remote_hosts">נתק מכשירי נייד</string>
     <string name="only_one_device_can_work_at_the_same_time">רק מכשיר אחד יכול לעבוד בו זמנית.</string>
-    <string name="waiting_for_desktop">ממתין לשולחן העבודה…</string>
-    <string name="open_on_mobile_and_scan_qr_code">פתח <i>שימוש משולחן העבודה</i> באפליקציה בנייד וסרוק קוד QR.</string>
+    <string name="waiting_for_desktop">ממתין למחשב השולחני…</string>
+    <string name="open_on_mobile_and_scan_qr_code">פתח <i>שימוש ממחשב שולחני</i> באפליקציה בנייד וסרוק קוד QR.</string>
     <string name="database_migration_in_progress">העברת מסד הנתונים בתהליך.
 \nזה עשוי לקחת כמה דקות.</string>
     <string name="blocked_by_admin_items_description">%d הודעות נחסמו על ידי מנהל</string>
@@ -1663,15 +1663,15 @@
     <string name="message_too_large">הודעה ארוכה מדי</string>
     <string name="welcome_message_is_too_long">הודעת ברוכים הבאים ארוכה מדי</string>
     <string name="connected_mobile">התחבר לנייד</string>
-    <string name="connected_to_desktop">התחבר לשולחן העבודה</string>
+    <string name="connected_to_desktop">התחבר למחשב השולחני</string>
     <string name="connected_to_mobile">התחבר לנייד</string>
-    <string name="connecting_to_desktop">התחבר לשולחן העבודה</string>
-    <string name="connect_to_desktop">חיבור לשולחן העבודה</string>
+    <string name="connecting_to_desktop">התחבר למחשב השולחני</string>
+    <string name="connect_to_desktop">חיבור למחשב השולחני</string>
     <string name="desktop_app_version_is_incompatible">גרסת אפליקציית שולחן העבודה %s אינה תואמת לאפליקציה זו.</string>
     <string name="devices">מכשירים</string>
     <string name="error">שגיאה</string>
     <string name="desktop_incompatible_version">גירסא לא מתאימה</string>
-    <string name="found_desktop">יש שולחן עבודה</string>
+    <string name="found_desktop">מצא מחשב שולחני</string>
     <string name="new_mobile_device">מכשיר נייד חדש</string>
     <string name="this_device_name">השם של המכשיר הזה</string>
     <string name="multicast_connect_automatically">התחבר אוטומטית</string>
@@ -1689,20 +1689,20 @@
 \n- ועוד!</string>
     <string name="v5_4_block_group_members_descr">כדי להסתיר הודעות לא רצויות.</string>
     <string name="v5_4_block_group_members">תחסום חברים בקבוצה</string>
-    <string name="desktop_device">שולחן עבודה</string>
-    <string name="desktop_address">כתובת שולחן עבודה</string>
-    <string name="paste_desktop_address">הדבק כתובת שולחן עבודה</string>
-    <string name="scan_qr_code_from_desktop">סרוק קוד QR מהמחשב הנייח</string>
+    <string name="desktop_device">מחשב שולחני</string>
+    <string name="desktop_address">כתובת של המחשב השולחני</string>
+    <string name="paste_desktop_address">הדבק כתובת של המחשב שולחני</string>
+    <string name="scan_qr_code_from_desktop">סרוק קוד QR מהמחשב השולחני</string>
     <string name="connect_plan_connect_to_yourself">להתחבר אל עצמך?</string>
     <string name="verify_connections">אימות חיבורים</string>
     <string name="discover_on_network">גלה דרך רשת מקומית</string>
-    <string name="linked_desktop_options">אפשרויות שולחן עבודה מקושרות</string>
-    <string name="desktop_devices">מכשירי שולחן עבודה</string>
+    <string name="linked_desktop_options">האפשרויות של המחשב השולחני מקושרות</string>
+    <string name="desktop_devices">מחשבים שולחניים</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">אתה כבר מתחבר באמצעות קישור חד-פעמי זה!</string>
     <string name="connect_plan_open_group">פתח קבוצה</string>
     <string name="connect_plan_you_are_already_in_group_vName">אתה כבר בקבוצה <b>%1$s</b>.</string>
     <string name="connect_plan_repeat_join_request">האם לחזור על בקשת הצטרפות?</string>
-    <string name="bad_desktop_address">כתובת שולחן עבודה שגויה</string>
+    <string name="bad_desktop_address">הכתובת של המחשב השולחני שגויה</string>
     <string name="remote_host_was_disconnected_toast">מכשיר נייד <b>%s</b> התנתק</string>
     <string name="this_device_name_shared_with_mobile">שם המכשיר ישותף עם מכשיר הנייד המחובר.</string>
     <string name="enter_this_device_name">הזן את שם המכשיר הזה…</string>
@@ -1715,5 +1715,5 @@
     <string name="connect_plan_already_joining_the_group">כבר הצטרפת לקבוצה!</string>
     <string name="connect_plan_you_are_already_joining_the_group_vName">אתה כבר מצטרף לקבוצה <b>%1$s</b>.</string>
     <string name="remove_member_button">הסר משתתף</string>
-    <string name="remote_ctrl_error_timeout">הסתיים פסק הזמן הקצוב להתחברות לשולחן עבודה</string>
+    <string name="remote_ctrl_error_timeout">הסתיים פסק הזמן הקצוב להתחברות למחשב השולחני</string>
 </resources>
