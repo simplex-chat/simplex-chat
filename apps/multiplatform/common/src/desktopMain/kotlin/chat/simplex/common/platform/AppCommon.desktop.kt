@@ -32,9 +32,9 @@ fun initApp() {
   //testCrypto()
 }
 
-fun discoverVlcLibs(path: String) {
-  uk.co.caprica.vlcj.binding.LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path, 1)
-}
+//fun discoverVlcLibs(path: String) {
+//  uk.co.caprica.vlcj.binding.LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path, 1)
+//}
 
 private fun applyAppLocale() {
   val lang = ChatController.appPrefs.appLanguage.get()
