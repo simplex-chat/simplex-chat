@@ -1188,7 +1188,7 @@ viewGroupInfo GroupInfo {groupId, customData} s =
     <> viewCustomData customData
 
 viewCustomData :: Maybe CustomData -> [StyledString]
-viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> sShow v])
+viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> plain (LB.toStrict . J.encode $ J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
 viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink}, activeConn} stats =
