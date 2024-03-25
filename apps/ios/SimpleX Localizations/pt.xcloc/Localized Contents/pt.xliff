@@ -4301,6 +4301,11 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">(este dispositivo v%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
+        <source>All data is erased when it is entered.</source>
+        <target state="translated">Todos os dados são apagados quando são inseridos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt" datatype="plaintext">
