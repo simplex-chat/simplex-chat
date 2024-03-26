@@ -1796,4 +1796,5 @@
     <string name="migrate_to_device_confirm_network_settings_footer">Bitte bestätigen Sie, dass die Netzwerkeinstellungen auf diesem Gerät richtig sind.</string>
     <string name="conn_event_disabled_pq">Standard-Ende-zu-Ende-Verschlüsselung</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Sie dürfen die selbe Datenbank <b>nicht</b> auf zwei Geräten nutzen.]]></string>
+    <string name="error_showing_desktop_notification">Fehler beim Anzeigen der Benachrichtigung. Bitte kontaktieren Sie die Entwickler.</string>
 </resources>
