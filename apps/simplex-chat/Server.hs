@@ -28,9 +28,9 @@ import Simplex.Messaging.Util (raceAny_)
 import UnliftIO.Exception
 import UnliftIO.STM
 
-simplexChatServer :: ChatServerConfig -> ChatConfig -> ChatOpts -> IO ()
-simplexChatServer srvCfg cfg opts =
-  simplexChatCore cfg opts . const $ runChatServer srvCfg
+simplexChatServer :: ServiceName -> ChatConfig -> ChatOpts -> IO ()
+simplexChatServer chatPort cfg opts =
+  simplexChatCore cfg opts . const $ runChatServer defaultChatServerConfig {chatPort}
 
 data ChatServerConfig = ChatServerConfig
   { chatPort :: ServiceName,
