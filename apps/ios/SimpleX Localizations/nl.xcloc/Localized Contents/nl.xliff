@@ -4022,9 +4022,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Open instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat" xml:space="preserve">
+      <trans-unit id="Open chat" xml:space="preserve" approved="no">
         <source>Open chat</source>
-        <target>Gesprekken openen</target>
+        <target state="translated">Chat openen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open chat console" xml:space="preserve">
