@@ -1715,4 +1715,5 @@
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>注意</b>: 2つの端末で同じデータベースを使用すると、セキュリティ保護として、あなたが接続しているメッセージの復号化が解除されます。</string>
     <string name="saved_message_title">メッセージ保存済</string>
     <string name="migrate_from_device_stopping_chat">チャット停止中</string>
+    <string name="error_showing_desktop_notification">エラーが表示された場合は、開発者に連絡してください。</string>
 </resources>
