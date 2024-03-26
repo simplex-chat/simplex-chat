@@ -1628,7 +1628,7 @@
     <string name="profile_update_event_updated_profile">актуализиран профил</string>
     <string name="note_folder_local_display_name">Лични бележки</string>
     <string name="message_too_large">Съобщението е твърде голямо</string>
-    <string name="welcome_message_is_too_long">Съобщението при посрещане е твърде голямо</string>
+    <string name="welcome_message_is_too_long">Съобщението при посрещане е твърде дълго</string>
     <string name="database_migration_in_progress">Извършва се миграция на базата данни.
 \nМоже да отнеме няколко минути.</string>
     <string name="call_service_notification_audio_call">Аудио разговор</string>
@@ -1652,7 +1652,7 @@
     <string name="v5_6_quantum_resistant_encryption">Квантово устойчиво криптиране</string>
     <string name="v5_6_app_data_migration">Миграция на данните от приложението</string>
     <string name="v5_6_app_data_migration_descr">Мигрирайте към друго устройство чрез QR код.</string>
-    <string name="v5_6_picture_in_picture_calls">Обаждания \"картина в картина\".</string>
+    <string name="v5_6_picture_in_picture_calls">Обаждания \"картина в картина\"</string>
     <string name="v5_6_safer_groups">По-безопасни групи</string>
     <string name="v5_6_safer_groups_descr">Администраторите могат да блокират член за всички.</string>
     <string name="migrate_to_device_downloading_details">Подробности за линка се изтеглят</string>
