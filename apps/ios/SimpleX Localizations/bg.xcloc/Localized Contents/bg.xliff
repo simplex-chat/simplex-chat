@@ -3088,12 +3088,14 @@ This cannot be undone!</source>
         <target>Импортиране на база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import failed" xml:space="preserve">
+      <trans-unit id="Import failed" xml:space="preserve" approved="no">
         <source>Import failed</source>
+        <target state="translated">Неуспешно импортиране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Importing archive" xml:space="preserve">
+      <trans-unit id="Importing archive" xml:space="preserve" approved="no">
         <source>Importing archive</source>
+        <target state="translated">Импортиране на архив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -3111,8 +3113,9 @@ This cannot be undone!</source>
         <target>Подобрена конфигурация на сървъра</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In order to continue, chat should be stopped." xml:space="preserve">
+      <trans-unit id="In order to continue, chat should be stopped." xml:space="preserve" approved="no">
         <source>In order to continue, chat should be stopped.</source>
+        <target state="translated">За да продължите, чатът трябва да бъде спрян.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="In reply to" xml:space="preserve">
@@ -3227,8 +3230,9 @@ This cannot be undone!</source>
         <target>Невалиден линк</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid migration confirmation" xml:space="preserve">
+      <trans-unit id="Invalid migration confirmation" xml:space="preserve" approved="no">
         <source>Invalid migration confirmation</source>
+        <target state="translated">Невалидно потвърждение за мигриране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid name!" xml:space="preserve">
@@ -3599,8 +3603,9 @@ This is your link for group %@!</source>
         <target>Текст на съобщението</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message too large" xml:space="preserve">
+      <trans-unit id="Message too large" xml:space="preserve" approved="no">
         <source>Message too large</source>
+        <target state="translated">Съобщението е твърде голямо</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages" xml:space="preserve">
@@ -3626,28 +3631,34 @@ This is your link for group %@!</source>
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate device" xml:space="preserve">
+      <trans-unit id="Migrate device" xml:space="preserve" approved="no">
         <source>Migrate device</source>
+        <target state="translated">Мигрирай устройството</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate from another device" xml:space="preserve">
+      <trans-unit id="Migrate from another device" xml:space="preserve" approved="no">
         <source>Migrate from another device</source>
+        <target state="translated">Мигриране от друго устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate here" xml:space="preserve">
+      <trans-unit id="Migrate here" xml:space="preserve" approved="no">
         <source>Migrate here</source>
+        <target state="translated">Мигрирай тук</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device" xml:space="preserve">
+      <trans-unit id="Migrate to another device" xml:space="preserve" approved="no">
         <source>Migrate to another device</source>
+        <target state="translated">Миграция към друго устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve" approved="no">
         <source>Migrate to another device via QR code.</source>
+        <target state="translated">Мигрирайте към друго устройство чрез QR код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating" xml:space="preserve">
+      <trans-unit id="Migrating" xml:space="preserve" approved="no">
         <source>Migrating</source>
+        <target state="translated">Мигриране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">
@@ -3655,8 +3666,9 @@ This is your link for group %@!</source>
         <target>Архивът на базата данни се мигрира…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration complete" xml:space="preserve">
+      <trans-unit id="Migration complete" xml:space="preserve" approved="no">
         <source>Migration complete</source>
+        <target state="translated">Миграцията е завършена</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">
@@ -4018,8 +4030,9 @@ This is your link for group %@!</source>
         <target>Отвори група</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open migration to another device" xml:space="preserve">
+      <trans-unit id="Open migration to another device" xml:space="preserve" approved="no">
         <source>Open migration to another device</source>
+        <target state="translated">Отвори миграцията към друго устройство</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
@@ -4037,8 +4050,9 @@ This is your link for group %@!</source>
         <target>Приложението се отваря…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or paste archive link" xml:space="preserve">
+      <trans-unit id="Or paste archive link" xml:space="preserve" approved="no">
         <source>Or paste archive link</source>
+        <target state="translated">Или постави архивен линк</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or scan QR code" xml:space="preserve">
@@ -4046,8 +4060,9 @@ This is your link for group %@!</source>
         <target>Или сканирай QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or securely share this file link" xml:space="preserve">
+      <trans-unit id="Or securely share this file link" xml:space="preserve" approved="no">
         <source>Or securely share this file link</source>
+        <target state="translated">Или сигурно споделете този линк към файла</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or show this code" xml:space="preserve">
@@ -4135,8 +4150,9 @@ This is your link for group %@!</source>
         <target>Постоянна грешка при декриптиране</target>
         <note>message decrypt error item</note>
       </trans-unit>
-      <trans-unit id="Picture-in-picture calls" xml:space="preserve">
+      <trans-unit id="Picture-in-picture calls" xml:space="preserve" approved="no">
         <source>Picture-in-picture calls</source>
+        <target state="translated">Обаждания "картина в картина"</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -4159,8 +4175,9 @@ This is your link for group %@!</source>
         <target>Моля, проверете вашите настройки и тези вашия за контакт.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please confirm that network settings are correct for this device." xml:space="preserve">
+      <trans-unit id="Please confirm that network settings are correct for this device." xml:space="preserve" approved="no">
         <source>Please confirm that network settings are correct for this device.</source>
+        <target state="translated">Моля, потвърдете, че мрежовите настройки са правилни за това устройство.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
@@ -4220,8 +4237,9 @@ Error: %@</source>
         <target>Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Post-quantum E2EE" xml:space="preserve">
+      <trans-unit id="Post-quantum E2EE" xml:space="preserve" approved="no">
         <source>Post-quantum E2EE</source>
+        <target state="translated">Постквантово E2EE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -4359,12 +4377,14 @@ Error: %@</source>
         <target>Push известия</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push server" xml:space="preserve">
+      <trans-unit id="Push server" xml:space="preserve" approved="no">
         <source>Push server</source>
+        <target state="translated">Push сървър</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Quantum resistant encryption" xml:space="preserve">
+      <trans-unit id="Quantum resistant encryption" xml:space="preserve" approved="no">
         <source>Quantum resistant encryption</source>
+        <target state="translated">Квантово устойчиво криптиране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -4552,12 +4572,14 @@ Error: %@</source>
         <target>Изпрати отново заявката за свързване?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Repeat download" xml:space="preserve">
+      <trans-unit id="Repeat download" xml:space="preserve" approved="no">
         <source>Repeat download</source>
+        <target state="translated">Повтори изтеглянето</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Repeat import" xml:space="preserve">
+      <trans-unit id="Repeat import" xml:space="preserve" approved="no">
         <source>Repeat import</source>
+        <target state="translated">Повтори импортирането</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat join request?" xml:space="preserve">
@@ -4565,8 +4587,9 @@ Error: %@</source>
         <target>Изпрати отново заявката за присъединяване?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Repeat upload" xml:space="preserve">
+      <trans-unit id="Repeat upload" xml:space="preserve" approved="no">
         <source>Repeat upload</source>
+        <target state="translated">Повтори качването</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -4669,8 +4692,9 @@ Error: %@</source>
         <target>SMP сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Safer groups" xml:space="preserve">
+      <trans-unit id="Safer groups" xml:space="preserve" approved="no">
         <source>Safer groups</source>
+        <target state="translated">По-безопасни групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -5038,8 +5062,9 @@ Error: %@</source>
         <target>Задай kод за достъп</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passphrase" xml:space="preserve">
+      <trans-unit id="Set passphrase" xml:space="preserve" approved="no">
         <source>Set passphrase</source>
+        <target state="translated">Задаване на парола</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -5097,8 +5122,9 @@ Error: %@</source>
         <target>Сподели с контактите</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show QR code" xml:space="preserve">
+      <trans-unit id="Show QR code" xml:space="preserve" approved="no">
         <source>Show QR code</source>
+        <target state="translated">Покажи QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show calls in phone history" xml:space="preserve">
@@ -5241,8 +5267,9 @@ Error: %@</source>
         <target>Спри SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Stop chat" xml:space="preserve">
+      <trans-unit id="Stop chat" xml:space="preserve" approved="no">
         <source>Stop chat</source>
+        <target state="translated">Спри чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
@@ -5285,8 +5312,9 @@ Error: %@</source>
         <target>Спри споделянето на адреса?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stopping chat" xml:space="preserve">
+      <trans-unit id="Stopping chat" xml:space="preserve" approved="no">
         <source>Stopping chat</source>
+        <target state="translated">Спиране на чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -5536,12 +5564,14 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Това действие не може да бъде отменено - вашият профил, контакти, съобщения и файлове ще бъдат безвъзвратно загубени.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
+      <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve" approved="no">
         <source>This chat is protected by end-to-end encryption.</source>
+        <target state="translated">Този чат е защитен чрез криптиране от край до край.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve">
+      <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve" approved="no">
         <source>This chat is protected by quantum resistant end-to-end encryption.</source>
+        <target state="translated">Този чат е защитен от квантово устойчиво криптиране от край до край.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
@@ -5838,8 +5868,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Актуализирай и отвори чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upload failed" xml:space="preserve">
+      <trans-unit id="Upload failed" xml:space="preserve" approved="no">
         <source>Upload failed</source>
+        <target state="translated">Неуспешно качване</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload file" xml:space="preserve">
@@ -5847,8 +5878,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Качи файл</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Uploading archive" xml:space="preserve">
+      <trans-unit id="Uploading archive" xml:space="preserve" approved="no">
         <source>Uploading archive</source>
+        <target state="translated">Архивът се качва</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
@@ -5901,8 +5933,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Използвай сървър</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use the app while in the call." xml:space="preserve">
+      <trans-unit id="Use the app while in the call." xml:space="preserve" approved="no">
         <source>Use the app while in the call.</source>
+        <target state="translated">Използвайте приложението по време на разговора.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
@@ -5940,12 +5973,14 @@ To connect, please ask your contact to create another connection link and check 
         <target>Потвърждение за свързване</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify database passphrase" xml:space="preserve">
+      <trans-unit id="Verify database passphrase" xml:space="preserve" approved="no">
         <source>Verify database passphrase</source>
+        <target state="translated">Проверете паролата на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify passphrase" xml:space="preserve">
+      <trans-unit id="Verify passphrase" xml:space="preserve" approved="no">
         <source>Verify passphrase</source>
+        <target state="translated">Провери паролата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify security code" xml:space="preserve">
@@ -6038,8 +6073,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Изчаква се получаването на видеото</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve">
+      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve" approved="no">
         <source>Warning: starting chat on multiple devices is not supported and will cause message delivery failures</source>
+        <target state="translated">Внимание: стартирането на чата на множество устройства не се поддържа и ще доведе до неуспешно изпращане на съобщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
@@ -6062,8 +6098,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Съобщение при посрещане</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message is too long" xml:space="preserve">
+      <trans-unit id="Welcome message is too long" xml:space="preserve" approved="no">
         <source>Welcome message is too long</source>
+        <target state="translated">Съобщението при посрещане е твърде дълго</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -6212,8 +6249,9 @@ Repeat join request?</source>
         <target>Можете да ги активирате по-късно през настройките за "Поверителност и сигурност" на приложението.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can give another try." xml:space="preserve">
+      <trans-unit id="You can give another try." xml:space="preserve" approved="no">
         <source>You can give another try.</source>
+        <target state="translated">Можете да опитате още веднъж.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
@@ -7119,8 +7157,9 @@ SimpleX сървърите не могат да видят вашия профи
         <target>peer-to-peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
+      <trans-unit id="quantum resistant e2e encryption" xml:space="preserve" approved="no">
         <source>quantum resistant e2e encryption</source>
+        <target state="translated">квантово устойчиво e2e криптиране</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
@@ -7198,8 +7237,9 @@ SimpleX сървърите не могат да видят вашия профи
         <target>зададена нова профилна снимка</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="standard end-to-end encryption" xml:space="preserve">
+      <trans-unit id="standard end-to-end encryption" xml:space="preserve" approved="no">
         <source>standard end-to-end encryption</source>
+        <target state="translated">стандартно криптиране от край до край</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
