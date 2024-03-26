@@ -1710,4 +1710,5 @@
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
     <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
+    <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítéskor, lépjen kapcsolatba a fejlesztőkkel.</string>
 </resources>
