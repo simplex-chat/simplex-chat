@@ -629,8 +629,9 @@
         <target>Промяната на адреса ще бъде прекъсната. Ще се използва старият адрес за получаване.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Admins can block a member for all." xml:space="preserve">
+      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
         <source>Admins can block a member for all.</source>
+        <target state="translated">Администраторите могат да блокират член за всички.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -688,8 +689,9 @@
         <target>Всички ваши контакти ще останат свързани. Актуализацията на профила ще бъде изпратена до вашите контакти.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
+        <target state="translated">Всички ваши контакти, разговори и файлове ще бъдат сигурно криптирани и качени на парчета в конфигурираните XFTP релета.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -817,8 +819,9 @@
         <target>Компилация на приложението: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App data migration" xml:space="preserve">
+      <trans-unit id="App data migration" xml:space="preserve" approved="no">
         <source>App data migration</source>
+        <target state="translated">Миграция на данните от приложението</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
@@ -856,16 +859,19 @@
         <target>Изглед</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Apply" xml:space="preserve">
+      <trans-unit id="Apply" xml:space="preserve" approved="no">
         <source>Apply</source>
+        <target state="translated">Приложи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive and upload" xml:space="preserve">
+      <trans-unit id="Archive and upload" xml:space="preserve" approved="no">
         <source>Archive and upload</source>
+        <target state="translated">Архивиране и качване</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archiving database" xml:space="preserve">
+      <trans-unit id="Archiving database" xml:space="preserve" approved="no">
         <source>Archiving database</source>
+        <target state="translated">Архивиране на база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -1058,8 +1064,9 @@
         <target>Отказ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cancel migration" xml:space="preserve">
+      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
         <source>Cancel migration</source>
+        <target state="translated">Отмени миграцията</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -1163,8 +1170,9 @@
         <target>Чатът е спрян. Ако вече сте използвали тази база данни на друго устройство, трябва да я прехвърлите обратно, преди да стартирате чата отново.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat migrated!" xml:space="preserve">
+      <trans-unit id="Chat migrated!" xml:space="preserve" approved="no">
         <source>Chat migrated!</source>
+        <target state="translated">Чатът е мигриран!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
@@ -1261,8 +1269,9 @@
         <target>Потвърди актуализаациите на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm network settings" xml:space="preserve">
+      <trans-unit id="Confirm network settings" xml:space="preserve" approved="no">
         <source>Confirm network settings</source>
+        <target state="translated">Потвърди мрежовите настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
@@ -1275,12 +1284,14 @@
         <target>Потвърди парола</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
         <source>Confirm that you remember database passphrase to migrate it.</source>
+        <target state="translated">Потвърдете, че помните паролата на базата данни, преди да я мигрирате.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm upload" xml:space="preserve">
+      <trans-unit id="Confirm upload" xml:space="preserve" approved="no">
         <source>Confirm upload</source>
+        <target state="translated">Потвърди качването</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1542,8 +1553,9 @@ This is your own one-time link!</source>
         <target>Създаден на %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Creating archive link" xml:space="preserve">
+      <trans-unit id="Creating archive link" xml:space="preserve" approved="no">
         <source>Creating archive link</source>
+        <target state="translated">Създаване на архивен линк</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Creating link…" xml:space="preserve">
@@ -1766,8 +1778,9 @@ This cannot be undone!</source>
         <target>Изтрий базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete database from this device" xml:space="preserve">
+      <trans-unit id="Delete database from this device" xml:space="preserve" approved="no">
         <source>Delete database from this device</source>
+        <target state="translated">Изтриване на базата данни от това устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete file" xml:space="preserve">
@@ -2060,8 +2073,9 @@ This cannot be undone!</source>
         <target>Понижи версията и отвори чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Download failed" xml:space="preserve">
+      <trans-unit id="Download failed" xml:space="preserve" approved="no">
         <source>Download failed</source>
+        <target state="translated">Неуспешно изтегляне</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Download file" xml:space="preserve">
@@ -2069,12 +2083,14 @@ This cannot be undone!</source>
         <target>Свали файл</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Downloading archive" xml:space="preserve">
+      <trans-unit id="Downloading archive" xml:space="preserve" approved="no">
         <source>Downloading archive</source>
+        <target state="translated">Архива се изтегля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downloading link details" xml:space="preserve">
+      <trans-unit id="Downloading link details" xml:space="preserve" approved="no">
         <source>Downloading link details</source>
+        <target state="translated">Подробности за линка се изтеглят</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -2132,8 +2148,9 @@ This cannot be undone!</source>
         <target>Активиране за всички</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve" approved="no">
         <source>Enable in direct chats (BETA)!</source>
+        <target state="translated">Активиране в личните чатове (БЕТА)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -2251,8 +2268,9 @@ This cannot be undone!</source>
         <target>Въведи име на групата…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter passphrase" xml:space="preserve">
+      <trans-unit id="Enter passphrase" xml:space="preserve" approved="no">
         <source>Enter passphrase</source>
+        <target state="translated">Въведи парола</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter passphrase…" xml:space="preserve">
@@ -2315,8 +2333,9 @@ This cannot be undone!</source>
         <target>Грешка при добавяне на член(ове)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve">
+      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve" approved="no">
         <source>Error allowing contact PQ encryption</source>
+        <target state="translated">Грешка при разрешаване на PQ криптиране за контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -2409,8 +2428,9 @@ This cannot be undone!</source>
         <target>Грешка при изтриване на потребителския профил</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error downloading the archive" xml:space="preserve">
+      <trans-unit id="Error downloading the archive" xml:space="preserve" approved="no">
         <source>Error downloading the archive</source>
+        <target state="translated">Грешка при изтеглянето на архива</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
@@ -2488,8 +2508,9 @@ This cannot be undone!</source>
         <target>Грешка при запазване на парола в Кeychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving settings" xml:space="preserve">
+      <trans-unit id="Error saving settings" xml:space="preserve" approved="no">
         <source>Error saving settings</source>
+        <target state="translated">Грешка при запазване на настройките</target>
         <note>when migrating</note>
       </trans-unit>
       <trans-unit id="Error saving user password" xml:space="preserve">
@@ -2562,12 +2583,14 @@ This cannot be undone!</source>
         <target>Грешка при актуализиране на поверителността на потребителя</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error uploading the archive" xml:space="preserve">
+      <trans-unit id="Error uploading the archive" xml:space="preserve" approved="no">
         <source>Error uploading the archive</source>
+        <target state="translated">Грешка при качването на архива</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error verifying passphrase:" xml:space="preserve">
+      <trans-unit id="Error verifying passphrase:" xml:space="preserve" approved="no">
         <source>Error verifying passphrase:</source>
+        <target state="translated">Грешка при проверката на паролата:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: " xml:space="preserve">
@@ -2620,8 +2643,9 @@ This cannot be undone!</source>
         <target>Експортиран архив на базата данни.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exported file doesn't exist" xml:space="preserve">
+      <trans-unit id="Exported file doesn't exist" xml:space="preserve" approved="no">
         <source>Exported file doesn't exist</source>
+        <target state="translated">Експортираният файл не съществува</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exporting database archive…" xml:space="preserve">
@@ -2694,12 +2718,14 @@ This cannot be undone!</source>
         <target>Филтрирайте непрочетените и любимите чатове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Finalize migration" xml:space="preserve">
+      <trans-unit id="Finalize migration" xml:space="preserve" approved="no">
         <source>Finalize migration</source>
+        <target state="translated">Завърши миграцията</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Finalize migration on another device." xml:space="preserve">
+      <trans-unit id="Finalize migration on another device." xml:space="preserve" approved="no">
         <source>Finalize migration on another device.</source>
+        <target state="translated">Завършете миграцията на другото устройство.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2992,8 +3018,9 @@ This cannot be undone!</source>
         <target>Как да използвате вашите сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hungarian interface" xml:space="preserve">
+      <trans-unit id="Hungarian interface" xml:space="preserve" approved="no">
         <source>Hungarian interface</source>
+        <target state="translated">Унгарски интерфейс</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
