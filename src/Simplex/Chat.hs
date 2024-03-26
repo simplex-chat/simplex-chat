@@ -1569,31 +1569,31 @@ processChatCommand' vr = \case
         Nothing -> do
           timestamp <- liftIO getCurrentTime
           pure CRBroadcastSent {user, msgContent = mc, successes = 0, failures = 0, timestamp}
-        Just ctConns -> do
+        Just (ctConns :: NonEmpty (Contact, Connection)) -> do
           let idsEvts = L.map ctSndEvent ctConns
           sndMsgs <- createSndMessages idsEvts
-          let msgReqs_ = L.zipWith ctMsgReq ctConns sndMsgs
-              ctSndMsgs = L.zipWith ctSndMsg ctConns sndMsgs
-          (errs, ctSndMsgs') <- partitionEithers . L.toList . L.zipWith (second . const) ctSndMsgs <$> deliverMessagesB msgReqs_
+          let msgReqs_ :: NonEmpty (Either ChatError MsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
+          (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
+            partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
-          void $ withStoreBatch' $ \db -> map (createCI db user timestamp) (rights ctSndMsgs')
-          pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs', failures = length errs, timestamp}
+          void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
+          pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
     where
       mc = MCText msg
       addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
       addContactConn ct ctConns = case contactSendConn_ ct of
-        Left _ -> ctConns
-        Right conn
-          | not (directOrUsed ct) -> ctConns
-          | otherwise -> (ct, conn) : ctConns
+        Right conn | directOrUsed ct -> (ct, conn) : ctConns
+        _ -> ctConns
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, PQSupport, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId, pqSupport}) = (ConnectionId connId, pqSupport, XMsgNew $ MCSimple (extMsgContent mc Nothing))
-      ctMsgReq :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError MsgReq
-      ctMsgReq (_, conn) =
-        fmap $ \SndMessage {msgId, msgBody} ->
-          (conn, MsgFlags {notification = hasNotification XMsgNew_}, msgBody, msgId)
-      ctSndMsg :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError (Contact, SndMessage)
-      ctSndMsg (ct, _) = fmap (ct,)
+      ctMsgReq :: (Contact, Connection) -> SndMessage -> MsgReq
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, msgBody, msgId)
+      zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
+      zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
+      combineResults :: (Contact, Connection) -> (Either ChatError SndMessage) -> (Either ChatError (Int64, PQEncryption)) -> (Either ChatError (Contact, SndMessage))
+      combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
+      combineResults _ (Left e) _ = Left e
+      combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user createdAt (ct, sndMsg) =
         void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing False createdAt
@@ -2259,10 +2259,9 @@ processChatCommand' vr = \case
         -- [incognito] filter out contacts with whom user has incognito connections
         addChangedProfileContact :: User -> Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
         addChangedProfileContact user' ct changedCts = case contactSendConn_ ct' of
-          Left _ -> changedCts
-          Right conn
-            | connIncognito conn || mergedProfile' == mergedProfile -> changedCts
-            | otherwise -> ChangedProfileContact ct ct' mergedProfile' conn : changedCts
+          Right conn | not (connIncognito conn) && mergedProfile' /= mergedProfile ->
+            ChangedProfileContact ct ct' mergedProfile' conn : changedCts
+          _ -> changedCts
           where
             mergedProfile = userProfileToSend user Nothing (Just ct) False
             ct' = updateMergedPreferences user' ct
