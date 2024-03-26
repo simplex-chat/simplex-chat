@@ -22,15 +22,17 @@ Features currently not supporting communicating rejection:
   ``` haskell
   data AgentMsgEnvelope
     = ...
-    | AgentReject
+    | AgentRejection
         { e2eEncryption :: RcvE2ERatchetParams 'C.X448,
-          encRejectInfo :: ByteString
+          encRejectionInfo :: ByteString
         }
   ```
 
-- Unlike other AgentMsgEnvelope constructors, AgentReject doesn't require agentVersion since connection will be deleted after sending this message.
+- Unlike other AgentMsgEnvelope constructors, AgentRejection doesn't require agentVersion since connection will be deleted after sending this message.
 
   - We may be able to re-use recently added mechanism of marking connection for deletion with deleted_at_wait_delivery field without much additional work.
+
+- e2eEncryption will be used to encrypt first message, same as for AgentConfirmation. (?)
 
 - Both sync and async versions of agent functions are required, as contact rejection will be user action, while group join rejection will be automated (in case, for example, if link host is no longer admin).
 
@@ -38,7 +40,7 @@ Features currently not supporting communicating rejection:
 
   - For sync function either new API can be added, or rejectContact can be parameterized.
 
-- Chat protocol requires adding new messages to be sent in encRejectInfo, to be processed on requester side based on connections' semantics.
+- Chat protocol requires adding new messages to be sent in encRejectionInfo, to be processed on requester side based on connections' semantics.
 
   ```haskell
   -- / contact request rejection
@@ -64,7 +66,7 @@ Features currently not supporting communicating rejection:
 - Versioning considerations:
   - Increase chat version.
   - We already save peer chat version on contact_requests on initial REQ message. It can be used to differentiate UI whether contact supports rejection messages and not offer option to reject with notification.
-  - Increase agent version? Agent can prohibit sending AgentReject based on version in AgentInvitation, though it shouldn't be reachable as chat should also prohibit it.
+  - Increase agent version? Agent can prohibit sending AgentRejection based on version in AgentInvitation, though it shouldn't be reachable as chat should also prohibit it.
 
 ## Rejecting calls
 
