@@ -1706,4 +1706,13 @@
     <string name="profile_update_event_contact_name_changed">連絡先 %1$s が %2$s に変更されました</string>
     <string name="profile_update_event_set_new_picture">新しいプロフィール画像が設定されました</string>
     <string name="profile_update_event_removed_picture">プロフィール画像が削除されました</string>
+    <string name="auth_open_migration_to_another_device">移行画面を開く</string>
+    <string name="unable_to_open_browser_desc">通話には既定のウェブブラウザが必要です。既定のブラウザを設定し、開発者へ情報を共有してください。</string>
+    <string name="profile_update_event_updated_profile">プロフィール更新済</string>
+    <string name="profile_update_event_member_name_changed">メンバーの %1$sが %2$sに名前変更済</string>
+    <string name="migrate_to_device_confirm_network_settings">ネットワーク設定を確認してください</string>
+    <string name="migrate_to_device_confirm_network_settings_footer">この端末のネットワーク設定が正しいことを確認してください。</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>注意</b>: 2つの端末で同じデータベースを使用すると、セキュリティ保護として、あなたが接続しているメッセージの復号化が解除されます。</string>
+    <string name="saved_message_title">メッセージ保存済</string>
+    <string name="migrate_from_device_stopping_chat">チャット停止中</string>
 </resources>
