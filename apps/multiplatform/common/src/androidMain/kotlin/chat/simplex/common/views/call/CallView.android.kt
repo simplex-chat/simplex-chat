@@ -514,9 +514,9 @@ private fun DisabledBackgroundCallsButton() {
 @Composable
 fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Unit) {
   val audioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
-  val hadAudioInitially = rememberSaveable { audioPermission.hasPermission }
+  val hadAudioInitially = rememberSaveable { audioPermission.status == PermissionStatus.Granted }
   val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
-  val hadCameraInitially = rememberSaveable { cameraPermission.hasPermission }
+  val hadCameraInitially = rememberSaveable { cameraPermission.status == PermissionStatus.Granted }
   if (pipActive) {
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
       if (!hadAudioInitially) {
@@ -524,7 +524,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
           painterResource(MR.images.ic_call_500),
           stringResource(MR.strings.permissions_record_audio),
           Modifier.size(24.dp),
-          tint = if (audioPermission.hasPermission) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
+          tint = if (audioPermission.status == PermissionStatus.Granted) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
         )
       }
       if (hasVideo && !hadCameraInitially) {
@@ -532,7 +532,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
           painterResource(MR.images.ic_videocam),
           stringResource(MR.strings.permissions_camera),
           Modifier.size(24.dp),
-          tint = if (cameraPermission.hasPermission) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
+          tint = if (cameraPermission.status == PermissionStatus.Granted) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
         )
       }
     }
@@ -547,21 +547,21 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       SectionView(stringResource(MR.strings.permissions_section_title).uppercase()) {
         if (!hadAudioInitially) {
           SettingsActionItem(painterResource(MR.images.ic_call_500), stringResource(MR.strings.permissions_record_audio), {
-            if (audioPermission.shouldShowRationale) {
+            if (audioPermission.status is PermissionStatus.Denied && audioPermission.status.shouldShowRationale) {
               context.showAllowPermissionInSettingsAlert()
             } else {
               audioPermission.launchPermissionRequestWithFallback(context::showAllowPermissionInSettingsAlert)
             }
-          }, disabled = audioPermission.hasPermission)
+          }, disabled = audioPermission.status == PermissionStatus.Granted)
         }
         if (hasVideo && !hadCameraInitially) {
           SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.permissions_camera), {
-            if (cameraPermission.shouldShowRationale) {
+            if (cameraPermission.status is PermissionStatus.Denied && cameraPermission.status.shouldShowRationale) {
               context.showAllowPermissionInSettingsAlert()
             } else {
               cameraPermission.launchPermissionRequestWithFallback(context::showAllowPermissionInSettingsAlert)
             }
-          }, disabled = cameraPermission.hasPermission)
+          }, disabled = cameraPermission.status == PermissionStatus.Granted)
         }
       }
 
