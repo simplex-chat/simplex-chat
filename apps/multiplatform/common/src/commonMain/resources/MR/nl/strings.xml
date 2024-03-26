@@ -1713,4 +1713,5 @@
     <string name="migrate_to_device_bytes_downloaded">%s gedownload</string>
     <string name="set_passphrase">Wachtwoord instellen</string>
     <string name="e2ee_info_pq_short">Deze chat wordt beschermd door quantum bestendige end-to-end codering.</string>
+    <string name="error_showing_desktop_notification">Fout bij weergeven van melding. Neem contact op met ontwikkelaars.</string>
 </resources>
