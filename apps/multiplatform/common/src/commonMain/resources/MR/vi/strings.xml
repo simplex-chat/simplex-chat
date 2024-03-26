@@ -90,4 +90,10 @@
     <string name="empty_chat_profile_is_created">Một hồ sơ trống với tên chỉ định đã được tạo, và ứng dụng sẽ mở ra như bình thường.</string>
     <string name="answer_call">Trả lời cuộc gọi</string>
     <string name="connect__a_new_random_profile_will_be_shared">Một hồ sơ ngẫu nhiên mới sẽ được chia sẻ.</string>
+    <string name="notifications_mode_off_desc">Ứng dụng chỉ có thể nhận thông báo khi nó đang chạy, không có dịch vụ nền nào được khởi động</string>
+    <string name="app_version_code">Bản dựng ứng dụng: %s</string>
+    <string name="appearance_settings">Giao diện</string>
+    <string name="settings_section_title_app">ỨNG DỤNG</string>
+    <string name="v5_6_app_data_migration">Di chuyển dữ liệu ứng dụng</string>
+    <string name="full_backup">Sao lưu dữ liệu ứng dụng</string>
 </resources>
