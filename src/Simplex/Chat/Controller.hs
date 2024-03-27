@@ -188,6 +188,9 @@ data ChatController = ChatController
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
+    -- chatConnLocks :: TMap Int64 Lock,
+    -- chatInvLocks :: TMap ByteString Lock,
+    entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
@@ -211,6 +214,15 @@ data ChatController = ChatController
     contactMergeEnabled :: TVar Bool,
     pqExperimentalEnabled :: TVar PQSupport -- TODO v5.7 remove
   }
+
+data ChatLockEntity
+  = CLConnection Int64
+  | CLInvitation ByteString
+  | CLContact ContactId
+  | CLGroup GroupId
+  | CLUserContact Int64
+  | CLFile Int64
+  deriving (Eq, Ord)
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)
