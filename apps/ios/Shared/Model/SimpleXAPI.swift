@@ -1293,7 +1293,10 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     let m = ChatModel.shared
     m.ctrlInitInProgress = true
     defer { m.ctrlInitInProgress = false }
-    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
+    let endTask = beginBGTask({
+        // run DB operations as "backgroundable" to prevent 0xdead10cc SIGKILLs
+        (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
+    })
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
