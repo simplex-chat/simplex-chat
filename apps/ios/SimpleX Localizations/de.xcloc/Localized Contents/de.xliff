@@ -633,9 +633,9 @@
         <target>Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
         <source>Admins can block a member for all.</source>
-        <target state="translated">Administratoren können ein Gruppenmitglied für Alle blockieren.</target>
+        <target>Administratoren können ein Gruppenmitglied für Alle blockieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -1289,9 +1289,9 @@
         <target>Passwort bestätigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target state="translated">Bitte bestätigen Sie für die Migration, dass Sie sich an Ihr Datenbank-Passwort erinnern.</target>
+        <target>Bitte bestätigen Sie für die Migration, dass Sie sich an Ihr Datenbank-Passwort erinnern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
@@ -3658,9 +3658,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Auf ein anderes Gerät migrieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device via QR code." xml:space="preserve" approved="no">
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
         <source>Migrate to another device via QR code.</source>
-        <target state="translated">Daten können über einen QR-Code auf ein anderes Gerät migriert werden.</target>
+        <target>Daten können über einen QR-Code auf ein anderes Gerät migriert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
@@ -5616,9 +5616,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve" approved="no">
+      <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
         <source>To ask any questions and to receive updates:</source>
-        <target state="translated">Um Fragen zu stellen und aktuelle Informationen zu erhalten:</target>
+        <target>Um Fragen zu stellen und aktuelle Informationen zu erhalten:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
@@ -6506,9 +6506,9 @@ Sie können diese Verbindung abbrechen und den Kontakt entfernen (und es später
         <target>Ihre Kontakte können die unwiederbringliche Löschung von Nachrichten erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts will remain connected." xml:space="preserve" approved="no">
+      <trans-unit id="Your contacts will remain connected." xml:space="preserve">
         <source>Your contacts will remain connected.</source>
-        <target state="translated">Ihre Kontakte bleiben weiterhin verbunden.</target>
+        <target>Ihre Kontakte bleiben weiterhin verbunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">

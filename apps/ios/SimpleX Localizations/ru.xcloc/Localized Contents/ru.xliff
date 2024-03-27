@@ -6080,9 +6080,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ожидание видео</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve" approved="no">
+      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve">
         <source>Warning: starting chat on multiple devices is not supported and will cause message delivery failures</source>
-        <target state="translated">Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений</target>
+        <target>Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
