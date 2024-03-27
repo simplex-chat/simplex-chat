@@ -211,6 +211,7 @@
   <string name="notification_preview_new_message">new message</string>
   <string name="notification_new_contact_request">New contact request</string>
   <string name="notification_contact_connected">Connected</string>
+  <string name="error_showing_desktop_notification">Error showing notification, contact developers.</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
