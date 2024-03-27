@@ -1595,8 +1595,8 @@
     <string name="group_member_status_unknown">ステータス不明</string>
     <string name="v5_5_private_notes">プライベートノート</string>
     <string name="v5_5_message_delivery">メッセージ配信の改善</string>
-    <string name="e2ee_info_no_pq">メッセージ、ファイル、通話は、前方秘匿性、否認防止および及び侵入復元性を備えた <b>エンドツーエンドの暗号化</b>によって保護されます。</string>
-    <string name="e2ee_info_pq">メッセージ、ファイル、通話は、前方秘匿性、否認防止および及び侵入復元性を備えた <b>耐量子E2E暗号化</b>によって保護されます。</string>
+    <string name="e2ee_info_no_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および及び侵入復元性を備えた <b>エンドツーエンドの暗号化</b>によって保護されます。]]></string>
+    <string name="e2ee_info_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および及び侵入復元性を備えた <b>耐量子E2E暗号化</b>によって保護されます。]]></string>
     <string name="e2ee_info_no_pq_short">このチャットはエンドツーエンド暗号化により保護されています。</string>
     <string name="e2ee_info_pq_short">このチャットは耐量子エンドツーエンド暗号化により保護されています。</string>
     <string name="note_folder_local_display_name">プライベートノート</string>
@@ -1638,7 +1638,7 @@
     <string name="migrate_from_device_chat_should_be_stopped">続けるには、チャットを停止する必要があります。</string>
     <string name="migrate_from_device_archive_and_upload">アーカイブとアップロード</string>
     <string name="migrate_from_device_confirm_upload">アップロードの確認</string>
-    <string name="migrate_from_device_bytes_uploaded">アップロード中</string>
+    <string name="migrate_from_device_bytes_uploaded">%s アップロード中</string>
     <string name="migrate_from_device_upload_failed">アップロード失敗</string>
     <string name="migrate_from_device_archiving_database">データベースをアーカイブ中</string>
     <string name="migrate_from_device_uploading_archive">アーカイブのアップロード中</string>
@@ -1649,12 +1649,12 @@
     <string name="migrate_from_device_or_share_this_file_link">ファイルリンクで安全に共有する</string>
     <string name="migrate_from_device_migration_complete">移行完了</string>
     <string name="migrate_from_device_start_chat">チャット開始</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">2つの端末上で同じデータベースを使用することは<b>できません</b>。</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[2つの端末上で同じデータベースを使用することは<b>できません</b>。]]></string>
     <string name="migrate_from_device_verify_passphrase">パスフレーズの検証</string>
     <string name="migrate_from_device_verify_database_passphrase">データベースパスフレーズの検証</string>
     <string name="migrate_from_device_check_connection_and_try_again">インターネット接続を確認して再試行してください</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">移行するデータベースのパスフレーズを覚えていることを確認して下さい。</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>警告</b>: アーカイブデータは削除されます。</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>警告</b>: アーカイブデータは削除されます。]]></string>
     <string name="migrate_from_device_error_verifying_passphrase">パスフレーズ検証エラー:</string>
     <string name="error_deleting_note_folder">プライベートノート削除エラー</string>
     <string name="share_text_created_at">送信日: %s</string>
@@ -1671,7 +1671,7 @@
     <string name="v5_6_quantum_resistant_encryption_descr">ダイレクトチャットで有効にする（ベータ版）！</string>
     <string name="welcome_message_is_too_long">ウェルカムメッセージが長すぎます</string>
     <string name="clear_note_folder_warning">全てのメッセージが削除されます - これは元に戻せません！</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">新しい端末で<i>別の端末に移行</i>を選択し、QRコードをスキャンします。</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[新しい端末で<i>別の端末に移行</i>を選択し、QRコードをスキャンします。]]></string>
     <string name="migrate_from_device_all_data_will_be_uploaded">すべての連絡先、会話、ファイルは安全に暗号化され、設定されたXFTPリレーに分割でアップロードされます。</string>
     <string name="unblock_for_all">ブロックの解除</string>
     <string name="unblock_for_all_question">ブロックを解除しますか？</string>
@@ -1712,7 +1712,7 @@
     <string name="profile_update_event_member_name_changed">メンバーの %1$sが %2$sに名前変更済</string>
     <string name="migrate_to_device_confirm_network_settings">ネットワーク設定を確認してください</string>
     <string name="migrate_to_device_confirm_network_settings_footer">この端末のネットワーク設定が正しいことを確認してください。</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>注意</b>: 2つの端末で同じデータベースを使用すると、セキュリティ保護として、あなたが接続しているメッセージの復号化が解除されます。</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>注意</b>: 2つの端末で同じデータベースを使用すると、セキュリティ保護として、あなたが接続しているメッセージの復号化が解除されます。]]></string>
     <string name="saved_message_title">メッセージ保存済</string>
     <string name="migrate_from_device_stopping_chat">チャット停止中</string>
     <string name="error_showing_desktop_notification">エラーが表示された場合は、開発者に連絡してください。</string>

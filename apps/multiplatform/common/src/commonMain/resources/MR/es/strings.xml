@@ -1689,12 +1689,12 @@
     <string name="migrate_from_device_creating_archive_link">Creando enlace de archivo</string>
     <string name="migrate_from_device_delete_database_from_device">Borrar la base de datos de este dispositivo</string>
     <string name="migrate_from_device_finalize_migration">Finalizar la migración</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Atención</b>: el archivo se eliminará.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Atención</b>: el archivo se eliminará.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Compruebe su conexión a Internet y vuelva a intentarlo</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Confirme que recuerda la contraseña de la base de datos para migrarla.</string>
     <string name="migrate_from_device_error_verifying_passphrase">Error al verificar la contraseña:</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Ten en cuenta</b>: usar la misma base de datos en dos dispositivos romperá el descifrado de mensajes de tus conexiones, como protección de seguridad.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Elige <i>Migrar desde otro dispositivo</i> en el nuevo dispositivo y escanea el código QR.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Ten en cuenta</b>: usar la misma base de datos en dos dispositivos romperá el descifrado de mensajes de tus conexiones, como protección de seguridad.]]></string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Elige <i>Migrar desde otro dispositivo</i> en el nuevo dispositivo y escanea el código QR.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Confirmar la configuración de red</string>
     <string name="migrate_from_device_confirm_upload">Confirmar carga</string>
     <string name="migrate_to_device_download_failed">Descarga fallida</string>
@@ -1703,8 +1703,8 @@
     <string name="migrate_from_device_error_saving_settings">Error al guardar los ajustes</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">El archivo exportado no existe</string>
     <string name="migrate_from_device_chat_should_be_stopped">Para continuar, el chat debe detenerse.</string>
-    <string name="e2ee_info_no_pq">Los mensajes, archivos y llamadas están protegidos por <b>cifrado de extremo a extremo</b> con perfecta confidencialidad, repudio y recuperación tras ataques.</string>
-    <string name="e2ee_info_pq">Los mensajes, archivos y llamadas están protegidos por <b>cifrado de extremo a extremo resistente a computación cuántica</b> con perfecta confidencialidad, repudio y recuperación tras ataques.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos por <b>cifrado de extremo a extremo</b> con perfecta confidencialidad, repudio y recuperación tras ataques.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos por <b>cifrado de extremo a extremo resistente a computación cuántica</b> con perfecta confidencialidad, repudio y recuperación tras ataques.]]></string>
     <string name="migrate_to_device_title">Migrar aquí</string>
     <string name="migrate_from_device_to_another_device">Migrar hacia otro dispositivo</string>
     <string name="v5_6_app_data_migration_descr">Migrar hacia otro dispositivo mediante código QR.</string>
@@ -1715,5 +1715,5 @@
     <string name="v5_6_quantum_resistant_encryption">Cifrado resistente a tecnologías cuánticas</string>
     <string name="set_passphrase">Establecer frase de contraseña</string>
     <string name="e2ee_info_pq_short">Este chat está protegido por un cifrado de extremo a extremo resistente a tecnología cuántica.</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>No debes</b> utilizar la misma base de datos en dos dispositivos.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>No debes</b> utilizar la misma base de datos en dos dispositivos.]]></string>
 </resources>

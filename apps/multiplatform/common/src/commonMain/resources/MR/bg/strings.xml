@@ -1636,7 +1636,7 @@
     <string name="unable_to_open_browser_desc">За разговори е необходим уеб браузър по подразбиране. Моля, конфигурирайте браузъра по подразбиране в системните настройки и споделете повече информация с разработчиците.</string>
     <string name="call_service_notification_video_call">Видео разговор</string>
     <string name="call_service_notification_end_call">Край на разговора</string>
-    <string name="e2ee_info_pq">Съобщенията, файловете и разговорите са защитени чрез <b>квантово устойчиво e2e криптиране</b> с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.</string>
+    <string name="e2ee_info_pq"><![CDATA[Съобщенията, файловете и разговорите са защитени чрез <b>квантово устойчиво e2e криптиране</b> с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.]]></string>
     <string name="auth_open_migration_to_another_device">Отвори екрана за мигриране</string>
     <string name="migrate_from_another_device">Мигриране от друго устройство</string>
     <string name="set_passphrase">Задаване на парола</string>
@@ -1683,8 +1683,8 @@
     <string name="migrate_from_device_or_share_this_file_link">Или сигурно споделете този линк към файла</string>
     <string name="migrate_from_device_delete_database_from_device">Изтриване на базата данни от това устройство</string>
     <string name="migrate_from_device_migration_complete">Миграцията е завършена</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>Не трябва</b> да използвате една и съща база данни на две устройства.</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Моля, обърнете внимание</b>: използването на една и съща база данни на две устройства ще наруши декриптирането на съобщенията от вашите връзки като защита на сигурността.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Не трябва</b> да използвате една и съща база данни на две устройства.]]></string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Моля, обърнете внимание</b>: използването на една и съща база данни на две устройства ще наруши декриптирането на съобщенията от вашите връзки като защита на сигурността.]]></string>
     <string name="migrate_from_device_verify_database_passphrase">Проверете паролата на базата данни</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Потвърдете, че помните паролата на базата данни, преди да я мигрирате.</string>
     <string name="migrate_from_device_verify_passphrase">Провери паролата</string>
@@ -1698,7 +1698,7 @@
     <string name="v5_6_picture_in_picture_calls_descr">Използвайте приложението по време на разговора.</string>
     <string name="e2ee_info_no_pq_short">Този чат е защитен чрез криптиране от край до край.</string>
     <string name="e2ee_info_pq_short">Този чат е защитен от квантово устойчиво криптиране от край до край.</string>
-    <string name="e2ee_info_no_pq">Съобщенията, файловете и разговорите са защитени чрез <b>криптиране от край до край</b> с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Съобщенията, файловете и разговорите са защитени чрез <b>криптиране от край до край</b> с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.]]></string>
     <string name="or_paste_archive_link">Или постави архивен линк</string>
     <string name="migrate_to_device_enter_passphrase">Въведи парола</string>
     <string name="migrate_from_device_confirm_upload">Потвърди качването</string>
@@ -1707,9 +1707,9 @@
     <string name="migrate_from_device_bytes_uploaded">%s качени</string>
     <string name="migrate_from_device_upload_failed">Неуспешно качване</string>
     <string name="migrate_from_device_repeat_upload">Повтори качването</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Изберете <i>Миграция от друго устройство</i> на новото устройство и сканирайте QR кода.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Изберете <i>Миграция от друго устройство</i> на новото устройство и сканирайте QR кода.]]></string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Внимание: стартирането на чата на множество устройства не се поддържа и ще доведе до неуспешно изпращане на съобщения</string>
     <string name="migrate_from_device_check_connection_and_try_again">Проверете вашата интернет връзка и опитайте отново</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Внимание</b>: архивът ще бъде изтрит.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Внимание</b>: архивът ще бъде изтрит.]]></string>
     <string name="v5_6_quantum_resistant_encryption_descr">Активиране в личните чатове (БЕТА)!</string>
 </resources>

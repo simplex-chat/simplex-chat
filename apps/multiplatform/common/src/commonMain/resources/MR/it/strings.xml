@@ -1680,7 +1680,7 @@
     <string name="migrate_to_device_importing_archive">Importazione archivio</string>
     <string name="invalid_file_link">Link non valido</string>
     <string name="e2ee_info_no_pq"><![CDATA[I messaggi, i file e le chiamate sono protetti da <b>crittografia end-to-end</b> con perfect forward secrecy, ripudio e recupero da intrusione.]]></string>
-    <string name="e2ee_info_pq">I messaggi, i file e le chiamate sono protetti da <b>crittografia e2e resistente alla quantistica</b> con perfect forward secrecy, ripudio e recupero da intrusione.</string>
+    <string name="e2ee_info_pq"><![CDATA[I messaggi, i file e le chiamate sono protetti da <b>crittografia e2e resistente alla quantistica</b> con perfect forward secrecy, ripudio e recupero da intrusione.]]></string>
     <string name="migrate_from_device_title">Migra dispositivo</string>
     <string name="migrate_from_another_device">Migra da un altro dispositivo</string>
     <string name="migrate_from_device_to_another_device">Migra ad un altro dispositivo</string>
