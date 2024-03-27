@@ -36,8 +36,8 @@ webRTCTests = describe "WebRTC crypto" $ do
     cc <- newStablePtr c
     let key = B.replicate 32 '#'
     frame <- (<> B.replicate reservedSize '\NUL') <$> getRandomBytes 100
-    runExceptT (chatEncryptMedia cc key frame) `shouldReturn` Left "invalid key: invalid character at offset: 0"
-    runExceptT (chatDecryptMedia key frame) `shouldReturn` Left "invalid key: invalid character at offset: 0"
+    runExceptT (chatEncryptMedia cc key frame) `shouldReturn` Left "invalid key: invalid base64 encoding near offset: 0"
+    runExceptT (chatDecryptMedia key frame) `shouldReturn` Left "invalid key: invalid base64 encoding near offset: 0"
   it "should fail on invalid auth tag" $ \tmp -> do
     Right c <- chatMigrateInit (tmp </> "1") "" "yesUp"
     cc <- newStablePtr c
