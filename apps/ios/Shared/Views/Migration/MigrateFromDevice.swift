@@ -150,7 +150,7 @@ struct MigrateFromDevice: View {
                 return Alert(
                     title: Text(title),
                     message: Text(text),
-                    primaryButton: .destructive(Text("Delete")) {
+                    primaryButton: .default(Text("Delete")) {
                         deleteChatAndDismiss()
                     },
                     secondaryButton: .cancel()
@@ -333,14 +333,14 @@ struct MigrateFromDevice: View {
         ZStack {
             List {
                 Section {
-                    Button(action: { alert = .deleteChat() }) {
-                        settingsRow("trash.fill") {
-                            Text("Delete database from this device").foregroundColor(.accentColor)
-                        }
-                    }
                     Button(action: { alert = .startChat() }) {
                         settingsRow("play.fill") {
                             Text("Start chat").foregroundColor(.red)
+                        }
+                    }
+                    Button(action: { alert = .deleteChat() }) {
+                        settingsRow("trash.fill") {
+                            Text("Delete database from this device").foregroundColor(.accentColor)
                         }
                     }
                 } header: {

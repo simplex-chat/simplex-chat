@@ -376,22 +376,6 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
   Box {
     SectionView(stringResource(MR.strings.migrate_from_device_migration_complete).uppercase()) {
       SettingsActionItemWithContent(
-        icon = painterResource(MR.images.ic_delete_forever),
-        text = stringResource(MR.strings.migrate_from_device_delete_database_from_device),
-        textColor = MaterialTheme.colors.primary,
-        click = {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.delete_chat_profile_question),
-            text = generalGetString(MR.strings.delete_chat_profile_action_cannot_be_undone_warning),
-            confirmText = generalGetString(MR.strings.delete_verb),
-            onConfirm = {
-              deleteChatAndDismiss()
-            }
-          )
-        }
-      ) {}
-
-      SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_play_arrow_filled),
         text = stringResource(MR.strings.migrate_from_device_start_chat),
         textColor = MaterialTheme.colors.error,
@@ -402,6 +386,23 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
             confirmText = generalGetString(MR.strings.migrate_from_device_start_chat),
             onConfirm = {
               withLongRunningApi { startChatAndDismiss() }
+            },
+            destructive = true
+          )
+        }
+      ) {}
+
+      SettingsActionItemWithContent(
+        icon = painterResource(MR.images.ic_delete_forever),
+        text = stringResource(MR.strings.migrate_from_device_delete_database_from_device),
+        textColor = MaterialTheme.colors.primary,
+        click = {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.delete_chat_profile_question),
+            text = generalGetString(MR.strings.delete_chat_profile_action_cannot_be_undone_warning),
+            confirmText = generalGetString(MR.strings.delete_verb),
+            onConfirm = {
+              deleteChatAndDismiss()
             }
           )
         }

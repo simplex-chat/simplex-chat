@@ -557,7 +557,12 @@ struct ChatView: View {
                         chatItemView(ci, nil, prev)
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
+                    if revealed {
+                        chatItemView(chatItem, range, prevItem)
+                    } else {
+                        chatItemView(chatItem, range, prevItem)
+                    }
                 }
             }
         }
