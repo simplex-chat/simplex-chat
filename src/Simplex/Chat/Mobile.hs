@@ -49,7 +49,7 @@ import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Encoding.Base64URL as U
+import qualified Simplex.Messaging.Encoding.Base64.URL as U
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))

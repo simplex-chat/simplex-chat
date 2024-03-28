@@ -25,7 +25,7 @@ import Foreign.StablePtr
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile.Shared
 import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Encoding.Base64URL as U
+import qualified Simplex.Messaging.Encoding.Base64.URL as U
 import UnliftIO (atomically)
 
 cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString

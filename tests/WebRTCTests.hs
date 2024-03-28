@@ -9,7 +9,7 @@ import Foreign.StablePtr
 import Simplex.Chat.Mobile
 import Simplex.Chat.Mobile.WebRTC
 import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Encoding.Base64URL as U
+import qualified Simplex.Messaging.Encoding.Base64.URL as U
 import System.FilePath ((</>))
 import Test.Hspec
 

@@ -55,7 +55,7 @@ import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import qualified Simplex.Messaging.Encoding.Base64URL as B64U
+import qualified Simplex.Messaging.Encoding.Base64.URL as B64U
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TLS, closeConnection, tlsUniq)
