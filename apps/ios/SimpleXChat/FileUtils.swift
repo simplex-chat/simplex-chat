@@ -82,9 +82,7 @@ public func deleteAppDatabaseAndFiles() {
     }
     try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
     try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
-    try? fm.removeItem(at: getTempFilesDirectory())
-    try? fm.removeItem(at: getMigrationTempFilesDirectory())
-    try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    deleteAppTempFiles()
     deleteAppFiles()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
@@ -97,6 +95,21 @@ public func deleteAppFiles() {
         try fm.createDirectory(at: getAppFilesDirectory(), withIntermediateDirectories: true)
     } catch {
         logger.error("FileUtils deleteAppFiles error: \(error.localizedDescription)")
+    }
+}
+
+public func deleteAppTempFiles() {
+    let fm = FileManager.default
+    do {
+        try fm.removeItem(at: getTempFilesDirectory())
+        try fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    } catch {
+        logger.error("FileUtils deleteAppTempFiles error: \(error.localizedDescription)")
+    }
+    do {
+        try fm.removeItem(at: getMigrationTempFilesDirectory())
+    } catch {
+        logger.error("FileUtils deleteAppTempFiles fm.removeItem(at: getMigrationTempFilesDirectory()) error: \(error.localizedDescription)")
     }
 }
 
