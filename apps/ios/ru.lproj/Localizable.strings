@@ -4074,7 +4074,7 @@
 "wants to connect to you!" = "хочет соединиться с Вами!";
 
 /* No comment provided by engineer. */
-"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений.";
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений";
 
 /* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Предупреждение: Вы можете потерять какие то данные!";
