@@ -85,4 +85,15 @@
     <string name="rcv_group_and_other_events">và %d sự kiện khác</string>
     <string name="keychain_is_storing_securely">Android Keystore được sử dụng để lưu trữ passphrase - nó cho phép dịch vụ thông báo hoạt động.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore sẽ được sử dụng để lưu trữ passphrase một cách an toàn sau khi bạn khởi động lại ứng dụng hoặc thay đổi passphrase - nó cho phép tiếp nhận thông báo.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Tất cả các liên hệ, cuộc hội thoại và tệp của bạn sẽ được mã hóa an toàn và tải lên từng phần tới các XFTP relay được chỉ định.</string>
+    <string name="v5_6_safer_groups_descr">Quản trị viên có thể chặn một thành viên khỏi tất cả.</string>
+    <string name="empty_chat_profile_is_created">Một hồ sơ trống với tên chỉ định đã được tạo, và ứng dụng sẽ mở ra như bình thường.</string>
+    <string name="answer_call">Trả lời cuộc gọi</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Một hồ sơ ngẫu nhiên mới sẽ được chia sẻ.</string>
+    <string name="notifications_mode_off_desc">Ứng dụng chỉ có thể nhận thông báo khi nó đang chạy, không có dịch vụ nền nào được khởi động</string>
+    <string name="app_version_code">Bản dựng ứng dụng: %s</string>
+    <string name="appearance_settings">Giao diện</string>
+    <string name="settings_section_title_app">ỨNG DỤNG</string>
+    <string name="v5_6_app_data_migration">Di chuyển dữ liệu ứng dụng</string>
+    <string name="full_backup">Sao lưu dữ liệu ứng dụng</string>
 </resources>

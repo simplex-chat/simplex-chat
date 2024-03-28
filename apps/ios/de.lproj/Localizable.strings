@@ -390,7 +390,7 @@
 "admin" = "Admin";
 
 /* No comment provided by engineer. */
-"Admins can block a member for all." = "Administratoren können für ein Mitglied alle Funktionen blockieren.";
+"Admins can block a member for all." = "Administratoren können ein Gruppenmitglied für Alle blockieren.";
 
 /* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Administratoren können Links für den Beitritt zu Gruppen erzeugen.";
@@ -853,7 +853,7 @@
 "Confirm password" = "Passwort bestätigen";
 
 /* No comment provided by engineer. */
-"Confirm that you remember database passphrase to migrate it." = "Für die Migration bestätigen Sie bitte, dass Sie sich an das Datenbank-Passwort erinnern.";
+"Confirm that you remember database passphrase to migrate it." = "Bitte bestätigen Sie für die Migration, dass Sie sich an Ihr Datenbank-Passwort erinnern.";
 
 /* No comment provided by engineer. */
 "Confirm upload" = "Hochladen bestätigen";
@@ -2470,7 +2470,7 @@
 "Migrate to another device" = "Auf ein anderes Gerät migrieren";
 
 /* No comment provided by engineer. */
-"Migrate to another device via QR code." = "Über einen QR-Code auf ein anderes Gerät migrieren.";
+"Migrate to another device via QR code." = "Daten können über einen QR-Code auf ein anderes Gerät migriert werden.";
 
 /* No comment provided by engineer. */
 "Migrating" = "Migrieren";
@@ -3753,7 +3753,7 @@
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";
 
 /* No comment provided by engineer. */
-"To ask any questions and to receive updates:" = "Um Fragen zu stellen und Aktualisierungen zu erhalten:";
+"To ask any questions and to receive updates:" = "Um Fragen zu stellen und aktuelle Informationen zu erhalten:";
 
 /* No comment provided by engineer. */
 "To connect, your contact can scan QR code or use the link in the app." = "Um eine Verbindung herzustellen, kann Ihr Kontakt den QR-Code scannen oder den Link in der App verwenden.";
@@ -4359,7 +4359,7 @@
 "Your contacts can allow full message deletion." = "Ihre Kontakte können die unwiederbringliche Löschung von Nachrichten erlauben.";
 
 /* No comment provided by engineer. */
-"Your contacts will remain connected." = "Ihre Kontakte bleiben verbunden.";
+"Your contacts will remain connected." = "Ihre Kontakte bleiben weiterhin verbunden.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.";

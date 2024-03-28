@@ -12,7 +12,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: fb43d54192a4750ed40a90cfefff84f13ceabbc4
+    tag: 0d8bf63f3af7bae49b9ef1291a45c26f383335df
 
 source-repository-package
     type: git
@@ -33,6 +33,12 @@ source-repository-package
     type: git
     location: https://github.com/simplex-chat/aeson.git
     tag: aab7b5a14d6c5ea64c64dcaee418de1bb00dcc2b
+
+-- old bs/text compat for 8.10
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/base64.git
+    tag: 2d77b6dbcaffc00570a70be8694049f3710e7c94
 
 source-repository-package
     type: git
