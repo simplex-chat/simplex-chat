@@ -148,13 +148,12 @@ enum NSENotification {
 class NSEThreads {
     static let shared = NSEThreads()
     private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
-    private var allThreads: [UUID] = []
+    private var allThreads: Set<UUID> = []
     private var activeThreads: [(UUID, NotificationService)] = []
 
     func newThread() -> UUID {
         NSEThreads.queue.sync {
-            let t = UUID()
-            allThreads.append(t)
+            let (_, t) = allThreads.insert(UUID())
             return t
         }
     }
@@ -169,37 +168,29 @@ class NSEThreads {
         }
     }
 
-    // return `true` from `processed` block to stop iterating over active threads
-    func forEach(_ id: ChatId, processed: (NotificationService) -> Bool) async -> Void {
-        // Before using `activeThreads` we have to wait a response from `apiGetNtfMessage` which can come after some messages were already received.
-        // Nothing should be lost so wait until every thread is ready to process each message
-        var timeoutOfWaiting: Int = 5_000_000000
-        while timeoutOfWaiting > 0 && !activeThreads.allSatisfy({ $0.1.receiveEntityId != nil }) {
-            try? await Task.sleep(nanoseconds: 10_000000)
-            timeoutOfWaiting -= 10_000000
-        }
-        NSEThreads.queue.sync {
-            for (_, service) in activeThreads {
-                if service.receiveEntityId == id, processed(service) {
-                    // this one was processed, skip next services
-                    break
-                }
+    func processNotification(_ id: ChatId, _ ntf: NSENotification) async -> Void {
+        var timeoutOfWaiting: Int64 = 5_000_000000
+        while timeoutOfWaiting > 0 {
+            let activeThread = NSEThreads.queue.sync {
+                activeThreads.first(where: { (_, nse) in nse.receiveEntityId == id })
+            }
+            if activeThread?.1.processReceivedNtf?(ntf) == true {
+                break
+            } else {
+                try? await Task.sleep(nanoseconds: 10_000000)
+                timeoutOfWaiting -= 10_000000
             }
         }
     }
 
-    // withoutQueueSync is needed to prevent deadlock: when you call sync from a function that is executed in sync already
-    func endThread(_ t: UUID, withoutQueueSync: Bool = false) -> Bool {
-        return if withoutQueueSync {
-            remove()
-        } else {
-            NSEThreads.queue.sync {
-                remove()
+    func endThread(_ t: UUID) -> Bool {
+        NSEThreads.queue.sync {
+            let tActive: UUID? = if let index = activeThreads.firstIndex(where: { $0.0 == t }) {
+                activeThreads.remove(at: index).0
+            } else {
+                nil
             }
-        }
-        func remove() -> Bool {
-            let tActive: UUID? = if let index = activeThreads.firstIndex(where: { $0.0 == t }) { activeThreads.remove(at: index).0 } else { nil }
-            let t: UUID? = if let index = allThreads.firstIndex(of: t) { allThreads.remove(at: index) } else { nil }
+            let t = allThreads.remove(t)
             if tActive != nil && activeThreads.isEmpty {
                 return true
             }
@@ -208,7 +199,6 @@ class NSEThreads {
             }
             return false
         }
-
     }
 
     var noThreads: Bool {
@@ -230,7 +220,6 @@ class NotificationService: UNNotificationServiceExtension {
     var receiveEntityId: String?
     // return true if the message is taken - it prevents sending it to another NotificationService instance for processing
     var processReceivedNtf: ((NSENotification) -> Bool)?
-//    var cancelRead: (() -> Void)?
     var appSubscriber: AppSubscriber?
     var returnedSuspension = false
 
@@ -308,7 +297,6 @@ class NotificationService: UNNotificationServiceExtension {
                         : .empty
                     )
                     if let id = connEntity.id, let msgTs = ntfInfo.msgTs {
-                        var nonProcessedCount = ntfInfo.ntfMessages.count
                         var expected = Set(ntfInfo.ntfMessages.map { $0.msgId })
                         processReceivedNtf = { ntf in
                             if !ntfInfo.user.showNotifications {
@@ -318,25 +306,28 @@ class NotificationService: UNNotificationServiceExtension {
                                 let found = expected.remove(info.msgId)
                                 if found != nil {
                                     logger.debug("NotificationService processNtf: msgInfo, last: \(expected.isEmpty)")
+                                    if expected.isEmpty {
+                                        self.processReceivedNtf = nil
+                                        self.deliverBestAttemptNtf()
+                                    }
                                     return true
                                 } else if info.msgTs > msgTs {
                                     logger.debug("NotificationService processNtf: unexpected msgInfo, let other instance to process it, stopping this one")
                                     // stop processing other messages
                                     self.processReceivedNtf = nil
-                                    self.deliverBestAttemptNtf(withoutQueueSync: true)
+                                    self.deliverBestAttemptNtf()
                                     return false
                                 } else {
                                     logger.debug("NotificationService processNtf: unknown message, let other instance to process it")
                                     return false
                                 }
                             } else if ntfInfo.user.showNotifications {
-                                nonProcessedCount -= 1
-                                logger.debug("NotificationService processNtf: setting best attempt, non-processed yet: \(nonProcessedCount)")
+                                logger.debug("NotificationService processNtf: setting best attempt")
                                 self.setBestAttemptNtf(ntf)
-                                if ntf.isCallInvitation || nonProcessedCount == 0 {
+                                if ntf.isCallInvitation {
                                     // stop processing other messages
                                     self.processReceivedNtf = nil
-                                    self.deliverBestAttemptNtf(withoutQueueSync: true)
+                                    self.deliverBestAttemptNtf()
                                 }
                                 return true
                             }
@@ -344,16 +335,6 @@ class NotificationService: UNNotificationServiceExtension {
                         }
                         receiveEntityId = id
                         return
-                        //NtfStreamSemaphores.shared.waitForStream(id)
-//                        if receiveEntityId != nil {
-//                            Task {
-//                                logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id)")
-//                                await PendingNtfs.shared.createStream(id)
-//                                await PendingNtfs.shared.readStream(id, for: self, ntfInfo: ntfInfo)
-//                                deliverBestAttemptNtf()
-//                            }
-//                        }
-//                        return
                     }
                 }
             } else if let dbStatus = dbStatus {
@@ -389,20 +370,12 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
 
-    private func deliverBestAttemptNtf(urgent: Bool = false, withoutQueueSync: Bool = false) {
+    private func deliverBestAttemptNtf(urgent: Bool = false) {
         logger.debug("NotificationService.deliverBestAttemptNtf")
-//        if let cancel = cancelRead {
-//            cancelRead = nil
-//            cancel()
-//        }
-//        if let id = receiveEntityId {
-            //receiveEntityId = nil
-            //NtfStreamSemaphores.shared.signalStreamReady(id)
-//        }
         let suspend: Bool
         if let t = threadId {
             threadId = nil
-            suspend = NSEThreads.shared.endThread(t, withoutQueueSync: withoutQueueSync) && NSEThreads.shared.noThreads
+            suspend = NSEThreads.shared.endThread(t) && NSEThreads.shared.noThreads
         } else {
             suspend = false
         }
@@ -660,14 +633,16 @@ func receiveMessages() async {
             logger.debug("NotificationService receiveMsg: message")
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 logger.debug("NotificationService receiveMsg: notification")
-                await NSEThreads.shared.forEach(id, processed: { nse in
-                    if let processReceivedNtf = nse.processReceivedNtf {
-                        processReceivedNtf(ntf)
-                    } else {
-                        // this instance not ready or don't want to process ntfs any more
-                        false
-                    }
-                })
+                await NSEThreads.shared.processNotification(id, ntf)
+
+//                await NSEThreads.shared.forEach(id, processed: { nse in
+//                    if let processReceivedNtf = nse.processReceivedNtf {
+//                        processReceivedNtf(ntf)
+//                    } else {
+//                        // this instance not ready or don't want to process ntfs any more
+//                        false
+//                    }
+//                })
                 //await PendingNtfs.shared.createStream(id)
                 //await PendingNtfs.shared.writeStream(id, ntf)
 
