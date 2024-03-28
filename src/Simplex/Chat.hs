@@ -3590,9 +3590,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO only acknowledge without saving message?
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
-          withAckMessage' agentConnId meta $ do
-            (_conn', _) <- saveDirectRcvMSG conn meta msgBody
-            pure ()
+          withAckMessage' agentConnId meta $
+            void $ saveDirectRcvMSG conn meta msgBody
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         OK ->
