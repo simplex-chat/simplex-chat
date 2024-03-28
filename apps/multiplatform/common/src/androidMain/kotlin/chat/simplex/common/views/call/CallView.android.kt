@@ -573,6 +573,18 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       }
     }
   }
+  val permissionsState = rememberMultiplePermissionsState(
+    permissions = if (hasVideo) {
+      listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+    } else {
+      listOf(Manifest.permission.RECORD_AUDIO)
+    }
+  )
+  LaunchedEffect(Unit) {
+    if (!pipActive) {
+      permissionsState.launchMultiplePermissionRequest()
+    }
+  }
 }
 
 /**
