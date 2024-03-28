@@ -740,6 +740,7 @@ testGroupReAddInvitedChangeRole =
       concurrently_
         (alice <## "#team: bob joined the group")
         (bob <## "#team: you joined the group")
+      threadDelay 50000
       bob ##> "/d #team"
       concurrentlyN_
         [ bob <## "#team: you deleted the group",
