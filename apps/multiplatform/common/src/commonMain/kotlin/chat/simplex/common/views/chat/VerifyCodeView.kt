@@ -16,8 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.shareText
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
@@ -57,10 +56,9 @@ private fun VerifyCodeLayout(
   connectionVerified: Boolean,
   verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit,
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
-      .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING)
   ) {
     AppBarTitle(stringResource(MR.strings.security_code), withPadding = false)

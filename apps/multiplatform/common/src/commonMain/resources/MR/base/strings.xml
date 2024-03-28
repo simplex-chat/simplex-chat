@@ -211,6 +211,7 @@
   <string name="notification_preview_new_message">new message</string>
   <string name="notification_new_contact_request">New contact request</string>
   <string name="notification_contact_connected">Connected</string>
+  <string name="error_showing_desktop_notification">Error showing notification, contact developers.</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -1719,6 +1720,14 @@
   <string name="v5_5_message_delivery">Improved message delivery</string>
   <string name="v5_5_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_5_new_interface_languages">Hungarian and Turkish UI</string>
+  <string name="v5_6_quantum_resistant_encryption">Quantum resistant encryption</string>
+  <string name="v5_6_quantum_resistant_encryption_descr">Enable in direct chats (BETA)!</string>
+  <string name="v5_6_app_data_migration">App data migration</string>
+  <string name="v5_6_app_data_migration_descr">Migrate to another device via QR code.</string>
+  <string name="v5_6_picture_in_picture_calls">Picture-in-picture calls</string>
+  <string name="v5_6_picture_in_picture_calls_descr">Use the app while in the call.</string>
+  <string name="v5_6_safer_groups">Safer groups</string>
+  <string name="v5_6_safer_groups_descr">Admins can block a member for all.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

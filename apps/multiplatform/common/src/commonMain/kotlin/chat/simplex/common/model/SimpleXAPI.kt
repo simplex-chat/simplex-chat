@@ -75,7 +75,7 @@ class AppPreferences {
       val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
       return try {
         CallOnLockScreen.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         CallOnLockScreen.default
       }
     },
@@ -95,7 +95,7 @@ class AppPreferences {
       val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
       return try {
         SimplexLinkMode.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         SimplexLinkMode.default
       }
     },
@@ -123,7 +123,7 @@ class AppPreferences {
       val value = _networkSessionMode.get() ?: return TransportSessionMode.default
       return try {
         TransportSessionMode.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         TransportSessionMode.default
       }
     },
@@ -393,7 +393,7 @@ object ChatController {
         }
         Log.d(TAG, "startChat: running")
       }
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
     }
@@ -411,7 +411,7 @@ object ChatController {
       startReceiver()
       setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
       Log.d(TAG, "startChat: started without user")
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat without user $e")
       throw e
     }
@@ -628,7 +628,7 @@ object ChatController {
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
-      else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
+      else -> throw Exception("failed starting chat: ${r.responseType} ${r.details}")
     }
   }
 
@@ -636,26 +636,26 @@ object ChatController {
     val r = sendCmd(null, CC.ApiStopChat())
     when (r) {
       is CR.ChatStopped -> return true
-      else -> throw Error("failed stopping chat: ${r.responseType} ${r.details}")
+      else -> throw Exception("failed stopping chat: ${r.responseType} ${r.details}")
     }
   }
 
   suspend fun apiSetTempFolder(tempFolder: String, ctrl: ChatCtrl? = null) {
     val r = sendCmd(null, CC.SetTempFolder(tempFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Error("failed to set temp folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set temp folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetFilesFolder(filesFolder: String, ctrl: ChatCtrl? = null) {
     val r = sendCmd(null, CC.SetFilesFolder(filesFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
     val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
     if (r is CR.CmdOk) return
-    throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set remote hosts folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
@@ -663,13 +663,13 @@ object ChatController {
   suspend fun apiSaveAppSettings(settings: AppSettings) {
     val r = sendCmd(null, CC.ApiSaveSettings(settings))
     if (r is CR.CmdOk) return
-    throw Error("failed to set app settings: ${r.responseType} ${r.details}")
+    throw Exception("failed to set app settings: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetAppSettings(settings: AppSettings): AppSettings {
     val r = sendCmd(null, CC.ApiGetSettings(settings))
     if (r is CR.AppSettingsR) return r.appSettings
-    throw Error("failed to get app settings: ${r.responseType} ${r.details}")
+    throw Exception("failed to get app settings: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
@@ -684,19 +684,19 @@ object ChatController {
   suspend fun apiExportArchive(config: ArchiveConfig) {
     val r = sendCmd(null, CC.ApiExportArchive(config))
     if (r is CR.CmdOk) return
-    throw Error("failed to export archive: ${r.responseType} ${r.details}")
+    throw Exception("failed to export archive: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiImportArchive(config: ArchiveConfig): List<ArchiveError> {
     val r = sendCmd(null, CC.ApiImportArchive(config))
     if (r is CR.ArchiveImported) return r.archiveErrors
-    throw Error("failed to import archive: ${r.responseType} ${r.details}")
+    throw Exception("failed to import archive: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiDeleteStorage() {
     val r = sendCmd(null, CC.ApiDeleteStorage())
     if (r is CR.CmdOk) return
-    throw Error("failed to delete storage: ${r.responseType} ${r.details}")
+    throw Exception("failed to delete storage: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = ""): CR.ChatCmdError? {

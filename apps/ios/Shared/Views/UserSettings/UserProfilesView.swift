@@ -276,6 +276,7 @@ struct UserProfilesView: View {
                     // Deleting the last visible user while having hidden one(s)
                     try await deleteUser()
                     try await changeActiveUserAsync_(nil, viewPwd: nil)
+                    try? await stopChatAsync()
                     await MainActor.run {
                         onboardingStageDefault.set(.step1_SimpleXInfo)
                         m.onboardingStage = .step1_SimpleXInfo

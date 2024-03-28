@@ -27,7 +27,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.appPreferences
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
@@ -100,8 +100,10 @@ fun DatabaseEncryptionLayout(
   migration: Boolean,
   onConfirmEncrypt: () -> Unit,
 ) {
+  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
+  val scrollState = rememberScrollState()
   Column(
-    if (!migration) Modifier.fillMaxWidth().verticalScroll(rememberScrollState()) else Modifier.fillMaxWidth(),
+    if (!migration) Modifier.fillMaxWidth().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier) else Modifier.fillMaxWidth(),
   ) {
     if (!migration) {
       AppBarTitle(stringResource(MR.strings.database_passphrase))
@@ -189,6 +191,11 @@ fun DatabaseEncryptionLayout(
       DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase, migration)
     }
     SectionBottomSpacer()
+  }
+  if (appPlatform.isDesktop && !migration) {
+    Box(Modifier.fillMaxSize()) {
+      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+    }
   }
 }
 

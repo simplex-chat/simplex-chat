@@ -205,7 +205,8 @@ fun GroupChatInfoLayout(
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
   val filteredMembers = remember(members) { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } } }
-  LazyColumn(
+  // LALAL strange scrolling
+  LazyColumnWithScrollBar(
     Modifier
       .fillMaxWidth(),
     state = listState

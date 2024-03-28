@@ -23,6 +23,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 import java.text.DecimalFormat
 
@@ -141,10 +142,9 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
 ) {
   val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
 
-  Column(
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.network_settings_title))
     SectionView {

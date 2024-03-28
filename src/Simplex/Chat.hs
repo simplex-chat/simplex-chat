@@ -29,7 +29,6 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (bimap, first, second)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
-import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -98,15 +97,15 @@ import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
-import Simplex.Messaging.Compression (withCompressCtx)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKNoPQ, pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
+import Simplex.Messaging.Encoding.Base64 (base64P)
+import qualified Simplex.Messaging.Encoding.Base64 as B64
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
@@ -1564,19 +1563,40 @@ processChatCommand' vr = \case
     processChatCommand . APISendMessage chatRef True Nothing $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' $ \db -> getUserContacts db vr user
-    let cts = filter (\ct -> contactReady ct && contactActive ct && directOrUsed ct) contacts
-    ChatConfig {logLevel} <- asks config
     withChatLock "sendMessageBroadcast" . procCmd $ do
-      (successes, failures) <- foldM (sendAndCount user logLevel) (0, 0) cts
-      timestamp <- liftIO getCurrentTime
-      pure CRBroadcastSent {user, msgContent = mc, successes, failures, timestamp}
+      let ctConns_ = L.nonEmpty $ foldr addContactConn [] contacts
+      case ctConns_ of
+        Nothing -> do
+          timestamp <- liftIO getCurrentTime
+          pure CRBroadcastSent {user, msgContent = mc, successes = 0, failures = 0, timestamp}
+        Just (ctConns :: NonEmpty (Contact, Connection)) -> do
+          let idsEvts = L.map ctSndEvent ctConns
+          sndMsgs <- createSndMessages idsEvts
+          let msgReqs_ :: NonEmpty (Either ChatError MsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
+          (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
+            partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
+          timestamp <- liftIO getCurrentTime
+          void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
+          pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
     where
       mc = MCText msg
-      sendAndCount user ll (s, f) ct =
-        (sendToContact user ct $> (s + 1, f)) `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
-      sendToContact user ct = do
-        (sndMsg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-        void $ saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
+      addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
+      addContactConn ct ctConns = case contactSendConn_ ct of
+        Right conn | directOrUsed ct -> (ct, conn) : ctConns
+        _ -> ctConns
+      ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, PQSupport, ChatMsgEvent 'Json)
+      ctSndEvent (_, Connection {connId, pqSupport}) = (ConnectionId connId, pqSupport, XMsgNew $ MCSimple (extMsgContent mc Nothing))
+      ctMsgReq :: (Contact, Connection) -> SndMessage -> MsgReq
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, msgBody, msgId)
+      zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
+      zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
+      combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError (Int64, PQEncryption) -> Either ChatError (Contact, SndMessage)
+      combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
+      combineResults _ (Left e) _ = Left e
+      combineResults _ _ (Left e) = Left e
+      createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
+      createCI db user createdAt (ct, sndMsg) =
+        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing False createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2222,7 +2242,7 @@ processChatCommand' vr = \case
             summary <- case changedCts_ of
               Nothing -> pure $ UserProfileUpdateSummary 0 0 []
               Just changedCts -> do
-                let idsEvts = L.map ctSndMsg changedCts
+                let idsEvts = L.map ctSndEvent changedCts
                 msgReqs_ <- L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
@@ -2239,16 +2259,15 @@ processChatCommand' vr = \case
         -- [incognito] filter out contacts with whom user has incognito connections
         addChangedProfileContact :: User -> Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
         addChangedProfileContact user' ct changedCts = case contactSendConn_ ct' of
-          Left _ -> changedCts
-          Right conn
-            | connIncognito conn || mergedProfile' == mergedProfile -> changedCts
-            | otherwise -> ChangedProfileContact ct ct' mergedProfile' conn : changedCts
+          Right conn | not (connIncognito conn) && mergedProfile' /= mergedProfile ->
+            ChangedProfileContact ct ct' mergedProfile' conn : changedCts
+          _ -> changedCts
           where
             mergedProfile = userProfileToSend user Nothing (Just ct) False
             ct' = updateMergedPreferences user' ct
             mergedProfile' = userProfileToSend user' Nothing (Just ct') False
-        ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, PQSupport, ChatMsgEvent 'Json)
-        ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId, pqSupport}} = (ConnectionId connId, pqSupport, XInfo mergedProfile')
+        ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, PQSupport, ChatMsgEvent 'Json)
+        ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId, pqSupport}} = (ConnectionId connId, pqSupport, XInfo mergedProfile')
         ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
         ctMsgReq ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
@@ -6129,7 +6148,7 @@ sendGroupMemberMessages user conn events groupId = do
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
     -- TODO v5.7 based on version (?)
     -- let shouldCompress = False
-    -- batched <- if shouldCompress then batchSndMessagesBinary msgs' else pure $ batchSndMessagesJSON msgs'
+    -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
     let batched = batchSndMessagesJSON msgs'
     let (errs', msgBatches) = partitionEithers batched
     -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
@@ -6147,12 +6166,9 @@ processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = d
 batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
 batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
 
--- batchSndMessagesBinary :: forall m. ChatMonad m => NonEmpty SndMessage -> m [Either ChatError MsgBatch]
--- batchSndMessagesBinary msgs = do
---   compressed <- liftIO $ withCompressCtx maxChatMsgSize $ \cctx -> mapM (compressForBatch cctx) msgs
---   pure . map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength) $ L.zip compressed msgs
+-- batchSndMessagesBinary :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
+-- batchSndMessagesBinary msgs = map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength) $ L.zip (map compress1 msgs) msgs
 --   where
---     compressForBatch cctx SndMessage {msgBody} = bimap (const TELargeMsg) smpEncode <$> compress cctx msgBody
 --     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
 --     toMsgBatch = \case
 --       SMP.TBTransmissions combined _n sms -> Right $ MsgBatch (markCompressedBatch combined) sms
@@ -6171,12 +6187,10 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
   case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded connInfo -> case pqSup of
       PQSupportOn | v >= pqEncryptionCompressionVersion && B.length connInfo > maxCompressedInfoLength -> do
-        connInfo' <- liftIO compressedBatchMsgBody
+        let connInfo' = compressedBatchMsgBody_ connInfo
         when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
         pure connInfo'
       _ -> pure connInfo
-      where
-        compressedBatchMsgBody = withCompressCtx (toEnum $ B.length connInfo) (`compressedBatchMsgBody_` connInfo)
     ECMLarge -> throwChatError $ CEException "large info"
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (Int64, PQEncryption)
@@ -6197,12 +6211,12 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: forall m. ChatMonad' m => NonEmpty (Either ChatError MsgReq) -> m (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- compressBodies
+  msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies = liftIO $ withCompressCtx (toEnum maxEncodedMsgLength) $ \cxt ->
+    compressBodies =
       forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
         runExceptT $ case pqSupport of
           -- we only compress messages when:
@@ -6210,7 +6224,7 @@ deliverMessagesB msgReqs = do
           -- 2) version is compatible with compression
           -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
           PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
-            msgBody' <- liftIO $ compressedBatchMsgBody_ cxt msgBody
+            let msgBody' = compressedBatchMsgBody_ msgBody
             when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
             pure (conn, msgFlags, msgBody', msgId)
           _ -> pure mr

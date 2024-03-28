@@ -18,6 +18,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -105,11 +106,10 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   val v = versionDescriptions[currentVersion.value]
 
   ModalView(close = close) {
-    Column(
+    ColumnWithScrollBar(
       Modifier
         .fillMaxSize()
-        .padding(horizontal = DEFAULT_PADDING)
-        .verticalScroll(rememberScrollState()),
+        .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING.times(0.75f))
     ) {
       AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)
@@ -492,6 +492,32 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         titleId = MR.strings.v5_5_new_interface_languages,
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
+  VersionDescription(
+    version = "v5.6",
+    post = "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_vpn_key_filled,
+        titleId = MR.strings.v5_6_quantum_resistant_encryption,
+        descrId = MR.strings.v5_6_quantum_resistant_encryption_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_ios_share,
+        titleId = MR.strings.v5_6_app_data_migration,
+        descrId = MR.strings.v5_6_app_data_migration_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_call,
+        titleId = MR.strings.v5_6_picture_in_picture_calls,
+        descrId = MR.strings.v5_6_picture_in_picture_calls_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_back_hand,
+        titleId = MR.strings.v5_6_safer_groups,
+        descrId = MR.strings.v5_6_safer_groups_descr
       )
     )
   ),

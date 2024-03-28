@@ -47,7 +47,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
-import Simplex.Messaging.Compression (CompressCtx, compress, decompressBatch)
+import Simplex.Messaging.Compression (compress1, decompressBatch)
 import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -576,8 +576,8 @@ parseChatMessages s = case B.head s of
       -- TODO v5.7 don't reserve multiple large buffers when decoding batches
       Right compressed -> concatMap (either (pure . Left) parseChatMessages) . L.toList $ decompressBatch maxEncodedMsgLength compressed
 
-compressedBatchMsgBody_ :: CompressCtx -> MsgBody -> IO ByteString
-compressedBatchMsgBody_ ctx msgBody = markCompressedBatch . smpEncode . (L.:| []) <$> compress ctx msgBody
+compressedBatchMsgBody_ :: MsgBody -> ByteString
+compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
 
 markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'

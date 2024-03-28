@@ -145,12 +145,19 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
+  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
+  val scrollState = rememberScrollState()
   Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).height(IntrinsicSize.Max),
+    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).height(IntrinsicSize.Max),
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
+  }
+  if (appPlatform.isDesktop) {
+    Box(Modifier.fillMaxSize()) {
+      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+    }
   }
   platform.androidLockPortraitOrientation()
 }
@@ -369,22 +376,6 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
   Box {
     SectionView(stringResource(MR.strings.migrate_from_device_migration_complete).uppercase()) {
       SettingsActionItemWithContent(
-        icon = painterResource(MR.images.ic_delete_forever),
-        text = stringResource(MR.strings.migrate_from_device_delete_database_from_device),
-        textColor = MaterialTheme.colors.primary,
-        click = {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.delete_chat_profile_question),
-            text = generalGetString(MR.strings.delete_chat_profile_action_cannot_be_undone_warning),
-            confirmText = generalGetString(MR.strings.delete_verb),
-            onConfirm = {
-              deleteChatAndDismiss()
-            }
-          )
-        }
-      ) {}
-
-      SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_play_arrow_filled),
         text = stringResource(MR.strings.migrate_from_device_start_chat),
         textColor = MaterialTheme.colors.error,
@@ -395,6 +386,23 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
             confirmText = generalGetString(MR.strings.migrate_from_device_start_chat),
             onConfirm = {
               withLongRunningApi { startChatAndDismiss() }
+            },
+            destructive = true
+          )
+        }
+      ) {}
+
+      SettingsActionItemWithContent(
+        icon = painterResource(MR.images.ic_delete_forever),
+        text = stringResource(MR.strings.migrate_from_device_delete_database_from_device),
+        textColor = MaterialTheme.colors.primary,
+        click = {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.delete_chat_profile_question),
+            text = generalGetString(MR.strings.delete_chat_profile_action_cannot_be_undone_warning),
+            confirmText = generalGetString(MR.strings.delete_verb),
+            onConfirm = {
+              deleteChatAndDismiss()
             }
           )
         }

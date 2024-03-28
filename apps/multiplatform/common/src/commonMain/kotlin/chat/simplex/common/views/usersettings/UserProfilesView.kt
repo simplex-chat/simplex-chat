@@ -158,10 +158,9 @@ private fun UserProfilesLayout(
   unmuteUser: (User) -> Unit,
   showHiddenProfile: (User) -> Unit,
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
   ) {
     if (profileHidden.value) {
       SectionView {
@@ -260,10 +259,9 @@ enum class UserProfileAction {
 
 @Composable
 private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (String) -> Unit) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
   ) {
     val actionPassword = rememberSaveable { mutableStateOf("") }
     val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
@@ -358,6 +356,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
           m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
           m.controller.changeActiveUser_(user.remoteHostId, null, null)
           if (appPlatform.isAndroid) {
+            m.controller.apiStopChat()
             controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
             ModalManager.closeAllModalsEverywhere()
           }

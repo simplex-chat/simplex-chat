@@ -291,10 +291,9 @@ fun GroupMemberInfoLayout(
     }
   }
 
-  Column(
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     Row(
       Modifier.fillMaxWidth(),

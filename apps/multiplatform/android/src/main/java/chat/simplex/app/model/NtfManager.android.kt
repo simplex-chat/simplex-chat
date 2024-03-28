@@ -4,6 +4,7 @@ import android.app.*
 import android.app.TaskStackBuilder
 import android.content.*
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.hardware.display.DisplayManager
 import android.media.AudioAttributes
@@ -218,7 +219,7 @@ object NtfManager {
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setSmallIcon(R.drawable.ntf_icon)
-      .setLargeIcon(null)
+      .setLargeIcon(null as Bitmap?)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
       .setVibrate(null)

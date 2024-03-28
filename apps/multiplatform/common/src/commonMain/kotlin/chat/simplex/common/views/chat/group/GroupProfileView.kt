@@ -95,9 +95,8 @@ fun GroupProfileLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = closeWithAlert) {
-        Column(
+        ColumnWithScrollBar(
           Modifier
-            .verticalScroll(scrollState)
         ) {
           Column(
             Modifier.fillMaxWidth()
