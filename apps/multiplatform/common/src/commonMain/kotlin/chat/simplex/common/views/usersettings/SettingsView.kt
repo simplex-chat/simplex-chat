@@ -105,10 +105,9 @@ fun SettingsLayout(
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
   Box(Modifier.fillMaxSize()) {
-    Column(
+    ColumnWithScrollBar(
       Modifier
         .fillMaxSize()
-        .verticalScroll(rememberScrollState())
         .themedBackground(theme.value.base)
         .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
     ) {

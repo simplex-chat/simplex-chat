@@ -557,7 +557,12 @@ struct ChatView: View {
                         chatItemView(ci, nil, prev)
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
+                    if revealed {
+                        chatItemView(chatItem, range, prevItem)
+                    } else {
+                        chatItemView(chatItem, range, prevItem)
+                    }
                 }
             }
         }
@@ -646,7 +651,7 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
-                .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
+                .uiKitContextMenu(maxWidth: maxWidth, menu: uiMenu, allowMenu: $allowMenu)
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)

@@ -75,7 +75,7 @@ actual fun ActiveCallView() {
               chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
             }
             withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
-          } catch (e: Error) {
+          } catch (e: Throwable) {
             Log.d(TAG, "call status ${r.state.connectionState} not used")
           }
         is WCallResponse.Connected -> {

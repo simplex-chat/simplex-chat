@@ -260,6 +260,7 @@ val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLight
 
+@Composable
 expect fun isSystemInDarkTheme(): Boolean
 
 fun reactOnDarkThemeChanges(isDark: Boolean) {

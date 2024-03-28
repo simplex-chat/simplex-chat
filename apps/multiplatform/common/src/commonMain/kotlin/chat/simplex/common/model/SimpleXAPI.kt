@@ -75,7 +75,7 @@ class AppPreferences {
       val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
       return try {
         CallOnLockScreen.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         CallOnLockScreen.default
       }
     },
@@ -95,7 +95,7 @@ class AppPreferences {
       val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
       return try {
         SimplexLinkMode.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         SimplexLinkMode.default
       }
     },
@@ -123,7 +123,7 @@ class AppPreferences {
       val value = _networkSessionMode.get() ?: return TransportSessionMode.default
       return try {
         TransportSessionMode.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         TransportSessionMode.default
       }
     },
@@ -393,7 +393,7 @@ object ChatController {
         }
         Log.d(TAG, "startChat: running")
       }
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
     }
@@ -411,7 +411,7 @@ object ChatController {
       startReceiver()
       setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
       Log.d(TAG, "startChat: started without user")
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat without user $e")
       throw e
     }
@@ -628,7 +628,7 @@ object ChatController {
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
-      else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
+      else -> throw Exception("failed starting chat: ${r.responseType} ${r.details}")
     }
   }
 
@@ -636,26 +636,26 @@ object ChatController {
     val r = sendCmd(null, CC.ApiStopChat())
     when (r) {
       is CR.ChatStopped -> return true
-      else -> throw Error("failed stopping chat: ${r.responseType} ${r.details}")
+      else -> throw Exception("failed stopping chat: ${r.responseType} ${r.details}")
     }
   }
 
   suspend fun apiSetTempFolder(tempFolder: String, ctrl: ChatCtrl? = null) {
     val r = sendCmd(null, CC.SetTempFolder(tempFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Error("failed to set temp folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set temp folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetFilesFolder(filesFolder: String, ctrl: ChatCtrl? = null) {
     val r = sendCmd(null, CC.SetFilesFolder(filesFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
     val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
     if (r is CR.CmdOk) return
-    throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set remote hosts folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
@@ -663,13 +663,13 @@ object ChatController {
   suspend fun apiSaveAppSettings(settings: AppSettings) {
     val r = sendCmd(null, CC.ApiSaveSettings(settings))
     if (r is CR.CmdOk) return
-    throw Error("failed to set app settings: ${r.responseType} ${r.details}")
+    throw Exception("failed to set app settings: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetAppSettings(settings: AppSettings): AppSettings {
     val r = sendCmd(null, CC.ApiGetSettings(settings))
     if (r is CR.AppSettingsR) return r.appSettings
-    throw Error("failed to get app settings: ${r.responseType} ${r.details}")
+    throw Exception("failed to get app settings: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
@@ -684,19 +684,19 @@ object ChatController {
   suspend fun apiExportArchive(config: ArchiveConfig) {
     val r = sendCmd(null, CC.ApiExportArchive(config))
     if (r is CR.CmdOk) return
-    throw Error("failed to export archive: ${r.responseType} ${r.details}")
+    throw Exception("failed to export archive: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiImportArchive(config: ArchiveConfig): List<ArchiveError> {
     val r = sendCmd(null, CC.ApiImportArchive(config))
     if (r is CR.ArchiveImported) return r.archiveErrors
-    throw Error("failed to import archive: ${r.responseType} ${r.details}")
+    throw Exception("failed to import archive: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiDeleteStorage() {
     val r = sendCmd(null, CC.ApiDeleteStorage())
     if (r is CR.CmdOk) return
-    throw Error("failed to delete storage: ${r.responseType} ${r.details}")
+    throw Exception("failed to delete storage: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = ""): CR.ChatCmdError? {
@@ -5011,8 +5011,8 @@ sealed class AgentErrorType {
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
-    is INACTIVE -> "INACTIVE"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
+    is INACTIVE -> "INACTIVE"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -5023,8 +5023,8 @@ sealed class AgentErrorType {
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
-  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
+  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
 }
 
 @Serializable
@@ -5123,11 +5123,13 @@ sealed class SMPTransportError {
     is BadBlock -> "badBlock"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
+    is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
+  @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
   @Serializable @SerialName("handshake") class Handshake(val handshakeErr: SMPHandshakeError): SMPTransportError()
 }
 
@@ -5137,10 +5139,12 @@ sealed class SMPHandshakeError {
     is PARSE -> "PARSE"
     is VERSION -> "VERSION"
     is IDENTITY -> "IDENTITY"
+    is BAD_AUTH -> "BAD_AUTH"
   }
   @Serializable @SerialName("PARSE") class PARSE: SMPHandshakeError()
   @Serializable @SerialName("VERSION") class VERSION: SMPHandshakeError()
   @Serializable @SerialName("IDENTITY") class IDENTITY: SMPHandshakeError()
+  @Serializable @SerialName("BAD_AUTH") class BAD_AUTH: SMPHandshakeError()
 }
 
 @Serializable
@@ -5175,6 +5179,8 @@ sealed class XFTPErrorType {
     is NO_FILE -> "NO_FILE"
     is HAS_FILE -> "HAS_FILE"
     is FILE_IO -> "FILE_IO"
+    is TIMEOUT -> "TIMEOUT"
+    is REDIRECT -> "REDIRECT"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
@@ -5188,6 +5194,8 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
   @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
   @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
+  @Serializable @SerialName("TIMEOUT") object TIMEOUT: XFTPErrorType()
+  @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
 }
 
@@ -5197,6 +5205,8 @@ sealed class RCErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is IDENTITY -> "IDENTITY"
     is NO_LOCAL_ADDRESS -> "NO_LOCAL_ADDRESS"
+    is NEW_CONTROLLER -> "NEW_CONTROLLER"
+    is NOT_DISCOVERED -> "NOT_DISCOVERED"
     is TLS_START_FAILED -> "TLS_START_FAILED"
     is EXCEPTION -> "EXCEPTION $EXCEPTION"
     is CTRL_AUTH -> "CTRL_AUTH"
@@ -5211,6 +5221,8 @@ sealed class RCErrorType {
   @Serializable @SerialName("internal") data class INTERNAL(val internalErr: String): RCErrorType()
   @Serializable @SerialName("identity") object IDENTITY: RCErrorType()
   @Serializable @SerialName("noLocalAddress") object NO_LOCAL_ADDRESS: RCErrorType()
+  @Serializable @SerialName("newController") object NEW_CONTROLLER: RCErrorType()
+  @Serializable @SerialName("notDiscovered") object NOT_DISCOVERED: RCErrorType()
   @Serializable @SerialName("tlsStartFailed") object TLS_START_FAILED: RCErrorType()
   @Serializable @SerialName("exception") data class EXCEPTION(val exception: String): RCErrorType()
   @Serializable @SerialName("ctrlAuth") object CTRL_AUTH: RCErrorType()
@@ -5269,28 +5281,39 @@ sealed class RemoteCtrlError {
     is BadState -> "badState"
     is Busy -> "busy"
     is Timeout -> "timeout"
+    is NoKnownControllers -> "noKnownControllers"
+    is BadController -> "badController"
     is Disconnected -> "disconnected"
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
+    is HTTP2Error -> "http2Error"
+    is ProtocolError -> "protocolError"
   }
   val localizedString: String get() = when (this) {
     is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
     is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
     is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
     is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is NoKnownControllers -> "no known controllers"
+    is BadController -> "bad controller"
     is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
     is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
     is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+    is HTTP2Error -> "HTTP2 error"
+    is ProtocolError -> "protocol error"
   }
 
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
+  @Serializable @SerialName("noKnownControllers") object NoKnownControllers: RemoteCtrlError()
+  @Serializable @SerialName("badController") object BadController: RemoteCtrlError()
   @Serializable @SerialName("disconnected") class Disconnected(val remoteCtrlId: Long, val reason: String): RemoteCtrlError()
   @Serializable @SerialName("badInvitation") object BadInvitation: RemoteCtrlError()
   @Serializable @SerialName("badVersion") data class BadVersion(val appVersion: String): RemoteCtrlError()
-  //@Serializable @SerialName("protocolError") data class ProtocolError(val protocolError: RemoteProtocolError): RemoteCtrlError()
+  @Serializable @SerialName("hTTP2Error") data class HTTP2Error(val http2Error: String): RemoteCtrlError()
+  @Serializable @SerialName("protocolError") object ProtocolError: RemoteCtrlError()
 }
 
 enum class NotificationsMode() {

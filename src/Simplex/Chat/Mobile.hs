@@ -17,7 +17,6 @@ import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
-import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -50,6 +49,7 @@ import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
+import qualified Simplex.Messaging.Encoding.Base64.URL as U
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
@@ -207,6 +207,7 @@ mobileChatOpts dbFilePrefix =
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      optTempDirectory = Nothing,
       showReactions = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,

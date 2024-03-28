@@ -49,8 +49,8 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ColumnWithScrollBar(
+        modifier = Modifier.fillMaxSize()
       ) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
@@ -120,8 +120,8 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ColumnWithScrollBar(
+        modifier = Modifier.fillMaxSize()
       ) {
         /*CloseSheetBar(close = {
           if (chatModel.users.isEmpty()) {
@@ -214,7 +214,8 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
     ) ?: return@withBGApi
     chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
-    if (chatModel.users.isEmpty()) {
+    // No users or no visible users
+    if (chatModel.users.none { u -> !u.user.hidden }) {
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {

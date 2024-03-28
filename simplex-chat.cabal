@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.6.0.2
+version:        5.6.0.4
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -186,7 +186,6 @@ library
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -246,7 +245,6 @@ executable simplex-bot
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -307,7 +305,6 @@ executable simplex-bot-advanced
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -356,13 +353,14 @@ executable simplex-bot-advanced
       , text >=1.2.3.0 && <1.3
 
 executable simplex-broadcast-bot
-  main-is: ../Main.hs
+  main-is: Main.hs
+  hs-source-dirs:
+      apps/simplex-broadcast-bot
+      apps/simplex-broadcast-bot/src
   other-modules:
       Broadcast.Bot
       Broadcast.Options
       Paths_simplex_chat
-  hs-source-dirs:
-      apps/simplex-broadcast-bot/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
@@ -370,7 +368,6 @@ executable simplex-broadcast-bot
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -432,7 +429,6 @@ executable simplex-chat
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -482,7 +478,10 @@ executable simplex-chat
       , text >=1.2.3.0 && <1.3
 
 executable simplex-directory-service
-  main-is: ../Main.hs
+  main-is: Main.hs
+  hs-source-dirs:
+      apps/simplex-directory-service
+      apps/simplex-directory-service/src
   other-modules:
       Directory.Events
       Directory.Options
@@ -490,8 +489,6 @@ executable simplex-directory-service
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  hs-source-dirs:
-      apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
@@ -499,7 +496,6 @@ executable simplex-directory-service
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -592,7 +588,6 @@ test-suite simplex-chat-test
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*

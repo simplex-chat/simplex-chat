@@ -57,8 +57,8 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
-    Column(
-      Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+    ColumnWithScrollBar(
+      Modifier.fillMaxWidth(),
     ) {
       val currentTheme by CurrentColors.collectAsState()
 

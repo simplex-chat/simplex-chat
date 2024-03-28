@@ -579,7 +579,7 @@ struct ChatInfoView: View {
                 let ct = try await apiSetContactPQ(contact.apiId, true)
                 contact = ct
                 await MainActor.run {
-                    chatModel.updateContact(contact)
+                    chatModel.updateContact(ct)
                     dismiss()
                 }
             } catch let error {

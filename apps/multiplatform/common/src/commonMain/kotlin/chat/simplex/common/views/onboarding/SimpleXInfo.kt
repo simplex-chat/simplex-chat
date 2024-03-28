@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -39,10 +40,9 @@ fun SimpleXInfoLayout(
   onboardingStage: SharedPreference<OnboardingStage>?,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
-      .verticalScroll(rememberScrollState())
       .padding(start = DEFAULT_PADDING , end = DEFAULT_PADDING, top = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
