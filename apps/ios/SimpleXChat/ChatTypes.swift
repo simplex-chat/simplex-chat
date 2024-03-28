@@ -2120,7 +2120,7 @@ public enum ConnectionEntity: Decodable {
     public var id: String? {
         switch self {
         case let .rcvDirectMsgConnection(contact):
-            return contact?.id ?? nil
+            return contact?.id
         case let .rcvGroupMsgConnection(_, groupMember):
             return groupMember.id
         case let .userContactConnection(userContact):
