@@ -595,7 +595,7 @@
     <string name="feature_offered_item">voorgesteld %s</string>
     <string name="store_passphrase_securely_without_recover">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de gesprekken.</string>
     <string name="store_passphrase_securely">Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u deze kwijtraakt.</string>
-    <string name="open_chat">Gesprekken openen</string>
+    <string name="open_chat">Chat openen</string>
     <string name="restore_database_alert_desc">Voer het vorige wachtwoord in na het herstellen van de database back-up. Deze actie kan niet ongedaan gemaakt worden.</string>
     <string name="icon_descr_call_pending_sent">Oproep in behandeling</string>
     <string name="simplex_link_mode_browser_warning">Het openen van de link in de browser kan de privacy en beveiliging van de verbinding verminderen. Niet vertrouwde SimpleX links worden rood weergegeven.</string>
@@ -1713,4 +1713,5 @@
     <string name="migrate_to_device_bytes_downloaded">%s gedownload</string>
     <string name="set_passphrase">Wachtwoord instellen</string>
     <string name="e2ee_info_pq_short">Deze chat wordt beschermd door quantum bestendige end-to-end codering.</string>
+    <string name="error_showing_desktop_notification">Fout bij weergeven van melding. Neem contact op met ontwikkelaars.</string>
 </resources>
