@@ -22,7 +22,11 @@ struct SimpleXApp: App {
 
     init() {
         DispatchQueue.global(qos: .background).sync {
-            haskell_init()
+            // we have to use debug profile file name without extension here because .hp extension is added by profiler
+            haskell_init(
+                getAppEventLogPath().path,
+                getAppDebugProfilePrefixPath().path
+            )
 //            hs_init(0, nil)
         }
         UserDefaults.standard.register(defaults: appDefaults)
