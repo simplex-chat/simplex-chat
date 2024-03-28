@@ -90,6 +90,9 @@ kotlin {
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
         implementation("androidx.camera:camera-view:${cameraXVersion}")
+
+        // Calls lifecycle listener
+        implementation("androidx.lifecycle:lifecycle-process:2.4.1")
       }
     }
     val desktopMain by getting {

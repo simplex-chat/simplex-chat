@@ -1,7 +1,9 @@
 package chat.simplex.app.views.call
 
+import android.Manifest
 import android.app.*
 import android.content.*
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.*
@@ -28,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import chat.simplex.app.*
 import chat.simplex.app.R
@@ -36,10 +39,12 @@ import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -109,9 +114,17 @@ class CallActivity: ComponentActivity(), ServiceConnection {
     m.callCommand.add(WCallCommand.Layout(layoutType))
   }
 
+  private fun hasGrantedPermissions(): Boolean {
+    val grantedAudio = ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    val grantedCamera = !callSupportsVideo() || ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    return grantedAudio && grantedCamera
+  }
+
   override fun onBackPressed() {
     if (isOnLockScreenNow()) {
       super.onBackPressed()
+    } else if (!hasGrantedPermissions() && !callSupportsVideo()) {
+      // Do nothing for audio calls with non-granted permissions
     } else {
       m.activeCallViewIsCollapsed.value = true
     }
@@ -223,8 +236,21 @@ fun CallActivityView() {
     }
     Box(Modifier.background(Color.Black)) {
       if (call != null) {
+        val permissionsState = rememberMultiplePermissionsState(
+          permissions = if (callSupportsVideo()) {
+            listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+          } else {
+            listOf(Manifest.permission.RECORD_AUDIO)
+          }
+        )
+        if (permissionsState.allPermissionsGranted) {
+          ActiveCallView()
+        } else {
+          CallPermissionsView(remember { m.activeCallViewIsCollapsed }.value, callSupportsVideo()) {
+            withBGApi { chatModel.callManager.endCall(call) }
+          }
+        }
         val view = LocalView.current
-        ActiveCallView()
         if (callSupportsVideo()) {
           val scope = rememberCoroutineScope()
           LaunchedEffect(Unit) {
@@ -252,6 +278,7 @@ fun CallActivityView() {
         }
       }
     }
+    AlertManager.shared.showInView()
   }
   LaunchedEffect(call == null) {
     if (call != null) {
