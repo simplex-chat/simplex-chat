@@ -558,7 +558,6 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   delivery_status TEXT -- MsgDeliveryStatus
 );
 CREATE TABLE note_folders(
@@ -828,10 +827,6 @@ CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
 );
 CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
 CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
-CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(
-  connection_id,
-  agent_ack_cmd_id
-);
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
   connection_id,
   agent_msg_id

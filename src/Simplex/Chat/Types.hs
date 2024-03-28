@@ -1567,7 +1567,7 @@ data CommandFunction
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
-  | CFAckMessage
+  | CFAckMessage -- not used
   | CFDeleteConn -- not used
   deriving (Eq, Show)
 

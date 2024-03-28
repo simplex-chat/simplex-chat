@@ -1447,7 +1447,7 @@
 "Enable for all" = "Activer pour tous";
 
 /* No comment provided by engineer. */
-"Enable in direct chats (BETA)!" = "Activé dans les conversations directes (BETA) !";
+"Enable in direct chats (BETA)!" = "Activer dans les conversations directes (BETA) !";
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Activer les notifications instantanées ?";
@@ -2455,7 +2455,7 @@
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Les messages, fichiers et appels sont protégés par un chiffrement **de bout en bout** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Les messages, fichiers et appels sont protégés par un chiffrement **2e2 résistant post-quantique** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.";
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Les messages, fichiers et appels sont protégés par un chiffrement **e2e résistant post-quantique** avec une confidentialité persistante, une répudiation et une récupération en cas d'effraction.";
 
 /* No comment provided by engineer. */
 "Migrate device" = "Transférer l'appareil";
@@ -3726,7 +3726,7 @@
 "This chat is protected by end-to-end encryption." = "Cette discussion est protégée par un chiffrement de bout en bout.";
 
 /* E2EE info chat item */
-"This chat is protected by quantum resistant end-to-end encryption." = "Cette discussion est protégée par un chiffrement de bout en bout résistant post-quantique.";
+"This chat is protected by quantum resistant end-to-end encryption." = "Cette discussion est protégée par un chiffrement de bout en bout résistant aux technologies quantiques.";
 
 /* notification title */
 "this contact" = "ce contact";
@@ -4074,7 +4074,7 @@
 "wants to connect to you!" = "veut établir une connexion !";
 
 /* No comment provided by engineer. */
-"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Attention : démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages";
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Attention: démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages";
 
 /* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Attention : vous risquez de perdre des données !";

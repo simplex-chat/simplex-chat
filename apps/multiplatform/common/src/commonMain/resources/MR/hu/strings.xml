@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d üzenet visszafejtése sikertelen</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d üzenet visszafejtése sikertelen.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d üzenet kihagyva.</string>
     <string name="integrity_msg_skipped">%1$d kihagyott üzenet</string>
     <string name="group_info_section_title_num_members">%1$s TAG</string>
@@ -726,7 +726,7 @@
     <string name="v4_6_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
     <string name="message_reactions_prohibited_in_this_chat">Az üzenetreakciók ebben a csevegésben le vannak tiltva.</string>
     <string name="incorrect_code">Helytelen biztonsági kód!</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha ön, vagy a kapcsolata régi adatbázis biztonsági mentést használt.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha ön, vagy az ismerőse régi adatbázis biztonsági mentést használt.</string>
     <string name="v5_3_new_desktop_app">Új asztali alkalmazás!</string>
     <string name="v4_6_group_moderation_descr">Most már az adminok is:
 \n- törölhetik a tagok üzeneteit.
@@ -740,15 +740,15 @@
     <string name="new_member_role">Új tag szerepköre</string>
     <string name="la_mode_off">Ki</string>
     <string name="invalid_contact_link">Érvénytelen hivatkozás!</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">A csatlakozáshoz Onion host-okra lesz szükség.</string>
+    <string name="network_use_onion_hosts_required_desc_in_alert">A csatlakozáshoz Onion kiszolgálókra lesz szükség.</string>
     <string name="new_in_version">Változások a %s verzióban</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion host-ok használata, ha azok rendelkezésre állnak.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion kiszolgálók használata, ha azok rendelkezésre állnak.</string>
     <string name="smp_servers_invalid_address">Érvénytelen kiszolgálócím!</string>
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
     <string name="new_desktop"><![CDATA[<i>(új)</i>]]></string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az SMP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
-    <string name="network_use_onion_hosts_no_desc">Onion host-ok nem lesznek használva.</string>
+    <string name="network_use_onion_hosts_no_desc">Onion kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
     <string name="notification_new_contact_request">Új kapcsolattartási kérelem</string>
@@ -765,7 +765,7 @@
     <string name="chat_preferences_on">be</string>
     <string name="v5_1_japanese_portuguese_interface">Japán és Portugál kezelőfelület</string>
     <string name="message_deletion_prohibited_in_chat">Ebben a csoportban az üzenetek visszafordíthatatlan törlése le van tiltva.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion host-ok nem lesznek használva.</string>
+    <string name="network_use_onion_hosts_no_desc_in_alert">Onion kiszolgálók nem lesznek használva.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[A(z) <b>%s</b> eszközzel megszakadt a kapcsolat]]></string>
     <string name="custom_time_unit_months">hónap</string>
     <string name="privacy_message_draft">Üzenetvázlat</string>
@@ -777,7 +777,7 @@
     <string name="message_deletion_prohibited">Ebben a csevegésben az üzenetek visszafordíthatatlan törlése le van tiltva.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
     <string name="description_via_contact_address_link_incognito">inkognitó a ismerős azonosító hivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_required_desc">A kapcsolódáshoz Onion host-okra lesz szükség.
+    <string name="network_use_onion_hosts_required_desc">A kapcsolódáshoz Onion kiszolgálókra lesz szükség.
 \nFigyelem: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
     <string name="v4_5_italian_interface">Olasz kezelőfelület</string>
     <string name="system_restricted_background_in_call_title">Nincsenek háttérhívások</string>
@@ -833,8 +833,8 @@
 \n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoportos hivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_prefer_desc">Onion host-ok használata, ha azok rendelkezésre állnak.</string>
-    <string name="invite_friends">Barátok meghívása</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion kiszolgálók használata, ha azok rendelkezésre állnak.</string>
+    <string name="invite_friends">Ismerősök meghívása</string>
     <string name="color_surface">Menük és figyelmeztetések</string>
     <string name="icon_descr_add_members">Tagok meghívása</string>
     <string name="group_preview_join_as">csatlakozás mint %s</string>
@@ -1158,7 +1158,7 @@
     <string name="whats_new">Változáslista</string>
     <string name="connect_plan_open_group">Csoport megnyitása</string>
     <string name="info_row_sent_at">Elküldve ekkor</string>
-    <string name="prohibit_sending_voice">Hangüzenetek küldésének letiltása.</string>
+    <string name="prohibit_sending_voice">Hangüzenetek küldése le van tiltva.</string>
     <string name="privacy_show_last_messages">Utolsó üzenetek megjelenítése</string>
     <string name="smp_servers_preset_address">Az előre beállított kiszolgáló címe</string>
     <string name="periodic_notifications_disabled">Rendszeres értesítések letiltva!</string>
@@ -1477,7 +1477,7 @@
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés leállítása a csevegő adatbázis exportálásához, importálásához, vagy törléséhez. A csevegés leállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
-    <string name="save_passphrase_in_keychain">Jelmondat mentése a kulcstárolóban</string>
+    <string name="save_passphrase_in_keychain">Jelmondat mentése a kulcstárolóba</string>
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
@@ -1710,4 +1710,5 @@
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
     <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
+    <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
 </resources>
