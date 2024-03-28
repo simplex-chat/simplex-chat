@@ -1827,6 +1827,7 @@ public enum AgentErrorType: Decodable {
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
+    case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
 }
 
@@ -1878,6 +1879,8 @@ public enum XFTPErrorType: Decodable {
     case NO_FILE
     case HAS_FILE
     case FILE_IO
+    case TIMEOUT
+    case REDIRECT(redirectError: String)
     case INTERNAL
 }
 
@@ -1885,6 +1888,8 @@ public enum RCErrorType: Decodable {
     case `internal`(internalErr: String)
     case identity
     case noLocalAddress
+    case newController
+    case notDiscovered
     case tlsStartFailed
     case exception(exception: String)
     case ctrlAuth
@@ -1910,6 +1915,7 @@ public enum ProtocolTransportError: Decodable {
     case badBlock
     case largeMsg
     case badSession
+    case noServerAuth
     case handshake(handshakeErr: SMPHandshakeError)
 }
 
@@ -1917,6 +1923,7 @@ public enum SMPHandshakeError: Decodable {
     case PARSE
     case VERSION
     case IDENTITY
+    case BAD_AUTH
 }
 
 public enum SMPAgentError: Decodable {
@@ -1938,10 +1945,13 @@ public enum RemoteCtrlError: Decodable {
     case badState
     case busy
     case timeout
+    case noKnownControllers
+    case badController
     case disconnected(remoteCtrlId: Int64, reason: String)
     case badInvitation
     case badVersion(appVersion: String)
-//    case protocolError(protocolError: RemoteProtocolError)
+    case hTTP2Error(http2Error: String)
+    case protocolError
 }
 
 public struct MigrationFileLinkData: Codable {
