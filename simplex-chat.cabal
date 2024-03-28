@@ -138,6 +138,7 @@ library
       Simplex.Chat.Migrations.M20240222_app_settings
       Simplex.Chat.Migrations.M20240226_users_restrict
       Simplex.Chat.Migrations.M20240228_pq
+      Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

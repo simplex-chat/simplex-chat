@@ -871,8 +871,7 @@ data SndMsgDelivery = SndMsgDelivery
 data RcvMsgDelivery = RcvMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId,
-    agentMsgMeta :: MsgMeta,
-    agentAckCmdId :: CommandId
+    agentMsgMeta :: MsgMeta
   }
   deriving (Show)
 
@@ -899,7 +898,7 @@ msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId
 
 data MsgDeliveryStatus (d :: MsgDirection) where
   MDSRcvAgent :: MsgDeliveryStatus 'MDRcv
-  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv
+  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv -- not used
   MDSSndPending :: MsgDeliveryStatus 'MDSnd
   MDSSndAgent :: MsgDeliveryStatus 'MDSnd
   MDSSndSent :: MsgDeliveryStatus 'MDSnd
