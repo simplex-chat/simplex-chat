@@ -226,8 +226,6 @@ newChatController
     connNetworkStatuses <- atomically TM.empty
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
-    -- chatConnLocks <- atomically TM.empty
-    -- chatInvLocks <- atomically TM.empty
     entityLocks <- atomically TM.empty
     sndFiles <- newTVarIO M.empty
     rcvFiles <- newTVarIO M.empty
@@ -265,8 +263,6 @@ newChatController
           connNetworkStatuses,
           subscriptionMode,
           chatLock,
-          -- chatConnLocks,
-          -- chatInvLocks,
           entityLocks,
           sndFiles,
           rcvFiles,
@@ -341,27 +337,6 @@ withUserContactLock name = withEntityLock name . CLUserContact
 
 withFileLock :: ChatMonad' m => String -> Int64 -> m a -> m a
 withFileLock name = withEntityLock name . CLFile
-
--- withConnLock :: ChatMonad' m => Int64 -> String -> m a -> m a
--- withConnLock connId name action = do
---   chatLock <- asks chatLock
---   ls <- asks chatConnLocks
---   E.bracket_
---     (atomically $ waitForLock chatLock)
---     (pure ())
---     (withLockMap ls connId name action)
-
--- withInvLock :: ChatMonad' m => ByteString -> String -> m a -> m a
--- withInvLock bs name action = do
---   chatLock <- asks chatLock
---   ls <- asks chatInvLocks
---   E.bracket_
---     (atomically $ waitForLock chatLock)
---     (pure ())
---     (withLockMap ls bs name action)
-
--- withConnLocks :: ChatMonad' m => [Int64] -> String -> m a -> m a
--- withConnLocks = withLocksMap_ connLocks . filter (not . B.null)
 
 activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
 activeAgentServers ChatConfig {defaultServers} p =
@@ -914,43 +889,45 @@ processChatCommand' vr = \case
         delGroupChatItem user gInfo ci msgId (Just membership)
       (_, _) -> throwChatError CEInvalidChatItemDelete
   APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> case cType of
-    CTDirect -> withContactLock "chatItemReaction" chatId $
-      withStore (\db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
-        (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
-          unless (featureAllowed SCFReactions forUser ct) $
-            throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
-          unless (ciReactionAllowed ci) $
-            throwChatError (CECommandError "reaction not allowed - chat item has no content")
-          rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
-          checkReactionAllowed rs
-          (SndMessage {msgId}, _) <- sendDirectContactMessage user ct $ XMsgReact itemSharedMId Nothing reaction add
-          createdAt <- liftIO getCurrentTime
-          reactions <- withStore' $ \db -> do
-            setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
-            liftIO $ getDirectCIReactions db ct itemSharedMId
-          let ci' = CChatItem md ci {reactions}
-              r = ACIReaction SCTDirect SMDSnd (DirectChat ct) $ CIReaction CIDirectSnd ci' createdAt reaction
-          pure $ CRChatItemReaction user add r
-        _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
-    CTGroup -> withGroupLock "chatItemReaction" chatId $
-      withStore (\db -> (,) <$> getGroup db vr user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
-        (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
-          unless (groupFeatureAllowed SGFReactions g) $
-            throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
-          unless (ciReactionAllowed ci) $
-            throwChatError (CECommandError "reaction not allowed - chat item has no content")
-          let GroupMember {memberId = itemMemberId} = chatItemMember g ci
-          rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
-          checkReactionAllowed rs
-          (SndMessage {msgId}, _) <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
-          createdAt <- liftIO getCurrentTime
-          reactions <- withStore' $ \db -> do
-            setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
-            liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
-          let ci' = CChatItem md ci {reactions}
-              r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
-          pure $ CRChatItemReaction user add r
-        _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
+    CTDirect ->
+      withContactLock "chatItemReaction" chatId $
+        withStore (\db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
+          (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+            unless (featureAllowed SCFReactions forUser ct) $
+              throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
+            unless (ciReactionAllowed ci) $
+              throwChatError (CECommandError "reaction not allowed - chat item has no content")
+            rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
+            checkReactionAllowed rs
+            (SndMessage {msgId}, _) <- sendDirectContactMessage user ct $ XMsgReact itemSharedMId Nothing reaction add
+            createdAt <- liftIO getCurrentTime
+            reactions <- withStore' $ \db -> do
+              setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
+              liftIO $ getDirectCIReactions db ct itemSharedMId
+            let ci' = CChatItem md ci {reactions}
+                r = ACIReaction SCTDirect SMDSnd (DirectChat ct) $ CIReaction CIDirectSnd ci' createdAt reaction
+            pure $ CRChatItemReaction user add r
+          _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
+    CTGroup ->
+      withGroupLock "chatItemReaction" chatId $
+        withStore (\db -> (,) <$> getGroup db vr user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
+          (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+            unless (groupFeatureAllowed SGFReactions g) $
+              throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
+            unless (ciReactionAllowed ci) $
+              throwChatError (CECommandError "reaction not allowed - chat item has no content")
+            let GroupMember {memberId = itemMemberId} = chatItemMember g ci
+            rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
+            checkReactionAllowed rs
+            (SndMessage {msgId}, _) <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+            createdAt <- liftIO getCurrentTime
+            reactions <- withStore' $ \db -> do
+              setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
+              liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
+            let ci' = CChatItem md ci {reactions}
+                r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
+            pure $ CRChatItemReaction user add r
+          _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
@@ -3044,11 +3021,7 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        -- str :: StrEncoding a => a -> String
-        -- str = B.unpack . strEncode
-        run action =
-          -- let name = "agentSubscriber entity=" <> show e <> " entId=" <> str entId <> " msg=" <> str (aCommandTag msg)
-          runExceptT $ action `catchChatError` (toView . CRChatError Nothing)
+        run action = runExceptT $ action `catchChatError` (toView . CRChatError Nothing)
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
@@ -3642,7 +3615,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
           withAckMessage' agentConnId meta $
-            void $ saveDirectRcvMSG conn meta msgBody
+            void $
+              saveDirectRcvMSG conn meta msgBody
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         OK ->
@@ -3679,7 +3653,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody
             let ct'' = ct' {activeConn = Just conn''} :: Contact
             assertDirectAllowed user MDRcv ct'' $ toCMEventTag event
-            -- updateChatLock "direct message" event
             case event of
               XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
               XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct'' sharedMsgId fileDescr
@@ -4098,7 +4071,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processEvent :: MsgEncodingI e => ChatMessage e -> m ()
           processEvent chatMsg = do
             (m', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta msgBody chatMsg
-            -- updateChatLock "groupMessage" event
             case event of
               XMsgNew mc -> memberCanSend m' $ newGroupContentMessage gInfo m' mc msg brokerTs False
               XMsgFileDescr sharedMsgId fileDescr -> memberCanSend m' $ groupMessageFileDescription gInfo m' sharedMsgId fileDescr
@@ -4434,13 +4406,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
-    -- updateChatLock :: MsgEncodingI enc => String -> ChatMsgEvent enc -> m ()
-    -- updateChatLock name event = do
-    --   l <- asks chatLock
-    --   atomically $ tryReadTMVar l >>= mapM_ (swapTMVar l . (<> s))
-    --   where
-    --     s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
-
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
     withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> m ()) -> m ()
@@ -4478,9 +4443,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> ackMsg msgMeta Nothing >> throwError e
-        where
-          ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> m ()
-          ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
+      where
+        ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> m ()
+        ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
     sentMsgDeliveryEvent Connection {connId} msgId =

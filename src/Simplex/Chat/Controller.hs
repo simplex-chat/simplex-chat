@@ -188,8 +188,6 @@ data ChatController = ChatController
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
-    -- chatConnLocks :: TMap Int64 Lock,
-    -- chatInvLocks :: TMap ByteString Lock,
     entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
