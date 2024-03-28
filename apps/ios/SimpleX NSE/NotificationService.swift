@@ -396,7 +396,7 @@ func startChat() -> DBMigrationResult? {
 
     startLock.wait()
     defer { startLock.signal() }
-    
+
     if hasChatCtrl() {
         return switch NSEChatState.shared.value {
         case .created: doStartChat()
@@ -415,7 +415,7 @@ func startChat() -> DBMigrationResult? {
 
 func doStartChat() -> DBMigrationResult? {
     logger.debug("NotificationService: doStartChat")
-    haskell_init_nse()
+    haskell_init(1, nil, getAppDebugProfilePrefixPath().path)
     let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation(), backgroundMode: true)
     logger.debug("NotificationService: doStartChat \(String(describing: dbStatus))")
     if dbStatus != .ok {
