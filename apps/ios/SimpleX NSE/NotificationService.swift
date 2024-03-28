@@ -22,110 +22,6 @@ let nseSuspendSchedule: SuspendSchedule = (2, 4)
 
 let fastNSESuspendSchedule: SuspendSchedule = (1, 1)
 
-typealias NtfStream = ConcurrentQueue<NSENotification>
-
-// Notifications are delivered via concurrent queues, as they are all received from chat controller in a single loop that
-// writes to ConcurrentQueue and when notification is processed, the instance of Notification service extension reads from the queue.
-// One queue per connection (entity) is used.
-// The concurrent queues allow read cancellation, to ensure that notifications are not lost in case the current thread completes
-// before expected notification is read (multiple notifications can be expected, because one notification can be delivered for several messages).
-//actor PendingNtfs {
-//    static let shared = PendingNtfs()
-//    private var ntfStreams: [String: NtfStream] = [:]
-//
-//    func createStream(_ id: String) async {
-//        logger.debug("NotificationService PendingNtfs.createStream: \(id)")
-//        if ntfStreams[id] == nil {
-//            ntfStreams[id] = ConcurrentQueue()
-//            logger.debug("NotificationService PendingNtfs.createStream: created ConcurrentQueue")
-//        }
-//    }
-//
-//    func readStream(_ id: String, for nse: NotificationService, ntfInfo: NtfMessages) async {
-//        logger.debug("NotificationService PendingNtfs.readStream: \(id) \(ntfInfo.ntfMessages.count)")
-//        if !ntfInfo.user.showNotifications {
-//            nse.setBestAttemptNtf(.empty)
-//        }
-//        if let s = ntfStreams[id] {
-//            logger.debug("NotificationService PendingNtfs.readStream: has stream")
-//            var expected = Set(ntfInfo.ntfMessages.map { $0.msgId })
-//            logger.debug("NotificationService PendingNtfs.readStream: expecting: \(expected)")
-//            var readCancelled = false
-//            var dequeued: DequeueElement<NSENotification>?
-//            nse.cancelRead = {
-//                readCancelled = true
-//                if let elementId = dequeued?.elementId {
-//                    s.cancelDequeue(elementId)
-//                }
-//            }
-//            while !readCancelled {
-//                dequeued = s.dequeue()
-//                if let ntf = await dequeued?.task.value {
-//                    if readCancelled {
-//                        logger.debug("NotificationService PendingNtfs.readStream: read cancelled, put ntf to queue front")
-//                        s.frontEnqueue(ntf)
-//                        break
-//                    } else if case let .msgInfo(info) = ntf {
-//                        let found = expected.remove(info.msgId)
-//                        if found != nil {
-//                            logger.debug("NotificationService PendingNtfs.readStream: msgInfo, last: \(expected.isEmpty)")
-//                            if expected.isEmpty { break }
-//                        } else if let msgTs = ntfInfo.msgTs, info.msgTs > msgTs {
-//                            logger.debug("NotificationService PendingNtfs.readStream: unexpected msgInfo")
-//                            s.frontEnqueue(ntf)
-//                            break
-//                        }
-//                    } else if ntfInfo.user.showNotifications {
-//                        logger.debug("NotificationService PendingNtfs.readStream: setting best attempt")
-//                        nse.setBestAttemptNtf(ntf)
-//                        if ntf.isCallInvitation { break }
-//                    }
-//                } else {
-//                    break
-//                }
-//            }
-//            nse.cancelRead = nil
-//            logger.debug("NotificationService PendingNtfs.readStream: exiting")
-//        }
-//    }
-//
-//    func writeStream(_ id: String, _ ntf: NSENotification) async {
-//        logger.debug("NotificationService PendingNtfs.writeStream: \(id)")
-//        if let s = ntfStreams[id] {
-//            logger.debug("NotificationService PendingNtfs.writeStream: writing ntf")
-//            s.enqueue(ntf)
-//        }
-//    }
-//}
-
-// The current implementation assumes concurrent notification delivery and uses semaphores
-// to process only one notification per connection (entity) at a time.
-//class NtfStreamSemaphores {
-//    static let shared = NtfStreamSemaphoresaaa()
-//    private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-semaphores.lock")
-//    private var semaphores: [String: DispatchSemaphore] = [:]
-//
-//    func waitForStream(_ id: String) {
-//        streamSemaphore(id, value: 0)?.wait()
-//    }
-//
-//    func signalStreamReady(_ id: String) {
-//        streamSemaphore(id, value: 1)?.signal()
-//    }
-//
-//    // this function returns nil if semaphore is just created, so passed value shoud be coordinated with the desired end value of the semaphore
-//    private func streamSemaphore(_ id: String, value: Int) -> DispatchSemaphore? {
-//        NtfStreamSemaphores.queue.sync {
-//            if let s = semaphores[id] {
-//                return s
-//            } else {
-//                semaphores[id] = DispatchSemaphore(value: value)
-//                return nil
-//            }
-//        }
-//    }
-//}
-
 enum NSENotification {
     case nse(UNMutableNotificationContent)
     case callkit(RcvCallInvitation)
@@ -307,14 +203,11 @@ class NotificationService: UNNotificationServiceExtension {
                                 if found != nil {
                                     logger.debug("NotificationService processNtf: msgInfo, last: \(expected.isEmpty)")
                                     if expected.isEmpty {
-                                        self.processReceivedNtf = nil
                                         self.deliverBestAttemptNtf()
                                     }
                                     return true
                                 } else if info.msgTs > msgTs {
                                     logger.debug("NotificationService processNtf: unexpected msgInfo, let other instance to process it, stopping this one")
-                                    // stop processing other messages
-                                    self.processReceivedNtf = nil
                                     self.deliverBestAttemptNtf()
                                     return false
                                 } else {
@@ -325,8 +218,6 @@ class NotificationService: UNNotificationServiceExtension {
                                 logger.debug("NotificationService processNtf: setting best attempt")
                                 self.setBestAttemptNtf(ntf)
                                 if ntf.isCallInvitation {
-                                    // stop processing other messages
-                                    self.processReceivedNtf = nil
                                     self.deliverBestAttemptNtf()
                                 }
                                 return true
@@ -359,8 +250,6 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     func setBestAttemptNtf(_ ntf: NSENotification) {
-        //logger.debug("LALAL DEBUG setBestAttemptNtf \(String(describing: ntf))  contentHandler == nil \(self.contentHandler == nil)")
-
         logger.debug("NotificationService.setBestAttemptNtf")
         if case let .nse(notification) = ntf {
             notification.badge = badgeCount as NSNumber
@@ -372,6 +261,9 @@ class NotificationService: UNNotificationServiceExtension {
 
     private func deliverBestAttemptNtf(urgent: Bool = false) {
         logger.debug("NotificationService.deliverBestAttemptNtf")
+        // stop processing other messages
+        processReceivedNtf = nil
+
         let suspend: Bool
         if let t = threadId {
             threadId = nil
@@ -421,7 +313,6 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func deliverNotification() {
-        //logger.debug("LALAL DEBUG deliver notification \(String(describing: self.bestAttemptNtf))  contentHandler == nil \(self.contentHandler == nil)")
         if let handler = contentHandler, let ntf = bestAttemptNtf {
             contentHandler = nil
             bestAttemptNtf = nil
@@ -634,18 +525,6 @@ func receiveMessages() async {
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 logger.debug("NotificationService receiveMsg: notification")
                 await NSEThreads.shared.processNotification(id, ntf)
-
-//                await NSEThreads.shared.forEach(id, processed: { nse in
-//                    if let processReceivedNtf = nse.processReceivedNtf {
-//                        processReceivedNtf(ntf)
-//                    } else {
-//                        // this instance not ready or don't want to process ntfs any more
-//                        false
-//                    }
-//                })
-                //await PendingNtfs.shared.createStream(id)
-                //await PendingNtfs.shared.writeStream(id, ntf)
-
             }
         }
     }
