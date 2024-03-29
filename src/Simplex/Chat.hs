@@ -225,8 +225,9 @@ newChatController
     outputQ <- newTBQueueIO tbqSize
     connNetworkStatuses <- atomically TM.empty
     subscriptionMode <- newTVarIO SMSubscribe
-    chatLock <- newEmptyTMVarIO
+    chatLock <- atomically $ (,) <$> createLock <*> createLock
     entityLocks <- atomically TM.empty
+    entityLocksCount <- newTVarIO 0
     sndFiles <- newTVarIO M.empty
     rcvFiles <- newTVarIO M.empty
     currentCalls <- atomically TM.empty
@@ -264,6 +265,7 @@ newChatController
           subscriptionMode,
           chatLock,
           entityLocks,
+          entityLocksCount,
           sndFiles,
           rcvFiles,
           currentCalls,
@@ -311,16 +313,25 @@ newChatController
               userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
               userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
+-- withChatLock :: ChatMonad' m => String -> m a -> m a
+-- withChatLock name action = asks chatLock >>= \l -> withLock l name action
+
 withChatLock :: ChatMonad' m => String -> m a -> m a
-withChatLock name action = asks chatLock >>= \l -> withLock l name action
+withChatLock name action = do
+  (l1, l2) <- asks chatLock
+  count <- asks entityLocksCount
+  withLock l1 name $ withGetLock' (waitForEntityLocks count $> l2) name action
+  where
+    waitForEntityLocks count = readTVar count >>= \n -> when (n > 0) retry
 
 withEntityLock :: ChatMonad' m => String -> ChatLockEntity -> m a -> m a
 withEntityLock name entity action = do
-  chatLock <- asks chatLock
+  (l1, _) <- asks chatLock
   ls <- asks entityLocks
+  count <- asks entityLocksCount
   E.bracket_
-    (atomically $ waitForLock chatLock)
-    (pure ())
+    (atomically $ waitForLock l1 >> modifyTVar' count (+ 1))
+    (atomically $ modifyTVar' count $ \n -> max 0 (n - 1))
     (withLockMap ls entity name action)
 
 withInvitationLock :: ChatMonad' m => String -> ByteString -> m a -> m a
@@ -2100,7 +2111,7 @@ processChatCommand' vr = \case
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> do
-    chatLockName <- atomically . tryReadTMVar =<< asks chatLock
+    chatLockName <- atomically . tryReadTMVar . fst =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
     pure CRDebugLocks {chatLockName, agentLocks}
   GetAgentWorkers -> CRAgentWorkersSummary <$> withAgent getAgentWorkersSummary
