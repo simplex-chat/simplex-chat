@@ -1569,21 +1569,27 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .networkStatus(status, connections):
+        // dispatch queue to synchronize access
         networkStatusesLock.sync {
             var ns = m.networkStatuses
+            // slow loop is on the background thread
             for cId in connections {
                 ns[cId] = status
             }
+            // fast model update is on the main thread
             DispatchQueue.main.sync {
                 m.networkStatuses = ns
             }
         }
     case let .networkStatuses(_, statuses): ()
+        // dispatch queue to synchronize access
         networkStatusesLock.sync {
             var ns = m.networkStatuses
+            // slow loop is on the background thread
             for s in statuses {
                 ns[s.agentConnId] = s.networkStatus
             }
+            // fast model update is on the main thread
             DispatchQueue.main.sync {
                 m.networkStatuses = ns
             }
