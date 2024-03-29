@@ -12,6 +12,7 @@ private let fillColorLight = Color(uiColor: UIColor(red: 0.99, green: 0.99, blue
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) var scenePhase
     @Binding var showSettings: Bool
     @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
@@ -91,7 +92,11 @@ struct UserPicker: View {
         .opacity(userPickerVisible ? 1.0 : 0.0)
         .onAppear {
             do {
-                m.users = try listUsers()
+                // This check prevents this after the app is suspended, and the database is closed.
+                // Unclear why it happens.
+                if case .active = scenePhase {
+                    m.users = try listUsers()
+                }
             } catch let error {
                 logger.error("Error loading users \(responseError(error))")
             }
