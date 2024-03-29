@@ -625,6 +625,7 @@ testGroupDelete =
       bob <## "#team: you deleted the group"
       cath ##> "#team hi"
       cath <## "you are no longer a member of the group"
+      threadDelay 50000
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
       alice <##> bob
