@@ -814,6 +814,14 @@
   <!-- CallView -->
   <string name="unable_to_open_browser_title">Error opening browser</string>
   <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
+  <string name="permissions_required">Grant permissions</string>
+  <string name="permissions_record_audio">Record audio</string>
+  <string name="permissions_camera">Camera</string>
+  <string name="permissions_camera_and_record_audio">Camera and record audio</string>
+  <string name="permissions_grant">Grant the following permission(s) before using calls</string>
+  <string name="permissions_grant_in_settings">Grant in settings</string>
+  <string name="permissions_find_in_settings_and_grant">Try to find this permission in settings and grant it manually.</string>
+  <string name="permissions_open_settings">Open settings</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
