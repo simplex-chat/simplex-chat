@@ -21,6 +21,8 @@ public let CURRENT_CHAT_VERSION: Int = 2
 // version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
 public let CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion: 2, maxVersion: CURRENT_CHAT_VERSION)
 
+private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network-statuses.lock")
+
 enum TerminalItem: Identifiable {
     case cmd(Date, ChatCommand)
     case resp(Date, ChatResponse)
@@ -1566,34 +1568,24 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(mergedContact.id)
             }
         }
-    case let .contactsSubscribed(_, contactRefs):
-        await updateContactsStatus(contactRefs, status: .connected)
-    case let .contactsDisconnected(_, contactRefs):
-        await updateContactsStatus(contactRefs, status: .disconnected)
-    case let .contactSubSummary(_, contactSubscriptions):
-        await MainActor.run {
-            for sub in contactSubscriptions {
-// no need to update contact here, and it is slow
-//                if active(user) {
-//                    m.updateContact(sub.contact)
-//                }
-                if let err = sub.contactError {
-                    processContactSubError(sub.contact, err)
-                } else {
-                    m.setContactNetworkStatus(sub.contact, .connected)
-                }
-            }
-        }
     case let .networkStatus(status, connections):
-        await MainActor.run {
+        networkStatusesLock.sync {
+            var ns = m.networkStatuses
             for cId in connections {
-                m.networkStatuses[cId] = status
+                ns[cId] = status
+            }
+            DispatchQueue.main.sync {
+                m.networkStatuses = ns
             }
         }
     case let .networkStatuses(_, statuses): ()
-        await MainActor.run {
+        networkStatusesLock.sync {
+            var ns = m.networkStatuses
             for s in statuses {
-                m.networkStatuses[s.agentConnId] = s.networkStatus
+                ns[s.agentConnId] = s.networkStatus
+            }
+            DispatchQueue.main.sync {
+                m.networkStatuses = ns
             }
         }
     case let .newChatItem(user, aChatItem):
@@ -1940,15 +1932,6 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
             if cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
-        }
-    }
-}
-
-func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) async {
-    let m = ChatModel.shared
-    await MainActor.run {
-        for c in contactRefs {
-            m.networkStatuses[c.agentConnId] = status
         }
     }
 }
