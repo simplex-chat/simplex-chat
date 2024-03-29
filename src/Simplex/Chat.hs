@@ -3401,7 +3401,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
     process user fileId = do
       (ft@FileTransferMeta {xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
       vr <- chatVersionRange
-      unless cancelled $ withFileLock "processAgentMsgSndFile" fileId $ case msg of
+      unless cancelled $ case msg of
         SFPROG sndProgress sndTotal -> do
           let status = CIFSSndTransfer {sndProgress, sndTotal}
           ci <- withStore $ \db -> do
@@ -3416,11 +3416,11 @@ processAgentMsgSndFile _corrId aFileId msg = do
               withAgent (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case rfds of
-                [] -> sendFileError "no receiver descriptions" fileId vr ft
+                [] -> sendFileError "no receiver descriptions" vr ft
                 rfd : _ -> case [fd | fd@(FD.ValidFileDescription FD.FileDescription {chunks = [_]}) <- rfds] of
                   [] -> case xftpRedirectFor of
                     Nothing -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
-                    Just _ -> sendFileError "Prohibit chaining redirects" fileId vr ft
+                    Just _ -> sendFileError "Prohibit chaining redirects" vr ft
                   rfds' -> do
                     -- we have 1 chunk - use it as URI whether it is redirect or not
                     ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
@@ -3469,7 +3469,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           | temporaryAgentError e ->
               throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
           | otherwise ->
-              sendFileError (tshow e) fileId vr ft
+              sendFileError (tshow e) vr ft
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -3487,8 +3487,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
               case L.nonEmpty fds of
                 Just fds' -> loopSend fds'
                 Nothing -> pure msgDeliveryId
-        sendFileError :: Text -> Int64 -> (PQSupport -> VersionRangeChat) -> FileTransferMeta -> m ()
-        sendFileError err fileId vr ft = do
+        sendFileError :: Text -> (PQSupport -> VersionRangeChat) -> FileTransferMeta -> m ()
+        sendFileError err vr ft = do
           logError $ "Sent file error: " <> err
           ci <- withStore $ \db -> do
             liftIO $ updateFileCancelled db user fileId CIFSSndError
@@ -3523,7 +3523,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
     process user fileId = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       vr <- chatVersionRange
-      unless (rcvFileCompleteOrCancelled ft) $ withFileLock "processAgentMsgRcvFile" fileId $ case msg of
+      unless (rcvFileCompleteOrCancelled ft) $ case msg of
         RFPROG rcvProgress rcvTotal -> do
           let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
           ci <- withStore $ \db -> do
