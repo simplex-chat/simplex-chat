@@ -371,7 +371,6 @@ testDeleteUnusedContactSilent =
       cath <### ["alice (Alice)", "bob (Bob)"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
       -- bob deletes cath, cath's bob contact is deleted silently
-      -- threadDelay 50000
       bob ##> "/d cath"
       bob <## "cath: contact is deleted"
       bob ##> "/contacts"
