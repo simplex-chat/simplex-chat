@@ -644,7 +644,7 @@ testPlanAddressOwn tmp =
              "alice_2 (Alice): contact is connected"
            ]
 
-    threadDelay 50000
+    -- threadDelay 50000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
