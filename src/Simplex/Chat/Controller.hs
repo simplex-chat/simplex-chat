@@ -144,8 +144,27 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     coreApi :: Bool,
     highlyAvailable :: Bool,
-    deviceNameForRemote :: Text
+    deviceNameForRemote :: Text,
+    chatHooks :: ChatHooks
   }
+
+-- The hooks can be used to extend or customize chat core in mobile or CLI clients.
+data ChatHooks = ChatHooks
+  { -- preCmdHook can be used to process or modify the commands before they are processed.
+    -- This hook should be used to process CustomChatCommand.
+    -- if this hook returns ChatResponse, the command processing will be skipped.
+    preCmdHook :: ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand),
+    -- eventHook can be used to additionally process or modify events,
+    -- it is called before the event is sent to the user (or to the UI).
+    eventHook :: ChatController -> ChatResponse -> IO ChatResponse
+  }
+
+defaultChatHooks :: ChatHooks
+defaultChatHooks =
+  ChatHooks
+    { preCmdHook = \_ -> pure . Right,
+      eventHook = \_ -> pure
+    }      
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
@@ -471,6 +490,9 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
+  -- The parser will return this command for strings that start from "//".
+  -- This command should be processed in preCmdHook
+  | CustomChatCommand ByteString
   deriving (Show)
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
@@ -597,10 +619,9 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
-  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem}
+  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
   | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
   | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
   | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
@@ -726,6 +747,7 @@ data ChatResponse
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
+  | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
 -- some of these can only be used as command responses
@@ -1278,9 +1300,9 @@ throwChatError = throwError . ChatError
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  localQ <- asks outputQ
-  session <- asks remoteCtrlSession
+toView ev = do
+  cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
+  event <- liftIO $ eventHook chatHooks cc ev
   atomically $
     readTVar session >>= \case
       Just (_, RCSessionConnected {remoteOutputQ})

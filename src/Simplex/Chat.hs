@@ -161,7 +161,8 @@ defaultChatConfig =
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
       coreApi = False,
       highlyAvailable = False,
-      deviceNameForRemote = ""
+      deviceNameForRemote = "",
+      chatHooks = defaultChatHooks
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -424,7 +425,9 @@ execChatCommand rh s = do
       Just rhId
         | allowRemoteCommand cmd -> execRemoteCommand u rhId cmd s
         | otherwise -> pure $ CRChatCmdError u $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
-      _ -> execChatCommand_ u cmd
+      _ -> do
+        cc@ChatController {config = ChatConfig {chatHooks}} <- ask
+        liftIO (preCmdHook chatHooks cc cmd) >>= either pure (execChatCommand_ u)
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
@@ -2094,6 +2097,9 @@ processChatCommand' vr = \case
             SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
             _ -> m
   GetAgentSubsDetails -> CRAgentSubsDetails <$> withAgent getAgentSubscriptions
+  -- CustomChatCommand is unsupported, it can be processed in preCmdHook
+  -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
+  CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action
     -- below code would make command responses asynchronous where they can be slow
@@ -4553,25 +4559,28 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       when (sz > fileSize) $ receiveFile' user ft Nothing Nothing >>= toView
 
     messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> m ()
-    messageFileDescription Contact {contactId} sharedMsgId fileDescr = do
+    messageFileDescription ct@Contact {contactId} sharedMsgId fileDescr = do
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
-      processFDMessage fileId fileDescr
+      processFDMessage (CDDirectRcv ct) sharedMsgId fileId fileDescr
 
     groupMessageFileDescription :: GroupInfo -> GroupMember -> SharedMsgId -> FileDescr -> m ()
-    groupMessageFileDescription GroupInfo {groupId} _m sharedMsgId fileDescr = do
+    groupMessageFileDescription g@GroupInfo {groupId} m sharedMsgId fileDescr = do
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      processFDMessage fileId fileDescr
+      processFDMessage (CDGroupRcv g m) sharedMsgId fileId fileDescr
 
-    processFDMessage :: FileTransferId -> FileDescr -> m ()
-    processFDMessage fileId fileDescr = do
+    processFDMessage :: ChatTypeQuotable c => ChatDirection c 'MDRcv -> SharedMsgId -> FileTransferId -> FileDescr -> m ()
+    processFDMessage cd sharedMsgId fileId fileDescr = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        (rfd, RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs}) <- withStore $ \db -> do
+        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft')
+        when fileDescrComplete $ do
+          ci <- withStore $ \db -> getAChatItemBySharedMsgId db user cd sharedMsgId
+          toView $ CRRcvFileDescrReady user ci ft' rfd
         case (fileStatus, xftpRcvFile) of
           (RFSAccepted _, Just XFTPRcvFile {}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
           _ -> pure ()
@@ -7040,7 +7049,8 @@ chatCommandP =
       "/get subs" $> GetAgentSubs,
       "/get subs details" $> GetAgentSubsDetails,
       "/get workers" $> GetAgentWorkers,
-      "/get workers details" $> GetAgentWorkersDetails
+      "/get workers details" $> GetAgentWorkersDetails,
+      "//" *> (CustomChatCommand <$> A.takeByteString)
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
