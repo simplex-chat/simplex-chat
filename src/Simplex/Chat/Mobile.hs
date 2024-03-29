@@ -243,10 +243,15 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
       newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix) backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations)
+        (first (DBMErrorMigration dbFile) <$> createStore' dbFile dbKey keepKey confirmMigrations)
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
+        createStore' dbFilePath dbKey keepKey _confirmMigrations =
+          let dbDir = takeDirectory dbFilePath
+          createDirectoryIfMissing True dbDir
+          Right <$> connectSQLiteStore dbFilePath dbKey keepKey
+
         checkDBError e = case sqlError e of
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
           _ -> dbError e
