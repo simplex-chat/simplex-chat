@@ -3388,18 +3388,18 @@ processAgentMessageNoConn = \case
           toView $ event srv cs
 
 processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
-processAgentMsgSndFile _corrId aFileId msg =
-  withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-    Just user -> process user `catchChatError` (toView . CRChatError (Just user))
-    _ -> do
-      withAgent (`xftpDeleteSndFileInternal` aFileId)
-      throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+processAgentMsgSndFile _corrId aFileId msg = do
+  fileId <- withStore (`getXFTPSndFileDBId` AgentSndFileId aFileId)
+  withFileLock "processAgentMsgSndFile" fileId $
+    withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+      Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
+      _ -> do
+        withAgent (`xftpDeleteSndFileInternal` aFileId)
+        throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
-    process :: User -> m ()
-    process user = do
-      (ft@FileTransferMeta {fileId, xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> do
-        fileId <- getXFTPSndFileDBId db user $ AgentSndFileId aFileId
-        getSndFileTransfer db user fileId
+    process :: User -> FileTransferId -> m ()
+    process user fileId = do
+      (ft@FileTransferMeta {xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
       vr <- chatVersionRange
       unless cancelled $ withFileLock "processAgentMsgSndFile" fileId $ case msg of
         SFPROG sndProgress sndTotal -> do
@@ -3510,18 +3510,18 @@ splitFileDescr rfdText = do
             else fileDescr <| splitParts (partNo + 1) partSize rest
 
 processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
-processAgentMsgRcvFile _corrId aFileId msg =
-  withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-    Just user -> process user `catchChatError` (toView . CRChatError (Just user))
-    _ -> do
-      withAgent (`xftpDeleteRcvFile` aFileId)
-      throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
+processAgentMsgRcvFile _corrId aFileId msg = do
+  fileId <- withStore (`getXFTPRcvFileDBId` AgentRcvFileId aFileId)
+  withFileLock "processAgentMsgRcvFile" fileId $
+    withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
+      Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
+      _ -> do
+        withAgent (`xftpDeleteRcvFile` aFileId)
+        throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
   where
-    process :: User -> m ()
-    process user = do
-      ft@RcvFileTransfer {fileId} <- withStore $ \db -> do
-        fileId <- getXFTPRcvFileDBId db $ AgentRcvFileId aFileId
-        getRcvFileTransfer db user fileId
+    process :: User -> FileTransferId -> m ()
+    process user fileId = do
+      ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       vr <- chatVersionRange
       unless (rcvFileCompleteOrCancelled ft) $ withFileLock "processAgentMsgRcvFile" fileId $ case msg of
         RFPROG rcvProgress rcvTotal -> do
