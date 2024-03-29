@@ -999,7 +999,7 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
         withStore $ \db -> deleteContact db user ct
         pure $ CRContactDeleted user ct
-    CTContactConnection -> withUserContactLock "deleteChat contactConnection" chatId . procCmd $ do
+    CTContactConnection -> procCmd $ do
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync user acId
       withStore' $ \db -> deletePendingContactConnection db userId chatId
