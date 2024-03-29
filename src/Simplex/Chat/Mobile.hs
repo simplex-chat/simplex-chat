@@ -46,7 +46,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, connectSQLiteStore, closeSQLiteStore, reopenSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Encoding.Base64.URL as U
@@ -54,6 +54,8 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
+import System.Directory
+import System.FilePath
 import System.IO (utf8)
 import System.Timeout (timeout)
 
@@ -233,7 +235,7 @@ chatMigrateInit dbFilePrefix dbKey confirm = chatMigrateInitKey dbFilePrefix dbK
 
 chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
 chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExceptT $ do
-  confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
+  confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode @MigrationConfirmation $ B.pack confirm
   chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations
   agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
@@ -247,7 +249,7 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
-        createStore' dbFilePath dbKey keepKey _confirmMigrations =
+        createStore' dbFilePath dbKey keepKey _confirmMigrations = do
           let dbDir = takeDirectory dbFilePath
           createDirectoryIfMissing True dbDir
           Right <$> connectSQLiteStore dbFilePath dbKey keepKey
