@@ -139,6 +139,7 @@ library
       Simplex.Chat.Migrations.M20240226_users_restrict
       Simplex.Chat.Migrations.M20240228_pq
       Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
+      Simplex.Chat.Migrations.M20240324_custom_data
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -168,6 +169,7 @@ library
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
       Simplex.Chat.Terminal.Input
+      Simplex.Chat.Terminal.Main
       Simplex.Chat.Terminal.Notification
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types

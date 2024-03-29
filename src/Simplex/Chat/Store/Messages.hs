@@ -41,6 +41,7 @@ module Simplex.Chat.Store.Messages
     getDirectChatItemLast,
     getAllChatItems,
     getAChatItem,
+    getAChatItemBySharedMsgId,
     updateDirectChatItem,
     updateDirectChatItem',
     addInitialAndNewCIVersions,
@@ -2201,6 +2202,15 @@ getAChatItem db vr user chatRef itemId = case chatRef of
     CChatItem msgDir ci <- getLocalChatItem db user folderId itemId
     pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
   _ -> throwError $ SEChatItemNotFound itemId
+
+getAChatItemBySharedMsgId :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> SharedMsgId -> ExceptT StoreError IO AChatItem
+getAChatItemBySharedMsgId db user cd sharedMsgId = case cd of
+  CDDirectRcv ct@Contact {contactId} -> do
+    (CChatItem msgDir ci) <- getDirectChatItemBySharedMsgId db user contactId sharedMsgId
+    pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
+  CDGroupRcv g@GroupInfo {groupId} GroupMember {groupMemberId} -> do
+    (CChatItem msgDir ci) <- getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+    pure $ AChatItem SCTGroup msgDir (GroupChat g) ci
 
 getChatItemVersions :: DB.Connection -> ChatItemId -> IO [ChatItemVersion]
 getChatItemVersions db itemId = do
