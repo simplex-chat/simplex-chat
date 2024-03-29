@@ -124,7 +124,10 @@ class CallActivity: ComponentActivity(), ServiceConnection {
     if (isOnLockScreenNow()) {
       super.onBackPressed()
     } else if (!hasGrantedPermissions() && !callSupportsVideo()) {
-      // Do nothing for audio calls with non-granted permissions
+      val call = m.activeCall.value
+      if (call != null) {
+        withBGApi { chatModel.callManager.endCall(call) }
+      }
     } else {
       m.activeCallViewIsCollapsed.value = true
     }

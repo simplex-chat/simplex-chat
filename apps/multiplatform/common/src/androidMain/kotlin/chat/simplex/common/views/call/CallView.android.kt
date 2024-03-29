@@ -29,8 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.*
 import androidx.webkit.WebViewAssetLoader
@@ -42,7 +44,6 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.Contact
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
@@ -50,7 +51,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.datetime.Clock
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
 // Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
@@ -514,65 +514,7 @@ private fun DisabledBackgroundCallsButton() {
 @Composable
 fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Unit) {
   val audioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
-  val hadAudioInitially = rememberSaveable { audioPermission.status == PermissionStatus.Granted }
   val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
-  val hadCameraInitially = rememberSaveable { cameraPermission.status == PermissionStatus.Granted }
-  if (pipActive) {
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
-      if (!hadAudioInitially) {
-        Icon(
-          painterResource(MR.images.ic_call_500),
-          stringResource(MR.strings.permissions_record_audio),
-          Modifier.size(24.dp),
-          tint = if (audioPermission.status == PermissionStatus.Granted) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
-        )
-      }
-      if (hasVideo && !hadCameraInitially) {
-        Icon(
-          painterResource(MR.images.ic_videocam),
-          stringResource(MR.strings.permissions_camera),
-          Modifier.size(24.dp),
-          tint = if (cameraPermission.status == PermissionStatus.Granted) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
-        )
-      }
-    }
-  } else {
-    ColumnWithScrollBar(Modifier.fillMaxSize()) {
-      Spacer(Modifier.height(AppBarHeight))
-
-      AppBarTitle(stringResource(MR.strings.permissions_required))
-      Text(stringResource(MR.strings.permissions_grant), Modifier.padding(horizontal = DEFAULT_PADDING))
-      SectionSpacer()
-      val context = LocalContext.current
-      SectionView(stringResource(MR.strings.permissions_section_title).uppercase()) {
-        if (!hadAudioInitially) {
-          SettingsActionItem(painterResource(MR.images.ic_call_500), stringResource(MR.strings.permissions_record_audio), {
-            if (audioPermission.status is PermissionStatus.Denied && audioPermission.status.shouldShowRationale) {
-              context.showAllowPermissionInSettingsAlert()
-            } else {
-              audioPermission.launchPermissionRequestWithFallback(context::showAllowPermissionInSettingsAlert)
-            }
-          }, disabled = audioPermission.status == PermissionStatus.Granted)
-        }
-        if (hasVideo && !hadCameraInitially) {
-          SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.permissions_camera), {
-            if (cameraPermission.status is PermissionStatus.Denied && cameraPermission.status.shouldShowRationale) {
-              context.showAllowPermissionInSettingsAlert()
-            } else {
-              cameraPermission.launchPermissionRequestWithFallback(context::showAllowPermissionInSettingsAlert)
-            }
-          }, disabled = cameraPermission.status == PermissionStatus.Granted)
-        }
-      }
-
-      Spacer(Modifier.weight(1f))
-      Box(Modifier.fillMaxWidth().padding(bottom = if (hasVideo) 0.dp else DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.Center) {
-        IconButton(onClick = cancel) {
-          Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
-        }
-      }
-    }
-  }
   val permissionsState = rememberMultiplePermissionsState(
     permissions = if (hasVideo) {
       listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
@@ -585,13 +527,84 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       permissionsState.launchMultiplePermissionRequest()
     }
   }
+
+  if (pipActive) {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+      if (audioPermission.status is PermissionStatus.Denied) {
+        Icon(
+          painterResource(MR.images.ic_call_500),
+          stringResource(MR.strings.permissions_record_audio),
+          Modifier.size(24.dp),
+          tint = Color.White
+        )
+      }
+      if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+        Icon(
+          painterResource(MR.images.ic_videocam),
+          stringResource(MR.strings.permissions_camera),
+          Modifier.size(24.dp),
+          tint = Color.White
+        )
+      }
+    }
+  } else {
+    ColumnWithScrollBar(Modifier.fillMaxSize()) {
+      Spacer(Modifier.height(AppBarHeight))
+
+      AppBarTitle(stringResource(MR.strings.permissions_required))
+      Spacer(Modifier.weight(1f))
+
+      val context = LocalContext.current
+      val onClick = {
+        if (permissionsState.shouldShowRationale) {
+          context.showAllowPermissionInSettingsAlert()
+        } else {
+          permissionsState.launchMultiplePermissionRequestWithFallback(context::showAllowPermissionInSettingsAlert)
+        }
+      }
+      Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color.White)
+      SectionSpacer()
+      SectionView {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          val text = if (hasVideo && audioPermission.status is PermissionStatus.Denied && cameraPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_camera_and_record_audio)
+          } else if (audioPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_record_audio)
+          } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_camera)
+          } else ""
+          GrantPermissionButton(text, onClick)
+        }
+      }
+
+      Spacer(Modifier.weight(1f))
+      Box(Modifier.fillMaxWidth().padding(bottom = if (hasVideo) 0.dp else DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.Center) {
+        SimpleButtonFrame(cancel, Modifier.height(64.dp)) {
+          Text(stringResource(MR.strings.call_service_notification_end_call), color = Color.White)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun GrantPermissionButton(text: String, onClick: () -> Unit) {
+  Row(
+    Modifier
+      .clickable(onClick = onClick)
+      .heightIn(min = 30.dp)
+      .background(WarningOrange.copy(0.3f), RoundedCornerShape(50)),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(text, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), fontSize = 20.sp, color = WarningOrange)
+  }
 }
 
 /**
  * The idea of this function is to ask system to show permission dialog and to see if it's really doing it.
  * Otherwise, show alert with a button that opens settings for manual permission granting
  * */
-private fun PermissionState.launchPermissionRequestWithFallback(fallback: () -> Unit) {
+private fun MultiplePermissionsState.launchMultiplePermissionRequestWithFallback(fallback: () -> Unit) {
   val lifecycleOwner = ProcessLifecycleOwner.get().lifecycle
   var useFallback = true
   val observer = LifecycleEventObserver { _, event ->
@@ -611,7 +624,7 @@ private fun PermissionState.launchPermissionRequestWithFallback(fallback: () -> 
       lifecycleOwner.removeObserver(observer)
     }
   }
-  launchPermissionRequest()
+  launchMultiplePermissionRequest()
 }
 
 @Composable
