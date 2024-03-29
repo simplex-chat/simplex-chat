@@ -45,6 +45,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (compress1, decompressBatch)

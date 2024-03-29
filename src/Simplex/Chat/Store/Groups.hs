@@ -123,6 +123,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
+import Data.Bifunctor (second)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
@@ -138,6 +139,7 @@ import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -665,13 +667,13 @@ getGroupSummary db User {userId} groupId = do
         (userId, groupId, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
   pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
-getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
+getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
-  map (mergeGroupPreferences . fromOnly)
+  map (second mergeGroupPreferences)
     <$> DB.query
       db
       [sql|
-        SELECT gp.preferences
+        SELECT m.member_role, gp.preferences
         FROM groups g
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members m USING (group_id)

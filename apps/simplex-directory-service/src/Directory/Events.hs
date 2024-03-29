@@ -31,6 +31,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 import Data.Char (isSpace)

@@ -172,6 +172,7 @@ library
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
       Simplex.Chat.Types.Preferences
+      Simplex.Chat.Types.Shared
       Simplex.Chat.Types.Util
       Simplex.Chat.Util
       Simplex.Chat.View

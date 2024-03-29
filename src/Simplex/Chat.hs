@@ -79,6 +79,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
@@ -709,10 +710,10 @@ processChatCommand' vr = \case
       assertUserGroupRole gInfo GRAuthor
       send g
       where
-        send g@(Group gInfo@GroupInfo {groupId} ms)
-          | isVoice mc && not (groupFeatureAllowed SGFVoice gInfo) = notAllowedError GFVoice
-          | not (isVoice mc) && isJust file_ && not (groupFeatureAllowed SGFFiles gInfo) = notAllowedError GFFiles
-          | otherwise = do
+        send g@(Group gInfo@GroupInfo {groupId, membership} ms) =
+          case prohibitedGroupContent gInfo membership mc file_ of
+            Just f -> notAllowedError f
+            Nothing -> do
               (fInv_, ciFile_) <- L.unzip <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
               timed_ <- sndGroupCITimed live gInfo itemTTL
               (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ timed_ live
@@ -1832,7 +1833,7 @@ processChatCommand' vr = \case
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor
-    unless (groupFeatureAllowed SGFDirectMessages g) $ throwChatError $ CECommandError "direct messages not allowed"
+    unless (groupFeatureMemberAllowed SGFDirectMessages (membership g) g) $ throwChatError $ CECommandError "direct messages not allowed"
     case memberConn m of
       Just mConn@Connection {peerChatVRange} -> do
         unless (maxVersion peerChatVRange >= groupDirectInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
@@ -2013,9 +2014,12 @@ processChatCommand' vr = \case
     ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db vr user cName
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
-  SetGroupFeature (AGF f) gName enabled ->
+  SetGroupFeature (AGFNR f) gName enabled ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
+  SetGroupFeatureRole (AGFR f) gName enabled role ->
+    updateGroupProfileByName gName $ \p ->
+      p {groupPreferences = Just . setGroupPreferenceRole f enabled role $ groupPreferences p}  
   SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
@@ -2592,7 +2596,7 @@ assertDirectAllowed user dir ct event =
   unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
     throwChatError (CEDirectMessagesProhibited dir ct)
   where
-    directMessagesAllowed = any (groupFeatureAllowed' SGFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
+    directMessagesAllowed = any (uncurry $ groupFeatureMemberAllowed' SGFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
     allowedChatEvent = case event of
       XMsgNew_ -> False
       XMsgUpdate_ -> False
@@ -2601,6 +2605,13 @@ assertDirectAllowed user dir ct event =
       XGrpInv_ -> False
       XCallInv_ -> False
       _ -> True
+
+prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe f -> Maybe GroupFeature
+prohibitedGroupContent gInfo m mc file_
+  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
+  | not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
+  | not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo) && containsFormat isSimplexLink (parseMarkdown $ msgContentText mc) = Just GFSimplexLinks
+  | otherwise = Nothing
 
 roundedFDCount :: Int -> Int
 roundedFDCount n
@@ -4695,14 +4706,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> m ()
     newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded
       | blockedByAdmin m = createBlockedByAdmin
-      | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
-      | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
-      | otherwise =
-          withStore' (\db -> getCIModeration db vr user gInfo memberId sharedMsgId_) >>= \case
-            Just ciModeration -> do
-              applyModeration ciModeration
-              withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
-            Nothing -> createContentItem
+      | otherwise = case prohibitedGroupContent gInfo m content fInv_ of
+          Just f -> rejected f
+          Nothing ->
+            withStore' (\db -> getCIModeration db vr user gInfo memberId sharedMsgId_) >>= \case
+              Just ciModeration -> do
+                applyModeration ciModeration
+                withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
+              Nothing -> createContentItem
       where
         rejected f = void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
@@ -5657,7 +5668,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> m ()
     xGrpDirectInv g m mConn connReq mContent_ msg brokerTs = do
-      unless (groupFeatureAllowed SGFDirectMessages g) $ messageError "x.grp.direct.inv: direct messages not allowed"
+      unless (groupFeatureMemberAllowed SGFDirectMessages m g) $ messageError "x.grp.direct.inv: direct messages not allowed"
       let GroupMember {memberContactId} = m
       subMode <- chatReadVar subscriptionMode
       case memberContactId of
@@ -6999,17 +7010,18 @@ chatCommandP =
       "/show profile image" $> ShowProfileImage,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNames),
       ("/profile" <|> "/p") $> ShowProfile,
-      "/set voice #" *> (SetGroupFeature (AGF SGFVoice) <$> displayName <*> (A.space *> strP)),
+      "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayName <*> _strP <*> optional _strP),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
-      "/set files #" *> (SetGroupFeature (AGF SGFFiles) <$> displayName <*> (A.space *> strP)),
-      "/set history #" *> (SetGroupFeature (AGF SGFHistory) <$> displayName <*> (A.space *> strP)),
+      "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayName <*> _strP <*> optional _strP),
+      "/set history #" *> (SetGroupFeature (AGFNR SGFHistory) <$> displayName <*> (A.space *> strP)),
+      "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayName <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayName <*> optional (A.space *> strP)),
       "/set calls " *> (SetUserFeature (ACF SCFCalls) <$> strP),
-      "/set delete #" *> (SetGroupFeature (AGF SGFFullDelete) <$> displayName <*> (A.space *> strP)),
+      "/set delete #" *> (SetGroupFeature (AGFNR SGFFullDelete) <$> displayName <*> (A.space *> strP)),
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
-      "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
+      "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayName <*> _strP <*> optional _strP),
       "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
@@ -7099,7 +7111,7 @@ chatCommandP =
       let groupPreferences =
             Just
               (emptyGroupPrefs :: GroupPreferences)
-                { directMessages = Just DirectMessagesGroupPreference {enable = FEOn},
+                { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
