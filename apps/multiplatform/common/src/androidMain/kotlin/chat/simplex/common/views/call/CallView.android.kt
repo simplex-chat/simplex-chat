@@ -522,9 +522,11 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       listOf(Manifest.permission.RECORD_AUDIO)
     }
   )
+  val context = LocalContext.current
+  val buttonEnabled = remember { mutableStateOf(true) }
   LaunchedEffect(Unit) {
     if (!pipActive) {
-      permissionsState.launchMultiplePermissionRequest()
+      permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
     }
   }
 
@@ -554,13 +556,11 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       AppBarTitle(stringResource(MR.strings.permissions_required))
       Spacer(Modifier.weight(1f))
 
-      val context = LocalContext.current
-      val enabled = remember { mutableStateOf(true) }
       val onClick = {
         if (permissionsState.shouldShowRationale) {
           context.showAllowPermissionInSettingsAlert()
         } else {
-          permissionsState.launchMultiplePermissionRequestWithFallback(enabled, context::showAllowPermissionInSettingsAlert)
+          permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
         }
       }
       Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color(0xFFFFFFD8))
@@ -574,7 +574,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
           } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
             stringResource(MR.strings.permissions_camera)
           } else ""
-          GrantPermissionButton(text, enabled.value, onClick)
+          GrantPermissionButton(text, buttonEnabled.value, onClick)
         }
       }
 
