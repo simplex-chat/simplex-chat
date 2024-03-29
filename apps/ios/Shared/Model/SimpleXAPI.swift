@@ -1936,17 +1936,6 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
-    let m = ChatModel.shared
-    var err: String
-    switch chatError {
-    case .errorAgent(agentError: .BROKER(_, .NETWORK)): err = "network"
-    case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
-    default: err = String(describing: chatError)
-    }
-    m.setContactNetworkStatus(contact, .error(connectionError: err))
-}
-
 func refreshCallInvitations() throws {
     let m = ChatModel.shared
     let callInvitations = try justRefreshCallInvitations()
