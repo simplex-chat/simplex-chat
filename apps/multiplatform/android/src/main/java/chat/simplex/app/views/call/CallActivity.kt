@@ -281,7 +281,9 @@ fun CallActivityView() {
         }
       }
     }
-    AlertManager.shared.showInView()
+    if (!m.activeCallViewIsCollapsed.value) {
+      AlertManager.shared.showInView()
+    }
   }
   LaunchedEffect(call == null) {
     if (call != null) {
