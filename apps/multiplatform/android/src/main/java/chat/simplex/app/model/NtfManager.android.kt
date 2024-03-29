@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.core.app.*
 import chat.simplex.app.*
 import chat.simplex.app.TAG
-import chat.simplex.app.views.call.IncomingCallActivity
+import chat.simplex.app.views.call.CallActivity
 import chat.simplex.app.views.call.getKeyguardManager
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
@@ -33,6 +33,7 @@ object NtfManager {
   const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_2"
   const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
   const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
+  const val EndCallAction: String = "chat.simplex.app.END_CALL"
   const val CallNotificationId: Int = -1
   private const val UserIdKey: String = "userId"
   private const val ChatIdKey: String = "chatId"
@@ -157,7 +158,7 @@ object NtfManager {
     val screenOff = displayManager.displays.all { it.state != Display.STATE_ON }
     var ntfBuilder =
       if ((keyguardManager.isKeyguardLocked || screenOff) && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
-        val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
+        val fullScreenIntent = Intent(context, CallActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)

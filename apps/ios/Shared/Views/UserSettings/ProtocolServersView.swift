@@ -95,7 +95,7 @@ struct ProtocolServersView: View {
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(servers: $servers)
         }
-        .modifier(BackButton {
+        .modifier(BackButton(disabled: Binding.constant(false)) {
             if saveDisabled {
                 dismiss()
                 justOpened = false

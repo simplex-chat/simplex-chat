@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.NotificationsMode
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.changeNotificationsMode
@@ -23,10 +24,9 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
-  Column(
+  ColumnWithScrollBar(
     modifier = Modifier
       .fillMaxSize()
-      .verticalScroll(rememberScrollState())
       .padding(vertical = 14.dp)
   ) {
     //CloseSheetBar(null)

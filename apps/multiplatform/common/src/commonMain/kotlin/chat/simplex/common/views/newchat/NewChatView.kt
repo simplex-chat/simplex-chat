@@ -141,10 +141,10 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
     }
 
     HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { index ->
-      Column(
+      // LALAL SCROLLBAR DOESN'T WORK
+      ColumnWithScrollBar(
         Modifier
-          .fillMaxSize()
-          .verticalScroll(rememberScrollState()),
+          .fillMaxSize(),
         verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top) {
         Spacer(Modifier.height(DEFAULT_PADDING))
         when (index) {
@@ -232,14 +232,7 @@ private fun AddContactLearnMoreButton() {
     {
       if (appPlatform.isDesktop) ModalManager.end.closeModals()
       ModalManager.end.showModalCloseable { close ->
-        Column(
-          Modifier
-            .fillMaxHeight()
-            .padding(horizontal = DEFAULT_PADDING),
-          verticalArrangement = Arrangement.SpaceBetween
-        ) {
-          AddContactLearnMore(close)
-        }
+        AddContactLearnMore(close)
       }
     }
   ) {
@@ -301,7 +294,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 }
 
 @Composable
-private fun LinkTextView(link: String, share: Boolean) {
+fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
   Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.weight(1f).clickable {

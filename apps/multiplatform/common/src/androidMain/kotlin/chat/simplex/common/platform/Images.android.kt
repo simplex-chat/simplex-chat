@@ -61,6 +61,16 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   return Bitmap.createBitmap(image.asAndroidBitmap(), xOffset, yOffset, side, side).asImageBitmap()
 }
 
+fun Bitmap.clipToCircle(): Bitmap {
+  val circle = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+  val path = android.graphics.Path()
+  path.addCircle(width / 2f, height / 2f, min(width, height) / 2f, android.graphics.Path.Direction.CCW)
+  val canvas = android.graphics.Canvas(circle)
+  canvas.clipPath(path)
+  canvas.drawBitmap(this, 0f, 0f, null)
+  return circle
+}
+
 actual fun compressImageStr(bitmap: ImageBitmap): String {
   val usePng = bitmap.hasAlpha()
   val ext = if (usePng) "png" else "jpg"

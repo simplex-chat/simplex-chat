@@ -29,6 +29,7 @@ import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -121,7 +122,12 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   }
   if (searchText.value.text.isEmpty()) {
-    DesktopActiveCallOverlayLayout(newChatSheetState)
+    if (appPlatform.isDesktop) {
+      val call = remember { chatModel.activeCall }.value
+      if (call != null) {
+        ActiveCallInteractiveArea(call, newChatSheetState)
+      }
+    }
     // TODO disable this button and sheet for the duration of the switch
     tryOrShowError("NewChatSheet", error = {}) {
       NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
@@ -314,7 +320,7 @@ private fun ToggleFilterDisabledButton() {
 }
 
 @Composable
-expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
+expect fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>)
 
 fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
@@ -454,7 +460,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.toList())
-  LazyColumn(
+  LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     listState
   ) {
@@ -529,7 +535,9 @@ private fun filteredChats(
 }
 
 private fun filtered(chat: Chat): Boolean =
-  (chat.chatInfo.chatSettings?.favorite ?: false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  (chat.chatInfo.chatSettings?.favorite ?: false) ||
+      chat.chatStats.unreadChat ||
+      (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
 
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
   cInfo.chatViewName.lowercase().contains(s.lowercase())

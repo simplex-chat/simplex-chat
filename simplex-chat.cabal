@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.5.5.0
+version:        5.6.0.4
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -26,6 +26,7 @@ flag swift
 library
   exposed-modules:
       Simplex.Chat
+      Simplex.Chat.AppSettings
       Simplex.Chat.Archive
       Simplex.Chat.Bot
       Simplex.Chat.Bot.KnownContacts
@@ -133,6 +134,10 @@ library
       Simplex.Chat.Migrations.M20240104_members_profile_update
       Simplex.Chat.Migrations.M20240115_block_member_for_all
       Simplex.Chat.Migrations.M20240122_indexes
+      Simplex.Chat.Migrations.M20240214_redirect_file_id
+      Simplex.Chat.Migrations.M20240222_app_settings
+      Simplex.Chat.Migrations.M20240226_users_restrict
+      Simplex.Chat.Migrations.M20240228_pq
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -148,6 +153,7 @@ library
       Simplex.Chat.Remote.Transport
       Simplex.Chat.Remote.Types
       Simplex.Chat.Store
+      Simplex.Chat.Store.AppSettings
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.Direct
       Simplex.Chat.Store.Files
