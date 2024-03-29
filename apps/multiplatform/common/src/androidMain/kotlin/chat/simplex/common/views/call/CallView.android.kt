@@ -535,7 +535,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
           painterResource(MR.images.ic_call_500),
           stringResource(MR.strings.permissions_record_audio),
           Modifier.size(24.dp),
-          tint = Color.White
+          tint = Color(0xFFFFFFD8)
         )
       }
       if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
@@ -543,7 +543,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
           painterResource(MR.images.ic_videocam),
           stringResource(MR.strings.permissions_camera),
           Modifier.size(24.dp),
-          tint = Color.White
+          tint = Color(0xFFFFFFD8)
         )
       }
     }
@@ -555,14 +555,15 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       Spacer(Modifier.weight(1f))
 
       val context = LocalContext.current
+      val enabled = remember { mutableStateOf(true) }
       val onClick = {
         if (permissionsState.shouldShowRationale) {
           context.showAllowPermissionInSettingsAlert()
         } else {
-          permissionsState.launchMultiplePermissionRequestWithFallback(context::showAllowPermissionInSettingsAlert)
+          permissionsState.launchMultiplePermissionRequestWithFallback(enabled, context::showAllowPermissionInSettingsAlert)
         }
       }
-      Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color.White)
+      Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color(0xFFFFFFD8))
       SectionSpacer()
       SectionView {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -573,14 +574,14 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
           } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
             stringResource(MR.strings.permissions_camera)
           } else ""
-          GrantPermissionButton(text, onClick)
+          GrantPermissionButton(text, enabled.value, onClick)
         }
       }
 
       Spacer(Modifier.weight(1f))
       Box(Modifier.fillMaxWidth().padding(bottom = if (hasVideo) 0.dp else DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.Center) {
         SimpleButtonFrame(cancel, Modifier.height(64.dp)) {
-          Text(stringResource(MR.strings.call_service_notification_end_call), color = Color.White)
+          Text(stringResource(MR.strings.call_service_notification_end_call), fontSize = 20.sp, color = Color(0xFFFFFFD8))
         }
       }
     }
@@ -588,10 +589,10 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
 }
 
 @Composable
-private fun GrantPermissionButton(text: String, onClick: () -> Unit) {
+private fun GrantPermissionButton(text: String, enabled: Boolean, onClick: () -> Unit) {
   Row(
     Modifier
-      .clickable(onClick = onClick)
+      .clickable(enabled = enabled, onClick = onClick)
       .heightIn(min = 30.dp)
       .background(WarningOrange.copy(0.3f), RoundedCornerShape(50)),
     verticalAlignment = Alignment.CenterVertically
@@ -604,20 +605,23 @@ private fun GrantPermissionButton(text: String, onClick: () -> Unit) {
  * The idea of this function is to ask system to show permission dialog and to see if it's really doing it.
  * Otherwise, show alert with a button that opens settings for manual permission granting
  * */
-private fun MultiplePermissionsState.launchMultiplePermissionRequestWithFallback(fallback: () -> Unit) {
+private fun MultiplePermissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled: MutableState<Boolean>, fallback: () -> Unit) {
+  buttonEnabled.value = false
   val lifecycleOwner = ProcessLifecycleOwner.get().lifecycle
   var useFallback = true
   val observer = LifecycleEventObserver { _, event ->
     if (event == Lifecycle.Event.ON_PAUSE) {
       useFallback = false
+      buttonEnabled.value = true
     }
   }
   lifecycleOwner.addObserver(observer)
   withBGApi {
     delay(2000)
-    if (useFallback) {
+    if (useFallback && chatModel.activeCall.value != null) {
       fallback()
     }
+    buttonEnabled.value = true
   }.invokeOnCompletion {
     // Main thread only
     withApi {
