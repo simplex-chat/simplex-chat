@@ -92,8 +92,7 @@ struct UserPicker: View {
         .opacity(userPickerVisible ? 1.0 : 0.0)
         .onAppear {
             do {
-                // This check prevents this after the app is suspended, and the database is closed.
-                // Unclear why it happens.
+                // This check prevents the call of listUsers after the app is suspended, and the database is closed.
                 if case .active = scenePhase {
                     m.users = try listUsers()
                 }
