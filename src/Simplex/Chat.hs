@@ -326,6 +326,9 @@ withEntityLock name entity action = do
 withInvitationLock :: ChatMonad' m => String -> ByteString -> m a -> m a
 withInvitationLock name = withEntityLock name . CLInvitation
 
+withConnectionLock :: ChatMonad' m => String -> Int64 -> m a -> m a
+withConnectionLock name = withEntityLock name . CLConnection
+
 withContactLock :: ChatMonad' m => String -> ContactId -> m a -> m a
 withContactLock name = withEntityLock name . CLContact
 
@@ -999,7 +1002,7 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
         withStore $ \db -> deleteContact db user ct
         pure $ CRContactDeleted user ct
-    CTContactConnection -> procCmd $ do
+    CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId . procCmd $ do
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync user acId
       withStore' $ \db -> deletePendingContactConnection db userId chatId
@@ -3335,23 +3338,22 @@ processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
 processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
-  connEntityId_ <- critical (withStore (`getConnectionEntityId` AgentConnId connId))
-  withLock_ connEntityId_ $ do
+  connEntityId <- critical (withStore (`getConnectionEntityId` AgentConnId connId))
+  withLock' connEntityId $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
       Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
-    withLock_ :: Maybe ConnectionEntityId -> m a -> m a
-    withLock_ ceId_ = case ceId_ of
-      Nothing -> id
-      Just ceId -> case ceId of
-        RcvDirectMsgConnEntityId contactId -> withContactLock "processAgentMessage contact" contactId
-        RcvGroupMsgConnEntityId groupId _ -> withGroupLock "processAgentMessage group" groupId
-        SndFileConnEntityId fileId -> withFileLock "processAgentMessage snd file" fileId
-        RcvFileConnEntityId fileId -> withFileLock "processAgentMessage rcv file" fileId
-        UserContactConnEntityId uclId -> withUserContactLock "processAgentMessage user contact" uclId
+    withLock' :: ConnectionEntityId -> m a -> m a
+    withLock' ceId = case ceId of
+      RcvDirectMsgConnEntityId cId Nothing -> withConnectionLock "processAgentMessage conn" cId
+      RcvDirectMsgConnEntityId _ (Just contactId) -> withContactLock "processAgentMessage contact" contactId
+      RcvGroupMsgConnEntityId _ groupId _ -> withGroupLock "processAgentMessage group" groupId
+      SndFileConnEntityId _ fileId -> withFileLock "processAgentMessage snd file" fileId
+      RcvFileConnEntityId _ fileId -> withFileLock "processAgentMessage rcv file" fileId
+      UserContactConnEntityId _ ucId -> withUserContactLock "processAgentMessage user contact" ucId
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,

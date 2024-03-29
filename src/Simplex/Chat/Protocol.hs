@@ -114,11 +114,11 @@ agentToChatVersion v
   | otherwise = pqEncryptionCompressionVersion
 
 data ConnectionEntityId
-  = RcvDirectMsgConnEntityId ContactId
-  | RcvGroupMsgConnEntityId GroupId GroupMemberId
-  | SndFileConnEntityId FileTransferId
-  | RcvFileConnEntityId FileTransferId
-  | UserContactConnEntityId Int64
+  = RcvDirectMsgConnEntityId {connId :: Int64, contactId :: Maybe ContactId}
+  | RcvGroupMsgConnEntityId {connId :: Int64, groupId :: GroupId, groupMemberId :: GroupMemberId}
+  | SndFileConnEntityId {connId :: Int64, sndFileTransferId :: FileTransferId}
+  | RcvFileConnEntityId {connId :: Int64, rcvFileTransferId :: FileTransferId}
+  | UserContactConnEntityId {connId :: Int64, userContactId :: FileTransferId}
   deriving (Eq, Show)
 
 data ConnectionEntity
