@@ -608,6 +608,7 @@ testGroupDelete =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      threadDelay 50000
       alice ##> "/d #team"
       concurrentlyN_
         [ alice <## "#team: you deleted the group",
@@ -2631,6 +2632,8 @@ testPlanGroupLinkLeaveRejoin =
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
+
+      threadDelay 50000
 
       bob ##> "/leave #team"
       concurrentlyN_
