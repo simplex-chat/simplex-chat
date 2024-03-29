@@ -189,16 +189,18 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
         (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
-getConnectionsToSubscribe :: DB.Connection -> (PQSupport -> VersionRangeChat) -> IO ([ConnId], [ConnectionEntity])
-getConnectionsToSubscribe db vr = do
-  aConnIds <- map fromOnly <$> DB.query_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1"
-  entities <- forM aConnIds $ \acId -> do
-    getUserByAConnId db acId >>= \case
-      Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId)
-      Nothing -> pure Nothing
-  unsetConnectionToSubscribe db
-  let connIds = map (\(AgentConnId connId) -> connId) aConnIds
-  pure (connIds, catMaybes entities)
+getConnectionsToSubscribe :: DB.Connection -> (PQSupport -> VersionRangeChat) -> es -> (es -> ConnectionEntity -> es) -> IO ([ConnId], es)
+getConnectionsToSubscribe db vr initialES addEntity = do
+  r <- DB.fold_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1" ([], initialES) collect
+  r <$ unsetConnectionToSubscribe db
+  where
+    collect (cids, es) (Only acId@(AgentConnId connId)) = do
+      es' <- getUserByAConnId db acId >>= \case
+        Just user -> runExceptT (getConnectionEntity db vr user acId) >>= \case
+          Right ce -> pure $! addEntity es ce
+          Left _err -> pure es
+        Nothing -> pure es
+      pure (connId : cids, es')
 
 unsetConnectionToSubscribe :: DB.Connection -> IO ()
 unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
