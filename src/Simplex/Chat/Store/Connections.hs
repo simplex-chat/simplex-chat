@@ -3,11 +3,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Connections
-  ( getConnectionEntity,
+  ( getConnectionEntityId,
+    getConnectionEntity,
     getConnectionEntityByConnReq,
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
@@ -36,6 +38,49 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Util (eitherToMaybe)
+
+getConnectionEntityId :: DB.Connection -> AgentConnId -> ExceptT StoreError IO (Maybe ConnectionEntityId)
+getConnectionEntityId db agentConnId = do
+  (connType, entityId) <- getConnEntityId_
+  case entityId of
+    Nothing ->
+      if connType == ConnContact
+        then pure Nothing
+        else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
+    Just entId ->
+      case connType of
+        ConnMember -> do
+          groupId <- getMemberGroupId entId
+          pure $ Just (RcvGroupMsgConnEntityId groupId entId)
+        ConnContact -> pure $ Just (RcvDirectMsgConnEntityId entId)
+        ConnSndFile -> pure $ Just (SndFileConnEntityId entId)
+        ConnRcvFile -> pure $ Just (RcvFileConnEntityId entId)
+        ConnUserContact -> pure $ Just (UserContactConnEntityId entId)
+  where
+    getConnEntityId_ :: ExceptT StoreError IO (ConnType, Maybe Int64)
+    getConnEntityId_ = ExceptT $ do
+      firstRow toEntityId (SEConnectionNotFound agentConnId) $
+        DB.query
+          db
+          [sql|
+            SELECT conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id
+            FROM connections
+            WHERE agent_conn_id = ?
+          |]
+          (Only agentConnId)
+      where
+        toEntityId :: (Only ConnType :. EntityIdsRow) -> (ConnType, Maybe Int64)
+        toEntityId ((Only connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId)) =
+          (connType,) $ case connType of
+            ConnContact -> contactId
+            ConnMember -> groupMemberId
+            ConnRcvFile -> rcvFileId
+            ConnSndFile -> sndFileId
+            ConnUserContact -> userContactLinkId
+    getMemberGroupId :: GroupMemberId -> ExceptT StoreError IO GroupId
+    getMemberGroupId groupMemberId =
+      ExceptT . firstRow fromOnly (SEInternalError "group member connection group_id not found") $
+        DB.query db "SELECT group_id FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
 getConnectionEntity :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do

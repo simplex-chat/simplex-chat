@@ -31,6 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.String
@@ -48,7 +49,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (compress1, decompressBatch)
-import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOn, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -111,6 +112,14 @@ agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
   | v < pqdrSMPAgentVersion = initialChatVersion
   | otherwise = pqEncryptionCompressionVersion
+
+data ConnectionEntityId
+  = RcvDirectMsgConnEntityId ContactId
+  | RcvGroupMsgConnEntityId GroupId GroupMemberId
+  | SndFileConnEntityId FileTransferId
+  | RcvFileConnEntityId FileTransferId
+  | UserContactConnEntityId Int64
+  deriving (Eq, Show)
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

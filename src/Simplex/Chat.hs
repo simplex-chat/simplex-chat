@@ -1425,7 +1425,7 @@ processChatCommand' vr = \case
   EnableGroupMember gName mName -> withMemberName gName mName $ \gId mId -> APIEnableGroupMember gId mId
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
-  APIAddContact userId incognito -> withUserId userId $ \user -> withChatLock "addContact" . procCmd $ do
+  APIAddContact userId incognito -> withUserId userId $ \user -> procCmd $ do
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
@@ -1498,7 +1498,7 @@ processChatCommand' vr = \case
     CRContactsList user <$> withStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user -> withChatLock "createMyAddress" . procCmd $ do
+  APICreateMyAddress userId -> withUserId userId $ \user -> procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- TODO v5.7 pass IPPQOn
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing IKPQOff subMode
@@ -3335,11 +3335,23 @@ processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
 processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
-  vr <- chatVersionRange
-  -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
-  critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
-    Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
-    _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+  connEntityId_ <- critical (withStore (`getConnectionEntityId` AgentConnId connId))
+  withLock_ connEntityId_ $ do
+    vr <- chatVersionRange
+    -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
+    critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
+      Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
+      _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+  where
+    withLock_ :: Maybe ConnectionEntityId -> m a -> m a
+    withLock_ ceId_ = case ceId_ of
+      Nothing -> id
+      Just ceId -> case ceId of
+        RcvDirectMsgConnEntityId contactId -> withContactLock "processAgentMessage contact" contactId
+        RcvGroupMsgConnEntityId groupId _ -> withGroupLock "processAgentMessage group" groupId
+        SndFileConnEntityId fileId -> withFileLock "processAgentMessage snd file" fileId
+        RcvFileConnEntityId fileId -> withFileLock "processAgentMessage rcv file" fileId
+        UserContactConnEntityId uclId -> withUserContactLock "processAgentMessage user contact" uclId
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -3597,7 +3609,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVersion, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
-      Nothing -> withEntityLock "processDirectMessage conn" (CLConnection connId) $ case agentMsg of
+      Nothing -> case agentMsg of
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           -- [incognito] send saved profile
@@ -3633,7 +3645,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
-      Just ct@Contact {contactId} -> withContactLock "processDirectMessage contact" contactId $ case agentMsg of
+      Just ct@Contact {contactId} -> case agentMsg of
         INV (ACR _ cReq) ->
           -- [async agent commands] XGrpMemIntro continuation on receiving INV
           withCompletedCommand conn agentMsg $ \_ ->
@@ -3803,7 +3815,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = withGroupLock "processGroupMessage" groupId $ case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -4216,7 +4228,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processSndFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
-      withFileLock "processSndFileConn" fileId $ case agentMsg of
+      case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
         CONF confId _pqSupport _ connInfo -> do
@@ -4263,7 +4275,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processRcvFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> m ()
     processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
-      withFileLock "processRcvFileConn" fileId $ case agentMsg of
+      case agentMsg of
         INV (ACR _ cReq) ->
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
             case cReq of
@@ -4345,7 +4357,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = withFileLock "processUserContactRequest" userContactLinkId $ case agentMsg of
+    processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of

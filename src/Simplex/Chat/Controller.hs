@@ -214,8 +214,7 @@ data ChatController = ChatController
   }
 
 data ChatLockEntity
-  = CLConnection Int64
-  | CLInvitation ByteString
+  = CLInvitation ByteString
   | CLContact ContactId
   | CLGroup GroupId
   | CLUserContact Int64
