@@ -107,8 +107,9 @@
         <target>%@ csatlakozott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ downloaded" xml:space="preserve">
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
         <source>%@ downloaded</source>
+        <target state="translated">%@ letöltve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -131,8 +132,9 @@
         <target>%@ kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ uploaded" xml:space="preserve">
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
         <source>%@ uploaded</source>
+        <target state="translated">%@ feltöltött</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
