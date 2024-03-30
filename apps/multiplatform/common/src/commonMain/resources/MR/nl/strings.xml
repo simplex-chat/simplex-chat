@@ -1714,4 +1714,12 @@
     <string name="set_passphrase">Wachtwoord instellen</string>
     <string name="e2ee_info_pq_short">Deze chat wordt beschermd door quantum bestendige end-to-end codering.</string>
     <string name="error_showing_desktop_notification">Fout bij weergeven van melding. Neem contact op met ontwikkelaars.</string>
+    <string name="permissions_find_in_settings_and_grant">Zoek deze toestemming in de Android-instellingen en verleen deze handmatig.</string>
+    <string name="permissions_grant_in_settings">Verlenen in instellingen</string>
+    <string name="permissions_required">Machtigingen verlenen</string>
+    <string name="permissions_grant">Verleen toestemming(en) om te bellen</string>
+    <string name="permissions_record_audio">Microfoon</string>
+    <string name="permissions_camera">Camera</string>
+    <string name="permissions_camera_and_record_audio">Camera en microfoon</string>
+    <string name="permissions_open_settings">Open instellingen</string>
 </resources>
