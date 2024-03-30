@@ -181,7 +181,7 @@ library
       Paths_simplex_chat
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -O2
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
