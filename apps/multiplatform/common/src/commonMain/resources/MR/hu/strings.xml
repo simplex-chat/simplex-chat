@@ -1711,4 +1711,12 @@
     <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
     <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
     <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
+    <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
+    <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>
+    <string name="permissions_grant">Engedély(ek) megadása a hívások kezdeményezéséhez</string>
+    <string name="permissions_record_audio">Mikrofon</string>
+    <string name="permissions_open_settings">Beállítások megnyitása</string>
+    <string name="permissions_camera">Kamera</string>
+    <string name="permissions_camera_and_record_audio">Kamera és mikrofon</string>
+    <string name="permissions_required">Engedélyek megadása</string>
 </resources>
