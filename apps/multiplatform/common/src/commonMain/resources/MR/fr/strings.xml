@@ -1718,7 +1718,7 @@
     <string name="error_showing_desktop_notification">Erreur lors de l\'affichage de la notification, contacter les développeurs.</string>
     <string name="permissions_camera_and_record_audio">Caméra et microphone</string>
     <string name="permissions_grant_in_settings">Accorder dans les paramètres</string>
-    <string name="permissions_required">Permissions octroyées</string>
+    <string name="permissions_required">Octroyer les permissions</string>
     <string name="permissions_grant">Accorder la/les permission(s) pour passer des appels</string>
     <string name="permissions_record_audio">Microphone</string>
     <string name="permissions_open_settings">Ouvrir les paramètres</string>
