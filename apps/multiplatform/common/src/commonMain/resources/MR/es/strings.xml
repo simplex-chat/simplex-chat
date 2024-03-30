@@ -1722,4 +1722,7 @@
     <string name="permissions_required">Conceder permisos</string>
     <string name="permissions_camera">Cámara</string>
     <string name="permissions_find_in_settings_and_grant">Busca este permiso en los ajustes de Android y concédelo manualmente.</string>
+    <string name="permissions_grant">Conceder permiso(s) para hacer llamadas</string>
+    <string name="permissions_record_audio">Micrófono</string>
+    <string name="permissions_open_settings">Abrir ajustes</string>
 </resources>
