@@ -1715,4 +1715,13 @@
     <string name="migrate_from_device_verify_passphrase">Vérifier la phrase secrète</string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Attention : démarrer une session de chat sur plusieurs appareils n\'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages</string>
     <string name="migrate_to_device_try_again">Vous pouvez faire un nouvel essai.</string>
+    <string name="error_showing_desktop_notification">Erreur lors de l\'affichage de la notification, contacter les développeurs.</string>
+    <string name="permissions_camera_and_record_audio">Caméra et microphone</string>
+    <string name="permissions_grant_in_settings">Accorder dans les paramètres</string>
+    <string name="permissions_required">Permissions octroyées</string>
+    <string name="permissions_grant">Accorder la/les permission(s) pour passer des appels</string>
+    <string name="permissions_record_audio">Microphone</string>
+    <string name="permissions_open_settings">Ouvrir les paramètres</string>
+    <string name="permissions_camera">Caméra</string>
+    <string name="permissions_find_in_settings_and_grant">Retrouvez cette permission dans les paramètres d\'Android et octroyez-la manuellement.</string>
 </resources>
