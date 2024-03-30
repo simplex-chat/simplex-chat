@@ -157,3 +157,5 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wunused-type-patterns
+  - -finfo-table-map
+  - -fdistinct-constructor-tables

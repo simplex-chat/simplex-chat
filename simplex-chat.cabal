@@ -181,7 +181,7 @@ library
       Paths_simplex_chat
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -240,7 +240,7 @@ executable simplex-bot
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-bot
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -300,7 +300,7 @@ executable simplex-bot-advanced
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-bot-advanced
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -363,7 +363,7 @@ executable simplex-broadcast-bot
       Broadcast.Bot
       Broadcast.Options
       Paths_simplex_chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -424,7 +424,7 @@ executable simplex-chat
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -491,7 +491,7 @@ executable simplex-directory-service
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -582,7 +582,7 @@ test-suite simplex-chat-test
       tests
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -finfo-table-map -fdistinct-constructor-tables -threaded
   build-depends:
       QuickCheck ==2.14.*
     , aeson ==2.2.*
