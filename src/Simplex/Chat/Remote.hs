@@ -623,7 +623,8 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
     rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
     remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
     encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
-    http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand encryption remoteOutputQ
+    env <- ask
+    http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> runReaderT (void . runExceptT $ handleRemoteCommand execChatCommand encryption remoteOutputQ req) env
     void . forkIO $ monitor sseq http2Server
     updateRemoteCtrlSession sseq $ \case
       RCSessionPendingConfirmation {} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ}
