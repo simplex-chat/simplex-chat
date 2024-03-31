@@ -493,14 +493,14 @@ parseCtrlAppInfo :: JT.Value -> CM CtrlAppInfo
 parseCtrlAppInfo ctrlAppInfo = do
   liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
 
-handleRemoteCommand :: (ByteString -> CM' ChatResponse) -> RemoteCrypto -> TBQueue ChatResponse -> HTTP2Request -> CM ()
+handleRemoteCommand :: (ByteString -> CM' ChatResponse) -> RemoteCrypto -> TBQueue ChatResponse -> HTTP2Request -> CM' ()
 handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
-  liftRC (tryRemoteError parseRequest) >>= \case
+  liftIO (tryRemoteError' parseRequest) >>= \case
     Right (getNext, rc) -> do
-      chatReadVar currentUser >>= \case
+      chatReadVar' currentUser >>= \case
         Nothing -> replyError $ ChatError CENoActiveUser
-        Just user -> processCommand user getNext rc `catchChatError` replyError
+        Just user -> processCommand user getNext rc `catchChatError'` replyError
     Left e -> reply $ RRProtocolError e
   where
     parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
@@ -510,19 +510,20 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
     replyError = reply . RRChatResponse . CRChatCmdError Nothing
     processCommand :: User -> GetChunk -> RemoteCommand -> CM ()
     processCommand user getNext = \case
-      RCSend {command} -> lift (handleSend execChatCommand command) >>= reply
-      RCRecv {wait = time} -> liftIO (handleRecv time remoteOutputQ) >>= reply
-      RCStoreFile {fileName, fileSize, fileDigest} -> lift (handleStoreFile encryption fileName fileSize fileDigest getNext) >>= reply
+      RCSend {command} -> lift $ handleSend execChatCommand command >>= reply
+      RCRecv {wait = time} -> lift $ liftIO (handleRecv time remoteOutputQ) >>= reply
+      RCStoreFile {fileName, fileSize, fileDigest} -> lift $ handleStoreFile encryption fileName fileSize fileDigest getNext >>= reply
       RCGetFile {file} -> handleGetFile encryption user file replyWith
-    reply :: RemoteResponse -> CM ()
+    reply :: RemoteResponse -> CM' ()
     reply = (`replyWith` \_ -> pure ())
     replyWith :: Respond
-    replyWith rr attach = do
-      resp <- liftRC $ encryptEncodeHTTP2Body encryption $ J.encode rr
-      liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
-        send resp
-        attach send
-        flush
+    replyWith rr attach =
+      liftIO (tryRemoteError' . encryptEncodeHTTP2Body encryption $ J.encode rr) >>= \case
+        Right resp -> liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
+          send resp
+          attach send
+          flush
+        Left e -> toView' . CRChatError Nothing . ChatErrorRemoteCtrl $ RCEProtocolError e
 
 takeRCStep :: RCStepTMVar a -> CM a
 takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
@@ -531,7 +532,7 @@ type GetChunk = Int -> IO ByteString
 
 type SendChunk = Builder -> IO ()
 
-type Respond = RemoteResponse -> (SendChunk -> IO ()) -> CM ()
+type Respond = RemoteResponse -> (SendChunk -> IO ()) -> CM' ()
 
 liftRC :: ExceptT RemoteProtocolError IO a -> CM a
 liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
@@ -549,7 +550,7 @@ handleSend execChatCommand command = do
   logDebug $ "Send: " <> tshow command
   -- execChatCommand checks for remote-allowed commands
   -- convert errors thrown in execChatCommand into error responses to prevent aborting the protocol wrapper
-  RRChatResponse <$> lift (execChatCommand $ encodeUtf8 command) `catchChatError'` (pure . CRChatError Nothing)
+  RRChatResponse <$> execChatCommand (encodeUtf8 command)
 
 handleRecv :: Int -> TBQueue ChatResponse -> IO RemoteResponse
 handleRecv time events = do
@@ -581,11 +582,11 @@ handleGetFile encryption User {userId} RemoteFile {userId = commandUserId, fileI
     cf <- getLocalCryptoFile db commandUserId fileId sent
     unless (cf == cf') $ throwError $ SEFileNotFound fileId
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
-    Left e -> reply (RRProtocolError e) $ \_ -> pure ()
+    Left e -> lift $ reply (RRProtocolError e) $ \_ -> pure ()
     Right (fileSize, fileDigest) ->
-      withFile path ReadMode $ \h -> do
+      ExceptT . withFile path ReadMode $ \h -> runExceptT $ do
         encFile <- liftRC $ prepareEncryptedFile encryption (h, fileSize)
-        reply RRFile {fileSize, fileDigest} $ sendEncryptedFile encFile
+        lift $ reply RRFile {fileSize, fileDigest} $ sendEncryptedFile encFile
 
 listRemoteCtrls :: CM [RemoteCtrlInfo]
 listRemoteCtrls = do
@@ -623,8 +624,8 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
     rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
     remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
     encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
-    env <- ask
-    http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> runReaderT (void . runExceptT $ handleRemoteCommand execChatCommand encryption remoteOutputQ req) env
+    cc <- ask
+    http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> handleRemoteCommand execChatCommand encryption remoteOutputQ req `runReaderT` cc
     void . forkIO $ monitor sseq http2Server
     updateRemoteCtrlSession sseq $ \case
       RCSessionPendingConfirmation {} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ}
