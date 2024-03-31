@@ -1716,4 +1716,13 @@
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Aynı veritabanını iki cihazda <b>kullanmamalısınız</b>.]]></string>
     <string name="migrate_from_device_try_again">Bir kez daha deneyebilirsiniz.</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Yeni cihazda <i>Başka bir cihazdan taşı</i>\'yı seçin ve QR kodunu tarayın.]]></string>
+    <string name="permissions_find_in_settings_and_grant">Bu izni Android ayarlarında bulun ve manuel olarak izin verin.</string>
+    <string name="permissions_required">İzinleri verin</string>
+    <string name="permissions_grant">Arama yapmak için izin(ler)i verin</string>
+    <string name="permissions_record_audio">Mikrofon</string>
+    <string name="permissions_open_settings">Ayarları aç</string>
+    <string name="permissions_camera">Kamera</string>
+    <string name="permissions_camera_and_record_audio">Kamera ve mikrofon</string>
+    <string name="error_showing_desktop_notification">Bildirim gösterilirken hata oluştu, geliştiricilerle irtibata geçin.</string>
+    <string name="permissions_grant_in_settings">Ayarlarda izin verin</string>
 </resources>
