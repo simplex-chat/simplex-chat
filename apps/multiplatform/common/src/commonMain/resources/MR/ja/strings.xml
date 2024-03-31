@@ -1509,7 +1509,7 @@
     <string name="unblock_member_question">メンバーのブロックを解除？</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>グループ作成</b>：新しいグループを作成する。]]></string>
     <string name="open_port_in_firewall_desc">モバイルアプリからデスクトップへの接続を許可するには、ファイアウォールでこのポートを開いてください。</string>
-    <string name="block_member_button">ブロックしたメンバー</string>
+    <string name="block_member_button">メンバーのブロック</string>
     <string name="recent_history">表示可能な履歴</string>
     <string name="settings_section_title_use_from_desktop">デスクトップから使用</string>
     <string name="session_code">セッションコード</string>
