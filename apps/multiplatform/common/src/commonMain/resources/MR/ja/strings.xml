@@ -235,7 +235,7 @@
     <string name="only_your_contact_can_send_voice">音声メッセージを送れるのはあなたの連絡相手だけです。</string>
     <string name="database_encryption_will_be_updated">データベース暗号化のパスフレーズが更新され、キーストア (暗証キー保管庫)に保存されます。</string>
     <string name="database_error">データベースエラー</string>
-    <string name="set_password_to_export_desc">データベースはランダムな暗証フレーズで暗号化済みです。エキスポートする前に更新してください。</string>
+    <string name="set_password_to_export_desc">データベースはランダムなパスフレーズで暗号化済みです。エクスポートする前に更新してください。</string>
     <string name="passphrase_is_different">データベース暗証フレーズはキーストア (暗証キー保管庫) に保存された暗証フレーズと異なります。</string>
     <string name="ttl_d">%d日</string>
     <string name="ttl_day">%d 日</string>
@@ -353,7 +353,7 @@
     <string name="chat_is_running">チャットは稼働中</string>
     <string name="chat_is_stopped">チャットが停止してます。</string>
     <string name="database_passphrase">データベース暗証フレーズ</string>
-    <string name="export_database">データベースをエキスポート</string>
+    <string name="export_database">データベースをエクスポート</string>
     <string name="delete_database">データベースを削除</string>
     <string name="import_database">データベースを読み込みますか？</string>
     <string name="new_database_archive">新しいデータベースのアーカイブ</string>
@@ -523,7 +523,7 @@
     <string name="delete_pending_connection__question">接続待ちの繋がりを削除しますか？</string>
     <string name="connect_button">接続</string>
     <string name="one_time_link">使い捨ての招待リンク</string>
-    <string name="database_passphrase_and_export">データベース暗証フレーズとエキスポート</string>
+    <string name="database_passphrase_and_export">データベースパスフレーズとエクスポート</string>
     <string name="how_to_use_simplex_chat">使い方</string>
     <string name="markdown_help">マークダウン (書式編集) ガイド</string>
     <string name="smp_servers_enter_manually">サーバを手動で入力</string>
@@ -827,7 +827,7 @@
     <string name="your_calls">あなたの通話</string>
     <string name="integrity_msg_skipped">%1$dスキップしたメッセージ</string>
     <string name="send_link_previews">リンクのプレビューを送信</string>
-    <string name="set_password_to_export">暗証フレーズを設定してからエキスポート</string>
+    <string name="set_password_to_export">パスフレーズを設定してからエクスポート</string>
     <string name="stop_chat_question">チャットを閉じますか？</string>
     <string name="save_passphrase_in_keychain">暗証フレーズをキーストア (暗証キー保管庫) に保存</string>
     <string name="wrong_passphrase">不正なパスフレーズ</string>
@@ -924,7 +924,7 @@
     <string name="incognito_random_profile">あなたのランダム・プロフィール</string>
     <string name="v4_3_voice_messages">音声メッセージ</string>
     <string name="settings_section_title_socks">SOCKSプロキシ</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">データベースのエキスポート、読み込み、削除するにはチャット機能を停止する必要があります。チャット機能を停止すると送受信ができなくなります。</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">データベースのエクスポート、読み込み、削除するにはチャット機能を停止する必要があります。チャット機能を停止すると送受信ができなくなります。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">あなたのプロフィール、連絡先、メッセージ、ファイルが完全削除されます (※元に戻せません※)。</string>
     <string name="update_database_passphrase">データベース暗証フレーズを更新</string>
     <string name="save_archive">アーカイブを保存</string>
@@ -1716,4 +1716,12 @@
     <string name="saved_message_title">メッセージ保存済</string>
     <string name="migrate_from_device_stopping_chat">チャット停止中</string>
     <string name="error_showing_desktop_notification">エラーが表示された場合は、開発者に連絡してください。</string>
+    <string name="permissions_find_in_settings_and_grant">Androidの設定から権限を設定見つけ、手動で許可。</string>
+    <string name="permissions_grant_in_settings">設定で付与</string>
+    <string name="permissions_required">権限の付与</string>
+    <string name="permissions_camera">カメラ</string>
+    <string name="permissions_camera_and_record_audio">カメラとマイク</string>
+    <string name="permissions_record_audio">マイク</string>
+    <string name="permissions_grant">通話許可を付与</string>
+    <string name="permissions_open_settings">設定を開く</string>
 </resources>
