@@ -353,7 +353,7 @@ storeRemoteFile rhId encrypted_ localPath = do
       createDirectoryIfMissing True tmpDir
       tmpFile <- liftIO $ tmpDir `uniqueCombine` takeFileName localPath
       cfArgs <- atomically . CF.randomArgs =<< asks random
-      liftEither =<< liftIO (runExceptT $ withExceptT (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs)
+      liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
 
 getRemoteFile :: RemoteHostId -> RemoteFile -> CM ()

@@ -2989,9 +2989,9 @@ agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
-  forever $ atomically (readTBQueue q) >>= void . process l
+  forever $ atomically (readTBQueue q) >>= process l
   where
-    process :: Lock -> (ACorrId, EntityId, APartyCmd 'Agent) -> CM' (Either ChatError ())
+    process :: Lock -> (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
     process l (corrId, entId, APC e msg) = run $ case e of
       SAENone -> processAgentMessageNoConn msg
       SAEConn -> processAgentMessage corrId entId msg
@@ -3000,7 +3000,7 @@ agentSubscriber = do
       where
         run action = do
           let name = "agentSubscriber entity=" <> show e <> " entId=" <> str entId <> " msg=" <> str (aCommandTag msg)
-          withLock l name $ runExceptT $ action `catchChatError` (toView . CRChatError Nothing)
+          withLock' l name $ action `catchChatError'` (toView' . CRChatError Nothing)
         str :: StrEncoding a => a -> String
         str = B.unpack . strEncode
 
