@@ -1715,4 +1715,13 @@
     <string name="migrate_to_device_try_again">你可以再试一次。</string>
     <string name="migrate_from_device_try_again">你可以再试一次。</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>请注意</b>: 作为安全保护措施，在两部设备上使用同一数据库会破坏解密来自你联系人的消息。]]></string>
+    <string name="error_showing_desktop_notification">显示通知出错，请联系开发者。</string>
+    <string name="permissions_find_in_settings_and_grant">在 Android 系统设置中找到此权限并手动授予权限。</string>
+    <string name="permissions_grant_in_settings">在系统设置中授予</string>
+    <string name="permissions_grant">要进行通话请授予一项或多项权限</string>
+    <string name="permissions_camera">相机</string>
+    <string name="permissions_record_audio">麦克风</string>
+    <string name="permissions_camera_and_record_audio">相机和麦克风</string>
+    <string name="permissions_open_settings">打开设置</string>
+    <string name="permissions_required">授予权限</string>
 </resources>
