@@ -150,6 +150,7 @@ tests:
 
 ghc-options:
   # - -haddock
+  - -O2
   - -Wall
   - -Wcompat
   - -Werror=incomplete-patterns
@@ -159,3 +160,6 @@ ghc-options:
   - -Wunused-type-patterns
   - -finfo-table-map
   - -fdistinct-constructor-tables
+
+default-extensions:
+  - StrictData

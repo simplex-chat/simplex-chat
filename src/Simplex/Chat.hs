@@ -132,7 +132,7 @@ defaultChatConfig =
   ChatConfig
     { agentConfig =
         defaultAgentConfig
-          { tcpPort = undefined, -- agent does not listen to TCP
+          { tcpPort = Nothing, -- agent does not listen to TCP
             tbqSize = 1024
           },
       chatVRange = supportedChatVRange,
