@@ -9,7 +9,7 @@
 #ifndef hs_init_h
 #define hs_init_h
 
-void haskell_init(const char *eventlog, const char *heap_profile);
+void haskell_init(int nse, const char *eventlog, const char *heap_profile);
 
 void haskell_init_nse(void);
 
