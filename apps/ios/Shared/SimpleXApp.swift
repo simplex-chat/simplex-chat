@@ -23,7 +23,9 @@ struct SimpleXApp: App {
     init() {
         DispatchQueue.global(qos: .background).sync {
             // we have to use debug profile file name without extension here because .hp extension is added by profiler
-          haskell_init(0, getAppEventLogPath().path, nil)
+//          haskell_init(0, nil, nil)
+          let dummyHpPath = getAppDebugProfilePrefixPath().path + "_dummy" // not used, but required to populate eventlog
+          haskell_init(0, getAppEventLogPath().path, dummyHpPath)
         }
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()

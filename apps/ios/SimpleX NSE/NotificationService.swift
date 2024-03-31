@@ -416,6 +416,7 @@ func startChat() -> DBMigrationResult? {
 func doStartChat() -> DBMigrationResult? {
     logger.debug("NotificationService: doStartChat")
     haskell_init(1, nil, getAppDebugProfilePrefixPath().path)
+//    haskell_init(1, nil, nil)
     let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation(), backgroundMode: true)
     logger.debug("NotificationService: doStartChat \(String(describing: dbStatus))")
     if dbStatus != .ok {
