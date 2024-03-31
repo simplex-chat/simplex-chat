@@ -1,5 +1,5 @@
 {
-  "https://github.com/simplex-chat/simplexmq.git"."7f0658a94e9d1f335d2c604f1f1b7de759b61e53" = "1na8yynwp010lsb82zclm9nygnnc1vsklhz1x4whc24naz7wd0d4";
+  "https://github.com/simplex-chat/simplexmq.git"."2168fff81b6faf0a0ccbe1f868e809f34ba1aa91" = "00cbpzaanrlpn9rsa48q7qsrzx41ialp3njc756hxk9k7ym2kmqw";
   "https://github.com/simplex-chat/hs-socks.git"."a30cc7a79a08d8108316094f8f2f82a0c5e1ac51" = "0yasvnr7g91k76mjkamvzab2kvlb1g5pspjyjn2fr6v83swjhj38";
   "https://github.com/simplex-chat/direct-sqlcipher.git"."f814ee68b16a9447fbb467ccc8f29bdd3546bfd9" = "1ql13f4kfwkbaq7nygkxgw84213i0zm7c1a8hwvramayxl38dq5d";
   "https://github.com/simplex-chat/sqlcipher-simple.git"."a46bd361a19376c5211f1058908fc0ae6bf42446" = "1z0r78d8f0812kxbgsm735qf6xx8lvaz27k1a0b4a2m0sshpd5gl";
