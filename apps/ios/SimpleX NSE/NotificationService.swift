@@ -65,18 +65,21 @@ class NSEThreads {
     }
 
     func processNotification(_ id: ChatId, _ ntf: NSENotification) async -> Void {
-        var timeoutOfWaiting: Int64 = 5_000_000000
-        while timeoutOfWaiting > 0 {
-            let activeThread = NSEThreads.queue.sync {
-                activeThreads.first(where: { (_, nse) in nse.receiveEntityId == id })
-            }
-            if let (_, nse) = activeThread,
+        var waitTime: Int64 = 5_000_000000
+        while waitTime > 0 {
+            if let (_, nse) = rcvEntityThread(id),
                nse.shouldProcessNtf && nse.processReceivedNtf(ntf) {
                 break
             } else {
                 try? await Task.sleep(nanoseconds: 10_000000)
-                timeoutOfWaiting -= 10_000000
+                waitTime -= 10_000000
             }
+        }
+    }
+
+    private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
+        NSEThreads.queue.sync {
+            activeThreads.first(where: { (_, nse) in nse.receiveEntityId == id })
         }
     }
 
