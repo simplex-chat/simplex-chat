@@ -150,6 +150,7 @@ tests:
 
 ghc-options:
   # - -haddock
+  - -O2
   - -Wall
   - -Wcompat
   - -Werror=incomplete-patterns
@@ -157,3 +158,6 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wunused-type-patterns
+
+default-extensions:
+  - StrictData
