@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -3010,11 +3011,10 @@ subscribeUserConnections :: forall m. ChatMonad m => (PQSupport -> VersionRangeC
 subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   -- get user connections
   ce <- asks $ subscriptionEvents . config
-  (conns, cts, ucs, gs, ms, sfts, rfts, pcs) <-
+  (!conns, !cts, !ucs, !gs, !ms, !sfts, !rfts, !pcs) <-
     if onlyNeeded
       then do
-        (conns, entities) <- withStore' (`getConnectionsToSubscribe` vr)
-        let (cts, ucs, ms, sfts, rfts, pcs) = foldl' addEntity (M.empty, M.empty, M.empty, M.empty, M.empty, M.empty) entities
+        (conns, (cts, ucs, ms, sfts, rfts, pcs)) <- withStore' $ \db -> getConnectionsToSubscribe db vr initialEntities addEntity
         pure (conns, cts, ucs, [], ms, sfts, rfts, pcs)
       else do
         withStore' unsetConnectionToSubscribe
@@ -3037,7 +3037,8 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   rcvFileSubsToView rs rfts
   pendingConnSubsToView rs pcs
   where
-    addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
+    initialEntities = (M.empty, M.empty, M.empty, M.empty, M.empty, M.empty)
+    addEntity (!cts, !ucs, !ms, !sfts, !rfts, !pcs) = \case
       RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
       RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
       RcvGroupMsgConnection c _g m -> let ms' = addConn c m ms in (cts, ucs, ms', sfts, rfts, pcs)
