@@ -71,7 +71,7 @@ crDirectoryEvent = \case
   CRChatItemDeleted {deletedChatItem = AChatItem _ SMDRcv (DirectChat ct) _, byUser = False} -> Just $ DEItemDeleteIgnored ct
   CRNewChatItem {chatItem = AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}} ->
     Just $ case (mc, itemLive) of
-      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly directoryCmdP $ T.dropWhileEnd isSpace t
+      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci
