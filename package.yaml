@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 5.6.0.4
+version: 5.6.1.0
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -151,6 +151,7 @@ tests:
 
 ghc-options:
   # - -haddock
+  - -O2
   - -Wall
   - -Wcompat
   - -Werror=incomplete-patterns
@@ -158,3 +159,6 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wunused-type-patterns
+
+default-extensions:
+  - StrictData

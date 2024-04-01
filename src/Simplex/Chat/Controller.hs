@@ -62,6 +62,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure)
@@ -82,7 +83,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, liftIOEither, tryAllErrors, (<$$>))
+import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -1140,7 +1141,7 @@ data DatabaseError
 data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
   deriving (Show, Exception)
 
-throwDBError :: ChatMonad m => DatabaseError -> m ()
+throwDBError :: DatabaseError -> CM ()
 throwDBError = throwError . ChatErrorDatabase
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
@@ -1244,39 +1245,59 @@ data RemoteCtrlInfo = RemoteCtrlInfo
   }
   deriving (Show)
 
-type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
+type CM' a = ReaderT ChatController IO a
 
-type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+type CM a = ExceptT ChatError (ReaderT ChatController IO) a
 
-chatReadVar :: ChatMonad' m => (ChatController -> TVar a) -> m a
-chatReadVar f = asks f >>= readTVarIO
+chatReadVar :: (ChatController -> TVar a) -> CM a
+chatReadVar = lift . chatReadVar'
 {-# INLINE chatReadVar #-}
 
-chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
-chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
+chatReadVar' :: (ChatController -> TVar a) -> CM' a
+chatReadVar' f = asks f >>= readTVarIO
+{-# INLINE chatReadVar' #-}
+
+chatWriteVar :: (ChatController -> TVar a) -> a -> CM ()
+chatWriteVar f = lift . chatWriteVar' f
 {-# INLINE chatWriteVar #-}
 
-chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
-chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
+chatWriteVar' :: (ChatController -> TVar a) -> a -> CM' ()
+chatWriteVar' f value = asks f >>= atomically . (`writeTVar` value)
+{-# INLINE chatWriteVar' #-}
+
+chatModifyVar :: (ChatController -> TVar a) -> (a -> a) -> CM ()
+chatModifyVar f = lift . chatModifyVar' f
 {-# INLINE chatModifyVar #-}
 
-setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
-setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
-setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar connNetworkStatuses $ M.insert agentConnId status
+chatModifyVar' :: (ChatController -> TVar a) -> (a -> a) -> CM' ()
+chatModifyVar' f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
+{-# INLINE chatModifyVar' #-}
 
-tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
+setContactNetworkStatus :: Contact -> NetworkStatus -> CM' ()
+setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
+setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar' connNetworkStatuses $ M.insert agentConnId status
+
+tryChatError :: CM a -> CM (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
 
-catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
+tryChatError' :: CM a -> CM' (Either ChatError a)
+tryChatError' = tryAllErrors' mkChatError
+{-# INLINE tryChatError' #-}
+
+catchChatError :: CM a -> (ChatError -> CM a) -> CM a
 catchChatError = catchAllErrors mkChatError
 {-# INLINE catchChatError #-}
 
-chatFinally :: ChatMonad m => m a -> m b -> m a
+catchChatError' :: CM a -> (ChatError -> CM' a) -> CM' a
+catchChatError' = catchAllErrors' mkChatError
+{-# INLINE catchChatError' #-}
+
+chatFinally :: CM a -> CM b -> CM a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
-onChatError :: ChatMonad m => m a -> m b -> m a
+onChatError :: CM a -> CM b -> CM a
 a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
 {-# INLINE onChatError #-}
 
@@ -1295,12 +1316,16 @@ mkStoreError = SEInternalError . show
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
 
-throwChatError :: ChatMonad m => ChatErrorType -> m a
+throwChatError :: ChatErrorType -> CM a
 throwChatError = throwError . ChatError
 
 -- | Emit local events.
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView ev = do
+toView :: ChatResponse -> CM ()
+toView = lift . toView'
+{-# INLINE toView #-}
+
+toView' :: ChatResponse -> CM' ()
+toView' ev = do
   cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
   event <- liftIO $ eventHook chatHooks cc ev
   atomically $
@@ -1310,15 +1335,15 @@ toView ev = do
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, Nothing, event)
 
-withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
+withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
 
-withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStore action = do
   ChatController {chatStore} <- ask
   liftIOEither $ withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
 
-withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
+withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
   liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
@@ -1332,17 +1357,17 @@ handleDBErrors =
     E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
   ]
 
-withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
+withStoreBatch' :: Traversable t => (DB.Connection -> t (IO a)) -> CM' (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
 
-withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
+withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
-    >>= runExceptT . action
+    >>= liftIO . runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
 
-withAgent' :: ChatMonad' m => (AgentClient -> m a) -> m a
-withAgent' action = asks smpAgent >>= action
+withAgent' :: (AgentClient -> IO a) -> CM' a
+withAgent' action = asks smpAgent >>= liftIO . action
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 

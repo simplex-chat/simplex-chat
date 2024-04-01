@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.6.0.4
+version:        5.6.1.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -181,7 +181,9 @@ library
       Paths_simplex_chat
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -O2
+  default-extensions:
+      StrictData
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -240,7 +242,9 @@ executable simplex-bot
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-bot
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  default-extensions:
+      StrictData
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -300,7 +304,9 @@ executable simplex-bot-advanced
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-bot-advanced
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  default-extensions:
+      StrictData
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -359,11 +365,13 @@ executable simplex-broadcast-bot
   hs-source-dirs:
       apps/simplex-broadcast-bot
       apps/simplex-broadcast-bot/src
+  default-extensions:
+      StrictData
   other-modules:
       Broadcast.Bot
       Broadcast.Options
       Paths_simplex_chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -424,7 +432,9 @@ executable simplex-chat
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  default-extensions:
+      StrictData
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -484,6 +494,8 @@ executable simplex-directory-service
   hs-source-dirs:
       apps/simplex-directory-service
       apps/simplex-directory-service/src
+  default-extensions:
+      StrictData
   other-modules:
       Directory.Events
       Directory.Options
@@ -491,7 +503,7 @@ executable simplex-directory-service
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -582,7 +594,9 @@ test-suite simplex-chat-test
       tests
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  default-extensions:
+      StrictData
+  ghc-options: -O2 -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       QuickCheck ==2.14.*
     , aeson ==2.2.*
