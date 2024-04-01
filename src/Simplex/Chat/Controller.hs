@@ -165,7 +165,7 @@ defaultChatHooks =
   ChatHooks
     { preCmdHook = \_ -> pure . Right,
       eventHook = \_ -> pure
-    }      
+    }
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
@@ -501,9 +501,9 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
-  -- The parser will return this command for strings that start from "//".
-  -- This command should be processed in preCmdHook
-  | CustomChatCommand ByteString
+  | -- The parser will return this command for strings that start from "//".
+    -- This command should be processed in preCmdHook
+    CustomChatCommand ByteString
   deriving (Show)
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
@@ -741,7 +741,7 @@ data ChatResponse
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
-  | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
+  | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
@@ -1363,7 +1363,7 @@ handleDBErrors =
   [ E.Handler $ \(e :: SQLError) ->
       let se = SQL.sqlError e
           busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
-        in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
+       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
     E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
   ]
 

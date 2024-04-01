@@ -2107,8 +2107,18 @@ processChatCommand' vr = \case
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
+    chatEntityLocks <- getLocks =<< asks entityLocks
     agentLocks <- withAgent' debugAgentLocks
-    pure CRDebugLocks {chatLockName, agentLocks}
+    pure CRDebugLocks {chatLockName, chatEntityLocks, agentLocks}
+    where
+      getLocks ls = atomically $ M.mapKeys enityLockString . M.mapMaybe id <$> (mapM tryReadTMVar =<< readTVar ls)
+      enityLockString cle = case cle of
+        CLInvitation bs -> "Invitation " <> B.unpack bs
+        CLConnection connId -> "Connection " <> show connId
+        CLContact ctId -> "Contact " <> show ctId
+        CLGroup gId -> "Group " <> show gId
+        CLUserContact ucId -> "UserContact " <> show ucId
+        CLFile fId -> "File " <> show fId
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
