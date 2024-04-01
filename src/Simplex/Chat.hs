@@ -92,7 +92,7 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, vacuumSQLiteStore, withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -638,6 +638,12 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
+  SQLVacuum -> do
+    ChatController {chatStore, smpAgent} <- ask
+    liftIO $ do
+      vacuumSQLiteStore chatStore
+      vacuumSQLiteStore $ agentClientStore smpAgent
+    ok_
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
     (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
@@ -6806,6 +6812,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
+      "/sql vacuum" $> SQLVacuum,
       "/_get chats "
         *> ( APIGetChats
               <$> A.decimal
