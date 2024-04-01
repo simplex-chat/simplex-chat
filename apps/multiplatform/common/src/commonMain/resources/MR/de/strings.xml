@@ -1797,4 +1797,12 @@
     <string name="conn_event_disabled_pq">Standard-Ende-zu-Ende-Verschlüsselung</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Sie dürfen die selbe Datenbank <b>nicht</b> auf zwei Geräten nutzen.]]></string>
     <string name="error_showing_desktop_notification">Fehler beim Anzeigen der Benachrichtigung. Bitte kontaktieren Sie die Entwickler.</string>
+    <string name="permissions_find_in_settings_and_grant">Sie finden diese Berechtigung in den Android Einstellungen vor und müssen Sie manuell erteilen.</string>
+    <string name="permissions_grant_in_settings">In den Einstellungen erteilen</string>
+    <string name="permissions_required">Berechtigungen erteilen</string>
+    <string name="permissions_record_audio">Mikrofon</string>
+    <string name="permissions_open_settings">Einstellungen öffnen</string>
+    <string name="permissions_camera">Kamera</string>
+    <string name="permissions_camera_and_record_audio">Kamera und Mikrofon</string>
+    <string name="permissions_grant">Erteilen Sie die Berechtigung(en), um Anrufe zu tätigen</string>
 </resources>
