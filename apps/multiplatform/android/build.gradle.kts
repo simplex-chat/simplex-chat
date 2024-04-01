@@ -8,12 +8,14 @@ plugins {
 }
 
 android {
-    compileSdkVersion(34)
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "chat.simplex.app"
-        minSdkVersion(28)
-        targetSdkVersion(33)
+        namespace = "chat.simplex.app"
+        minSdk = 28
+        //noinspection OldTargetApi
+        targetSdk = 33
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
@@ -47,11 +49,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility =  JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility =  JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
         freeCompilerArgs += "-opt-in=kotlinx.coroutines.DelicateCoroutinesApi"
         freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         freeCompilerArgs += "-opt-in=androidx.compose.ui.text.ExperimentalTextApi"
@@ -71,18 +73,20 @@ android {
             isMinifyEnabled = false
         }
     }
-    packagingOptions {
+    buildFeatures {
+        buildConfig = true
+    }
+    packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs.useLegacyPackaging = rootProject.extra["compression.level"] as Int != 0
     }
     android.sourceSets["main"].assets.setSrcDirs(listOf("../common/src/commonMain/resources/assets"))
-    val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
-    val isBundle = gradle.startParameter.taskNames.find { it.toLowerCase().contains("bundle") } != null
-    //    if (isRelease) {
+    val isRelease = gradle.startParameter.taskNames.find { it.lowercase().contains("release") } != null
+    val isBundle = gradle.startParameter.taskNames.find { it.lowercase().contains("bundle") } != null
     // Comma separated list of languages that will be included in the apk
-    android.defaultConfig.resConfigs(
+    android.defaultConfig.resourceConfigurations += listOf(
         "en",
         "ar",
         "bg",
@@ -104,7 +108,7 @@ android {
         "uk",
         "zh-rCN"
     )
-    //    }
+    ndkVersion = "23.1.7779620"
     if (isBundle) {
         defaultConfig.ndk.abiFilters("arm64-v8a", "armeabi-v7a")
     } else {
@@ -125,41 +129,44 @@ android {
 
 dependencies {
     implementation(project(":common"))
-    implementation("androidx.core:core-ktx:1.7.0")
+    implementation("androidx.core:core-ktx:1.12.0")
     //implementation("androidx.compose.ui:ui:${rootProject.extra["compose.version"] as String}")
     //implementation("androidx.compose.material:material:$compose_version")
     //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
-    implementation("androidx.appcompat:appcompat:1.5.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.1")
-    implementation("androidx.lifecycle:lifecycle-process:2.4.1")
-    implementation("androidx.activity:activity-compose:1.5.0")
-    val work_version = "2.7.1"
-    implementation("androidx.work:work-runtime-ktx:$work_version")
-    implementation("androidx.work:work-multiprocess:$work_version")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    val workVersion = "2.9.0"
+    implementation("androidx.work:work-runtime-ktx:$workVersion")
+    implementation("androidx.work:work-multiprocess:$workVersion")
 
-    implementation("com.jakewharton:process-phoenix:2.1.2")
+    implementation("com.jakewharton:process-phoenix:2.2.0")
+
+    //Camera Permission
+    implementation("com.google.accompanist:accompanist-permissions:0.23.0")
 
     //implementation("androidx.compose.material:material-icons-extended:$compose_version")
     //implementation("androidx.compose.ui:ui-util:$compose_version")
 
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.3")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.4.3")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.6.4")
 }
 
 tasks {
     val compressApk by creating {
         doLast {
-            val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
+            val isRelease = gradle.startParameter.taskNames.find { it.lowercase().contains("release") } != null
             val buildType: String = if (isRelease) "release" else "debug"
             val javaHome = System.getProperties()["java.home"] ?: org.gradle.internal.jvm.Jvm.current().javaHome
             val sdkDir = android.sdkDirectory.absolutePath
-            var keyAlias = ""
-            var keyPassword = ""
-            var storeFile = ""
-            var storePassword = ""
+            val keyAlias: String
+            val keyPassword: String
+            val storeFile: String
+            val storePassword: String
             if (project.properties["android.injected.signing.key.alias"] != null) {
                 keyAlias = project.properties["android.injected.signing.key.alias"] as String
                 keyPassword = project.properties["android.injected.signing.key.password"] as String
@@ -184,16 +191,16 @@ tasks {
             }
             exec {
                 workingDir("../../../scripts/android")
-                setEnvironment(mapOf("JAVA_HOME" to "$javaHome"))
+                environment = mapOf("JAVA_HOME" to "$javaHome")
                 commandLine = listOf(
                     "./compress-and-sign-apk.sh",
                     "${rootProject.extra["compression.level"]}",
                     "$outputDir",
-                    "$sdkDir",
-                    "$storeFile",
-                    "$storePassword",
-                    "$keyAlias",
-                    "$keyPassword"
+                    sdkDir,
+                    storeFile,
+                    storePassword,
+                    keyAlias,
+                    keyPassword
                 )
             }
 

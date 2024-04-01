@@ -21,7 +21,7 @@
     "hero-2-header-desc": "הסרטון מראה כיצד אתם יוצרים קשר עם חברכם באמצעות קוד QR חד פעמי, באופן אישי או באמצעות קישור וידאו. באפשרותכם גם להתחבר על-ידי שיתוף קישור ההזמנה.",
     "hero-overlay-1-title": "איך SimpleX עובד?",
     "feature-1-title": "הודעות מוצפנות מקצה לקצה עם סימונים ואפשרויות עריכה",
-    "feature-2-title": "תמונות וקבצים<br>מוצפנים מקצה לקצה",
+    "feature-2-title": "תמונות, וידאו וקבצים<br>בהצפנת קצה-אל-קצה",
     "feature-3-title": "קבוצות סודיות מבוזרות &mdash;<br>רק המשתמשים יודעים שהן קיימות",
     "simplex-private-3-title": "תעבורת TLS<br>מאובטחת ומאומתת",
     "simplex-private-card-1-point-2": "תיבת הצפנה NaCL בכל תור כדי למנוע קורלציית תעבורה בין תורי הודעות במקרה שאבטחת TLS נפגעה.",
@@ -59,7 +59,7 @@
     "feature-6-title": "שיחות שמע ווידאו<br>מוצפנות מקצה לקצה",
     "feature-4-title": "הודעות קוליות מוצפנות מקצה לקצה",
     "feature-5-title": "הודעות נעלמות",
-    "feature-7-title": "מסד נתונים מוצפן נייד &mdash; העברת הפרופיל שלכם למכשיר אחר",
+    "feature-7-title": "מסד נתונים מוצפן נייד &mdash; העבר פרופיל למכשיר אחר",
     "feature-8-title": "מצב זהות נסתרת &mdash;<br>ייחודי ל-SimpleX Chat",
     "simplex-private-4-title": "אופציונלי<br>גישה דרך Tor",
     "simplex-network-overlay-1-title": "השוואה לפרוטוקולי העברת הודעות P2P",
@@ -250,5 +250,7 @@
     "stable-and-beta-versions-built-by-developers": "גרסאות יציבות ובטא שנבנו על ידי המפתחים",
     "f-droid-page-simplex-chat-repo-section-text": "כדי להוסיף אותו ללקוח F-Droid שלכם, <span class='hide-on-mobile'>סרקו את קוד ה-QR או</span> השתמשו בכתובת האתר הזו:",
     "docs-dropdown-8": "שירות מדריך כתובות SimpleX",
-    "f-droid-page-f-droid-org-repo-section-text": "מאגרי SimpleX Chat ו-F-Droid.org חותמים על גרסאות עם מפתחות שונים. כדי לעבור, אנא <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>ייצא</a> את מסד הנתונים של הצ'אט והתקן מחדש את האפליקציה."
+    "f-droid-page-f-droid-org-repo-section-text": "מאגרי SimpleX Chat ו-F-Droid.org חותמים על גרסאות עם מפתחות שונים. כדי לעבור, אנא <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>ייצא</a> את מסד הנתונים של הצ'אט והתקן מחדש את האפליקציה.",
+    "please-enable-javascript": "אנא הפעל JavaScript כדי לראות את קוד ה-QR.",
+    "please-use-link-in-mobile-app": "אנא השתמש בקישור באפליקציה במכשיר נייד"
 }

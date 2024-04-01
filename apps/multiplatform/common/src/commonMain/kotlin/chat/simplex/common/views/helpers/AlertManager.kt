@@ -190,6 +190,7 @@ class AlertManager {
   fun showAlertMsg(
     title: String, text: String? = null,
     confirmText: String = generalGetString(MR.strings.ok),
+    onConfirm: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     shareText: Boolean? = null
   ) {
@@ -220,6 +221,7 @@ class AlertManager {
               }
               TextButton(
                 onClick = {
+                  onConfirm?.invoke()
                   hideAlert()
                 },
                 Modifier.focusRequester(focusRequester)
@@ -257,8 +259,9 @@ class AlertManager {
     title: StringResource,
     text: StringResource? = null,
     confirmText: StringResource = MR.strings.ok,
+    onConfirm: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
-  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), hostDevice)
+  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), onConfirm, hostDevice)
 
   @Composable
   fun showInView() {

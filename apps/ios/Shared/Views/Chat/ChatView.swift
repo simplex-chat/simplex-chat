@@ -17,6 +17,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -234,7 +235,9 @@ struct ChatView: View {
 
     private func initChatView() {
         let cInfo = chat.chatInfo
-        if case let .direct(contact) = cInfo {
+        // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
+        if case .active = scenePhase,
+           case let .direct(contact) = cInfo {
             Task {
                 do {
                     let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
@@ -979,8 +982,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Hide", comment: "chat item action"),
                 image: UIImage(systemName: "eye.slash")
             ) { _ in
-                // With animation it looks bad because of UIKit context menu involved
-                revealed = false
+                withAnimation {
+                    revealed = false
+                }
             }
         }
         
@@ -1049,8 +1053,9 @@ struct ChatView: View {
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
                 image: UIImage(systemName: "eye")
             ) { _ in
-                // With animation it looks bad because of UIKit context menu involved
-                revealed = true
+                withAnimation {
+                    revealed = true
+                }
             }
         }
 

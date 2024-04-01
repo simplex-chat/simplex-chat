@@ -1753,6 +1753,8 @@ object ChatController {
           chatModel.removeChat(rhId, r.mergedContact.id)
         }
       }
+      // ContactsSubscribed, ContactsDisconnected and ContactSubSummary are only used in CLI,
+      // They have to be used here for remote desktop to process these status updates.
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
       is CR.ContactSubSummary -> {
@@ -5011,8 +5013,8 @@ sealed class AgentErrorType {
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
-    is INACTIVE -> "INACTIVE"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
+    is INACTIVE -> "INACTIVE"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -5023,8 +5025,8 @@ sealed class AgentErrorType {
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
-  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
+  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
 }
 
 @Serializable
@@ -5123,11 +5125,13 @@ sealed class SMPTransportError {
     is BadBlock -> "badBlock"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
+    is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
+  @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
   @Serializable @SerialName("handshake") class Handshake(val handshakeErr: SMPHandshakeError): SMPTransportError()
 }
 
@@ -5137,10 +5141,12 @@ sealed class SMPHandshakeError {
     is PARSE -> "PARSE"
     is VERSION -> "VERSION"
     is IDENTITY -> "IDENTITY"
+    is BAD_AUTH -> "BAD_AUTH"
   }
   @Serializable @SerialName("PARSE") class PARSE: SMPHandshakeError()
   @Serializable @SerialName("VERSION") class VERSION: SMPHandshakeError()
   @Serializable @SerialName("IDENTITY") class IDENTITY: SMPHandshakeError()
+  @Serializable @SerialName("BAD_AUTH") class BAD_AUTH: SMPHandshakeError()
 }
 
 @Serializable
@@ -5175,6 +5181,8 @@ sealed class XFTPErrorType {
     is NO_FILE -> "NO_FILE"
     is HAS_FILE -> "HAS_FILE"
     is FILE_IO -> "FILE_IO"
+    is TIMEOUT -> "TIMEOUT"
+    is REDIRECT -> "REDIRECT"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
@@ -5188,6 +5196,8 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
   @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
   @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
+  @Serializable @SerialName("TIMEOUT") object TIMEOUT: XFTPErrorType()
+  @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
 }
 
@@ -5197,6 +5207,8 @@ sealed class RCErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is IDENTITY -> "IDENTITY"
     is NO_LOCAL_ADDRESS -> "NO_LOCAL_ADDRESS"
+    is NEW_CONTROLLER -> "NEW_CONTROLLER"
+    is NOT_DISCOVERED -> "NOT_DISCOVERED"
     is TLS_START_FAILED -> "TLS_START_FAILED"
     is EXCEPTION -> "EXCEPTION $EXCEPTION"
     is CTRL_AUTH -> "CTRL_AUTH"
@@ -5211,6 +5223,8 @@ sealed class RCErrorType {
   @Serializable @SerialName("internal") data class INTERNAL(val internalErr: String): RCErrorType()
   @Serializable @SerialName("identity") object IDENTITY: RCErrorType()
   @Serializable @SerialName("noLocalAddress") object NO_LOCAL_ADDRESS: RCErrorType()
+  @Serializable @SerialName("newController") object NEW_CONTROLLER: RCErrorType()
+  @Serializable @SerialName("notDiscovered") object NOT_DISCOVERED: RCErrorType()
   @Serializable @SerialName("tlsStartFailed") object TLS_START_FAILED: RCErrorType()
   @Serializable @SerialName("exception") data class EXCEPTION(val exception: String): RCErrorType()
   @Serializable @SerialName("ctrlAuth") object CTRL_AUTH: RCErrorType()
@@ -5269,28 +5283,39 @@ sealed class RemoteCtrlError {
     is BadState -> "badState"
     is Busy -> "busy"
     is Timeout -> "timeout"
+    is NoKnownControllers -> "noKnownControllers"
+    is BadController -> "badController"
     is Disconnected -> "disconnected"
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
+    is HTTP2Error -> "http2Error"
+    is ProtocolError -> "protocolError"
   }
   val localizedString: String get() = when (this) {
     is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
     is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
     is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
     is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is NoKnownControllers -> "no known controllers"
+    is BadController -> "bad controller"
     is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
     is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
     is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+    is HTTP2Error -> "HTTP2 error"
+    is ProtocolError -> "protocol error"
   }
 
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
+  @Serializable @SerialName("noKnownControllers") object NoKnownControllers: RemoteCtrlError()
+  @Serializable @SerialName("badController") object BadController: RemoteCtrlError()
   @Serializable @SerialName("disconnected") class Disconnected(val remoteCtrlId: Long, val reason: String): RemoteCtrlError()
   @Serializable @SerialName("badInvitation") object BadInvitation: RemoteCtrlError()
   @Serializable @SerialName("badVersion") data class BadVersion(val appVersion: String): RemoteCtrlError()
-  //@Serializable @SerialName("protocolError") data class ProtocolError(val protocolError: RemoteProtocolError): RemoteCtrlError()
+  @Serializable @SerialName("hTTP2Error") data class HTTP2Error(val http2Error: String): RemoteCtrlError()
+  @Serializable @SerialName("protocolError") object ProtocolError: RemoteCtrlError()
 }
 
 enum class NotificationsMode() {

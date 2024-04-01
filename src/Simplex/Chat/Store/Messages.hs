@@ -25,7 +25,6 @@ module Simplex.Chat.Store.Messages
     createNewMessageAndRcvMsgDelivery,
     createNewRcvMessage,
     updateSndMsgDeliveryStatus,
-    updateRcvMsgDeliveryStatus,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -42,6 +41,7 @@ module Simplex.Chat.Store.Messages
     getDirectChatItemLast,
     getAllChatItems,
     getAChatItem,
+    getAChatItemBySharedMsgId,
     updateDirectChatItem,
     updateDirectChatItem',
     addInitialAndNewCIVersions,
@@ -211,7 +211,7 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
   insertedRowId db
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} authorGroupMemberId_ = do
+createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
   msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ Nothing
   liftIO $ do
     currentTs <- getCurrentTime
@@ -219,10 +219,10 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
       db
       [sql|
         INSERT INTO msg_deliveries
-          (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at, delivery_status)
-        VALUES (?,?,?,?,?,?,?,?,?)
+          (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
+        VALUES (?,?,?,?,?,?,?,?)
       |]
-      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
+      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
   pure msg
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
@@ -272,18 +272,6 @@ updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do
       WHERE connection_id = ? AND agent_msg_id = ?
     |]
     (sndMsgDeliveryStatus, currentTs, connId, agentMsgId)
-
-updateRcvMsgDeliveryStatus :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
-updateRcvMsgDeliveryStatus db connId cmdId rcvMsgDeliveryStatus = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE msg_deliveries
-      SET delivery_status = ?, updated_at = ?
-      WHERE connection_id = ? AND agent_ack_cmd_id = ?
-    |]
-    (rcvMsgDeliveryStatus, currentTs, connId, cmdId)
 
 createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> Maybe Int64 -> IO ()
 createPendingGroupMessage db groupMemberId messageId introId_ = do
@@ -2214,6 +2202,15 @@ getAChatItem db vr user chatRef itemId = case chatRef of
     CChatItem msgDir ci <- getLocalChatItem db user folderId itemId
     pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
   _ -> throwError $ SEChatItemNotFound itemId
+
+getAChatItemBySharedMsgId :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> SharedMsgId -> ExceptT StoreError IO AChatItem
+getAChatItemBySharedMsgId db user cd sharedMsgId = case cd of
+  CDDirectRcv ct@Contact {contactId} -> do
+    (CChatItem msgDir ci) <- getDirectChatItemBySharedMsgId db user contactId sharedMsgId
+    pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
+  CDGroupRcv g@GroupInfo {groupId} GroupMember {groupMemberId} -> do
+    (CChatItem msgDir ci) <- getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+    pure $ AChatItem SCTGroup msgDir (GroupChat g) ci
 
 getChatItemVersions :: DB.Connection -> ChatItemId -> IO [ChatItemVersion]
 getChatItemVersions db itemId = do

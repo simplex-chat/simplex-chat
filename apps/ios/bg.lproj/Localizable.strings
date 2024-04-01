@@ -378,6 +378,9 @@
 "admin" = "админ";
 
 /* No comment provided by engineer. */
+"Admins can block a member for all." = "Администраторите могат да блокират член за всички.";
+
+/* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Админите могат да създадат линкове за присъединяване към групи.";
 
 /* No comment provided by engineer. */
@@ -415,6 +418,9 @@
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Всички ваши контакти ще останат свързани. Актуализацията на профила ще бъде изпратена до вашите контакти.";
+
+/* No comment provided by engineer. */
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Всички ваши контакти, разговори и файлове ще бъдат сигурно криптирани и качени на парчета в конфигурираните XFTP релета.";
 
 /* No comment provided by engineer. */
 "Allow" = "Позволи";
@@ -498,6 +504,9 @@
 "App build: %@" = "Компилация на приложението: %@";
 
 /* No comment provided by engineer. */
+"App data migration" = "Миграция на данните от приложението";
+
+/* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "Приложението криптира нови локални файлове (с изключение на видеоклипове).";
 
 /* No comment provided by engineer. */
@@ -517,6 +526,15 @@
 
 /* No comment provided by engineer. */
 "Appearance" = "Изглед";
+
+/* No comment provided by engineer. */
+"Apply" = "Приложи";
+
+/* No comment provided by engineer. */
+"Archive and upload" = "Архивиране и качване";
+
+/* No comment provided by engineer. */
+"Archiving database" = "Архивиране на база данни";
 
 /* No comment provided by engineer. */
 "Attach" = "Прикачи";
@@ -665,6 +683,9 @@
 /* No comment provided by engineer. */
 "Cancel" = "Отказ";
 
+/* No comment provided by engineer. */
+"Cancel migration" = "Отмени миграцията";
+
 /* feature offered item */
 "cancelled %@" = "отменен %@";
 
@@ -745,6 +766,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Чатът е спрян. Ако вече сте използвали тази база данни на друго устройство, трябва да я прехвърлите обратно, преди да стартирате чата отново.";
 
 /* No comment provided by engineer. */
+"Chat migrated!" = "Чатът е мигриран!";
+
+/* No comment provided by engineer. */
 "Chat preferences" = "Чат настройки";
 
 /* No comment provided by engineer. */
@@ -802,6 +826,9 @@
 "Confirm database upgrades" = "Потвърди актуализаациите на базата данни";
 
 /* No comment provided by engineer. */
+"Confirm network settings" = "Потвърди мрежовите настройки";
+
+/* No comment provided by engineer. */
 "Confirm new passphrase…" = "Потвърди новата парола…";
 
 /* No comment provided by engineer. */
@@ -809,6 +836,12 @@
 
 /* No comment provided by engineer. */
 "Confirm password" = "Потвърди парола";
+
+/* No comment provided by engineer. */
+"Confirm that you remember database passphrase to migrate it." = "Потвърдете, че помните паролата на базата данни, преди да я мигрирате.";
+
+/* No comment provided by engineer. */
+"Confirm upload" = "Потвърди качването";
 
 /* server test step */
 "Connect" = "Свързване";
@@ -1009,6 +1042,9 @@
 "Created on %@" = "Създаден на %@";
 
 /* No comment provided by engineer. */
+"Creating archive link" = "Създаване на архивен линк";
+
+/* No comment provided by engineer. */
 "Creating link…" = "Линкът се създава…";
 
 /* No comment provided by engineer. */
@@ -1154,6 +1190,9 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Изтрий базата данни";
+
+/* No comment provided by engineer. */
+"Delete database from this device" = "Изтриване на базата данни от това устройство";
 
 /* server test step */
 "Delete file" = "Изтрий файл";
@@ -1347,8 +1386,17 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Понижи версията и отвори чата";
 
+/* No comment provided by engineer. */
+"Download failed" = "Неуспешно изтегляне";
+
 /* server test step */
 "Download file" = "Свали файл";
+
+/* No comment provided by engineer. */
+"Downloading archive" = "Архива се изтегля";
+
+/* No comment provided by engineer. */
+"Downloading link details" = "Подробности за линка се изтеглят";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Дублирано име!";
@@ -1382,6 +1430,9 @@
 
 /* No comment provided by engineer. */
 "Enable for all" = "Активиране за всички";
+
+/* No comment provided by engineer. */
+"Enable in direct chats (BETA)!" = "Активиране в личните чатове (БЕТА)!";
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Активирай незабавни известия?";
@@ -1498,6 +1549,9 @@
 "Enter Passcode" = "Въведете kодa за достъп";
 
 /* No comment provided by engineer. */
+"Enter passphrase" = "Въведи парола";
+
+/* No comment provided by engineer. */
 "Enter passphrase…" = "Въведи парола…";
 
 /* No comment provided by engineer. */
@@ -1535,6 +1589,9 @@
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Грешка при добавяне на член(ове)";
+
+/* No comment provided by engineer. */
+"Error allowing contact PQ encryption" = "Грешка при разрешаване на PQ криптиране за контакт";
 
 /* No comment provided by engineer. */
 "Error changing address" = "Грешка при промяна на адреса";
@@ -1591,6 +1648,9 @@
 "Error deleting user profile" = "Грешка при изтриване на потребителския профил";
 
 /* No comment provided by engineer. */
+"Error downloading the archive" = "Грешка при изтеглянето на архива";
+
+/* No comment provided by engineer. */
 "Error enabling delivery receipts!" = "Грешка при активирането на потвърждениeто за доставка!";
 
 /* No comment provided by engineer. */
@@ -1635,6 +1695,9 @@
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Грешка при запазване на парола в Кeychain";
 
+/* when migrating */
+"Error saving settings" = "Грешка при запазване на настройките";
+
 /* No comment provided by engineer. */
 "Error saving user password" = "Грешка при запазване на потребителска парола";
 
@@ -1678,6 +1741,12 @@
 "Error updating user privacy" = "Грешка при актуализиране на поверителността на потребителя";
 
 /* No comment provided by engineer. */
+"Error uploading the archive" = "Грешка при качването на архива";
+
+/* No comment provided by engineer. */
+"Error verifying passphrase:" = "Грешка при проверката на паролата:";
+
+/* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
 /* No comment provided by engineer. */
@@ -1709,6 +1778,9 @@
 
 /* No comment provided by engineer. */
 "Exported database archive." = "Експортиран архив на базата данни.";
+
+/* No comment provided by engineer. */
+"Exported file doesn't exist" = "Експортираният файл не съществува";
 
 /* No comment provided by engineer. */
 "Exporting database archive…" = "Експортиране на архив на базата данни…";
@@ -1751,6 +1823,12 @@
 
 /* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Филтрирайте непрочетените и любимите чатове.";
+
+/* No comment provided by engineer. */
+"Finalize migration" = "Завърши миграцията";
+
+/* No comment provided by engineer. */
+"Finalize migration on another device." = "Завършете миграцията на другото устройство.";
 
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "Най-накрая ги имаме! 🚀";
@@ -1936,6 +2014,9 @@
 "How to use your servers" = "Как да използвате вашите сървъри";
 
 /* No comment provided by engineer. */
+"Hungarian interface" = "Унгарски интерфейс";
+
+/* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE сървъри (по един на ред)";
 
 /* No comment provided by engineer. */
@@ -1975,6 +2056,12 @@
 "Import database" = "Импортиране на база данни";
 
 /* No comment provided by engineer. */
+"Import failed" = "Неуспешно импортиране";
+
+/* No comment provided by engineer. */
+"Importing archive" = "Импортиране на архив";
+
+/* No comment provided by engineer. */
 "Improved message delivery" = "Подобрена доставка на съобщения";
 
 /* No comment provided by engineer. */
@@ -1982,6 +2069,9 @@
 
 /* No comment provided by engineer. */
 "Improved server configuration" = "Подобрена конфигурация на сървъра";
+
+/* No comment provided by engineer. */
+"In order to continue, chat should be stopped." = "За да продължите, чатът трябва да бъде спрян.";
 
 /* No comment provided by engineer. */
 "In reply to" = "В отговор на";
@@ -2066,6 +2156,9 @@
 
 /* No comment provided by engineer. */
 "Invalid link" = "Невалиден линк";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Невалидно потвърждение за мигриране";
 
 /* No comment provided by engineer. */
 "Invalid name!" = "Невалидно име!";
@@ -2332,6 +2425,9 @@
 "Message text" = "Текст на съобщението";
 
 /* No comment provided by engineer. */
+"Message too large" = "Съобщението е твърде голямо";
+
+/* No comment provided by engineer. */
 "Messages" = "Съобщения";
 
 /* No comment provided by engineer. */
@@ -2341,7 +2437,28 @@
 "Messages from %@ will be shown!" = "Съобщенията от %@ ще бъдат показани!";
 
 /* No comment provided by engineer. */
+"Migrate device" = "Мигрирай устройството";
+
+/* No comment provided by engineer. */
+"Migrate from another device" = "Мигриране от друго устройство";
+
+/* No comment provided by engineer. */
+"Migrate here" = "Мигрирай тук";
+
+/* No comment provided by engineer. */
+"Migrate to another device" = "Миграция към друго устройство";
+
+/* No comment provided by engineer. */
+"Migrate to another device via QR code." = "Мигрирайте към друго устройство чрез QR код.";
+
+/* No comment provided by engineer. */
+"Migrating" = "Мигриране";
+
+/* No comment provided by engineer. */
 "Migrating database archive…" = "Архивът на базата данни се мигрира…";
+
+/* No comment provided by engineer. */
+"Migration complete" = "Миграцията е завършена";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Грешка при мигриране:";
@@ -2600,6 +2717,9 @@
 /* No comment provided by engineer. */
 "Open group" = "Отвори група";
 
+/* authentication reason */
+"Open migration to another device" = "Отвори миграцията към друго устройство";
+
 /* No comment provided by engineer. */
 "Open Settings" = "Отвори настройки";
 
@@ -2613,7 +2733,13 @@
 "Opening app…" = "Приложението се отваря…";
 
 /* No comment provided by engineer. */
+"Or paste archive link" = "Или постави архивен линк";
+
+/* No comment provided by engineer. */
 "Or scan QR code" = "Или сканирай QR код";
+
+/* No comment provided by engineer. */
+"Or securely share this file link" = "Или сигурно споделете този линк към файла";
 
 /* No comment provided by engineer. */
 "Or show this code" = "Или покажи този код";
@@ -2667,6 +2793,9 @@
 "Permanent decryption error" = "Постоянна грешка при декриптиране";
 
 /* No comment provided by engineer. */
+"Picture-in-picture calls" = "Обаждания \"картина в картина\"";
+
+/* No comment provided by engineer. */
 "PING count" = "PING бройка";
 
 /* No comment provided by engineer. */
@@ -2683,6 +2812,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Моля, проверете вашите настройки и тези вашия за контакт.";
+
+/* No comment provided by engineer. */
+"Please confirm that network settings are correct for this device." = "Моля, потвърдете, че мрежовите настройки са правилни за това устройство.";
 
 /* No comment provided by engineer. */
 "Please contact developers.\nError: %@" = "Моля, свържете се с разработчиците.\nГрешка: %@";
@@ -2716,6 +2848,9 @@
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
+
+/* No comment provided by engineer. */
+"Post-quantum E2EE" = "Постквантово E2EE";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Запазете последната чернова на съобщението с прикачени файлове.";
@@ -2797,6 +2932,15 @@
 
 /* No comment provided by engineer. */
 "Push notifications" = "Push известия";
+
+/* No comment provided by engineer. */
+"Push server" = "Push сървър";
+
+/* chat item text */
+"quantum resistant e2e encryption" = "квантово устойчиво e2e криптиране";
+
+/* No comment provided by engineer. */
+"Quantum resistant encryption" = "Квантово устойчиво криптиране";
 
 /* No comment provided by engineer. */
 "Rate the app" = "Оценете приложението";
@@ -2934,7 +3078,16 @@
 "Repeat connection request?" = "Изпрати отново заявката за свързване?";
 
 /* No comment provided by engineer. */
+"Repeat download" = "Повтори изтеглянето";
+
+/* No comment provided by engineer. */
+"Repeat import" = "Повтори импортирането";
+
+/* No comment provided by engineer. */
 "Repeat join request?" = "Изпрати отново заявката за присъединяване?";
+
+/* No comment provided by engineer. */
+"Repeat upload" = "Повтори качването";
 
 /* chat item action */
 "Reply" = "Отговори";
@@ -2992,6 +3145,9 @@
 
 /* No comment provided by engineer. */
 "Run chat" = "Стартиране на чат";
+
+/* No comment provided by engineer. */
+"Safer groups" = "По-безопасни групи";
 
 /* chat item action */
 "Save" = "Запази";
@@ -3234,6 +3390,9 @@
 "Set passcode" = "Задай kод за достъп";
 
 /* No comment provided by engineer. */
+"Set passphrase" = "Задаване на парола";
+
+/* No comment provided by engineer. */
 "Set passphrase to export" = "Задай парола за експортиране";
 
 /* No comment provided by engineer. */
@@ -3277,6 +3436,9 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Показване на визуализация";
+
+/* No comment provided by engineer. */
+"Show QR code" = "Покажи QR код";
 
 /* No comment provided by engineer. */
 "Show:" = "Покажи:";
@@ -3338,6 +3500,9 @@
 /* notification title */
 "Somebody" = "Някой";
 
+/* chat item text */
+"standard end-to-end encryption" = "стандартно криптиране от край до край";
+
 /* No comment provided by engineer. */
 "Start chat" = "Започни чат";
 
@@ -3352,6 +3517,9 @@
 
 /* No comment provided by engineer. */
 "Stop" = "Спри";
+
+/* No comment provided by engineer. */
+"Stop chat" = "Спри чата";
 
 /* No comment provided by engineer. */
 "Stop chat to enable database actions" = "Спрете чата, за да активирате действията с базата данни";
@@ -3379,6 +3547,9 @@
 
 /* authentication reason */
 "Stop SimpleX" = "Спри SimpleX";
+
+/* No comment provided by engineer. */
+"Stopping chat" = "Спиране на чата";
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнат";
@@ -3529,6 +3700,12 @@
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Това действие не може да бъде отменено - вашият профил, контакти, съобщения и файлове ще бъдат безвъзвратно загубени.";
+
+/* E2EE info chat item */
+"This chat is protected by end-to-end encryption." = "Този чат е защитен чрез криптиране от край до край.";
+
+/* E2EE info chat item */
+"This chat is protected by quantum resistant end-to-end encryption." = "Този чат е защитен от квантово устойчиво криптиране от край до край.";
 
 /* notification title */
 "this contact" = "този контакт";
@@ -3722,8 +3899,14 @@
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Актуализирай и отвори чата";
 
+/* No comment provided by engineer. */
+"Upload failed" = "Неуспешно качване";
+
 /* server test step */
 "Upload file" = "Качи файл";
+
+/* No comment provided by engineer. */
+"Uploading archive" = "Архивът се качва";
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Използвай .onion хостове";
@@ -3756,6 +3939,9 @@
 "Use SimpleX Chat servers?" = "Използвай сървърите на SimpleX Chat?";
 
 /* No comment provided by engineer. */
+"Use the app while in the call." = "Използвайте приложението по време на разговора.";
+
+/* No comment provided by engineer. */
 "User profile" = "Потребителски профил";
 
 /* No comment provided by engineer. */
@@ -3781,6 +3967,12 @@
 
 /* No comment provided by engineer. */
 "Verify connections" = "Потвърждение за свързване";
+
+/* No comment provided by engineer. */
+"Verify database passphrase" = "Проверете паролата на базата данни";
+
+/* No comment provided by engineer. */
+"Verify passphrase" = "Провери паролата";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Потвърди кода за сигурност";
@@ -3861,6 +4053,9 @@
 "wants to connect to you!" = "иска да се свърже с вас!";
 
 /* No comment provided by engineer. */
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Внимание: стартирането на чата на множество устройства не се поддържа и ще доведе до неуспешно изпращане на съобщения";
+
+/* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Предупреждение: Може да загубите някои данни!";
 
 /* No comment provided by engineer. */
@@ -3874,6 +4069,9 @@
 
 /* No comment provided by engineer. */
 "Welcome message" = "Съобщение при посрещане";
+
+/* No comment provided by engineer. */
+"Welcome message is too long" = "Съобщението при посрещане е твърде дълго";
 
 /* No comment provided by engineer. */
 "What's new" = "Какво е новото";
@@ -3970,6 +4168,9 @@
 
 /* No comment provided by engineer. */
 "You can enable them later via app Privacy & Security settings." = "Можете да ги активирате по-късно през настройките за \"Поверителност и сигурност\" на приложението.";
+
+/* No comment provided by engineer. */
+"You can give another try." = "Можете да опитате още веднъж.";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Можете да скриете или заглушите известията за потребителски профил - плъзнете надясно.";
