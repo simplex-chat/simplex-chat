@@ -1548,8 +1548,9 @@ processChatCommand' vr = \case
     let mc = MCText msg
     case memberContactId m of
       Nothing -> do
-        gInfo <- withStore $ \db -> getGroupInfo db vr user gId
-        toView $ CRNoMemberContactCreating user gInfo m
+        g <- withStore $ \db -> getGroupInfo db vr user gId
+        unless (groupFeatureMemberAllowed SGFDirectMessages (membership g) g) $ throwChatError $ CECommandError "direct messages not allowed"
+        toView $ CRNoMemberContactCreating user g m
         processChatCommand (APICreateMemberContact gId mId) >>= \case
           cr@(CRNewMemberContact _ Contact {contactId} _ _) -> do
             toView cr
@@ -5156,8 +5157,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     createGroupFeatureItems g@GroupInfo {fullGroupPreferences} m =
       forM_ allGroupFeatures $ \(AGF f) -> do
         let p = getGroupPreference f fullGroupPreferences
-            (_, param) = groupFeatureState p
-        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param) Nothing
+            (_, param, role) = groupFeatureState p
+        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param role) Nothing
 
     xInfoProbe :: ContactOrMember -> Probe -> m ()
     xInfoProbe cgm2 probe = do
@@ -6649,14 +6650,14 @@ createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
             cup = getContactUserPreference f cups
             cup' = getContactUserPreference f cups'
 
-createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
+createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
   forM_ allGroupFeatures $ \(AGF f) -> do
     let state = groupFeatureState $ getGroupPreference f gps
         pref' = getGroupPreference f gps'
-        state'@(_, int') = groupFeatureState pref'
+        state'@(_, param', role') = groupFeatureState pref'
     when (state /= state') $
-      createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref') int') Nothing
+      createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref') param' role') Nothing
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
@@ -7010,10 +7011,10 @@ chatCommandP =
       "/show profile image" $> ShowProfileImage,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNames),
       ("/profile" <|> "/p") $> ShowProfile,
-      "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayName <*> _strP <*> optional _strP),
+      "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayName <*> _strP <*> optional memberRole),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
-      "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayName <*> _strP <*> optional _strP),
+      "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayName <*> _strP <*> optional memberRole),
       "/set history #" *> (SetGroupFeature (AGFNR SGFHistory) <$> displayName <*> (A.space *> strP)),
       "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayName <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayName <*> optional (A.space *> strP)),
@@ -7021,10 +7022,11 @@ chatCommandP =
       "/set delete #" *> (SetGroupFeature (AGFNR SGFFullDelete) <$> displayName <*> (A.space *> strP)),
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
-      "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayName <*> _strP <*> optional _strP),
+      "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayName <*> _strP <*> optional memberRole),
       "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
+      "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayName <*> _strP <*> optional memberRole),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),
       "/list remote hosts" $> ListRemoteHosts,

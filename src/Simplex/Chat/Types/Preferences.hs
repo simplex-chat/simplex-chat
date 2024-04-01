@@ -495,6 +495,7 @@ class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference 
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
   sGroupFeature :: SGroupFeature f
   groupPrefParam :: GroupFeaturePreference f -> Maybe Int
+  groupPrefRole :: GroupFeaturePreference f -> Maybe GroupMemberRole
 
 class GroupFeatureI f => GroupFeatureNoRoleI f
 
@@ -531,41 +532,49 @@ instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
   sGroupFeature = SGFTimedMessages
   groupPrefParam TimedMessagesGroupPreference {ttl} = ttl
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
   sGroupFeature = SGFDirectMessages
   groupPrefParam _ = Nothing
+  groupPrefRole DirectMessagesGroupPreference {role} = role
 
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
   sGroupFeature = SGFFullDelete
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureI 'GFReactions where
   type GroupFeaturePreference 'GFReactions = ReactionsGroupPreference
   sGroupFeature = SGFReactions
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureI 'GFVoice where
   type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
   sGroupFeature = SGFVoice
   groupPrefParam _ = Nothing
+  groupPrefRole VoiceGroupPreference {role} = role
 
 instance GroupFeatureI 'GFFiles where
   type GroupFeaturePreference 'GFFiles = FilesGroupPreference
   sGroupFeature = SGFFiles
   groupPrefParam _ = Nothing
+  groupPrefRole FilesGroupPreference {role} = role
 
 instance GroupFeatureI 'GFSimplexLinks where
   type GroupFeaturePreference 'GFSimplexLinks = SimplexLinksGroupPreference
   sGroupFeature = SGFSimplexLinks
   groupPrefParam _ = Nothing
+  groupPrefRole SimplexLinksGroupPreference {role} = role
 
 instance GroupFeatureI 'GFHistory where
   type GroupFeaturePreference 'GFHistory = HistoryGroupPreference
   sGroupFeature = SGFHistory
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureNoRoleI 'GFTimedMessages
 
@@ -595,11 +604,12 @@ instance GroupFeatureRoleI 'GFFiles
 
 instance GroupFeatureRoleI 'GFSimplexLinks
 
-groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature -> p -> Maybe Int -> Text
-groupPrefStateText feature pref param =
+groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature -> p -> Maybe Int -> Maybe GroupMemberRole -> Text
+groupPrefStateText feature pref param role =
   let enabled = getField @"enable" pref
       paramText = if enabled == FEOn then groupParamText_ feature param else ""
-   in groupFeatureNameText feature <> ": " <> safeDecodeUtf8 (strEncode enabled) <> paramText
+      roleText = maybe "" (\r -> " for " <> safeDecodeUtf8 (strEncode r) <> "s") role
+   in groupFeatureNameText feature <> ": " <> safeDecodeUtf8 (strEncode enabled) <> paramText <> roleText
 
 groupParamText_ :: GroupFeature -> Maybe Int -> Text
 groupParamText_ feature param = case feature of
@@ -609,7 +619,7 @@ groupParamText_ feature param = case feature of
 groupPreferenceText :: forall f. GroupFeatureI f => GroupFeaturePreference f -> Text
 groupPreferenceText pref =
   let feature = toGroupFeature $ sGroupFeature @f
-   in groupPrefStateText feature pref $ groupPrefParam pref
+   in groupPrefStateText feature pref (groupPrefParam pref) (groupPrefRole pref)
 
 timedTTLText :: Int -> Text
 timedTTLText 0 = "0 sec"
@@ -679,7 +689,7 @@ instance StrEncoding GroupFeatureEnabled where
     "on" -> Right FEOn
     "off" -> Right FEOff
     r -> Left $ "bad GroupFeatureEnabled " <> B.unpack r
-  strP = strDecode <$?> A.takeByteString
+  strP = strDecode <$?> A.takeTill (== ' ')
 
 instance FromJSON GroupFeatureEnabled where
   parseJSON = strParseJSON "GroupFeatureEnabled"
@@ -688,11 +698,13 @@ instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
+groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int, Maybe GroupMemberRole)
 groupFeatureState p =
   let enable = getField @"enable" p
-      param = if enable == FEOn then groupPrefParam p else Nothing
-   in (enable, param)
+      (param, role)
+        | enable == FEOn = (groupPrefParam p, groupPrefRole p)
+        | otherwise = (Nothing, Nothing)
+   in (enable, param, role)
 
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
