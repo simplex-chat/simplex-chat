@@ -20,12 +20,11 @@ attachRevHTTP2Client disconnected = attachHTTP2Client config ANY_ADDR_V4 "0" dis
   where
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
-attachHTTP2Server :: MonadUnliftIO m => TLS -> (HTTP2Request -> m ()) -> m ()
-attachHTTP2Server tls processRequest = do
-  withRunInIO $ \unlift ->
-    runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
-      reqBody <- getHTTP2Body r doNotPrefetchHead
-      unlift $ processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}
+attachHTTP2Server :: TLS -> (HTTP2Request -> IO ()) -> IO ()
+attachHTTP2Server tls processRequest =
+  runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
+    reqBody <- getHTTP2Body r doNotPrefetchHead
+    processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}
 
 -- | Suppress storing initial chunk in bodyHead, forcing clients and servers to stream chunks
 doNotPrefetchHead :: Int

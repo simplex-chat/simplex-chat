@@ -46,7 +46,7 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFi
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
-import Simplex.Messaging.Util (liftEitherError, liftEitherWith, liftError, tshow)
+import Simplex.Messaging.Util (liftError', liftEitherWith, liftError, tshow)
 import Simplex.RemoteControl.Client (xrcpBlockSize)
 import qualified Simplex.RemoteControl.Client as RC
 import Simplex.RemoteControl.Types (CtrlSessKeys (..), HostSessKeys (..), RCErrorType (..), SessionCode)
@@ -75,7 +75,7 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 -- * Client side / desktop
 
-mkRemoteHostClient :: ChatMonad m => HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> m RemoteHostClient
+mkRemoteHostClient :: HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> CM RemoteHostClient
 mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
   drg <- asks random
   counter <- newTVarIO 1
@@ -92,15 +92,15 @@ mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {enc
         storePath
       }
 
-mkCtrlRemoteCrypto :: ChatMonad m => CtrlSessKeys -> SessionCode -> m RemoteCrypto
+mkCtrlRemoteCrypto :: CtrlSessKeys -> SessionCode -> CM RemoteCrypto
 mkCtrlRemoteCrypto CtrlSessKeys {hybridKey, idPubKey, sessPubKey} sessionCode = do
   drg <- asks random
   counter <- newTVarIO 1
   let signatures = RSVerify {idPubKey, sessPubKey}
   pure RemoteCrypto {drg, counter, sessionCode, hybridKey, signatures}
 
-closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
-closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
+closeRemoteHostClient :: RemoteHostClient -> IO ()
+closeRemoteHostClient RemoteHostClient {httpClient} = closeHTTP2Client httpClient
 
 -- ** Commands
 
@@ -141,7 +141,7 @@ sendRemoteCommand :: RemoteHostClient -> Maybe (Handle, Word32) -> RemoteCommand
 sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} file_ cmd = do
   encFile_ <- mapM (prepareEncryptedFile encryption) file_
   req <- httpRequest encFile_ <$> encryptEncodeHTTP2Body encryption (J.encode cmd)
-  HTTP2Response {response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
+  HTTP2Response {response, respBody} <- liftError' (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
   (header, getNext) <- parseDecryptHTTP2Body encryption response respBody
   rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecode header >>= JT.parseEither J.parseJSON . convertJSON hostEncoding localEncoding
   pure (getNext, rr)
@@ -271,7 +271,7 @@ parseDecryptHTTP2Body RemoteCrypto {hybridKey, sessionCode, signatures} hr HTTP2
       where
         getSig = do
           len <- liftIO $ B.head <$> getNext 1
-          liftEitherError RPEInvalidBody $ C.decodeSignature <$> getNext (fromIntegral len)
+          liftError' RPEInvalidBody $ C.decodeSignature <$> getNext (fromIntegral len)
         verifySig key sig hc' = do
           let signed = BA.convert $ CH.hashFinalize hc'
           unless (C.verify' key sig signed) $ throwError $ PRERemoteControl RCECtrlAuth
