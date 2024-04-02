@@ -1338,19 +1338,19 @@ This is your own one-time link!</source>
 Ez az egyszer használatos hivatkozása!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via contact address" xml:space="preserve">
+      <trans-unit id="Connect via contact address" xml:space="preserve" approved="no">
         <source>Connect via contact address</source>
-        <target>Kapcsolódás ismerős azonosítója által</target>
+        <target state="translated">Csatlakozás ismerős azonosítója által</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via link" xml:space="preserve">
+      <trans-unit id="Connect via link" xml:space="preserve" approved="no">
         <source>Connect via link</source>
-        <target>Kapcsolódás egy hivatkozáson keresztül</target>
+        <target state="translated">Csatlakozás egy hivatkozáson keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link" xml:space="preserve">
+      <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
         <source>Connect via one-time link</source>
-        <target>Kapcsolódás egyszer használatos hivatkozáson keresztül</target>
+        <target state="translated">Csatlakozás egyszer használatos hivatkozáson keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve">
@@ -6364,9 +6364,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>Csatlakozott ehhez a csoporthoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
+      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve" approved="no">
         <source>You joined this group. Connecting to inviting group member.</source>
-        <target>Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</target>
+        <target state="translated">Csatlakozott ehhez a csoporthoz. Csatlakozás a meghívó csoporttaghoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
