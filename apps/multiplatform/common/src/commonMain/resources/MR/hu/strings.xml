@@ -179,10 +179,10 @@
     <string name="confirm_password">Jelszó megerősítése</string>
     <string name="change_member_role_question">Csoport szerepkör megváltoztatása?</string>
     <string name="change_lock_mode">Zárolási mód megváltoztatása</string>
-    <string name="notification_contact_connected">Kapcsolódva</string>
-    <string name="rcv_group_event_member_connected">kapcsolódva</string>
+    <string name="notification_contact_connected">Csatlakozott</string>
+    <string name="rcv_group_event_member_connected">csatlakozva</string>
     <string name="connect_via_link_verb">Kapcsolódás</string>
-    <string name="group_member_status_connected">kapcsolódva</string>
+    <string name="group_member_status_connected">csatlakozva</string>
     <string name="connected_mobile">Csatlakoztatott telefon</string>
     <string name="server_connected">kapcsolódva</string>
     <string name="change_role">Szerepkör megváltoztatása</string>
@@ -195,7 +195,7 @@
     <string name="connect_button">Kapcsolódás</string>
     <string name="connect_via_member_address_alert_title">Közvetlen kapcsolódás?</string>
     <string name="smp_server_test_connect">Kapcsolódás</string>
-    <string name="rcv_group_event_member_created_contact">közvetlenül kapcsolódva</string>
+    <string name="rcv_group_event_member_created_contact">közvetlenül csatlakozva</string>
     <string name="connection_local_display_name">kapcsolat %1$d</string>
     <string name="status_contact_has_e2e_encryption">az ismerős e2e titkosítással rendelkezik</string>
     <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerű profillal.</string>
@@ -251,7 +251,7 @@
     <string name="create_group_button">Csoport létrehozása</string>
     <string name="network_session_mode_user">Csevegési profil</string>
     <string name="create_another_profile_button">Profil létrehozása</string>
-    <string name="connected_desktop">Csatlakoztatott számítógép</string>
+    <string name="connected_desktop">Társított számítógép</string>
     <string name="share_text_deleted_at">Törölve ekkor: %s</string>
     <string name="info_row_deleted_at">Törölve ekkor</string>
     <string name="v4_6_chinese_spanish_interface">Kínai és spanyol kezelőfelület.</string>
@@ -287,7 +287,7 @@
     <string name="v5_1_custom_themes_descr">Témák személyre szabása és megosztása</string>
     <string name="delete_chat_profile_question">Csevegési profil törlése?</string>
     <string name="create_group">Titkos csoport létrehozása</string>
-    <string name="connected_to_desktop">Csatlakozva a számítógéphez</string>
+    <string name="connected_to_desktop">Kapcsolódva a számítógéphez</string>
     <string name="configure_ICE_servers">ICE kiszolgálók beállítása</string>
     <string name="button_delete_group">Csoport törlése</string>
     <string name="clear_verification">Hitelesítés törlése</string>
@@ -318,7 +318,7 @@
     <string name="delete_link_question">Hivatkozás törlése?</string>
     <string name="server_connecting">kapcsolódás</string>
     <string name="send_disappearing_message_custom_time">Személyreszabott idő</string>
-    <string name="connect_via_link_incognito">Inkognítóban csatlakozva</string>
+    <string name="connect_via_link_incognito">Csatlakozás inkognitóban</string>
     <string name="settings_section_title_chats">CSEVEGÉSEK</string>
     <string name="v5_3_new_desktop_app_descr">Új profil létrehozása a számítógép alkalmazásban. 💻</string>
     <string name="group_member_status_announced">kapcsolódás (bejelentve)</string>
@@ -794,7 +794,7 @@
     <string name="loading_remote_file_title">A fájl betöltése</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
-    <string name="display_name_invited_to_connect">meghívott, hogy csatlakozzon</string>
+    <string name="display_name_invited_to_connect">meghívott</string>
     <string name="add_contact">Egyszer használatos meghívó hivatkozás</string>
     <string name="notifications">Értesítések</string>
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
@@ -884,7 +884,7 @@
 \n- valamivel jobb csoportok.
 \n- és még sok más!</string>
     <string name="v5_1_message_reactions">Üzenetreakciók</string>
-    <string name="no_connected_mobile">Nincs csatlakoztatott mobil eszköz</string>
+    <string name="no_connected_mobile">Nincs társított mobil eszköz</string>
     <string name="network_status">Hálózat állapota</string>
     <string name="new_passcode">Új jelkód</string>
     <string name="message_delivery_error_desc">Valószínűleg ez az ismerős törölte önnel a kapcsolatot.</string>
@@ -939,7 +939,7 @@
     <string name="share_verb">Megosztás</string>
     <string name="received_message">Fogadott üzenet</string>
     <string name="button_welcome_message">Üdvözlő üzenet</string>
-    <string name="rcv_group_event_n_members_connected">%s, %s és %d további tag csatlakozott</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s és további %d tag csatlakozott</string>
     <string name="only_your_contact_can_make_calls">Csak az ismerőse tud hívást indítani.</string>
     <string name="settings_section_title_themes">TÉMÁK</string>
     <string name="videos_limit_title">Túl sok videó!</string>
@@ -995,7 +995,7 @@
     <string name="compose_send_direct_message_to_connect">A kapcsolódáshoz közvetlen üzenet küldése</string>
     <string name="network_option_ping_count">PING számláló</string>
     <string name="show_developer_options">Fejlesztői beállítások mutatása</string>
-    <string name="rcv_group_event_1_member_connected">%s csatlakozva</string>
+    <string name="rcv_group_event_1_member_connected">%s csatlakozott</string>
     <string name="theme_system">Rendszer</string>
     <string name="network_use_onion_hosts_prefer">Amikor elérhető</string>
     <string name="voice_message_with_duration">Hangüzenet (%1$s)</string>
@@ -1093,7 +1093,7 @@
     <string name="your_chat_profiles">Csevegési profilok</string>
     <string name="group_member_role_owner">tulajdonos</string>
     <string name="la_notice_turn_on">Bekapcsolás</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s és %s csatlakozott</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s és %s csatlakoztak</string>
     <string name="simplex_link_invitation">SimpleX egyszer használatos meghívó</string>
     <string name="your_calls">Hívások</string>
     <string name="icon_descr_sent_msg_status_send_failed">küldés sikertelen</string>
@@ -1151,7 +1151,7 @@
     <string name="callstate_received_answer">fogadott válasz…</string>
     <string name="restore_database_alert_title">Adatbázismentés visszaállítása?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
-    <string name="rcv_group_event_2_members_connected">%s és %s csatlakozva</string>
+    <string name="rcv_group_event_2_members_connected">%s és %s csatlakoztak</string>
     <string name="you_are_observer">megfigyelő szerep</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
@@ -1292,7 +1292,7 @@
     <string name="v5_0_large_files_support">Videók és fájlok 1Gb méretig</string>
     <string name="network_option_tcp_connection_timeout">TCP kapcsolat időtúllépés</string>
     <string name="connect__your_profile_will_be_shared">A %1$s SimpleX azonosítója megosztásra kerül.</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Már csatlakozott: %1$s.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Ön már csatlakozott ehhez: %1$s.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Jelenlegi csevegési adatbázis TÖRLÉSRE és FELCSERÉLÉSRE kerül az importált által!
 \nEz a művelet nem visszavonható - profilok, ismerősök, csevegési üzenetek és fájlok véglegesen elvesznek!</string>
     <string name="chat_with_the_founder">Ötletek és javaslatok</string>
@@ -1301,7 +1301,7 @@
     <string name="waiting_for_desktop">Várakozás a számítógépre…</string>
     <string name="next_generation_of_private_messaging">A privát üzenetküldés következő generációja</string>
     <string name="update_network_settings_question">Hálózati beállítások megváltoztatása?</string>
-    <string name="waiting_for_mobile_to_connect">Várakozás a mobiltelefon csatlakozására:</string>
+    <string name="waiting_for_mobile_to_connect">Várakozás a mobiltelefon társítására:</string>
     <string name="v4_4_verify_connection_security">Kapcsolat biztonságának ellenőrzése</string>
     <string name="sending_files_not_yet_supported">fájlok küldése egyelőre még nem támogatott</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">Azonosítója erre változott: %s</string>
@@ -1358,7 +1358,7 @@
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a Beállításokban</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor tud csatlakozni a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="mtr_error_different">eltérő migráció az appban/adatbázisban: %s / %s</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Már csatlakozik a következőhöz: <b>%1$s</b>.]]></string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">Ön már csatlakozik a következőhöz: <b>%1$s</b>.</string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a hivatkozás nem érvényes kapcsolati hivatkozás!</string>
     <string name="to_verify_compare">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy szkennelje be) az ismerőse eszközén lévő kódot.</string>
@@ -1420,7 +1420,7 @@
     <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez válassza ki az <b>Alkalmazás akkumulátor használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívó hivatkozás!</string>
     <string name="to_start_a_new_chat_help_header">Új csevegés kezdése</string>
-    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Már csatlakozik ezen az egyszer használatos hivatkozáson keresztül!</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Ön már csatlakozik ezen az egyszer használatos hivatkozáson keresztül!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Nem veszíti el az ismerőseit, ha később törli az azonosítóját.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.</string>
     <string name="contact_wants_to_connect_with_you">kapcsolatba akar lépni veled!</string>
