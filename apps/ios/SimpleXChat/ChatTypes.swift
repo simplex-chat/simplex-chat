@@ -3209,7 +3209,7 @@ public enum MsgContent: Equatable {
         }
     }
 
-    public var hasImageOrVideo: Bool {
+    public var isImageOrVideo: Bool {
         switch self {
         case .image: true
         case .video: true

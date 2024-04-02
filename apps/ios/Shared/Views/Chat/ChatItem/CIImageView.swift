@@ -70,7 +70,7 @@ struct CIImageView: View {
     }
 
     private func imageView(_ img: UIImage) -> some View {
-        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : img.imageData == nil ? maxWidth : maxWidth
+        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
         DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
             if img.imageData == nil {
