@@ -21,7 +21,27 @@ struct DetermineWidth: View {
     }
 }
 
+struct DetermineWidthImageVideoItem: View {
+    typealias Key = MaximumWidthImageVideoPreferenceKey
+    var body: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .preference(
+                    key: MaximumWidthImageVideoPreferenceKey.self,
+                    value: proxy.size.width
+                )
+        }
+    }
+}
+
 struct MaximumWidthPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+struct MaximumWidthImageVideoPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
