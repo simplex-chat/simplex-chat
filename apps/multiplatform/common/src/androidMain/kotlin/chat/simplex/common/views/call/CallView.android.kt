@@ -1,5 +1,7 @@
 package chat.simplex.common.views.call
 
+import SectionSpacer
+import SectionView
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -24,17 +26,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.*
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.common.helpers.showAllowPermissionInSettingsAlert
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.ChatModel
@@ -42,13 +45,12 @@ import chat.simplex.common.model.Contact
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.datetime.Clock
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
 // Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
@@ -209,7 +211,6 @@ actual fun ActiveCallView() {
       ActiveCallOverlay(call, chatModel, audioViaBluetooth)
     }
   }
-
   val context = LocalContext.current
   DisposableEffect(Unit) {
     val activity = context as? Activity ?: return@DisposableEffect onDispose {}
@@ -511,33 +512,137 @@ private fun DisabledBackgroundCallsButton() {
 //}
 
 @Composable
+fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Unit) {
+  val audioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
+  val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
+  val permissionsState = rememberMultiplePermissionsState(
+    permissions = if (hasVideo) {
+      listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+    } else {
+      listOf(Manifest.permission.RECORD_AUDIO)
+    }
+  )
+  val context = LocalContext.current
+  val buttonEnabled = remember { mutableStateOf(true) }
+  LaunchedEffect(Unit) {
+    if (!pipActive) {
+      permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
+    }
+  }
+
+  if (pipActive) {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+      if (audioPermission.status is PermissionStatus.Denied) {
+        Icon(
+          painterResource(MR.images.ic_call_500),
+          stringResource(MR.strings.permissions_record_audio),
+          Modifier.size(24.dp),
+          tint = Color(0xFFFFFFD8)
+        )
+      }
+      if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+        Icon(
+          painterResource(MR.images.ic_videocam),
+          stringResource(MR.strings.permissions_camera),
+          Modifier.size(24.dp),
+          tint = Color(0xFFFFFFD8)
+        )
+      }
+    }
+  } else {
+    ColumnWithScrollBar(Modifier.fillMaxSize()) {
+      Spacer(Modifier.height(AppBarHeight))
+
+      AppBarTitle(stringResource(MR.strings.permissions_required))
+      Spacer(Modifier.weight(1f))
+
+      val onClick = {
+        if (permissionsState.shouldShowRationale) {
+          context.showAllowPermissionInSettingsAlert()
+        } else {
+          permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
+        }
+      }
+      Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color(0xFFFFFFD8))
+      SectionSpacer()
+      SectionView {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          val text = if (hasVideo && audioPermission.status is PermissionStatus.Denied && cameraPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_camera_and_record_audio)
+          } else if (audioPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_record_audio)
+          } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_camera)
+          } else ""
+          GrantPermissionButton(text, buttonEnabled.value, onClick)
+        }
+      }
+
+      Spacer(Modifier.weight(1f))
+      Box(Modifier.fillMaxWidth().padding(bottom = if (hasVideo) 0.dp else DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.Center) {
+        SimpleButtonFrame(cancel, Modifier.height(64.dp)) {
+          Text(stringResource(MR.strings.call_service_notification_end_call), fontSize = 20.sp, color = Color(0xFFFFFFD8))
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun GrantPermissionButton(text: String, enabled: Boolean, onClick: () -> Unit) {
+  Row(
+    Modifier
+      .clickable(enabled = enabled, onClick = onClick)
+      .heightIn(min = 30.dp)
+      .background(WarningOrange.copy(0.3f), RoundedCornerShape(50)),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(text, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), fontSize = 20.sp, color = WarningOrange)
+  }
+}
+
+/**
+ * The idea of this function is to ask system to show permission dialog and to see if it's really doing it.
+ * Otherwise, show alert with a button that opens settings for manual permission granting
+ * */
+private fun MultiplePermissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled: MutableState<Boolean>, fallback: () -> Unit) {
+  buttonEnabled.value = false
+  val lifecycleOwner = ProcessLifecycleOwner.get().lifecycle
+  var useFallback = true
+  val observer = LifecycleEventObserver { _, event ->
+    if (event == Lifecycle.Event.ON_PAUSE) {
+      useFallback = false
+      buttonEnabled.value = true
+    }
+  }
+  lifecycleOwner.addObserver(observer)
+  withBGApi {
+    delay(2000)
+    if (useFallback && chatModel.activeCall.value != null) {
+      fallback()
+    }
+    buttonEnabled.value = true
+  }.invokeOnCompletion {
+    // Main thread only
+    withApi {
+      lifecycleOwner.removeObserver(observer)
+    }
+  }
+  launchMultiplePermissionRequest()
+}
+
+@Composable
 fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
   val webView = remember { mutableStateOf<WebView?>(null) }
-  val permissionsState = rememberMultiplePermissionsState(
-    permissions = listOf(
-      Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO,
-      Manifest.permission.MODIFY_AUDIO_SETTINGS,
-      Manifest.permission.INTERNET
-    )
-  )
   fun processCommand(wv: WebView, cmd: WCallCommand) {
     val apiCall = WVAPICall(command = cmd)
     wv.evaluateJavascript("processCommand(${json.encodeToString(apiCall)})", null)
   }
-  val lifecycleOwner = LocalLifecycleOwner.current
-  DisposableEffect(lifecycleOwner) {
-    val observer = LifecycleEventObserver { _, event ->
-      if (event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_START) {
-        permissionsState.launchMultiplePermissionRequest()
-      }
-    }
-    lifecycleOwner.lifecycle.addObserver(observer)
+  DisposableEffect(Unit) {
     onDispose {
-      lifecycleOwner.lifecycle.removeObserver(observer)
-//      val wv = webView.value
-//      if (wv != null) processCommand(wv, WCallCommand.End)
-//      webView.value?.destroy()
+      //      val wv = webView.value
+      //      if (wv != null) processCommand(wv, WCallCommand.End)
+      //      webView.value?.destroy()
       webView.value = null
     }
   }
@@ -560,44 +665,42 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(LocalContext.current))
     .build()
 
-  if (permissionsState.allPermissionsGranted) {
-    Box(Modifier.fillMaxSize()) {
-      AndroidView(
-        factory = { AndroidViewContext ->
-          (staticWebView ?: WebView(androidAppContext)).apply {
-            layoutParams = ViewGroup.LayoutParams(
-              ViewGroup.LayoutParams.MATCH_PARENT,
-              ViewGroup.LayoutParams.MATCH_PARENT,
-            )
-            this.webChromeClient = object: WebChromeClient() {
-              override fun onPermissionRequest(request: PermissionRequest) {
-                if (request.origin.toString().startsWith("file:/")) {
-                  request.grant(request.resources)
-                } else {
-                  Log.d(TAG, "Permission request from webview denied.")
-                  request.deny()
-                }
+  Box(Modifier.fillMaxSize()) {
+    AndroidView(
+      factory = { AndroidViewContext ->
+        (staticWebView ?: WebView(androidAppContext)).apply {
+          layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+          )
+          this.webChromeClient = object: WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest) {
+              if (request.origin.toString().startsWith("file:/")) {
+                request.grant(request.resources)
+              } else {
+                Log.d(TAG, "Permission request from webview denied.")
+                request.deny()
               }
             }
-            this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
-            this.clearHistory()
-            this.clearCache(true)
-            this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
-            val webViewSettings = this.settings
-            webViewSettings.allowFileAccess = true
-            webViewSettings.allowContentAccess = true
-            webViewSettings.javaScriptEnabled = true
-            webViewSettings.mediaPlaybackRequiresUserGesture = false
-            webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-            if (staticWebView == null) {
-              this.loadUrl("file:android_asset/www/android/call.html")
-            } else {
-              webView.value = this
-            }
+          }
+          this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
+          this.clearHistory()
+          this.clearCache(true)
+          this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
+          val webViewSettings = this.settings
+          webViewSettings.allowFileAccess = true
+          webViewSettings.allowContentAccess = true
+          webViewSettings.javaScriptEnabled = true
+          webViewSettings.mediaPlaybackRequiresUserGesture = false
+          webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+          if (staticWebView == null) {
+            this.loadUrl("file:android_asset/www/android/call.html")
+          } else {
+            webView.value = this
           }
         }
-      ) { /* WebView */ }
-    }
+      }
+    ) { /* WebView */ }
   }
 }
 

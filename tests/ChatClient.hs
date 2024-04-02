@@ -87,7 +87,7 @@ testOpts =
 testCoreOpts :: CoreChatOpts
 testCoreOpts =
   CoreChatOpts
-    { dbFilePrefix = undefined,
+    { dbFilePrefix = "./simplex_v1",
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],

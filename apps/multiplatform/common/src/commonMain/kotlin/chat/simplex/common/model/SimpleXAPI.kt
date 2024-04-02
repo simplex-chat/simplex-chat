@@ -1753,6 +1753,8 @@ object ChatController {
           chatModel.removeChat(rhId, r.mergedContact.id)
         }
       }
+      // ContactsSubscribed, ContactsDisconnected and ContactSubSummary are only used in CLI,
+      // They have to be used here for remote desktop to process these status updates.
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
       is CR.ContactSubSummary -> {

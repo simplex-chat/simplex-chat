@@ -44,7 +44,7 @@ archiveChatDbFile = "simplex_v1_chat.db"
 archiveFilesFolder :: String
 archiveFilesFolder = "simplex_v1_files"
 
-exportArchive :: ChatMonad m => ArchiveConfig -> m ()
+exportArchive :: ArchiveConfig -> CM' ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
@@ -55,7 +55,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
 
-importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
+importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
@@ -78,12 +78,12 @@ importArchive cfg@ArchiveConfig {archivePath} =
             (pure [])
         _ -> pure []
 
-withTempDir :: ChatMonad m => ArchiveConfig -> (String -> (FilePath -> m a) -> m a)
+withTempDir :: ArchiveConfig -> (String -> (FilePath -> CM' a) -> CM' a)
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   Just tmpDir -> withTempDirectory tmpDir
   _ -> withSystemTempDirectory
 
-copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m [ArchiveError]
+copyDirectoryFiles :: FilePath -> FilePath -> CM' [ArchiveError]
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
@@ -97,9 +97,9 @@ copyDirectoryFiles fromDir toDir = do
           f' = fromDir </> fn
       whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
 
-deleteStorage :: ChatMonad m => m ()
+deleteStorage :: CM ()
 deleteStorage = do
-  fs <- storageFiles
+  fs <- lift storageFiles
   liftIO $ closeSQLiteStore `withStores` fs
   remove `withDBs` fs
   mapM_ removeDir $ filesPath fs
@@ -114,17 +114,17 @@ data StorageFiles = StorageFiles
     filesPath :: Maybe FilePath
   }
 
-storageFiles :: ChatMonad m => m StorageFiles
+storageFiles :: CM' StorageFiles
 storageFiles = do
   ChatController {chatStore, filesFolder, smpAgent} <- ask
   let agentStore = agentClientStore smpAgent
   filesPath <- readTVarIO filesFolder
   pure StorageFiles {chatStore, agentStore, filesPath}
 
-sqlCipherExport :: forall m. ChatMonad m => DBEncryptionConfig -> m ()
+sqlCipherExport :: DBEncryptionConfig -> CM ()
 sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key', keepKey} =
   when (key /= key') $ do
-    fs <- storageFiles
+    fs <- lift storageFiles
     checkFile `withDBs` fs
     backup `withDBs` fs
     checkEncryption `withStores` fs
@@ -159,7 +159,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
                    "DETACH DATABASE exported;"
                  ]
 
-withDB :: forall a m. ChatMonad m => FilePath -> (SQL.Database -> IO a) -> (SQLiteError -> DatabaseError) -> m ()
+withDB :: FilePath -> (SQL.Database -> IO a) -> (SQLiteError -> DatabaseError) -> CM ()
 withDB f' a err =
   liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
     `catch` checkSQLError
@@ -169,7 +169,7 @@ withDB f' a err =
     checkSQLError e = case SQL.sqlError e of
       SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
       _ -> sqliteError' e
-    sqliteError' :: Show e => e -> m (Maybe SQLiteError)
+    sqliteError' :: Show e => e -> CM (Maybe SQLiteError)
     sqliteError' = pure . Just . SQLiteError . show
 
 testSQL :: BA.ScrubbedBytes -> Text
@@ -184,9 +184,9 @@ testSQL k =
 keySQL :: BA.ScrubbedBytes -> [Text]
 keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
 
-sqlCipherTestKey :: forall m. ChatMonad m => DBEncryptionKey -> m ()
+sqlCipherTestKey :: DBEncryptionKey -> CM ()
 sqlCipherTestKey (DBEncryptionKey key) = do
-  fs <- storageFiles
+  fs <- lift storageFiles
   testKey `withDBs` fs
   where
     testKey f = withDB f (`SQL.exec` testSQL key) DBErrorOpen

@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module Simplex.Chat.Util (week, encryptFile, chunkSize, shuffle) where
+module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle) where
 
 import Control.Monad
 import Control.Monad.Except
@@ -42,3 +42,7 @@ shuffle xs = map snd . sortBy (comparing fst) <$> mapM (\x -> (,x) <$> random) x
   where
     random :: IO Word16
     random = randomRIO (0, 65535)
+
+liftIOEither :: (MonadIO m, MonadError e m) => IO (Either e a) -> m a
+liftIOEither a = liftIO a >>= liftEither
+{-# INLINE liftIOEither #-}
