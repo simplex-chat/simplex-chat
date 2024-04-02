@@ -17,6 +17,7 @@ import Data.Bifunctor (bimap)
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Base64.URL as U
 import Data.Either (fromLeft)
 import Data.Word (Word8)
 import Foreign.C (CInt, CString, newCAString)
@@ -25,7 +26,6 @@ import Foreign.StablePtr
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile.Shared
 import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Encoding.Base64.URL as U
 import UnliftIO (atomically)
 
 cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString

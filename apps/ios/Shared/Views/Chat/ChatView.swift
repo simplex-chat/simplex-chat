@@ -514,6 +514,7 @@ struct ChatView: View {
             chat: chat,
             chatItem: ci,
             maxWidth: maxWidth,
+            itemWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
             chatView: self
@@ -526,6 +527,7 @@ struct ChatView: View {
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
+        @State var itemWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         var chatView: ChatView
@@ -654,7 +656,7 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
-                .uiKitContextMenu(maxWidth: maxWidth, menu: uiMenu, allowMenu: $allowMenu)
+                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu)
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)
