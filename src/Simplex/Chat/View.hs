@@ -795,8 +795,8 @@ groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQu
 forwardedFrom :: CIForwardedFrom -> [StyledString]
 forwardedFrom = \case
   CIFFUnknown -> ["-> forwarded"]
-  CIFFContact c _ -> ["-> forwarded from " <> ttyContact c]
-  CIFFGroup g _ -> ["-> forwarded from " <> ttyGroup g]
+  CIFFContact c _ -> ["-> from conversation: " <> ttyContact c]
+  CIFFGroup g _ -> ["-> from conversation: " <> ttyGroup g]
   CIFFNoteFolder _ _ -> ["-> forwarded from notes"]
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember

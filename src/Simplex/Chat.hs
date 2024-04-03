@@ -843,7 +843,7 @@ processChatCommand' vr = \case
             cci <- getDirectChatItem db user fromChatId itemId
             pure (ct, cci)
           mc <- forwardMC ci
-          file <- forwardCryptoFile ci
+          file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
           let ciff = forwardCIFF ci $ CIFFContact (forwardName ct) fromChatId
           pure (ComposedMessage file Nothing mc, ciff)
           where
@@ -857,7 +857,7 @@ processChatCommand' vr = \case
             cci <- getGroupChatItem db user fromChatId itemId
             pure (gInfo, cci)
           mc <- forwardMC ci
-          file <- forwardCryptoFile ci
+          file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
           let ciff = forwardCIFF ci $ CIFFGroup (forwardName gInfo) fromChatId
           pure (ComposedMessage file Nothing mc, ciff)
           where
@@ -866,7 +866,7 @@ processChatCommand' vr = \case
         CTLocal -> do
           (CChatItem _ ci) <- withStore $ \db -> getLocalChatItem db user fromChatId itemId
           mc <- forwardMC ci
-          file <- forwardCryptoFile ci
+          file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
           let ciff = forwardCIFF ci $ CIFFNoteFolder "notes" fromChatId
           pure (ComposedMessage file Nothing mc, ciff)
         CTContactRequest -> throwChatError $ CECommandError "not supported"
@@ -7051,8 +7051,8 @@ chatCommandP =
       "/show link #" *> (ShowGroupLink <$> displayName),
       "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
-      (">#" <|> "> #") *> (ForwardGroupMessage <$> displayName <* A.char '@' <*> (Just <$> displayName) <* " -> " <*> chatNameP <*> msgTextP),
-      (">#" <|> "> #") *> (ForwardGroupMessage <$> displayName <*> pure Nothing <* " -> " <*> chatNameP <*> msgTextP),
+      (">#" <|> "> #") *> (ForwardGroupMessage <$> displayName <* A.char '@' <*> (Just <$> displayName) <* " -> " <*> chatNameP <* A.space <*> msgTextP),
+      (">#" <|> "> #") *> (ForwardGroupMessage <$> displayName <*> pure Nothing <* " -> " <*> chatNameP <* A.space <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -7183,7 +7183,7 @@ chatCommandP =
         quoted cs = A.choice [A.char c *> takeNameTill (== c) <* A.char c | c <- cs]
         refChar c = c > ' ' && c /= '#' && c /= '@'
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
-    forwardMsgP msgDir = ForwardMessage <$> displayName <*> pure msgDir <* " -> " <*> chatNameP <*> msgTextP
+    forwardMsgP msgDir = ForwardMessage <$> displayName <*> pure msgDir <* " -> " <*> chatNameP <* A.space <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
     toEmoji = \case

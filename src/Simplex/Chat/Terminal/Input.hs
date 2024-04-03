@@ -86,7 +86,9 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       Right SendLiveMessage {} -> True
       Right SendFile {} -> True
       Right SendMessageQuote {} -> True
+      Right ForwardMessage {} -> True
       Right SendGroupMessageQuote {} -> True
+      Right ForwardGroupMessage {} -> True
       Right SendMessageBroadcast {} -> True
       _ -> False
     startLiveMessage :: Either a ChatCommand -> ChatResponse -> IO ()

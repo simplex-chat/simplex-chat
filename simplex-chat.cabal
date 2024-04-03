@@ -569,6 +569,7 @@ test-suite simplex-chat-test
       ChatTests.ChatList
       ChatTests.Direct
       ChatTests.Files
+      ChatTests.Forward
       ChatTests.Groups
       ChatTests.Local
       ChatTests.Profiles
