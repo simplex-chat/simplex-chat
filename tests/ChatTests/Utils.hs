@@ -14,6 +14,7 @@ import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
@@ -34,7 +35,6 @@ import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
-import qualified Simplex.Messaging.Encoding.Base64 as B64
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
