@@ -64,7 +64,6 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
   )
 }
 
-
 private val imageLoader = ImageLoader.Builder(androidAppContext)
   .networkObserverEnabled(false)
   .components {
