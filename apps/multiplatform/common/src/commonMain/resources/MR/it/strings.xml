@@ -1715,4 +1715,13 @@
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Non devi</b> usare lo stesso database su due dispositivi.]]></string>
     <string name="migrate_to_device_try_again">Puoi fare un altro tentativo.</string>
     <string name="migrate_from_device_try_again">Puoi fare un altro tentativo.</string>
+    <string name="error_showing_desktop_notification">Errore nel mostrare la notifica, contatta gli sviluppatori.</string>
+    <string name="permissions_find_in_settings_and_grant">Trova questa autorizzazione nelle impostazioni di Android e concedila a mano.</string>
+    <string name="permissions_camera">Fotocamera</string>
+    <string name="permissions_camera_and_record_audio">Fotocamera e microfono</string>
+    <string name="permissions_required">Concedi autorizzazioni</string>
+    <string name="permissions_grant_in_settings">Concedi nelle impostazioni</string>
+    <string name="permissions_grant">Concedi la/le autorizzazione/i per effettuare chiamate</string>
+    <string name="permissions_record_audio">Microfono</string>
+    <string name="permissions_open_settings">Apri le impostazioni</string>
 </resources>
