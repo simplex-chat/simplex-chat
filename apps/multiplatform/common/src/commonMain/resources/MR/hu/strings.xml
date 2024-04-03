@@ -1444,7 +1444,7 @@
     <string name="connect_via_member_address_alert_desc">Csoporttag részére a csatlakozási kérelem eküldésre kerül.</string>
     <string name="incognito_info_share">Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már kért egy csatlakozást ezen az azonosítón keresztül!</string>
-    <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX azonosítót ismerőseivel, hogy kapcsolatba léphessenek ezzel: %s.</string>
+    <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX azonosítót ismerőseivel, hogy kapcsolatba léphessenek vele: %s.</string>
     <string name="you_can_accept_or_reject_connection">Csatlakozási kérelmek esetében, elfogadhatja vagy elutasíthatja azokat.</string>
     <string name="v4_6_group_welcome_message_descr">Megjelenő üzenetet beállítása új tagok részére!</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
