@@ -1392,11 +1392,12 @@ private fun providerForGallery(
     return null
   }
 
-  var initialIndex = Int.MAX_VALUE / 2
+  // Pager has a bug with overflowing when total pages is around Int.MAX_VALUE. Using smaller value
+  var initialIndex = 10000 / 2
   var initialChatId = cItemId
   return object: ImageGalleryProvider {
     override val initialIndex: Int = initialIndex
-    override val totalMediaSize = mutableStateOf(Int.MAX_VALUE)
+    override val totalMediaSize = mutableStateOf(10000)
     override fun getMedia(index: Int): ProviderMedia? {
       val internalIndex = initialIndex - index
       val item = item(internalIndex, initialChatId)?.second ?: return null
