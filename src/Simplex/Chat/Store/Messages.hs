@@ -402,7 +402,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing, Nothing)
       CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
       CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
-    forwardedFromRow :: (Maybe String, Maybe Int64, Maybe Int64, Maybe Int64)
+    forwardedFromRow :: (Maybe Text, Maybe Int64, Maybe Int64, Maybe Int64)
     forwardedFromRow = case itemForwarded of
       Nothing -> (Nothing, Nothing, Nothing, Nothing)
       Just CIFFUnknown -> (Just "", Nothing, Nothing, Nothing)
@@ -1402,7 +1402,7 @@ type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath,
 
 type ChatItemModeRow = (Maybe Int, Maybe UTCTime, Maybe Bool)
 
-type ChatItemForwardedFromRow = (Maybe String, Maybe Int64, Maybe Int64, Maybe Int64)
+type ChatItemForwardedFromRow = (Maybe Text, Maybe Int64, Maybe Int64, Maybe Int64)
 
 type ChatItemRow =
   (Int64, ChatItemTs, AMsgDirection, Text, Text, ACIStatus, Maybe SharedMsgId)

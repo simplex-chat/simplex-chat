@@ -822,15 +822,79 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
-  APIForwardChatItem _fromChatRef toChatRef@(ChatRef toCType _) _chatItemId -> withUser $ \user -> withChatLock "forwardChatItem" $ case toCType of
+  APIForwardChatItem (ChatRef fromCType fromChatId) (ChatRef toCType toChatId) itemId -> withUser $ \user -> withChatLock "forwardChatItem" $ case toCType of
     CTDirect -> do
-      pure $ chatCmdError (Just user) "not implemented"
+      (cm, ciff) <- prepareForward user
+      sendContactContentMessage user toChatId False Nothing cm (Just ciff)
     CTGroup -> do
-      pure $ chatCmdError (Just user) "not implemented"
+      (cm, ciff) <- prepareForward user
+      sendGroupContentMessage user toChatId False Nothing cm (Just ciff)
     CTLocal -> do
-      pure $ chatCmdError (Just user) "not implemented"
+      (cm, ciff) <- prepareForward user
+      createNoteFolderContentItem user toChatId cm (Just ciff)
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    where
+      prepareForward :: User -> CM (ComposedMessage, CIForwardedFrom)
+      prepareForward user = case fromCType of
+        CTDirect -> do
+          (ct, CChatItem _ ci) <- withStore $ \db -> do
+            ct <- getContact db vr user fromChatId
+            cci <- getDirectChatItem db user fromChatId itemId
+            pure (ct, cci)
+          mc <- forwardMC ci
+          file <- forwardCryptoFile ci
+          let ciff = forwardCIFF ci $ CIFFContact (forwardName ct) fromChatId
+          pure (ComposedMessage file Nothing mc, ciff)
+          where
+            forwardName :: Contact -> ContactName
+            forwardName Contact {profile = LocalProfile {displayName, localAlias}}
+              | localAlias /= "" = localAlias
+              | otherwise = displayName
+        CTGroup -> do
+          (gInfo, CChatItem _ ci) <- withStore $ \db -> do
+            gInfo <- getGroupInfo db vr user fromChatId
+            cci <- getGroupChatItem db user fromChatId itemId
+            pure (gInfo, cci)
+          mc <- forwardMC ci
+          file <- forwardCryptoFile ci
+          let ciff = forwardCIFF ci $ CIFFGroup (forwardName gInfo) fromChatId
+          pure (ComposedMessage file Nothing mc, ciff)
+          where
+            forwardName :: GroupInfo -> ContactName
+            forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
+        CTLocal -> do
+          (CChatItem _ ci) <- withStore $ \db -> getLocalChatItem db user fromChatId itemId
+          mc <- forwardMC ci
+          file <- forwardCryptoFile ci
+          let ciff = forwardCIFF ci $ CIFFNoteFolder "notes" fromChatId
+          pure (ComposedMessage file Nothing mc, ciff)
+        CTContactRequest -> throwChatError $ CECommandError "not supported"
+        CTContactConnection -> throwChatError $ CECommandError "not supported"
+        where
+          forwardMC :: ChatItem c d -> CM MsgContent
+          forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidForward
+          forwardMC ChatItem {content = CISndMsgContent fmc} = pure fmc
+          forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure fmc
+          forwardMC _ = throwChatError CEInvalidForward
+          forwardCIFF :: ChatItem c d -> CIForwardedFrom -> CIForwardedFrom
+          forwardCIFF ChatItem {meta = CIMeta {itemForwarded = Just ciff}} _ = ciff
+          forwardCIFF _ ciff = ciff
+          forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
+          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileSource = Just cf@CryptoFile {filePath}}} =
+            chatReadVar filesFolder >>= \case
+              Nothing ->
+                ifM (doesFileExist filePath) (pure $ Just cf) (pure Nothing)
+              Just filesFolder ->
+                ifM
+                  (doesFileExist filePath)
+                  ( do
+                      fPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                      liftIO $ copyFile filePath fPath -- to keep forwarded file in case original is deleted
+                      pure $ Just (cf {filePath = fPath} :: CryptoFile)
+                  )
+                  (pure Nothing)
+          forwardCryptoFile _ = pure Nothing
   APIUserRead userId -> withUserId userId $ \user -> withStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
@@ -2196,8 +2260,9 @@ processChatCommand' vr = \case
         -- [incognito] filter out contacts with whom user has incognito connections
         addChangedProfileContact :: User -> Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
         addChangedProfileContact user' ct changedCts = case contactSendConn_ ct' of
-          Right conn | not (connIncognito conn) && mergedProfile' /= mergedProfile ->
-            ChangedProfileContact ct ct' mergedProfile' conn : changedCts
+          Right conn
+            | not (connIncognito conn) && mergedProfile' /= mergedProfile ->
+                ChangedProfileContact ct ct' mergedProfile' conn : changedCts
           _ -> changedCts
           where
             mergedProfile = userProfileToSend user Nothing (Just ct) False
@@ -3628,7 +3693,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
           withAckMessage' agentConnId meta $
-            void $ saveDirectRcvMSG conn meta msgBody
+            void $
+              saveDirectRcvMSG conn meta msgBody
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         OK ->
@@ -4464,9 +4530,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> ackMsg msgMeta Nothing >> throwError e
-        where
-          ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
-          ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
+      where
+        ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
+        ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> CM ()
     sentMsgDeliveryEvent Connection {connId} msgId =

@@ -985,9 +985,9 @@ itemDeletedTs = \case
 
 data CIForwardedFrom
   = CIFFUnknown
-  | CIFFContact {name :: String, contactId :: ContactId}
-  | CIFFGroup {name :: String, groupId :: GroupId}
-  | CIFFNoteFolder {name :: String, folderId :: NoteFolderId}
+  | CIFFContact {name :: Text, contactId :: ContactId}
+  | CIFFGroup {name :: Text, groupId :: GroupId}
+  | CIFFNoteFolder {name :: Text, folderId :: NoteFolderId}
   deriving (Show)
 
 cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom

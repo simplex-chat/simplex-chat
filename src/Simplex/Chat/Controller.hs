@@ -1114,6 +1114,7 @@ data ChatErrorType
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
+  | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall
