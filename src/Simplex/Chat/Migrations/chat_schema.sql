@@ -382,7 +382,11 @@ CREATE TABLE chat_items(
   item_deleted_ts TEXT,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   item_content_tag TEXT,
-  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  forwarded_from_str TEXT,
+  forwarded_from_contact_id INTEGER REFERENCES contacts ON DELETE SET NULL,
+  forwarded_from_group_id INTEGER REFERENCES groups ON DELETE SET NULL,
+  forwarded_from_note_folder_id INTEGER REFERENCES note_folders ON DELETE SET NULL
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -860,3 +864,12 @@ CREATE INDEX idx_chat_items_notes_item_status on chat_items(
   item_status
 );
 CREATE INDEX idx_files_redirect_file_id on files(redirect_file_id);
+CREATE INDEX idx_chat_items_forwarded_from_contact_id ON chat_items(
+  forwarded_from_contact_id
+);
+CREATE INDEX idx_chat_items_forwarded_from_group_id ON chat_items(
+  forwarded_from_group_id
+);
+CREATE INDEX idx_chat_items_forwarded_from_note_folder_id ON chat_items(
+  forwarded_from_note_folder_id
+);
