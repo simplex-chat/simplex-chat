@@ -243,13 +243,13 @@ struct CIVideoView: View {
     }
 
     private func imageView(_ img: UIImage) -> some View {
-        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : .infinity
+        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
         DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
             .scaledToFit()
-            .frame(maxWidth: w)
+            .frame(width: w)
             loadingIndicator()
         }
     }
