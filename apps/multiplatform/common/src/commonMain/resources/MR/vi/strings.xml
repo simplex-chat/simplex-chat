@@ -96,4 +96,10 @@
     <string name="settings_section_title_app">ỨNG DỤNG</string>
     <string name="v5_6_app_data_migration">Di chuyển dữ liệu ứng dụng</string>
     <string name="full_backup">Sao lưu dữ liệu ứng dụng</string>
+    <string name="app_passcode_replaced_with_self_destruct">Mật mã ứng dụng đã được thay thế bằng mật mã tự hủy.</string>
+    <string name="v5_3_encrypt_local_files_descr">Ứng dụng mã hóa các tệp cục bộ mới (trừ video).</string>
+    <string name="migrate_to_device_apply_onion">Áp dụng</string>
+    <string name="la_app_passcode">Mật mã ứng dụng</string>
+    <string name="settings_section_title_icon">BIỂU TƯỢNG ỨNG DỤNG</string>
+    <string name="v5_0_app_passcode">Mật mã ứng dụng</string>
 </resources>
