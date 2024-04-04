@@ -80,7 +80,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
-import Simplex.Chat.Util (encryptFile, shuffle)
+import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
@@ -861,19 +861,28 @@ processChatCommand' vr = \case
           forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure fmc
           forwardMC _ = throwChatError CEInvalidForward
           forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
-          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileSource = Just cf@CryptoFile {filePath}}} =
-            chatReadVar filesFolder >>= \case
-              Nothing ->
-                ifM (doesFileExist filePath) (pure $ Just cf) (pure Nothing)
-              Just filesFolder ->
-                ifM
-                  (doesFileExist filePath)
-                  ( do
-                      fPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                      liftIO $ copyFile filePath fPath -- to keep forwarded file in case original is deleted
-                      pure $ Just (cf {filePath = fPath} :: CryptoFile)
-                  )
-                  (pure Nothing)
+          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}}
+            | ciFileLoaded fileStatus =
+                chatReadVar filesFolder >>= \case
+                  Nothing ->
+                    ifM (doesFileExist filePath) (pure $ Just fromCF) (pure Nothing)
+                  Just filesFolder ->
+                    ifM
+                      (doesFileExist filePath)
+                      ( do
+                          newPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                          liftIO $ B.writeFile newPath "" -- create empty file
+                          encrypt <- chatReadVar encryptLocalFiles
+                          cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                          let toCF = CryptoFile newPath cfArgs
+                          -- to keep forwarded file in case original is deleted
+                          liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ do
+                            lb <- CF.readFile fromCF
+                            CF.writeFile toCF lb
+                          pure $ Just toCF
+                      )
+                      (pure Nothing)
+            | otherwise = pure Nothing
           forwardCryptoFile _ = pure Nothing
   APIUserRead userId -> withUserId userId $ \user -> withStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId

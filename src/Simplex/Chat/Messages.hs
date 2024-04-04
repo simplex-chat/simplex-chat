@@ -550,6 +550,21 @@ ciFileEnded = \case
   CIFSRcvError -> True
   CIFSInvalid {} -> True
 
+ciFileLoaded :: CIFileStatus d -> Bool
+ciFileLoaded = \case
+  CIFSSndStored -> True
+  CIFSSndTransfer {} -> True
+  CIFSSndComplete -> True
+  CIFSSndCancelled -> True
+  CIFSSndError -> True
+  CIFSRcvInvitation -> False
+  CIFSRcvAccepted -> False
+  CIFSRcvTransfer {} -> False
+  CIFSRcvCancelled -> False
+  CIFSRcvComplete -> True
+  CIFSRcvError -> False
+  CIFSInvalid {} -> False
+
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
 deriving instance Show ACIFileStatus
