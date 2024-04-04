@@ -6,6 +6,7 @@ module ChatTests.Forward where
 import ChatClient
 import ChatTests.Utils
 import qualified Data.ByteString.Char8 as B
+import System.Directory (doesFileExist)
 import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
@@ -348,3 +349,10 @@ testForwardFileRelativePaths =
 
       dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
       dest2 `shouldBe` src
+
+      -- deleting original file doesn't delete forwarded file
+      checkActionDeletesFile "./tests/tmp/bob_files/test.pdf" $ do
+        bob ##> "/clear alice"
+        bob <## "alice: all messages are removed locally ONLY"
+      fwdFileExists <- doesFileExist "./tests/tmp/bob_files/test_1.pdf"
+      fwdFileExists `shouldBe` True
