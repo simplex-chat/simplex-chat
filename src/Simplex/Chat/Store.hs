@@ -1,6 +1,7 @@
 module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
+    ChatLockEntity (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
     AutoAccept (..),

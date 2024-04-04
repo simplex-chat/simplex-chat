@@ -179,10 +179,12 @@ testMultiWordProfileNames =
       alice <# "#'Our Team' 'Bob James'> hi"
       cath <# "#'Our Team' 'Bob James'> hi"
       alice `send` "@'Cath Johnson' hello"
-      alice <## "member #'Our Team' 'Cath Johnson' does not have direct connection, creating"
-      alice <## "contact for member #'Our Team' 'Cath Johnson' is created"
-      alice <## "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'"
-      alice <# "@'Cath Johnson' hello"
+      alice
+        <### [ "member #'Our Team' 'Cath Johnson' does not have direct connection, creating",
+               "contact for member #'Our Team' 'Cath Johnson' is created",
+               "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'",
+               WithTime "@'Cath Johnson' hello"
+             ]
       cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
       cath <# "'Alice Jones'> hello"
       cath <## "'Alice Jones': contact is connected"
