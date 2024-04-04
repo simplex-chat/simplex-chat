@@ -4535,6 +4535,11 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">Alterar modo de autodestruição</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Confirm upload" xml:space="preserve" approved="no">
+        <source>Confirm upload</source>
+        <target state="translated">Confirmar envio</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt" datatype="plaintext">
