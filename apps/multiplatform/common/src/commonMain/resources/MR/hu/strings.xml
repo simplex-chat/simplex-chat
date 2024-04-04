@@ -1627,7 +1627,7 @@
     <string name="error_blocking_member_for_all">Hiba a tag mindenki számára való letiltása során</string>
     <string name="message_too_large">Az üzenet túl nagy</string>
     <string name="welcome_message_is_too_long">Az üdvözlő üzenet túl hosszú</string>
-    <string name="database_migration_in_progress">Az adatbázis migrációja folyamatban van.
+    <string name="database_migration_in_progress">Az adatbázis átköltöztetése folyamatban van.
 \nEz eltarthat néhány percig.</string>
     <string name="call_service_notification_audio_call">Hanghívás</string>
     <string name="call_service_notification_end_call">A hívás befejeződött</string>
