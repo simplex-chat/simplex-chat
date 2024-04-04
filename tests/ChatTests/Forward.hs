@@ -22,16 +22,16 @@ testForwardContactContact =
 
       alice #> "@bob hi"
       bob <# "alice> hi"
-
       msgId <- lastItemId alice
+
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+
       alice ##> ("/_forward @2 @3 " <> msgId)
       alice <# "@cath -> from conversation: bob"
       alice <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hi"
-
-      alice #> "@bob hey"
-      bob <# "alice> hey"
 
       bob `send` "> @alice -> @cath hey"
       bob <# "@cath -> from conversation: alice"
