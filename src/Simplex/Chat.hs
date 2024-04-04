@@ -88,9 +88,9 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescr
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
-import Simplex.Messaging.Agent.Lock
+import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
@@ -319,28 +319,32 @@ withEntityLock :: String -> ChatLockEntity -> CM a -> CM a
 withEntityLock name entity action = do
   chatLock <- asks chatLock
   ls <- asks entityLocks
-  E.bracket_
-    (atomically $ waitForLock chatLock)
-    (pure ())
-    (withLockMap' ls entity name action)
+  atomically $ unlessM (isEmptyTMVar chatLock) retry
+  withLockMap ls entity name action
 
 withInvitationLock :: String -> ByteString -> CM a -> CM a
 withInvitationLock name = withEntityLock name . CLInvitation
+{-# INLINE withInvitationLock #-}
 
 withConnectionLock :: String -> Int64 -> CM a -> CM a
 withConnectionLock name = withEntityLock name . CLConnection
+{-# INLINE withConnectionLock #-}
 
 withContactLock :: String -> ContactId -> CM a -> CM a
 withContactLock name = withEntityLock name . CLContact
+{-# INLINE withContactLock #-}
 
 withGroupLock :: String -> GroupId -> CM a -> CM a
 withGroupLock name = withEntityLock name . CLGroup
+{-# INLINE withGroupLock #-}
 
 withUserContactLock :: String -> Int64 -> CM a -> CM a
 withUserContactLock name = withEntityLock name . CLUserContact
+{-# INLINE withUserContactLock #-}
 
 withFileLock :: String -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
+{-# INLINE withFileLock #-}
 
 activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
 activeAgentServers ChatConfig {defaultServers} p =
