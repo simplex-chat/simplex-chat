@@ -13,6 +13,8 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.migration.MigrationToDeviceState
+import chat.simplex.common.views.migration.MigrationToState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -96,12 +98,15 @@ object ChatModel {
   val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val activeCallViewIsVisible = mutableStateOf<Boolean>(false)
+  val activeCallViewIsCollapsed = mutableStateOf<Boolean>(false)
   val callCommand = mutableStateListOf<WCallCommand>()
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
 
   // currently showing invitation
   val showingInvitation = mutableStateOf(null as ShowingInvitation?)
+
+  val migrationState: MutableState<MigrationToState?> by lazy { mutableStateOf(MigrationToDeviceState.makeMigrationState()) }
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
@@ -1122,11 +1127,19 @@ data class Connection(
   val viaGroupLink: Boolean,
   val customUserProfileId: Long? = null,
   val connectionCode: SecurityCode? = null,
+  val pqSupport: Boolean,
+  val pqEncryption: Boolean,
+  val pqSndEnabled: Boolean? = null,
+  val pqRcvEnabled: Boolean? = null,
   val connectionStats: ConnectionStats? = null
 ) {
   val id: ChatId get() = ":$connId"
+
+  val connPQEnabled: Boolean
+    get() = pqSndEnabled == true && pqRcvEnabled == true
+
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false)
   }
 }
 
@@ -1821,7 +1834,7 @@ data class ChatItem (
       is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
         is RcvDirectEvent.ContactDeleted -> false
-        is RcvDirectEvent.ProfileUpdated -> true
+        is RcvDirectEvent.ProfileUpdated -> false
       }
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
@@ -1852,6 +1865,10 @@ data class ChatItem (
       is CIContent.SndModerated -> false
       is CIContent.RcvModerated -> false
       is CIContent.RcvBlocked -> false
+      is CIContent.SndDirectE2EEInfo -> false
+      is CIContent.RcvDirectE2EEInfo -> false
+      is CIContent.SndGroupE2EEInfo -> false
+      is CIContent.RcvGroupE2EEInfo -> false
       is CIContent.InvalidJSON -> false
     }
 
@@ -2282,6 +2299,10 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndModerated") object SndModerated: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvModerated") object RcvModerated: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvBlocked") object RcvBlocked: CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndDirectE2EEInfo") class SndDirectE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvDirectE2EEInfo") class RcvDirectE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupE2EEInfo") class SndGroupE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupE2EEInfo") class RcvGroupE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when (this) {
@@ -2311,6 +2332,10 @@ sealed class CIContent: ItemContent {
       is SndModerated -> generalGetString(MR.strings.moderated_description)
       is RcvModerated -> generalGetString(MR.strings.moderated_description)
       is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
+      is SndDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
+      is RcvDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
+      is SndGroupE2EEInfo -> e2eeInfoNoPQStr
+      is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
       is InvalidJSON -> "invalid data"
     }
 
@@ -2329,6 +2354,15 @@ sealed class CIContent: ItemContent {
     }
 
   companion object {
+    fun directE2EEInfoStr(e2EEInfo: E2EEInfo): String =
+      if (e2EEInfo.pqEnabled) {
+        generalGetString(MR.strings.e2ee_info_pq_short)
+      } else {
+        e2eeInfoNoPQStr
+      }
+
+    private val e2eeInfoNoPQStr: String = generalGetString(MR.strings.e2ee_info_no_pq_short)
+
     fun featureText(feature: Feature, enabled: String, param: Int?): String =
       if (feature.hasParam) {
         "${feature.text}: ${timeText(param)}"
@@ -2743,6 +2777,9 @@ enum class CIGroupInvitationStatus {
   @SerialName("expired") Expired;
 }
 
+@Serializable
+class E2EEInfo (val pqEnabled: Boolean) {}
+
 object MsgContentSerializer : KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
@@ -2940,10 +2977,17 @@ enum class FormatColor(val color: String) {
 class SndFileTransfer() {}
 
 @Serializable
-class RcvFileTransfer() {}
+data class RcvFileTransfer(
+  val fileId: Long,
+)
 
 @Serializable
-class FileTransferMeta() {}
+data class FileTransferMeta(
+  val fileId: Long,
+  val fileName: String,
+  val filePath: String,
+  val fileSize: Long,
+)
 
 @Serializable
 enum class CICallStatus {
@@ -3096,6 +3140,7 @@ sealed class RcvConnEvent {
   @Serializable @SerialName("switchQueue") class SwitchQueue(val phase: SwitchPhase): RcvConnEvent()
   @Serializable @SerialName("ratchetSync") class RatchetSync(val syncStatus: RatchetSyncState): RcvConnEvent()
   @Serializable @SerialName("verificationCodeReset") object VerificationCodeReset: RcvConnEvent()
+  @Serializable @SerialName("pqEnabled") class PQEnabled(val enabled: Boolean): RcvConnEvent()
 
   val text: String get() = when (this) {
     is SwitchQueue -> when (phase) {
@@ -3104,6 +3149,11 @@ sealed class RcvConnEvent {
     }
     is RatchetSync -> ratchetSyncStatusToText(syncStatus)
     is VerificationCodeReset -> generalGetString(MR.strings.rcv_conn_event_verification_code_reset)
+    is PQEnabled -> if (enabled) {
+      generalGetString(MR.strings.conn_event_enabled_pq)
+    } else {
+      generalGetString(MR.strings.conn_event_disabled_pq)
+    }
   }
 }
 
@@ -3121,6 +3171,7 @@ fun ratchetSyncStatusToText(ratchetSyncStatus: RatchetSyncState): String {
 sealed class SndConnEvent {
   @Serializable @SerialName("switchQueue") class SwitchQueue(val phase: SwitchPhase, val member: GroupMemberRef? = null): SndConnEvent()
   @Serializable @SerialName("ratchetSync") class RatchetSync(val syncStatus: RatchetSyncState, val member: GroupMemberRef? = null): SndConnEvent()
+  @Serializable @SerialName("pqEnabled") class PQEnabled(val enabled: Boolean): SndConnEvent()
 
   val text: String
     get() = when (this) {
@@ -3148,6 +3199,12 @@ sealed class SndConnEvent {
           }
         }
         ratchetSyncStatusToText(syncStatus)
+      }
+
+      is PQEnabled -> if (enabled) {
+        generalGetString(MR.strings.conn_event_enabled_pq)
+      } else {
+        generalGetString(MR.strings.conn_event_disabled_pq)
       }
     }
 }

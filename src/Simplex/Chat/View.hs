@@ -49,13 +49,14 @@ import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import qualified Simplex.FileTransfer.Protocol as XFTP
+import qualified Simplex.FileTransfer.Transport as XFTPTransport
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
@@ -182,8 +183,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CRUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
-  CRRcvFileDescrReady _ _ -> []
-  CRRcvFileDescrNotReady _ _ -> []
+  CRRcvFileDescrReady _ _ _ _ -> []
   CRRcvFileProgressXFTP {} -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
@@ -198,19 +198,27 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
+  CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFileStandalone "started" ft
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
+  CRRcvStandaloneFileComplete u _ ft -> ttyUser u $ receivingFileStandalone "completed" ft
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
+  CRRcvFileError u (Just ci) e _ -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
+  CRRcvFileError u Nothing e ft -> ttyUser u $ receivingFileStandalone "error" ft <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
+  CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFileStandalone "started" ft
   CRSndFileStartXFTP {} -> []
   CRSndFileProgressXFTP {} -> []
+  CRSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
+  CRSndStandaloneFileComplete u ft uris -> ttyUser u $ standaloneUploadComplete ft uris
   CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
   CRSndFileCancelledXFTP {} -> []
-  CRSndFileError u ci -> ttyUser u $ uploadingFile "error" ci
+  CRSndFileError u Nothing ft e -> ttyUser u $ uploadingFileStandalone "error" ft <> [plain e]
+  CRSndFileError u (Just ci) _ e -> ttyUser u $ uploadingFile "error" ci <> [plain e]
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
+  CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [plain . LB.toStrict $ J.encode j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
@@ -283,7 +291,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
-  CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
+  CRNtfToken _ status mode srv -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode) <> ", server: " <> sShow srv]
   CRNtfMessages {} -> []
   CRNtfMessage {} -> []
   CRCurrentRemoteHost rhi_ ->
@@ -333,6 +341,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
   CRRemoteCtrlStopped {} -> ["remote controller stopped"]
+  CRContactPQAllowed u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": enable " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption"]
+  CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
@@ -378,7 +388,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
+  CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
+  CRCustomChatResponse u r -> ttyUser' u $ [plain r]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser} ss
@@ -1125,7 +1137,7 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
   Just ProtocolTestFailure {testStep, testError} ->
     result
       <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTP.AUTH]
+      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTPTransport.AUTH]
       <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
@@ -1155,7 +1167,7 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
@@ -1165,13 +1177,19 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
+    <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
+    <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
-viewGroupInfo GroupInfo {groupId} s =
+viewGroupInfo GroupInfo {groupId, customData} s =
   [ "group ID: " <> sShow groupId,
     "current members: " <> sShow (currentMembers s)
   ]
+    <> viewCustomData customData
+
+viewCustomData :: Maybe CustomData -> [StyledString]
+viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> plain (LB.toStrict . J.encode $ J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
 viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink}, activeConn} stats =
@@ -1188,8 +1206,8 @@ viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
-viewPeerChatVRange :: JVersionRange -> StyledString
-viewPeerChatVRange (JVersionRange (VersionRange minVer maxVer)) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
+viewPeerChatVRange :: VersionRangeChat -> StyledString
+viewPeerChatVRange (VersionRange minVer maxVer) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
@@ -1558,11 +1576,26 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
 uploadingFile :: StyledString -> AChatItem -> [StyledString]
-uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
-  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
-  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
-uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
+uploadingFile status = \case
+  AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd} ->
+    [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
+  AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd} ->
+    [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+  _ -> [status <> " uploading file"]
+
+uploadingFileStandalone :: StyledString -> FileTransferMeta -> [StyledString]
+uploadingFileStandalone status FileTransferMeta {fileId, fileName} = [status <> " standalone uploading " <> fileTransferStr fileId fileName]
+
+standaloneUploadRedirect :: FileTransferMeta -> FileTransferMeta -> [StyledString]
+standaloneUploadRedirect FileTransferMeta {fileId, fileName} FileTransferMeta {fileId = redirectId} =
+  [fileTransferStr fileId fileName <> " uploaded, preparing redirect file " <> sShow redirectId]
+
+standaloneUploadComplete :: FileTransferMeta -> [Text] -> [StyledString]
+standaloneUploadComplete FileTransferMeta {fileId, fileName} = \case
+  [] -> [fileTransferStr fileId fileName <> " upload complete."]
+  uris ->
+    fileTransferStr fileId fileName <> " upload complete. download with:"
+    : map plain uris
 
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
@@ -1608,7 +1641,11 @@ receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIF
               highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode RemoteFile {userId, fileId, sent = False, fileSource = f}))
             ]
       _ -> []
-receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+receivingFile_' _ _ status _ = [plain status <> " receiving file"]
+
+receivingFileStandalone :: String -> RcvFileTransfer -> [StyledString]
+receivingFileStandalone status RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} =
+  [plain status <> " standalone receiving " <> fileTransferStr fileId fileName]
 
 viewLocalFile :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
@@ -1627,7 +1664,7 @@ fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
 receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
-  [status <> " receiving " <> rcvFile ft <> " from " <> ttyContact c]
+  [status <> " receiving " <> rcvFile ft <> if c == "" then "" else " from " <> ttyContact c]
 
 rcvFile :: RcvFileTransfer -> StyledString
 rcvFile RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} = fileTransferStr fileId fileName

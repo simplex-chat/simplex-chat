@@ -92,6 +92,7 @@ class CallManager {
         if case .ended = call.callState {
             logger.debug("CallManager.endCall: call ended")
             m.activeCall = nil
+            m.activeCallViewIsCollapsed = false
             m.showCallView = false
             completed()
         } else {
@@ -100,6 +101,7 @@ class CallManager {
                 await m.callCommand.processCommand(.end)
                 await MainActor.run {
                     m.activeCall = nil
+                    m.activeCallViewIsCollapsed = false
                     m.showCallView = false
                     completed()
                 }

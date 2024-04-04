@@ -5311,6 +5311,11 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">ללא היסטוריה</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
+        <source>%@ and %@</source>
+        <target state="translated">%@ ו-%@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="he" datatype="plaintext">

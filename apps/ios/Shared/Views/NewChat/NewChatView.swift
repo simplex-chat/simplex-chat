@@ -86,7 +86,7 @@ struct NewChatView: View {
                         }
                 }
                 if case .connect = selection {
-                    ConnectView(showQRCodeScanner: showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
+                    ConnectView(showQRCodeScanner: $showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
                         .transition(.move(edge: .trailing))
                 }
             }
@@ -284,8 +284,7 @@ private struct InviteView: View {
 
 private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @State var showQRCodeScanner = false
-    @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
+    @Binding var showQRCodeScanner: Bool
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
@@ -295,31 +294,12 @@ private struct ConnectView: View {
             Section("Paste the link you received") {
                 pasteLinkView()
             }
-
-            scanCodeView()
+            Section("Or scan QR code") {
+                ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
+            }
         }
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, cleanup: { pastedLink = "" })
-        }
-        .onAppear {
-            let status = AVCaptureDevice.authorizationStatus(for: .video)
-            cameraAuthorizationStatus = status
-            if showQRCodeScanner {
-                switch status {
-                case .notDetermined: askCameraAuthorization()
-                case .restricted: showQRCodeScanner = false
-                case .denied: showQRCodeScanner = false
-                case .authorized: ()
-                @unknown default: askCameraAuthorization()
-                }
-            }
-        }
-    }
-
-    func askCameraAuthorization(_ cb: (() -> Void)? = nil) {
-        AVCaptureDevice.requestAccess(for: .video) { allowed in
-            cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-            if allowed { cb?() }
         }
     }
 
@@ -351,8 +331,45 @@ private struct ConnectView: View {
         }
     }
 
-    private func scanCodeView() -> some View {
-        Section("Or scan QR code") {
+    private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
+        switch resp {
+        case let .success(r):
+            let link = r.string
+            if strIsSimplexLink(r.string) {
+                connect(link)
+            } else {
+                alert = .newChatSomeAlert(alert: .someAlert(
+                    alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
+                    id: "processQRCode: code is not a SimpleX link"
+                ))
+            }
+        case let .failure(e):
+            logger.error("processQRCode QR code error: \(e.localizedDescription)")
+            alert = .newChatSomeAlert(alert: .someAlert(
+                alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
+                id: "processQRCode: failure"
+            ))
+        }
+    }
+
+    private func connect(_ link: String) {
+        planAndConnect(
+            link,
+            showAlert: { alert = .planAndConnectAlert(alert: $0) },
+            showActionSheet: { sheet = $0 },
+            dismiss: true,
+            incognito: nil
+        )
+    }
+}
+
+struct ScannerInView: View {
+    @Binding var showQRCodeScanner: Bool
+    let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
+    @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
+
+    var body: some View {
+        Group {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
                 CodeScannerView(codeTypes: [.qr], scanMode: .continuous, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
@@ -396,37 +413,26 @@ private struct ConnectView: View {
                 .disabled(cameraAuthorizationStatus == .restricted)
             }
         }
-    }
-
-    private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
-        switch resp {
-        case let .success(r):
-            let link = r.string
-            if strIsSimplexLink(r.string) {
-                connect(link)
-            } else {
-                alert = .newChatSomeAlert(alert: .someAlert(
-                    alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
-                    id: "processQRCode: code is not a SimpleX link"
-                ))
+        .onAppear {
+            let status = AVCaptureDevice.authorizationStatus(for: .video)
+            cameraAuthorizationStatus = status
+            if showQRCodeScanner {
+                switch status {
+                case .notDetermined: askCameraAuthorization()
+                case .restricted: showQRCodeScanner = false
+                case .denied: showQRCodeScanner = false
+                case .authorized: ()
+                @unknown default: askCameraAuthorization()
+                }
             }
-        case let .failure(e):
-            logger.error("processQRCode QR code error: \(e.localizedDescription)")
-            alert = .newChatSomeAlert(alert: .someAlert(
-                alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
-                id: "processQRCode: failure"
-            ))
         }
     }
 
-    private func connect(_ link: String) {
-        planAndConnect(
-            link,
-            showAlert: { alert = .planAndConnectAlert(alert: $0) },
-            showActionSheet: { sheet = $0 },
-            dismiss: true,
-            incognito: nil
-        )
+    func askCameraAuthorization(_ cb: (() -> Void)? = nil) {
+        AVCaptureDevice.requestAccess(for: .video) { allowed in
+            cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
+            if allowed { cb?() }
+        }
     }
 }
 

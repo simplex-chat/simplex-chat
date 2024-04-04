@@ -6,6 +6,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -34,12 +35,13 @@ import kotlin.system.exitProcess
 
 class SimplexService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
-  private var isStartingService = false
+  private var isCheckingNewMessages = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d(TAG, "onStartCommand startId: $startId")
+    isServiceStarting = false
     if (intent != null) {
       val action = intent.action
       Log.d(TAG, "intent action $action")
@@ -71,6 +73,7 @@ class SimplexService: Service() {
       stopForeground(true)
       stopSelf()
     } else {
+      isServiceStarting = false
       isServiceStarted = true
       // In case of self-destruct is enabled the initialization process will not start in SimplexApp, Let's start it here
       if (DatabaseUtils.ksSelfDestructPassword.get() != null && chatModel.chatDbStatus.value == null) {
@@ -89,6 +92,7 @@ class SimplexService: Service() {
     } catch (e: Exception) {
       Log.d(TAG, "Exception while releasing wakelock: ${e.message}")
     }
+    isServiceStarting = false
     isServiceStarted = false
     stopAfterStart = false
     saveServiceState(this, ServiceState.STOPPED)
@@ -101,9 +105,9 @@ class SimplexService: Service() {
 
   private fun startService() {
     Log.d(TAG, "SimplexService startService")
-    if (wakeLock != null || isStartingService) return
+    if (wakeLock != null || isCheckingNewMessages) return
     val self = this
-    isStartingService = true
+    isCheckingNewMessages = true
     withLongRunningApi {
       val chatController = ChatController
       waitDbMigrationEnds(chatController)
@@ -123,7 +127,7 @@ class SimplexService: Service() {
           }
         }
       } finally {
-        isStartingService = false
+        isCheckingNewMessages = false
       }
     }
   }
@@ -262,6 +266,7 @@ class SimplexService: Service() {
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
     private const val WORK_NAME_ONCE = "ServiceStartWorkerOnce"
 
+    var isServiceStarting = false
     var isServiceStarted = false
     private var stopAfterStart = false
 
@@ -281,7 +286,7 @@ class SimplexService: Service() {
     fun safeStopService() {
       if (isServiceStarted) {
         androidAppContext.stopService(Intent(androidAppContext, SimplexService::class.java))
-      } else {
+      } else if (isServiceStarting) {
         stopAfterStart = true
       }
     }
@@ -291,6 +296,7 @@ class SimplexService: Service() {
       withContext(Dispatchers.IO) {
         Intent(androidAppContext, SimplexService::class.java).also {
           it.action = action.name
+          isServiceStarting = true
           ContextCompat.startForegroundService(androidAppContext, it)
         }
       }

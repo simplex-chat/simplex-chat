@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 5.5.3.0
+version: 5.6.1.1
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -104,16 +104,20 @@ executables:
       - -threaded
 
   simplex-broadcast-bot:
-    source-dirs: apps/simplex-broadcast-bot/src
-    main: ../Main.hs
+    source-dirs:
+      - apps/simplex-broadcast-bot
+      - apps/simplex-broadcast-bot/src
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
       - -threaded
 
   simplex-directory-service:
-    source-dirs: apps/simplex-directory-service/src
-    main: ../Main.hs
+    source-dirs:
+      - apps/simplex-directory-service
+      - apps/simplex-directory-service/src
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
@@ -147,6 +151,7 @@ tests:
 
 ghc-options:
   # - -haddock
+  - -O2
   - -Wall
   - -Wcompat
   - -Werror=incomplete-patterns
@@ -154,3 +159,6 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wunused-type-patterns
+
+default-extensions:
+  - StrictData

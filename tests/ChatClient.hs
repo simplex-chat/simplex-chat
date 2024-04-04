@@ -3,7 +3,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -15,6 +17,7 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.Reader
 import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
@@ -22,27 +25,33 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
+import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
+import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
+import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
 import Simplex.Messaging.Version
+import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
 import qualified System.Terminal as C
@@ -66,6 +75,7 @@ testOpts =
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      optTempDirectory = Nothing,
       showReactions = True,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
@@ -77,7 +87,7 @@ testOpts =
 testCoreOpts :: CoreChatOpts
 testCoreOpts =
   CoreChatOpts
-    { dbFilePrefix = undefined,
+    { dbFilePrefix = "./simplex_v1",
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
@@ -129,67 +139,91 @@ testCfg =
     { agentConfig = testAgentCfg,
       showReceipts = False,
       testView = True,
-      tbqSize = 16,
-      xftpFileConfig = Nothing
+      tbqSize = 16
     }
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
   testAgentCfg
-    { smpAgentVRange = prevRange $ smpAgentVRange testAgentCfg,
-      smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
-      e2eEncryptVRange = prevRange $ e2eEncryptVRange testAgentCfg,
+    { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
+      smpAgentVRange = \_ -> prevRange $ supportedSMPAgentVRange PQSupportOff,
+      e2eEncryptVRange = \_ -> prevRange $ supportedE2EEncryptVRange PQSupportOff,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
+    }
+
+testAgentCfgVNext :: AgentConfig
+testAgentCfgVNext =
+  testAgentCfg
+    { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
+      smpAgentVRange = \_ -> mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
+      e2eEncryptVRange = \_ -> mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = v1Range,
-      e2eEncryptVRange = v1Range,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = v1Range}
+      smpAgentVRange = \_ -> versionToRange duplexHandshakeSMPAgentVersion,
+      e2eEncryptVRange = \_ -> versionToRange CR.kdfX3DHE2EEncryptVersion,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange batchCmdsSMPVersion}
     }
 
 testCfgVPrev :: ChatConfig
 testCfgVPrev =
   testCfg
-    { chatVRange = prevRange $ chatVRange testCfg,
+    { chatVRange = \_ -> prevRange $ chatVRange testCfg PQSupportOff,
       agentConfig = testAgentCfgVPrev
+    }
+
+testCfgVNext :: ChatConfig
+testCfgVNext =
+  testCfg
+    { chatVRange = \_ -> mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
+      agentConfig = testAgentCfgVNext
     }
 
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = v1Range,
+    { chatVRange = const v1Range,
       agentConfig = testAgentCfgV1
     }
 
-prevRange :: VersionRange -> VersionRange
-prevRange vr = vr {maxVersion = maxVersion vr - 1}
+prevRange :: VersionRange v -> VersionRange v
+prevRange vr = vr {maxVersion = max (minVersion vr) (prevVersion $ maxVersion vr)}
 
-v1Range :: VersionRange
-v1Range = mkVersionRange 1 1
+nextRange :: VersionRange v -> VersionRange v
+nextRange vr = vr {maxVersion = max (minVersion vr) (nextVersion $ maxVersion vr)}
+
+v1Range :: VersionRange v
+v1Range = mkVersionRange (Version 1) (Version 1)
+
+prevVersion :: Version v -> Version v
+prevVersion (Version v) = Version (v - 1)
+
+nextVersion :: Version v -> Version v
+nextVersion (Version v) = Version (v + 1)
 
 testCfgCreateGroupDirect :: ChatConfig
 testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+mkCfgCreateGroupDirect cfg = cfg {chatVRange = const groupCreateDirectVRange}
 
-groupCreateDirectVRange :: VersionRange
-groupCreateDirectVRange = mkVersionRange 1 1
+groupCreateDirectVRange :: VersionRangeChat
+groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
 
 testCfgGroupLinkViaContact :: ChatConfig
 testCfgGroupLinkViaContact =
   mkCfgGroupLinkViaContact testCfg
 
 mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
-mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
+mkCfgGroupLinkViaContact cfg = cfg {chatVRange = const groupLinkViaContactVRange}
 
-groupLinkViaContactVRange :: VersionRange
-groupLinkViaContactVRange = mkVersionRange 1 2
+groupLinkViaContactVRange :: VersionRangeChat
+groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
@@ -209,6 +243,7 @@ startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
+  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") `runReaderT` cc
   chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -216,10 +251,12 @@ startTestChat_ db cfg opts user = do
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput = False}
 
 stopTestChat :: TestCC -> IO ()
-stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
+stopTestChat TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync, termAsync} = do
   stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
+  liftIO $ disposeAgentClient smpAgent
+  closeSQLiteStore chatStore
   threadDelay 200000
 
 withNewTestChat :: HasCallStack => FilePath -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
@@ -317,7 +354,8 @@ getTermLine cc =
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) = maybe "no current user" (T.unpack . localDisplayName) <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) =
+  maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
@@ -375,6 +413,8 @@ serverCfg =
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail
       newQueueBasicAuth = Nothing, -- Just "server_password",
+      controlPortUserAuth = Nothing,
+      controlPortAdminAuth = Nothing,
       messageExpiration = Just defaultMessageExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
@@ -384,7 +424,7 @@ serverCfg =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      smpServerVRange = supportedSMPServerVRange,
+      smpServerVRange = supportedServerSMPRelayVRange,
       transportConfig = defaultTransportServerConfig,
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing
@@ -407,10 +447,13 @@ xftpServerConfig =
       storeLogFile = Just "tests/tmp/xftp-server-store.log",
       filesPath = xftpServerFiles,
       fileSizeQuota = Nothing,
-      allowedChunkSizes = [kb 128, kb 256, mb 1, mb 4],
+      allowedChunkSizes = [kb 64, kb 128, kb 256, mb 1, mb 4],
       allowNewFiles = True,
       newFileBasicAuth = Nothing,
+      controlPortUserAuth = Nothing,
+      controlPortAdminAuth = Nothing,
       fileExpiration = Just defaultFileExpiration,
+      fileTimeout = 10000000,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",

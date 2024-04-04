@@ -4,17 +4,18 @@ plugins {
   id("com.android.library")
   id("org.jetbrains.kotlin.plugin.serialization")
   id("dev.icerock.mobile.multiplatform-resources")
-  id("com.github.gmazzo.buildconfig") version "4.0.4"
+  id("com.github.gmazzo.buildconfig") version "5.3.5"
 }
 
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
 kotlin {
-  android()
+  androidTarget()
   jvm("desktop") {
     jvmToolchain(11)
   }
+  applyDefaultHierarchyTemplate()
   sourceSets {
     all {
       languageSettings {
@@ -35,20 +36,20 @@ kotlin {
         api(compose.runtime)
         api(compose.foundation)
         api(compose.material)
-        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
-        api("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
-        api("com.russhwolf:multiplatform-settings:1.0.0")
-        api("com.charleskorn.kaml:kaml:0.43.0")
-        api("dev.icerock.moko:resources-compose:0.23.0")
+        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+        api("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+        api("com.russhwolf:multiplatform-settings:1.1.1")
+        api("com.charleskorn.kaml:kaml:0.58.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
-        api("org.boofcv:boofcv-core:0.40.1")
+        api("org.boofcv:boofcv-core:1.1.3")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
         // Link Previews
-        implementation("org.jsoup:jsoup:1.13.1")
+        implementation("org.jsoup:jsoup:1.17.2")
         // Resources
-        implementation("dev.icerock.moko:resources:0.23.0")
+        api("dev.icerock.moko:resources:0.23.0")
+        api("dev.icerock.moko:resources-compose:0.23.0")
       }
     }
     val commonTest by getting {
@@ -57,47 +58,50 @@ kotlin {
       }
     }
     val androidMain by getting {
+      kotlin.srcDir("build/generated/moko/androidMain/src")
       dependencies {
-        implementation("androidx.activity:activity-compose:1.5.0")
-        val work_version = "2.7.1"
-        implementation("androidx.work:work-runtime-ktx:$work_version")
-        implementation("com.google.accompanist:accompanist-insets:0.23.0")
-        implementation("dev.icerock.moko:resources:0.23.0")
+        implementation("androidx.activity:activity-compose:1.8.2")
+        val workVersion = "2.9.0"
+        implementation("androidx.work:work-runtime-ktx:$workVersion")
+        implementation("com.google.accompanist:accompanist-insets:0.30.1")
 
         // Video support
-        implementation("com.google.android.exoplayer:exoplayer:2.17.1")
+        implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 
         // Biometric authentication
-        implementation("androidx.biometric:biometric:1.2.0-alpha04")
+        implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
         //Barcode
-        implementation("org.boofcv:boofcv-android:0.40.1")
+        implementation("org.boofcv:boofcv-android:1.1.3")
 
         //Camera Permission
-        implementation("com.google.accompanist:accompanist-permissions:0.23.0")
+        implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
-        implementation("androidx.webkit:webkit:1.4.0")
+        implementation("androidx.webkit:webkit:1.10.0")
 
         // GIFs support
-        implementation("io.coil-kt:coil-compose:2.1.0")
-        implementation("io.coil-kt:coil-gif:2.1.0")
+        implementation("io.coil-kt:coil-compose:2.6.0")
+        implementation("io.coil-kt:coil-gif:2.6.0")
 
-        implementation("com.jakewharton:process-phoenix:2.1.2")
+        implementation("com.jakewharton:process-phoenix:2.2.0")
 
-        val camerax_version = "1.1.0-beta01"
-        implementation("androidx.camera:camera-core:${camerax_version}")
-        implementation("androidx.camera:camera-camera2:${camerax_version}")
-        implementation("androidx.camera:camera-lifecycle:${camerax_version}")
-        implementation("androidx.camera:camera-view:${camerax_version}")
+        val cameraXVersion = "1.3.2"
+        implementation("androidx.camera:camera-core:${cameraXVersion}")
+        implementation("androidx.camera:camera-camera2:${cameraXVersion}")
+        implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
+        implementation("androidx.camera:camera-view:${cameraXVersion}")
+
+        // Calls lifecycle listener
+        implementation("androidx.lifecycle:lifecycle-process:2.4.1")
       }
     }
     val desktopMain by getting {
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.1")
-        implementation("com.github.Dansoftowner:jSystemThemeDetector:3.6")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+        implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8")
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
-        implementation("org.slf4j:slf4j-simple:2.0.7")
-        implementation("uk.co.caprica:vlcj:4.7.3")
+        implementation("org.slf4j:slf4j-simple:2.0.12")
+        implementation("uk.co.caprica:vlcj:4.8.2")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
       }
@@ -107,23 +111,25 @@ kotlin {
 }
 
 android {
-  compileSdkVersion(34)
+  namespace = "chat.simplex.common"
+  compileSdk = 34
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
-    minSdkVersion(28)
-    targetSdkVersion(33)
+    minSdk = 28
   }
+  testOptions.targetSdk = 33
+  lint.targetSdk = 33
   compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
   }
   val isAndroid = gradle.startParameter.taskNames.find {
-    val lower = it.toLowerCase()
+    val lower = it.lowercase()
     lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
   } != null
   if (isAndroid) {
     // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
-    // No other ways to exclude a file work but it's large and should be excluded
+    // No other ways to exclude a file work, but it's large and should be excluded
     kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
   }
 }

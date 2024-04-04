@@ -82,7 +82,7 @@ def RatchetInitAlicePQ2HE(state, SK, bob_dh_public_key, shared_hka, shared_nhkb,
     state.PQRs = GENERATE_PQKEM()
     state.PQRr = bob_pq_kem_encapsulation_key
     state.PQRss = random // shared secret for KEM
-    state.PQRenc_ss = PQKEM-ENC(state.PQRr.encaps, state.PQRss) // encapsulated additional shared secret
+    state.PQRct = PQKEM-ENC(state.PQRr, state.PQRss) // encapsulated additional shared secret
     // above added for KEM
     // below augments DH key agreement with PQ shared secret
     state.RK, state.CKs, state.NHKs = KDF_RK_HE(SK, DH(state.DHRs, state.DHRr) || state.PQRss) 
@@ -103,7 +103,7 @@ def RatchetInitBobPQ2HE(state, SK, bob_dh_key_pair, shared_hka, shared_nhkb, bob
     state.PQRs = bob_pq_kem_key_pair
     state.PQRr = None
     state.PQRss = None
-    state.PQRenc_ss = None
+    state.PQRct = None
     // above added for KEM
     state.RK = SK 
     state.CKs = None
@@ -132,10 +132,10 @@ def RatchetEncryptPQ2HE(state, plaintext, AD):
     // encapsulation key from PQRs and encapsulated shared secret is added to header
     header = HEADER_PQ2(
       dh = state.DHRs.public,
+      kem = state.PQRs.public, // added for KEM #2
+      ct = state.PQRct // added for KEM #1
       pn = state.PN,
       n = state.Ns,
-      encaps = state.PQRs.encaps, // added for KEM #1
-      enc_ss = state.PQRenc_ss // added for KEM #2
     )
     enc_header = HENCRYPT(state.HKs, header)
     state.Ns += 1
@@ -162,6 +162,16 @@ def RatchetDecryptPQ2HE(state, enc_header, ciphertext, AD):
     state.Nr += 1
     return DECRYPT(mk, ciphertext, CONCAT(AD, enc_header))
 
+// DecryptHeader is the same as in double ratchet specification
+def DecryptHeader(state, enc_header):
+    header = HDECRYPT(state.HKr, enc_header)
+    if header != None:
+        return header, False
+    header = HDECRYPT(state.NHKr, enc_header)
+    if header != None:
+        return header, True
+    raise Error()
+
 def DHRatchetPQ2HE(state, header):
     state.PN = state.Ns
     state.Ns = 0
@@ -170,16 +180,16 @@ def DHRatchetPQ2HE(state, header):
     state.HKr = state.NHKr
     state.DHRr = header.dh
     // save new encapsulation key from header
-    state.PQRr = header.encaps
+    state.PQRr = header.kem
     // decapsulate shared secret from header - KEM #2
-    ss = PQKEM-DEC(state.PQRs.decaps, header.enc_ss)
+    ss = PQKEM-DEC(state.PQRs.private, header.ct)
     // use decapsulated shared secret with receiving ratchet
     state.RK, state.CKr, state.NHKr = KDF_RK_HE(state.RK, DH(state.DHRs, state.DHRr) || ss)
     state.DHRs = GENERATE_DH()
     // below is added for KEM
     state.PQRs = GENERATE_PQKEM() // generate new PQ key pair
     state.PQRss = random // shared secret for KEM
-    state.PQRenc_ss = PQKEM-ENC(state.PQRr.encaps, state.PQRss) // encapsulated additional shared secret KEM #1
+    state.PQRct = PQKEM-ENC(state.PQRr, state.PQRss) // encapsulated additional shared secret KEM #1
     // above is added for KEM
     // use new shared secret with sending ratchet
     state.RK, state.CKs, state.NHKs = KDF_RK_HE(state.RK, DH(state.DHRs, state.DHRr) || state.PQRss)
@@ -201,13 +211,15 @@ The main downside is the absense of performance-efficient implementation for aar
 
 ## Implementation considerations for SimpleX Chat
 
-As SimpleX Chat pads messages to a fixed size, using 16kb transport blocks, the size increase introduced by this scheme will not cause additional traffic in most cases. For large texts it may require additional messages to be sent. Similarly, for media previews it may require either reducing the preview size (and quality) or sending additional messages.
+As SimpleX Chat pads messages to a fixed size, using 16kb transport blocks, the size increase introduced by this scheme will not cause additional traffic in most cases. For large texts it may require additional messages to be sent. Similarly, for media previews it may require either reducing the preview size (and quality), or sending additional messages, or compressing the current JSON encoding, e.g. with zstd algorithm.
 
 That might be the primary reason why this scheme was not adopted by Signal, as it would have resulted in substantial traffic growth – to the best of our knowledge, Signal messages are not padded to a fixed size.
 
 Sharing the initial keys in case of SimpleX Chat it is equivalent to sharing the invitation link. As encapsulation key is large, it may be inconvenient to share it in the link in some contexts.
 
 It is possible to postpone sharing the encapsulation key until the first message from Alice (confirmation message in SMP protocol), the party sending connection request. The upside here is that the invitation link size would not increase. The downside is that the user profile shared in this confirmation will not be encrypted with PQ-resistant algorithm. To mitigate it, the hadnshake protocol can be modified to postpone sending the user profile until the second message from Alice (HELLO message in SMP protocol).
+
+Another consideration is pairwise ratchets in groups. Key generation in sntrup761 is quite slow - on slow devices it can probably be as slow as 10 keys per second, so using this primitive in groups larger than 10 members would result in slow performance. An option could be not to use ratchets in groups at all, but that would result in the lack of protection in small groups that simply combine multiple devices of 1-3 people. So a better option would be to support dynamically adding and removing sntrup761 keys for pairwise ratchets in groups, which means that when sending each message a boolean flag needs to be passed whether to use PQ KEM or not.
 
 ## Summary
 

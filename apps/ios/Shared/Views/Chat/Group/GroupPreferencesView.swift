@@ -48,7 +48,7 @@ struct GroupPreferencesView: View {
                 preferences.timedMessages.ttl = currentPreferences.timedMessages.ttl
             }
         }
-        .modifier(BackButton {
+        .modifier(BackButton(disabled: Binding.constant(false)) {
             if currentPreferences == preferences {
                 dismiss()
             } else {

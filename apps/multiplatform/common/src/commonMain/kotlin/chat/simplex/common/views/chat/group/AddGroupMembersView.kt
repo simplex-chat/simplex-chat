@@ -125,10 +125,9 @@ fun AddGroupMembersLayout(
     }
   }
 
-  Column(
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.button_add_members))
     profileText()

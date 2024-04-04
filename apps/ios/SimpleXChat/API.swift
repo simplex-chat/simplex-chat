@@ -54,6 +54,38 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     return result
 }
 
+public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation: MigrationConfirmation = .error) -> (DBMigrationResult, chat_ctrl?) {
+    let dbPath = url.path
+    let dbKey = key ?? randomDatabasePassword()
+    logger.debug("chatInitTemporaryDatabase path: \(dbPath)")
+    var temporaryController: chat_ctrl? = nil
+    var cPath = dbPath.cString(using: .utf8)!
+    var cKey = dbKey.cString(using: .utf8)!
+    var cConfirm = confirmation.rawValue.cString(using: .utf8)!
+    let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &temporaryController)!
+    return (dbMigrationResult(fromCString(cjson)), temporaryController)
+}
+
+public func chatInitControllerRemovingDatabases() {
+    let dbPath = getAppDatabasePath().path
+    let fm = FileManager.default
+    // Remove previous databases, otherwise, can be .errorNotADatabase with nil controller
+    try? fm.removeItem(atPath: dbPath + CHAT_DB)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB)
+
+    let dbKey = randomDatabasePassword()
+    logger.debug("chatInitControllerRemovingDatabases path: \(dbPath)")
+    var cPath = dbPath.cString(using: .utf8)!
+    var cKey = dbKey.cString(using: .utf8)!
+    var cConfirm = MigrationConfirmation.error.rawValue.cString(using: .utf8)!
+    chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &chatController)
+
+    // We need only controller, not databases
+    try? fm.removeItem(atPath: dbPath + CHAT_DB)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB)
+}
+
+
 public func chatCloseStore() {
     let err = fromCString(chat_close_store(getChatCtrl()))
     if err != "" {
@@ -73,17 +105,17 @@ public func resetChatCtrl() {
     migrationResult = nil
 }
 
-public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
+public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
-    let cjson  = chat_send_cmd(getChatCtrl(), &c)!
+    let cjson  = chat_send_cmd(ctrl ?? getChatCtrl(), &c)!
     return chatResponse(fromCString(cjson))
 }
 
 // in microseconds
 let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public func recvSimpleXMsg() -> ChatResponse? {
-    if let cjson = chat_recv_msg_wait(getChatCtrl(), MESSAGE_TIMEOUT) {
+public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil) -> ChatResponse? {
+    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), MESSAGE_TIMEOUT) {
         let s = fromCString(cjson)
         return s == "" ? nil : chatResponse(s)
     }
@@ -181,19 +213,25 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    let user: UserRef? = try? decodeObject(jError["user_"] as Any)
-                    return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
                 }
             } else if type == "chatError" {
                 if let jError = jResp["chatError"] as? NSDictionary {
-                    let user: UserRef? = try? decodeObject(jError["user_"] as Any)
-                    return .chatError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
                 }
             }
         }
         json = prettyJSON(j)
     }
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
+}
+
+private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
+    if let user_ = jDict["user_"] {
+        try? decodeObject(user_ as Any)
+    } else {
+        nil
+    }
 }
 
 func parseChatData(_ jChat: Any) throws -> ChatData {

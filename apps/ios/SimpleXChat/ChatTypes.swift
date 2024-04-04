@@ -1532,14 +1532,22 @@ public struct Connection: Decodable {
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
+    public var pqSupport: Bool
+    public var pqEncryption: Bool
+    public var pqSndEnabled: Bool?
+    public var pqRcvEnabled: Bool?
 
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled
     }
 
     public var id: ChatId { get { ":\(connId)" } }
+
+    public var connPQEnabled: Bool {
+        pqSndEnabled == true && pqRcvEnabled == true
+    }
 
     static let sampleData = Connection(
         connId: 1,
@@ -1547,7 +1555,9 @@ public struct Connection: Decodable {
         peerChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
         connStatus: .ready,
         connLevel: 0,
-        viaGroupLink: false
+        viaGroupLink: false,
+        pqSupport: false,
+        pqEncryption: false
     )
 }
 
@@ -2110,7 +2120,7 @@ public enum ConnectionEntity: Decodable {
     public var id: String? {
         switch self {
         case let .rcvDirectMsgConnection(contact):
-            return contact?.id ?? nil
+            return contact?.id
         case let .rcvGroupMsgConnection(_, groupMember):
             return groupMember.id
         case let .userContactConnection(userContact):
@@ -2268,7 +2278,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
             switch rcvDirectEvent {
             case .contactDeleted: return false
-            case .profileUpdated: return true
+            case .profileUpdated: return false
             }
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
             switch rcvGroupEvent {
@@ -2300,6 +2310,10 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndModerated: return false
         case .rcvModerated: return false
         case .rcvBlocked: return false
+        case .sndDirectE2EEInfo: return false
+        case .rcvDirectE2EEInfo: return false
+        case .sndGroupE2EEInfo: return false
+        case .rcvGroupE2EEInfo: return false
         case .invalidJSON: return false
         }
     }
@@ -2735,6 +2749,10 @@ public enum CIContent: Decodable, ItemContent {
     case sndModerated
     case rcvModerated
     case rcvBlocked
+    case sndDirectE2EEInfo(e2eeInfo: E2EEInfo)
+    case rcvDirectE2EEInfo(e2eeInfo: E2EEInfo)
+    case sndGroupE2EEInfo(e2eeInfo: E2EEInfo)
+    case rcvGroupE2EEInfo(e2eeInfo: E2EEInfo)
     case invalidJSON(json: String)
 
     public var text: String {
@@ -2766,9 +2784,23 @@ public enum CIContent: Decodable, ItemContent {
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
+            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
+            case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }
+    }
+
+    private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
+        e2eeInfo.pqEnabled
+        ? NSLocalizedString("This chat is protected by quantum resistant end-to-end encryption.", comment: "E2EE info chat item")
+        : e2eeInfoNoPQStr
+    }
+
+    private var e2eeInfoNoPQStr: String {
+        NSLocalizedString("This chat is protected by end-to-end encryption.", comment: "E2EE info chat item")
     }
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
@@ -3177,6 +3209,14 @@ public enum MsgContent: Equatable {
         }
     }
 
+    public var isImageOrVideo: Bool {
+        switch self {
+        case .image: true
+        case .video: true
+        default: false
+        }
+    }
+
     var cmdString: String {
         "json \(encodeJSON(self))"
     }
@@ -3378,11 +3418,14 @@ public struct SndFileTransfer: Decodable {
 }
 
 public struct RcvFileTransfer: Decodable {
-
+    public let fileId: Int64
 }
 
 public struct FileTransferMeta: Decodable {
-    
+    public let fileId: Int64
+    public let fileName: String
+    public let filePath: String
+    public let fileSize: Int64
 }
 
 public enum CICallStatus: String, Decodable {
@@ -3455,6 +3498,10 @@ public enum CIGroupInvitationStatus: String, Decodable {
     case accepted
     case rejected
     case expired
+}
+
+public struct E2EEInfo: Decodable {
+    public var pqEnabled: Bool
 }
 
 public enum RcvDirectEvent: Decodable {
@@ -3574,7 +3621,8 @@ public enum RcvConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase)
     case ratchetSync(syncStatus: RatchetSyncState)
     case verificationCodeReset
-    
+    case pqEnabled(enabled: Bool)
+
     var text: String {
         switch self {
         case let .switchQueue(phase):
@@ -3586,6 +3634,12 @@ public enum RcvConnEvent: Decodable {
             return ratchetSyncStatusToText(syncStatus)
         case .verificationCodeReset:
             return NSLocalizedString("security code changed", comment: "chat item text")
+        case let .pqEnabled(enabled):
+            if enabled {
+                return NSLocalizedString("quantum resistant e2e encryption", comment: "chat item text")
+            } else {
+                return NSLocalizedString("standard end-to-end encryption", comment: "chat item text")
+            }
         }
     }
 }
@@ -3603,6 +3657,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
     case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
+    case pqEnabled(enabled: Bool)
 
     var text: String {
         switch self {
@@ -3626,6 +3681,12 @@ public enum SndConnEvent: Decodable {
                 }
             }
             return ratchetSyncStatusToText(syncStatus)
+        case let .pqEnabled(enabled):
+            if enabled {
+                return NSLocalizedString("quantum resistant e2e encryption", comment: "chat item text")
+            } else {
+                return NSLocalizedString("standard end-to-end encryption", comment: "chat item text")
+            }
         }
     }
 }

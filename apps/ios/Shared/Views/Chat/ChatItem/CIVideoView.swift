@@ -120,6 +120,9 @@ struct CIVideoView: View {
                         showFullScreenPlayer = urlDecrypted != nil
                     }
                 }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
+                }
                 if !decryptionInProgress {
                     Button {
                         decrypt(file: file) {
@@ -167,6 +170,9 @@ struct CIVideoView: View {
                         }
                     default: ()
                     }
+                }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
                 }
                 if !videoPlaying {
                     Button {
@@ -237,13 +243,13 @@ struct CIVideoView: View {
     }
 
     private func imageView(_ img: UIImage) -> some View {
-        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : .infinity
+        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
         DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
             .scaledToFit()
-            .frame(maxWidth: w)
+            .frame(width: w)
             loadingIndicator()
         }
     }

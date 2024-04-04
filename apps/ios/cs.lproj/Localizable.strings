@@ -2070,7 +2070,7 @@
 /* copied message info */
 "Moderated at: %@" = "Upraveno v: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "moderovaný %@";
 
 /* time unit */

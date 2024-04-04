@@ -75,7 +75,7 @@ actual fun ActiveCallView() {
               chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
             }
             withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
-          } catch (e: Error) {
+          } catch (e: Throwable) {
             Log.d(TAG, "call status ${r.state.connectionState} not used")
           }
         is WCallResponse.Connected -> {
@@ -146,8 +146,21 @@ private fun SendStateUpdates() {
 @Composable
 fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
   val uriHandler = LocalUriHandler.current
+  val endCall = {
+    val call = chatModel.activeCall.value
+    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
+  }
   val server = remember {
-    uriHandler.openUri("http://${SERVER_HOST}:$SERVER_PORT/simplex/call/")
+    try {
+      uriHandler.openUri("http://${SERVER_HOST}:$SERVER_PORT/simplex/call/")
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to open browser: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.unable_to_open_browser_title),
+        text = generalGetString(MR.strings.unable_to_open_browser_desc)
+      )
+      endCall()
+    }
     startServer(onResponse)
   }
   fun processCommand(cmd: WCallCommand) {

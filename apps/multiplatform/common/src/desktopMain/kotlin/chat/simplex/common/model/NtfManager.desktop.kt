@@ -111,8 +111,12 @@ object NtfManager {
     }
     try {
       prevNtfs.add(chatId to builder.toast())
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
       Log.e(TAG, e.stackTraceToString())
+      if (e !is Exception) {
+        val text = e.stackTraceToString().lines().getOrNull(0) ?: ""
+        showToast(generalGetString(MR.strings.error_showing_desktop_notification) + " " + text, 4_000)
+      }
     }
   }
 

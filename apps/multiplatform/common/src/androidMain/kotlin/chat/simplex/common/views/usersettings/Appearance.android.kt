@@ -85,8 +85,8 @@ fun AppearanceScope.AppearanceLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   editColor: (ThemeColor, Color) -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
     SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {

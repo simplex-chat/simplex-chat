@@ -38,9 +38,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.runBlocking
 
 @Composable
 fun ConnectMobileView() {
@@ -91,8 +89,8 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
@@ -181,8 +179,8 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     if (title != null) {
@@ -269,12 +267,20 @@ fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, c
   var cachedR by remember { mutableStateOf<CR.RemoteHostStarted?>(null) }
   val customAddress = rememberSaveable { mutableStateOf<RemoteCtrlAddress?>(null) }
   val customPort = rememberSaveable { mutableStateOf<Int?>(null) }
+  var userChangedAddress by rememberSaveable { mutableStateOf(false) }
+  var userChangedPort by rememberSaveable { mutableStateOf(false) }
   val startRemoteHost = suspend {
+    if (customAddress.value != cachedR.address && cachedR != null) {
+      userChangedAddress = true
+    }
+    if (customPort.value != cachedR.port && cachedR != null) {
+      userChangedPort = true
+    }
     val r = chatModel.controller.startRemoteHost(
       rhId = null,
       multicast = controller.appPrefs.offerRemoteMulticast.get(),
-      address = if (customAddress.value?.address != cachedR.address?.address) customAddress.value else cachedR.rh?.bindAddress_,
-      port = if (customPort.value != cachedR.port) customPort.value else cachedR.rh?.bindPort_
+      address = if (customAddress.value != null && userChangedAddress) customAddress.value else cachedR.rh?.bindAddress_,
+      port = if (customPort.value != null && userChangedPort) customPort.value else cachedR.rh?.bindPort_
     )
     if (r != null) {
       cachedR = r
@@ -343,12 +349,20 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
     var cachedR by remember { mutableStateOf<CR.RemoteHostStarted?>(null) }
     val customAddress = rememberSaveable { mutableStateOf<RemoteCtrlAddress?>(null) }
     val customPort = rememberSaveable { mutableStateOf<Int?>(null) }
+    var userChangedAddress by rememberSaveable { mutableStateOf(false) }
+    var userChangedPort by rememberSaveable { mutableStateOf(false) }
     val startRemoteHost = suspend {
+      if (customAddress.value != cachedR.address && cachedR != null) {
+        userChangedAddress = true
+      }
+      if (customPort.value != cachedR.port && cachedR != null) {
+        userChangedPort = true
+      }
       val r = chatModel.controller.startRemoteHost(
         rhId = rh.remoteHostId,
         multicast = controller.appPrefs.offerRemoteMulticast.get(),
-        address = if (customAddress.value?.address != cachedR.address?.address) customAddress.value else cachedR.rh?.bindAddress_ ?: rh.bindAddress_,
-        port = if (customPort.value != cachedR.port) customPort.value else cachedR.rh?.bindPort_ ?: rh.bindPort_
+        address = if (customAddress.value != null && userChangedAddress) customAddress.value else cachedR.rh?.bindAddress_ ?: rh.bindAddress_,
+        port = if (customPort.value != null && userChangedPort) customPort.value else cachedR.rh?.bindPort_ ?: rh.bindPort_
       )
       if (r != null) {
         cachedR = r

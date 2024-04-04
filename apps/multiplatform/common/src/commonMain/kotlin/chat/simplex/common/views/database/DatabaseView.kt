@@ -7,8 +7,6 @@ import SectionItemView
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,7 +25,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import java.io.*
@@ -158,8 +155,8 @@ fun DatabaseLayout(
   val stopped = !runChat
   val operationsDisabled = (!stopped || progressIndicator) && !chatModel.desktopNoUserNoRemote
 
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
@@ -211,7 +208,7 @@ fun DatabaseLayout(
         if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
         else painterResource(MR.images.ic_lock),
         stringResource(MR.strings.database_passphrase),
-        click = showSettingsModal() { DatabaseEncryptionView(it) },
+        click = showSettingsModal() { DatabaseEncryptionView(it, false) },
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
@@ -391,7 +388,7 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
       platform.androidChatStartedAfterBeingOff()
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       m.chatRunning.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
     } finally {
@@ -486,6 +483,7 @@ fun deleteChatDatabaseFilesAndState() {
   filesDir.mkdir()
   remoteHostsDir.deleteRecursively()
   tmpDir.deleteRecursively()
+  getMigrationTempFilesDirectory().deleteRecursively()
   tmpDir.mkdir()
   DatabaseUtils.ksDatabasePassword.remove()
   controller.appPrefs.storeDBPassphrase.set(true)
@@ -509,7 +507,7 @@ private fun exportArchive(
   progressIndicator.value = true
   withLongRunningApi {
     try {
-      val archiveFile = exportChatArchive(m, chatArchiveName, chatArchiveTime, chatArchiveFile)
+      val archiveFile = exportChatArchive(m, null, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
       saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
       progressIndicator.value = false
@@ -520,8 +518,9 @@ private fun exportArchive(
   }
 }
 
-private suspend fun exportChatArchive(
+suspend fun exportChatArchive(
   m: ChatModel,
+  storagePath: File?,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatArchiveFile: MutableState<String?>
@@ -529,13 +528,19 @@ private suspend fun exportChatArchive(
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
-  val archivePath = "${filesDir.absolutePath}${File.separator}$archiveName"
+  val archivePath = "${(storagePath ?: filesDir).absolutePath}${File.separator}$archiveName"
   val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
+  // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
+  if (!m.chatDbChanged.value) {
+    controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
+  }
   m.controller.apiExportArchive(config)
-  deleteOldArchive(m)
-  m.controller.appPrefs.chatArchiveName.set(archiveName)
+  if (storagePath == null) {
+    deleteOldArchive(m)
+    m.controller.appPrefs.chatArchiveName.set(archiveName)
+    m.controller.appPrefs.chatArchiveTime.set(archiveTime)
+  }
   chatArchiveName.value = archiveName
-  m.controller.appPrefs.chatArchiveTime.set(archiveTime)
   chatArchiveTime.value = archiveTime
   chatArchiveFile.value = archivePath
   return archivePath

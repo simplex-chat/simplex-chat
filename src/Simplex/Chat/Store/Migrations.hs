@@ -98,6 +98,12 @@ import Simplex.Chat.Migrations.M20240102_note_folders
 import Simplex.Chat.Migrations.M20240104_members_profile_update
 import Simplex.Chat.Migrations.M20240115_block_member_for_all
 import Simplex.Chat.Migrations.M20240122_indexes
+import Simplex.Chat.Migrations.M20240214_redirect_file_id
+import Simplex.Chat.Migrations.M20240222_app_settings
+import Simplex.Chat.Migrations.M20240226_users_restrict
+import Simplex.Chat.Migrations.M20240228_pq
+import Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
+import Simplex.Chat.Migrations.M20240324_custom_data
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -195,7 +201,13 @@ schemaMigrations =
     ("20240102_note_folders", m20240102_note_folders, Just down_m20240102_note_folders),
     ("20240104_members_profile_update", m20240104_members_profile_update, Just down_m20240104_members_profile_update),
     ("20240115_block_member_for_all", m20240115_block_member_for_all, Just down_m20240115_block_member_for_all),
-    ("20240122_indexes", m20240122_indexes, Just down_m20240122_indexes)
+    ("20240122_indexes", m20240122_indexes, Just down_m20240122_indexes),
+    ("20240214_redirect_file_id", m20240214_redirect_file_id, Just down_m20240214_redirect_file_id),
+    ("20240222_app_settings", m20240222_app_settings, Just down_m20240222_app_settings),
+    ("20240226_users_restrict", m20240226_users_restrict, Just down_m20240226_users_restrict),
+    ("20240228_pq", m20240228_pq, Just down_m20240228_pq),
+    ("20240313_drop_agent_ack_cmd_id", m20240313_drop_agent_ack_cmd_id, Just down_m20240313_drop_agent_ack_cmd_id),
+    ("20240324_custom_data", m20240324_custom_data, Just down_m20240324_custom_data)
   ]
 
 -- | The list of migrations in ascending order by date

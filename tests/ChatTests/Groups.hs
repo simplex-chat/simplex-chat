@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 
 module ChatTests.Groups where
@@ -11,12 +12,12 @@ import Control.Monad (void, when)
 import qualified Data.ByteString as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (GroupMemberRole (..))
+import Simplex.Chat.Types (GroupMemberRole (..), VersionRangeChat)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Version
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -148,19 +149,19 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   where
-    _0 = supportedChatVRange -- don't create direct connections
+    _0 = supportedChatVRange PQSupportOff -- don't create direct connections
     _1 = groupCreateDirectVRange
     -- having host configured with older version doesn't have effect in tests
     -- because host uses current code and sends version in MemberInfo
     testNoDirect vrMem2 vrMem3 noConns =
       it
         ( "host "
-            <> vRangeStr supportedChatVRange
+            <> vRangeStr (supportedChatVRange PQSupportOff)
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
-        $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
+        $ testNoGroupDirectConns (supportedChatVRange PQSupportOff) vrMem2 vrMem3 noConns
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
@@ -336,11 +337,11 @@ testGroupShared alice bob cath checkMessages directConnections = do
     getReadChats :: HasCallStack => String -> String -> IO ()
     getReadChats msgItem1 msgItem2 = do
       alice @@@ [("#team", "hey team"), ("@cath", "sent invitation to join group team as admin"), ("@bob", "sent invitation to join group team as admin")]
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       -- "before" and "after" define a chat item id across all chats,
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=" <> msgItem1 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
@@ -499,9 +500,10 @@ testGroup2 =
       dan <##> cath
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 8"
+      alice ##> "/t #club 9"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
-        <##? [ "#club bob> connected",
+        <##? [ ConsoleString ("#club " <> e2eeInfoNoPQStr),
+               "#club bob> connected",
                "#club cath> connected",
                "#club bob> added dan (Daniel)",
                "#club dan> connected",
@@ -869,6 +871,9 @@ testGroupRemoveAdd =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+
+      threadDelay 100000
+
       -- remove member
       alice ##> "/rm team bob"
       concurrentlyN_
@@ -878,6 +883,9 @@ testGroupRemoveAdd =
             bob <## "use /d #team to delete the group",
           cath <## "#team: alice removed bob from the group"
         ]
+
+      threadDelay 100000
+
       alice ##> "/a team bob"
       alice <## "invitation to join the group #team sent to bob"
       bob <## "#team_1: alice invites you to join the group as member"
@@ -1858,7 +1866,7 @@ testGroupLink =
             bob <## "#team: you joined the group"
         ]
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
       -- contacts connected via group link are not in chat previews
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -1913,6 +1921,8 @@ testGroupLink =
       concurrently_
         (alice <# "#team cath> hey team")
         (bob <# "#team cath> hey team")
+
+      threadDelay 100000
 
       -- leaving team removes link
       alice ##> "/l team"
@@ -2697,7 +2707,7 @@ testGroupLinkNoContact =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -2760,7 +2770,7 @@ testGroupLinkNoContactInviteesWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected"), ("@cath", "hey")]
@@ -2841,7 +2851,7 @@ testGroupLinkNoContactAllMembersWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected"), ("@bob", "hey"), ("@cath", "hey")]
       bob @@@ [("#team", "connected"), ("@alice", "hey"), ("@cath", "hey")]
@@ -2996,7 +3006,7 @@ testGroupLinkNoContactHostIncognito =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3029,7 +3039,7 @@ testGroupLinkNoContactInviteeIncognito =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3096,7 +3106,7 @@ testGroupLinkNoContactExistingContactMerged =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
 
       alice <##> bob
 
@@ -3579,11 +3589,11 @@ testConfigureGroupDeliveryReceipts tmp =
       cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
       cc1 <// 50000
 
-testNoGroupDirectConns :: HasCallStack => VersionRange -> VersionRange -> VersionRange -> Bool -> FilePath -> IO ()
+testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> FilePath -> IO ()
 testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = const hostVRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = const mem2VRange} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfg {chatVRange = const mem3VRange} "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
         if noDirectConns
           then contactsDontExist bob cath
@@ -4321,7 +4331,7 @@ testGroupMsgForwardDeletion =
 
 testGroupMsgForwardFile :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardFile =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       setupGroupForwarding3 "team" alice bob cath
 
@@ -4343,8 +4353,6 @@ testGroupMsgForwardFile =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupMsgForwardChangeRole :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardChangeRole =
@@ -4577,7 +4585,7 @@ testGroupHistoryPreferenceOff =
 
 testGroupHistoryHostFile :: HasCallStack => FilePath -> IO ()
 testGroupHistoryHostFile =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       createGroup2 "team" alice bob
 
@@ -4613,12 +4621,10 @@ testGroupHistoryHostFile =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryMemberFile :: HasCallStack => FilePath -> IO ()
 testGroupHistoryMemberFile =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       createGroup2 "team" alice bob
 
@@ -4654,8 +4660,6 @@ testGroupHistoryMemberFile =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryLargeFile :: HasCallStack => FilePath -> IO ()
 testGroupHistoryLargeFile =
@@ -4713,11 +4717,11 @@ testGroupHistoryLargeFile =
       destCath <- B.readFile "./tests/tmp/testfile_2"
       destCath `shouldBe` src
   where
-    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200}
 
 testGroupHistoryMultipleFiles :: HasCallStack => FilePath -> IO ()
 testGroupHistoryMultipleFiles =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
       xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
@@ -4794,12 +4798,10 @@ testGroupHistoryMultipleFiles =
         `shouldContain` [ ((0, "hi alice"), Just "./tests/tmp/testfile_bob_1"),
                           ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
                         ]
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryFileCancel :: HasCallStack => FilePath -> IO ()
 testGroupHistoryFileCancel =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
       xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
@@ -4851,12 +4853,10 @@ testGroupHistoryFileCancel =
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
         ]
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryFileCancelNoText :: HasCallStack => FilePath -> IO ()
 testGroupHistoryFileCancelNoText =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
       xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
@@ -4912,8 +4912,6 @@ testGroupHistoryFileCancelNoText =
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
         ]
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryQuotes :: HasCallStack => FilePath -> IO ()
 testGroupHistoryQuotes =
@@ -5062,8 +5060,7 @@ testGroupHistoryDeletedMessage =
 testGroupHistoryDisappearingMessage :: HasCallStack => FilePath -> IO ()
 testGroupHistoryDisappearingMessage =
   testChat3 aliceProfile bobProfile cathProfile $
-    -- \alice bob cath -> do -- revert when test is stable
-    \a b c -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> withTestOutput c $ \cath -> do
+    \alice bob cath -> do
       createGroup2 "team" alice bob
 
       threadDelay 1000000

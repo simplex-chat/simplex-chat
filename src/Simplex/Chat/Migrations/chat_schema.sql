@@ -22,7 +22,7 @@ CREATE TABLE contact_profiles(
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE
+  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
   DEFERRABLE INITIALLY DEFERRED,
   local_display_name TEXT NOT NULL UNIQUE,
   active_user INTEGER NOT NULL DEFAULT 0,
@@ -37,7 +37,7 @@ CREATE TABLE users(
   user_member_profile_updated_at TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
-  ON DELETE CASCADE
+  ON DELETE RESTRICT
   ON UPDATE CASCADE
   DEFERRABLE INITIALLY DEFERRED
 );
@@ -73,6 +73,7 @@ CREATE TABLE contacts(
   REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
+  custom_data BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -120,7 +121,8 @@ CREATE TABLE groups(
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
-  user_member_profile_sent_at TEXT, -- received
+  user_member_profile_sent_at TEXT,
+  custom_data BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -193,7 +195,8 @@ CREATE TABLE files(
   protocol TEXT NOT NULL DEFAULT 'smp',
   file_crypto_key BLOB,
   file_crypto_nonce BLOB,
-  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE
+  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -276,6 +279,11 @@ CREATE TABLE connections(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
   contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
+  conn_chat_version INTEGER,
+  pq_support INTEGER NOT NULL DEFAULT 0,
+  pq_encryption INTEGER NOT NULL DEFAULT 0,
+  pq_snd_enabled INTEGER,
+  pq_rcv_enabled INTEGER,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -311,6 +319,7 @@ CREATE TABLE contact_requests(
   xcontact_id BLOB,
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  pq_support INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -549,7 +558,6 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   delivery_status TEXT -- MsgDeliveryStatus
 );
 CREATE TABLE note_folders(
@@ -561,6 +569,7 @@ CREATE TABLE note_folders(
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE app_settings(app_settings TEXT NOT NULL);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -818,10 +827,6 @@ CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
 );
 CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
 CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
-CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(
-  connection_id,
-  agent_ack_cmd_id
-);
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
   connection_id,
   agent_msg_id
@@ -854,3 +859,4 @@ CREATE INDEX idx_chat_items_notes_item_status on chat_items(
   note_folder_id,
   item_status
 );
+CREATE INDEX idx_files_redirect_file_id on files(redirect_file_id);

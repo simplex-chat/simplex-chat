@@ -29,6 +29,9 @@ struct CIImageView: View {
                     FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
                 }
                 .onTapGesture { showFullScreenImage = true }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenImage = false
+                }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
                       let uiImage = UIImage(data: data) {
                 imageView(uiImage)
@@ -67,14 +70,14 @@ struct CIImageView: View {
     }
 
     private func imageView(_ img: UIImage) -> some View {
-        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : img.imageData == nil ? .infinity : maxWidth
+        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
         DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
                         .scaledToFit()
-                        .frame(maxWidth: w)
+                        .frame(width: w)
             } else {
                 SwiftyGif(image: img)
                         .frame(width: w, height: w * img.size.height / img.size.width)

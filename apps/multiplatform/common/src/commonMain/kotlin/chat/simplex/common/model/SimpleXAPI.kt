@@ -4,12 +4,15 @@ import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import chat.simplex.common.model.ChatController.getNetCfg
+import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import com.charleskorn.kaml.Yaml
@@ -72,7 +75,7 @@ class AppPreferences {
       val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
       return try {
         CallOnLockScreen.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         CallOnLockScreen.default
       }
     },
@@ -92,7 +95,7 @@ class AppPreferences {
       val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
       return try {
         SimplexLinkMode.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         SimplexLinkMode.default
       }
     },
@@ -120,7 +123,7 @@ class AppPreferences {
       val value = _networkSessionMode.get() ?: return TransportSessionMode.default
       return try {
         TransportSessionMode.valueOf(value)
-      } catch (e: Error) {
+      } catch (e: Throwable) {
         TransportSessionMode.default
       }
     },
@@ -144,6 +147,8 @@ class AppPreferences {
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
+  val migrationToStage = mkStrPreference(SHARED_PREFS_MIGRATION_TO_STAGE, null)
+  val migrationFromStage = mkStrPreference(SHARED_PREFS_MIGRATION_FROM_STAGE, null)
   val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
@@ -156,6 +161,7 @@ class AppPreferences {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
+  val pqExperimentalEnabled = mkBoolPreference(SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
@@ -176,6 +182,11 @@ class AppPreferences {
   val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
   val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
+
+
+  val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
+  val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
+
   
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -276,6 +287,8 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
+    const val SHARED_PREFS_MIGRATION_TO_STAGE = "MigrationToStage"
+    const val SHARED_PREFS_MIGRATION_FROM_STAGE = "MigrationFromStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
@@ -312,6 +325,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
+    private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES = "Themes"
@@ -324,6 +338,9 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+
+    private const val SHARED_PREFS_IOS_CALL_KIT_ENABLED = "iOSCallKitEnabled"
+    private const val SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS = "iOSCallKitCallsInRecents"
   }
 }
 
@@ -376,7 +393,7 @@ object ChatController {
         }
         Log.d(TAG, "startChat: running")
       }
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
     }
@@ -394,10 +411,20 @@ object ChatController {
       startReceiver()
       setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
       Log.d(TAG, "startChat: started without user")
-    } catch (e: Error) {
+    } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat without user $e")
       throw e
     }
+  }
+
+  suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
+    Log.d(TAG, "startChatWithTemporaryDatabase")
+    val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
+    apiSetNetworkConfig(netCfg, ctrl)
+    apiSetTempFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
+    apiSetFilesFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
+    apiStartChat(ctrl)
+    return migrationActiveUser
   }
 
   suspend fun changeActiveUser(rhId: Long?, toUserId: Long, viewPwd: String?) {
@@ -476,8 +503,8 @@ object ChatController {
     }
   }
 
-  suspend fun sendCmd(rhId: Long?, cmd: CC): CR {
-    val ctrl = ctrl ?: throw Exception("Controller is not initialized")
+  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null): CR {
+    val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
@@ -494,7 +521,7 @@ object ChatController {
     }
   }
 
-  private fun recvMsg(ctrl: ChatCtrl): APIResponse? {
+  fun recvMsg(ctrl: ChatCtrl): APIResponse? {
     val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
     return if (json == "") {
       null
@@ -507,8 +534,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiGetActiveUser(rh: Long?): User? {
-    val r = sendCmd(rh, CC.ShowActiveUser())
+  suspend fun apiGetActiveUser(rh: Long?, ctrl: ChatCtrl? = null): User? {
+    val r = sendCmd(rh, CC.ShowActiveUser(), ctrl)
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiGetActiveUser: ${r.responseType} ${r.details}")
     if (rh == null) {
@@ -517,8 +544,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false): User? {
-    val r = sendCmd(rh, CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp))
+  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? {
+    val r = sendCmd(rh, CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp), ctrl)
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
@@ -596,12 +623,12 @@ object ChatController {
     throw Exception("failed to delete the user ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat(): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true))
+  suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
+    val r = sendCmd(null, CC.StartChat(mainApp = true), ctrl)
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
-      else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
+      else -> throw Exception("failed starting chat: ${r.responseType} ${r.details}")
     }
   }
 
@@ -609,52 +636,67 @@ object ChatController {
     val r = sendCmd(null, CC.ApiStopChat())
     when (r) {
       is CR.ChatStopped -> return true
-      else -> throw Error("failed stopping chat: ${r.responseType} ${r.details}")
+      else -> throw Exception("failed stopping chat: ${r.responseType} ${r.details}")
     }
   }
 
-  suspend fun apiSetTempFolder(tempFolder: String) {
-    val r = sendCmd(null, CC.SetTempFolder(tempFolder))
+  suspend fun apiSetTempFolder(tempFolder: String, ctrl: ChatCtrl? = null) {
+    val r = sendCmd(null, CC.SetTempFolder(tempFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Error("failed to set temp folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set temp folder: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiSetFilesFolder(filesFolder: String) {
-    val r = sendCmd(null, CC.SetFilesFolder(filesFolder))
+  suspend fun apiSetFilesFolder(filesFolder: String, ctrl: ChatCtrl? = null) {
+    val r = sendCmd(null, CC.SetFilesFolder(filesFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
     val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
     if (r is CR.CmdOk) return
-    throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
-    val r = sendCmd(null, CC.ApiSetXFTPConfig(cfg))
-    if (r is CR.CmdOk) return
-    throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
+    throw Exception("failed to set remote hosts folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
 
+  suspend fun apiSaveAppSettings(settings: AppSettings) {
+    val r = sendCmd(null, CC.ApiSaveSettings(settings))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to set app settings: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiGetAppSettings(settings: AppSettings): AppSettings {
+    val r = sendCmd(null, CC.ApiGetSettings(settings))
+    if (r is CR.AppSettingsR) return r.appSettings
+    throw Exception("failed to get app settings: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
+
+  suspend fun apiSetContactPQ(rh: Long?, contactId: Long, enable: Boolean): Contact? {
+    val r = sendCmd(rh, CC.ApiSetContactPQ(contactId, enable))
+    if (r is CR.ContactPQAllowed) return r.contact
+    apiErrorAlert("apiSetContactPQ", "Error allowing contact PQ", r)
+    return null
+  }
+
   suspend fun apiExportArchive(config: ArchiveConfig) {
     val r = sendCmd(null, CC.ApiExportArchive(config))
     if (r is CR.CmdOk) return
-    throw Error("failed to export archive: ${r.responseType} ${r.details}")
+    throw Exception("failed to export archive: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiImportArchive(config: ArchiveConfig): List<ArchiveError> {
     val r = sendCmd(null, CC.ApiImportArchive(config))
     if (r is CR.ArchiveImported) return r.archiveErrors
-    throw Error("failed to import archive: ${r.responseType} ${r.details}")
+    throw Exception("failed to import archive: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiDeleteStorage() {
     val r = sendCmd(null, CC.ApiDeleteStorage())
     if (r is CR.CmdOk) return
-    throw Error("failed to delete storage: ${r.responseType} ${r.details}")
+    throw Exception("failed to delete storage: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = ""): CR.ChatCmdError? {
@@ -662,6 +704,13 @@ object ChatController {
     if (r is CR.CmdOk) return null
     else if (r is CR.ChatCmdError) return r
     throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun testStorageEncryption(key: String, ctrl: ChatCtrl? = null): CR.ChatCmdError? {
+    val r = sendCmd(null, CC.TestStorageEncryption(key), ctrl)
+    if (r is CR.CmdOk) return null
+    else if (r is CR.ChatCmdError) return r
+    throw Exception("failed to test storage encryption: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetChats(rh: Long?): List<Chat> {
@@ -800,8 +849,8 @@ object ChatController {
     throw Exception("failed to set chat item TTL: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiSetNetworkConfig(cfg: NetCfg): Boolean {
-    val r = sendCmd(null, CC.APISetNetworkConfig(cfg))
+  suspend fun apiSetNetworkConfig(cfg: NetCfg, ctrl: ChatCtrl? = null): Boolean {
+    val r = sendCmd(null, CC.APISetNetworkConfig(cfg), ctrl)
     return when (r) {
       is CR.CmdOk -> true
       else -> {
@@ -1231,6 +1280,36 @@ object ChatController {
     return false
   }
 
+  suspend fun uploadStandaloneFile(user: UserLike, file: CryptoFile, ctrl: ChatCtrl? = null): Pair<FileTransferMeta?, String?> {
+    val r = sendCmd(null, CC.ApiUploadStandaloneFile(user.userId, file), ctrl)
+    return if (r is CR.SndStandaloneFileCreated) {
+      r.fileTransferMeta to null
+    } else {
+      Log.e(TAG, "uploadStandaloneFile error: $r")
+      null to r.toString()
+    }
+  }
+
+  suspend fun downloadStandaloneFile(user: UserLike, url: String, file: CryptoFile, ctrl: ChatCtrl? = null): Pair<RcvFileTransfer?, String?> {
+    val r = sendCmd(null, CC.ApiDownloadStandaloneFile(user.userId, url, file), ctrl)
+    return if (r is CR.RcvStandaloneFileCreated) {
+      r.rcvFileTransfer to null
+    } else {
+      Log.e(TAG, "downloadStandaloneFile error: $r")
+      null to r.toString()
+    }
+  }
+
+  suspend fun standaloneFileInfo(url: String, ctrl: ChatCtrl? = null): MigrationFileLinkData? {
+    val r = sendCmd(null, CC.ApiStandaloneFileInfo(url), ctrl)
+    return if (r is CR.StandaloneFileInfo) {
+      r.fileMeta
+    } else {
+      Log.e(TAG, "standaloneFileInfo error: $r")
+      null
+    }
+  }
+
   suspend fun apiReceiveFile(rh: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
     val r = sendCmd(rh, CC.ReceiveFile(fileId, encrypted, inline))
@@ -1269,11 +1348,11 @@ object ChatController {
     }
   }
 
-  suspend fun apiCancelFile(rh: Long?, fileId: Long): AChatItem? {
-    val r = sendCmd(rh, CC.CancelFile(fileId))
+  suspend fun apiCancelFile(rh: Long?, fileId: Long, ctrl: ChatCtrl? = null): AChatItem? {
+    val r = sendCmd(rh, CC.CancelFile(fileId), ctrl)
     return when (r) {
-      is CR.SndFileCancelled -> r.chatItem
-      is CR.RcvFileCancelled -> r.chatItem
+      is CR.SndFileCancelled -> r.chatItem_
+      is CR.RcvFileCancelled -> r.chatItem_
       else -> {
         Log.d(TAG, "apiCancelFile bad response: ${r.responseType} ${r.details}")
         null
@@ -1560,8 +1639,8 @@ object ChatController {
 
   suspend fun deleteRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(null, CC.DeleteRemoteCtrl(rcId))
 
-  private suspend fun sendCommandOkResp(rh: Long?, cmd: CC): Boolean {
-    val r = sendCmd(rh, cmd)
+  private suspend fun sendCommandOkResp(rh: Long?, cmd: CC, ctrl: ChatCtrl? = null): Boolean {
+    val r = sendCmd(rh, cmd, ctrl)
     val ok = r is CR.CmdOk
     if (!ok) apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error_alert_title), r)
     return ok
@@ -1674,6 +1753,8 @@ object ChatController {
           chatModel.removeChat(rhId, r.mergedContact.id)
         }
       }
+      // ContactsSubscribed, ContactsDisconnected and ContactSubSummary are only used in CLI,
+      // They have to be used here for remote desktop to process these status updates.
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
       is CR.ContactSubSummary -> {
@@ -1851,11 +1932,16 @@ object ChatController {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
-      is CR.RcvFileProgressXFTP ->
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
+      is CR.RcvFileProgressXFTP -> {
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
+        }
+      }
       is CR.RcvFileError -> {
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-        cleanupFile(r.chatItem)
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
+          cleanupFile(r.chatItem_)
+        }
       }
       is CR.SndFileStart ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
@@ -1864,18 +1950,25 @@ object ChatController {
         cleanupDirectFile(r.chatItem)
       }
       is CR.SndFileRcvCancelled -> {
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-        cleanupDirectFile(r.chatItem)
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
+          cleanupDirectFile(r.chatItem_)
+        }
       }
-      is CR.SndFileProgressXFTP ->
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
+      is CR.SndFileProgressXFTP -> {
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
+        }
+      }
       is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
       is CR.SndFileError -> {
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-        cleanupFile(r.chatItem)
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
+          cleanupFile(r.chatItem_)
+        }
       }
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation.copy(remoteHostId = rhId))
@@ -1914,10 +2007,8 @@ object ChatController {
         if (invitation != null) {
           chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
         }
-        withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.End)
-          chatModel.activeCall.value = null
-          chatModel.showCallView.value = false
+        withCall(r, r.contact) { call ->
+          withBGApi { chatModel.callManager.endCall(call) }
         }
       }
       is CR.ContactSwitch ->
@@ -2024,6 +2115,10 @@ object ChatController {
           }
         }
       }
+      is CR.ContactPQEnabled ->
+        if (active(r.user)) {
+          chatModel.updateContact(rhId, r.contact)
+        }
       is CR.ChatCmdError -> when {
         r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
           chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
@@ -2173,10 +2268,6 @@ object ChatController {
     }
   }
 
-  fun getXFTPCfg(): XFTPFileConfig {
-    return XFTPFileConfig(minFileSize = 0)
-  }
-
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val proxyHostPort  = appPrefs.networkProxyHostPort.get()
@@ -2246,21 +2337,13 @@ object ChatController {
 
 class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   val set: (T) -> Unit
-  private val _state: MutableState<T> by lazy { mutableStateOf(get()) }
-  val state: State<T> by lazy { _state }
+  private val _state: MutableState<T> = mutableStateOf(get())
+  val state: State<T> = _state
 
   init {
     this.set = { value ->
       set(value)
-      try {
-        _state.value = value
-      } catch (e: IllegalStateException) {
-        // Can be `Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied`
-        Log.i(TAG, e.stackTraceToString())
-        withApi {
-          _state.value = value
-        }
-      }
+      _state.value = value
     }
   }
 }
@@ -2285,12 +2368,16 @@ sealed class CC {
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
-  class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
+  class ApiSetPQEncryption(val enable: Boolean): CC()
+  class ApiSetContactPQ(val contactId: Long, val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
   class ApiStorageEncryption(val config: DBEncryptionConfig): CC()
+  class TestStorageEncryption(val key: String): CC()
+  class ApiSaveSettings(val settings: AppSettings): CC()
+  class ApiGetSettings(val settings: AppSettings): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
@@ -2384,6 +2471,9 @@ sealed class CC {
   class ListRemoteCtrls(): CC()
   class StopRemoteCtrl(): CC()
   class DeleteRemoteCtrl(val remoteCtrlId: Long): CC()
+  class ApiUploadStandaloneFile(val userId: Long, val file: CryptoFile): CC()
+  class ApiDownloadStandaloneFile(val userId: Long, val url: String, val file: CryptoFile): CC()
+  class ApiStandaloneFileInfo(val url: String): CC()
   // misc
   class ShowVersion(): CC()
 
@@ -2415,12 +2505,16 @@ sealed class CC {
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
-    is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
+    is ApiSetPQEncryption -> "/pq ${onOff(enable)}"
+    is ApiSetContactPQ -> "/_pq @$contactId ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
     is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
+    is TestStorageEncryption -> "/db test key $key"
+    is ApiSaveSettings -> "/_save app settings ${json.encodeToString(settings)}"
+    is ApiGetSettings -> "/_get app settings ${json.encodeToString(settings)}"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id)} $itemId"
@@ -2528,6 +2622,9 @@ sealed class CC {
     is ListRemoteCtrls -> "/list remote ctrls"
     is StopRemoteCtrl -> "/stop remote ctrl"
     is DeleteRemoteCtrl -> "/delete remote ctrl $remoteCtrlId"
+    is ApiUploadStandaloneFile -> "/_upload $userId ${file.filePath}"
+    is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
+    is ApiStandaloneFileInfo -> "/_download info $url"
     is ShowVersion -> "/version"
   }
 
@@ -2550,12 +2647,16 @@ sealed class CC {
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
     is SetRemoteHostsFolder -> "setRemoteHostsFolder"
-    is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
+    is ApiSetPQEncryption -> "apiSetPQEncryption"
+    is ApiSetContactPQ -> "apiSetContactPQ"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
     is ApiStorageEncryption -> "apiStorageEncryption"
+    is TestStorageEncryption -> "testStorageEncryption"
+    is ApiSaveSettings -> "apiSaveSettings"
+    is ApiGetSettings -> "apiGetSettings"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
@@ -2648,6 +2749,9 @@ sealed class CC {
     is ListRemoteCtrls -> "listRemoteCtrls"
     is StopRemoteCtrl -> "stopRemoteCtrl"
     is DeleteRemoteCtrl -> "deleteRemoteCtrl"
+    is ApiUploadStandaloneFile -> "apiUploadStandaloneFile"
+    is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
+    is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ShowVersion -> "showVersion"
   }
 
@@ -2665,6 +2769,7 @@ sealed class CC {
       is ApiHideUser -> ApiHideUser(userId, obfuscate(viewPwd))
       is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
+      is TestStorageEncryption -> TestStorageEncryption(obfuscate(key))
       else -> this
     }
 
@@ -2715,9 +2820,6 @@ sealed class ChatPagination {
 
 @Serializable
 class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
-
-@Serializable
-class XFTPFileConfig(val minFileSize: Long)
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
@@ -3793,6 +3895,13 @@ val json = Json {
   explicitNulls = false
 }
 
+val jsonShort = Json {
+  prettyPrint = false
+  ignoreUnknownKeys = true
+  encodeDefaults = true
+  explicitNulls = false
+}
+
 val yaml = Yaml(configuration = YamlConfiguration(
   strictMode = false,
   encodeDefaults = false,
@@ -3982,20 +4091,28 @@ sealed class CR {
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: UserRef, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("standaloneFileInfo") class StandaloneFileInfo(val fileMeta: MigrationFileLinkData?): CR()
+  @Serializable @SerialName("rcvStandaloneFileCreated") class RcvStandaloneFileCreated(val user: UserRef, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: UserRef, val chatItem: AChatItem): CR() // send by chats
+  @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: UserRef, val chatItem_: AChatItem?, val receivedSize: Long, val totalSize: Long, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val user: UserRef, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvStandaloneFileComplete") class RcvStandaloneFileComplete(val user: UserRef, val targetPath: String, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: UserRef, val chatItem: AChatItem, val receivedSize: Long, val totalSize: Long): CR()
-  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
+  @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: UserRef, val chatItem_: AChatItem?, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
+  @Serializable @SerialName("sndStandaloneFileCreated") class SndStandaloneFileCreated(val user: UserRef, val fileTransferMeta: FileTransferMeta): CR() // returned by _upload
+  @Serializable @SerialName("sndFileStartXFTP") class SndFileStartXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR() // not used
+  @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
+  @Serializable @SerialName("sndFileRedirectStartXFTP") class SndFileRedirectStartXFTP(val user: UserRef, val fileTransferMeta: FileTransferMeta, val redirectMeta: FileTransferMeta): CR()
   @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
-  @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("sndStandaloneFileComplete") class SndStandaloneFileComplete(val user: UserRef, val fileTransferMeta: FileTransferMeta, val rcvURIs: List<String>): CR()
+  @Serializable @SerialName("sndFileCancelledXFTP") class SndFileCancelledXFTP(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta): CR()
+  @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta): CR()
   // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callInvitations") class CallInvitations(val callInvitations: List<RcvCallInvitation>): CR()
@@ -4020,11 +4137,16 @@ sealed class CR {
   @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
   @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason): CR()
+  // pq
+  @Serializable @SerialName("contactPQAllowed") class ContactPQAllowed(val user: UserRef, val contact: Contact, val pqEncryption: Boolean): CR()
+  @Serializable @SerialName("contactPQEnabled") class ContactPQEnabled(val user: UserRef, val contact: Contact, val pqEnabled: Boolean): CR()
+  // misc
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
+  @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -4134,19 +4256,27 @@ sealed class CR {
     is NewMemberContactSentInv -> "newMemberContactSentInv"
     is NewMemberContactReceivedInv -> "newMemberContactReceivedInv"
     is RcvFileAcceptedSndCancelled -> "rcvFileAcceptedSndCancelled"
+    is StandaloneFileInfo -> "standaloneFileInfo"
+    is RcvStandaloneFileCreated -> "rcvStandaloneFileCreated"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
+    is RcvStandaloneFileComplete -> "rcvStandaloneFileComplete"
     is RcvFileCancelled -> "rcvFileCancelled"
+    is SndStandaloneFileCreated -> "sndStandaloneFileCreated"
+    is SndFileStartXFTP -> "sndFileStartXFTP"
     is RcvFileSndCancelled -> "rcvFileSndCancelled"
     is RcvFileProgressXFTP -> "rcvFileProgressXFTP"
+    is SndFileRedirectStartXFTP -> "sndFileRedirectStartXFTP"
     is RcvFileError -> "rcvFileError"
-    is SndFileCancelled -> "sndFileCancelled"
+    is SndFileStart -> "sndFileStart"
     is SndFileComplete -> "sndFileComplete"
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
-    is SndFileStart -> "sndFileStart"
+    is SndFileCancelled -> "sndFileCancelled"
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
+    is SndStandaloneFileComplete -> "sndStandaloneFileComplete"
+    is SndFileCancelledXFTP -> "sndFileCancelledXFTP"
     is SndFileError -> "sndFileError"
     is CallInvitations -> "callInvitations"
     is CallInvitation -> "callInvitation"
@@ -4169,11 +4299,14 @@ sealed class CR {
     is RemoteCtrlSessionCode -> "remoteCtrlSessionCode"
     is RemoteCtrlConnected -> "remoteCtrlConnected"
     is RemoteCtrlStopped -> "remoteCtrlStopped"
+    is ContactPQAllowed -> "contactPQAllowed"
+    is ContactPQEnabled -> "contactPQEnabled"
     is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
     is ArchiveImported -> "archiveImported"
+    is AppSettingsR -> "appSettings"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -4186,7 +4319,7 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, json.encodeToString(chat))
-    is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(AChatItem)}\n${json.encodeToString(chatItemInfo)}")
+    is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
@@ -4283,20 +4416,28 @@ sealed class CR {
     is NewMemberContactSentInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
     is NewMemberContactReceivedInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
     is RcvFileAcceptedSndCancelled -> withUser(user, noDetails())
+    is StandaloneFileInfo -> json.encodeToString(fileMeta)
+    is RcvStandaloneFileCreated -> noDetails()
     is RcvFileAccepted -> withUser(user, json.encodeToString(chatItem))
     is RcvFileStart -> withUser(user, json.encodeToString(chatItem))
     is RcvFileComplete -> withUser(user, json.encodeToString(chatItem))
-    is RcvFileCancelled -> withUser(user, json.encodeToString(chatItem))
+    is RcvFileCancelled -> withUser(user, json.encodeToString(chatItem_))
     is RcvFileSndCancelled -> withUser(user, json.encodeToString(chatItem))
-    is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
-    is RcvFileError -> withUser(user, json.encodeToString(chatItem))
-    is SndFileCancelled -> json.encodeToString(chatItem)
+    is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem_)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
+    is RcvStandaloneFileComplete -> withUser(user, targetPath)
+    is RcvFileError -> withUser(user, json.encodeToString(chatItem_))
+    is SndFileCancelled -> json.encodeToString(chatItem_)
+    is SndStandaloneFileCreated -> noDetails()
+    is SndFileStartXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndFileComplete -> withUser(user, json.encodeToString(chatItem))
-    is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem))
+    is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem_))
     is SndFileStart -> withUser(user, json.encodeToString(chatItem))
-    is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
+    is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem_)}\nsentSize: $sentSize\ntotalSize: $totalSize")
+    is SndFileRedirectStartXFTP -> withUser(user, json.encodeToString(redirectMeta))
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
-    is SndFileError -> withUser(user, json.encodeToString(chatItem))
+    is SndStandaloneFileComplete -> withUser(user, rcvURIs.size.toString())
+    is SndFileCancelledXFTP -> withUser(user, json.encodeToString(chatItem_))
+    is SndFileError -> withUser(user, json.encodeToString(chatItem_))
     is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
@@ -4333,6 +4474,8 @@ sealed class CR {
           "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
     is RemoteCtrlStopped -> noDetails()
+    is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
+    is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
@@ -4340,6 +4483,7 @@ sealed class CR {
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
+    is AppSettingsR -> json.encodeToString(appSettings)
     is Response -> json
     is Invalid -> str
   }
@@ -4753,6 +4897,7 @@ sealed class StoreError {
       is FileIdNotFoundBySharedMsgId -> "fileIdNotFoundBySharedMsgId"
       is SndFileNotFoundXFTP -> "sndFileNotFoundXFTP"
       is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP"
+      is ExtraFileDescrNotFoundXFTP -> "extraFileDescrNotFoundXFTP"
       is ConnectionNotFound -> "connectionNotFound"
       is ConnectionNotFoundById -> "connectionNotFoundById"
       is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId"
@@ -4811,6 +4956,7 @@ sealed class StoreError {
   @Serializable @SerialName("fileIdNotFoundBySharedMsgId") class FileIdNotFoundBySharedMsgId(val sharedMsgId: String): StoreError()
   @Serializable @SerialName("sndFileNotFoundXFTP") class SndFileNotFoundXFTP(val agentSndFileId: String): StoreError()
   @Serializable @SerialName("rcvFileNotFoundXFTP") class RcvFileNotFoundXFTP(val agentRcvFileId: String): StoreError()
+  @Serializable @SerialName("extraFileDescrNotFoundXFTP") class ExtraFileDescrNotFoundXFTP(val fileId: Long): StoreError()
   @Serializable @SerialName("connectionNotFound") class ConnectionNotFound(val agentConnId: String): StoreError()
   @Serializable @SerialName("connectionNotFoundById") class ConnectionNotFoundById(val connId: Long): StoreError()
   @Serializable @SerialName("connectionNotFoundByMemberId") class ConnectionNotFoundByMemberId(val groupMemberId: Long): StoreError()
@@ -4867,8 +5013,8 @@ sealed class AgentErrorType {
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
-    is INACTIVE -> "INACTIVE"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
+    is INACTIVE -> "INACTIVE"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -4879,8 +5025,8 @@ sealed class AgentErrorType {
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
-  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
+  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
 }
 
 @Serializable
@@ -4979,11 +5125,13 @@ sealed class SMPTransportError {
     is BadBlock -> "badBlock"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
+    is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
+  @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
   @Serializable @SerialName("handshake") class Handshake(val handshakeErr: SMPHandshakeError): SMPTransportError()
 }
 
@@ -4993,10 +5141,12 @@ sealed class SMPHandshakeError {
     is PARSE -> "PARSE"
     is VERSION -> "VERSION"
     is IDENTITY -> "IDENTITY"
+    is BAD_AUTH -> "BAD_AUTH"
   }
   @Serializable @SerialName("PARSE") class PARSE: SMPHandshakeError()
   @Serializable @SerialName("VERSION") class VERSION: SMPHandshakeError()
   @Serializable @SerialName("IDENTITY") class IDENTITY: SMPHandshakeError()
+  @Serializable @SerialName("BAD_AUTH") class BAD_AUTH: SMPHandshakeError()
 }
 
 @Serializable
@@ -5031,6 +5181,8 @@ sealed class XFTPErrorType {
     is NO_FILE -> "NO_FILE"
     is HAS_FILE -> "HAS_FILE"
     is FILE_IO -> "FILE_IO"
+    is TIMEOUT -> "TIMEOUT"
+    is REDIRECT -> "REDIRECT"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
@@ -5044,6 +5196,8 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
   @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
   @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
+  @Serializable @SerialName("TIMEOUT") object TIMEOUT: XFTPErrorType()
+  @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
 }
 
@@ -5053,6 +5207,8 @@ sealed class RCErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is IDENTITY -> "IDENTITY"
     is NO_LOCAL_ADDRESS -> "NO_LOCAL_ADDRESS"
+    is NEW_CONTROLLER -> "NEW_CONTROLLER"
+    is NOT_DISCOVERED -> "NOT_DISCOVERED"
     is TLS_START_FAILED -> "TLS_START_FAILED"
     is EXCEPTION -> "EXCEPTION $EXCEPTION"
     is CTRL_AUTH -> "CTRL_AUTH"
@@ -5067,6 +5223,8 @@ sealed class RCErrorType {
   @Serializable @SerialName("internal") data class INTERNAL(val internalErr: String): RCErrorType()
   @Serializable @SerialName("identity") object IDENTITY: RCErrorType()
   @Serializable @SerialName("noLocalAddress") object NO_LOCAL_ADDRESS: RCErrorType()
+  @Serializable @SerialName("newController") object NEW_CONTROLLER: RCErrorType()
+  @Serializable @SerialName("notDiscovered") object NOT_DISCOVERED: RCErrorType()
   @Serializable @SerialName("tlsStartFailed") object TLS_START_FAILED: RCErrorType()
   @Serializable @SerialName("exception") data class EXCEPTION(val exception: String): RCErrorType()
   @Serializable @SerialName("ctrlAuth") object CTRL_AUTH: RCErrorType()
@@ -5125,28 +5283,39 @@ sealed class RemoteCtrlError {
     is BadState -> "badState"
     is Busy -> "busy"
     is Timeout -> "timeout"
+    is NoKnownControllers -> "noKnownControllers"
+    is BadController -> "badController"
     is Disconnected -> "disconnected"
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
+    is HTTP2Error -> "http2Error"
+    is ProtocolError -> "protocolError"
   }
   val localizedString: String get() = when (this) {
     is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
     is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
     is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
     is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is NoKnownControllers -> "no known controllers"
+    is BadController -> "bad controller"
     is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
     is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
     is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+    is HTTP2Error -> "HTTP2 error"
+    is ProtocolError -> "protocol error"
   }
 
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
+  @Serializable @SerialName("noKnownControllers") object NoKnownControllers: RemoteCtrlError()
+  @Serializable @SerialName("badController") object BadController: RemoteCtrlError()
   @Serializable @SerialName("disconnected") class Disconnected(val remoteCtrlId: Long, val reason: String): RemoteCtrlError()
   @Serializable @SerialName("badInvitation") object BadInvitation: RemoteCtrlError()
   @Serializable @SerialName("badVersion") data class BadVersion(val appVersion: String): RemoteCtrlError()
-  //@Serializable @SerialName("protocolError") data class ProtocolError(val protocolError: RemoteProtocolError): RemoteCtrlError()
+  @Serializable @SerialName("hTTP2Error") data class HTTP2Error(val http2Error: String): RemoteCtrlError()
+  @Serializable @SerialName("protocolError") object ProtocolError: RemoteCtrlError()
 }
 
 enum class NotificationsMode() {
@@ -5154,5 +5323,207 @@ enum class NotificationsMode() {
 
   companion object {
     val default: NotificationsMode = SERVICE
+  }
+}
+
+@Serializable
+data class AppSettings(
+  var networkConfig: NetCfg? = null,
+  var privacyEncryptLocalFiles: Boolean? = null,
+  var privacyAcceptImages: Boolean? = null,
+  var privacyLinkPreviews: Boolean? = null,
+  var privacyShowChatPreviews: Boolean? = null,
+  var privacySaveLastDraft: Boolean? = null,
+  var privacyProtectScreen: Boolean? = null,
+  var notificationMode: AppSettingsNotificationMode? = null,
+  var notificationPreviewMode: AppSettingsNotificationPreviewMode? = null,
+  var webrtcPolicyRelay: Boolean? = null,
+  var webrtcICEServers: List<String>? = null,
+  var confirmRemoteSessions: Boolean? = null,
+  var connectRemoteViaMulticast: Boolean? = null,
+  var connectRemoteViaMulticastAuto: Boolean? = null,
+  var developerTools: Boolean? = null,
+  var confirmDBUpgrades: Boolean? = null,
+  var androidCallOnLockScreen: AppSettingsLockScreenCalls? = null,
+  var iosCallKitEnabled: Boolean? = null,
+  var iosCallKitCallsInRecents: Boolean? = null,
+) {
+  fun prepareForExport(): AppSettings {
+    val empty = AppSettings()
+    val def = defaults
+    if (networkConfig != def.networkConfig) { empty.networkConfig = networkConfig }
+    if (privacyEncryptLocalFiles != def.privacyEncryptLocalFiles) { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+    if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
+    if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
+    if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
+    if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
+    if (privacyProtectScreen != def.privacyProtectScreen) { empty.privacyProtectScreen = privacyProtectScreen }
+    if (notificationMode != def.notificationMode) { empty.notificationMode = notificationMode }
+    if (notificationPreviewMode != def.notificationPreviewMode) { empty.notificationPreviewMode = notificationPreviewMode }
+    if (webrtcPolicyRelay != def.webrtcPolicyRelay) { empty.webrtcPolicyRelay = webrtcPolicyRelay }
+    if (webrtcICEServers != def.webrtcICEServers) { empty.webrtcICEServers = webrtcICEServers }
+    if (confirmRemoteSessions != def.confirmRemoteSessions) { empty.confirmRemoteSessions = confirmRemoteSessions }
+    if (connectRemoteViaMulticast != def.connectRemoteViaMulticast) { empty.connectRemoteViaMulticast = connectRemoteViaMulticast }
+    if (connectRemoteViaMulticastAuto != def.connectRemoteViaMulticastAuto) { empty.connectRemoteViaMulticastAuto = connectRemoteViaMulticastAuto }
+    if (developerTools != def.developerTools) { empty.developerTools = developerTools }
+    if (confirmDBUpgrades != def.confirmDBUpgrades) { empty.confirmDBUpgrades = confirmDBUpgrades }
+    if (androidCallOnLockScreen != def.androidCallOnLockScreen) { empty.androidCallOnLockScreen = androidCallOnLockScreen }
+    if (iosCallKitEnabled != def.iosCallKitEnabled) { empty.iosCallKitEnabled = iosCallKitEnabled }
+    if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+    return empty
+  }
+
+  fun importIntoApp() {
+    val def = appPreferences
+    var net = networkConfig?.copy()
+    if (net != null) {
+      // migrating from iOS BUT shouldn't be here ever because it should be changed on migration stage
+      if (net.hostMode == HostMode.Onion) {
+        net = net.copy(hostMode = HostMode.Public, requiredHostMode = true)
+      }
+      setNetCfg(net)
+    }
+    privacyEncryptLocalFiles?.let { def.privacyEncryptLocalFiles.set(it) }
+    privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
+    privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
+    privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
+    privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
+    privacyProtectScreen?.let { def.privacyProtectScreen.set(it) }
+    notificationMode?.let { def.notificationsMode.set(it.toNotificationsMode()) }
+    notificationPreviewMode?.let { def.notificationPreviewMode.set(it.toNotificationPreviewMode().name) }
+    webrtcPolicyRelay?.let { def.webrtcPolicyRelay.set(it) }
+    webrtcICEServers?.let { def.webrtcIceServers.set(it.joinToString(separator = "\n")) }
+    confirmRemoteSessions?.let { def.confirmRemoteSessions.set(it) }
+    connectRemoteViaMulticast?.let { def.connectRemoteViaMulticast.set(it) }
+    connectRemoteViaMulticastAuto?.let { def.connectRemoteViaMulticastAuto.set(it) }
+    developerTools?.let { def.developerTools.set(it) }
+    confirmDBUpgrades?.let { def.confirmDBUpgrades.set(it) }
+    androidCallOnLockScreen?.let { def.callOnLockScreen.set(it.toCallOnLockScreen()) }
+    iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
+    iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
+  }
+
+  companion object {
+    val defaults: AppSettings
+      get() = AppSettings(
+        networkConfig = NetCfg.defaults,
+        privacyEncryptLocalFiles = true,
+        privacyAcceptImages = true,
+        privacyLinkPreviews = true,
+        privacyShowChatPreviews = true,
+        privacySaveLastDraft = true,
+        privacyProtectScreen = false,
+        notificationMode = AppSettingsNotificationMode.INSTANT,
+        notificationPreviewMode = AppSettingsNotificationPreviewMode.MESSAGE,
+        webrtcPolicyRelay = true,
+        webrtcICEServers = emptyList(),
+        confirmRemoteSessions = false,
+        connectRemoteViaMulticast = true,
+        connectRemoteViaMulticastAuto = true,
+        developerTools = false,
+        confirmDBUpgrades = false,
+        androidCallOnLockScreen = AppSettingsLockScreenCalls.SHOW,
+        iosCallKitEnabled = true,
+        iosCallKitCallsInRecents = false
+      )
+
+    val current: AppSettings
+      get() {
+        val def = appPreferences
+        return defaults.copy(
+          networkConfig = getNetCfg(),
+          privacyEncryptLocalFiles = def.privacyEncryptLocalFiles.get(),
+          privacyAcceptImages = def.privacyAcceptImages.get(),
+          privacyLinkPreviews = def.privacyLinkPreviews.get(),
+          privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
+          privacySaveLastDraft = def.privacySaveLastDraft.get(),
+          privacyProtectScreen = def.privacyProtectScreen.get(),
+          notificationMode = AppSettingsNotificationMode.from(def.notificationsMode.get()),
+          notificationPreviewMode = AppSettingsNotificationPreviewMode.from(NotificationPreviewMode.valueOf(def.notificationPreviewMode.get()!!)),
+          webrtcPolicyRelay = def.webrtcPolicyRelay.get(),
+          webrtcICEServers = def.webrtcIceServers.get()?.lines(),
+          confirmRemoteSessions = def.confirmRemoteSessions.get(),
+          connectRemoteViaMulticast = def.connectRemoteViaMulticast.get(),
+          connectRemoteViaMulticastAuto = def.connectRemoteViaMulticastAuto.get(),
+          developerTools = def.developerTools.get(),
+          confirmDBUpgrades = def.confirmDBUpgrades.get(),
+          androidCallOnLockScreen = AppSettingsLockScreenCalls.from(def.callOnLockScreen.get()),
+          iosCallKitEnabled = def.iosCallKitEnabled.get(),
+          iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
+        )
+    }
+  }
+}
+
+@Serializable
+enum class AppSettingsNotificationMode {
+  @SerialName("off") OFF,
+  @SerialName("periodic") PERIODIC,
+  @SerialName("instant") INSTANT;
+
+  fun toNotificationsMode(): NotificationsMode =
+    when (this) {
+      INSTANT -> NotificationsMode.SERVICE
+      PERIODIC -> NotificationsMode.PERIODIC
+      OFF -> NotificationsMode.OFF
+    }
+
+  companion object {
+    fun from(mode: NotificationsMode): AppSettingsNotificationMode =
+      when (mode) {
+        NotificationsMode.SERVICE -> INSTANT
+        NotificationsMode.PERIODIC -> PERIODIC
+        NotificationsMode.OFF -> OFF
+      }
+  }
+}
+
+@Serializable
+enum class AppSettingsNotificationPreviewMode {
+  @SerialName("message") MESSAGE,
+  @SerialName("contact") CONTACT,
+  @SerialName("hidden") HIDDEN;
+
+  fun toNotificationPreviewMode(): NotificationPreviewMode =
+    when (this) {
+      MESSAGE -> NotificationPreviewMode.MESSAGE
+      CONTACT -> NotificationPreviewMode.CONTACT
+      HIDDEN -> NotificationPreviewMode.HIDDEN
+    }
+
+  companion object {
+    val default: AppSettingsNotificationPreviewMode = MESSAGE
+
+    fun from(mode: NotificationPreviewMode): AppSettingsNotificationPreviewMode =
+      when (mode) {
+        NotificationPreviewMode.MESSAGE -> MESSAGE
+        NotificationPreviewMode.CONTACT -> CONTACT
+        NotificationPreviewMode.HIDDEN -> HIDDEN
+      }
+  }
+}
+
+@Serializable
+enum class AppSettingsLockScreenCalls {
+  @SerialName("disable") DISABLE,
+  @SerialName("show") SHOW,
+  @SerialName("accept") ACCEPT;
+
+  fun toCallOnLockScreen(): CallOnLockScreen =
+    when (this) {
+      DISABLE -> CallOnLockScreen.DISABLE
+      SHOW -> CallOnLockScreen.SHOW
+      ACCEPT -> CallOnLockScreen.ACCEPT
+    }
+
+  companion object {
+    val default = SHOW
+
+    fun from(mode: CallOnLockScreen): AppSettingsLockScreenCalls =
+      when (mode) {
+        CallOnLockScreen.DISABLE -> DISABLE
+        CallOnLockScreen.SHOW -> SHOW
+        CallOnLockScreen.ACCEPT -> ACCEPT
+      }
   }
 }

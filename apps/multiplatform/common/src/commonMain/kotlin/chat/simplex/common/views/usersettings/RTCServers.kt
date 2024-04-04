@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.parseRTCIceServers
 import chat.simplex.common.views.helpers.*
@@ -98,12 +99,11 @@ fun RTCServersLayout(
   saveRTCServers: () -> Unit,
   editOn: () -> Unit,
 ) {
-  Column {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_ICE_servers))
     Column(
       Modifier
         .fillMaxWidth()
-        .verticalScroll(rememberScrollState())
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
