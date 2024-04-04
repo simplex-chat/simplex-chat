@@ -49,6 +49,7 @@ import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import qualified Simplex.FileTransfer.Transport as XFTPTransport
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))

@@ -19,7 +19,8 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
-import Simplex.Chat.Types (GroupMemberRole (..), Profile (..))
+import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
