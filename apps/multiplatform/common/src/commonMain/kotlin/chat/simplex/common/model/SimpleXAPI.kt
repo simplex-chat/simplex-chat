@@ -875,6 +875,11 @@ object ChatController {
     }
   }
 
+  suspend fun apiSetNetworkInfo(info: NetworkInfo) {
+    // LALAL
+    //sendCommandOkResp(null, CC.APISetNetworkInfo(info))
+  }
+
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
 
@@ -2409,6 +2414,7 @@ sealed class CC {
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
+  class APISetNetworkInfo(val info: NetworkInfo): CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2551,6 +2557,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
+    is APISetNetworkInfo -> "/_network info ${json.encodeToString(info)}"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
@@ -2688,6 +2695,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
+    is APISetNetworkInfo -> "apiSetNetworkInfo"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
@@ -5526,4 +5534,26 @@ enum class AppSettingsLockScreenCalls {
         CallOnLockScreen.ACCEPT -> ACCEPT
       }
   }
+}
+
+@Serializable
+data class NetworkInfo(
+  val online: Boolean,
+  val type: NetworkInfoType,
+  val metered: Boolean,
+)
+
+enum class NetworkInfoType {
+  @SerialName("none")
+  NONE,
+  @SerialName("mobile")
+  MOBILE,
+  @SerialName("wifi")
+  WIFI,
+  @SerialName("ethernet")
+  ETHERNET,
+  @SerialName("roaming")
+  ROAMING,
+  @SerialName("unknown")
+  UNKNOWN
 }
