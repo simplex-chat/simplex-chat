@@ -2228,9 +2228,9 @@ Ezt nem vonható vissza!</target>
         <target>Titkosított üzenet: adatbázis hiba</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
         <source>Encrypted message: database migration error</source>
-        <target>Titkosított üzenet: adatbázis-migrációs hiba</target>
+        <target state="translated">Titkosított üzenet: adatbázis-átköltöztetés hiba</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -3678,24 +3678,24 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target state="translated">Átköltöztetés befejezve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration error:" xml:space="preserve">
+      <trans-unit id="Migration error:" xml:space="preserve" approved="no">
         <source>Migration error:</source>
-        <target>Migrációs hiba:</target>
+        <target state="translated">Átköltöztetési hiba:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve">
+      <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve" approved="no">
         <source>Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat).</source>
-        <target>Sikertelen migráció. Koppintson a **Kihagyás** lehetőségre az aktuális adatbázis használatának folytatásához. Kérjük, jelentse a problémát az alkalmazás fejlesztőinek csevegésben vagy e-mailben [chat@simplex.chat](mailto:chat@simplex.chat).</target>
+        <target state="translated">Sikertelen átköltöztetés. Koppintson a **Kihagyás** lehetőségre az aktuális adatbázis használatának folytatásához. Kérjük, jelentse a problémát az alkalmazás fejlesztőinek csevegésben vagy e-mailben [chat@simplex.chat](mailto:chat@simplex.chat).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration is completed" xml:space="preserve">
+      <trans-unit id="Migration is completed" xml:space="preserve" approved="no">
         <source>Migration is completed</source>
-        <target>A migráció befejeződött</target>
+        <target state="translated">Az átköltöztetés befejeződött</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
+      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
         <source>Migrations: %@</source>
-        <target>Migrációk: %@</target>
+        <target state="translated">Átköltöztetések: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -4219,9 +4219,9 @@ Hiba: %@</target>
         <target>Jelentse a fejlesztőknek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
+      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve" approved="no">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
-        <target>Indítsa újra az alkalmazást az adatbázis-migrációhoz szükséges push értesítések engedélyezéséhez.</target>
+        <target state="translated">Indítsa újra az alkalmazást az adatbázis-átköltöztetéshez szükséges push értesítések engedélyezéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
@@ -5259,9 +5259,9 @@ Hiba: %@</target>
         <target>Csevegés indítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start migration" xml:space="preserve">
+      <trans-unit id="Start migration" xml:space="preserve" approved="no">
         <source>Start migration</source>
-        <target>Migráció indítása</target>
+        <target state="translated">Átköltöztetés indítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop" xml:space="preserve">
@@ -5369,9 +5369,9 @@ Hiba: %@</target>
         <target>Fotó készítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap button " xml:space="preserve">
+      <trans-unit id="Tap button " xml:space="preserve" approved="no">
         <source>Tap button </source>
-        <target>Koppintson a gombra </target>
+        <target state="translated">Koppintson a </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve">
@@ -5511,9 +5511,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A privát üzenetküldés következő generációja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
+      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve" approved="no">
         <source>The old database was not removed during the migration, it can be deleted.</source>
-        <target>A régi adatbázis nem került eltávolításra a migráció során, így törölhető.</target>
+        <target state="translated">A régi adatbázis nem került eltávolításra az átköltöztetés során, így törölhető.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
@@ -5743,9 +5743,9 @@ A funkció engedélyezése előtt a rendszer felszólítja a hitelesítés befej
         <target>Váratlan hiba: %@</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="Unexpected migration state" xml:space="preserve">
+      <trans-unit id="Unexpected migration state" xml:space="preserve" approved="no">
         <source>Unexpected migration state</source>
-        <target>Váratlan migrációs állapot</target>
+        <target state="translated">Váratlan átköltöztetési állapot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unfav." xml:space="preserve">
@@ -6598,9 +6598,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>a + b</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="above, then choose:" xml:space="preserve">
+      <trans-unit id="above, then choose:" xml:space="preserve" approved="no">
         <source>above, then choose:</source>
-        <target>fent, majd válassza ki:</target>
+        <target state="translated">gombra fent, majd válassza ki:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
@@ -6813,9 +6813,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>egyedi</target>
         <note>dropdown time picker choice</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
-        <target>az adatbázis verziója újabb, mint az alkalmazásé, de nincs visszafelé migráció: %@</target>
+        <target state="translated">az adatbázis verziója újabb, mint az alkalmazásé, visszafelé átköltöztetés nem lehetséges a következőhöz:%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="days" xml:space="preserve">
@@ -6853,9 +6853,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>törölt csoport</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve" approved="no">
         <source>different migration in the app/database: %@ / %@</source>
-        <target>különböző migrációk az alkalmazásban/adatbázisban: %@ / %@</target>
+        <target state="translated">különböző átköltöztetések az alkalmazásban/adatbázisban: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
