@@ -412,6 +412,7 @@ data ChatCommand
   | SendLiveMessage ChatName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
   | ForwardMessage {contactName :: ContactName, msgDir :: AMsgDirection, toChatName :: ChatName, forwardedMsg :: Text}
+  | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
   | SendMessageBroadcast Text -- UserId (not used in UI)
   | DeleteMessage ChatName Text
   | DeleteMemberMessage GroupName ContactName Text

@@ -1585,6 +1585,11 @@ processChatCommand' vr = \case
     forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir forwardedMsg
     toChatRef <- getChatRef user toChatName
     processChatCommand $ APIForwardChatItem (ChatRef CTDirect contactId) toChatRef forwardedItemId
+  ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
+    folderId <- withStore (`getUserNoteFolderId` user)
+    forwardedItemId <- withStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
+    toChatRef <- getChatRef user toChatName
+    processChatCommand $ APIForwardChatItem (ChatRef CTLocal folderId) toChatRef forwardedItemId
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -7058,6 +7063,7 @@ chatCommandP =
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> forwardMsgP (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> forwardMsgP (AMsgDirection SMDSnd),
+      (">* -> " <|> "> * -> ") *> (ForwardLocalMessage <$> chatNameP <* A.space <*> msgTextP),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),

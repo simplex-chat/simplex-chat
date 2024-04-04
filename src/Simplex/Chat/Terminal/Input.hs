@@ -87,6 +87,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       Right SendFile {} -> True
       Right SendMessageQuote {} -> True
       Right ForwardMessage {} -> True
+      Right ForwardLocalMessage {} -> True
       Right SendGroupMessageQuote {} -> True
       Right ForwardGroupMessage {} -> True
       Right SendMessageBroadcast {} -> True
