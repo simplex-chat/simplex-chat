@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import chat.simplex.common.platform.*
+import chat.simplex.common.simplexWindowState
+import java.awt.Window
 
 @Composable
 actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
@@ -23,14 +25,15 @@ actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLon
   }
 }
 
+/*
+* This function doesn't take into account multi-window environment. In case more windows will be used, modify the code
+* */
 @Composable
-actual fun LocalWindowWidth(): Dp {
-  return with(LocalDensity.current) { (java.awt.Window.getWindows().find { it.isActive }?.width ?: 0).toDp() }
-  /*val density = LocalDensity.current
-  var width by remember { mutableStateOf(with(density) { (java.awt.Window.getWindows().find { it.isActive }?.width ?: 0).toDp() }) }
-  SideEffect {
-    if (width != with(density) { (java.awt.Window.getWindows().find { it.isActive }?.width ?: 0).toDp() })
-      width = with(density) { (java.awt.Window.getWindows().find { it.isActive }?.width ?: 0).toDp() }
+actual fun LocalWindowWidth(): Dp = with(LocalDensity.current) {
+  val windows = java.awt.Window.getWindows()
+  if (windows.size == 1) {
+    (windows.getOrNull(0)?.width ?: 0).toDp()
+  } else {
+    simplexWindowState.windowState.size.width
   }
-  return width.also { println("LALAL $it") }*/
 }

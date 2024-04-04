@@ -21,6 +21,7 @@ import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
@@ -103,7 +104,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   simplexWindowState.windowState = windowState
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
-    Window(state = windowState, onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
+    Window(state = windowState, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
       if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
         simplexWindowState.backstack.lastOrNull()?.invoke() != null
       } else {

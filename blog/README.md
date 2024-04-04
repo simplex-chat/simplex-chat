@@ -1,5 +1,13 @@
 # Blog
 
+Apr 4. 2024 [Why I joined SimpleX Chat](./20240404-why-i-joined-simplex-chat-esraa-al-shafei.md)
+
+_By [Esra'a al Shafei](https://mastodon.social/@alshafei)_
+
+Transitioning from a lifelong career dedicated to nonprofits, including Board roles at organizations like the Wikimedia Foundation, Access Now and Tor, my decision to join SimpleX Chat may come as a surprise to some. But, as I step into this new chapter, I want to share the insights and convictions that have guided me here, shedding light on what I think sets SimpleX Chat apart and why this move feels like an essential learning opportunity.
+
+---
+
 Mar 23, 2024 [SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration](./20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
 
 SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance:
