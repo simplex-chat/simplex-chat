@@ -10,11 +10,11 @@ import chat.simplex.common.platform.androidAppContext
 
 class NetworkObserver(private val onChange: (NetworkInfo) -> Unit) {
   private var prevInfo: NetworkInfo? = null
+
   private val networkCallback = object: ConnectivityManager.NetworkCallback() {
-    //override fun onAvailable(network: Network) = networkStatusChanged(true, network, null)
     override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) = networkCapabilitiesChanged(networkCapabilities)
-    //override fun onLost(network: Network) = networkLost()
   }
+
   private val connectivityManager: ConnectivityManager? = androidAppContext.getSystemService()
 
   fun start() {
@@ -43,18 +43,6 @@ class NetworkObserver(private val onChange: (NetworkInfo) -> Unit) {
       Log.e(TAG, "Error unregistering network callback: ${e.stackTraceToString()}")
     }
   }
-
-//  private fun networkLost() {
-//    val info = NetworkInfo(
-//      online = false,
-//      type = NetworkInfoType.NONE,
-//      metered = false,
-//    )
-//    if (prevInfo != info) {
-//      prevInfo = info
-//      onChange(info)
-//    }
-//  }
 
   private fun networkCapabilitiesChanged(capabilities: NetworkCapabilities) {
     connectivityManager ?: return
