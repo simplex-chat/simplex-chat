@@ -787,7 +787,8 @@ testXFTPCancelRcvRepeat =
       bob ##> "/fr 1 ./tests/tmp"
       bob
         <### [ "saving file 1 from alice to ./tests/tmp/testfile_1",
-               "started receiving file 1 (testfile) from alice"
+               "started receiving file 1 (testfile) from alice",
+               StartsWith "chat db error: SERcvFileNotFoundXFTP"
              ]
       bob <## "completed receiving file 1 (testfile) from alice"
 

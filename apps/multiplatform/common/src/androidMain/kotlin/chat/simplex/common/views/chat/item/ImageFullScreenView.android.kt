@@ -3,7 +3,7 @@ package chat.simplex.common.views.chat.item
 import android.os.Build
 import android.view.View
 import androidx.compose.foundation.Image
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -11,8 +11,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
-import chat.simplex.common.helpers.toUri
 import chat.simplex.common.platform.VideoPlayer
+import chat.simplex.common.platform.androidAppContext
 import chat.simplex.res.MR
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
@@ -23,21 +23,11 @@ import coil.size.Size
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import dev.icerock.moko.resources.compose.stringResource
-import java.net.URI
 
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
-  // I'm making a new instance of imageLoader here because if I use one instance in multiple places
+  // I'm using a new private instance of imageLoader here because if I use one instance in multiple places
   // after end of composition here a GIF from the first instance will be paused automatically which isn't what I want
-  val imageLoader = ImageLoader.Builder(LocalContext.current)
-    .components {
-      if (Build.VERSION.SDK_INT >= 28) {
-        add(ImageDecoderDecoder.Factory())
-      } else {
-        add(GifDecoder.Factory())
-      }
-    }
-    .build()
   Image(
     rememberAsyncImagePainter(
       ImageRequest.Builder(LocalContext.current).data(data = data).size(Size.ORIGINAL).build(),
@@ -73,3 +63,14 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
     modifier
   )
 }
+
+private val imageLoader = ImageLoader.Builder(androidAppContext)
+  .networkObserverEnabled(false)
+  .components {
+    if (Build.VERSION.SDK_INT >= 28) {
+      add(ImageDecoderDecoder.Factory())
+    } else {
+      add(GifDecoder.Factory())
+    }
+  }
+  .build()

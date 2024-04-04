@@ -336,10 +336,10 @@ setSndFTAgentDeleted db User {userId} fileId = do
     "UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (currentTs, userId, fileId)
 
-getXFTPSndFileDBId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
-getXFTPSndFileDBId db User {userId} aSndFileId =
+getXFTPSndFileDBId :: DB.Connection -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
+getXFTPSndFileDBId db aSndFileId =
   ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
-    DB.query db "SELECT file_id FROM files WHERE user_id = ? AND agent_snd_file_id = ?" (userId, aSndFileId)
+    DB.query db "SELECT file_id FROM files WHERE agent_snd_file_id = ?" (Only aSndFileId)
 
 getXFTPRcvFileDBId :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
 getXFTPRcvFileDBId db aRcvFileId =
