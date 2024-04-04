@@ -24,7 +24,7 @@
     <string name="network_enable_socks_info">Hozzáférés a kiszolgálókhoz SOCKS proxy segítségével a %d porton? A proxyt el kell indítani, mielőtt engedélyezné ezt az opciót.</string>
     <string name="accept_feature">Elfogadás</string>
     <string name="accept_call_on_lock_screen">Elfogadás</string>
-    <string name="above_then_preposition_continuation">fentről, utána:</string>
+    <string name="above_then_preposition_continuation">gombra fent, majd:</string>
     <string name="accept_contact_incognito_button">Fogadás inkognítóban</string>
     <string name="accept_connection_request__question">Kapcsolatfelvétel elfogadása?</string>
     <string name="accept_contact_button">Elfogadás</string>
@@ -433,7 +433,7 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">Az adatbázis titkosításra kerül és a jelmondat eltárolásra a Keystore-ban.</string>
     <string name="enable_automatic_deletion_question">Automatikus üzenet törlés engedélyezése?</string>
     <string name="delete_contact_menu_action">Törlés</string>
-    <string name="mtr_error_no_down_migration">az adatbázis verzió újabb, mint az alkalmazás, de nincs lefelé migráció eddig: %s</string>
+    <string name="mtr_error_no_down_migration">az adatbázis verziója újabb, mint az alkalmazásé, visszafelé átköltöztetés nem lehetséges a következőhöz: %s</string>
     <string name="simplex_link_mode_description">Leírás</string>
     <string name="ttl_hour">%d óra</string>
     <string name="ttl_m">%dp</string>
@@ -1209,7 +1209,7 @@
     <string name="unfavorite_chat">Nem kedvenc</string>
     <string name="send_receipts">Üzenet kézbesítési jelentések küldése</string>
     <string name="icon_descr_address">SimpleX azonosító</string>
-    <string name="chat_help_tap_button">Koppintson a gombra</string>
+    <string name="chat_help_tap_button">Koppintson a</string>
     <string name="save_and_notify_contact">Mentés és ismerős értesítése</string>
     <string name="icon_descr_call_rejected">Elutasított hívás</string>
     <string name="network_socks_proxy_settings">SOCKS proxy beállítások</string>
@@ -1357,7 +1357,7 @@
     <string name="connected_to_server_to_receive_messages_from_contact">Kiszolgálóhoz történő csatlakozás, mely az adott ismerőstől érkező üzenetek fogadására szolgál.</string>
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a Beállításokban</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor tud csatlakozni a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
-    <string name="mtr_error_different">eltérő migráció az appban/adatbázisban: %s / %s</string>
+    <string name="mtr_error_different">különböző átköltöztetés az alkalmazásban/adatbázisban: %s / %s</string>
     <string name="connect_plan_you_are_already_connecting_to_vName">Ön már csatlakozik a következőhöz: <b>%1$s</b>.</string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a hivatkozás nem érvényes kapcsolati hivatkozás!</string>
