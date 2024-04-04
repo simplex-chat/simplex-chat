@@ -673,13 +673,13 @@ processChatCommand' vr = \case
       _ -> pure Nothing
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
   APISendMessage (ChatRef cType chatId) live itemTTL cm -> withUser $ \user -> withChatLock "sendMessage" $ case cType of
-    CTDirect -> sendContactContentMessage user chatId live itemTTL cm Nothing
-    CTGroup -> sendGroupContentMessage user chatId live itemTTL cm Nothing
+    CTDirect -> sendContactContentMessage user chatId live itemTTL cm False
+    CTGroup -> sendGroupContentMessage user chatId live itemTTL cm False
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatItem folderId cm -> withUser $ \user ->
-    createNoteFolderContentItem user folderId cm Nothing
+    createNoteFolderContentItem user folderId cm False
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       ct@Contact {contactId} <- withStore $ \db -> getContact db vr user chatId
@@ -824,51 +824,34 @@ processChatCommand' vr = \case
           throwChatError (CECommandError "too many reactions")
   APIForwardChatItem (ChatRef fromCType fromChatId) (ChatRef toCType toChatId) itemId -> withUser $ \user -> withChatLock "forwardChatItem" $ case toCType of
     CTDirect -> do
-      (cm, ciff) <- prepareForward user
-      sendContactContentMessage user toChatId False Nothing cm (Just ciff)
+      cm <- prepareForward user
+      sendContactContentMessage user toChatId False Nothing cm True
     CTGroup -> do
-      (cm, ciff) <- prepareForward user
-      sendGroupContentMessage user toChatId False Nothing cm (Just ciff)
+      cm <- prepareForward user
+      sendGroupContentMessage user toChatId False Nothing cm True
     CTLocal -> do
-      (cm, ciff) <- prepareForward user
-      createNoteFolderContentItem user toChatId cm (Just ciff)
+      cm <- prepareForward user
+      createNoteFolderContentItem user toChatId cm True
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
-      prepareForward :: User -> CM (ComposedMessage, CIForwardedFrom)
+      prepareForward :: User -> CM ComposedMessage
       prepareForward user = case fromCType of
         CTDirect -> do
-          (ct, CChatItem _ ci) <- withStore $ \db -> do
-            ct <- getContact db vr user fromChatId
-            cci <- getDirectChatItem db user fromChatId itemId
-            pure (ct, cci)
+          (CChatItem _ ci) <- withStore $ \db -> getDirectChatItem db user fromChatId itemId
           mc <- forwardMC ci
           file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
-          let ciff = forwardCIFF ci $ CIFFContact (forwardName ct) fromChatId
-          pure (ComposedMessage file Nothing mc, ciff)
-          where
-            forwardName :: Contact -> ContactName
-            forwardName Contact {profile = LocalProfile {displayName, localAlias}}
-              | localAlias /= "" = localAlias
-              | otherwise = displayName
+          pure $ ComposedMessage file Nothing mc
         CTGroup -> do
-          (gInfo, CChatItem _ ci) <- withStore $ \db -> do
-            gInfo <- getGroupInfo db vr user fromChatId
-            cci <- getGroupChatItem db user fromChatId itemId
-            pure (gInfo, cci)
+          (CChatItem _ ci) <- withStore $ \db -> getGroupChatItem db user fromChatId itemId
           mc <- forwardMC ci
           file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
-          let ciff = forwardCIFF ci $ CIFFGroup (forwardName gInfo) fromChatId
-          pure (ComposedMessage file Nothing mc, ciff)
-          where
-            forwardName :: GroupInfo -> ContactName
-            forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
+          pure $ ComposedMessage file Nothing mc
         CTLocal -> do
           (CChatItem _ ci) <- withStore $ \db -> getLocalChatItem db user fromChatId itemId
           mc <- forwardMC ci
           file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
-          let ciff = forwardCIFF ci $ CIFFNoteFolder "notes" fromChatId
-          pure (ComposedMessage file Nothing mc, ciff)
+          pure $ ComposedMessage file Nothing mc
         CTContactRequest -> throwChatError $ CECommandError "not supported"
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
@@ -877,9 +860,6 @@ processChatCommand' vr = \case
           forwardMC ChatItem {content = CISndMsgContent fmc} = pure fmc
           forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure fmc
           forwardMC _ = throwChatError CEInvalidForward
-          forwardCIFF :: ChatItem c d -> CIForwardedFrom -> CIForwardedFrom
-          forwardCIFF ChatItem {meta = CIMeta {itemForwarded = Just ciff}} _ = ciff
-          forwardCIFF _ ciff = ciff
           forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
           forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileSource = Just cf@CryptoFile {filePath}}} =
             chatReadVar filesFolder >>= \case
@@ -1585,7 +1565,7 @@ processChatCommand' vr = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing False Nothing False createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2531,7 +2511,7 @@ processChatCommand' vr = \case
               let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = newStatus} memRole
               updateDirectChatItemView user ct itemId aciContent False Nothing
         _ -> pure () -- prohibited
-    sendContactContentMessage :: User -> ContactId -> Bool -> Maybe Int -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
+    sendContactContentMessage :: User -> ContactId -> Bool -> Maybe Int -> ComposedMessage -> Bool -> CM ChatResponse
     sendContactContentMessage user contactId live itemTTL (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
       ct@Contact {contactUsed} <- withStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
@@ -2554,9 +2534,9 @@ processChatCommand' vr = \case
           xftpSndFileTransfer user file fileSize 1 $ CGContact ct
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> CM (MsgContainer, Maybe (CIQuote 'CTDirect))
         prepareMsg fInv_ timed_ = case (quotedItemId_, itemForwarded) of
-          (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-          (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-          (Just quotedItemId, Nothing) -> do
+          (Nothing, False) -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+          (Nothing, True) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+          (Just quotedItemId, False) -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getDirectChatItem db user contactId quotedItemId
             (origQmc, qd, sent) <- quoteData qci
@@ -2564,14 +2544,14 @@ processChatCommand' vr = \case
                 qmc = quoteContent mc origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
-          (Just _, Just _) -> throwChatError CEInvalidQuote
+          (Just _, True) -> throwChatError CEInvalidQuote
           where
             quoteData :: ChatItem c d -> CM (MsgContent, CIQDirection 'CTDirect, Bool)
             quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidQuote
             quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
             quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
             quoteData _ = throwChatError CEInvalidQuote
-    sendGroupContentMessage :: User -> GroupId -> Bool -> Maybe Int -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
+    sendGroupContentMessage :: User -> GroupId -> Bool -> Maybe Int -> ComposedMessage -> Bool -> CM ChatResponse
     sendGroupContentMessage user groupId live itemTTL (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
       g@(Group gInfo _) <- withStore $ \db -> getGroup db vr user groupId
       assertUserGroupRole gInfo GRAuthor
@@ -2612,7 +2592,7 @@ processChatCommand' vr = \case
                   \db -> createSndFTDescrXFTP db user (Just m) conn ft dummyFileDescr
             saveMemberFD _ = pure ()
       pure (fInv, ciFile)
-    createNoteFolderContentItem :: User -> NoteFolderId -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
+    createNoteFolderContentItem :: User -> NoteFolderId -> ComposedMessage -> Bool -> CM ChatResponse
     createNoteFolderContentItem user folderId (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
       forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
       nf <- withStore $ \db -> getNoteFolder db user folderId
@@ -2643,11 +2623,11 @@ data ChangedProfileContact = ChangedProfileContact
     conn :: Connection
   }
 
-prepareGroupMsg :: User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> CM (MsgContainer, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg :: User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Bool -> Maybe FileInvitation -> Maybe CITimed -> Bool -> CM (MsgContainer, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
-  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-  (Just quotedItemId, Nothing) -> do
+  (Nothing, False) -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+  (Nothing, True) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+  (Just quotedItemId, False) -> do
     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
       withStore $ \db -> getGroupChatItem db user groupId quotedItemId
     (origQmc, qd, sent, GroupMember {memberId}) <- quoteData qci membership
@@ -2655,7 +2635,7 @@ prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ itemForwar
         qmc = quoteContent mc origQmc file
         quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
     pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
-  (Just _, Just _) -> throwChatError CEInvalidQuote
+  (Just _, True) -> throwChatError CEInvalidQuote
   where
     quoteData :: ChatItem c d -> GroupMember -> CM (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwChatError CEInvalidQuote
@@ -4091,7 +4071,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
                             quotedItemId_ = quoteItemId =<< quotedItem
                             fInv_ = fst <$> fInvDescr_
-                        (msgContainer, _) <- prepareGroupMsg user gInfo mc quotedItemId_ Nothing fInv_ itemTimed False
+                        (msgContainer, _) <- prepareGroupMsg user gInfo mc quotedItemId_ False fInv_ itemTimed False
                         let senderVRange = memberChatVRange' sender
                             xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
                         fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
@@ -6491,9 +6471,9 @@ saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember@GroupMember {me
       _ -> throwError e
 
 saveSndChatItem :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> CM (ChatItem c 'MDSnd)
-saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing Nothing False
+saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing False Nothing False
 
-saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
+saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Bool -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
 saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemForwarded itemTimed live = do
   createdAt <- liftIO getCurrentTime
   ciId <- withStore' $ \db -> do
@@ -6517,11 +6497,11 @@ saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerT
     pure r
   pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live brokerTs forwardedByMember createdAt
 
-mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Bool -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
 mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live itemTs forwardedByMember currentTs =
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing itemForwarded False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: MsgDirectionI d => User -> Contact -> ChatItem 'CTDirect d -> Bool -> Bool -> CM ChatResponse
@@ -6782,10 +6762,10 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
-      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+      let ci = mkChatItem cd ciId content Nothing Nothing Nothing False Nothing False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
-createLocalChatItem :: MsgDirectionI d => User -> ChatDirection 'CTLocal d -> CIContent d -> Maybe CIForwardedFrom -> UTCTime -> CM ChatItemId
+createLocalChatItem :: MsgDirectionI d => User -> ChatDirection 'CTLocal d -> CIContent d -> Bool -> UTCTime -> CM ChatItemId
 createLocalChatItem user cd content itemForwarded createdAt = do
   gVar <- asks random
   withStore $ \db -> do

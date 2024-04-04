@@ -553,11 +553,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           where
             from = ttyFromContact c
         where
-          context =
-            maybe
-              (maybe [] (forwardedFrom) itemForwarded)
-              (directQuote chatDir)
-              quotedItem
+          context = maybe (forwarded itemForwarded) (directQuote chatDir) quotedItem
       GroupChat g -> case chatDir of
         CIGroupSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
@@ -575,11 +571,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           where
             from = ttyFromGroup g m
         where
-          context =
-            maybe
-              (maybe [] (forwardedFrom) itemForwarded)
-              (groupQuote g)
-              quotedItem
+          context = maybe (forwarded itemForwarded) (groupQuote g) quotedItem
       LocalChat _ -> case chatDir of
         CILocalSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withLocalFile to $ sndMsg to context mc
@@ -595,7 +587,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           where
             from = "* "
         where
-          context = maybe [] (forwardedFrom) itemForwarded
+          context = forwarded itemForwarded
       ContactRequest {} -> []
       ContactConnection {} -> []
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
@@ -687,11 +679,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
       where
         to = if itemEdited then ttyToContactEdited' c else ttyToContact' c
     where
-      context =
-        maybe
-          (maybe [] (forwardedFrom) itemForwarded)
-          (directQuote chatDir)
-          quotedItem
+      context = maybe (forwarded itemForwarded) (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc
@@ -706,11 +694,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
       where
         to = if itemEdited then ttyToGroupEdited g else ttyToGroup g
     where
-      context =
-        maybe
-          (maybe [] (forwardedFrom) itemForwarded)
-          (groupQuote g)
-          quotedItem
+      context = maybe (forwarded itemForwarded) (groupQuote g) quotedItem
   _ -> []
 
 hideLive :: CIMeta c d -> [StyledString] -> [StyledString]
@@ -792,12 +776,8 @@ directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
 groupQuote :: GroupInfo -> CIQuote 'CTGroup -> [StyledString]
 groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir
 
-forwardedFrom :: CIForwardedFrom -> [StyledString]
-forwardedFrom = \case
-  CIFFUnknown -> ["-> forwarded"]
-  CIFFContact c _ -> ["-> from conversation: " <> ttyContact c]
-  CIFFGroup g _ -> ["-> from conversation: " <> ttyGroup g]
-  CIFFNoteFolder _ _ -> ["-> forwarded from notes"]
+forwarded :: Bool -> [StyledString]
+forwarded itemForwarded = ["-> forwarded" | itemForwarded]
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case

@@ -339,8 +339,8 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
+    itemForwarded :: Bool,
     itemDeleted :: Maybe (CIDeleted c),
-    itemForwarded :: Maybe CIForwardedFrom,
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
@@ -351,15 +351,15 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Maybe CIForwardedFrom -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemForwarded itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
   let editable = case itemContent of
         CISndMsgContent _ ->
           case chatTypeI @c of
             SCTLocal -> isNothing itemDeleted
             _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemForwarded, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -369,8 +369,8 @@ dummyMeta itemId ts itemText =
       itemText,
       itemStatus = CISSndNew,
       itemSharedMsgId = Nothing,
+      itemForwarded = False,
       itemDeleted = Nothing,
-      itemForwarded = Nothing,
       itemEdited = False,
       itemTimed = Nothing,
       itemLive = Nothing,
@@ -983,18 +983,6 @@ itemDeletedTs = \case
   CIBlockedByAdmin ts -> ts
   CIModerated ts _ -> ts
 
-data CIForwardedFrom
-  = CIFFUnknown
-  | CIFFContact {name :: Text, contactId :: ContactId}
-  | CIFFGroup {name :: Text, groupId :: GroupId}
-  | CIFFNoteFolder {name :: Text, folderId :: NoteFolderId}
-  deriving (Show)
-
-cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
-cmForwardedFrom = \case
-  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
-  _ -> Nothing
-
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
     memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
@@ -1056,8 +1044,6 @@ instance ChatTypeI c => FromJSON (CIDeleted c) where
 instance ChatTypeI c => ToJSON (CIDeleted c) where
   toJSON = J.toJSON . jsonCIDeleted
   toEncoding = J.toEncoding . jsonCIDeleted
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CIFF") ''CIForwardedFrom)
 
 $(JQ.deriveJSON defaultJSON ''CITimed)
 
