@@ -31,7 +31,6 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.String
@@ -112,14 +111,6 @@ agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
   | v < pqdrSMPAgentVersion = initialChatVersion
   | otherwise = pqEncryptionCompressionVersion
-
-data ConnectionEntityId
-  = RcvDirectMsgConnEntityId {connId :: Int64, contactId :: Maybe ContactId}
-  | RcvGroupMsgConnEntityId {connId :: Int64, groupId :: GroupId, groupMemberId :: GroupMemberId}
-  | SndFileConnEntityId {connId :: Int64, sndFileTransferId :: FileTransferId}
-  | RcvFileConnEntityId {connId :: Int64, rcvFileTransferId :: FileTransferId}
-  | UserContactConnEntityId {connId :: Int64, userContactId :: FileTransferId}
-  deriving (Eq, Show)
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

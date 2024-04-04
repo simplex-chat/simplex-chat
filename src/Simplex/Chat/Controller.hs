@@ -59,7 +59,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
-import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Util (liftIOEither)
@@ -232,15 +232,6 @@ data ChatController = ChatController
     contactMergeEnabled :: TVar Bool,
     pqExperimentalEnabled :: TVar PQSupport -- TODO v5.7 remove
   }
-
-data ChatLockEntity
-  = CLInvitation ByteString
-  | CLConnection Int64
-  | CLContact ContactId
-  | CLGroup GroupId
-  | CLUserContact Int64
-  | CLFile Int64
-  deriving (Eq, Ord)
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)

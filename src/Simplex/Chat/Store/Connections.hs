@@ -8,7 +8,7 @@
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Connections
-  ( getConnectionEntityId,
+  ( getChatLockEntity,
     getConnectionEntity,
     getConnectionEntityByConnReq,
     getContactConnEntityByConnReqHash,
@@ -39,44 +39,26 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Util (eitherToMaybe)
 
-getConnectionEntityId :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ConnectionEntityId
-getConnectionEntityId db agentConnId = do
-  (connId, connType, entityId) <- getConnEntityId_
-  case entityId of
-    Nothing ->
-      if connType == ConnContact
-        then pure $ RcvDirectMsgConnEntityId connId Nothing
-        else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
-    Just entId ->
-      case connType of
-        ConnMember -> do
-          groupId <- getMemberGroupId entId
-          pure $ RcvGroupMsgConnEntityId connId groupId entId
-        ConnContact -> pure $ RcvDirectMsgConnEntityId connId (Just entId)
-        ConnSndFile -> pure $ SndFileConnEntityId connId entId
-        ConnRcvFile -> pure $ RcvFileConnEntityId connId entId
-        ConnUserContact -> pure $ UserContactConnEntityId connId entId
+getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
+getChatLockEntity db agentConnId = do
+  ((connId, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId)) <-
+    ExceptT . firstRow id (SEConnectionNotFound agentConnId) $
+      DB.query
+        db
+        [sql|
+          SELECT connection_id, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id
+          FROM connections
+          WHERE agent_conn_id = ?
+        |]
+        (Only agentConnId)
+  let err = throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
+  case connType of
+    ConnMember -> maybe err (fmap CLGroup . getMemberGroupId) groupMemberId
+    ConnContact -> pure $ maybe (CLConnection connId) CLContact contactId
+    ConnSndFile -> maybe err (pure . CLFile) sndFileId
+    ConnRcvFile -> maybe err (pure . CLFile) rcvFileId
+    ConnUserContact -> maybe err (pure . CLUserContact) userContactLinkId
   where
-    getConnEntityId_ :: ExceptT StoreError IO (Int64, ConnType, Maybe Int64)
-    getConnEntityId_ = ExceptT $ do
-      firstRow toEntityId (SEConnectionNotFound agentConnId) $
-        DB.query
-          db
-          [sql|
-            SELECT connection_id, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id
-            FROM connections
-            WHERE agent_conn_id = ?
-          |]
-          (Only agentConnId)
-      where
-        toEntityId :: ((Int64, ConnType) :. EntityIdsRow) -> (Int64, ConnType, Maybe Int64)
-        toEntityId ((connId, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId)) =
-          (connId,connType,) $ case connType of
-            ConnContact -> contactId
-            ConnMember -> groupMemberId
-            ConnRcvFile -> rcvFileId
-            ConnSndFile -> sndFileId
-            ConnUserContact -> userContactLinkId
     getMemberGroupId :: GroupMemberId -> ExceptT StoreError IO GroupId
     getMemberGroupId groupMemberId =
       ExceptT . firstRow fromOnly (SEInternalError "group member connection group_id not found") $
