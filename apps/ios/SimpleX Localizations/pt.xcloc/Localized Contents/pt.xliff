@@ -610,60 +610,73 @@ Available in v5.1</source>
         <source>Can't delete user profile!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contact!" xml:space="preserve">
+      <trans-unit id="Can't invite contact!" xml:space="preserve" approved="no">
         <source>Can't invite contact!</source>
+        <target state="translated">Não é possível convidar contato!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contacts!" xml:space="preserve">
+      <trans-unit id="Can't invite contacts!" xml:space="preserve" approved="no">
         <source>Can't invite contacts!</source>
+        <target state="translated">Não é possível convidar contatos!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cancel" xml:space="preserve">
+      <trans-unit id="Cancel" xml:space="preserve" approved="no">
         <source>Cancel</source>
+        <target state="translated">Cancelar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
         <source>Cannot access keychain to save database password</source>
+        <target state="translated">Não é possível acessar as chaves para salvar a senha do banco de dados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot receive file" xml:space="preserve">
+      <trans-unit id="Cannot receive file" xml:space="preserve" approved="no">
         <source>Cannot receive file</source>
+        <target state="translated">Não é possível receber o arquivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change" xml:space="preserve">
+      <trans-unit id="Change" xml:space="preserve" approved="no">
         <source>Change</source>
+        <target state="translated">Mudar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change database passphrase?" xml:space="preserve">
+      <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
+        <target state="translated">Alterar a senha do banco de dados?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change lock mode" xml:space="preserve">
+      <trans-unit id="Change lock mode" xml:space="preserve" approved="no">
         <source>Change lock mode</source>
+        <target state="translated">Alterar modo de bloqueio</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
+      <trans-unit id="Change member role?" xml:space="preserve" approved="no">
         <source>Change member role?</source>
+        <target state="translated">Alterar a função do membro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change passcode" xml:space="preserve">
+      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
         <source>Change passcode</source>
+        <target state="translated">Alterar senha</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change receiving address" xml:space="preserve">
+      <trans-unit id="Change receiving address" xml:space="preserve" approved="no">
         <source>Change receiving address</source>
+        <target state="translated">Alterar endereço de recebimento</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change receiving address?" xml:space="preserve">
+      <trans-unit id="Change receiving address?" xml:space="preserve" approved="no">
         <source>Change receiving address?</source>
+        <target state="translated">Alterar endereço de recebimento?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change role" xml:space="preserve">
+      <trans-unit id="Change role" xml:space="preserve" approved="no">
         <source>Change role</source>
+        <target state="translated">Mudar função</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve" approved="no">
@@ -700,20 +713,24 @@ Available in v5.1</source>
         <source>Chat is stopped</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences" xml:space="preserve">
+      <trans-unit id="Chat preferences" xml:space="preserve" approved="no">
         <source>Chat preferences</source>
+        <target state="translated">Preferências da conversa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats" xml:space="preserve">
+      <trans-unit id="Chats" xml:space="preserve" approved="no">
         <source>Chats</source>
+        <target state="translated">Conversas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check server address and try again." xml:space="preserve">
+      <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
         <source>Check server address and try again.</source>
+        <target state="translated">Verifique o endereço do servidor e tente novamente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
+      <trans-unit id="Chinese and Spanish interface" xml:space="preserve" approved="no">
         <source>Chinese and Spanish interface</source>
+        <target state="translated">Interface em Chinês e Espanhol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve" approved="no">
@@ -726,8 +743,9 @@ Available in v5.1</source>
         <target state="translated">Escolha da biblioteca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear" xml:space="preserve">
+      <trans-unit id="Clear" xml:space="preserve" approved="no">
         <source>Clear</source>
+        <target state="translated">Limpar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear conversation" xml:space="preserve" approved="no">
@@ -735,44 +753,54 @@ Available in v5.1</source>
         <target state="translated">Limpar conversa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation?" xml:space="preserve">
+      <trans-unit id="Clear conversation?" xml:space="preserve" approved="no">
         <source>Clear conversation?</source>
+        <target state="translated">Limpar conversa?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear verification" xml:space="preserve">
+      <trans-unit id="Clear verification" xml:space="preserve" approved="no">
         <source>Clear verification</source>
+        <target state="translated">Limpar verificação</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Colors" xml:space="preserve">
+      <trans-unit id="Colors" xml:space="preserve" approved="no">
         <source>Colors</source>
+        <target state="translated">Cores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Compare file" xml:space="preserve">
+      <trans-unit id="Compare file" xml:space="preserve" approved="no">
         <source>Compare file</source>
+        <target state="translated">Comparar arquivo</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
+      <trans-unit id="Compare security codes with your contacts." xml:space="preserve" approved="no">
         <source>Compare security codes with your contacts.</source>
+        <target state="translated">Compare os códigos de segurança com seus contatos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure ICE servers" xml:space="preserve">
+      <trans-unit id="Configure ICE servers" xml:space="preserve" approved="no">
         <source>Configure ICE servers</source>
+        <target state="translated">Configurar servidores ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm" xml:space="preserve">
+      <trans-unit id="Confirm" xml:space="preserve" approved="no">
         <source>Confirm</source>
+        <target state="translated">Confirme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm Passcode" xml:space="preserve">
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
         <source>Confirm Passcode</source>
+        <target state="translated">Confirmar senha</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm database upgrades" xml:space="preserve">
+      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
         <source>Confirm database upgrades</source>
+        <target state="translated">Confirmar atualizações do banco de dados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm new passphrase…" xml:space="preserve">
+      <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
+        <target state="translated">Confirme a nova senha…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm password" xml:space="preserve">
@@ -4460,6 +4488,52 @@ SimpleX servers cannot see your profile.</source>
         <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
         <target state="translated">Escolha _Migrar de outro dispositivo_ no novo dispositivo e leia o código QR.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
+        <source>Cancel migration</source>
+        <target state="translated">Cancelar migração</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
+        <source>Camera not available</source>
+        <target state="translated">Câmera não disponível</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
+        <source>Change self-destruct passcode</source>
+        <target state="translated">Alterar a senha de autodestruição</target>
+        <note>authentication reason
+   set passcode view</note>
+      </trans-unit>
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
+        <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <target state="translated">A conversa foi interrompida. Se você já usou esse banco de dados em outro dispositivo, deverá transferi-lo de volta antes de iniciar a conversa.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat migrated!" xml:space="preserve" approved="no">
+        <source>Chat migrated!</source>
+        <target state="translated">Conversa migrada!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear private notes?" xml:space="preserve" approved="no">
+        <source>Clear private notes?</source>
+        <target state="translated">Limpar notas privadas?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm network settings" xml:space="preserve" approved="no">
+        <source>Confirm network settings</source>
+        <target state="translated">Confirme as configurações de rede</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
+        <source>Confirm that you remember database passphrase to migrate it.</source>
+        <target state="translated">Confirme se você se lembra da senha do banco de dados para migrá-lo.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
+        <source>Change self-destruct mode</source>
+        <target state="translated">Alterar modo de autodestruição</target>
+        <note>authentication reason</note>
       </trans-unit>
     </body>
   </file>
