@@ -12,9 +12,7 @@ version = extra["android.version_name"] as String
 
 kotlin {
   androidTarget()
-  jvm("desktop") {
-    jvmToolchain(11)
-  }
+  jvm("desktop")
   applyDefaultHierarchyTemplate()
   sourceSets {
     all {
