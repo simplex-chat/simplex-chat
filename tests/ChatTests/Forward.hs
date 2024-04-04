@@ -5,6 +5,7 @@ module ChatTests.Forward where
 
 import ChatClient
 import ChatTests.Utils
+import qualified Data.ByteString.Char8 as B
 import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
@@ -18,7 +19,10 @@ chatForwardTests = do
     it "from group to notes" testForwardGroupToNotes
     it "from notes to contact" testForwardNotesToContact
     it "from notes to group" testForwardNotesToGroup
-    it "from notes to notes" testForwardNotesToNotes
+    it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
+  describe "forward files" $ do
+    it "from contact to contact" testForwardFileNoFilesFolder
+    fit "with relative paths: from contact to contact" testForwardFileRelativePaths
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -215,3 +219,132 @@ testForwardNotesToNotes tmp =
     alice <# "* hi"
     alice <# "* -> forwarded"
     alice <## "      hi"
+
+testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
+testForwardFileNoFilesFolder =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      connectUsers alice bob
+      connectUsers bob cath
+
+      -- send original file
+      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice <# "@bob hi"
+      alice <# "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> hi"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob ##> "/fr 1 ./tests/tmp"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
+            <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+                   "started receiving file 1 (test.pdf) from alice"
+                 ]
+        ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+      -- forward file
+      bob `send` "> @alice -> @cath hi"
+      bob <# "@cath -> forwarded"
+      bob <## "      hi"
+      bob <# "/f @cath ./tests/tmp/test.pdf"
+      bob <## "use /fc 2 to cancel sending"
+      cath <# "bob> -> forwarded"
+      cath <## "      hi"
+      cath <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath ##> "/fr 1 ./tests/tmp"
+      concurrentlyN_
+        [ bob <## "completed uploading file 2 (test.pdf) for cath",
+          cath
+            <### [ "saving file 1 from bob to ./tests/tmp/test_1.pdf",
+                   "started receiving file 1 (test.pdf) from bob"
+                 ]
+        ]
+      cath <## "completed receiving file 1 (test.pdf) from bob"
+
+      dest2 <- B.readFile "./tests/tmp/test_1.pdf"
+      dest2 `shouldBe` src
+
+testForwardFileRelativePaths :: HasCallStack => FilePath -> IO ()
+testForwardFileRelativePaths =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      alice #$> ("/_temp_folder ./tests/tmp/alice_xftp", id, "ok")
+      alice ##> "/_start"
+      alice <## "chat started"
+
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
+      bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
+      bob ##> "/_start"
+      bob <## "chat started"
+
+      cath ##> "/_stop"
+      cath <## "chat stopped"
+      cath #$> ("/_files_folder ./tests/tmp/cath_files", id, "ok")
+      cath #$> ("/_temp_folder ./tests/tmp/cath_xftp", id, "ok")
+      cath ##> "/_start"
+      cath <## "chat started"
+
+      connectUsers alice bob
+      connectUsers bob cath
+
+      -- send original file
+      alice ##> "/_send @2 json {\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice <# "@bob hi"
+      alice <# "/f @bob test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> hi"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob ##> "/fr 1"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
+            <### [ "saving file 1 from alice to test.pdf",
+                   "started receiving file 1 (test.pdf) from alice"
+                 ]
+        ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
+      dest `shouldBe` src
+
+      -- forward file
+      bob `send` "> @alice -> @cath hi"
+      bob <# "@cath -> forwarded"
+      bob <## "      hi"
+      bob <# "/f @cath test.pdf"
+      bob <## "use /fc 2 to cancel sending"
+      cath <# "bob> -> forwarded"
+      cath <## "      hi"
+      cath <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath ##> "/fr 1 ./tests/tmp"
+      concurrentlyN_
+        [ bob <## "completed uploading file 2 (test.pdf) for cath",
+          cath
+            <### [ "saving file 1 from bob to test.pdf",
+                   "started receiving file 1 (test.pdf) from bob"
+                 ]
+        ]
+      cath <## "completed receiving file 1 (test.pdf) from bob"
+
+      dest2 <- B.readFile "./tests/tmp/cath_files/test.pdf"
+      dest2 `shouldBe` src
