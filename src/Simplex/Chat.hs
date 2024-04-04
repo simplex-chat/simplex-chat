@@ -3359,21 +3359,21 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   connEntityId <- critical (withStore (`getConnectionEntityId` AgentConnId connId))
-  withCELock connEntityId $ do
+  withEntityLock "processAgentMessage" (chatLockEntity connEntityId) $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
       Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
-    withCELock :: ConnectionEntityId -> CM a -> CM a
-    withCELock ceId = case ceId of
-      RcvDirectMsgConnEntityId cId Nothing -> withConnectionLock "processAgentMessage conn" cId
-      RcvDirectMsgConnEntityId _ (Just contactId) -> withContactLock "processAgentMessage contact" contactId
-      RcvGroupMsgConnEntityId _ groupId _ -> withGroupLock "processAgentMessage group" groupId
-      SndFileConnEntityId _ fileId -> withFileLock "processAgentMessage snd file" fileId
-      RcvFileConnEntityId _ fileId -> withFileLock "processAgentMessage rcv file" fileId
-      UserContactConnEntityId _ ucId -> withUserContactLock "processAgentMessage user contact" ucId
+    chatLockEntity :: ConnectionEntityId -> ChatLockEntity
+    chatLockEntity = \case
+      RcvDirectMsgConnEntityId cId Nothing -> CLConnection cId
+      RcvDirectMsgConnEntityId _ (Just contactId) -> CLContact contactId
+      RcvGroupMsgConnEntityId _ groupId _ -> CLGroup groupId
+      SndFileConnEntityId _ fileId -> CLFile fileId
+      RcvFileConnEntityId _ fileId -> CLFile fileId
+      UserContactConnEntityId _ ucId -> CLUserContact ucId
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
