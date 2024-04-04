@@ -22,7 +22,7 @@ chatForwardTests = do
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
   describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
-    fit "with relative paths: from contact to contact" testForwardFileRelativePaths
+    it "with relative paths: from contact to contact" testForwardFileRelativePaths
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -329,22 +329,22 @@ testForwardFileRelativePaths =
       bob `send` "> @alice -> @cath hi"
       bob <# "@cath -> forwarded"
       bob <## "      hi"
-      bob <# "/f @cath test.pdf"
+      bob <# "/f @cath test_1.pdf"
       bob <## "use /fc 2 to cancel sending"
       cath <# "bob> -> forwarded"
       cath <## "      hi"
-      cath <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      cath <# "bob> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> "/fr 1"
       concurrentlyN_
-        [ bob <## "completed uploading file 2 (test.pdf) for cath",
+        [ bob <## "completed uploading file 2 (test_1.pdf) for cath",
           cath
-            <### [ "saving file 1 from bob to test.pdf",
-                   "started receiving file 1 (test.pdf) from bob"
+            <### [ "saving file 1 from bob to test_1.pdf",
+                   "started receiving file 1 (test_1.pdf) from bob"
                  ]
         ]
-      cath <## "completed receiving file 1 (test.pdf) from bob"
+      cath <## "completed receiving file 1 (test_1.pdf) from bob"
 
-      dest2 <- B.readFile "./tests/tmp/cath_files/test.pdf"
+      dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
       dest2 `shouldBe` src

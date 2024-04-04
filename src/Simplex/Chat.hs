@@ -822,7 +822,7 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
-  APIForwardChatItem (ChatRef fromCType fromChatId) (ChatRef toCType toChatId) itemId -> withUser $ \user -> withChatLock "forwardChatItem" $ case toCType of
+  APIForwardChatItem fromChatRef (ChatRef toCType toChatId) itemId -> withUser $ \user -> withChatLock "forwardChatItem" $ case toCType of
     CTDirect -> do
       cm <- prepareForward user
       sendContactContentMessage user toChatId False Nothing cm True
@@ -836,24 +836,11 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
       prepareForward :: User -> CM ComposedMessage
-      prepareForward user = case fromCType of
-        CTDirect -> do
-          (CChatItem _ ci) <- withStore $ \db -> getDirectChatItem db user fromChatId itemId
-          mc <- forwardMC ci
-          file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
-          pure $ ComposedMessage file Nothing mc
-        CTGroup -> do
-          (CChatItem _ ci) <- withStore $ \db -> getGroupChatItem db user fromChatId itemId
-          mc <- forwardMC ci
-          file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
-          pure $ ComposedMessage file Nothing mc
-        CTLocal -> do
-          (CChatItem _ ci) <- withStore $ \db -> getLocalChatItem db user fromChatId itemId
-          mc <- forwardMC ci
-          file <- forwardCryptoFile ci `catchChatError` \_ -> pure Nothing
-          pure $ ComposedMessage file Nothing mc
-        CTContactRequest -> throwChatError $ CECommandError "not supported"
-        CTContactConnection -> throwChatError $ CECommandError "not supported"
+      prepareForward user = do
+        (AChatItem _ _ _ ci) <- withStore $ \db -> getAChatItem db vr user fromChatRef itemId
+        mc <- forwardMC ci
+        file <- forwardCryptoFile ci `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
+        pure $ ComposedMessage file Nothing mc
         where
           forwardMC :: ChatItem c d -> CM MsgContent
           forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidForward
@@ -866,20 +853,21 @@ processChatCommand' vr = \case
                 chatReadVar filesFolder >>= \case
                   Nothing ->
                     ifM (doesFileExist filePath) (pure $ Just fromCF) (pure Nothing)
-                  Just filesFolder ->
+                  Just filesFolder -> do
+                    let fsFromPath = filesFolder </> filePath
                     ifM
-                      (doesFileExist filePath)
+                      (doesFileExist fsFromPath)
                       ( do
-                          newPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                          liftIO $ B.writeFile newPath "" -- create empty file
+                          fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                          liftIO $ B.writeFile fsNewPath "" -- create empty file
                           encrypt <- chatReadVar encryptLocalFiles
                           cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
-                          let toCF = CryptoFile newPath cfArgs
+                          let toCF = CryptoFile fsNewPath cfArgs
                           -- to keep forwarded file in case original is deleted
                           liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ do
-                            lb <- CF.readFile fromCF
+                            lb <- CF.readFile (fromCF {filePath = fsFromPath} :: CryptoFile)
                             CF.writeFile toCF lb
-                          pure $ Just toCF
+                          pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
                       )
                       (pure Nothing)
             | otherwise = pure Nothing
