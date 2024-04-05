@@ -875,9 +875,9 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetNetworkInfo(info: NetworkInfo) {
+  suspend fun apiSetNetworkInfo(networkInfo: NetworkInfo) {
     // LALAL
-    //sendCommandOkResp(null, CC.APISetNetworkInfo(info))
+    //sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
   }
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
@@ -2414,7 +2414,7 @@ sealed class CC {
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
-  class APISetNetworkInfo(val info: NetworkInfo): CC()
+  class APISetNetworkInfo(val networkInfo: NetworkInfo): CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2557,7 +2557,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
-    is APISetNetworkInfo -> "/_network info ${json.encodeToString(info)}"
+    is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
