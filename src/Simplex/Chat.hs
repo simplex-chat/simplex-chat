@@ -861,10 +861,10 @@ processChatCommand' vr = \case
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
   APIForwardChatItem fromChatRef (ChatRef toCType toChatId) itemId -> withUser $ \user -> withChatLock "forwardChatItem" $ case toCType of
-    CTDirect -> do
+    CTDirect -> withContactLock "sendMessage" toChatId $ do
       cm <- prepareForward user
       sendContactContentMessage user toChatId False Nothing cm True
-    CTGroup -> do
+    CTGroup ->  withGroupLock "sendMessage" toChatId $ do
       cm <- prepareForward user
       sendGroupContentMessage user toChatId False Nothing cm True
     CTLocal -> do
