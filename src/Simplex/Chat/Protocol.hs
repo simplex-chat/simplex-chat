@@ -418,11 +418,6 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
-cmToItemForwarded :: AChatMsgEvent -> Bool
-cmToItemForwarded = \case
-  ACME _ (XMsgNew (MCForward _)) -> True
-  _ -> False
-
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCUnknown_ Text
   deriving (Eq)
 

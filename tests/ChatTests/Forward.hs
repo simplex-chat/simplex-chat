@@ -42,21 +42,21 @@ testForwardContactToContact =
       alice <# "bob> hey"
 
       alice ##> ("/_forward @2 @3 " <> msgId)
-      alice <# "@cath -> forwarded"
+      alice <# "@cath -> from you"
       alice <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hi"
 
       alice `send` "> @bob -> @cath hey"
-      alice <# "@cath -> forwarded"
+      alice <# "@cath -> from bob (contact id: 2)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
       alice ##> "/tail @cath 2"
-      alice <# "@cath -> forwarded"
+      alice <# "@cath -> from you"
       alice <## "      hi"
-      alice <# "@cath -> forwarded"
+      alice <# "@cath -> from bob (contact id: 2)"
       alice <## "      hey"
 
       cath ##> "/tail @alice 2"
@@ -78,13 +78,13 @@ testForwardContactToGroup =
       alice <# "bob> hey"
 
       alice `send` ">> @bob -> #team hi"
-      alice <# "#team -> forwarded"
+      alice <# "#team -> from you"
       alice <## "      hi"
       cath <# "#team alice> -> forwarded"
       cath <## "      hi"
 
       alice `send` "> @bob -> #team hey"
-      alice <# "#team -> forwarded"
+      alice <# "#team -> from bob (contact id: 2)"
       alice <## "      hey"
       cath <# "#team alice> -> forwarded"
       cath <## "      hey"
@@ -102,11 +102,11 @@ testForwardContactToNotes =
       alice <# "bob> hey"
 
       alice `send` ">> @bob -> * hi"
-      alice <# "* -> forwarded"
+      alice <# "* -> from you"
       alice <## "      hi"
 
       alice `send` "> @bob -> * hey"
-      alice <# "* -> forwarded"
+      alice <# "* -> from bob (contact id: 2)"
       alice <## "      hey"
 
 testForwardGroupToContact :: HasCallStack => FilePath -> IO ()
@@ -122,13 +122,13 @@ testForwardGroupToContact =
       alice <# "#team bob> hey"
 
       alice `send` "> #team -> @cath hi"
-      alice <# "@cath -> forwarded"
+      alice <# "@cath -> from you"
       alice <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hi"
 
       alice `send` "> #team -> @cath hey"
-      alice <# "@cath -> forwarded"
+      alice <# "@cath -> from #team (group id: 1)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
@@ -146,13 +146,13 @@ testForwardGroupToGroup =
       alice <# "#team bob> hey"
 
       alice `send` "> #team -> #club hi"
-      alice <# "#club -> forwarded"
+      alice <# "#club -> from you"
       alice <## "      hi"
       cath <# "#club alice> -> forwarded"
       cath <## "      hi"
 
       alice `send` "> #team -> #club hey"
-      alice <# "#club -> forwarded"
+      alice <# "#club -> from #team (group id: 1)"
       alice <## "      hey"
       cath <# "#club alice> -> forwarded"
       cath <## "      hey"
@@ -170,11 +170,11 @@ testForwardGroupToNotes =
       alice <# "#team bob> hey"
 
       alice `send` "> #team -> * hi"
-      alice <# "* -> forwarded"
+      alice <# "* -> from you"
       alice <## "      hi"
 
       alice `send` "> #team -> * hey"
-      alice <# "* -> forwarded"
+      alice <# "* -> from #team (group id: 1)"
       alice <## "      hey"
 
 testForwardNotesToContact :: HasCallStack => FilePath -> IO ()
@@ -187,10 +187,8 @@ testForwardNotesToContact =
       alice /* "hi"
 
       alice `send` "> * -> @cath hi"
-      alice <# "@cath -> forwarded"
-      alice <## "      hi"
-      cath <# "alice> -> forwarded"
-      cath <## "      hi"
+      alice <# "@cath hi"
+      cath <# "alice> hi"
 
 testForwardNotesToGroup :: HasCallStack => FilePath -> IO ()
 testForwardNotesToGroup =
@@ -202,10 +200,8 @@ testForwardNotesToGroup =
       alice /* "hi"
 
       alice `send` "> * -> #team hi"
-      alice <# "#team -> forwarded"
-      alice <## "      hi"
-      cath <# "#team alice> -> forwarded"
-      cath <## "      hi"
+      alice <# "#team hi"
+      cath <# "#team alice> hi"
 
 testForwardNotesToNotes :: HasCallStack => FilePath -> IO ()
 testForwardNotesToNotes tmp =
@@ -215,13 +211,11 @@ testForwardNotesToNotes tmp =
     alice /* "hi"
 
     alice `send` "> * -> * hi"
-    alice <# "* -> forwarded"
-    alice <## "      hi"
+    alice <# "* hi"
 
     alice ##> "/tail * 2"
     alice <# "* hi"
-    alice <# "* -> forwarded"
-    alice <## "      hi"
+    alice <# "* hi"
 
 testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
 testForwardFileNoFilesFolder =
@@ -255,7 +249,7 @@ testForwardFileNoFilesFolder =
 
       -- forward file
       bob `send` "> @alice -> @cath hi"
-      bob <# "@cath -> forwarded"
+      bob <# "@cath -> from alice (contact id: 2)"
       bob <## "      hi"
       bob <# "/f @cath ./tests/tmp/test.pdf"
       bob <## "use /fc 2 to cancel sending"
@@ -312,7 +306,7 @@ testForwardFileContactToContact =
 
       -- forward file
       bob `send` "> @alice -> @cath hi"
-      bob <# "@cath -> forwarded"
+      bob <# "@cath -> from alice (contact id: 2)"
       bob <## "      hi"
       bob <# "/f @cath test_1.pdf"
       bob <## "use /fc 2 to cancel sending"
@@ -377,7 +371,7 @@ testForwardFileGroupToNotes =
 
       -- forward file
       cath `send` "> #team -> * hi"
-      cath <# "* -> forwarded"
+      cath <# "* -> from #team (group id: 1)"
       cath <## "      hi"
       cath <# "* file 2 (test_1.pdf)"
 
@@ -408,12 +402,10 @@ testForwardFileNotesToGroup =
 
       -- forward file
       alice `send` "> * -> #team hi"
-      alice <# "#team -> forwarded"
-      alice <## "      hi"
+      alice <# "#team hi"
       alice <# "/f #team test_1.pdf"
       alice <## "use /fc 2 to cancel sending"
-      cath <# "#team alice> -> forwarded"
-      cath <## "      hi"
+      cath <# "#team alice> hi"
       cath <# "#team alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
