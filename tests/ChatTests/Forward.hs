@@ -6,7 +6,7 @@ module ChatTests.Forward where
 import ChatClient
 import ChatTests.Utils
 import qualified Data.ByteString.Char8 as B
-import System.Directory (doesFileExist)
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
@@ -23,7 +23,9 @@ chatForwardTests = do
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
   describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
-    it "with relative paths: from contact to contact" testForwardFileRelativePaths
+    it "with relative paths: from contact to contact" testForwardFileContactToContact
+    it "with relative paths: from group to notes" testForwardFileGroupToNotes
+    it "with relative paths: from notes to group" testForwardFileNotesToGroup
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -275,8 +277,8 @@ testForwardFileNoFilesFolder =
       dest2 <- B.readFile "./tests/tmp/test_1.pdf"
       dest2 `shouldBe` src
 
-testForwardFileRelativePaths :: HasCallStack => FilePath -> IO ()
-testForwardFileRelativePaths =
+testForwardFileContactToContact :: HasCallStack => FilePath -> IO ()
+testForwardFileContactToContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
       setRelativePaths alice "./tests/fixtures" "./tests/tmp/alice_xftp"
@@ -329,12 +331,111 @@ testForwardFileRelativePaths =
         ]
       cath <## "completed receiving file 1 (test_1.pdf) from bob"
 
+      src2 <- B.readFile "./tests/tmp/bob_files/test_1.pdf"
+      src2 `shouldBe` dest
       dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
-      dest2 `shouldBe` src
+      dest2 `shouldBe` src2
 
       -- deleting original file doesn't delete forwarded file
       checkActionDeletesFile "./tests/tmp/bob_files/test.pdf" $ do
         bob ##> "/clear alice"
         bob <## "alice: all messages are removed locally ONLY"
       fwdFileExists <- doesFileExist "./tests/tmp/bob_files/test_1.pdf"
+      fwdFileExists `shouldBe` True
+
+testForwardFileGroupToNotes :: HasCallStack => FilePath -> IO ()
+testForwardFileGroupToNotes =
+  testChat2 aliceProfile cathProfile $
+    \alice cath -> withXFTPServer $ do
+      setRelativePaths alice "./tests/fixtures" "./tests/tmp/alice_xftp"
+      setRelativePaths cath "./tests/tmp/cath_files" "./tests/tmp/cath_xftp"
+      createGroup2 "team" alice cath
+      createCCNoteFolder cath
+
+      -- send original file
+      alice ##> "/_send #1 json {\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice <# "#team hi"
+      alice <# "/f #team test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      cath <# "#team alice> hi"
+      cath <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath ##> "/fr 1"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for #team",
+          cath
+            <### [ "saving file 1 from alice to test.pdf",
+                   "started receiving file 1 (test.pdf) from alice"
+                 ]
+        ]
+      cath <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/cath_files/test.pdf"
+      dest `shouldBe` src
+
+      -- forward file
+      cath `send` "> #team -> * hi"
+      cath <# "* -> forwarded"
+      cath <## "      hi"
+      cath <# "* file 2 (test_1.pdf)"
+
+      dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
+      dest2 `shouldBe` dest
+
+      -- deleting original file doesn't delete forwarded file
+      checkActionDeletesFile "./tests/tmp/cath_files/test.pdf" $ do
+        cath ##> "/clear #team"
+        cath <## "#team: all messages are removed locally ONLY"
+      fwdFileExists <- doesFileExist "./tests/tmp/cath_files/test_1.pdf"
+      fwdFileExists `shouldBe` True
+
+testForwardFileNotesToGroup :: HasCallStack => FilePath -> IO ()
+testForwardFileNotesToGroup =
+  testChat2 aliceProfile cathProfile $
+    \alice cath -> withXFTPServer $ do
+      setRelativePaths alice "./tests/tmp/alice_files" "./tests/tmp/alice_xftp"
+      setRelativePaths cath "./tests/tmp/cath_files" "./tests/tmp/cath_xftp"
+      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_files/test.pdf"
+      createCCNoteFolder alice
+      createGroup2 "team" alice cath
+
+      -- create original file
+      alice ##> "/_create *1 json {\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice <# "* hi"
+      alice <# "* file 1 (test.pdf)"
+
+      -- forward file
+      alice `send` "> * -> #team hi"
+      alice <# "#team -> forwarded"
+      alice <## "      hi"
+      alice <# "/f #team test_1.pdf"
+      alice <## "use /fc 2 to cancel sending"
+      cath <# "#team alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "#team alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath ##> "/fr 1"
+      concurrentlyN_
+        [ alice <## "completed uploading file 2 (test_1.pdf) for #team",
+          cath
+            <### [ "saving file 1 from alice to test_1.pdf",
+                   "started receiving file 1 (test_1.pdf) from alice"
+                 ]
+        ]
+      cath <## "completed receiving file 1 (test_1.pdf) from alice"
+
+      src <- B.readFile "./tests/tmp/alice_files/test.pdf"
+      src2 <- B.readFile "./tests/tmp/alice_files/test_1.pdf"
+      src2 `shouldBe` src
+      dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
+      dest2 `shouldBe` src2
+
+      -- deleting original file doesn't delete forwarded file
+      checkActionDeletesFile "./tests/tmp/alice_files/test.pdf" $ do
+        alice ##> "/clear *"
+        alice <## "notes: all messages are removed"
+      fwdFileExists <- doesFileExist "./tests/tmp/alice_files/test_1.pdf"
       fwdFileExists `shouldBe` True

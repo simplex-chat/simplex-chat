@@ -839,7 +839,9 @@ viewChatCleared :: AChatInfo -> [StyledString]
 viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
   GroupChat gi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
-  _ -> []
+  LocalChat _ -> ["notes: all messages are removed"]
+  ContactRequest _ -> []
+  ContactConnection _ -> []
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
