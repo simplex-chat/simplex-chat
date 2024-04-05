@@ -279,27 +279,9 @@ testForwardFileRelativePaths :: HasCallStack => FilePath -> IO ()
 testForwardFileRelativePaths =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
-      alice ##> "/_stop"
-      alice <## "chat stopped"
-      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
-      alice #$> ("/_temp_folder ./tests/tmp/alice_xftp", id, "ok")
-      alice ##> "/_start"
-      alice <## "chat started"
-
-      bob ##> "/_stop"
-      bob <## "chat stopped"
-      bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
-      bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
-      bob ##> "/_start"
-      bob <## "chat started"
-
-      cath ##> "/_stop"
-      cath <## "chat stopped"
-      cath #$> ("/_files_folder ./tests/tmp/cath_files", id, "ok")
-      cath #$> ("/_temp_folder ./tests/tmp/cath_xftp", id, "ok")
-      cath ##> "/_start"
-      cath <## "chat started"
-
+      setRelativePaths alice "./tests/fixtures" "./tests/tmp/alice_xftp"
+      setRelativePaths bob "./tests/tmp/bob_files" "./tests/tmp/bob_xftp"
+      setRelativePaths cath "./tests/tmp/cath_files" "./tests/tmp/cath_xftp"
       connectUsers alice bob
       connectUsers bob cath
 
