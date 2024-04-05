@@ -3209,6 +3209,14 @@ public enum MsgContent: Equatable {
         }
     }
 
+    public var isImageOrVideo: Bool {
+        switch self {
+        case .image: true
+        case .video: true
+        default: false
+        }
+    }
+
     var cmdString: String {
         "json \(encodeJSON(self))"
     }

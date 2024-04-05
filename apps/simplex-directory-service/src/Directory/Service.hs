@@ -36,6 +36,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatResponse, simplexChatContact)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)

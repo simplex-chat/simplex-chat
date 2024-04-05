@@ -18,6 +18,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
@@ -38,12 +39,20 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import qualified Simplex.Messaging.Encoding.Base64 as B64
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
 import UnliftIO.STM
+
+data ChatLockEntity
+  = CLInvitation ByteString
+  | CLConnection Int64
+  | CLContact ContactId
+  | CLGroup GroupId
+  | CLUserContact Int64
+  | CLFile Int64
+  deriving (Eq, Ord)
 
 -- These error type constructors must be added to mobile apps
 data StoreError

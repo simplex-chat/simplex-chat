@@ -11,11 +11,20 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func uiKitContextMenu(maxWidth: CGFloat, menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
+    func uiKitContextMenu(hasImageOrVideo: Bool, maxWidth: CGFloat, itemWidth: Binding<CGFloat>, menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
         Group {
             if allowMenu.wrappedValue {
-                InteractionView(content: self, maxWidth: maxWidth, menu: menu)
-                    .fixedSize(horizontal: true, vertical: false)
+                if hasImageOrVideo {
+                    InteractionView(content:
+                        self.environmentObject(ChatModel.shared)
+                        .overlay(DetermineWidthImageVideoItem())
+                        .onPreferenceChange(DetermineWidthImageVideoItem.Key.self) { itemWidth.wrappedValue = $0 == 0 ? maxWidth : $0 }
+                    , maxWidth: maxWidth, itemWidth: itemWidth, menu: menu)
+                    .frame(maxWidth: itemWidth.wrappedValue)
+                } else {
+                    InteractionView(content: self.environmentObject(ChatModel.shared), maxWidth: maxWidth, itemWidth: itemWidth, menu: menu)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
             } else {
                 self
             }
@@ -31,13 +40,14 @@ private class HostingViewHolder: UIView {
 struct InteractionView<Content: View>: UIViewRepresentable {
     let content: Content
     var maxWidth: CGFloat
+    var itemWidth: Binding<CGFloat>
     @Binding var menu: UIMenu
 
     func makeUIView(context: Context) -> UIView {
         let view = HostingViewHolder()
-        view.contentSize = CGSizeMake(maxWidth, .infinity)
         view.backgroundColor = .clear
         let hostView = UIHostingController(rootView: content)
+        view.contentSize = hostView.view.intrinsicContentSize
         hostView.view.translatesAutoresizingMaskIntoConstraints = false
         let constraints = [
             hostView.view.topAnchor.constraint(equalTo: view.topAnchor),
@@ -57,7 +67,11 @@ struct InteractionView<Content: View>: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        (uiView as! HostingViewHolder).contentSize = uiView.subviews[0].sizeThatFits(CGSizeMake(maxWidth, .infinity))
+        let was = (uiView as! HostingViewHolder).contentSize
+        (uiView as! HostingViewHolder).contentSize = uiView.subviews[0].sizeThatFits(CGSizeMake(itemWidth.wrappedValue, .infinity))
+        if was != (uiView as! HostingViewHolder).contentSize {
+            uiView.invalidateIntrinsicContentSize()
+        }
     }
 
     func makeCoordinator() -> Coordinator {
