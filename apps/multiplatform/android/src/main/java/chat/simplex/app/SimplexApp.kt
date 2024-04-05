@@ -40,7 +40,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
     get() = chatController.chatModel
 
   val chatController: ChatController = ChatController
-  var networkObserver: NetworkObserver? = null
 
   override fun onCreate() {
     super.onCreate()
@@ -67,7 +66,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initHaskell()
     initMultiplatform()
-    networkObserver = initNetworkObserver()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
@@ -318,28 +316,5 @@ class SimplexApp: Application(), LifecycleEventObserver {
         return true
       }
     }
-  }
-
-  private fun initNetworkObserver(): NetworkObserver {
-    // When having both mobile and Wi-Fi networks enabled with Wi-Fi being active, then disabling Wi-Fi, network reports its offline (which is true)
-    // but since it will be online after switching to mobile, there is no need to inform backend about such temporary change.
-    // But if it will not be online after some seconds, report it and apply required measures
-    var noNetworkJob = Job() as Job
-    val observer = NetworkObserver { info ->
-      Log.d(TAG, "Network changed: $info")
-      noNetworkJob.cancel()
-      if (info.online) {
-        withBGApi {
-          chatController.apiSetNetworkInfo(info)
-        }
-      } else {
-        noNetworkJob = withBGApi {
-          delay(3000)
-          chatController.apiSetNetworkInfo(info)
-        }
-      }
-    }
-    observer.start()
-    return observer
   }
 }

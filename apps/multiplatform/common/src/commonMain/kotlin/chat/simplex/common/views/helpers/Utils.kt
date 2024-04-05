@@ -414,6 +414,8 @@ expect fun ByteArray.toBase64StringForPassphrase(): String
 // fun String.toByteArrayFromBase64(): ByteArray = Base64.getMimeDecoder().decode(this.trimEnd { it == '\n' || it == ' ' })
 expect fun String.toByteArrayFromBase64ForPassphrase(): ByteArray
 
+expect fun reinitNetworkObserver()
+
 val LongRange.Companion.saver
   get() = Saver<MutableState<LongRange>, Pair<Long, Long>>(
     save = { it.value.first to it.value.last },

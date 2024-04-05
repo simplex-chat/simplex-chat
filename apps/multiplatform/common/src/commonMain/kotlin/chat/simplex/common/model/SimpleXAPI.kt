@@ -355,6 +355,8 @@ object ChatController {
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
+  fun hasChatCtrl() = ctrl != -1L && ctrl != null
+
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
     if (userId == null) {
