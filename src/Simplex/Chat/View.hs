@@ -625,11 +625,12 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
     prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
 
 viewChatItemInfo :: AChatItem -> ChatItemInfo -> TimeZone -> [StyledString]
-viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt}}) ChatItemInfo {itemVersions} tz =
+viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt}}) ChatItemInfo {itemVersions, forwardedFromChatItem} tz =
   ["sent at: " <> ts itemTs]
     <> receivedAt
     <> toBeDeletedAt
     <> versions
+    <> forwardedFromItemId
   where
     ts = styleTime . localTs tz
     receivedAt = case msgDir of
@@ -642,7 +643,12 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
       if null itemVersions
         then []
         else ["message history:"] <> concatMap version itemVersions
-    version ChatItemVersion {msgContent, itemVersionTs} = prependFirst (ts itemVersionTs <> styleTime ": ") $ ttyMsgContent msgContent
+      where
+        version ChatItemVersion {msgContent, itemVersionTs} = prependFirst (ts itemVersionTs <> styleTime ": ") $ ttyMsgContent msgContent
+    forwardedFromItemId =
+      case forwardedFromChatItem of
+        Just aci -> ["forwarded from chat item id: " <> (plain . show) (aChatItemId aci)]
+        _ -> []
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do

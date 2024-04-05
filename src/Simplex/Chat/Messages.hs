@@ -1031,9 +1031,10 @@ instance TextEncoding CIForwardedFromTag where
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
-    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
+    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus],
+    forwardedFromChatItem :: Maybe AChatItem
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
@@ -1115,8 +1116,6 @@ instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemVersion)
-
-$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''CIMeta)
@@ -1206,6 +1205,8 @@ instance forall c. ChatTypeI c => FromJSON (CChatItem c) where
 instance ChatTypeI c => ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
+
+$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
 

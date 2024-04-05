@@ -705,7 +705,16 @@ processChatCommand' vr = \case
           [] -> pure Nothing
           memStatuses -> pure $ Just $ map (uncurry MemberDeliveryStatus) memStatuses
       _ -> pure Nothing
-    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
+    forwardedFromChatItem <- getForwardedFromItem user ci
+    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}
+    where
+      getForwardedFromItem :: User -> ChatItem c d -> CM (Maybe AChatItem)
+      getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
+        Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
+          Just <$> withStore (\db -> getAChatItem db vr user (ChatRef CTDirect ctId) fwdItemId)
+        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
+          Just <$> withStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
+        _ -> pure Nothing
   APISendMessage (ChatRef cType chatId) live itemTTL cm -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "sendMessage" chatId $
       sendContactContentMessage user chatId live itemTTL cm Nothing

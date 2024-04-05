@@ -54,6 +54,7 @@ testForwardContactToContact =
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
+      -- read chat
       alice ##> "/tail @cath 2"
       alice <# "@cath -> from you"
       alice <## "      hi"
@@ -65,6 +66,13 @@ testForwardContactToContact =
       cath <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
+
+      -- item info
+      alice ##> "/item info @cath hey"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey"
+      alice <##. "forwarded from chat item id:"
 
 testForwardContactToGroup :: HasCallStack => FilePath -> IO ()
 testForwardContactToGroup =
