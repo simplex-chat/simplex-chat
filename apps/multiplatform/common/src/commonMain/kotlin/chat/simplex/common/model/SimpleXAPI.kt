@@ -5554,6 +5554,6 @@ enum class NetworkInfoType {
   ETHERNET,
   @SerialName("roaming")
   ROAMING,
-  @SerialName("unknown")
-  UNKNOWN
+  @SerialName("other")
+  OTHER
 }

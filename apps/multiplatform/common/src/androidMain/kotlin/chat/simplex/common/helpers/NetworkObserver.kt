@@ -22,7 +22,7 @@ class NetworkObserver(private val onChange: (NetworkInfo) -> Unit) {
       Log.e(TAG, "Connectivity manager is unavailable, network observer is disabled")
       val info = NetworkInfo(
         online = true,
-        type = NetworkInfoType.UNKNOWN,
+        type = NetworkInfoType.OTHER,
         metered = false,
       )
       prevInfo = info
@@ -64,6 +64,6 @@ class NetworkObserver(private val onChange: (NetworkInfo) -> Unit) {
     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkInfoType.CELLULAR
     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkInfoType.WIFI
     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkInfoType.ETHERNET
-    else -> NetworkInfoType.UNKNOWN
+    else -> NetworkInfoType.OTHER
   }
 }
