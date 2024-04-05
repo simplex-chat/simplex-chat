@@ -61,7 +61,7 @@ class NetworkObserver(private val onChange: (NetworkInfo) -> Unit) {
     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
         !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING) -> NetworkInfoType.ROAMING
 
-    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkInfoType.MOBILE
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkInfoType.CELLULAR
     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkInfoType.WIFI
     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkInfoType.ETHERNET
     else -> NetworkInfoType.UNKNOWN

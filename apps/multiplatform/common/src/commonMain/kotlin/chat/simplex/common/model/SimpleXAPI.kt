@@ -5546,8 +5546,8 @@ data class NetworkInfo(
 enum class NetworkInfoType {
   @SerialName("none")
   NONE,
-  @SerialName("mobile")
-  MOBILE,
+  @SerialName("cellular")
+  CELLULAR,
   @SerialName("wifi")
   WIFI,
   @SerialName("ethernet")
