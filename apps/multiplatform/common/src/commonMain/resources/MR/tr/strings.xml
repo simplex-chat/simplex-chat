@@ -1652,7 +1652,7 @@
     <string name="v5_6_quantum_resistant_encryption_descr">Doğrudan sohbetlerde etkinleştir (BETA)!</string>
     <string name="v5_6_quantum_resistant_encryption">Kuantuma dayanıklı şifreleme</string>
     <string name="v5_6_safer_groups_descr">Yöneticiler bir üyeyi tamamen engelleyebilirler.</string>
-    <string name="v5_6_app_data_migration">Uygulama veri göçü.</string>
+    <string name="v5_6_app_data_migration">Uygulama verisi taşıma</string>
     <string name="v5_6_app_data_migration_descr">QR kodu aracılığıyla başka bir cihaza geçiş yapın.</string>
     <string name="v5_6_picture_in_picture_calls">Resim içinde resim çağrıları</string>
     <string name="v5_6_safer_groups">Daha güvenli gruplar</string>
