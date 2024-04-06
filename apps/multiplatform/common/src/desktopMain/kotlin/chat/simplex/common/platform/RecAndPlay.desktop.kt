@@ -228,3 +228,35 @@ actual object SoundPlayer: SoundPlayerInterface {
     AudioPlayer.stop()
   }
 }
+
+actual object CallSoundsPlayer: CallSoundsPlayerInterface {
+  private var player: MediaPlayer? = null
+  private var playing = false
+
+  override fun startWaitingAnswerSound(scope: CoroutineScope) {
+    val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+    tmpFile.deleteOnExit()
+    SoundPlayer::class.java.getResource("/media/call_sound_before_answer.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+    SoundPlayer.playing = true
+    scope.launch {
+      while (SoundPlayer.playing) {
+        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
+        delay(3500)
+      }
+    }
+    playing = true
+    scope.launch {
+      while (playing) {
+        player?.start()
+        delay(3500)
+      }
+    }
+  }
+
+  override fun vibrate() {}
+
+  override fun stop() {
+    playing = false
+    AudioPlayer.stop()
+  }
+}

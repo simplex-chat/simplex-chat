@@ -69,6 +69,8 @@ fun activeCallDestroyWebView() = withApi {
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
+  val call = remember { chatModel.activeCall }.value
+  val scope = rememberCoroutineScope()
   val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
   val proximityLock = remember {
     val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -76,6 +78,16 @@ actual fun ActiveCallView() {
       pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, androidAppContext.packageName + ":proximityLock")
     } else {
       null
+    }
+  }
+  val wasConnected = rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(call) {
+    if (call?.callState == CallState.Connected && !wasConnected.value) {
+      CallSoundsPlayer.vibrate()
+      wasConnected.value = true
+    }
+    if ((call?.callState ?: CallState.WaitCapabilities) >= CallState.OfferReceived) {
+      CallSoundsPlayer.stop()
     }
   }
   DisposableEffect(Unit) {
@@ -106,7 +118,15 @@ actual fun ActiveCallView() {
       }
     }
     am.registerAudioDeviceCallback(audioCallback, null)
+    if (call?.callState == CallState.WaitCapabilities || call?.callState == CallState.InvitationSent) {
+      setCallSound(call.soundSpeaker, audioViaBluetooth)
+      CallSoundsPlayer.startWaitingAnswerSound(scope)
+    }
     onDispose {
+      CallSoundsPlayer.stop()
+      if (wasConnected.value) {
+        CallSoundsPlayer.vibrate()
+      }
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
       if (proximityLock?.isHeld == true) {
@@ -122,8 +142,6 @@ actual fun ActiveCallView() {
       if (proximityLock?.isHeld == false) proximityLock.acquire()
     }
   }
-  val scope = rememberCoroutineScope()
-  val call = chatModel.activeCall.value
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
