@@ -343,7 +343,7 @@
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш SimpleX адрес</string>
     <string name="database_passphrase_and_export">База данных</string>
-    <string name="about_simplex_chat">Информация о SimpleX Chat</string>
+    <string name="about_simplex_chat">Подробнее о SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
@@ -768,7 +768,7 @@
     <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где Вы используете свой основной профиль</string>
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить членов группы</string>
-    <string name="group_info_section_title_num_members">ЧЛЕНОВ ГРУППЫ: %1$s</string>
+    <string name="group_info_section_title_num_members">УЧАСТНИКОВ ГРУППЫ: %1$s</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
@@ -1337,7 +1337,7 @@
     <string name="snd_conn_event_ratchet_sync_ok">шифрование работает для %s</string>
     <string name="snd_conn_event_ratchet_sync_required">требуется новое соглашение о шифровании для %s</string>
     <string name="abort_switch_receiving_address_desc">Изменение адреса будет прекращено. Будет использоваться старый адрес.</string>
-    <string name="abort_switch_receiving_address">Прекратить изменение адреса</string>
+    <string name="abort_switch_receiving_address">Остановить изменение адреса</string>
     <string name="receipts_section_contacts">Контакты</string>
     <string name="receipts_contacts_disable_keep_overrides">Выключить (кроме исключений)</string>
     <string name="conn_event_ratchet_sync_started">шифрование согласовывается…</string>
@@ -1359,7 +1359,7 @@
     <string name="you_can_enable_delivery_receipts_later_alert">Вы можете включить их позже в настройках Конфиденциальности.</string>
     <string name="error_aborting_address_change">Ошибка при прекращении изменения адреса</string>
     <string name="abort_switch_receiving_address_confirm">Прекратить</string>
-    <string name="abort_switch_receiving_address_question">Прекратить изменение адреса\?</string>
+    <string name="abort_switch_receiving_address_question">Остановить изменение адреса?</string>
     <string name="unfavorite_chat">Не избранный</string>
     <string name="shutdown_alert_desc">Нотификации перестанут работать, пока вы не перезапустите приложение</string>
     <string name="network_option_protocol_timeout_per_kb">Таймаут протокола на KB</string>

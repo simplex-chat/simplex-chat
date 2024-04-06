@@ -73,6 +73,7 @@ CREATE TABLE contacts(
   REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
+  custom_data BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -120,7 +121,8 @@ CREATE TABLE groups(
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
-  user_member_profile_sent_at TEXT, -- received
+  user_member_profile_sent_at TEXT,
+  custom_data BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -556,7 +558,6 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   delivery_status TEXT -- MsgDeliveryStatus
 );
 CREATE TABLE note_folders(
@@ -826,10 +827,6 @@ CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
 );
 CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
 CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
-CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(
-  connection_id,
-  agent_ack_cmd_id
-);
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
   connection_id,
   agent_msg_id

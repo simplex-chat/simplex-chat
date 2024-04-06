@@ -522,7 +522,7 @@ testNotApprovedBadRoles tmp =
         let approve = "/approve 1:privacy 1"
         superUser #> ("@SimpleX-Directory " <> approve)
         superUser <# ("SimpleX-Directory> > " <> approve)
-        superUser <## "      Group is not approved: user is not an owner."
+        superUser <## "      Group is not approved: SimpleX-Directory is not an admin."
         groupNotFound cath "privacy"
         bob ##> "/mr privacy SimpleX-Directory admin"
         bob <## "#privacy: you changed the role of SimpleX-Directory from member to admin"

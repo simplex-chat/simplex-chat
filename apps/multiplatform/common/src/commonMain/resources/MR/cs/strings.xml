@@ -379,7 +379,7 @@
     <string name="your_settings">Vaše nastavení</string>
     <string name="your_simplex_contact_address">Vaše SimpleX adresa</string>
     <string name="database_passphrase_and_export">Přístupová fráze k databázi a export</string>
-    <string name="your_chat_profiles">Vaše chatovací profily</string>
+    <string name="your_chat_profiles">Vaše chat profily</string>
     <string name="chat_with_the_founder">Zaslat otázky a nápady</string>
     <string name="smp_servers_test_server">Test serveru</string>
     <string name="enter_one_ICE_server_per_line">Servery ICE (jeden na řádek)</string>
@@ -719,7 +719,7 @@
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>
     <string name="settings_section_title_incognito">Inkognito mód</string>
-    <string name="your_chat_database">Vaše chatovací databáze</string>
+    <string name="your_chat_database">Vaše chat databáze</string>
     <string name="run_chat_section">SPUSTIT CHAT</string>
     <string name="chat_is_running">Chat je spuštěn</string>
     <string name="chat_is_stopped">Chat je zastaven</string>

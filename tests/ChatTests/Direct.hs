@@ -2997,10 +2997,15 @@ testPQEnableContactCompression =
     bob ##> "/pq @alice on"
     bob <## "alice: enable quantum resistant end-to-end encryption"
     PQSupportOn <- bob `pqSupportForCt` 2
+    threadDelay 300000
     (alice, "lrg 1", v) \:#> (bob, v')
+    threadDelay 300000
     (bob, "lrg 2", v') \:#> (alice, v')
+    threadDelay 300000
     (alice, "lrg 3", v') \:#> (bob, v')
+    threadDelay 300000
     (bob, "lrg 4", v') \:#> (alice, v')
+    threadDelay 300000
     (alice, "lrg 5", v') +:#> (bob, v')
     PQEncOff <- alice `pqForContact` 2
     PQEncOff <- bob `pqForContact` 2

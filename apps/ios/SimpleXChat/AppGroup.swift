@@ -197,7 +197,7 @@ public let confirmDBUpgradesGroupDefault = BoolDefault(defaults: groupDefaults, 
 
 public let callKitEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CALL_KIT_ENABLED)
 
-public let pqExperimentalEnabledDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)
+public let pqExperimentalEnabledDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED)
 
 public class DateDefault {
     var defaults: UserDefaults

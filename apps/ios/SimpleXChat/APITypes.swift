@@ -557,11 +557,6 @@ public enum ChatResponse: Decodable, Error {
     case contactRequestRejected(user: UserRef)
     case contactUpdated(user: UserRef, toContact: Contact)
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
-    // TODO remove events below
-    case contactsSubscribed(server: String, contactRefs: [ContactRef])
-    case contactsDisconnected(server: String, contactRefs: [ContactRef])
-    case contactSubSummary(user: UserRef, contactSubscriptions: [ContactSubStatus])
-    // TODO remove events above
     case networkStatus(networkStatus: NetworkStatus, connections: [String])
     case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
     case groupSubscribed(user: UserRef, groupInfo: GroupRef)
@@ -724,9 +719,6 @@ public enum ChatResponse: Decodable, Error {
             case .contactRequestRejected: return "contactRequestRejected"
             case .contactUpdated: return "contactUpdated"
             case .groupMemberUpdated: return "groupMemberUpdated"
-            case .contactsSubscribed: return "contactsSubscribed"
-            case .contactsDisconnected: return "contactsDisconnected"
-            case .contactSubSummary: return "contactSubSummary"
             case .networkStatus: return "networkStatus"
             case .networkStatuses: return "networkStatuses"
             case .groupSubscribed: return "groupSubscribed"
@@ -885,9 +877,6 @@ public enum ChatResponse: Decodable, Error {
             case .contactRequestRejected: return noDetails
             case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
-            case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
             case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
             case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
             case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))
@@ -1827,6 +1816,7 @@ public enum AgentErrorType: Decodable {
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
+    case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
 }
 
@@ -1878,6 +1868,8 @@ public enum XFTPErrorType: Decodable {
     case NO_FILE
     case HAS_FILE
     case FILE_IO
+    case TIMEOUT
+    case REDIRECT(redirectError: String)
     case INTERNAL
 }
 
@@ -1885,6 +1877,8 @@ public enum RCErrorType: Decodable {
     case `internal`(internalErr: String)
     case identity
     case noLocalAddress
+    case newController
+    case notDiscovered
     case tlsStartFailed
     case exception(exception: String)
     case ctrlAuth
@@ -1910,6 +1904,7 @@ public enum ProtocolTransportError: Decodable {
     case badBlock
     case largeMsg
     case badSession
+    case noServerAuth
     case handshake(handshakeErr: SMPHandshakeError)
 }
 
@@ -1917,6 +1912,7 @@ public enum SMPHandshakeError: Decodable {
     case PARSE
     case VERSION
     case IDENTITY
+    case BAD_AUTH
 }
 
 public enum SMPAgentError: Decodable {
@@ -1938,10 +1934,13 @@ public enum RemoteCtrlError: Decodable {
     case badState
     case busy
     case timeout
+    case noKnownControllers
+    case badController
     case disconnected(remoteCtrlId: Int64, reason: String)
     case badInvitation
     case badVersion(appVersion: String)
-//    case protocolError(protocolError: RemoteProtocolError)
+    case hTTP2Error(http2Error: String)
+    case protocolError
 }
 
 public struct MigrationFileLinkData: Codable {

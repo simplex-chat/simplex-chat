@@ -137,7 +137,7 @@
 "%@ and %@ connected" = "%@ ve %@ bağlandı";
 
 /* copied message info, <sender> at <time> */
-"%@ at %@:" = "%1$@, %2$@ de";
+"%@ at %@:" = "1$@, %2$@'de:";
 
 /* No comment provided by engineer. */
 "%@ connected" = "%@ bağlandı";
@@ -1606,6 +1606,9 @@
 "Error adding member(s)" = "Üye(ler) eklenirken hata oluştu";
 
 /* No comment provided by engineer. */
+"Error allowing contact PQ encryption" = "İletişim PQ şifrelemesine izin verirken hata oluştu";
+
+/* No comment provided by engineer. */
 "Error changing address" = "Adres değiştirilirken hata oluştu";
 
 /* No comment provided by engineer. */
@@ -2024,6 +2027,9 @@
 
 /* No comment provided by engineer. */
 "How to use your servers" = "Sunucularını nasıl kullanabilirsin";
+
+/* No comment provided by engineer. */
+"Hungarian interface" = "Macarca arayüz";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE sunucuları (her satıra bir tane)";
@@ -2446,7 +2452,34 @@
 "Messages from %@ will be shown!" = "%@ den gelen mesajlar gösterilecektir!";
 
 /* No comment provided by engineer. */
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Mesajlar, dosyalar ve aramalar **uçtan uca şifreleme** ile mükemmel ileri gizlilik, inkar ve izinsiz giriş kurtarma ile korunur.";
+
+/* No comment provided by engineer. */
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Mesajlar, dosyalar ve aramalar **kuantum dirençli e2e şifreleme** ile mükemmel ileri gizlilik, inkar ve zorla girme kurtarma ile korunur.";
+
+/* No comment provided by engineer. */
+"Migrate device" = "Cihazı taşıma";
+
+/* No comment provided by engineer. */
+"Migrate from another device" = "Başka bir cihazdan geçiş yapın";
+
+/* No comment provided by engineer. */
+"Migrate here" = "Buraya göç edin";
+
+/* No comment provided by engineer. */
+"Migrate to another device" = "Başka bir cihaza taşıma";
+
+/* No comment provided by engineer. */
+"Migrate to another device via QR code." = "QR kodu aracılığıyla başka bir cihaza geçiş yapın.";
+
+/* No comment provided by engineer. */
+"Migrating" = "Göçmenlik";
+
+/* No comment provided by engineer. */
 "Migrating database archive…" = "Veritabanı arşivine geçiliyor…";
+
+/* No comment provided by engineer. */
+"Migration complete" = "Geçiş tamamlandı";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Geçiş hatası:";
@@ -2705,6 +2738,9 @@
 /* No comment provided by engineer. */
 "Open group" = "Grubu aç";
 
+/* authentication reason */
+"Open migration to another device" = "Başka bir cihaza açık geçiş";
+
 /* No comment provided by engineer. */
 "Open Settings" = "Ayarları aç";
 
@@ -2718,7 +2754,13 @@
 "Opening app…" = "Uygulama açılıyor…";
 
 /* No comment provided by engineer. */
+"Or paste archive link" = "Veya arşiv bağlantısını yapıştırın";
+
+/* No comment provided by engineer. */
 "Or scan QR code" = "Veya QR kodu okut";
+
+/* No comment provided by engineer. */
+"Or securely share this file link" = "Veya bu dosya bağlantısını güvenli bir şekilde paylaşın";
 
 /* No comment provided by engineer. */
 "Or show this code" = "Veya bu kodu göster";
@@ -2772,6 +2814,9 @@
 "Permanent decryption error" = "Kalıcı şifre çözümü hatası";
 
 /* No comment provided by engineer. */
+"Picture-in-picture calls" = "Resim içinde resim aramaları";
+
+/* No comment provided by engineer. */
 "PING count" = "PING sayısı";
 
 /* No comment provided by engineer. */
@@ -2788,6 +2833,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Lütfen sizinkini ve iletişim tercihlerinizi kontrol edin.";
+
+/* No comment provided by engineer. */
+"Please confirm that network settings are correct for this device." = "Lütfen bu cihaz için ağ ayarlarının doğru olduğunu onaylayın.";
 
 /* No comment provided by engineer. */
 "Please contact developers.\nError: %@" = "Lütfen geliştiricilerle irtibata geçin.\nHata: %@";
@@ -2821,6 +2869,9 @@
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil";
+
+/* No comment provided by engineer. */
+"Post-quantum E2EE" = "Kuantum sonrası E2EE";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Son mesaj taslağını ekleriyle birlikte koru.";
@@ -2904,6 +2955,15 @@
 "Push notifications" = "Anında bildirimler";
 
 /* No comment provided by engineer. */
+"Push server" = "Push sunucu";
+
+/* chat item text */
+"quantum resistant e2e encryption" = "kuantuma dayanıklı e2e şifreleme";
+
+/* No comment provided by engineer. */
+"Quantum resistant encryption" = "Kuantum dirençli şifreleme";
+
+/* No comment provided by engineer. */
 "Rate the app" = "Uygulamayı değerlendir";
 
 /* chat item menu */
@@ -2931,7 +2991,7 @@
 "Read more in our GitHub repository." = "Daha fazlasını GitHub depomuzdan oku.";
 
 /* No comment provided by engineer. */
-"Receipts are disabled" = "Görüldü devre dışı bırakıldı";
+"Receipts are disabled" = "Makbuzlar devre dışı bırakıldı";
 
 /* No comment provided by engineer. */
 "received answer…" = "alınan cevap…";
@@ -3039,7 +3099,16 @@
 "Repeat connection request?" = "Bağlantı isteği tekrarlansın mı?";
 
 /* No comment provided by engineer. */
+"Repeat download" = "Tekrar indir";
+
+/* No comment provided by engineer. */
+"Repeat import" = "İthalatı tekrarla";
+
+/* No comment provided by engineer. */
 "Repeat join request?" = "Katılma isteği tekrarlansın mı?";
+
+/* No comment provided by engineer. */
+"Repeat upload" = "Yüklemeyi tekrarla";
 
 /* chat item action */
 "Reply" = "Yanıtla";
@@ -3097,6 +3166,9 @@
 
 /* No comment provided by engineer. */
 "Run chat" = "Sohbeti çalıştır";
+
+/* No comment provided by engineer. */
+"Safer groups" = "Daha güvenli gruplar";
 
 /* chat item action */
 "Save" = "Kaydet";
@@ -3267,7 +3339,7 @@
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Görüldü bilgisi, tüm görünür sohbet profillerindeki tüm kişiler için etkinleştirilecektir.";
 
 /* No comment provided by engineer. */
-"Sending delivery receipts will be enabled for all contacts." = "Görüldü bilgisi bütün kişileri için etkinleştirilecektir.";
+"Sending delivery receipts will be enabled for all contacts." = "Teslimat makbuzlarının gönderilmesi tüm kişiler için etkinleştirilecektir.";
 
 /* No comment provided by engineer. */
 "Sending file will be stopped." = "Dosya gönderimi durdurulacaktır.";
@@ -3339,6 +3411,9 @@
 "Set passcode" = "Şifre ayarla";
 
 /* No comment provided by engineer. */
+"Set passphrase" = "Parolayı ayarla";
+
+/* No comment provided by engineer. */
 "Set passphrase to export" = "Dışa aktarmak için parola ayarla";
 
 /* No comment provided by engineer. */
@@ -3382,6 +3457,9 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Ön gösterimi göser";
+
+/* No comment provided by engineer. */
+"Show QR code" = "QR kodunu göster";
 
 /* No comment provided by engineer. */
 "Show:" = "Göster:";
@@ -3443,6 +3521,9 @@
 /* notification title */
 "Somebody" = "Biri";
 
+/* chat item text */
+"standard end-to-end encryption" = "standart uçtan uca şifreleme";
+
 /* No comment provided by engineer. */
 "Start chat" = "Sohbeti başlat";
 
@@ -3457,6 +3538,9 @@
 
 /* No comment provided by engineer. */
 "Stop" = "Dur";
+
+/* No comment provided by engineer. */
+"Stop chat" = "Sohbeti kes";
 
 /* No comment provided by engineer. */
 "Stop chat to enable database actions" = "Veritabanı eylemlerini etkinleştirmek için sohbeti durdur";
@@ -3484,6 +3568,9 @@
 
 /* authentication reason */
 "Stop SimpleX" = "SimpleX'i durdur";
+
+/* No comment provided by engineer. */
+"Stopping chat" = "Sohbeti durdurma";
 
 /* No comment provided by engineer. */
 "strike" = "çizik";
@@ -3531,7 +3618,7 @@
 "TCP connection timeout" = "TCP bağlantı zaman aşımı";
 
 /* No comment provided by engineer. */
-"TCP_KEEPCNT" = "TCP_CNTYİTUT";
+"TCP_KEEPCNT" = "TCP_KEEPCNT";
 
 /* No comment provided by engineer. */
 "TCP_KEEPIDLE" = "TCP_BOŞTAKAL";
@@ -3634,6 +3721,12 @@
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Bu işlem geri alınamaz - profiliniz, kişileriniz, mesajlarınız ve dosyalarınız geri döndürülemez şekilde kaybolacaktır.";
+
+/* E2EE info chat item */
+"This chat is protected by end-to-end encryption." = "Bu sohbet uçtan uca şifreleme ile korunmaktadır.";
+
+/* E2EE info chat item */
+"This chat is protected by quantum resistant end-to-end encryption." = "Bu sohbet kuantum dirençli uçtan uca şifreleme ile korunmaktadır.";
 
 /* notification title */
 "this contact" = "Bu kişi";
@@ -3827,8 +3920,14 @@
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Yükselt ve sohbeti aç";
 
+/* No comment provided by engineer. */
+"Upload failed" = "Yükleme başarısız";
+
 /* server test step */
 "Upload file" = "Dosya yükle";
+
+/* No comment provided by engineer. */
+"Uploading archive" = "Arşiv yükleme";
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = ".onion ana bilgisayarlarını kullan";
@@ -3861,6 +3960,9 @@
 "Use SimpleX Chat servers?" = "SimpleX Chat sunucuları kullanılsın mı?";
 
 /* No comment provided by engineer. */
+"Use the app while in the call." = "Görüşme sırasında uygulamayı kullanın.";
+
+/* No comment provided by engineer. */
 "User profile" = "Kullanıcı profili";
 
 /* No comment provided by engineer. */
@@ -3886,6 +3988,12 @@
 
 /* No comment provided by engineer. */
 "Verify connections" = "Bağlantıları doğrula";
+
+/* No comment provided by engineer. */
+"Verify database passphrase" = "Veritabanı parolasını doğrulayın";
+
+/* No comment provided by engineer. */
+"Verify passphrase" = "Parolayı doğrula";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Güvenlik kodunu doğrula";
@@ -3966,6 +4074,9 @@
 "wants to connect to you!" = "bağlanmak istiyor!";
 
 /* No comment provided by engineer. */
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Uyarı: birden fazla cihazda sohbet başlatmak desteklenmez ve mesaj teslim hatalarına neden olur";
+
+/* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Uyarı: Bazı verileri kaybedebilirsin!";
 
 /* No comment provided by engineer. */
@@ -3979,6 +4090,9 @@
 
 /* No comment provided by engineer. */
 "Welcome message" = "Karşılama mesajı";
+
+/* No comment provided by engineer. */
+"Welcome message is too long" = "Hoş geldiniz mesajı çok uzun";
 
 /* No comment provided by engineer. */
 "What's new" = "Neler yeni";
@@ -4015,6 +4129,9 @@
 
 /* No comment provided by engineer. */
 "You" = "Sen";
+
+/* No comment provided by engineer. */
+"You **must not** use the same database on two devices." = "Aynı veritabanını iki cihazda **kullanmamalısınız**.";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "Bağlantıyı onayladın";
@@ -4075,6 +4192,9 @@
 
 /* No comment provided by engineer. */
 "You can enable them later via app Privacy & Security settings." = "Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.";
+
+/* No comment provided by engineer. */
+"You can give another try." = "Bir kez daha deneyebilirsiniz.";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Bir kullanıcı profilini gizleyebilir veya sessize alabilirsiniz - sağa kaydırın.";

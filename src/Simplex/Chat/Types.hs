@@ -174,9 +174,24 @@ data Contact = Contact
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
-    contactGrpInvSent :: Bool
+    contactGrpInvSent :: Bool,
+    customData :: Maybe CustomData
   }
   deriving (Eq, Show)
+
+newtype CustomData = CustomData J.Object
+  deriving (Eq, Show)
+
+instance ToJSON CustomData where
+  toJSON (CustomData v) = toJSON v
+  toEncoding (CustomData v) = toEncoding v
+
+instance FromJSON CustomData where
+  parseJSON = J.withObject "CustomData" (pure . CustomData)
+
+instance ToField CustomData where toField (CustomData v) = toField $ J.encode v
+
+instance FromField CustomData where fromField = fromBlobField_ J.eitherDecodeStrict
 
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
@@ -356,7 +371,8 @@ data GroupInfo = GroupInfo
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    userMemberProfileSentAt :: Maybe UTCTime
+    userMemberProfileSentAt :: Maybe UTCTime,
+    customData :: Maybe CustomData
   }
   deriving (Eq, Show)
 
@@ -1551,7 +1567,7 @@ data CommandFunction
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
-  | CFAckMessage
+  | CFAckMessage -- not used
   | CFDeleteConn -- not used
   deriving (Eq, Show)
 
