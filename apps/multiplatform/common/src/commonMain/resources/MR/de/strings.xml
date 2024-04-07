@@ -1430,8 +1430,8 @@
     <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
     <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
     <string name="connect_via_link_incognito">Inkognito verbinden</string>
-    <string name="connect_use_current_profile">Nutzen Sie das aktuelle Profil</string>
-    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil verwenden</string>
+    <string name="connect_use_current_profile">Das aktuelle Profil nutzen</string>
+    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil nutzen</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.]]></string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
     <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
