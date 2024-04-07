@@ -5927,7 +5927,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve" approved="no">
         <source>Use new incognito profile</source>
-        <target state="translated">Ein neues Inkognito-Profil verwenden</target>
+        <target state="translated">Ein neues Inkognito-Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
