@@ -3,7 +3,7 @@ title: Dostęp do plików w aplikacji Androidowej
 revision: 07.02.2023
 ---
 
-| 07.02.2023 | EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md), [PL](/docs/lang/pl/ANDROID.md) |
+| 07.02.2023 | PL, [EN](/docs/ANDROID.md), [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md) |
 
 # Dostęp do plików w aplikacji Androidowej
 

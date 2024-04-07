@@ -3,7 +3,7 @@ title: Aplikacja konsolowa
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
+| Updated 31.01.2023 | Języki: PL, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md) |
 
 # Terminalowa (konsolowa) aplikacja SimpleX Chat dla systemów Linux/MacOS/Windows
 

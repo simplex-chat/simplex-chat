@@ -4,7 +4,7 @@
 [![Dołącz na Reddicie](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 <a rel="me" href="https://mastodon.social/@simplex">![Śledź na Mastodonie](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)</a>
 
-| 30/03/2023 | EN, [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md), [PL](/docs/lang/pl/README.md) |
+| 30/03/2023 | PL, [EN](/README.md), [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
