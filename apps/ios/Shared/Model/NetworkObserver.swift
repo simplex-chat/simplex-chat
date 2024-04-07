@@ -11,80 +11,61 @@ import Network
 import SimpleXChat
 
 class NetworkObserver {
-    let onChange: (NetworkInfo) -> Void
-    private var prevInfo: NetworkInfo? = nil
-    private let queue: DispatchQueue = DispatchQueue(label: "NetworkObserver")
+    static let shared = NetworkObserver()
+    private let queue: DispatchQueue = DispatchQueue(label: "chat.simplex.app.NetworkObserver")
+    private var prevInfo: UserNetworkInfo? = nil
+    private var monitor: NWPathMonitor?
+    private let monitorLock: DispatchQueue = DispatchQueue(label: "chat.simplex.app.monitorLock")
 
-    init(onChange: @escaping (NetworkInfo) -> Void) {
-        self.onChange = onChange
-    }
-
-    private let monitor: NWPathMonitor = NWPathMonitor()
-
-    private func start() {
-        monitor.pathUpdateHandler = { [weak self] path in
-            self?.networkPathChanged(path: path)
+    func restartMonitor() {
+        monitorLock.sync {
+            monitor?.cancel()
+            let mon = NWPathMonitor()
+            mon.pathUpdateHandler = { [weak self] path in
+                self?.networkPathChanged(path: path)
+            }
+            mon.start(queue: queue)
+            monitor = mon
         }
-        monitor.start(queue: queue)
-    }
-
-    private func stop() {
-        monitor.cancel()
     }
 
     private func networkPathChanged(path: NWPath) {
-        let info = NetworkInfo(
+        let info = UserNetworkInfo(
+            networkType: networkTypeFromPath(path),
             online: path.status == .satisfied,
-            type: networkTypeFromPath(path: path),
             metered: path.isExpensive
         )
         if (prevInfo != info) {
             prevInfo = info
-            onChange(info)
+            setNetworkInfo(info)
         }
     }
 
-    private func networkTypeFromPath(path: NWPath) -> NetworkInfoType {
-        return if path.usesInterfaceType(.cellular) {
-            .cellular
+    private func networkTypeFromPath(_ path: NWPath) -> UserNetworkType {
+        if path.usesInterfaceType(.wiredEthernet) {
+            .ethernet
         } else if path.usesInterfaceType(.wifi) {
             .wifi
-        } else if path.usesInterfaceType(.wiredEthernet) {
-            .ethernet
-        } else {
+        } else if path.usesInterfaceType(.cellular) {
+            .cellular
+        } else if path.usesInterfaceType(.other) {
             .other
+        } else {
+            .none
         }
     }
 
     private static var networkObserver: NetworkObserver? = nil
 
-    static func reinitNetworkObserver() {
-        networkObserver?.stop()
-        // When having both mobile and Wi-Fi networks enabled with Wi-Fi being active, then disabling Wi-Fi, network reports its offline (which is true)
-        // but since it will be online after switching to mobile, there is no need to inform backend about such temporary change.
-        // But if it will not be online after some seconds, report it and apply required measures
-        var noNetworkTask: Task = Task {}
-        let observer = NetworkObserver { info in
-            logger.debug("Network changed: \(String(describing: info))")
-            noNetworkTask.cancel()
-            if (info.online) {
-                if hasChatCtrl() {
-                    _ = apiSetNetworkInfo(info)
-                }
-            } else {
-                noNetworkTask = Task {
-                    do {
-                        try await Task.sleep(nanoseconds: 3000_000000)
-                        if hasChatCtrl() {
-                            _ = apiSetNetworkInfo(info)
-                        }
-                    } catch {
-                        logger.debug("Interrupted sleep before sending network info")
-                    }
-                }
+    private func setNetworkInfo(_ info: UserNetworkInfo) {
+        logger.debug("setNetworkInfo Network changed: \(String(describing: info))")
+        if !hasChatCtrl() { return }
+        self.monitorLock.sync {
+            do {
+                try apiSetNetworkInfo(info)
+            } catch let err {
+                logger.error("setNetworkInfo error: \(responseError(err))")
             }
         }
-        observer.start()
-        networkObserver = observer
     }
 }

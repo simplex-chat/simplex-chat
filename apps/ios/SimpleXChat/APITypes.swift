@@ -77,7 +77,7 @@ public enum ChatCommand {
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
-    case apiSetNetworkInfo(networkInfo: NetworkInfo)
+    case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
     case reconnectAllServers
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
@@ -2090,23 +2090,22 @@ public enum AppSettingsLockScreenCalls: String, Codable {
     case accept
 }
 
-public struct NetworkInfo: Codable, Equatable {
+public struct UserNetworkInfo: Codable, Equatable {
+    public let networkType: UserNetworkType
     public let online: Bool
-    public let type: NetworkInfoType
     public let metered: Bool
 
-    public init(online: Bool, type: NetworkInfoType, metered: Bool) {
+    public init(networkType: UserNetworkType, online: Bool, metered: Bool) {
+        self.networkType = networkType
         self.online = online
-        self.type = type
         self.metered = metered
     }
 }
 
-public enum NetworkInfoType: String, Codable {
+public enum UserNetworkType: String, Codable {
     case none
     case cellular
     case wifi
     case ethernet
-    case roaming
     case other
 }
