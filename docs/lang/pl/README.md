@@ -14,13 +14,13 @@
 
 ## Witamy w SimpleX Chat!
 
-1. 📲 [Zainstaluj aplikację](#install-the-app).
-2. ↔️ [Połącz się z naszym zespołem](#connect-to-the-team), [dołącz do grup użytkowników](#join-user-groups) oraz [śledź nasze aktualizacje](#follow-our-updates).
-3. 🤝 [Wykonaj prywatne połączenie](#make-a-private-connection) ze znajomym.
-4. 🔤 [Pomóż w tłumaczeniu SimpleX Chat](#help-translating-simplex-chat).
-5. ⚡️ [Kontrybuuj](#contribute) i [wesprzyj nas dotacjami](#help-us-with-donations).
+1. 📲 [Zainstaluj aplikację](#zainstaluj-aplikację).
+2. ↔️ [Połącz się z naszym zespołem](#połącz-się-z-naszym-zespołem), [dołącz do grup użytkowników](#dołącz-do-grup-użytkowników) oraz [śledź nasze aktualizacje](#śledź-nasze-aktualizacje).
+3. 🤝 [Wykonaj prywatne połączenie](#wykonaj-prywatne-połączenie) ze znajomym.
+4. 🔤 [Pomóż w tłumaczeniu SimpleX Chat](#pomóż-nam-przetłumaczyć-simplex-chat).
+5. ⚡️ [Kontrybuuj](#kontrybuuj) i [wesprzyj nas dotacjami](#wesprzyj-nas-dotacjami).
 
-[Dowiedz się więcej na temat SimpleX Chat](#contents).
+[Dowiedz się więcej na temat SimpleX Chat](#informacje).
 
 ## Zainstaluj aplikację
 
@@ -110,7 +110,7 @@ Po wykonaniu połączenia możesz [zweryfikować kod bezpieczeństwa połączeni
 
 Przeczytaj o funkcjach i ustawieniach aplikacji w nowym [Przewodniku użytkownika](./docs/guide/README.md).
 
-## Pomóż przetłumaczyć SimpleX Chat
+## Pomóż nam przetłumaczyć SimpleX Chat
 
 Dzięki naszym użytkownikom i [Weblate](https://hosted.weblate.org/engage/simplex-chat/), aplikacje SimpleX Chat, strona internetowa i dokumenty są tłumaczone na wiele innych języków.
 
@@ -181,20 +181,20 @@ Twórca SimpleX Chat.
 
 ## Informacje
 
-- [Dlaczego prywatność ma znaczenie](#why-privacy-matters)
-- [Podejście SimpleXa do problemu prywatności i bezpieczeństwa](#simplex-approach-to-privacy-and-security)
-  - [Kompletna prywatność](#complete-privacy-of-your-identity-profile-contacts-and-metadata)
-  - [Ochrona przed spamem i nadużyciami](#the-best-protection-against-spam-and-abuse)
-  - [Pełna kontrola i bezpieczeństwo Twoich danych](#complete-ownership-control-and-security-of-your-data)
-  - [Użytkownicy są właścicielami sieci SimpleX](#users-own-simplex-network)
-- [Często zadawane pytania](#frequently-asked-questions)
-- [Newsy i aktualizacje](#news-and-updates)
-- [Szybka instalacja terminalowej wersji aplikacji](#zap-quick-installation-of-a-terminal-app)
-- [Budowa Platformy SimpleX](#simplex-platform-design)
-- [Prywatność i bezpieczeństwo: szczegóły techniczne i ograniczenia](#privacy-and-security-technical-details-and-limitations)
-- [Dla deweloperów](#for-developers)
-- [Roadmapa](#roadmap)
-- [Ostrzeżenia, Kontakt w sprawie bezpieczeństwa, Licencja](#disclaimers)
+- [Dlaczego prywatność ma znaczenie](#dlaczego-prywatność-ma-znaczenie)
+- [Podejście SimpleXa do problemu prywatności i bezpieczeństwa](#podejście-simplexa-do-problemu-prywatności-i-bezpieczeństwa)
+  - [Kompletna prywatność Twojej tożsamości, profilu, kontaktów i metadanych.](#kompletna-prywatność-twojej-tożsamości-profilu-kontaktów-i-metadanych)
+  - [Najlepsza ochrona przed spamem i nadużyciami](#najlepsza-ochrona-przed-spamem-i-nadużyciami)
+  - [Pełna kontrola i bezpieczeństwo Twoich danych](#pełna-kontrola-i-bezpieczeństwo-twoich-danych)
+  - [Użytkownicy są właścicielami sieci SimpleX](#użytkownicy-są-właścicielami-sieci-simplex)
+- [Często zadawane pytania](#często-zadawane-pytania)
+- [Newsy i aktualizacje](#newsy-i-aktualizacje)
+- [Szybka instalacja terminalowej wersji aplikacji](#zap-szybka-instalacja-terminalowej-wersji-aplikacji)
+- [Budowa Platformy SimpleX](#budowa-platformy-simplex)
+- [Prywatność i bezpieczeństwo: szczegóły techniczne i ograniczenia](#prywatność-i-bezpieczeństwo-szczegóły-techniczne-i-ograniczenia)
+- [Dla deweloperów](#dla-deweloperów)
+- [Roadmapa](#roadmapa)
+- [Ostrzeżenia, Kontakt w sprawie bezpieczeństwa, Licencja](#ostrzeżenia)
 
 ## Dlaczego prywatność ma znaczenie
 
@@ -222,7 +222,7 @@ SimpleX przechowuje wszystkie dane użytkownika na urządzeniach klienckich, wia
 
 Możesz używać SimpleX na własnych serwerach i nadal komunikować się z ludźmi za pomocą serwerów, które są wstępnie skonfigurowane w aplikacjach lub z dowolnymi innymi serwerami SimpleX. [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#users-own-simplex-network).
 
-## Frequently asked questions
+## Często zadawane pytania
 
 1. _W jaki sposób SimpleX może dostarczać wiadomości bez jakichkolwiek identyfikatorów użytkownika?_ Zobacz [ogłoszenie wydania v2](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) wyjaśniające jak SimpleX działa.
 
