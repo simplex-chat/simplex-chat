@@ -86,9 +86,6 @@ actual fun ActiveCallView() {
       CallSoundsPlayer.vibrate()
       wasConnected.value = true
     }
-    if ((call?.callState ?: CallState.WaitCapabilities) >= CallState.OfferReceived) {
-      CallSoundsPlayer.stop()
-    }
   }
   DisposableEffect(Unit) {
     val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -160,6 +157,7 @@ actual fun ActiveCallView() {
           is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
             updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
+            CallSoundsPlayer.stop()
           }
           is WCallResponse.Ice -> withBGApi {
             chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
