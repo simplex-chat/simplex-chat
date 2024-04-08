@@ -21,6 +21,7 @@ class NetworkObserver {
   private var noNetworkJob = Job() as Job
   private val networkCallback = object: ConnectivityManager.NetworkCallback() {
     override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) = networkCapabilitiesChanged(networkCapabilities)
+    override fun onLost(network: Network) = networkLost()
   }
   private val connectivityManager: ConnectivityManager? = androidAppContext.getSystemService()
 
@@ -40,6 +41,12 @@ class NetworkObserver {
     } catch (e: Exception) {
       // do nothing
     }
+    val initialCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+    if (initialCapabilities != null) {
+      networkCapabilitiesChanged(initialCapabilities)
+    } else {
+      networkLost()
+    }
     try {
       connectivityManager.registerDefaultNetworkCallback(networkCallback)
     } catch (e: Exception) {
@@ -57,6 +64,13 @@ class NetworkObserver {
       prevInfo = info
       setNetworkInfo(info)
     }
+  }
+
+  private fun networkLost() {
+    Log.d(TAG, "Network changed: lost")
+    val none = UserNetworkInfo(networkType = UserNetworkType.NONE, false)
+    prevInfo = none
+    setNetworkInfo(none)
   }
 
   private fun setNetworkInfo(info: UserNetworkInfo) {
