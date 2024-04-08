@@ -877,9 +877,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo) {
+  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
     sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
-  }
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
@@ -5553,5 +5552,14 @@ enum class UserNetworkType {
   @SerialName("ethernet")
   ETHERNET,
   @SerialName("other")
-  OTHER
+  OTHER;
+
+  val text: String
+    get() = when (this) {
+      NONE -> generalGetString(MR.strings.network_type_no_network_connection)
+      CELLULAR -> generalGetString(MR.strings.network_type_cellular)
+      WIFI -> generalGetString(MR.strings.network_type_network_wifi)
+      ETHERNET -> generalGetString(MR.strings.network_type_ethernet)
+      OTHER -> generalGetString(MR.strings.network_type_other)
+    }
 }

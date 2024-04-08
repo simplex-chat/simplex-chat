@@ -6,8 +6,7 @@ import androidx.core.content.getSystemService
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.UserNetworkInfo
 import chat.simplex.common.model.UserNetworkType
-import chat.simplex.common.platform.TAG
-import chat.simplex.common.platform.androidAppContext
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withBGApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -79,14 +78,18 @@ class NetworkObserver {
     if (info.online) {
       withBGApi {
         if (controller.hasChatCtrl()) {
-          controller.apiSetNetworkInfo(info)
+          if (controller.apiSetNetworkInfo(info)) {
+            chatModel.networkInfo.value = info
+          }
         }
       }
     } else {
       noNetworkJob = withBGApi {
         delay(3000)
         if (controller.hasChatCtrl()) {
-          controller.apiSetNetworkInfo(info)
+          if (controller.apiSetNetworkInfo(info)) {
+            chatModel.networkInfo.value = info
+          }
         }
       }
     }
