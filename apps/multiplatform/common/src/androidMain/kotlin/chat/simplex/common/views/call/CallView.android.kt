@@ -83,11 +83,8 @@ actual fun ActiveCallView() {
   val wasConnected = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(call) {
     if (call?.callState == CallState.Connected && !wasConnected.value) {
-      CallSoundsPlayer.vibrate()
+      SoundPlayer.vibrate()
       wasConnected.value = true
-    }
-    if ((call?.callState ?: CallState.WaitCapabilities) >= CallState.OfferReceived) {
-      CallSoundsPlayer.stop()
     }
   }
   DisposableEffect(Unit) {
@@ -118,14 +115,9 @@ actual fun ActiveCallView() {
       }
     }
     am.registerAudioDeviceCallback(audioCallback, null)
-    if (call?.callState == CallState.WaitCapabilities || call?.callState == CallState.InvitationSent) {
-      setCallSound(call.soundSpeaker, audioViaBluetooth)
-      CallSoundsPlayer.startWaitingAnswerSound(scope)
-    }
     onDispose {
-      CallSoundsPlayer.stop()
       if (wasConnected.value) {
-        CallSoundsPlayer.vibrate()
+        SoundPlayer.vibrate()
       }
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
@@ -154,6 +146,7 @@ actual fun ActiveCallView() {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
+            setCallSound(call.soundSpeaker, audioViaBluetooth)
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)

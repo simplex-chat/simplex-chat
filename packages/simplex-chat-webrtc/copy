@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # it can be tested in the browser from dist folder
-mkdir -p dist/{android,desktop,desktop/images} 2>/dev/null
+mkdir -p dist/{android,desktop,desktop/images,audio} 2>/dev/null
 cp ./src/android/call.html ./dist/android/call.html
 cp ./src/android/style.css ./dist/android/style.css
 cp ./src/desktop/call.html ./dist/desktop/call.html
@@ -10,9 +10,10 @@ cp ./src/desktop/images/* ./dist/desktop/images/
 cp ./node_modules/lz-string/libs/lz-string.min.js ./dist/lz-string.min.js
 cp ./src/webcall.html ./dist/webcall.html
 cp ./src/ui.js ./dist/ui.js
+cp ./src/audio/call_sound_before_answer.mp3 ./dist/audio/call_sound_before_answer.mp3
 
 # copy to android and desktop apps
-mkdir -p ../../apps/multiplatform/common/src/commonMain/resources/assets/www/{android,desktop,desktop/images} 2>/dev/null
+mkdir -p ../../apps/multiplatform/common/src/commonMain/resources/assets/www/{android,desktop,desktop/images,audio} 2>/dev/null
 cp ./src/android/call.html ../../apps/multiplatform/common/src/commonMain/resources/assets/www/android/call.html
 cp ./src/android/style.css ../../apps/multiplatform/common/src/commonMain/resources/assets/www/android/style.css
 cp ./src/desktop/call.html ../../apps/multiplatform/common/src/commonMain/resources/assets/www/desktop/call.html
@@ -21,4 +22,5 @@ cp ./src/desktop/images/* ../../apps/multiplatform/common/src/commonMain/resourc
 
 cp ./dist/desktop/ui.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/desktop/ui.js
 cp ./dist/call.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/call.js
+cp ./dist/audio/call_sound_before_answer.mp3 ../../apps/multiplatform/common/src/commonMain/resources/assets/www/audio/call_sound_before_answer.mp3
 cp ./node_modules/lz-string/libs/lz-string.min.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/lz-string.min.js

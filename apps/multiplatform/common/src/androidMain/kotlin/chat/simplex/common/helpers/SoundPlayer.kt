@@ -36,37 +36,6 @@ object SoundPlayer: SoundPlayerInterface {
     }
   }
 
-  override fun stop() {
-    playing = false
-    player?.stop()
-  }
-}
-
-object CallSoundsPlayer: CallSoundsPlayerInterface {
-  private var player: MediaPlayer? = null
-  private var playing = false
-
-  override fun startWaitingAnswerSound(scope: CoroutineScope) {
-    player?.reset()
-    player = MediaPlayer().apply {
-      setAudioAttributes(
-        AudioAttributes.Builder()
-          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-          .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING)
-          .build()
-      )
-      setDataSource(androidAppContext, Uri.parse("android.resource://" + androidAppContext.packageName + "/" + R.raw.call_sound_before_answer))
-      prepare()
-    }
-    playing = true
-    scope.launch {
-      while (playing) {
-        player?.start()
-        delay(2000)
-      }
-    }
-  }
-
   override fun vibrate() {
     val vibrator = ContextCompat.getSystemService(androidAppContext, Vibrator::class.java)
     val effect = VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)

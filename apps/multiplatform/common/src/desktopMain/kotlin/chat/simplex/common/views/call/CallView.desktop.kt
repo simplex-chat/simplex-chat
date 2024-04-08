@@ -203,7 +203,7 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
     override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
 
     fun resourcesToResponse(path: String): Response {
-      val uri = Class.forName("chat.simplex.common.AppKt").getResource("/assets/www$path") ?: return resourceNotFound
+      val uri = Class.forName("chat.simplex.common.AppKt").getResource("/assets/www${path.replace("/simplex", "")}") ?: return resourceNotFound
       val response = newFixedLengthResponse(
         Status.OK, getMimeTypeForFile(uri.file),
         uri.openStream().readBytes()

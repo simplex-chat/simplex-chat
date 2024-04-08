@@ -36,15 +36,8 @@ expect object AudioPlayer: AudioPlayerInterface
 
 interface SoundPlayerInterface {
   fun start(scope: CoroutineScope, sound: Boolean)
-  fun stop()
-}
-
-interface CallSoundsPlayerInterface {
-  fun startWaitingAnswerSound(scope: CoroutineScope)
-  fun stop()
   fun vibrate()
+  fun stop()
 }
 
 expect object SoundPlayer: SoundPlayerInterface
-
-expect object CallSoundsPlayer: CallSoundsPlayerInterface

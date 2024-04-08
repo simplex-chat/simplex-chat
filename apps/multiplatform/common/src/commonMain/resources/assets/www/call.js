@@ -34,6 +34,17 @@ var useWorker = false;
 var isDesktop = false;
 var localizedState = "";
 var localizedDescription = "";
+let callSoundBeforeAnswer = new Audio("../audio/call_sound_before_answer.mp3");
+var callSoundBeforeAnswerStopped = false;
+callSoundBeforeAnswer.addEventListener("ended", function () {
+    setTimeout(() => {
+        if (!callSoundBeforeAnswerStopped) {
+            this.currentTime = 0;
+            this.play();
+        }
+        callSoundBeforeAnswerStopped = false;
+    }, 1500);
+});
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stun:stun.simplex.im:443"] },
@@ -210,6 +221,9 @@ const processCommand = (function () {
                     if (command.media)
                         await getLocalMediaStream(command.media, VideoCamera.User);
                     const encryption = supportsInsertableStreams(useWorker);
+                    setTimeout(() => {
+                        callSoundBeforeAnswer.play();
+                    }, 1500);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
                 case "start": {
@@ -261,6 +275,8 @@ const processCommand = (function () {
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
                         addIceCandidates(pc, remoteIceCandidates);
+                        callSoundBeforeAnswerStopped = true;
+                        callSoundBeforeAnswer.pause();
                         // same as command for caller to use
                         resp = {
                             type: "answer",
