@@ -418,6 +418,9 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
+data ForwardedMsg = ForwardedMsg {}
+  deriving (Eq, Show)
+
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCUnknown_ Text
   deriving (Eq)
 
@@ -450,14 +453,14 @@ instance ToJSON MsgContentTag where
 data MsgContainer
   = MCSimple ExtMsgContent
   | MCQuote QuotedMsg ExtMsgContent
-  | MCForward ExtMsgContent
+  | MCForward (Maybe ForwardedMsg) ExtMsgContent
   deriving (Eq, Show)
 
 mcExtMsgContent :: MsgContainer -> ExtMsgContent
 mcExtMsgContent = \case
   MCSimple c -> c
   MCQuote _ c -> c
-  MCForward c -> c
+  MCForward _ c -> c
 
 isQuote :: MsgContainer -> Bool
 isQuote = \case
@@ -528,6 +531,8 @@ msgContentTag = \case
 data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
   deriving (Eq, Show)
 
+$(JQ.deriveJSON defaultJSON ''ForwardedMsg)
+
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
@@ -587,7 +592,9 @@ markCompressedBatch = B.cons 'X'
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    -- TODO v6.0 (?) deprecate bool encoding for forward
+    <|> (v .: "forward" >>= \f -> (if f then MCForward Nothing else MCSimple) <$> mc)
+    <|> (MCForward <$> v .: "forward" <*> mc)
     <|> MCSimple <$> mc
   where
     mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
@@ -633,7 +640,8 @@ unknownMsgType = "unknown message type"
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
   MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
-  MCForward mc -> o $ ("forward" .= True) : msgContent mc
+  -- TODO v6.0 (?) encode ForwardedMsg object
+  MCForward _fm mc -> o $ ("forward" .= True) : msgContent mc
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
