@@ -72,13 +72,7 @@ class NetworkObserver {
       noNetworkJob = withBGApi {
         delay(3000)
         if (controller.hasChatCtrl()) {
-          val networkNone = UserNetworkInfo(
-            networkType = UserNetworkType.NONE,
-            online = false
-          )
-          prevInfo = networkNone
-          Log.d(TAG, "Network is off: $networkNone")
-          controller.apiSetNetworkInfo(networkNone)
+          controller.apiSetNetworkInfo(info)
         }
       }
     }
