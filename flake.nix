@@ -155,6 +155,7 @@
               }).simplex-chat.components.exes.simplex-chat;
               # WINDOWS x86_64-mingwW64
               "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.openssl = true;
@@ -187,6 +188,7 @@
                 '';
               };
               "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv' rec {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.openssl = true;
