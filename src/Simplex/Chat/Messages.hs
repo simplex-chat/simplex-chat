@@ -1006,7 +1006,7 @@ data CIForwardedFrom
 
 cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
 cmForwardedFrom = \case
-  ACME _ (XMsgNew (MCForward _ _)) -> Just CIFFUnknown
+  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
   _ -> Nothing
 
 data CIForwardedFromTag
