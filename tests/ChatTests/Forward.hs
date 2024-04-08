@@ -22,6 +22,7 @@ chatForwardTests = do
     it "from notes to group" testForwardNotesToGroup
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
     it "preserve original forward info" testForwardPreserveInfo
+    it "quoted message" testForwardQuotedMsg
   describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
     it "with relative paths: from contact to contact" testForwardFileContactToContact
@@ -253,6 +254,36 @@ testForwardPreserveInfo =
       alice <## "      hey"
       dan <# "#team alice> -> forwarded"
       dan <## "      hey"
+
+testForwardQuotedMsg :: HasCallStack => FilePath -> IO ()
+testForwardQuotedMsg =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob `send` "> @alice (hi) hey"
+      bob <# "@alice > hi"
+      bob <## "      hey"
+      alice <# "bob> > hi"
+      alice <## "      hey"
+
+      alice `send` "> @bob -> @cath hey"
+      alice <# "@cath -> from bob (contact id: 2)"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
+
+      -- read chat
+      alice ##> "/tail @cath 1"
+      alice <# "@cath -> from bob (contact id: 2)"
+      alice <## "      hey"
+
+      cath ##> "/tail @alice 1"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
 
 testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
 testForwardFileNoFilesFolder =
