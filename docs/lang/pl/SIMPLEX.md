@@ -36,7 +36,7 @@ Każdy powinien zwracać uwagę na prywatność i bezpieczeństwo swojej komunik
 
 Do dostarczania wiadomości zamiast identyfikatorów użytkowników, których używają wszystkie inne platformy, SimpleX wykorzystuje adresy jednokierunkowych (simpleksowych) kolejek wiadomości. Korzystanie z SimpleX jest jak posiadanie innego adresu e-mail lub numeru telefonu dla każdego kontaktu, ale bez kłopotów z zarządzaniem tymi wszystkimi adresami. W niedalekiej przyszłości aplikacje SimpleX będą również automatycznie zmieniać kolejki wiadomości, przenosząc konwersacje z jednego serwera na drugi, aby zapewnić użytkownikom jeszcze lepszą prywatność.
 
-Takie podejście chroni prywatność tego, z kim się komunikujesz, ukrywając to przed serwerami platformy SimpleX i wszelkimi obserwatorami. Prywatność komunikacji można dodatkowo zwiększyć, konfigurując dostęp do sieci w taki sposób, by łączyć się z serwerami SimpleX za pośrednictwem sieci transportowej typu overlay, np. sieci Tor.
+Takie podejście chroni prywatność tego, z kim się komunikujesz, ukrywając jego tożsamość oraz fakt komunikacji przed serwerami platformy SimpleX i wszelkimi obserwatorami. Prywatność komunikacji można dodatkowo zwiększyć, konfigurując dostęp do sieci w taki sposób, by łączyć się z serwerami SimpleX za pośrednictwem sieci transportowej typu overlay, np. sieci Tor.
 
 ### Najlepsza ochrona przed spamem i nadużyciami
 

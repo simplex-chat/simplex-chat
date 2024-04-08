@@ -208,7 +208,7 @@ Używanie szyfrowanego komunikatora end-to-end nie jest wystarczające. Powinni�
 
 ### Kompletna prywatność Twojej tożsamości, profilu, kontaktów i metadanych.
 
-**W przeciwieństwie do innych komunikatorów, SimpleX nie posiada żadnych identyfikatorów przypisanych do użytkowników**. Nie posiada nawet numerów generowanych losowo. Zapewnia to prywatność tego, z kim się komunikujesz, ukrywając to przed serwerami platformy SimpleX i przed wszelkimi obserwatorami. [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
+**W przeciwieństwie do innych komunikatorów, SimpleX nie posiada żadnych identyfikatorów przypisanych do użytkowników**. Nie posiada nawet numerów generowanych losowo. Zapewnia to prywatność tego, z kim się komunikujesz, ukrywając jego tożsamość oraz fakt komunikacji przed serwerami platformy SimpleX i wszelkimi obserwatorami [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
 ### Najlepsza ochrona przed spamem i nadużyciami
 
