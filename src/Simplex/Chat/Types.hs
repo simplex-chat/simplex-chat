@@ -30,7 +30,6 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
-import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -45,6 +44,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
@@ -439,8 +439,12 @@ featureAllowed feature forWhom Contact {mergedPreferences} =
   let ContactUserPreference {enabled} = getContactUserPreference feature mergedPreferences
    in forWhom enabled
 
-groupFeatureAllowed :: GroupFeatureI f => SGroupFeature f -> GroupInfo -> Bool
+groupFeatureAllowed :: GroupFeatureNoRoleI f => SGroupFeature f -> GroupInfo -> Bool
 groupFeatureAllowed feature gInfo = groupFeatureAllowed' feature $ fullGroupPreferences gInfo
+
+groupFeatureMemberAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupMember -> GroupInfo -> Bool
+groupFeatureMemberAllowed feature GroupMember {memberRole} =
+  groupFeatureMemberAllowed' feature memberRole . fullGroupPreferences
 
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
 mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
@@ -795,41 +799,6 @@ fromInvitedBy userCtId = \case
   IBUnknown -> Nothing
   IBContact ctId -> Just ctId
   IBUser -> Just userCtId
-
-data GroupMemberRole
-  = GRObserver -- connects to all group members and receives all messages, can't send messages
-  | GRAuthor -- reserved, unused
-  | GRMember -- + can send messages to all group members
-  | GRAdmin -- + add/remove members, change member role (excl. Owners)
-  | GROwner -- + delete and change group information, add/remove/change roles for Owners
-  deriving (Eq, Show, Ord)
-
-instance FromField GroupMemberRole where fromField = fromBlobField_ strDecode
-
-instance ToField GroupMemberRole where toField = toField . strEncode
-
-instance StrEncoding GroupMemberRole where
-  strEncode = \case
-    GROwner -> "owner"
-    GRAdmin -> "admin"
-    GRMember -> "member"
-    GRAuthor -> "author"
-    GRObserver -> "observer"
-  strDecode = \case
-    "owner" -> Right GROwner
-    "admin" -> Right GRAdmin
-    "member" -> Right GRMember
-    "author" -> Right GRAuthor
-    "observer" -> Right GRObserver
-    r -> Left $ "bad GroupMemberRole " <> B.unpack r
-  strP = strDecode <$?> A.takeByteString
-
-instance FromJSON GroupMemberRole where
-  parseJSON = strParseJSON "GroupMemberRole"
-
-instance ToJSON GroupMemberRole where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data GroupMemberSettings = GroupMemberSettings
   { showMessages :: Bool

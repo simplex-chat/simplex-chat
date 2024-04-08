@@ -12,9 +12,7 @@ version = extra["android.version_name"] as String
 
 kotlin {
   androidTarget()
-  jvm("desktop") {
-    jvmToolchain(11)
-  }
+  jvm("desktop")
   applyDefaultHierarchyTemplate()
   sourceSets {
     all {
@@ -119,10 +117,6 @@ android {
   }
   testOptions.targetSdk = 33
   lint.targetSdk = 33
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-  }
   val isAndroid = gradle.startParameter.taskNames.find {
     val lower = it.lowercase()
     lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")

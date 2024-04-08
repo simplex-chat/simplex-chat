@@ -3,11 +3,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Connections
-  ( getConnectionEntity,
+  ( getChatLockEntity,
+    getConnectionEntity,
     getConnectionEntityByConnReq,
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
@@ -36,6 +38,31 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Util (eitherToMaybe)
+
+getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
+getChatLockEntity db agentConnId = do
+  ((connId, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId)) <-
+    ExceptT . firstRow id (SEConnectionNotFound agentConnId) $
+      DB.query
+        db
+        [sql|
+          SELECT connection_id, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id
+          FROM connections
+          WHERE agent_conn_id = ?
+        |]
+        (Only agentConnId)
+  let err = throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
+  case connType of
+    ConnMember -> maybe err (fmap CLGroup . getMemberGroupId) groupMemberId
+    ConnContact -> pure $ maybe (CLConnection connId) CLContact contactId
+    ConnSndFile -> maybe err (pure . CLFile) sndFileId
+    ConnRcvFile -> maybe err (pure . CLFile) rcvFileId
+    ConnUserContact -> maybe err (pure . CLUserContact) userContactLinkId
+  where
+    getMemberGroupId :: GroupMemberId -> ExceptT StoreError IO GroupId
+    getMemberGroupId groupMemberId =
+      ExceptT . firstRow fromOnly (SEInternalError "group member connection group_id not found") $
+        DB.query db "SELECT group_id FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
 getConnectionEntity :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
