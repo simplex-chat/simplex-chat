@@ -141,7 +141,7 @@
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
               # STATIC i686-linux
               "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
-                compiler-nix-name = "ghc964";
+                compiler-nix-name = "ghc810";
                 pkgs' = pkgs.pkgsCross.musl32;
                 extra-modules = [{
                   # 32 bit patches
