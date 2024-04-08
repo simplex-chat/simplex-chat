@@ -2106,4 +2106,14 @@ public enum UserNetworkType: String, Codable {
     case wifi
     case ethernet
     case other
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .none: "No network connection"
+        case .cellular: "Cellular"
+        case .wifi: "WiFi"
+        case .ethernet: "Wired ethernet"
+        case .other: "Other"
+        }
+    }
 }

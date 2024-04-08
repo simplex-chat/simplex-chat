@@ -58,6 +58,9 @@ class NetworkObserver {
 
     private func setNetworkInfo(_ info: UserNetworkInfo) {
         logger.debug("setNetworkInfo Network changed: \(String(describing: info))")
+        DispatchQueue.main.sync {
+            ChatModel.shared.networkInfo = info
+        }
         if !hasChatCtrl() { return }
         self.monitorLock.sync {
             do {
