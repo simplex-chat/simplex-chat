@@ -67,7 +67,7 @@ chatGroupTests = do
   describe "group link connection plan" $ do
     it "group link ok to connect; known group" testPlanGroupLinkOkKnown
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
-    fit "own group link" testPlanGroupLinkOwn
+    it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
@@ -133,7 +133,7 @@ chatGroupTests = do
     it "quoted messages" testGroupHistoryQuotes
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
-    fit "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
+    it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
     it "unknown member messages are processed" testGroupHistoryUnknownMember
   describe "membership profile updates" $ do
     it "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
@@ -2503,6 +2503,7 @@ testPlanHostContactDeletedGroupLinkKnown =
 testPlanGroupLinkOwn :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkOwn tmp =
   withNewTestChatCfg tmp testCfgGroupLinkViaContact "alice" aliceProfile $ \alice -> do
+    threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
@@ -5186,7 +5187,11 @@ testGroupHistoryWelcomeMessage =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!"), (0, "welcome to team")]
+      -- sometimes there are "connected" and feature items in between,
+      -- so we filter them out; `shouldContain` then checks order is correct
+      let expected = [(0, "hello"), (0, "hey!"), (0, "welcome to team")]
+          r' = filter (`elem` expected) r
+      r' `shouldContain` expected
 
       -- message delivery works after sending history
       alice #> "#team 1"
