@@ -76,6 +76,7 @@ class NetworkObserver {
             networkType = UserNetworkType.NONE,
             online = false
           )
+          prevInfo = networkNone
           Log.d(TAG, "Network is off: $networkNone")
           controller.apiSetNetworkInfo(networkNone)
         }
