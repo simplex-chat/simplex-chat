@@ -2093,12 +2093,10 @@ public enum AppSettingsLockScreenCalls: String, Codable {
 public struct UserNetworkInfo: Codable, Equatable {
     public let networkType: UserNetworkType
     public let online: Bool
-    public let metered: Bool
 
-    public init(networkType: UserNetworkType, online: Bool, metered: Bool) {
+    public init(networkType: UserNetworkType, online: Bool) {
         self.networkType = networkType
         self.online = online
-        self.metered = metered
     }
 }
 

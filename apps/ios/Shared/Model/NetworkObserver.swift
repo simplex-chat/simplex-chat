@@ -32,8 +32,7 @@ class NetworkObserver {
     private func networkPathChanged(path: NWPath) {
         let info = UserNetworkInfo(
             networkType: networkTypeFromPath(path),
-            online: path.status == .satisfied,
-            metered: path.isExpensive
+            online: path.status == .satisfied
         )
         if (prevInfo != info) {
             prevInfo = info
