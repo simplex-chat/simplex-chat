@@ -3,7 +3,7 @@ title: SimpleX platform
 revision: 07.02.2023
 ---
 
-| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
+| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md), [PL](/docs/lang/pl/SIMPLEX.md) |
 # SimpleX platform - motivation and comparison
 
 ## Problems
