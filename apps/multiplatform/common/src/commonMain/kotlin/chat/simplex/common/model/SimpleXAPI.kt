@@ -877,9 +877,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetNetworkInfo(networkInfo: NetworkInfo) {
-    // LALAL
-    //sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
+  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo) {
+    sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
   }
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
@@ -2416,7 +2415,7 @@ sealed class CC {
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
-  class APISetNetworkInfo(val networkInfo: NetworkInfo): CC()
+  class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -5539,13 +5538,12 @@ enum class AppSettingsLockScreenCalls {
 }
 
 @Serializable
-data class NetworkInfo(
+data class UserNetworkInfo(
+  val networkType: UserNetworkType,
   val online: Boolean,
-  val type: NetworkInfoType,
-  val metered: Boolean,
 )
 
-enum class NetworkInfoType {
+enum class UserNetworkType {
   @SerialName("none")
   NONE,
   @SerialName("cellular")
@@ -5554,8 +5552,6 @@ enum class NetworkInfoType {
   WIFI,
   @SerialName("ethernet")
   ETHERNET,
-  @SerialName("roaming")
-  ROAMING,
   @SerialName("other")
   OTHER
 }

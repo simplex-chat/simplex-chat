@@ -15,7 +15,6 @@ import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -414,7 +413,7 @@ expect fun ByteArray.toBase64StringForPassphrase(): String
 // fun String.toByteArrayFromBase64(): ByteArray = Base64.getMimeDecoder().decode(this.trimEnd { it == '\n' || it == ' ' })
 expect fun String.toByteArrayFromBase64ForPassphrase(): ByteArray
 
-expect fun reinitNetworkObserver()
+expect fun restartNetworkObserver()
 
 val LongRange.Companion.saver
   get() = Saver<MutableState<LongRange>, Pair<Long, Long>>(
