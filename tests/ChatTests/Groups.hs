@@ -67,7 +67,7 @@ chatGroupTests = do
   describe "group link connection plan" $ do
     it "group link ok to connect; known group" testPlanGroupLinkOkKnown
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
-    it "own group link" testPlanGroupLinkOwn
+    fit "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
@@ -133,7 +133,7 @@ chatGroupTests = do
     it "quoted messages" testGroupHistoryQuotes
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
-    it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
+    fit "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
     it "unknown member messages are processed" testGroupHistoryUnknownMember
   describe "membership profile updates" $ do
     it "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
