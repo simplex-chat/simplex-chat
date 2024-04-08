@@ -141,6 +141,7 @@
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
               # STATIC i686-linux
               "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs.pkgsCross.musl32;
                 extra-modules = [{
                   # 32 bit patches
@@ -543,6 +544,7 @@
             "aarch64-darwin" = {
               # aarch64-darwin iOS build (to be patched with mac2ios)
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.simplex-chat.flags.swift = true;
@@ -559,6 +561,7 @@
               );
 	            # aarch64-darwin build with tagged JSON format (for Mac & Flutter)
               "aarch64-darwin:lib:simplex-chat" = (drv' {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
@@ -574,6 +577,7 @@
             "x86_64-darwin" = {
               # x86_64-darwin iOS simulator build (to be patched with mac2ios)
               "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.simplex-chat.flags.swift = true;
@@ -589,6 +593,7 @@
               );
               # x86_64-darwin build with tagged JSON format (for Mac & Flutter iOS simulator)
               "x86_64-darwin:lib:simplex-chat" = (drv' {
+                compiler-nix-name = "ghc964";
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
