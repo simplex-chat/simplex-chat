@@ -723,3 +723,12 @@ linkAnotherSchema link
 
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+
+setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
+setRelativePaths cc filesFolder tempFolder = do
+  cc ##> "/_stop"
+  cc <## "chat stopped"
+  cc #$> ("/_files_folder " <> filesFolder, id, "ok")
+  cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
+  cc ##> "/_start"
+  cc <## "chat started"
