@@ -803,14 +803,10 @@ groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQu
 forwardedFrom :: CIForwardedFrom -> [StyledString]
 forwardedFrom = \case
   CIFFUnknown -> ["-> forwarded"]
-  CIFFContact _ MDSnd _ _ -> ["<- you"]
-  CIFFContact c MDRcv cId_ _ -> case cId_ of
-    Nothing -> ["<- " <> ttyContact c]
-    Just cId -> ["<- " <> ttyContact c <> " (contact id: " <> sShow cId <> ")"]
-  CIFFGroup _ MDSnd _ _ -> ["<- you"]
-  CIFFGroup c MDRcv gId_ _ -> case gId_ of
-    Nothing -> ["<- " <> ttyGroup c]
-    Just gId -> ["<- " <> ttyGroup c <> " (group id: " <> sShow gId <> ")"]
+  CIFFContact c MDSnd _ _ -> ["<- you @" <> (plain . viewName) c]
+  CIFFContact c MDRcv _ _ -> ["<- @" <> (plain . viewName) c]
+  CIFFGroup g MDSnd _ _ -> ["<- you #" <> (plain . viewName) g]
+  CIFFGroup g MDRcv _ _ -> ["<- #" <> (plain . viewName) g]
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case
