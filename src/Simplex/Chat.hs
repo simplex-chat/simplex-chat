@@ -870,12 +870,14 @@ processChatCommand' vr = \case
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
   APIForwardChatItem (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemId -> withUser $ \user -> case toCType of
-    CTDirect -> withContactLock "sendMessage" toChatId $ do
+    CTDirect -> do
       (cm, ciff) <- prepareForward user
-      sendContactContentMessage user toChatId False Nothing cm ciff
-    CTGroup ->  withGroupLock "sendMessage" toChatId $ do
+      withContactLock "forwardChatItem, to contact" toChatId $
+        sendContactContentMessage user toChatId False Nothing cm ciff
+    CTGroup -> do
       (cm, ciff) <- prepareForward user
-      sendGroupContentMessage user toChatId False Nothing cm ciff
+      withGroupLock "forwardChatItem, to group" toChatId $
+        sendGroupContentMessage user toChatId False Nothing cm ciff
     CTLocal -> do
       (cm, ciff) <- prepareForward user
       createNoteFolderContentItem user toChatId cm ciff
@@ -884,7 +886,7 @@ processChatCommand' vr = \case
     where
       prepareForward :: User -> CM (ComposedMessage, Maybe CIForwardedFrom)
       prepareForward user = case fromCType of
-        CTDirect -> do
+        CTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do
           (ct, CChatItem _ ci) <- withStore $ \db -> do
             ct <- getContact db vr user fromChatId
             cci <- getDirectChatItem db user fromChatId itemId
@@ -898,7 +900,7 @@ processChatCommand' vr = \case
             forwardName Contact {profile = LocalProfile {displayName, localAlias}}
               | localAlias /= "" = localAlias
               | otherwise = displayName
-        CTGroup -> do
+        CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
           (gInfo, CChatItem _ ci) <- withStore $ \db -> do
             gInfo <- getGroupInfo db vr user fromChatId
             cci <- getGroupChatItem db user fromChatId itemId
