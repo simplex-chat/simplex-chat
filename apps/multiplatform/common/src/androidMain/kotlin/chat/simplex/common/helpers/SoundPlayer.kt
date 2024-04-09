@@ -73,6 +73,8 @@ object CallSoundsPlayer: CallSoundsPlayerInterface {
   }
 
   override fun startConnectingCallSound(scope: CoroutineScope) {
+    // Taken from https://github.com/TelegramOrg/Telegram-Android
+    // https://github.com/TelegramOrg/Telegram-Android/blob/master/LICENSE
     start("android.resource://" + androidAppContext.packageName + "/" + R.raw.connecting_call, 0, scope)
   }
 
