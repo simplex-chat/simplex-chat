@@ -9,6 +9,7 @@
 import SwiftUI
 import WebKit
 import SimpleXChat
+import AVFoundation
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
@@ -21,6 +22,7 @@ struct ActiveCallView: View {
     @Binding var canConnectCall: Bool
     @State var prevColorScheme: ColorScheme = .dark
     @State var pipShown = false
+    @State var wasConnected = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -69,6 +71,11 @@ struct ActiveCallView: View {
             Task { await m.callCommand.setClient(nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
+            CallSoundsPlayer.shared.stop()
+            try? AVAudioSession.sharedInstance().setCategory(.soloAmbient)
+            if (wasConnected) {
+                CallSoundsPlayer.shared.vibrate()
+            }
         }
         .background(m.activeCallViewIsCollapsed ? .clear : .black)
         // Quite a big delay when opening/closing the view when a scheme changes (globally) this way. It's not needed when CallKit is used since status bar is green with white text on it
@@ -103,6 +110,14 @@ struct ActiveCallView: View {
                         call.callState = .invitationSent
                         call.localCapabilities = capabilities
                     }
+                    if call.supportsVideo {
+                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: .defaultToSpeaker)
+                    }
+                    CallSoundsPlayer.shared.startConnectingCallSound()
+                    Task {
+                        try? await Task.sleep(nanoseconds: 7000_000000)
+                        CallSoundsPlayer.shared.startInCallSound()
+                    }
                 }
             case let .offer(offer, iceCandidates, capabilities):
                 Task {
@@ -126,6 +141,8 @@ struct ActiveCallView: View {
                     }
                     await MainActor.run {
                         call.callState = .negotiated
+                        CallSoundsPlayer.shared.stop()
+                        try? AVAudioSession.sharedInstance().setCategory(.soloAmbient)
                     }
                 }
             case let .ice(iceCandidates):
@@ -144,6 +161,10 @@ struct ActiveCallView: View {
                     : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
                     call.connectedAt = .now
+                    if !wasConnected {
+                        CallSoundsPlayer.shared.vibrate(2)
+                        wasConnected = true
+                    }
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
@@ -161,6 +182,10 @@ struct ActiveCallView: View {
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
                 call.connectedAt = .now
+                if !wasConnected {
+                    CallSoundsPlayer.shared.vibrate(2)
+                    wasConnected = true
+                }
             case .ended:
                 closeCallView(client)
                 call.callState = .ended
