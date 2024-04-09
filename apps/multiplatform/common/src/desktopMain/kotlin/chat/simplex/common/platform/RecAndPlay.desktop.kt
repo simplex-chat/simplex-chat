@@ -213,7 +213,7 @@ actual object SoundPlayer: SoundPlayerInterface {
   override fun start(scope: CoroutineScope, sound: Boolean) {
     val tmpFile = File(tmpDir, UUID.randomUUID().toString())
     tmpFile.deleteOnExit()
-    SoundPlayer::class.java.getResource("/media/ring_once.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+    SoundPlayer::class.java.getResource("/media/ring_once.mp3")!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
     playing = true
     scope.launch {
       while (playing && sound) {
@@ -230,26 +230,33 @@ actual object SoundPlayer: SoundPlayerInterface {
 }
 
 actual object CallSoundsPlayer: CallSoundsPlayerInterface {
-  private var player: MediaPlayer? = null
-  private var playing = false
+  private var playingJob: Job? = null
 
-  override fun startWaitingAnswerSound(scope: CoroutineScope) {
+  private fun start(soundPath: String, delay: Long, scope: CoroutineScope) {
+    playingJob?.cancel()
     val tmpFile = File(tmpDir, UUID.randomUUID().toString())
     tmpFile.deleteOnExit()
-    SoundPlayer::class.java.getResource("/media/call_sound_before_answer.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
-    playing = true
-    scope.launch {
-      while (playing) {
+    SoundPlayer::class.java.getResource(soundPath)!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+    playingJob = scope.launch {
+      while (isActive) {
         AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
-        delay(5000)
+        delay(delay)
       }
     }
   }
 
-  override fun vibrate() {}
+  override fun startInCallSound(scope: CoroutineScope) {
+    start("/media/in_call.mp3", 5000, scope)
+  }
+
+  override fun startConnectingCallSound(scope: CoroutineScope) {
+    start("/media/connecting_call.mp3", 3000, scope)
+  }
+
+  override fun vibrate(times: Int) {}
 
   override fun stop() {
-    playing = false
+    playingJob?.cancel()
     AudioPlayer.stop()
   }
 }

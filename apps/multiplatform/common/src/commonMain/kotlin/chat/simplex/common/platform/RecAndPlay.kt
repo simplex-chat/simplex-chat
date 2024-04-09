@@ -40,9 +40,10 @@ interface SoundPlayerInterface {
 }
 
 interface CallSoundsPlayerInterface {
-  fun startWaitingAnswerSound(scope: CoroutineScope)
+  fun startInCallSound(scope: CoroutineScope)
+  fun startConnectingCallSound(scope: CoroutineScope)
   fun stop()
-  fun vibrate()
+  fun vibrate(times: Int = 1)
 }
 
 expect object SoundPlayer: SoundPlayerInterface

@@ -83,7 +83,7 @@ actual fun ActiveCallView() {
   val wasConnected = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(call) {
     if (call?.callState == CallState.Connected && !wasConnected.value) {
-      CallSoundsPlayer.vibrate()
+      CallSoundsPlayer.vibrate(2)
       wasConnected.value = true
     }
   }
@@ -148,7 +148,11 @@ actual fun ActiveCallView() {
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
             setCallSound(call.soundSpeaker, audioViaBluetooth)
-            CallSoundsPlayer.startWaitingAnswerSound(scope)
+            CallSoundsPlayer.startConnectingCallSound(scope)
+            withBGApi {
+              delay(7000)
+              CallSoundsPlayer.startInCallSound(scope)
+            }
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)

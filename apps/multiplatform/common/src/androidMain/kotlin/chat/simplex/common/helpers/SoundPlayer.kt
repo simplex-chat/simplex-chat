@@ -6,6 +6,7 @@ import android.os.*
 import androidx.core.content.ContextCompat
 import chat.simplex.common.R
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.helpers.withApi
 import kotlinx.coroutines.*
 
 object SoundPlayer: SoundPlayerInterface {
@@ -44,9 +45,10 @@ object SoundPlayer: SoundPlayerInterface {
 
 object CallSoundsPlayer: CallSoundsPlayerInterface {
   private var player: MediaPlayer? = null
-  private var playing = false
+  private var playingJob: Job? = null
 
-  override fun startWaitingAnswerSound(scope: CoroutineScope) {
+  private fun start(soundPath: String, delay: Long, scope: CoroutineScope) {
+    playingJob?.cancel()
     player?.reset()
     player = MediaPlayer().apply {
       setAudioAttributes(
@@ -55,26 +57,39 @@ object CallSoundsPlayer: CallSoundsPlayerInterface {
           .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING)
           .build()
       )
-      setDataSource(androidAppContext, Uri.parse("android.resource://" + androidAppContext.packageName + "/" + R.raw.call_sound_before_answer))
+      setDataSource(androidAppContext, Uri.parse(soundPath))
       prepare()
     }
-    playing = true
-    scope.launch {
-      while (playing) {
+    playingJob = scope.launch {
+      while (isActive) {
         player?.start()
-        delay(2000)
+        delay(delay)
       }
     }
   }
 
-  override fun vibrate() {
+  override fun startInCallSound(scope: CoroutineScope) {
+    start("android.resource://" + androidAppContext.packageName + "/" + R.raw.in_call, 2000, scope)
+  }
+
+  override fun startConnectingCallSound(scope: CoroutineScope) {
+    start("android.resource://" + androidAppContext.packageName + "/" + R.raw.connecting_call, 0, scope)
+  }
+
+  override fun vibrate(times: Int) {
     val vibrator = ContextCompat.getSystemService(androidAppContext, Vibrator::class.java)
-    val effect = VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+    val effect = VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE)
     vibrator?.vibrateApiVersionAware(effect)
+    repeat(times - 1) {
+      withApi {
+        delay(50)
+        vibrator?.vibrateApiVersionAware(effect)
+      }
+    }
   }
 
   override fun stop() {
-    playing = false
+    playingJob?.cancel()
     player?.stop()
   }
 }
