@@ -1560,6 +1560,21 @@ processChatCommand' vr = \case
   RejectContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIRejectContact connReqId
+  ForwardMessage toChatName fromContactName forwardedMsg -> withUser $ \user -> do
+    contactId <- withStore $ \db -> getContactIdByName db user fromContactName
+    forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
+    toChatRef <- getChatRef user toChatName
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId
+  ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user fromGroupName
+    forwardedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
+    toChatRef <- getChatRef user toChatName
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId
+  ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
+    folderId <- withStore (`getUserNoteFolderId` user)
+    forwardedItemId <- withStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
+    toChatRef <- getChatRef user toChatName
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
@@ -1650,16 +1665,6 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTDirect contactId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  ForwardMessage toChatName fromContactName forwardedMsg -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user fromContactName
-    forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
-    toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId
-  ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
-    folderId <- withStore (`getUserNoteFolderId` user)
-    forwardedItemId <- withStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
-    toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -1934,11 +1939,6 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user fromGroupName
-    forwardedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
-    toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withStore (`getUserNoteFolderId` user)
     processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
