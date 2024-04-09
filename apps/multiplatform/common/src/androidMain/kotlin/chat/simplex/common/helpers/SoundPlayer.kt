@@ -60,6 +60,11 @@ object CallSoundsPlayer: CallSoundsPlayerInterface {
       setDataSource(androidAppContext, Uri.parse(soundPath))
       prepare()
     }
+    if (delay < 1000) {
+      player?.isLooping = true
+      player?.start()
+      return
+    }
     playingJob = scope.launch {
       while (isActive) {
         player?.start()
