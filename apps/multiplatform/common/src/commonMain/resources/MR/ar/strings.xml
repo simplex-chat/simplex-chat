@@ -1325,7 +1325,7 @@
     <string name="icon_descr_video_on">الفيديو مُشغَّل</string>
     <string name="v4_2_auto_accept_contact_requests_desc">مع رسالة ترحيب اختيارية.</string>
     <string name="in_developing_title">قريباً!</string>
-    <string name="in_developing_desc">هذه الميزة ليست مدعومة حتى الآن. جرب الإصدار التالي.</string>
+    <string name="in_developing_desc">هذه الميزة ليست مدعومة بعد. جرب الإصدار القادم.</string>
     <string name="receipts_groups_disable_keep_overrides">تعطيل (الاحتفاظ بتجاوزات المجموعة)</string>
     <string name="receipts_groups_enable_for_all">تفعيل لجميع المجموعات</string>
     <string name="receipts_groups_override_enabled">إرسال الإيصالات مفعّلة لـ%d مجموعات</string>
