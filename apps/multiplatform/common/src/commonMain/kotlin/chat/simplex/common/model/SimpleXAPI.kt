@@ -2119,7 +2119,7 @@ object ChatController {
         if (active(r.user)) {
           chatModel.updateContact(rhId, r.contact)
         }
-      is CR.ChatCmdError -> when {
+      is CR.ChatRespError -> when {
         r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
           chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
         }
