@@ -245,14 +245,14 @@ actual object CallSoundsPlayer: CallSoundsPlayerInterface {
     }
   }
 
-  override fun startInCallSound(scope: CoroutineScope) {
-    start("/media/in_call.mp3", 5000, scope)
-  }
-
   override fun startConnectingCallSound(scope: CoroutineScope) {
     // Taken from https://github.com/TelegramOrg/Telegram-Android
     // https://github.com/TelegramOrg/Telegram-Android/blob/master/LICENSE
     start("/media/connecting_call.mp3", 3000, scope)
+  }
+
+  override fun startInCallSound(scope: CoroutineScope) {
+    start("/media/in_call.mp3", 5000, scope)
   }
 
   override fun vibrate(times: Int) {}

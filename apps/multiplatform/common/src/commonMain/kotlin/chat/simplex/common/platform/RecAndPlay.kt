@@ -40,8 +40,8 @@ interface SoundPlayerInterface {
 }
 
 interface CallSoundsPlayerInterface {
-  fun startInCallSound(scope: CoroutineScope)
   fun startConnectingCallSound(scope: CoroutineScope)
+  fun startInCallSound(scope: CoroutineScope)
   fun stop()
   fun vibrate(times: Int = 1)
 }
