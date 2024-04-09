@@ -869,7 +869,7 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
-  APIForwardChatItem (ChatRef fromCType fromChatId) (ChatRef toCType toChatId) itemId -> withUser $ \user -> case toCType of
+  APIForwardChatItem (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemId -> withUser $ \user -> case toCType of
     CTDirect -> withContactLock "sendMessage" toChatId $ do
       (cm, ciff) <- prepareForward user
       sendContactContentMessage user toChatId False Nothing cm ciff
@@ -1648,16 +1648,16 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTDirect contactId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  ForwardMessage cName (AMsgDirection msgDir) toChatName forwardedMsg -> withUser $ \user@User {userId} -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir forwardedMsg
+  ForwardMessage toChatName fromContactName forwardedMsg -> withUser $ \user -> do
+    contactId <- withStore $ \db -> getContactIdByName db user fromContactName
+    forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem (ChatRef CTDirect contactId) toChatRef forwardedItemId
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withStore (`getUserNoteFolderId` user)
     forwardedItemId <- withStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem (ChatRef CTLocal folderId) toChatRef forwardedItemId
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -1932,11 +1932,11 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  ForwardGroupMessage gName cName toChatName forwardedMsg -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
-    forwardedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName forwardedMsg
+  ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user fromGroupName
+    forwardedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem (ChatRef CTGroup groupId) toChatRef forwardedItemId
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withStore (`getUserNoteFolderId` user)
     processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
@@ -7120,8 +7120,6 @@ chatCommandP =
       "/show link #" *> (ShowGroupLink <$> displayName),
       "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
-      (">#" <|> "> #") *> (ForwardGroupMessage <$> displayName <* A.char '@' <*> (Just <$> displayName) <* " -> " <*> chatNameP <* A.space <*> msgTextP),
-      (">#" <|> "> #") *> (ForwardGroupMessage <$> displayName <*> pure Nothing <* " -> " <*> chatNameP <* A.space <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -7132,13 +7130,14 @@ chatCommandP =
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
+      ForwardMessage <$> chatNameP <* " <- @" <*> displayName <* A.space <*> msgTextP,
+      ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayName <* A.space <* A.char '@' <*> (Just <$> displayName) <* A.space <*> msgTextP,
+      ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayName <*> pure Nothing <* A.space <*> msgTextP,
+      ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "/* " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
       "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
-      (">@" <|> "> @") *> forwardMsgP (AMsgDirection SMDRcv),
-      (">>@" <|> ">> @") *> forwardMsgP (AMsgDirection SMDSnd),
-      (">* -> " <|> "> * -> ") *> (ForwardLocalMessage <$> chatNameP <* A.space <*> msgTextP),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
@@ -7255,7 +7254,6 @@ chatCommandP =
         quoted cs = A.choice [A.char c *> takeNameTill (== c) <* A.char c | c <- cs]
         refChar c = c > ' ' && c /= '#' && c /= '@'
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
-    forwardMsgP msgDir = ForwardMessage <$> displayName <*> pure msgDir <* " -> " <*> chatNameP <* A.space <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
     toEmoji = \case

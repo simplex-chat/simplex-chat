@@ -43,23 +43,23 @@ testForwardContactToContact =
       bob #> "@alice hey"
       alice <# "bob> hey"
 
-      alice ##> ("/_forward @2 @3 " <> msgId)
-      alice <# "@cath -> from you"
+      alice ##> ("/_forward @3 @2 " <> msgId)
+      alice <# "@cath <- from you"
       alice <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hi"
 
-      alice `send` "> @bob -> @cath hey"
-      alice <# "@cath -> from bob (contact id: 2)"
+      alice `send` "@cath <- @bob hey"
+      alice <# "@cath <- from bob (contact id: 2)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
       -- read chat
       alice ##> "/tail @cath 2"
-      alice <# "@cath -> from you"
+      alice <# "@cath <- from you"
       alice <## "      hi"
-      alice <# "@cath -> from bob (contact id: 2)"
+      alice <# "@cath <- from bob (contact id: 2)"
       alice <## "      hey"
 
       cath ##> "/tail @alice 2"
@@ -87,14 +87,14 @@ testForwardContactToGroup =
       bob #> "@alice hey"
       alice <# "bob> hey"
 
-      alice `send` ">> @bob -> #team hi"
-      alice <# "#team -> from you"
+      alice `send` "#team <- @bob hi"
+      alice <# "#team <- from you"
       alice <## "      hi"
       cath <# "#team alice> -> forwarded"
       cath <## "      hi"
 
-      alice `send` "> @bob -> #team hey"
-      alice <# "#team -> from bob (contact id: 2)"
+      alice `send` "#team <- @bob hey"
+      alice <# "#team <- from bob (contact id: 2)"
       alice <## "      hey"
       cath <# "#team alice> -> forwarded"
       cath <## "      hey"
@@ -111,12 +111,12 @@ testForwardContactToNotes =
       bob #> "@alice hey"
       alice <# "bob> hey"
 
-      alice `send` ">> @bob -> * hi"
-      alice <# "* -> from you"
+      alice `send` "* <- @bob hi"
+      alice <# "* <- from you"
       alice <## "      hi"
 
-      alice `send` "> @bob -> * hey"
-      alice <# "* -> from bob (contact id: 2)"
+      alice `send` "* <- @bob hey"
+      alice <# "* <- from bob (contact id: 2)"
       alice <## "      hey"
 
 testForwardGroupToContact :: HasCallStack => FilePath -> IO ()
@@ -131,14 +131,14 @@ testForwardGroupToContact =
       bob #> "#team hey"
       alice <# "#team bob> hey"
 
-      alice `send` "> #team -> @cath hi"
-      alice <# "@cath -> from you"
+      alice `send` "@cath <- #team hi"
+      alice <# "@cath <- from you"
       alice <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hi"
 
-      alice `send` "> #team -> @cath hey"
-      alice <# "@cath -> from #team (group id: 1)"
+      alice `send` "@cath <- #team hey"
+      alice <# "@cath <- from #team (group id: 1)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
@@ -155,14 +155,14 @@ testForwardGroupToGroup =
       bob #> "#team hey"
       alice <# "#team bob> hey"
 
-      alice `send` "> #team -> #club hi"
-      alice <# "#club -> from you"
+      alice `send` "#club <- #team hi"
+      alice <# "#club <- from you"
       alice <## "      hi"
       cath <# "#club alice> -> forwarded"
       cath <## "      hi"
 
-      alice `send` "> #team -> #club hey"
-      alice <# "#club -> from #team (group id: 1)"
+      alice `send` "#club <- #team hey"
+      alice <# "#club <- from #team (group id: 1)"
       alice <## "      hey"
       cath <# "#club alice> -> forwarded"
       cath <## "      hey"
@@ -179,12 +179,12 @@ testForwardGroupToNotes =
       bob #> "#team hey"
       alice <# "#team bob> hey"
 
-      alice `send` "> #team -> * hi"
-      alice <# "* -> from you"
+      alice `send` "* <- #team hi"
+      alice <# "* <- from you"
       alice <## "      hi"
 
-      alice `send` "> #team -> * hey"
-      alice <# "* -> from #team (group id: 1)"
+      alice `send` "* <- #team hey"
+      alice <# "* <- from #team (group id: 1)"
       alice <## "      hey"
 
 testForwardNotesToContact :: HasCallStack => FilePath -> IO ()
@@ -196,7 +196,7 @@ testForwardNotesToContact =
 
       alice /* "hi"
 
-      alice `send` "> * -> @cath hi"
+      alice `send` "@cath <- * hi"
       alice <# "@cath hi"
       cath <# "alice> hi"
 
@@ -209,7 +209,7 @@ testForwardNotesToGroup =
 
       alice /* "hi"
 
-      alice `send` "> * -> #team hi"
+      alice `send` "#team <- * hi"
       alice <# "#team hi"
       cath <# "#team alice> hi"
 
@@ -220,7 +220,7 @@ testForwardNotesToNotes tmp =
 
     alice /* "hi"
 
-    alice `send` "> * -> * hi"
+    alice `send` "* <- * hi"
     alice <# "* hi"
 
     alice ##> "/tail * 2"
@@ -239,18 +239,18 @@ testForwardPreserveInfo =
       bob #> "@alice hey"
       alice <# "bob> hey"
 
-      alice `send` "> @bob -> * hey"
-      alice <# "* -> from bob (contact id: 2)"
+      alice `send` "* <- @bob hey"
+      alice <# "* <- from bob (contact id: 2)"
       alice <## "      hey"
 
-      alice `send` "> * -> @cath hey"
-      alice <# "@cath -> from bob (contact id: 2)"
+      alice `send` "@cath <- * hey"
+      alice <# "@cath <- from bob (contact id: 2)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
-      alice `send` ">> @cath -> #team hey"
-      alice <# "#team -> from bob (contact id: 2)"
+      alice `send` "#team <- @cath hey"
+      alice <# "#team <- from bob (contact id: 2)"
       alice <## "      hey"
       dan <# "#team alice> -> forwarded"
       dan <## "      hey"
@@ -270,15 +270,15 @@ testForwardQuotedMsg =
       alice <# "bob> > hi"
       alice <## "      hey"
 
-      alice `send` "> @bob -> @cath hey"
-      alice <# "@cath -> from bob (contact id: 2)"
+      alice `send` "@cath <- @bob hey"
+      alice <# "@cath <- from bob (contact id: 2)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
       -- read chat
       alice ##> "/tail @cath 1"
-      alice <# "@cath -> from bob (contact id: 2)"
+      alice <# "@cath <- from bob (contact id: 2)"
       alice <## "      hey"
 
       cath ##> "/tail @alice 1"
@@ -316,8 +316,8 @@ testForwardFileNoFilesFolder =
       dest `shouldBe` src
 
       -- forward file
-      bob `send` "> @alice -> @cath hi"
-      bob <# "@cath -> from alice (contact id: 2)"
+      bob `send` "@cath <- @alice hi"
+      bob <# "@cath <- from alice (contact id: 2)"
       bob <## "      hi"
       bob <# "/f @cath ./tests/tmp/test.pdf"
       bob <## "use /fc 2 to cancel sending"
@@ -373,8 +373,8 @@ testForwardFileContactToContact =
       dest `shouldBe` src
 
       -- forward file
-      bob `send` "> @alice -> @cath hi"
-      bob <# "@cath -> from alice (contact id: 2)"
+      bob `send` "@cath <- @alice hi"
+      bob <# "@cath <- from alice (contact id: 2)"
       bob <## "      hi"
       bob <# "/f @cath test_1.pdf"
       bob <## "use /fc 2 to cancel sending"
@@ -438,8 +438,8 @@ testForwardFileGroupToNotes =
       dest `shouldBe` src
 
       -- forward file
-      cath `send` "> #team -> * hi"
-      cath <# "* -> from #team (group id: 1)"
+      cath `send` "* <- #team hi"
+      cath <# "* <- from #team (group id: 1)"
       cath <## "      hi"
       cath <# "* file 2 (test_1.pdf)"
 
@@ -469,7 +469,7 @@ testForwardFileNotesToGroup =
       alice <# "* file 1 (test.pdf)"
 
       -- forward file
-      alice `send` "> * -> #team hi"
+      alice `send` "#team <- * hi"
       alice <# "#team hi"
       alice <# "/f #team test_1.pdf"
       alice <## "use /fc 2 to cancel sending"
