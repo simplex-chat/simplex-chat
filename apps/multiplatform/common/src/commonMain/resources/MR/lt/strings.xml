@@ -1244,4 +1244,10 @@
     <string name="open_port_in_firewall_desc">Kad leisti mobiliajai programėlei prisijungti prie darbastalio, atidarykite šį prievadą savo ugniasienėje, jei ją turite įgalinę.</string>
     <string name="migrate_from_device_stopping_chat">Sustabdomi pokalbiai</string>
     <string name="migrate_from_device_bytes_uploaded">%s įkeltas</string>
+    <string name="your_chat_profiles">Jūsų pokalbių profiliai</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Jūsų pokalbių profilis bus nusiųstas
+\njūsų kontaktui</string>
+    <string name="your_chat_database">Jūsų duomenų bazė</string>
+    <string name="database_is_not_encrypted">Jūsų duomenų bazė nėra užšifruota - nustatykite slaptafrazę, kad ją apsaugoti.</string>
+    <string name="group_main_profile_sent">Jūsų pokalbių profilis bus nusiųstas grupės nariams</string>
 </resources>
