@@ -630,7 +630,7 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
     <> receivedAt
     <> toBeDeletedAt
     <> versions
-    <> forwardedFromItemId
+    <> forwardedFrom'
   where
     ts = styleTime . localTs tz
     receivedAt = case msgDir of
@@ -645,9 +645,18 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
         else ["message history:"] <> concatMap version itemVersions
       where
         version ChatItemVersion {msgContent, itemVersionTs} = prependFirst (ts itemVersionTs <> styleTime ": ") $ ttyMsgContent msgContent
-    forwardedFromItemId =
+    forwardedFrom' =
       case forwardedFromChatItem of
-        Just aci -> ["forwarded from chat item id: " <> (plain . show) (aChatItemId aci)]
+        Just fwdACI@(AChatItem _ fwdMsgDir fwdChatInfo _) ->
+          [plain $ "forwarded from: " <> maybe "" (<> ", ") fwdDir_ <> fwdItemId]
+          where
+            fwdDir_ = case (fwdMsgDir, fwdChatInfo) of
+              (SMDSnd, DirectChat ct) -> Just $ "you @" <> viewContactName ct
+              (SMDRcv, DirectChat ct) -> Just $ "@" <> viewContactName ct
+              (SMDSnd, GroupChat gInfo) -> Just $ "you #" <> viewGroupName gInfo
+              (SMDRcv, GroupChat gInfo) -> Just $ "#" <> viewGroupName gInfo
+              _ -> Nothing
+            fwdItemId = "chat item id: " <> (T.pack . show $ aChatItemId fwdACI)
         _ -> []
 
 localTs :: TimeZone -> UTCTime -> String
