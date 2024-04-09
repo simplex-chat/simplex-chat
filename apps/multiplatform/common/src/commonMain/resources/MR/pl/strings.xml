@@ -1715,4 +1715,13 @@
     <string name="migrate_to_device_confirm_network_settings_footer">Proszę potwierdzić, że ustawienia sieciowe są prawidłowe dla tego urządzenia.</string>
     <string name="conn_event_enabled_pq">kwantowo odporne szyfrowanie e2e</string>
     <string name="v5_6_quantum_resistant_encryption">Kwantowo odporne szyfrowanie</string>
+    <string name="permissions_find_in_settings_and_grant">Znajdź to zezwolenie w ustawieniach androida i przyznaj ręcznie.</string>
+    <string name="permissions_grant_in_settings">Przyznaj w ustawieniach</string>
+    <string name="permissions_required">Przyznaj uprawnienia</string>
+    <string name="permissions_camera">Aparat</string>
+    <string name="permissions_camera_and_record_audio">Aparat i mikrofon</string>
+    <string name="error_showing_desktop_notification">Błąd pokazywania powiadomienia, skontaktuj się z deweloperami.</string>
+    <string name="permissions_grant">Przyznaj uprawnienie(a), aby wykonywać połączenia</string>
+    <string name="permissions_record_audio">Mikrofon</string>
+    <string name="permissions_open_settings">Otwórz ustawienia</string>
 </resources>
