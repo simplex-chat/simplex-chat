@@ -137,7 +137,7 @@ testForwardGroupToContact =
       cath <# "alice> -> forwarded"
       cath <## "      hi"
 
-      alice `send` "@cath <- #team hey"
+      alice `send` "@cath <- #team @bob hey"
       alice <# "@cath <- from #team (group id: 1)"
       alice <## "      hey"
       cath <# "alice> -> forwarded"
