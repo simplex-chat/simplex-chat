@@ -2151,6 +2151,7 @@ processChatCommand' vr = \case
         CLGroup gId -> "Group " <> show gId
         CLUserContact ucId -> "UserContact " <> show ucId
         CLFile fId -> "File " <> show fId
+  DebugEvent event -> toView event >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
@@ -7225,6 +7226,7 @@ chatCommandP =
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
+      "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,

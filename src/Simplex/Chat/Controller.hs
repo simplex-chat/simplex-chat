@@ -492,6 +492,7 @@ data ChatCommand
   | QuitChat
   | ShowVersion
   | DebugLocks
+  | DebugEvent ChatResponse
   | GetAgentStats
   | ResetAgentStats
   | GetAgentSubs
