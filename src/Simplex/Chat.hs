@@ -716,10 +716,12 @@ processChatCommand' vr = \case
           Just <$> withStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
   APISendMessage (ChatRef cType chatId) live itemTTL cm -> withUser $ \user -> case cType of
-    CTDirect -> withContactLock "sendMessage" chatId $
-      sendContactContentMessage user chatId live itemTTL cm Nothing
-    CTGroup -> withGroupLock "sendMessage" chatId $
-      sendGroupContentMessage user chatId live itemTTL cm Nothing
+    CTDirect ->
+      withContactLock "sendMessage" chatId $
+        sendContactContentMessage user chatId live itemTTL cm Nothing
+    CTGroup ->
+      withGroupLock "sendMessage" chatId $
+        sendGroupContentMessage user chatId live itemTTL cm Nothing
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
@@ -2081,7 +2083,7 @@ processChatCommand' vr = \case
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
   SetGroupFeatureRole (AGFR f) gName enabled role ->
     updateGroupProfileByName gName $ \p ->
-      p {groupPreferences = Just . setGroupPreferenceRole f enabled role $ groupPreferences p}  
+      p {groupPreferences = Just . setGroupPreferenceRole f enabled role $ groupPreferences p}
   SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
@@ -4790,18 +4792,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateRcvChatItem = do
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} -> do
-              let changed = mc /= oldMC
-              if changed || fromMaybe False itemLive
-                then do
-                  ci' <- withStore' $ \db -> do
-                    when changed $
-                      addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                    reactions <- getDirectCIReactions db ct sharedMsgId
-                    updateDirectChatItem' db user contactId ci {reactions} content live $ Just msgId
-                  toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
-                  startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
-                else toView $ CRChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
+            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC}
+              | isNothing itemForwarded -> do
+                  let changed = mc /= oldMC
+                  if changed || fromMaybe False itemLive
+                    then do
+                      ci' <- withStore' $ \db -> do
+                        when changed $
+                          addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                        reactions <- getDirectCIReactions db ct sharedMsgId
+                        updateDirectChatItem' db user contactId ci {reactions} content live $ Just msgId
+                      toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
+                      startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
+                    else toView $ CRChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> CM ()

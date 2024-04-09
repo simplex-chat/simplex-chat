@@ -21,8 +21,10 @@ chatForwardTests = do
     it "from notes to contact" testForwardNotesToContact
     it "from notes to group" testForwardNotesToGroup
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
+  describe "interactions with forwarded messages" $ do
     it "preserve original forward info" testForwardPreserveInfo
-    it "quoted message" testForwardQuotedMsg
+    it "quoted message is not included" testForwardQuotedMsg
+    it "editing is prohibited" testForwardEditProhibited
   describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
     it "with relative paths: from contact to contact" testForwardFileContactToContact
@@ -284,6 +286,26 @@ testForwardQuotedMsg =
       cath ##> "/tail @alice 1"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
+
+testForwardEditProhibited :: HasCallStack => FilePath -> IO ()
+testForwardEditProhibited =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+
+      alice `send` "@cath <- @bob hey"
+      alice <# "@cath <- @bob"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
+
+      msgId <- lastItemId alice
+      alice ##> ("/_update item @3 " <> msgId <> " text hey edited")
+      alice <## "cannot update this item"
 
 testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
 testForwardFileNoFilesFolder =

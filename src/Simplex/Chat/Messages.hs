@@ -356,8 +356,8 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded it
   let editable = case itemContent of
         CISndMsgContent _ ->
           case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
+            SCTLocal -> isNothing itemDeleted && isNothing itemForwarded
+            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted && isNothing itemForwarded
         _ -> False
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
 
