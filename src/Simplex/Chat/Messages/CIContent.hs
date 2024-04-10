@@ -43,6 +43,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MD") ''MsgDirection)
 
 instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
 
+instance FromField MsgDirection where fromField = fromIntField_ msgDirectionIntP
+
 instance ToField MsgDirection where toField = toField . msgDirectionInt
 
 data SMsgDirection (d :: MsgDirection) where
