@@ -6490,8 +6490,7 @@ memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe Memb
 memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
-    | connDisabled conn || connStatus == ConnDeleted -> Nothing
-    | connInactive conn -> Nothing -- TODO [inactive members] make service messages pending?
+    | connDisabled conn || connInactive conn || connStatus == ConnDeleted -> Nothing
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where
