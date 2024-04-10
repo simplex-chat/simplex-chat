@@ -114,10 +114,7 @@ struct ActiveCallView: View {
                         try? AVAudioSession.sharedInstance().setCategory(.playback, options: .defaultToSpeaker)
                     }
                     CallSoundsPlayer.shared.startConnectingCallSound()
-                    Task {
-                        try? await Task.sleep(nanoseconds: 7000_000000)
-                        CallSoundsPlayer.shared.startInCallSound()
-                    }
+                    activeCallWaitDeliveryReceipt()
                 }
             case let .offer(offer, iceCandidates, capabilities):
                 Task {
@@ -208,6 +205,22 @@ struct ActiveCallView: View {
             case let .invalid(type):
                 logger.debug("ActiveCallView: invalid response: \(type)")
                 AlertManager.shared.showAlert(Alert(title: Text("Invalid response"), message: Text(type)))
+            }
+        }
+    }
+
+    private func activeCallWaitDeliveryReceipt() {
+        ChatReceiver.shared.messagesChannel = { msg in
+            guard let call = ChatModel.shared.activeCall, call.callState == .invitationSent else {
+                ChatReceiver.shared.messagesChannel = nil
+                return
+            }
+            if case let .chatItemStatusUpdated(_, msg) = msg,
+               msg.chatInfo.id == call.contact.id,
+               case .sndCall = msg.chatItem.content,
+               case .sndRcvd = msg.chatItem.meta.itemStatus {
+                CallSoundsPlayer.shared.startInCallSound()
+                ChatReceiver.shared.messagesChannel = nil
             }
         }
     }
