@@ -65,7 +65,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         self.localRendererAspectRatio = localRendererAspectRatio
         rtcAudioSession.useManualAudio = CallController.useCallKit()
         rtcAudioSession.isAudioEnabled = !CallController.useCallKit()
-        logger.debug("WebRTCClient: rtcAudioSession has manual audio \(self.rtcAudioSession.useManualAudio) and audio enabled \(self.rtcAudioSession.isAudioEnabled)}")
+        logger.debug("WebRTCClient: rtcAudioSession has manual audio \(self.rtcAudioSession.useManualAudio) and audio enabled \(self.rtcAudioSession.isAudioEnabled)")
         super.init()
     }
 
