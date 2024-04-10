@@ -432,7 +432,7 @@ struct RTCIceServer: Codable, Equatable {
 
 // the servers are expected in this format:
 // stun:stun.simplex.im:443?transport=tcp
-// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443?transport=tcp
+// turns:private2:Hxuq2QxUjnhj96Zq2r4HjqHRj@turn.simplex.im:443?transport=tcp
 func parseRTCIceServer(_ str: String) -> RTCIceServer? {
     var s = replaceScheme(str, "stun:")
     s = replaceScheme(s, "turn:")
