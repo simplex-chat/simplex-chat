@@ -4581,7 +4581,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CRConnectionInactive connEntity True
         _ -> pure ()
 
-    -- TODO [inactive members] also mark as active on MSG, RCVD?
     processConnQCONT :: ConnectionEntity -> Connection -> CM ()
     processConnQCONT connEntity conn =
       when (connInactive conn) $ do
