@@ -58,7 +58,7 @@ Please check our [Groups Directory](./DIRECTORY.md) in the first place. You migh
 
 ### What is database? What can I do with it?
 
-Database is essential for SimpleX Chat to function properly. In comparison to centralised messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](./guide/managing-data.md).
+Database is essential for SimpleX Chat to function properly. In comparison to centralized messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](./guide/managing-data.md).
 
 ### Can I send files over SimpleX? 
 
@@ -74,7 +74,7 @@ When "Incognito Mode” is turned on, your currently chosen profile name and ima
 
 It is quite a complex process, but fortunately all of this happens in the background, so it's simply to use.
 
-Whenerver somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.
+Whenever somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.
 If interested, please read more: [Addresses and invitations](./guide/making-connections.md).
 
 ### How to configure and delete groups?
