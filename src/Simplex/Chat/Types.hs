@@ -1295,6 +1295,7 @@ data Connection = Connection
     pqSndEnabled :: Maybe PQEncryption,
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
+    inactive :: Bool,
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -1307,6 +1308,9 @@ authErrDisableCount = 10
 
 connDisabled :: Connection -> Bool
 connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
+
+connInactive :: Connection -> Bool
+connInactive Connection {inactive} = inactive
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
   deriving (Eq, Show)

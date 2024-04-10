@@ -3783,9 +3783,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        QCONT ->
+          processConnQCONT connEntity conn
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-          incAuthErrCounter connEntity conn err
+          processConnMERR connEntity conn err
         MERRS _ err -> do
           -- error cannot be AUTH error here
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -3949,10 +3951,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        QCONT ->
+          processConnQCONT connEntity conn
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId $ agentErrToItemStatus err
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-          incAuthErrCounter connEntity conn err
+          processConnMERR connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
           updateDirectItemsStatus ct conn (L.toList msgIds) $ agentErrToItemStatus err
@@ -4331,11 +4335,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+      QCONT ->
+        processConnQCONT connEntity conn
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentErrToItemStatus err
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-        incAuthErrCounter connEntity conn err
+        processConnMERR connEntity conn err
       MERRS msgIds err -> do
         let newStatus = agentErrToItemStatus err
         -- error cannot be AUTH error here
@@ -4462,9 +4468,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        QCONT ->
+          processConnQCONT connEntity conn
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-          incAuthErrCounter connEntity conn err
+          processConnMERR connEntity conn err
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4514,9 +4522,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XInfo p -> profileContactRequest invId chatVRange p Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
+      QCONT ->
+        processConnQCONT connEntity conn
       MERR _ err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-        incAuthErrCounter connEntity conn err
+        processConnMERR connEntity conn err
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4558,14 +4568,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | memberRole <= GRObserver = messageError "member is not allowed to send messages"
       | otherwise = a
 
-    incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
-    incAuthErrCounter connEntity conn err = do
+    processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
+    processConnMERR connEntity conn@Connection {inactive} err = do
       case err of
         SMP SMP.AUTH -> do
           authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ do
             toView $ CRConnectionDisabled connEntity
+        SMP SMP.QUOTA ->
+          unless inactive $ do
+            withStore' $ \db -> setConnectionInactive db user conn True
+            toView $ CRConnectionInactive connEntity True
         _ -> pure ()
+
+    -- TODO [inactive members] also mark as active on MSG, RCVD?
+    processConnQCONT :: ConnectionEntity -> Connection -> CM ()
+    processConnQCONT connEntity conn@Connection {inactive} =
+      when inactive $ do
+        withStore' $ \db -> setConnectionInactive db user conn False
+        toView $ CRConnectionInactive connEntity False
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
@@ -6470,6 +6491,7 @@ memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = c
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
+    | connInactive conn -> Nothing -- TODO [inactive members] make service messages pending?
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where

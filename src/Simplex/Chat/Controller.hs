@@ -746,6 +746,7 @@ data ChatResponse
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
+  | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
   | CRAgentUserDeleted {agentUserId :: Int64}

@@ -376,6 +376,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
+  CRConnectionInactive entity inactive -> viewConnectionEntityInactive entity inactive
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
         <> (", server: " <> sShow srv)
@@ -2064,6 +2065,11 @@ viewConnectionEntityDisabled entity = case entity of
   _ -> ["[" <> entityLabel <> "] connection is disabled"]
   where
     entityLabel = connEntityLabel entity
+
+viewConnectionEntityInactive :: ConnectionEntity -> Bool -> [StyledString]
+viewConnectionEntityInactive entity inactive
+  | inactive = ["[" <> connEntityLabel entity <> "] connection is marked as inactive"]
+  | otherwise = ["[" <> connEntityLabel entity <> "] inactive connection is marked as active"]
 
 connEntityLabel :: ConnectionEntity -> StyledString
 connEntityLabel = \case
