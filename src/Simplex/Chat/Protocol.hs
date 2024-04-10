@@ -283,6 +283,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
   XGrpMsgForward :: MemberId -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgSkipped :: SharedMsgId -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -699,6 +700,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpInfo_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
+  XGrpMsgSkipped_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
   XInfoProbeOk_ :: CMEventTag 'Json
@@ -749,6 +751,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpInfo_ -> "x.grp.info"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpMsgForward_ -> "x.grp.msg.forward"
+    XGrpMsgSkipped_ -> "x.grp.msg.skipped"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -800,6 +803,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.info" -> XGrpInfo_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.msg.forward" -> XGrpMsgForward_
+        "x.grp.msg.skipped" -> XGrpMsgSkipped_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
         "x.info.probe.ok" -> XInfoProbeOk_
@@ -847,6 +851,7 @@ toCMEventTag msg = case msg of
   XGrpInfo _ -> XGrpInfo_
   XGrpDirectInv _ _ -> XGrpDirectInv_
   XGrpMsgForward {} -> XGrpMsgForward_
+  XGrpMsgSkipped _ -> XGrpMsgSkipped_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -947,6 +952,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
       XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> p "msg" <*> p "msgTs"
+      XGrpMsgSkipped_ -> XGrpMsgSkipped <$> p "msgId"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1008,6 +1014,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
       XGrpMsgForward memberId msg msgTs -> o ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgSkipped msgId' -> o ["msgId" .= msgId']
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
