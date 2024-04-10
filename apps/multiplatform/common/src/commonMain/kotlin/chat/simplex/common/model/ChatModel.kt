@@ -1884,6 +1884,7 @@ data class ChatItem (
       quotedItem: CIQuote? = null,
       file: CIFile? = null,
       itemDeleted: CIDeleted? = null,
+      itemForwarded: CIForwardedFrom? = null,
       itemEdited: Boolean = false,
       itemTimed: CITimed? = null,
       editable: Boolean = true
@@ -2255,6 +2256,19 @@ sealed class CIDeleted {
   @Serializable @SerialName("blocked") class Blocked(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("blockedByAdmin") class BlockedByAdmin(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("moderated") class Moderated(val deletedTs: Instant?, val byGroupMember: GroupMember): CIDeleted()
+}
+
+@Serializable
+enum class MsgDirection {
+  @SerialName("rcv") Rcv,
+  @SerialName("snd") Snd;
+}
+
+@Serializable
+sealed class CIForwardedFrom {
+  @Serializable @SerialName("unknown") object Unknown: CIForwardedFrom()
+  @Serializable @SerialName("contact") class Contact(val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+  @Serializable @SerialName("group") class Group(val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
 }
 
 @Serializable
@@ -3251,7 +3265,8 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 @Serializable
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
-  val memberDeliveryStatuses: List<MemberDeliveryStatus>?
+  val memberDeliveryStatuses: List<MemberDeliveryStatus>?,
+  val forwardedFromChatItem: AChatItem?
 )
 
 @Serializable
