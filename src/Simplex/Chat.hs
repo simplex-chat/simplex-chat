@@ -4261,6 +4261,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpInfo p' -> xGrpInfo gInfo m' p' msg brokerTs
               XGrpDirectInv connReq mContent_ -> memberCanSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward memberId msg' msgTs -> xGrpMsgForward gInfo m' memberId msg' msgTs
+              XGrpMsgSkipped sharedMsgId -> xGrpMsgSkipped gInfo m' sharedMsgId msg brokerTs
               XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
               XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
@@ -4335,8 +4336,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      QCONT ->
+      QCONT -> do
         processConnQCONT connEntity conn
+        lastSharedMsgId <- withStore' $ \db -> getLastItemSharedMsgId db m
+        forM_ lastSharedMsgId $ \lastMsgId -> do
+          let conn' = conn {inactive = False} :: Connection
+          void $ sendDirectMemberMessage conn' (XGrpMsgSkipped lastMsgId) groupId
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentErrToItemStatus err
         -- group errors are silenced to reduce load on UI event log
@@ -5935,6 +5940,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
+
+    xGrpMsgSkipped :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> UTCTime -> CM ()
+    xGrpMsgSkipped gInfo m _sharedMsgId msg brokerTs = do
+      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent RGESkippedMessages)
+      groupMsgToView gInfo ci
+      -- TODO can request delivery starting with _sharedMsgId here
+      pure ()
 
     createUnknownMember :: GroupInfo -> MemberId -> CM GroupMember
     createUnknownMember gInfo memberId = do

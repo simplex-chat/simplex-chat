@@ -200,6 +200,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
       RGEMemberProfileUpdated {} -> False
+      RGESkippedMessages -> False
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -311,6 +312,7 @@ rcvGroupEventToText = \case
   RGEInvitedViaGroupLink -> "invited via your group link"
   RGEMemberCreatedContact -> "started direct connection with you"
   RGEMemberProfileUpdated {} -> "updated profile"
+  RGESkippedMessages -> "notified about skipped messages"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case

@@ -111,6 +111,7 @@ module Simplex.Chat.Store.Messages
     getGroupSndStatuses,
     getGroupSndStatusCounts,
     getGroupHistoryItems,
+    getLastItemSharedMsgId,
   )
 where
 
@@ -2581,3 +2582,22 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
             LIMIT ?
           |]
           (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
+
+getLastItemSharedMsgId :: DB.Connection -> GroupMember -> IO (Maybe SharedMsgId)
+getLastItemSharedMsgId db GroupMember {groupMemberId} = do
+  fmap join . maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT shared_msg_id
+        FROM chat_items
+        WHERE chat_item_id = (
+          SELECT chat_item_id
+          FROM group_snd_item_statuses
+          WHERE group_member_id = ?
+            AND (group_snd_item_status LIKE 'snd_sent%' OR group_snd_item_status LIKE 'snd_rcvd%')
+          ORDER BY created_at DESC, updated_at DESC
+          LIMIT 1
+        )
+      |]
+      (Only groupMemberId)
