@@ -30,13 +30,13 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 **In simplex-chat repo**
 
-- `stable` - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.3).
+- `stable` - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.4).
 
 - `stable-android` - used to build stable Android core library with Nix (GHC 8.10.7) - only for Android armv7a.
 
 - `stable-ios` - used to build stable iOS core library with Nix (GHC 8.10.7) – this branch should be the same as `stable-android` except Nix configuration files. Deprecated.
 
-- `master` - branch for beta version releases (GHC 9.6.3).
+- `master` - branch for beta version releases (GHC 9.6.4).
 
 - `master-ghc8107` - branch for beta version releases (GHC 8.10.7). Deprecated.
 
@@ -50,7 +50,7 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 **In simplexmq repo**
 
-- `master` - uses GHC 9.6.3 its commit should be used in `master` branch of simplex-chat repo.
+- `master` - uses GHC 9.6.4 its commit should be used in `master` branch of simplex-chat repo.
 
 - `master-ghc8107` - its commit should be used in `master-android` (and `master-ios`) branch of simplex-chat repo. Deprecated.
 
@@ -77,28 +77,28 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 7. Independently, `master` branch of simplexmq repo should be merged to `stable` branch on stable releases.
 
 
-## Differences between GHC 8.10.7 and GHC 9.6.3
+## Differences between GHC 8.10.7 and GHC 9.6.4
 
 1. The main difference is related to `DuplicateRecordFields` extension.
 
-It is no longer possible in GHC 9.6.3 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:
+It is no longer possible in GHC 9.6.4 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:
 
 ```haskell
 {-# LANGUAGE DuplicateRecordFields #-}
--- use this in GHC 9.6.3 when needed
+-- use this in GHC 9.6.4 when needed
 {-# LANGUAGE OverloadedRecordDot #-}
 
--- GHC 9.6.3 syntax
+-- GHC 9.6.4 syntax
 let x = record.field
 
--- GHC 8.10.7 syntax removed in GHC 9.6.3
+-- GHC 8.10.7 syntax absent in GHC 9.6.4
 let x = field (record :: Record)
 ```
 
 It is still possible to specify type when using record update syntax, use this pragma to suppress compiler warning:
 
 ```haskell
--- use this in GHC 9.6.3 when needed
+-- use this in GHC 9.6.4 when needed
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 let r' = (record :: Record) {field = value}
@@ -107,7 +107,7 @@ let r' = (record :: Record) {field = value}
 2. Most monad functions now have to be imported from `Control.Monad`, and not from specific monad modules (e.g. `Control.Monad.Except`).
 
 ```haskell
--- use this in GHC 9.6.3 when needed
+-- use this in GHC 9.6.4 when needed
 import Control.Monad
 ```
 
