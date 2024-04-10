@@ -1883,8 +1883,8 @@ data class ChatItem (
       status: CIStatus = CIStatus.SndNew(),
       quotedItem: CIQuote? = null,
       file: CIFile? = null,
-      itemDeleted: CIDeleted? = null,
       itemForwarded: CIForwardedFrom? = null,
+      itemDeleted: CIDeleted? = null,
       itemEdited: Boolean = false,
       itemTimed: CITimed? = null,
       editable: Boolean = true
