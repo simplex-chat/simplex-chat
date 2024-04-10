@@ -41,7 +41,6 @@ import chat.simplex.common.helpers.showAllowPermissionInSettingsAlert
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.Contact
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
@@ -150,7 +149,7 @@ actual fun ActiveCallView() {
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
             setCallSound(call.soundSpeaker, audioViaBluetooth)
             CallSoundsPlayer.startConnectingCallSound(scope)
-            startWaitingCallReceipt(scope)
+            activeCallWaitDeliveryReceipt(scope)
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
@@ -281,22 +280,6 @@ fun ActiveCallOverlayDisabled(call: Call) {
     toggleSound = {},
     flipCamera = {}
   )
-}
-
-private fun startWaitingCallReceipt(scope: CoroutineScope) = scope.launch(Dispatchers.Default) {
-  for (apiResp in controller.messagesChannel) {
-    val call = chatModel.activeCall.value
-    if (call == null || call.callState > CallState.InvitationSent) break
-    val msg = apiResp.resp
-    if (apiResp.remoteHostId == call.remoteHostId &&
-      msg is CR.ChatItemStatusUpdated &&
-      msg.chatItem.chatInfo.id == call.contact.id &&
-      msg.chatItem.chatItem.content is CIContent.SndCall &&
-      msg.chatItem.chatItem.meta.itemStatus is CIStatus.SndRcvd) {
-      CallSoundsPlayer.startInCallSound(scope)
-      break
-    }
-  }
 }
 
 private fun setCallSound(speaker: Boolean, audioViaBluetooth: MutableState<Boolean>) {

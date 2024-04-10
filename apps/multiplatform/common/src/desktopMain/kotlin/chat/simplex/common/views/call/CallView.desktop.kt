@@ -43,10 +43,7 @@ actual fun ActiveCallView() {
           chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
           chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
           CallSoundsPlayer.startConnectingCallSound(scope)
-          withBGApi {
-            delay(7000)
-            CallSoundsPlayer.startInCallSound(scope)
-          }
+          activeCallWaitDeliveryReceipt(scope)
         }
         is WCallResponse.Offer -> withBGApi {
           chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
