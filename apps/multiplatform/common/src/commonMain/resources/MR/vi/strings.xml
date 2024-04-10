@@ -102,4 +102,9 @@
     <string name="la_app_passcode">Mật mã ứng dụng</string>
     <string name="settings_section_title_icon">BIỂU TƯỢNG ỨNG DỤNG</string>
     <string name="v5_0_app_passcode">Mật mã ứng dụng</string>
+    <string name="app_version_name">Phiên bản ứng dụng: v%s</string>
+    <string name="app_version_title">Phiên bản ứng dụng</string>
+    <string name="v5_3_new_interface_languages_descr">Tiếng Ả Rập, tiếng Bungari, tiếng Phần Lan, tiếng Do Thái, tiếng Thái và tiếng Ukraina - trân thành gửi lời cảm ơn tới các tình nguyện viên dịch thuật và Weblate.</string>
+    <string name="migrate_from_device_archiving_database">Lưu trữ cơ sở dữ liệu</string>
+    <string name="migrate_from_device_archive_and_upload">Lưu trữ và tải lên</string>
 </resources>
