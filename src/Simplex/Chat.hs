@@ -4569,22 +4569,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise = a
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
-    processConnMERR connEntity conn@Connection {inactive} err = do
+    processConnMERR connEntity conn err = do
       case err of
         SMP SMP.AUTH -> do
           authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ do
             toView $ CRConnectionDisabled connEntity
         SMP SMP.QUOTA ->
-          unless inactive $ do
+          unless (connInactive conn) $ do
             withStore' $ \db -> setConnectionInactive db user conn True
             toView $ CRConnectionInactive connEntity True
         _ -> pure ()
 
     -- TODO [inactive members] also mark as active on MSG, RCVD?
     processConnQCONT :: ConnectionEntity -> Connection -> CM ()
-    processConnQCONT connEntity conn@Connection {inactive} =
-      when inactive $ do
+    processConnQCONT connEntity conn =
+      when (connInactive conn) $ do
         withStore' $ \db -> setConnectionInactive db user conn False
         toView $ CRConnectionInactive connEntity False
 
