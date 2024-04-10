@@ -20,6 +20,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -350,6 +351,8 @@ object ChatController {
   var ctrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
+  val messagesChannel: Channel<APIResponse> = Channel()
+
   val chatModel = ChatModel
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
@@ -481,6 +484,7 @@ object ChatController {
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
+              messagesChannel.trySend(msg)
             }
             if (finishedWithoutTimeout == null) {
               Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
