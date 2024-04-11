@@ -344,6 +344,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
+    deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
@@ -353,13 +354,14 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let editable = case itemContent of
+  let deletable = case itemContent of
         CISndMsgContent _ ->
           case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted && isNothing itemForwarded
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted && isNothing itemForwarded
+            SCTLocal -> isNothing itemDeleted
+            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
+      editable = deletable && isNothing itemForwarded
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -374,6 +376,7 @@ dummyMeta itemId ts itemText =
       itemEdited = False,
       itemTimed = Nothing,
       itemLive = Nothing,
+      deletable = False,
       editable = False,
       forwardedByMember = Nothing,
       createdAt = ts,
