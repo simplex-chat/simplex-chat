@@ -2546,6 +2546,7 @@ public struct CIMeta: Decodable {
     public var itemStatus: CIStatus
     public var createdAt: Date
     public var updatedAt: Date
+    public var itemForwarded: CIForwardedFrom?
     public var itemDeleted: CIDeleted?
     public var itemEdited: Bool
     public var itemTimed: CITimed?
@@ -2711,6 +2712,17 @@ public enum CIDeleted: Decodable {
         case .moderated: return "moderated"
         }
     }
+}
+
+public enum MsgDirection: Decodable {
+    case rcv
+    case snd
+}
+
+public enum CIForwardedFrom: Decodable {
+    case unknown
+    case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
+    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
 }
 
 public enum CIDeleteMode: String, Decodable {
@@ -3751,6 +3763,7 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
 public struct ChatItemInfo: Decodable {
     public var itemVersions: [ChatItemVersion]
     public var memberDeliveryStatuses: [MemberDeliveryStatus]?
+    public var forwardedFromChatItem: AChatItem?
 }
 
 public struct ChatItemVersion: Decodable {

@@ -4772,6 +4772,7 @@ sealed class ChatErrorType {
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
+      is InvalidForward -> "invalidForward"
       is InvalidChatItemUpdate -> "invalidChatItemUpdate"
       is InvalidChatItemDelete -> "invalidChatItemDelete"
       is HasCurrentCall -> "hasCurrentCall"
@@ -4850,6 +4851,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
+  @Serializable @SerialName("invalidForward") object InvalidForward: ChatErrorType()
   @Serializable @SerialName("invalidChatItemUpdate") object InvalidChatItemUpdate: ChatErrorType()
   @Serializable @SerialName("invalidChatItemDelete") object InvalidChatItemDelete: ChatErrorType()
   @Serializable @SerialName("hasCurrentCall") object HasCurrentCall: ChatErrorType()

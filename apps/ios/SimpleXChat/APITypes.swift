@@ -1717,6 +1717,7 @@ public enum ChatErrorType: Decodable {
     case fallbackToSMPProhibited(fileId: Int64)
     case inlineFileProhibited(fileId: Int64)
     case invalidQuote
+    case invalidForward
     case invalidChatItemUpdate
     case invalidChatItemDelete
     case hasCurrentCall
