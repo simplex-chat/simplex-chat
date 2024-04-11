@@ -1247,4 +1247,5 @@
 \n- 編輯紀錄。</string>
     <string name="search_verb">搜尋</string>
     <string name="la_mode_off">已關閉</string>
+    <string name="network_type_other"></string>
 </resources>
