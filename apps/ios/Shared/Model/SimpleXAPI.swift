@@ -353,11 +353,20 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
+func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64) async -> ChatItem? {
+    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId)
+    return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
+}
+
 func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
-    let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
+    return await processSendMessageCmd(toChatType: type, cmd: cmd)
+}
+
+private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async -> ChatItem? {
+    let chatModel = ChatModel.shared
     let r: ChatResponse
-    if type == .direct {
+    if toChatType == .direct {
         var cItem: ChatItem? = nil
         let endTask = beginBGTask({
             if let cItem = cItem {
@@ -397,7 +406,7 @@ func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) 
 }
 
 private func sendMessageErrorAlert(_ r: ChatResponse) {
-    logger.error("apiSendMessage error: \(String(describing: r))")
+    logger.error("send message error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
         message: "Error: \(String(describing: r))"

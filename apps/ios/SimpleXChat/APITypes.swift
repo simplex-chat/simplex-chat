@@ -50,6 +50,7 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
+    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -195,6 +196,7 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
+            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId): return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -343,6 +345,7 @@ public enum ChatCommand {
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
+            case .apiForwardChatItem: return "apiForwardChatItem"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
