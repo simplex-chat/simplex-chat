@@ -2828,14 +2828,14 @@ Ezt nem vonható vissza!</target>
         <target>Csoport</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group already exists" xml:space="preserve">
+      <trans-unit id="Group already exists" xml:space="preserve" approved="no">
         <source>Group already exists</source>
-        <target>A csoport már létezik</target>
+        <target state="translated">Már tagja ennek a csoportnak:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group already exists!" xml:space="preserve">
+      <trans-unit id="Group already exists!" xml:space="preserve" approved="no">
         <source>Group already exists!</source>
-        <target>A csoport már létezik!</target>
+        <target state="translated">Már tagja a csoportnak!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
