@@ -46,6 +46,7 @@
   <string name="invalid_message_format">invalid message format</string>
   <string name="live">LIVE</string>
   <string name="moderated_description">moderated</string>
+  <string name="forwarded_description">forwarded</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
   <string name="error_showing_message">error showing message</string>
