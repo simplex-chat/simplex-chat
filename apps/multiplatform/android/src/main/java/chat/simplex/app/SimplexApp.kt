@@ -290,6 +290,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
         activeCallDestroyWebView()
       }
 
+      override fun androidRestartNetworkObserver() {
+        NetworkObserver.shared.restartNetworkObserver()
+      }
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {

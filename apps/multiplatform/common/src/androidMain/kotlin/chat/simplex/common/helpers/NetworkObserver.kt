@@ -77,19 +77,15 @@ class NetworkObserver {
     noNetworkJob.cancel()
     if (info.online) {
       withBGApi {
-        if (controller.hasChatCtrl()) {
-          if (controller.apiSetNetworkInfo(info)) {
-            chatModel.networkInfo.value = info
-          }
+        if (controller.hasChatCtrl() && controller.apiSetNetworkInfo(info)) {
+          chatModel.networkInfo.value = info
         }
       }
     } else {
       noNetworkJob = withBGApi {
         delay(3000)
-        if (controller.hasChatCtrl()) {
-          if (controller.apiSetNetworkInfo(info)) {
-            chatModel.networkInfo.value = info
-          }
+        if (controller.hasChatCtrl() && controller.apiSetNetworkInfo(info)) {
+          chatModel.networkInfo.value = info
         }
       }
     }

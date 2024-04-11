@@ -87,7 +87,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       Log.d(TAG, "Unable to migrate successfully: $res")
       return
     }
-    restartNetworkObserver()
+    platform.androidRestartNetworkObserver()
     controller.apiSetTempFolder(coreTmpDir.absolutePath)
     controller.apiSetFilesFolder(appFilesDir.absolutePath)
     if (appPlatform.isDesktop) {

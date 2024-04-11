@@ -27,8 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
 import chat.simplex.common.views.helpers.*
@@ -193,12 +192,13 @@ fun NetworkAndServersView() {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
 
-    SectionDividerSpaced()
-
-    SectionView(generalGetString(MR.strings.settings_section_title_network_connection).uppercase()) {
-      val info = remember { chatModel.networkInfo }.value
-      SettingsActionItemWithContent(icon = null, info.networkType.text) {
-        Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
+    if (appPlatform.isAndroid) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection).uppercase()) {
+        val info = remember { chatModel.networkInfo }.value
+        SettingsActionItemWithContent(icon = null, info.networkType.text) {
+          Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
+        }
       }
     }
     SectionBottomSpacer()

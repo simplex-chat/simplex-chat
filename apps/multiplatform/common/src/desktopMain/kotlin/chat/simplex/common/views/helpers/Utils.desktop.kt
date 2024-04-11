@@ -202,5 +202,3 @@ actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encode(this)
 
 @OptIn(ExperimentalEncodingApi::class)
 actual fun String.toByteArrayFromBase64ForPassphrase(): ByteArray = Base64.decode(this)
-
-actual fun restartNetworkObserver() {}
