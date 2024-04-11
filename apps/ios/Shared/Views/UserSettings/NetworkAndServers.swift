@@ -24,6 +24,7 @@ private enum NetworkAlert: Identifiable {
 }
 
 struct NetworkAndServers: View {
+    @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var cfgLoaded = false
     @State private var currentNetCfg = NetCfg.defaults
@@ -80,6 +81,14 @@ struct NetworkAndServers: View {
                             .navigationTitle("Your ICE servers")
                     } label: {
                         Text("WebRTC ICE servers")
+                    }
+                }
+
+                Section("Network connection") {
+                    HStack {
+                        Text(m.networkInfo.networkType.text)
+                        Spacer()
+                        Image(systemName: "circle.fill").foregroundColor(m.networkInfo.online ? .green : .red)
                     }
                 }
             }

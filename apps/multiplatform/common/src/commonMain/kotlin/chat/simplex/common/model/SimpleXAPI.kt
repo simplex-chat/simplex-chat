@@ -20,6 +20,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -350,10 +351,14 @@ object ChatController {
   var ctrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
+  val messagesChannel: Channel<APIResponse> = Channel()
+
   val chatModel = ChatModel
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
+
+  fun hasChatCtrl() = ctrl != -1L && ctrl != null
 
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
@@ -481,6 +486,7 @@ object ChatController {
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
+              messagesChannel.trySend(msg)
             }
             if (finishedWithoutTimeout == null) {
               Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
@@ -874,6 +880,9 @@ object ChatController {
       }
     }
   }
+
+  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
+    sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
@@ -2409,6 +2418,7 @@ sealed class CC {
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
+  class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2551,6 +2561,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
+    is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
@@ -2688,6 +2699,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
+    is APISetNetworkInfo -> "apiSetNetworkInfo"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
@@ -3035,7 +3047,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 20_000_000,
         tcpTimeout = 15_000_000,
-        tcpTimeoutPerKb = 45_000,
+        tcpTimeoutPerKb = 10_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -3049,7 +3061,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 30_000_000,
         tcpTimeout = 20_000_000,
-        tcpTimeoutPerKb = 60_000,
+        tcpTimeoutPerKb = 15_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -4760,6 +4772,7 @@ sealed class ChatErrorType {
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
+      is InvalidForward -> "invalidForward"
       is InvalidChatItemUpdate -> "invalidChatItemUpdate"
       is InvalidChatItemDelete -> "invalidChatItemDelete"
       is HasCurrentCall -> "hasCurrentCall"
@@ -4838,6 +4851,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
+  @Serializable @SerialName("invalidForward") object InvalidForward: ChatErrorType()
   @Serializable @SerialName("invalidChatItemUpdate") object InvalidChatItemUpdate: ChatErrorType()
   @Serializable @SerialName("invalidChatItemDelete") object InvalidChatItemDelete: ChatErrorType()
   @Serializable @SerialName("hasCurrentCall") object HasCurrentCall: ChatErrorType()
@@ -5526,4 +5540,27 @@ enum class AppSettingsLockScreenCalls {
         CallOnLockScreen.ACCEPT -> ACCEPT
       }
   }
+}
+
+@Serializable
+data class UserNetworkInfo(
+  val networkType: UserNetworkType,
+  val online: Boolean,
+)
+
+enum class UserNetworkType {
+  @SerialName("none") NONE,
+  @SerialName("cellular") CELLULAR,
+  @SerialName("wifi") WIFI,
+  @SerialName("ethernet") ETHERNET,
+  @SerialName("other") OTHER;
+
+  val text: String
+    get() = when (this) {
+      NONE -> generalGetString(MR.strings.network_type_no_network_connection)
+      CELLULAR -> generalGetString(MR.strings.network_type_cellular)
+      WIFI -> generalGetString(MR.strings.network_type_network_wifi)
+      ETHERNET -> generalGetString(MR.strings.network_type_ethernet)
+      OTHER -> generalGetString(MR.strings.network_type_other)
+    }
 }

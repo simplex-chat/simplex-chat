@@ -296,6 +296,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 }
 
 actual typealias SoundPlayer = chat.simplex.common.helpers.SoundPlayer
+actual typealias CallSoundsPlayer = chat.simplex.common.helpers.CallSoundsPlayer
 
 class CryptoMediaSource(val data: ByteArray) : MediaDataSource() {
   override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {

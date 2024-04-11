@@ -448,6 +448,9 @@ struct MigrateToDevice: View {
                     case .rcvFileError:
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
+                    case .chatError(_, .error(.noRcvFileUser)):
+                        alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
+                        migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
                         logger.debug("unsupported event: \(msg.responseType)")
                     }

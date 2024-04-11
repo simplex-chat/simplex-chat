@@ -534,6 +534,12 @@ func setNetworkConfig(_ cfg: NetCfg, ctrl: chat_ctrl? = nil) throws {
     throw r
 }
 
+func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo) throws {
+    let r = chatSendCmdSync(.apiSetNetworkInfo(networkInfo: networkInfo))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func reconnectAllServers() async throws {
     try await sendCommandOkResp(.reconnectAllServers)
 }
@@ -1297,6 +1303,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     defer { m.ctrlInitInProgress = false }
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
+    NetworkObserver.shared.restartMonitor()
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
@@ -1462,6 +1469,8 @@ class ChatReceiver {
     private var receiveMessages = true
     private var _lastMsgTime = Date.now
 
+    var messagesChannel: ((ChatResponse) -> Void)? = nil
+
     static let shared = ChatReceiver()
 
     var lastMsgTime: Date { get { _lastMsgTime } }
@@ -1479,6 +1488,9 @@ class ChatReceiver {
             if let msg = await chatRecvMsg() {
                 self._lastMsgTime = .now
                 await processReceivedMsg(msg)
+                if let messagesChannel {
+                    messagesChannel(msg)
+                }
             }
             _ = try? await Task.sleep(nanoseconds: 7_500_000)
         }

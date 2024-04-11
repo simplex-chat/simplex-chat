@@ -16,8 +16,7 @@ import androidx.work.*
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.app.views.call.CallActivity
-import chat.simplex.common.helpers.APPLICATION_ID
-import chat.simplex.common.helpers.requiresIgnoringBattery
+import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
@@ -289,6 +288,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidCallEnded() {
         activeCallDestroyWebView()
+      }
+
+      override fun androidRestartNetworkObserver() {
+        NetworkObserver.shared.restartNetworkObserver()
       }
 
       @SuppressLint("SourceLockedOrientationActivity")
