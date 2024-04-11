@@ -1719,4 +1719,10 @@
     <string name="permissions_camera">Kamera</string>
     <string name="permissions_camera_and_record_audio">Kamera és mikrofon</string>
     <string name="permissions_required">Engedélyek megadása</string>
+    <string name="network_type_ethernet">Vezetékes Ethernet</string>
+    <string name="network_type_cellular">Mobilhálózat</string>
+    <string name="settings_section_title_network_connection">Internetkapcsolat</string>
+    <string name="network_type_no_network_connection">Nincs hálózati kapcsolat</string>
+    <string name="network_type_other">Egyéb</string>
+    <string name="network_type_network_wifi">WiFi</string>
 </resources>
