@@ -187,6 +187,7 @@
 		8C69FE7D2B8C7D2700267E38 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */; };
 		8C7D949A2B88952700B7B9E1 /* MigrateToDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */; };
 		8C7DF3202B7CDB0A00C886D0 /* MigrateFromDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */; };
+		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D741547729AF89AF0022400A /* StoreKit.framework */; };
@@ -480,6 +481,7 @@
 		8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateToDevice.swift; sourceTree = "<group>"; };
 		8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateFromDevice.swift; sourceTree = "<group>"; };
+		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -623,6 +625,7 @@
 				5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */,
 				5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */,
 				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
+				8CC956ED2BC0041000412A11 /* NetworkObserver.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1176,6 +1179,7 @@
 				5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */,
 				5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */,
 				6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */,
+				8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CA7DFC329302AF000F7FDDE /* AppSheet.swift in Sources */,
