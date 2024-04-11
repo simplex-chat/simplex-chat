@@ -74,7 +74,7 @@ struct ActiveCallView: View {
             CallSoundsPlayer.shared.stop()
             try? AVAudioSession.sharedInstance().setCategory(.soloAmbient)
             if (wasConnected) {
-                CallSoundsPlayer.shared.vibrate()
+                CallSoundsPlayer.shared.vibrate(long: true)
             }
         }
         .background(m.activeCallViewIsCollapsed ? .clear : .black)
@@ -159,7 +159,7 @@ struct ActiveCallView: View {
                     call.callState = .connected
                     call.connectedAt = .now
                     if !wasConnected {
-                        CallSoundsPlayer.shared.vibrate(2)
+                        CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
                     }
                 }
@@ -180,7 +180,7 @@ struct ActiveCallView: View {
                 call.connectionInfo = connectionInfo
                 call.connectedAt = .now
                 if !wasConnected {
-                    CallSoundsPlayer.shared.vibrate(2)
+                    CallSoundsPlayer.shared.vibrate(long: false)
                     wasConnected = true
                 }
             case .ended:

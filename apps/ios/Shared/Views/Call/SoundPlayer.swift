@@ -95,12 +95,12 @@ class CallSoundsPlayer {
         audioPlayer = nil
     }
 
-    func vibrate(_ times: Int = 1) {
+    func vibrate(long: Bool) {
         // iOS just don't want to vibrate more than once after a short period of time, and all 'styles' feel the same
-        if times == 1 {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        } else {
+        if long {
             AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
+        } else {
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         }
     }
 }
