@@ -167,7 +167,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
         // can't be higher than 130ms to avoid overflow on 32bit systems
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
-          listOf(15_000, 30_000, 45_000, 60_000, 90_000, 120_000), secondsLabel
+          listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel
         )
       }
       SectionItemView {

@@ -77,6 +77,7 @@ public enum ChatCommand {
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
+    case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
     case reconnectAllServers
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
@@ -221,6 +222,7 @@ public enum ChatCommand {
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
+            case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
             case .reconnectAllServers: return "/reconnect"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
@@ -368,6 +370,7 @@ public enum ChatCommand {
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
+            case .apiSetNetworkInfo: return "apiSetNetworkInfo"
             case .reconnectAllServers: return "reconnectAllServers"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
@@ -1261,7 +1264,7 @@ public struct NetCfg: Codable, Equatable {
         sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 20_000_000,
         tcpTimeout: 15_000_000,
-        tcpTimeoutPerKb: 45_000,
+        tcpTimeoutPerKb: 10_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1273,7 +1276,7 @@ public struct NetCfg: Codable, Equatable {
         sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 30_000_000,
         tcpTimeout: 20_000_000,
-        tcpTimeoutPerKb: 60_000,
+        tcpTimeoutPerKb: 15_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -2085,4 +2088,32 @@ public enum AppSettingsLockScreenCalls: String, Codable {
     case disable
     case show
     case accept
+}
+
+public struct UserNetworkInfo: Codable, Equatable {
+    public let networkType: UserNetworkType
+    public let online: Bool
+
+    public init(networkType: UserNetworkType, online: Bool) {
+        self.networkType = networkType
+        self.online = online
+    }
+}
+
+public enum UserNetworkType: String, Codable {
+    case none
+    case cellular
+    case wifi
+    case ethernet
+    case other
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .none: "No network connection"
+        case .cellular: "Cellular"
+        case .wifi: "WiFi"
+        case .ethernet: "Wired ethernet"
+        case .other: "Other"
+        }
+    }
 }

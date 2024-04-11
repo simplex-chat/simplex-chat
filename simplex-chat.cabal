@@ -140,6 +140,7 @@ library
       Simplex.Chat.Migrations.M20240228_pq
       Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
       Simplex.Chat.Migrations.M20240324_custom_data
+      Simplex.Chat.Migrations.M20240402_item_forwarded
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -575,6 +576,7 @@ test-suite simplex-chat-test
       ChatTests.ChatList
       ChatTests.Direct
       ChatTests.Files
+      ChatTests.Forward
       ChatTests.Groups
       ChatTests.Local
       ChatTests.Profiles
