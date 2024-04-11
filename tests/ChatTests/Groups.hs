@@ -1,6 +1,8 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Groups where
 
@@ -13,12 +15,17 @@ import qualified Data.ByteString as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -149,6 +156,8 @@ chatGroupTests = do
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
+  describe "group member inactivity" $ do
+    fit "mark member inactive on reaching quota" testGroupMemberInactive
   where
     _0 = supportedChatVRange PQSupportOff -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6018,3 +6027,69 @@ testBlockForAllCantRepeat =
       [alice, cath] *<# "#team bob> 3"
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
+
+testGroupMemberInactive :: HasCallStack => FilePath -> IO ()
+testGroupMemberInactive tmp = do
+  withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp cfg' opts' "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts tmp cfg' opts' "bob" bobProfile $ \bob -> do
+        createGroup2 "team" alice bob
+
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        bob #> "#team hey"
+        alice <# "#team bob> hey"
+
+      threadDelay 1000000
+
+      -- bob is offline
+      alice #> "#team 1"
+      alice #> "#team 2"
+      alice #> "#team 3"
+      alice <## "[#team bob] connection is marked as inactive"
+      -- 4 and 5 shouldn't be attempted to be sent to bob
+      alice #> "#team 4"
+      alice #> "#team 5"
+
+      withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
+        bob <## "1 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        bob <# "#team alice> 1"
+        bob <# "#team alice> 2"
+        bob <#. "#team alice> skipped message ID"
+        alice <## "[#team bob] inactive connection is marked as active"
+
+        threadDelay 1000000
+        bob ##> "/tail #team 4"
+        bob <# "#team alice> 1"
+        bob <# "#team alice> 2"
+        bob <#. "#team alice> skipped message ID"
+        bob <# "#team alice> notified about skipped messages"
+
+        -- delivery works
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        bob #> "#team hey"
+        alice <# "#team bob> hey"
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS)],
+          msgQueueQuota = 2
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }

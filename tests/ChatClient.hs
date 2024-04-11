@@ -346,8 +346,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      -- when True $ do
-      when (printOutput cc) $ do
+      when True $ do
+      -- when (printOutput cc) $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -399,8 +399,8 @@ testChatCfg4 cfg p1 p2 p3 p4 test = testChatN cfg testOpts [p1, p2, p3, p4] test
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-serverCfg :: ServerConfig
-serverCfg =
+smpServerCfg :: ServerConfig
+smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
@@ -431,7 +431,10 @@ serverCfg =
     }
 
 withSmpServer :: IO () -> IO ()
-withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg)
+withSmpServer = withSmpServer' smpServerCfg
+
+withSmpServer' :: ServerConfig -> IO () -> IO ()
+withSmpServer' cfg = serverBracket (`runSMPServerBlocking` cfg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
