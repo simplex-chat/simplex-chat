@@ -1017,6 +1017,7 @@
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
+  <string name="settings_section_title_network_connection">Network connection</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
   <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
   <string name="settings_section_title_use_from_desktop">Use from desktop</string>
@@ -1925,4 +1926,11 @@
   <string name="migrate_from_device_check_connection_and_try_again">Check your internet connection and try again</string>
   <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Warning</b>: the archive will be deleted.]]></string>
   <string name="migrate_from_device_error_verifying_passphrase">Error verifying passphrase:</string>
+
+<!-- NetworkObserver.kt -->
+  <string name="network_type_no_network_connection">No network connection</string>
+  <string name="network_type_cellular">Cellular</string>
+  <string name="network_type_network_wifi">WiFi</string>
+  <string name="network_type_ethernet">Wired ethernet</string>
+  <string name="network_type_other">Other</string>
 </resources>

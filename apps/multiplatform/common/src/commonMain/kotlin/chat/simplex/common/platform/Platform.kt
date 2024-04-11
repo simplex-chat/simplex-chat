@@ -23,6 +23,7 @@ interface PlatformInterface {
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}
+  fun androidRestartNetworkObserver() {}
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
   @Composable fun desktopScrollBarComponents(): Triple<Animatable<Float, AnimationVector1D>, Modifier, MutableState<Job>> = remember { Triple(Animatable(0f), Modifier, mutableStateOf(Job())) }
