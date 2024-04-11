@@ -65,6 +65,8 @@ struct FramedItemView: View {
                                 }
                             }
                         }
+                } else if chatItem.meta.itemForwarded != nil {
+                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text("forwarded").italic())
                 }
 
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: framedMsgContentView)
@@ -353,9 +355,9 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 
 func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
-        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
     } else if case let .video(text, _, _) = ci.content.msgContent {
-        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
     }
     return false
 }
