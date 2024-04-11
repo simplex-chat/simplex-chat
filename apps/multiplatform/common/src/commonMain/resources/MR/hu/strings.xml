@@ -497,7 +497,7 @@
     <string name="enable_self_destruct">Önmegsemmisítés engedélyezése</string>
     <string name="v5_2_favourites_filter_descr">Olvasatlan és kedvenc csevegésekre való szűrés.</string>
     <string name="failed_to_parse_chats_title">A csevegések betöltése sikertelen</string>
-    <string name="connect_plan_group_already_exists">A csoport már létezik!</string>
+    <string name="connect_plan_group_already_exists">Már tagja a csoportnak!</string>
     <string name="v4_4_french_interface">Francia kezelőfelület</string>
     <string name="v4_2_group_links">Csoport hivatkozások</string>
     <string name="v5_1_message_reactions_descr">Végre, megvannak! 🚀</string>
@@ -1724,5 +1724,5 @@
     <string name="settings_section_title_network_connection">Internetkapcsolat</string>
     <string name="network_type_no_network_connection">Nincs hálózati kapcsolat</string>
     <string name="network_type_other">Egyéb</string>
-    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_network_wifi">Wi-Fi</string>
 </resources>
