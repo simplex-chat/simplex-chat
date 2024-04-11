@@ -5543,16 +5543,11 @@ data class UserNetworkInfo(
 )
 
 enum class UserNetworkType {
-  @SerialName("none")
-  NONE,
-  @SerialName("cellular")
-  CELLULAR,
-  @SerialName("wifi")
-  WIFI,
-  @SerialName("ethernet")
-  ETHERNET,
-  @SerialName("other")
-  OTHER;
+  @SerialName("none") NONE,
+  @SerialName("cellular") CELLULAR,
+  @SerialName("wifi") WIFI,
+  @SerialName("ethernet") ETHERNET,
+  @SerialName("other") OTHER;
 
   val text: String
     get() = when (this) {
