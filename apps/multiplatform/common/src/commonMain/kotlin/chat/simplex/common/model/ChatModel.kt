@@ -118,6 +118,7 @@ object ChatModel {
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
 
   val clipboardHasText = mutableStateOf(false)
+  val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
 
   val updatingChatsMutex: Mutex = Mutex()
   val changingActiveUserMutex: Mutex = Mutex()
