@@ -2372,10 +2372,10 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, editable: Bool = true) -> ChatItem {
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, editable: editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -2466,6 +2466,7 @@ public struct ChatItem: Identifiable, Decodable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                deletable: false,
                 editable: false
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
@@ -2487,6 +2488,7 @@ public struct ChatItem: Identifiable, Decodable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: true,
+                deletable: false,
                 editable: false
             ),
             content: .sndMsgContent(msgContent: .text("")),
@@ -2551,6 +2553,7 @@ public struct CIMeta: Decodable {
     public var itemEdited: Bool
     public var itemTimed: CITimed?
     public var itemLive: Bool?
+    public var deletable: Bool
     public var editable: Bool
 
     public var timestampText: Text { get { formatTimestampText(itemTs) } }
@@ -2567,7 +2570,7 @@ public struct CIMeta: Decodable {
         itemStatus.statusIcon(metaColor)
     }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -2578,6 +2581,7 @@ public struct CIMeta: Decodable {
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
             itemLive: itemLive,
+            deletable: deletable,
             editable: editable
         )
     }
@@ -2593,6 +2597,7 @@ public struct CIMeta: Decodable {
             itemDeleted: nil,
             itemEdited: false,
             itemLive: false,
+            deletable: false,
             editable: false
         )
     }
