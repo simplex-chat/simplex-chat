@@ -6040,8 +6040,6 @@ testGroupMemberInactive tmp = do
         bob #> "#team hey"
         alice <# "#team bob> hey"
 
-      threadDelay 1000000
-
       -- bob is offline
       alice #> "#team 1"
       alice #> "#team 2"
@@ -6058,13 +6056,6 @@ testGroupMemberInactive tmp = do
         bob <# "#team alice> 2"
         bob <#. "#team alice> skipped message ID"
         alice <## "[#team bob] inactive connection is marked as active"
-
-        threadDelay 1000000
-        bob ##> "/tail #team 4"
-        bob <# "#team alice> 1"
-        bob <# "#team alice> 2"
-        bob <#. "#team alice> skipped message ID"
-        bob <# "#team alice> notified about skipped messages"
 
         -- delivery works
         alice #> "#team hi"

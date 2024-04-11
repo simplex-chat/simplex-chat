@@ -29,7 +29,6 @@ data RcvGroupEvent
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
   | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
-  | RGESkippedMessages
   deriving (Show)
 
 data SndGroupEvent

@@ -5943,9 +5943,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
 
     xGrpMsgSkipped :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> UTCTime -> CM ()
-    xGrpMsgSkipped gInfo m _sharedMsgId msg brokerTs = do
-      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent RGESkippedMessages)
-      groupMsgToView gInfo ci
+    xGrpMsgSkipped _gInfo _m _sharedMsgId _msg _brokerTs = do
       -- TODO can request delivery starting with _sharedMsgId here
       pure ()
 
