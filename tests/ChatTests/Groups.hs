@@ -157,7 +157,7 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   describe "group member inactivity" $ do
-    fit "mark member inactive on reaching quota" testGroupMemberInactive
+    it "mark member inactive on reaching quota" testGroupMemberInactive
   where
     _0 = supportedChatVRange PQSupportOff -- don't create direct connections
     _1 = groupCreateDirectVRange
