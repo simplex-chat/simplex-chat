@@ -1469,6 +1469,8 @@ class ChatReceiver {
     private var receiveMessages = true
     private var _lastMsgTime = Date.now
 
+    var messagesChannel: ((ChatResponse) -> Void)? = nil
+
     static let shared = ChatReceiver()
 
     var lastMsgTime: Date { get { _lastMsgTime } }
@@ -1486,6 +1488,9 @@ class ChatReceiver {
             if let msg = await chatRecvMsg() {
                 self._lastMsgTime = .now
                 await processReceivedMsg(msg)
+                if let messagesChannel {
+                    messagesChannel(msg)
+                }
             }
             _ = try? await Task.sleep(nanoseconds: 7_500_000)
         }
