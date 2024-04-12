@@ -805,6 +805,24 @@ data class Chat(
 
   val id: String get() = chatInfo.id
 
+  fun groupFeatureEnabled(feature: GroupFeature): Boolean =
+    if (chatInfo is ChatInfo.Group) {
+      val groupInfo = chatInfo.groupInfo
+      val p = groupInfo.fullGroupPreferences
+      when (feature) {
+        GroupFeature.TimedMessages -> p.timedMessages.on
+        GroupFeature.DirectMessages -> p.directMessages.on(groupInfo.membership)
+        GroupFeature.FullDelete -> p.fullDelete.on
+        GroupFeature.Reactions -> p.reactions.on
+        GroupFeature.Voice -> p.voice.on(groupInfo.membership)
+        GroupFeature.Files -> p.files.on(groupInfo.membership)
+        GroupFeature.SimplexLinks -> p.simplexLinks.on(groupInfo.membership)
+        GroupFeature.History -> p.history.on
+      }
+    } else {
+      true
+    }
+
   @Serializable
   data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0, val unreadChat: Boolean = false)
 
@@ -1240,7 +1258,7 @@ data class GroupInfo (
     ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
     ChatFeature.FullDelete -> fullGroupPreferences.fullDelete.on
     ChatFeature.Reactions -> fullGroupPreferences.reactions.on
-    ChatFeature.Voice -> fullGroupPreferences.voice.on
+    ChatFeature.Voice -> fullGroupPreferences.voice.on(membership)
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
@@ -2319,8 +2337,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatPreference") class RcvChatPreference(val feature: ChatFeature, val allowed: FeatureAllowed, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndChatPreference") class SndChatPreference(val feature: ChatFeature, val allowed: FeatureAllowed, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null, val memberRole_: GroupMemberRole?): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null, val memberRole_: GroupMemberRole?): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: ChatFeature): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupFeatureRejected") class RcvGroupFeatureRejected(val groupFeature: GroupFeature): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndModerated") object SndModerated: CIContent() { override val msgContent: MsgContent? get() = null }
@@ -2352,8 +2370,8 @@ sealed class CIContent: ItemContent {
       is SndChatFeature -> featureText(feature, enabled.text, param)
       is RcvChatPreference -> preferenceText(feature, allowed, param)
       is SndChatPreference -> preferenceText(feature, allowed, param)
-      is RcvGroupFeature -> featureText(groupFeature, preference.enable.text, param)
-      is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param)
+      is RcvGroupFeature -> featureText(groupFeature, preference.enable.text, param, memberRole_)
+      is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param, memberRole_)
       is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(MR.strings.feature_received_prohibited)}"
       is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(MR.strings.feature_received_prohibited)}"
       is SndModerated -> generalGetString(MR.strings.moderated_description)
@@ -2390,11 +2408,23 @@ sealed class CIContent: ItemContent {
 
     private val e2eeInfoNoPQStr: String = generalGetString(MR.strings.e2ee_info_no_pq_short)
 
-    fun featureText(feature: Feature, enabled: String, param: Int?): String =
-      if (feature.hasParam) {
+    fun featureText(feature: Feature, enabled: String, param: Int?, role: GroupMemberRole? = null): String =
+      (if (feature.hasParam) {
         "${feature.text}: ${timeText(param)}"
       } else {
         "${feature.text}: $enabled"
+      }) + (
+          if (feature.hasRole && role != null)
+            " (${roleText(role)})"
+          else
+            ""
+          )
+
+    private fun roleText(role: GroupMemberRole?): String =
+      when (role) {
+        GroupMemberRole.Owner -> generalGetString(MR.strings.feature_roles_owners)
+        GroupMemberRole.Admin -> generalGetString(MR.strings.feature_roles_admins)
+        else -> generalGetString(MR.strings.feature_roles_all_members)
       }
 
     fun preferenceText(feature: Feature, allowed: FeatureAllowed, param: Int?): String = when {

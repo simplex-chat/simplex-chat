@@ -309,7 +309,7 @@ fun GroupMemberInfoLayout(
       SectionView {
         if (contactId != null && knownDirectChat(contactId) != null) {
           OpenChatButton(onClick = { openDirectChat(contactId) })
-        } else if (groupInfo.fullGroupPreferences.directMessages.on) {
+        } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
           if (contactId != null) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
           } else if (member.activeConn?.peerChatVRange?.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) == true) {
@@ -335,7 +335,7 @@ fun GroupMemberInfoLayout(
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
         if (contactId != null) {
-          if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on) {
+          if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
             ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
           }
         } else {

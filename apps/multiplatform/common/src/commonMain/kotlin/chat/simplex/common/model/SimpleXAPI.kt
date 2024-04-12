@@ -3430,6 +3430,7 @@ interface Feature {
   @Composable
   fun iconFilled(): Painter
   val hasParam: Boolean
+  val hasRole: Boolean
 }
 
 @Serializable
@@ -3449,6 +3450,7 @@ enum class ChatFeature: Feature {
       TimedMessages -> true
       else -> false
     }
+  override val hasRole: Boolean = false
 
   override val text: String
     get() = when(this) {
@@ -3549,12 +3551,25 @@ enum class GroupFeature: Feature {
   @SerialName("reactions") Reactions,
   @SerialName("voice") Voice,
   @SerialName("files") Files,
+  @SerialName("simplexLinks") SimplexLinks,
   @SerialName("history") History;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
     else -> false
   }
+
+  override val hasRole: Boolean
+    get() = when (this) {
+      TimedMessages -> false
+      DirectMessages -> true
+      FullDelete -> false
+      Reactions -> false
+      Voice -> true
+      Files -> true
+      SimplexLinks -> true
+      History -> false
+    }
 
   override val text: String
     get() = when(this) {
@@ -3564,6 +3579,7 @@ enum class GroupFeature: Feature {
       Reactions -> generalGetString(MR.strings.message_reactions)
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
+      SimplexLinks -> generalGetString(MR.strings.simplex_links)
       History -> generalGetString(MR.strings.recent_history)
     }
 
@@ -3575,6 +3591,7 @@ enum class GroupFeature: Feature {
       Reactions -> painterResource(MR.images.ic_add_reaction)
       Voice -> painterResource(MR.images.ic_keyboard_voice)
       Files -> painterResource(MR.images.ic_draft)
+      SimplexLinks -> painterResource(MR.images.ic_link)
       History -> painterResource(MR.images.ic_schedule)
     }
 
@@ -3586,6 +3603,7 @@ enum class GroupFeature: Feature {
     Reactions -> painterResource(MR.images.ic_add_reaction_filled)
     Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
     Files -> painterResource(MR.images.ic_draft_filled)
+    SimplexLinks -> painterResource(MR.images.ic_link)
     History -> painterResource(MR.images.ic_schedule_filled)
   }
 
@@ -3615,6 +3633,10 @@ enum class GroupFeature: Feature {
         Files -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_files)
+        }
+        SimplexLinks -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_simplex_links)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_simplex_links)
         }
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
@@ -3646,6 +3668,10 @@ enum class GroupFeature: Feature {
         Files -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
+        }
+        SimplexLinks -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_simplex_links)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.simplex_links_are_prohibited_in_group)
         }
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
@@ -3760,11 +3786,12 @@ enum class FeatureAllowed {
 @Serializable
 data class FullGroupPreferences(
   val timedMessages: TimedMessagesGroupPreference,
-  val directMessages: GroupPreference,
+  val directMessages: RoleGroupPreference,
   val fullDelete: GroupPreference,
   val reactions: GroupPreference,
-  val voice: GroupPreference,
-  val files: GroupPreference,
+  val voice: RoleGroupPreference,
+  val files: RoleGroupPreference,
+  val simplexLinks: RoleGroupPreference,
   val history: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -3775,17 +3802,19 @@ data class FullGroupPreferences(
       reactions = reactions,
       voice = voice,
       files = files,
+      simplexLinks = simplexLinks,
       history = history
     )
 
   companion object {
     val sampleData = FullGroupPreferences(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
-      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = RoleGroupPreference(GroupFeatureEnabled.OFF, role = null),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       reactions = GroupPreference(GroupFeatureEnabled.ON),
-      voice = GroupPreference(GroupFeatureEnabled.ON),
-      files = GroupPreference(GroupFeatureEnabled.ON),
+      voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
@@ -3794,21 +3823,23 @@ data class FullGroupPreferences(
 @Serializable
 data class GroupPreferences(
   val timedMessages: TimedMessagesGroupPreference? = null,
-  val directMessages: GroupPreference? = null,
+  val directMessages: RoleGroupPreference? = null,
   val fullDelete: GroupPreference? = null,
   val reactions: GroupPreference? = null,
-  val voice: GroupPreference? = null,
-  val files: GroupPreference? = null,
+  val voice: RoleGroupPreference? = null,
+  val files: RoleGroupPreference? = null,
+  val simplexLinks: RoleGroupPreference? = null,
   val history: GroupPreference? = null,
 ) {
   companion object {
     val sampleData = GroupPreferences(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
-      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = RoleGroupPreference(GroupFeatureEnabled.OFF, role = null),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       reactions = GroupPreference(GroupFeatureEnabled.ON),
-      voice = GroupPreference(GroupFeatureEnabled.ON),
-      files = GroupPreference(GroupFeatureEnabled.ON),
+      voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
@@ -3819,6 +3850,26 @@ data class GroupPreference(
   val enable: GroupFeatureEnabled
 ) {
   val on: Boolean get() = enable == GroupFeatureEnabled.ON
+
+  fun enabled(role: GroupMemberRole?, m: GroupMember?): GroupFeatureEnabled =
+    when (enable) {
+      GroupFeatureEnabled.OFF -> GroupFeatureEnabled.OFF
+      GroupFeatureEnabled.ON ->
+        if (role != null && m != null) {
+          if (m.memberRole >= role) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF
+        } else {
+          GroupFeatureEnabled.ON
+        }
+    }
+}
+
+@Serializable
+data class RoleGroupPreference(
+  val enable: GroupFeatureEnabled,
+  val role: GroupMemberRole? = null,
+) {
+  fun on(m: GroupMember): Boolean =
+    enable == GroupFeatureEnabled.ON && m.memberRole >= (role ?: GroupMemberRole.Observer)
 }
 
 @Serializable
