@@ -1888,11 +1888,12 @@ data class ChatItem (
       itemDeleted: CIDeleted? = null,
       itemEdited: Boolean = false,
       itemTimed: CITimed? = null,
+      deletable: Boolean = true,
       editable: Boolean = true
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, itemForwarded, itemDeleted, itemEdited, itemTimed, editable),
+        meta = CIMeta.getSample(id, ts, text, status, itemForwarded, itemDeleted, itemEdited, itemTimed, deletable, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
         reactions = listOf(),
@@ -1981,6 +1982,7 @@ data class ChatItem (
           itemEdited = false,
           itemTimed = null,
           itemLive = false,
+          deletable = false,
           editable = false
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
@@ -2003,6 +2005,7 @@ data class ChatItem (
           itemEdited = false,
           itemTimed = null,
           itemLive = true,
+          deletable = false,
           editable = false
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
@@ -2104,6 +2107,7 @@ data class CIMeta (
   val itemEdited: Boolean,
   val itemTimed: CITimed?,
   val itemLive: Boolean?,
+  val deletable: Boolean,
   val editable: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs)
@@ -2123,7 +2127,8 @@ data class CIMeta (
   companion object {
     fun getSample(
       id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
-      itemForwarded: CIForwardedFrom? = null, itemDeleted: CIDeleted? = null, itemEdited: Boolean = false, itemTimed: CITimed? = null, itemLive: Boolean = false, editable: Boolean = true
+      itemForwarded: CIForwardedFrom? = null, itemDeleted: CIDeleted? = null, itemEdited: Boolean = false,
+      itemTimed: CITimed? = null, itemLive: Boolean = false, deletable: Boolean = true, editable: Boolean = true
     ): CIMeta =
       CIMeta(
         itemId = id,
@@ -2137,6 +2142,7 @@ data class CIMeta (
         itemEdited = itemEdited,
         itemTimed = itemTimed,
         itemLive = itemLive,
+        deletable = deletable,
         editable = editable
       )
 
@@ -2154,6 +2160,7 @@ data class CIMeta (
         itemEdited = false,
         itemTimed = null,
         itemLive = false,
+        deletable = false,
         editable = false
       )
   }
