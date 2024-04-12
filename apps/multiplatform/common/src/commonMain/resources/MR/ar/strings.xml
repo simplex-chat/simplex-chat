@@ -1722,4 +1722,11 @@
     <string name="migrate_from_device_try_again">يمكنك إعطاء محاولة أخرى.</string>
     <string name="migrate_from_device_choose_migrate_from_another_device">اختر <i>رحّل من جهاز آخر</i> على الجهاز الجديد و امسح رمز QR ضوئيًا.</string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">تحذير: بدء الدردشة على أجهزة متعددة غير مدعوم وسيؤدي إلى فشل تسليم الرسائل</string>
+    <string name="settings_section_title_network_connection">إتصال شبكة</string>
+    <string name="forwarded_description">محوّلة</string>
+    <string name="network_type_cellular">خلوي</string>
+    <string name="network_type_ethernet">إيثرنت سلكية</string>
+    <string name="network_type_no_network_connection">لا إتصال شبكة</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_other">أخرى</string>
 </resources>
