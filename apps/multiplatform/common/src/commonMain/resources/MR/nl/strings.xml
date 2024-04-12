@@ -1722,4 +1722,11 @@
     <string name="permissions_camera">Camera</string>
     <string name="permissions_camera_and_record_audio">Camera en microfoon</string>
     <string name="permissions_open_settings">Open instellingen</string>
+    <string name="network_type_cellular">Mobiel</string>
+    <string name="forwarded_description">doorgestuurd</string>
+    <string name="settings_section_title_network_connection">Netwerkverbinding</string>
+    <string name="network_type_no_network_connection">Geen netwerkverbinding</string>
+    <string name="network_type_other">Ander</string>
+    <string name="network_type_network_wifi">Wifi</string>
+    <string name="network_type_ethernet">Wired ethernet</string>
 </resources>
