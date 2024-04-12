@@ -1724,4 +1724,11 @@
     <string name="permissions_grant">Concedi la/le autorizzazione/i per effettuare chiamate</string>
     <string name="permissions_record_audio">Microfono</string>
     <string name="permissions_open_settings">Apri le impostazioni</string>
+    <string name="forwarded_description">inoltrato</string>
+    <string name="settings_section_title_network_connection">Connessione di rete</string>
+    <string name="network_type_no_network_connection">Nessuna connessione di rete</string>
+    <string name="network_type_cellular">Mobile</string>
+    <string name="network_type_other">Altro</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Cavo ethernet</string>
 </resources>
