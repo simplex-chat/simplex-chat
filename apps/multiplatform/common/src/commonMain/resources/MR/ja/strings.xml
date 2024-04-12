@@ -1724,4 +1724,5 @@
     <string name="permissions_record_audio">マイク</string>
     <string name="permissions_grant">通話許可を付与</string>
     <string name="permissions_open_settings">設定を開く</string>
+    <string name="network_type_cellular">セルラー</string>
 </resources>
