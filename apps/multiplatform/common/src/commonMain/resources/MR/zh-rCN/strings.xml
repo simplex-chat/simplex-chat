@@ -1724,4 +1724,10 @@
     <string name="permissions_camera_and_record_audio">相机和麦克风</string>
     <string name="permissions_open_settings">打开设置</string>
     <string name="permissions_required">授予权限</string>
+    <string name="settings_section_title_network_connection">网络连接</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">有线以太网</string>
+    <string name="network_type_cellular">移动网络</string>
+    <string name="network_type_no_network_connection">无网络连接</string>
+    <string name="network_type_other">其他</string>
 </resources>
