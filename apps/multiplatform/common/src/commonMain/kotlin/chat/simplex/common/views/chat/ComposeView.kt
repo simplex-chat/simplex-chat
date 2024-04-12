@@ -580,8 +580,9 @@ fun ComposeView(
     } else {
       textStyle.value = smallFont
       if (composeState.value.linkPreviewAllowed) {
-        if (s.isNotEmpty()) showLinkPreview(s)
-        else {
+        if (s.isNotEmpty()) {
+          showLinkPreview(s)
+        } else {
           resetLinkPreview()
           hasSimplexLink.value = false
         }
