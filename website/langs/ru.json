@@ -252,5 +252,6 @@
     "f-droid-page-f-droid-org-repo-section-text": "Приложение SimpleX Chat от разработчиков и от репозитория F-Droid.org имеют разные ключи подписи. Если вы хотите сменить одно на другое, вам сначала нужно будет <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>экспортировать</a> базу данных и только потом скачать другое приложение.",
     "simplex-private-5-title": "Многоуровневое<br>Заполнения содержимого",
     "please-use-link-in-mobile-app": "Пожалуйста, воспользуйтесь ссылкой в мобильном приложении",
-    "please-enable-javascript": "Пожалуйста, включите JavaScript, чтобы увидеть QR-код."
+    "please-enable-javascript": "Пожалуйста, включите JavaScript, чтобы увидеть QR-код.",
+    "docs-dropdown-10": "Прозрачность"
 }
