@@ -1725,5 +1725,5 @@
     <string name="network_type_no_network_connection">Nincs hálózati kapcsolat</string>
     <string name="network_type_other">Egyéb</string>
     <string name="network_type_network_wifi">Wi-Fi</string>
-    <string name="forwarded_description">továbbítva</string>
+    <string name="forwarded_description">továbbküldve</string>
 </resources>
