@@ -296,7 +296,7 @@ struct ChatView: View {
     }
     
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
-        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
     private func chatItemsList() -> some View {

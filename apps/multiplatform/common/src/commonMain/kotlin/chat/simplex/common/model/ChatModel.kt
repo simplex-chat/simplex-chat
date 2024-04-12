@@ -1892,7 +1892,7 @@ data class ChatItem (
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, itemTimed, editable),
+        meta = CIMeta.getSample(id, ts, text, status, itemForwarded, itemDeleted, itemEdited, itemTimed, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
         reactions = listOf(),
@@ -1976,6 +1976,7 @@ data class ChatItem (
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
+          itemForwarded = null,
           itemDeleted = null,
           itemEdited = false,
           itemTimed = null,
@@ -1997,6 +1998,7 @@ data class ChatItem (
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
+          itemForwarded = null,
           itemDeleted = null,
           itemEdited = false,
           itemTimed = null,
@@ -2097,6 +2099,7 @@ data class CIMeta (
   val itemStatus: CIStatus,
   val createdAt: Instant,
   val updatedAt: Instant,
+  val itemForwarded: CIForwardedFrom?,
   val itemDeleted: CIDeleted?,
   val itemEdited: Boolean,
   val itemTimed: CITimed?,
@@ -2120,7 +2123,7 @@ data class CIMeta (
   companion object {
     fun getSample(
       id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
-      itemDeleted: CIDeleted? = null, itemEdited: Boolean = false, itemTimed: CITimed? = null, itemLive: Boolean = false, editable: Boolean = true
+      itemForwarded: CIForwardedFrom? = null, itemDeleted: CIDeleted? = null, itemEdited: Boolean = false, itemTimed: CITimed? = null, itemLive: Boolean = false, editable: Boolean = true
     ): CIMeta =
       CIMeta(
         itemId = id,
@@ -2129,6 +2132,7 @@ data class CIMeta (
         itemStatus = status,
         createdAt = ts,
         updatedAt = ts,
+        itemForwarded = itemForwarded,
         itemDeleted = itemDeleted,
         itemEdited = itemEdited,
         itemTimed = itemTimed,
@@ -2145,6 +2149,7 @@ data class CIMeta (
         itemStatus = CIStatus.SndNew(),
         createdAt = Clock.System.now(),
         updatedAt = Clock.System.now(),
+        itemForwarded = null,
         itemDeleted = null,
         itemEdited = false,
         itemTimed = null,

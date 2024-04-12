@@ -304,7 +304,7 @@ fun ChatItemView(
             MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
             MarkedDeletedItemDropdownMenu()
           } else {
-            if (cItem.quotedItem == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
+            if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
               if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
                 EmojiItemView(cItem, cInfo.timedMessagesTTL)
               } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
