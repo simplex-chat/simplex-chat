@@ -786,7 +786,7 @@ fun ComposeView(
       } else if (fileProhibited) {
         MsgNotAllowedView(generalGetString(MR.strings.files_and_media_not_allowed), icon = painterResource(MR.images.ic_draft_filled))
       } else if (voiceProhibited) {
-        MsgNotAllowedView(generalGetString(MR.strings.voice_messages_not_allowed), icon = painterResource(MR.images.ic_mic))
+        MsgNotAllowedView(generalGetString(MR.strings.voice_messages_not_allowed), icon = painterResource(MR.images.ic_mic_filled))
       }
       contextItemView()
       when {
