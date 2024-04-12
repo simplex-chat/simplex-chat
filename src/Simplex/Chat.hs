@@ -943,34 +943,37 @@ processChatCommand' vr = \case
                     ifM
                       (doesFileExist fsFromPath)
                       ( do
-                          fromSizeFull <- getFileSize fsFromPath
-                          let fromSize = fromSizeFull - maybe 0 (const $ toInteger C.authTagSize) fromArgs
                           fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
                           liftIO $ B.writeFile fsNewPath "" -- create empty file
                           encrypt <- chatReadVar encryptLocalFiles
                           cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
                           let toCF = CryptoFile fsNewPath cfArgs
                           -- to keep forwarded file in case original is deleted
-                          liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $
-                            CF.withFile (fromCF {filePath = fsFromPath} :: CryptoFile) ReadMode $ \fromH ->
-                              CF.withFile toCF WriteMode $ \toH -> do
-                                decryptChunks fromH fromSize (liftIO . CF.hPut toH . LB.fromStrict)
-                                forM_ fromArgs $ \_ -> CF.hGetTag fromH
-                                forM_ cfArgs $ \_ -> liftIO $ CF.hPutTag toH
+                          liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
                           pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
                       )
                       (pure Nothing)
             | otherwise = pure Nothing
           forwardCryptoFile _ = pure Nothing
-          decryptChunks :: CF.CryptoFileHandle -> Integer -> (ByteString -> ExceptT CF.FTCryptoError IO ()) -> ExceptT CF.FTCryptoError IO ()
-          decryptChunks r size f = do
-            let chSize = min size U.chunkSize
-                chSize' = fromIntegral chSize
-                size' = size - chSize
-            ch <- liftIO $ CF.hGet r chSize'
-            when (B.length ch /= chSize') $ throwError $ CF.FTCEFileIOError "encrypting file: unexpected EOF"
-            f ch
-            when (size' > 0) $ decryptChunks r size' f
+          copyCryptoFile :: CryptoFile -> CryptoFile -> ExceptT CF.FTCryptoError IO ()
+          copyCryptoFile fromCF@CryptoFile {filePath = fsFromPath, cryptoArgs = fromArgs} toCF@CryptoFile {cryptoArgs = toArgs} = do
+            fromSizeFull <- getFileSize fsFromPath
+            let fromSize = fromSizeFull - maybe 0 (const $ toInteger C.authTagSize) fromArgs
+            CF.withFile fromCF ReadMode $ \fromH ->
+              CF.withFile toCF WriteMode $ \toH -> do
+                copyChunks fromH toH fromSize
+                forM_ fromArgs $ \_ -> CF.hGetTag fromH
+                forM_ toArgs $ \_ -> liftIO $ CF.hPutTag toH
+            where
+              copyChunks :: CF.CryptoFileHandle -> CF.CryptoFileHandle -> Integer -> ExceptT CF.FTCryptoError IO ()
+              copyChunks r w size = do
+                let chSize = min size U.chunkSize
+                    chSize' = fromIntegral chSize
+                    size' = size - chSize
+                ch <- liftIO $ CF.hGet r chSize'
+                when (B.length ch /= chSize') $ throwError $ CF.FTCEFileIOError "encrypting file: unexpected EOF"
+                liftIO . CF.hPut w $ LB.fromStrict ch
+                when (size' > 0) $ copyChunks r w size'
   APIUserRead userId -> withUserId userId $ \user -> withStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
