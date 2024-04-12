@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
@@ -21,6 +22,7 @@ struct ChatItemInfoView: View {
     enum CIInfoTab {
         case history
         case quote
+        case forwarded
         case delivery
     }
 
@@ -68,6 +70,9 @@ struct ChatItemInfoView: View {
         if ci.quotedItem != nil {
             numTabs += 1
         }
+        if chatItemInfo?.forwardedFromChatItem != nil {
+            numTabs += 1
+        }
         return numTabs
     }
 
@@ -92,6 +97,13 @@ struct ChatItemInfoView: View {
                             Label("In reply to", systemImage: "arrowshape.turn.up.left")
                         }
                         .tag(CIInfoTab.quote)
+                }
+                if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
+                    forwardedFromTab(forwardedFromItem)
+                        .tabItem {
+                            Label("Forwarded from", systemImage: "arrowshape.turn.up.forward")
+                        }
+                        .tag(CIInfoTab.forwarded)
                 }
             }
             .onAppear {
@@ -238,6 +250,37 @@ struct ChatItemInfoView: View {
             }
             .frame(maxHeight: .infinity, alignment: .top)
         }
+    }
+
+    @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                Text("Forwarded from")
+                    .font(.title2)
+                    .padding(.bottom, 4)
+
+                Button {
+                    Task {
+                        await MainActor.run {
+                            chatModel.chatId = forwardedFromItem.chatInfo.id
+                            dismiss()
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
+                            .frame(width: 63, height: 63)
+                        Text(forwardedFromItem.chatInfo.chatViewName)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .padding()
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {

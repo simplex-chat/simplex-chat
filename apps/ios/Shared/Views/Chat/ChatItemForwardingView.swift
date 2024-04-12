@@ -87,7 +87,6 @@ struct ChatItemForwardingView: View {
 
     @ViewBuilder private func forwardListNavLinkView(_ chat: Chat) -> some View {
         Button {
-
             Task {
                 await MainActor.run {
                     if chat.id != fromChatInfo.id {
