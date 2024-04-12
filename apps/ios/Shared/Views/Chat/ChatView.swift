@@ -296,7 +296,7 @@ struct ChatView: View {
     }
     
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
-        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
     private func chatItemsList() -> some View {
@@ -667,7 +667,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
                     }
-                    if let di = deletingItem, di.meta.editable && !di.localNote {
+                    if let di = deletingItem, di.meta.deletable && !di.localNote {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
