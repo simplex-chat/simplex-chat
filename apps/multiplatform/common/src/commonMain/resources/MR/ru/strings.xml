@@ -468,7 +468,7 @@
     <string name="callstate_ended">завершен</string>
     <!-- SimpleXInfo -->
     <string name="next_generation_of_private_messaging">Новое поколение приватных сообщений</string>
-    <string name="privacy_redefined">Более конфиденциальный</string>
+    <string name="privacy_redefined">Переосмысленная конфиденциальность</string>
     <string name="first_platform_without_user_ids">Первая в мире платформа без идентификаторов пользователей.</string>
     <string name="immune_to_spam_and_abuse">Защищен от спама</string>
     <string name="people_can_connect_only_via_links_you_share">С Вами можно соединиться только через созданные Вами ссылки.</string>
@@ -553,7 +553,7 @@
 \n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.
 \n3. Соединение компроментировано.</string>
     <!-- Privacy settings -->
-    <string name="privacy_and_security">Конфиденциальность</string>
+    <string name="privacy_and_security">Конфиденциальность и безопасность</string>
     <string name="your_privacy">Конфиденциальность</string>
     <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприем изображений</string>
@@ -1798,4 +1798,19 @@
 \nЭто может занять несколько минут.</string>
     <string name="unable_to_open_browser_title">Ошибка открытия браузера</string>
     <string name="unable_to_open_browser_desc">Для звонков требуется веб-браузер по умолчанию. Пожалуйста, настройте браузер по умолчанию в системе и поделитесь дополнительной информацией с разработчиками.</string>
+    <string name="network_type_other">Другое</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Проводная сеть</string>
+    <string name="network_type_cellular">Мобильная сеть</string>
+    <string name="settings_section_title_network_connection">Интернет-соединение</string>
+    <string name="network_type_no_network_connection">Нет интернет-соединения</string>
+    <string name="error_showing_desktop_notification">Ошибка при показе уведомления, свяжитесь с разработчиками.</string>
+    <string name="permissions_camera">Камера</string>
+    <string name="permissions_camera_and_record_audio">Камера и микрофон</string>
+    <string name="permissions_find_in_settings_and_grant">Найдите это разрешение в настройках Android и добавьте его вручную.</string>
+    <string name="permissions_grant_in_settings">Разрешить в настройках</string>
+    <string name="permissions_required">Дать разрешения</string>
+    <string name="permissions_grant">Дать разрешения для совершения звонков</string>
+    <string name="permissions_record_audio">Микрофон</string>
+    <string name="permissions_open_settings">Открыть настройки</string>
 </resources>
