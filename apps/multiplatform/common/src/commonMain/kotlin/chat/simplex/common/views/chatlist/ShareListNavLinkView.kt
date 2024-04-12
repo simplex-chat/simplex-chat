@@ -15,7 +15,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 
 @Composable
-fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
+fun chShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val stopped = chatModel.chatRunning.value == false
   when (chat.chatInfo) {
     is ChatInfo.Direct ->

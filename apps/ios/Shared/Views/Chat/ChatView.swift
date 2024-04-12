@@ -251,7 +251,11 @@ struct ChatView: View {
                 }
             }
         }
-        if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+        if chatModel.forwardToChatId == cInfo.id, let forward = chatModel.forward {
+            composeState = forward
+            chatModel.forwardToChatId = nil
+            chatModel.forward = nil
+        } else if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
             composeState = draft
         }
         if chat.chatStats.unreadChat {
@@ -539,6 +543,7 @@ struct ChatView: View {
         @State private var revealed = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
+        @State private var showForwardingSheet: Bool = false
 
         @State private var allowMenu: Bool = true
 
@@ -693,6 +698,14 @@ struct ChatView: View {
                 }) {
                     ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
                 }
+                .sheet(isPresented: $showForwardingSheet) {
+                    if #available(iOS 16.0, *) {
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo)
+                            .presentationDetents([.fraction(0.8)])
+                    } else {
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo)
+                    }
+                }
         }
 
         private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
@@ -775,6 +788,9 @@ struct ChatView: View {
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction(ci))
                 }
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                    menu.append(forwardUIAction(ci))
+                }
                 if !ci.isLiveDummy {
                     menu.append(viewInfoUIAction(ci))
                 }
@@ -823,6 +839,15 @@ struct ChatView: View {
                         composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                     }
                 }
+            }
+        }
+
+        private func forwardUIAction(_ ci: ChatItem) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Forward", comment: "chat item action"),
+                image: UIImage(systemName: "arrowshape.turn.up.forward")
+            ) { _ in
+                showForwardingSheet = true
             }
         }
 

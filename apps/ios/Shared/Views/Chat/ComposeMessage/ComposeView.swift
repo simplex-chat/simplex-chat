@@ -23,6 +23,7 @@ enum ComposeContextItem {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
+    case forwardingItem(chatItem: ChatItem, fromChatInfo: ChatInfo)
 }
 
 enum VoiceMessageRecordingState {
@@ -72,6 +73,13 @@ struct ComposeState {
         }
     }
 
+    init(forwardingItem: ChatItem, fromChatInfo: ChatInfo) {
+        self.message = ""
+        self.preview = .noPreview
+        self.contextItem = .forwardingItem(chatItem: forwardingItem, fromChatInfo: fromChatInfo)
+        self.voiceMessageRecordingState = .noRecording
+    }
+
     func copy(
         message: String? = nil,
         liveMessage: LiveMessage? = nil,
@@ -102,12 +110,19 @@ struct ComposeState {
         }
     }
 
+    var forwarding: Bool {
+        switch contextItem {
+        case .forwardingItem: return true
+        default: return false
+        }
+    }
+
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || liveMessage != nil
+        default: return !message.isEmpty || forwarding || liveMessage != nil
         }
     }
 
@@ -153,7 +168,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || liveMessage != nil || inProgress { return true }
+        if editing || forwarding || liveMessage != nil || inProgress { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -667,6 +682,13 @@ struct ComposeView: View {
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
             )
+        case let .forwardingItem(chatItem: forwardedItem, _):
+            ContextItemView(
+                chat: chat,
+                contextItem: forwardedItem,
+                contextIcon: "arrowshape.turn.up.forward",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
+            )
         }
     }
 
@@ -688,6 +710,11 @@ struct ComposeView: View {
         }
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
+        } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
+            sent = await forwardItem(ci, fromChatInfo)
+            if composeState.message.isEmpty {
+                sent = await send(.text(msgText), quoted: nil, live: false, ttl: nil)
+            }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
@@ -850,6 +877,22 @@ struct ComposeView: View {
             }
             if let file = file {
                 removeFile(file.filePath)
+            }
+            return nil
+        }
+
+        func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo) async -> ChatItem? {
+            if let chatItem = await apiForwardChatItem(
+                toChatType: chat.chatInfo.chatType,
+                toChatId: chat.chatInfo.apiId,
+                fromChatType: fromChatInfo.chatType,
+                fromChatId: fromChatInfo.apiId,
+                itemId: forwardedItem.id
+            ) {
+                await MainActor.run {
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                }
+                return chatItem
             }
             return nil
         }
