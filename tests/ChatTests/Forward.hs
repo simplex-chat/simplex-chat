@@ -25,6 +25,7 @@ chatForwardTests = do
     it "preserve original forward info" testForwardPreserveInfo
     it "quoted message is not included" testForwardQuotedMsg
     it "editing is prohibited" testForwardEditProhibited
+    it "delete for other" testForwardDeleteForOther
   describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
     it "with relative paths: from contact to contact" testForwardFileContactToContact
@@ -306,6 +307,27 @@ testForwardEditProhibited =
       msgId <- lastItemId alice
       alice ##> ("/_update item @3 " <> msgId <> " text hey edited")
       alice <## "cannot update this item"
+
+testForwardDeleteForOther :: HasCallStack => FilePath -> IO ()
+testForwardDeleteForOther =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+
+      alice `send` "@cath <- @bob hey"
+      alice <# "@cath <- @bob"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
+
+      msgId <- lastItemId alice
+      alice ##> ("/_delete item @3 " <> msgId <> " broadcast")
+      alice <## "message marked deleted"
+      cath <# "alice> [marked deleted] hey"
 
 testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
 testForwardFileNoFilesFolder =
