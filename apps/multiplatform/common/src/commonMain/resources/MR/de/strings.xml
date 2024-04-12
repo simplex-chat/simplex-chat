@@ -1805,4 +1805,11 @@
     <string name="permissions_camera">Kamera</string>
     <string name="permissions_camera_and_record_audio">Kamera und Mikrofon</string>
     <string name="permissions_grant">Erteilen Sie die Berechtigung(en), um Anrufe zu tätigen</string>
+    <string name="forwarded_description">weitergeleitet</string>
+    <string name="settings_section_title_network_connection">Netzwerkverbindung</string>
+    <string name="network_type_no_network_connection">Keine Netzwerkverbindung</string>
+    <string name="network_type_cellular">Zellulär</string>
+    <string name="network_type_other">Andere</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Kabelgebundenes Ethernet</string>
 </resources>
