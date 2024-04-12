@@ -712,7 +712,7 @@ struct ComposeView: View {
             await sendMemberContactInvitation()
         } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
             sent = await forwardItem(ci, fromChatInfo)
-            if composeState.message.isEmpty {
+            if !composeState.message.isEmpty {
                 sent = await send(.text(msgText), quoted: nil, live: false, ttl: nil)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {

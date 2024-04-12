@@ -2784,9 +2784,9 @@ public enum CIDeleted: Decodable {
     }
 }
 
-public enum MsgDirection: Decodable {
-    case rcv
-    case snd
+public enum MsgDirection: String, Decodable {
+    case rcv = "rcv"
+    case snd = "snd"
 }
 
 public enum CIForwardedFrom: Decodable {
