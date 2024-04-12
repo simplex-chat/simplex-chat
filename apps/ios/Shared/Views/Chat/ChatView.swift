@@ -700,10 +700,10 @@ struct ChatView: View {
                 }
                 .sheet(isPresented: $showForwardingSheet) {
                     if #available(iOS 16.0, *) {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo)
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
                             .presentationDetents([.fraction(0.8)])
                     } else {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo)
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
                     }
                 }
         }

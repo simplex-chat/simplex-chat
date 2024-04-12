@@ -713,7 +713,7 @@ struct ComposeView: View {
         } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
             sent = await forwardItem(ci, fromChatInfo)
             if !composeState.message.isEmpty {
-                sent = await send(.text(msgText), quoted: nil, live: false, ttl: nil)
+                sent = await send(checkLinkPreview(), quoted: nil, live: false, ttl: nil)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)

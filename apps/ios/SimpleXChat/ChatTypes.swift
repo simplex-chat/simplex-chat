@@ -2793,6 +2793,14 @@ public enum CIForwardedFrom: Decodable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
     case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
+
+    public var chatName: String? {
+        switch self {
+        case .unknown: return nil
+        case let .contact(chatName, _, _, _): return chatName
+        case let .group(chatName, _, _, _): return chatName
+        }
+    }
 }
 
 public enum CIDeleteMode: String, Decodable {

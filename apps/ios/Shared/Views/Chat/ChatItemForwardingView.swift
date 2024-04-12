@@ -15,6 +15,7 @@ struct ChatItemForwardingView: View {
 
     var ci: ChatItem
     var fromChatInfo: ChatInfo
+    @Binding var composeState: ComposeState
 
     @State private var searchText: String = ""
     @FocusState private var searchFocused
@@ -59,8 +60,12 @@ struct ChatItemForwardingView: View {
     }
 
     private func filterChatsToForwardTo() -> [Chat] {
-        return chatModel.chats
-            .filter({ canForwardToChat($0) })
+        var filteredChats = chatModel.chats.filter({ canForwardToChat($0) })
+        if let index = filteredChats.firstIndex(where: { $0.chatInfo.chatType == .local }) {
+            let privateNotes = filteredChats.remove(at: index)
+            filteredChats.insert(privateNotes, at: 0)
+        }
+        return filteredChats
     }
 
     private func canForwardToChat(_ chat: Chat) -> Bool {
@@ -82,12 +87,23 @@ struct ChatItemForwardingView: View {
 
     @ViewBuilder private func forwardListNavLinkView(_ chat: Chat) -> some View {
         Button {
+
             Task {
                 await MainActor.run {
-                    chatModel.forwardToChatId = chat.id
-                    chatModel.forward = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
-                    dismiss()
-                    chatModel.chatId = chat.id
+                    if chat.id != fromChatInfo.id {
+                        chatModel.forwardToChatId = chat.id
+                        chatModel.forward = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
+                        dismiss()
+                        chatModel.chatId = chat.id
+                    } else {
+                        let currentComposeState = composeState
+                        composeState = ComposeState(
+                            message: currentComposeState.message,
+                            preview: currentComposeState.linkPreview != nil ? currentComposeState.preview : .noPreview,
+                            contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
+                        )
+                        dismiss()
+                    }
                 }
             }
         } label: {
@@ -114,6 +130,7 @@ struct ChatItemForwardingView: View {
 #Preview {
     ChatItemForwardingView(
         ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
-        fromChatInfo: .direct(contact: Contact.sampleData)
+        fromChatInfo: .direct(contact: Contact.sampleData),
+        composeState: Binding.constant(ComposeState(message: "hello"))
     )
 }
