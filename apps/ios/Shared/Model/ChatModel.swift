@@ -779,6 +779,24 @@ final class Chat: ObservableObject, Identifiable {
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 
+    func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
+        if case let .group(groupInfo) = self.chatInfo {
+            let p = groupInfo.fullGroupPreferences
+            return switch feature {
+            case .timedMessages: p.timedMessages.on
+            case .directMessages: p.directMessages.on(for: groupInfo.membership)
+            case .fullDelete: p.fullDelete.on
+            case .reactions: p.reactions.on
+            case .voice: p.voice.on(for: groupInfo.membership)
+            case .files: p.files.on(for: groupInfo.membership)
+            case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
+            case .history: p.history.on
+            }
+        } else {
+            return true
+        }
+    }
+
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }
 

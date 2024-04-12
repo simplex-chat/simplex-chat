@@ -102,9 +102,9 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvChatPreference(feature, allowed, param):
             CIFeaturePreferenceView(chat: chat, chatItem: chatItem, feature: feature, allowed: allowed, param: param)
         case let .sndChatPreference(feature, _, _):
-            CIChatFeatureView(chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: .secondary)
-        case let .rcvGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
-        case let .sndGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
+            CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: .secondary)
+        case let .rcvGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor)
+        case let .sndGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         case .sndModerated: deletedItemView()
@@ -149,7 +149,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
-        CIChatFeatureView(chatItem: chatItem, revealed: $revealed, feature: feature, iconColor: iconColor)
+        CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, iconColor: iconColor)
     }
 
     private var mergedGroupEventText: Text? {
