@@ -348,6 +348,9 @@
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
   <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
+  <string name="simplex_links_not_allowed">SimpleX links not allowed</string>
+  <string name="files_and_media_not_allowed">Files and media not allowed</string>
+  <string name="voice_messages_not_allowed">Voice messages not allowed</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -1532,6 +1535,7 @@
   <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
   <string name="files_and_media">Files and media</string>
+  <string name="simplex_links">SimpleX links</string>
   <string name="recent_history">Visible history</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
@@ -1589,6 +1593,8 @@
   <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
   <string name="allow_to_send_files">Allow to send files and media.</string>
   <string name="prohibit_sending_files">Prohibit sending files and media.</string>
+  <string name="allow_to_send_simplex_links">Allow to send SimpleX links.</string>
+  <string name="prohibit_sending_simplex_links">Prohibit sending SimpleX links</string>
   <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
   <string name="disable_sending_recent_history">Do not send history to new members.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
@@ -1603,6 +1609,8 @@
   <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
   <string name="group_members_can_send_files">Group members can send files and media.</string>
   <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
+  <string name="group_members_can_send_simplex_links">Group members can send SimpleX links.</string>
+  <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited in this group.</string>
   <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="delete_after">Delete after</string>
@@ -1625,6 +1633,10 @@
   <string name="feature_offered_item">offered %s</string>
   <string name="feature_offered_item_with_param">offered %s: %2s</string>
   <string name="feature_cancelled_item">cancelled %s</string>
+  <string name="feature_roles_all_members">all members</string>
+  <string name="feature_roles_admins">admins</string>
+  <string name="feature_roles_owners">owners</string>
+  <string name="feature_enabled_for">Enabled for</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>

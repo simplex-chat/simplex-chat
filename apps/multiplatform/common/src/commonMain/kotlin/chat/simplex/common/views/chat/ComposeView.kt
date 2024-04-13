@@ -1,6 +1,7 @@
 @file:UseSerializers(UriSerializer::class)
 package chat.simplex.common.views.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -11,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -18,8 +21,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.Indigo
-import chat.simplex.common.ui.theme.isSystemInDarkTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -113,6 +115,15 @@ data class ComposeState(
         is ComposePreview.CLinkPreview -> false
         else -> true
       }
+    }
+
+  val attachmentPreview: Boolean
+    get() = when (preview) {
+      ComposePreview.NoPreview -> false
+      is ComposePreview.CLinkPreview -> false
+      is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
+      is ComposePreview.VoicePreview -> false
+      is ComposePreview.FilePreview -> true
     }
 
   val empty: Boolean
@@ -243,10 +254,23 @@ fun ComposeView(
   attachmentOption: MutableState<AttachmentOption?>,
   showChooseAttachment: () -> Unit
 ) {
+  val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
+  fun isSimplexLink(link: String): Boolean =
+    link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
+
+  fun parseMessage(msg: String): Pair<String?, Boolean> {
+    if (msg.isBlank()) return null to false
+    val parsedMsg = parseToMarkdown(msg) ?: return null to false
+    val link = parsedMsg.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
+    val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
+    return link?.text to simplexLink
+  }
+
   val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
+  // default value parsed because of draft
+  val hasSimplexLink = rememberSaveable { mutableStateOf(parseMessage(composeState.value.message).second) }
   val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
-  val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
@@ -254,15 +278,6 @@ fun ComposeView(
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
-
-  fun isSimplexLink(link: String): Boolean =
-    link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
-
-  fun parseMessage(msg: String): String? {
-    val parsedMsg = parseToMarkdown(msg)
-    val link = parsedMsg?.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
-    return link?.text
-  }
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
@@ -283,7 +298,9 @@ fun ComposeView(
 
   fun showLinkPreview(s: String) {
     prevLinkUrl.value = linkUrl.value
-    linkUrl.value = parseMessage(s)
+    val parsed = parseMessage(s)
+    linkUrl.value = parsed.first
+    hasSimplexLink.value = parsed.second
     val url = linkUrl.value
     if (url != null) {
       if (url != composeState.value.linkPreview?.uri && url != pendingLinkUrl.value) {
@@ -387,7 +404,7 @@ fun ComposeView(
     fun checkLinkPreview(): MsgContent {
       return when (val composePreview = cs.preview) {
         is ComposePreview.CLinkPreview -> {
-          val url = parseMessage(msgText)
+          val url = parseMessage(msgText).first
           val lp = composePreview.linkPreview
           if (lp != null && url == lp.uri) {
             MsgContent.MCLink(msgText, preview = lp)
@@ -563,8 +580,16 @@ fun ComposeView(
     } else {
       textStyle.value = smallFont
       if (composeState.value.linkPreviewAllowed) {
-        if (s.isNotEmpty()) showLinkPreview(s)
-        else resetLinkPreview()
+        if (s.isNotEmpty()) {
+          showLinkPreview(s)
+        } else {
+          resetLinkPreview()
+          hasSimplexLink.value = false
+        }
+      } else if (s.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)) {
+        hasSimplexLink.value = parseMessage(s).second
+      } else {
+        hasSimplexLink.value = false
       }
     }
   }
@@ -701,6 +726,16 @@ fun ComposeView(
   }
 
   @Composable
+  fun MsgNotAllowedView(reason: String, icon: Painter) {
+    val color = CurrentColors.collectAsState().value.appColors.receivedMessage
+    Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+      Icon(icon, null, tint = MaterialTheme.colors.secondary)
+      Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+      Text(reason, fontStyle = FontStyle.Italic)
+    }
+  }
+
+  @Composable
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
@@ -743,7 +778,17 @@ fun ComposeView(
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }
+    val simplexLinkProhibited = hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
+    val fileProhibited = composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
+    val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
     if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
+      if (simplexLinkProhibited) {
+        MsgNotAllowedView(generalGetString(MR.strings.simplex_links_not_allowed), icon = painterResource(MR.images.ic_link))
+      } else if (fileProhibited) {
+        MsgNotAllowedView(generalGetString(MR.strings.files_and_media_not_allowed), icon = painterResource(MR.images.ic_draft))
+      } else if (voiceProhibited) {
+        MsgNotAllowedView(generalGetString(MR.strings.voice_messages_not_allowed), icon = painterResource(MR.images.ic_mic))
+      }
       contextItemView()
       when {
         composeState.value.editing && composeState.value.preview is ComposePreview.VoicePreview -> {}
@@ -764,7 +809,7 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on
+      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
       val attachmentClicked = if (isGroupAndProhibitedFiles) {
         {
           AlertManager.shared.showAlertMsg(
@@ -871,6 +916,7 @@ fun ComposeView(
         chat.chatInfo is ChatInfo.Direct,
         liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
         sendMsgEnabled = sendMsgEnabled.value,
+        sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
         nextSendGrpInv = nextSendGrpInv.value,
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
