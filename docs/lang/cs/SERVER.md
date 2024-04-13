@@ -2,7 +2,7 @@
 title: Hostování vlastního serveru SMP
 revision: 05.06.2023
 ---
-| Aktualizováno 05.06.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
+| Aktualizováno 05.06.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 # Hostování vlastního serveru SMP
 

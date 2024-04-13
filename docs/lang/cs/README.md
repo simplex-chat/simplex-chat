@@ -1,4 +1,4 @@
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
