@@ -411,7 +411,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
       Just CIFFContact {chatName, msgDir, contactId, chatItemId} ->
         (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, chatItemId)
       Just CIFFGroup {chatName, msgDir, groupId, chatItemId} ->
-        (Just CIFFContact_, Just chatName, Just msgDir, Nothing, groupId, chatItemId)
+        (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, chatItemId)
 
 ciTimedRow :: Maybe CITimed -> (Maybe Int, Maybe UTCTime)
 ciTimedRow (Just CITimed {ttl, deleteAt}) = (Just ttl, deleteAt)
@@ -1468,8 +1468,8 @@ toCIForwardedFrom :: ChatItemForwardedFromRow -> Maybe CIForwardedFrom
 toCIForwardedFrom (fwdFromTag, fwdFromChatName, fwdFromMsgDir, fwdFromContactId, fwdFromGroupId, fwdFromChatItemId) =
   case (fwdFromTag, fwdFromChatName, fwdFromMsgDir, fwdFromContactId, fwdFromGroupId, fwdFromChatItemId) of
     (Just CIFFUnknown_, Nothing, Nothing, Nothing, Nothing, Nothing) -> Just CIFFUnknown
-    (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, chatId) -> Just $ CIFFContact chatName msgDir contactId chatId
-    (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, chatId) -> Just $ CIFFGroup chatName msgDir groupId chatId
+    (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, ciId) -> Just $ CIFFContact chatName msgDir contactId ciId
+    (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, ciId) -> Just $ CIFFGroup chatName msgDir groupId ciId
     _ -> Nothing
 
 type GroupQuoteRow = QuoteRow :. MaybeGroupMemberRow
