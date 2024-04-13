@@ -2,7 +2,7 @@
 title: Héberger votre propre serveur SMP
 revision: 05.06.2023
 ---
-| 05.06.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/CLI.md) |
+| 05.06.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 # Héberger votre propre serveur SMP
 
