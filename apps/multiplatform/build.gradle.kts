@@ -47,6 +47,9 @@ buildscript {
         classpath(kotlin("gradle-plugin", version = rootProject.extra["kotlin.version"] as String))
         classpath("dev.icerock.moko:resources-generator:0.23.0")
 
+        // Workaround gradle sync issue: https://github.com/gmazzo/gradle-buildconfig-plugin/issues/137#issuecomment-1935739759
+        classpath("com.squareup:kotlinpoet:1.16.0")
+
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -78,6 +81,30 @@ plugins {
     id("com.android.library") apply false
     id("org.jetbrains.compose") apply false
     id("org.jetbrains.kotlin.plugin.serialization") apply false
+}
+
+// https://raymondctc.medium.com/configuring-your-sourcecompatibility-targetcompatibility-and-kotlinoptions-jvmtarget-all-at-once-66bf2198145f
+val jvmVersion: Provider<String> = providers.gradleProperty("kotlin.jvm.target")
+
+configure(subprojects) {
+    // Apply compileOptions to subprojects
+    plugins.withType<com.android.build.gradle.BasePlugin>().configureEach {
+        extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
+            jvmVersion.map { JavaVersion.toVersion(it) }.orNull?.let {
+                compileOptions {
+                    sourceCompatibility = it
+                    targetCompatibility = it
+                }
+            }
+        }
+    }
+
+    // Apply kotlinOptions.jvmTarget to subprojects
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions {
+            if (jvmVersion.isPresent) jvmTarget = jvmVersion.get()
+        }
+    }
 }
 
 tasks.register("clean", Delete::class) {

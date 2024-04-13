@@ -1,5 +1,27 @@
 # Blog
 
+Apr 4. 2024 [Why I joined SimpleX Chat](./20240404-why-i-joined-simplex-chat-esraa-al-shafei.md)
+
+_By [Esra'a al Shafei](https://mastodon.social/@alshafei)_
+
+Transitioning from a lifelong career dedicated to nonprofits, including Board roles at organizations like the Wikimedia Foundation, Access Now and Tor, my decision to join SimpleX Chat may come as a surprise to some. But, as I step into this new chapter, I want to share the insights and convictions that have guided me here, shedding light on what I think sets SimpleX Chat apart and why this move feels like an essential learning opportunity.
+
+---
+
+Mar 23, 2024 [SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration](./20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
+
+SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance:
+- community and business interests are aligned.
+- the journey to the decentralized non-profit protocol governance.
+- welcome, Esra’a!
+
+What's new in v5.6:
+- quantum resistant end-to-end encryption (BETA) – enable it for the new contacts.
+- use the app during the audio and video calls.
+- migrate all app data to another device via QR code.
+
+---
+
 Mar 14, 2024 [SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
 This is a major upgrade for SimpleX Chat messaging protocol stack, I am really proud to present this work of the whole team.

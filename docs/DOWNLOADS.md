@@ -4,10 +4,10 @@ permalink: /downloads/index.html
 revision: 11.02.2024
 ---
 
-| Updated 11.02.2024 | Languages: EN |
+| Updated 23.03.2024 | Languages: EN |
 # Download SimpleX apps
 
-The latest stable version is v5.5.3.
+The latest stable version is v5.6.
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
 
@@ -19,7 +19,7 @@ You can get the latest beta releases from [GitHub](https://github.com/simplex-ch
 
 <img src="/docs/images/simplex-desktop-light.png" alt="desktop app" width=500>
 
-Using the same profile as on mobile device is not yet supported – you need to create a separate profile to use desktop apps.
+You can link your mobile device with desktop to use the same profile remotely, but this is only possible when both devices are connected to the same local network.
 
 **Linux**: [AppImage](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage) (most Linux distros), [Ubuntu 20.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-20_04-x86_64.deb) (and Debian-based distros), [Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb).
 

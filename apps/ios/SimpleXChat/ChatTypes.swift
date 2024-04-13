@@ -2120,7 +2120,7 @@ public enum ConnectionEntity: Decodable {
     public var id: String? {
         switch self {
         case let .rcvDirectMsgConnection(contact):
-            return contact?.id ?? nil
+            return contact?.id
         case let .rcvGroupMsgConnection(_, groupMember):
             return groupMember.id
         case let .userContactConnection(userContact):
@@ -3206,6 +3206,14 @@ public enum MsgContent: Equatable {
         switch self {
         case .video: return true
         default: return false
+        }
+    }
+
+    public var isImageOrVideo: Bool {
+        switch self {
+        case .image: true
+        case .video: true
+        default: false
         }
     }
 

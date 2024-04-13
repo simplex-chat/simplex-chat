@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import chat.simplex.common.helpers.toUri
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.ModalManager
@@ -15,7 +14,6 @@ import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
-import java.net.URI
 
 @Composable
 actual fun SimpleAndAnimatedImageView(
@@ -43,6 +41,7 @@ actual fun SimpleAndAnimatedImageView(
 }
 
 private val imageLoader = ImageLoader.Builder(androidAppContext)
+  .networkObserverEnabled(false)
   .components {
     if (SDK_INT >= 28) {
       add(ImageDecoderDecoder.Factory())

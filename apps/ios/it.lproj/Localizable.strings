@@ -2455,7 +2455,7 @@
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "I messaggi, i file e le chiamate sono protetti da **crittografia end-to-end** con perfect forward secrecy, ripudio e recupero da intrusione.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "I messaggi, i file e le chiamate sono protetti da **crittografia e2e resistente al quantistico** con perfect forward secrecy, ripudio e recupero da intrusione.";
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "I messaggi, i file e le chiamate sono protetti da **crittografia e2e resistente alla quantistica** con perfect forward secrecy, ripudio e recupero da intrusione.";
 
 /* No comment provided by engineer. */
 "Migrate device" = "Migra dispositivo";
@@ -2958,10 +2958,10 @@
 "Push server" = "Server push";
 
 /* chat item text */
-"quantum resistant e2e encryption" = "crittografia e2e resistente al quantistico";
+"quantum resistant e2e encryption" = "crittografia e2e resistente alla quantistica";
 
 /* No comment provided by engineer. */
-"Quantum resistant encryption" = "Crittografia resistente al quantistico";
+"Quantum resistant encryption" = "Crittografia resistente alla quantistica";
 
 /* No comment provided by engineer. */
 "Rate the app" = "Valuta l'app";
@@ -3726,7 +3726,7 @@
 "This chat is protected by end-to-end encryption." = "Questa chat è protetta da crittografia end-to-end.";
 
 /* E2EE info chat item */
-"This chat is protected by quantum resistant end-to-end encryption." = "Questa chat è protetta da crittografia end-to-end resistente al quantistico.";
+"This chat is protected by quantum resistant end-to-end encryption." = "Questa chat è protetta da crittografia end-to-end resistente alla quantistica.";
 
 /* notification title */
 "this contact" = "questo contatto";
@@ -4014,7 +4014,7 @@
 "via relay" = "via relay";
 
 /* No comment provided by engineer. */
-"Via secure quantum resistant protocol." = "Tramite protocollo sicuro resistente al quantistico.";
+"Via secure quantum resistant protocol." = "Tramite protocollo sicuro resistente alla quantistica.";
 
 /* No comment provided by engineer. */
 "Video call" = "Videochiamata";

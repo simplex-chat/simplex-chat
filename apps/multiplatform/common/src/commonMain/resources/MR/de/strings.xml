@@ -262,7 +262,7 @@
     <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie SimpleX Chat installiert haben!</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color="#0088ff">mit SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color="#0088ff">mit den SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und aktuelle Informationen zu erhalten</font>.]]></string>
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
@@ -1214,7 +1214,7 @@
     <string name="create_address_and_let_people_connect">Erstellen Sie eine Adresse, damit sich Personen mit Ihnen verbinden können.</string>
     <string name="create_simplex_address">SimpleX-Adresse erstellen</string>
     <string name="share_with_contacts">Mit Kontakten teilen</string>
-    <string name="your_contacts_will_remain_connected">Ihre Kontakte bleiben verbunden.</string>
+    <string name="your_contacts_will_remain_connected">Ihre Kontakte bleiben weiterhin verbunden.</string>
     <string name="auto_accept_contact">Automatisch akzeptieren</string>
     <string name="enter_welcome_message_optional">Geben Sie eine Begrüßungsmeldung ein … (optional)</string>
     <string name="invite_friends">Freunde einladen</string>
@@ -1725,7 +1725,7 @@
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Wählen Sie auf dem neuen Gerät <i>Von einem anderen Gerät migrieren</i> und scannen Sie den QR-Code.]]></string>
     <string name="migrate_from_device_delete_database_from_device">Datenbank auf diesem Gerät löschen</string>
     <string name="v5_6_app_data_migration">App-Daten-Migration</string>
-    <string name="v5_6_safer_groups_descr">Administratoren können für ein Mitglied alle Funktionen blockieren.</string>
+    <string name="v5_6_safer_groups_descr">Administratoren können ein Gruppenmitglied für Alle blockieren.</string>
     <string name="migrate_to_device_downloading_details">Link-Details werden heruntergeladen</string>
     <string name="migrate_to_device_downloading_archive">Archiv wird heruntergeladen</string>
     <string name="migrate_to_device_apply_onion">Anwenden</string>
@@ -1737,7 +1737,7 @@
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Bitte beachten Sie</b>: Aus Sicherheitsgründen wird die Nachrichtenentschlüsselung Ihrer Verbindungen abgebrochen, wenn Sie die gleiche Datenbank auf zwei Geräten nutzen.]]></string>
     <string name="migrate_from_device_cancel_migration">Migration abbrechen</string>
     <string name="migrate_to_device_confirm_network_settings">Bestätigen Sie die Netzwerkeinstellungen</string>
-    <string name="migrate_from_device_confirm_you_remember_passphrase">Für die Migration bestätigen Sie bitte, dass Sie sich an das Datenbank-Passwort erinnern.</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Bitte bestätigen Sie für die Migration, dass Sie sich an Ihr Datenbank-Passwort erinnern.</string>
     <string name="migrate_from_device_confirm_upload">Hochladen bestätigen</string>
     <string name="migrate_to_device_download_failed">Herunterladen fehlgeschlagen</string>
     <string name="e2ee_info_no_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Ende-zu-Ende-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.]]></string>
@@ -1759,7 +1759,7 @@
     <string name="migrate_from_device_start_chat">Chat starten</string>
     <string name="v5_6_quantum_resistant_encryption_descr">Kann in direkten Chats aktiviert werden (BETA)!</string>
     <string name="v5_6_quantum_resistant_encryption">Quantum-resistente Verschlüsselung</string>
-    <string name="v5_6_app_data_migration_descr">Über einen QR-Code auf ein anderes Gerät migrieren.</string>
+    <string name="v5_6_app_data_migration_descr">Daten können über einen QR-Code auf ein anderes Gerät migriert werden.</string>
     <string name="v5_6_picture_in_picture_calls">Bild-in-Bild-Anrufe</string>
     <string name="v5_6_safer_groups">Sicherere Gruppen</string>
     <string name="v5_6_picture_in_picture_calls_descr">Die App kann während eines Anrufs genutzt werden.</string>
@@ -1796,4 +1796,5 @@
     <string name="migrate_to_device_confirm_network_settings_footer">Bitte bestätigen Sie, dass die Netzwerkeinstellungen auf diesem Gerät richtig sind.</string>
     <string name="conn_event_disabled_pq">Standard-Ende-zu-Ende-Verschlüsselung</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Sie dürfen die selbe Datenbank <b>nicht</b> auf zwei Geräten nutzen.]]></string>
+    <string name="error_showing_desktop_notification">Fehler beim Anzeigen der Benachrichtigung. Bitte kontaktieren Sie die Entwickler.</string>
 </resources>

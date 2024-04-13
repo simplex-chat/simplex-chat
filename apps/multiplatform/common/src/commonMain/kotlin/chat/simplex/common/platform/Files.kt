@@ -109,6 +109,7 @@ private fun fileReady(file: CIFile, filePath: String) =
 @Composable
 expect fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any? = null, onResult: (URI?) -> Unit): FileChooserLauncher
 
+@Composable
 expect fun rememberFileChooserMultipleLauncher(onResult: (List<URI>) -> Unit): FileChooserMultipleLauncher
 
 expect class FileChooserLauncher() {

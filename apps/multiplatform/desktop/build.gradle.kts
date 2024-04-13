@@ -12,16 +12,13 @@ version = extra["desktop.version_name"] as String
 
 
 kotlin {
-  jvm {
-    jvmToolchain(11)
-    withJava()
-  }
+  jvm()
   sourceSets {
     val jvmMain by getting {
       dependencies {
         implementation(project(":common"))
         implementation(compose.desktop.currentOs)
-        implementation("net.java.dev.jna:jna:5.13.0")
+        implementation("net.java.dev.jna:jna:5.14.0")
       }
     }
     val jvmTest by getting
@@ -151,7 +148,7 @@ cmake {
 tasks.named("clean") {
   dependsOn("cmakeClean")
 }
-tasks.named("compileJava") {
+tasks.named("compileKotlinJvm") {
   dependsOn("cmakeBuildAndCopy")
 }
 afterEvaluate {
