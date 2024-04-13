@@ -1543,9 +1543,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Saját profil létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Created at" xml:space="preserve">
+      <trans-unit id="Created at" xml:space="preserve" approved="no">
         <source>Created at</source>
-        <target>Létrehozva ekkor</target>
+        <target state="translated">Létrehozva ekkor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created at: %@" xml:space="preserve">
@@ -1893,9 +1893,9 @@ Ezt nem vonható vissza!</target>
         <target>Felhasználói profil törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at" xml:space="preserve">
+      <trans-unit id="Deleted at" xml:space="preserve" approved="no">
         <source>Deleted at</source>
-        <target>Törölve ekkor</target>
+        <target state="translated">Törölve ekkor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deleted at: %@" xml:space="preserve">
@@ -2013,9 +2013,9 @@ Ezt nem vonható vissza!</target>
         <target>Az eltűnő üzenetek küldése le van tiltva ebben a csoportban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at" xml:space="preserve">
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
         <source>Disappears at</source>
-        <target>Eltűnik ekkor</target>
+        <target state="translated">Eltűnik ekkor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappears at: %@" xml:space="preserve">
@@ -2863,9 +2863,9 @@ Ezt nem vonható vissza!</target>
         <target>A csoport meghívó lejárt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve">
+      <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve" approved="no">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
-        <target>A csoport meghívó már nem érvényes, el lett távolítva a küldője által.</target>
+        <target state="translated">A csoport meghívó már nem érvényes, a küldője törölte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -3143,9 +3143,9 @@ Ezt nem vonható vissza!</target>
         <target>Inkognitó mód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve">
+      <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve" approved="no">
         <source>Incognito mode protects your privacy by using a new random profile for each contact.</source>
-        <target>Az inkognitómód védi személyes adatait azáltal, hogy minden ismerőshöz új véletlenszerű profilt használ.</target>
+        <target state="translated">Az inkognitó mód védi személyes adatait azáltal, hogy minden ismerőshöz új véletlenszerű profilt használ.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -3703,9 +3703,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Moderálás</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Moderated at" xml:space="preserve">
+      <trans-unit id="Moderated at" xml:space="preserve" approved="no">
         <source>Moderated at</source>
-        <target>Moderálva ekkor</target>
+        <target state="translated">Moderálva ekkor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderated at: %@" xml:space="preserve">
@@ -4112,9 +4112,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>A jelkód beállítva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Password to show" xml:space="preserve">
+      <trans-unit id="Password to show" xml:space="preserve" approved="no">
         <source>Password to show</source>
-        <target>Jelszó mutatása</target>
+        <target state="translated">Jelszó megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Past member %@" xml:space="preserve">
@@ -4359,9 +4359,9 @@ Hiba: %@</target>
         <target>Hangüzenetek küldésének letiltása.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect app screen" xml:space="preserve">
+      <trans-unit id="Protect app screen" xml:space="preserve" approved="no">
         <source>Protect app screen</source>
-        <target>App képernyőjének védelme</target>
+        <target state="translated">Alkalmazás képernyőjének védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
@@ -4414,19 +4414,19 @@ Hiba: %@</target>
         <target>Tudjon meg többet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
-        <target>További információ a [Felhasználói útmutatóban](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
+        <target state="translated">További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve">
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</source>
-        <target>További információ a [Felhasználói útmutatóban](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</target>
+        <target state="translated">További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
-        <target>További információ a [Felhasználói útmutatóban](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
+        <target state="translated">További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
@@ -4444,9 +4444,9 @@ Hiba: %@</target>
         <target>Üzenet kézbesítési jelentés letiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at" xml:space="preserve">
+      <trans-unit id="Received at" xml:space="preserve" approved="no">
         <source>Received at</source>
-        <target>Fogadva ekkor</target>
+        <target state="translated">Fogadva ekkor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at: %@" xml:space="preserve">
@@ -4824,9 +4824,9 @@ Hiba: %@</target>
         <target>Keresés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search bar accepts invitation links." xml:space="preserve">
+      <trans-unit id="Search bar accepts invitation links." xml:space="preserve" approved="no">
         <source>Search bar accepts invitation links.</source>
-        <target>A keresősáv fogadja a meghívó hivatkozásokat.</target>
+        <target state="translated">A keresősáv elfogadja a meghívó hivatkozásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -4894,9 +4894,9 @@ Hiba: %@</target>
         <target>Közvetlen üzenet küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
+      <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
         <source>Send direct message to connect</source>
-        <target>A kapcsolódáshoz közvetlen üzenet küldése</target>
+        <target state="translated">Közvetlen üzenet küldése a csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -4994,9 +4994,9 @@ Hiba: %@</target>
         <target>Küldés ezen keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at" xml:space="preserve">
+      <trans-unit id="Sent at" xml:space="preserve" approved="no">
         <source>Sent at</source>
-        <target>Elküldve ekkor</target>
+        <target state="translated">Elküldve ekkor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent at: %@" xml:space="preserve">
@@ -5139,9 +5139,9 @@ Hiba: %@</target>
         <target>Hívások megjelenítése a híváslistában</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show developer options" xml:space="preserve">
+      <trans-unit id="Show developer options" xml:space="preserve" approved="no">
         <source>Show developer options</source>
-        <target>Fejlesztői beállítások mutatása</target>
+        <target state="translated">Fejlesztői beállítások megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show last messages" xml:space="preserve">
@@ -5154,9 +5154,9 @@ Hiba: %@</target>
         <target>Előnézet megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show:" xml:space="preserve">
+      <trans-unit id="Show:" xml:space="preserve" approved="no">
         <source>Show:</source>
-        <target>Mutat:</target>
+        <target state="translated">Megjelenítés:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Address" xml:space="preserve">
@@ -5389,9 +5389,9 @@ Hiba: %@</target>
         <target>Koppintson a csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to join incognito" xml:space="preserve">
+      <trans-unit id="Tap to join incognito" xml:space="preserve" approved="no">
         <source>Tap to join incognito</source>
-        <target>Koppintson az inkognitómódhoz való csatlakozáshoz</target>
+        <target state="translated">Koppintson az inkognitóban való csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to paste link" xml:space="preserve">
@@ -6125,9 +6125,9 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
         <target>Csatlakozási kérelmek esetében, elfogadhatja vagy elutasíthatja azokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
+      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve" approved="no">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target>Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</target>
+        <target state="translated">Inkognitó profil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With encrypted files and media." xml:space="preserve">
@@ -6738,9 +6738,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>kapcsolódva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected directly" xml:space="preserve">
+      <trans-unit id="connected directly" xml:space="preserve" approved="no">
         <source>connected directly</source>
-        <target>közvetlenül kapcsolódva</target>
+        <target state="translated">közvetlenül csatlakozva</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
@@ -6763,9 +6763,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>kapcsolódás (bejelentve)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
+      <trans-unit id="connecting (introduction invitation)" xml:space="preserve" approved="no">
         <source>connecting (introduction invitation)</source>
-        <target>csatlakozás (bemutatkozás meghívás)</target>
+        <target state="translated">csatlakozás (bemutatkozó meghívó)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call" xml:space="preserve">
@@ -6988,9 +6988,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>inkognitó a csoportos hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="incognito via one-time link" xml:space="preserve">
+      <trans-unit id="incognito via one-time link" xml:space="preserve" approved="no">
         <source>incognito via one-time link</source>
-        <target>inkognitó egyszer használatos hivatkozáson keresztül</target>
+        <target state="translated">inkognitó az egyszer használatos hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="indirect (%d)" xml:space="preserve">
