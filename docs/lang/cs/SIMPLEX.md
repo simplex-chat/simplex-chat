@@ -2,7 +2,7 @@
 title: Platforma SimpleX
 revision: 07.02.2023
 ---
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/SIMPLEX.md), [FR](/docs/lang/fr/SIMPLEX.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/SIMPLEX.md), [FR](/docs/lang/fr/SIMPLEX.md), [PL](/docs/lang/pl/SIMPLEX.md) |
 
 # Platforma SimpleX - motivace a srovnání
 
