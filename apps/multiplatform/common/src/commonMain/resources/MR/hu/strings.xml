@@ -1726,4 +1726,13 @@
     <string name="network_type_other">Egyéb</string>
     <string name="network_type_network_wifi">Wi-Fi</string>
     <string name="forwarded_description">továbbküldve</string>
+    <string name="simplex_links_not_allowed">SimpleX hivatkozások küldése nem engedélyezett</string>
+    <string name="group_members_can_send_simplex_links">A csoporttagok küldhetnek SimpleX hivatkozásokat.</string>
+    <string name="feature_roles_owners">tulajdonosok</string>
+    <string name="feature_roles_admins">adminok</string>
+    <string name="feature_roles_all_members">minden tag</string>
+    <string name="simplex_links">SimpleX hivatkozás</string>
+    <string name="voice_messages_not_allowed">Hangüzenetek küldése nem engedélyezett</string>
+    <string name="simplex_links_are_prohibited_in_group">A SimpleX hivatkozások küldése ebben a csoportban le van tiltva.</string>
+    <string name="prohibit_sending_simplex_links">A SimpleX hivatkozások küldése le van tiltva</string>
 </resources>
