@@ -1,14 +1,14 @@
+| 30/03/2023 | PL, [EN](/README.md), [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md) |
+
+<img src="../images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
+
+# SimpleX - pierwszy komunikator bez jakichkolwiek identyfikatorów użytkowników - w 100% prywatny z założenia!
+
 [![build](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml/badge.svg?branch=stable)](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml)
 [![Pobieranie z GitHuba](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
 [![Wydanie na Githubie](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 [![Dołącz na Reddicie](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 <a rel="me" href="https://mastodon.social/@simplex">![Śledź na Mastodonie](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)</a>
-
-| 30/03/2023 | PL, [EN](/README.md), [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md) |
-
-<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
-
-# SimpleX - pierwszy komunikator bez jakichkolwiek identyfikatorów użytkowników - w 100% prywatny z założenia!
 
 [<img src="./images/trail-of-bits.jpg" height="100">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="80">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="80">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
 
@@ -42,7 +42,7 @@
 
 ## Połącz się z naszym zespołem
 
-Możesz połączyć się z naszym zespołem za pośrednictwem aplikacji, korzystając z przycisku "czat z deweloperami" który dostępny jest w przypadku gdy nie masz konwersacji na swoim profilu, opcji "wysyłaj pytania i pomysły" w ustawieniach aplikacji lub za pośrednictwem naszego [adresu SimpleX](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Please connect to:
+Możesz połączyć się z naszym zespołem za pośrednictwem aplikacji, korzystając z przycisku "czat z deweloperami" który dostępny jest w przypadku gdy nie masz konwersacji na swoim profilu, opcji "wysyłaj pytania i pomysły" w ustawieniach aplikacji lub za pośrednictwem naszego [adresu SimpleX](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Połącz się z nami:
 
 - by zadać dowolne pytania
 - by zasugerować dowolne ulepszenia
