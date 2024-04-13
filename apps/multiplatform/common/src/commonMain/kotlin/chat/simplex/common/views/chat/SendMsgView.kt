@@ -432,7 +432,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary)
+        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary.copy(alpha = 0.75f))
         .padding(3.dp)
     )
   }
