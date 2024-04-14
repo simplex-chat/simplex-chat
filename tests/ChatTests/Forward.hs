@@ -5,6 +5,7 @@ module ChatTests.Forward where
 
 import ChatClient
 import ChatTests.Utils
+import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as B
 import System.Directory (copyFile, doesFileExist)
 import Test.Hspec hiding (it)
@@ -158,15 +159,32 @@ testForwardGroupToGroup =
       bob #> "#team hey"
       alice <# "#team bob> hey"
 
+      threadDelay 1000000
+
       alice `send` "#club <- #team hi"
       alice <# "#club <- you #team"
       alice <## "      hi"
       cath <# "#club alice> -> forwarded"
       cath <## "      hi"
 
+      threadDelay 1000000
+
       alice `send` "#club <- #team hey"
       alice <# "#club <- #team"
       alice <## "      hey"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hey"
+
+      -- read chat
+      alice ##> "/tail #club 2"
+      alice <# "#club <- you #team"
+      alice <## "      hi"
+      alice <# "#club <- #team"
+      alice <## "      hey"
+
+      cath ##> "/tail #club 2"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hi"
       cath <# "#club alice> -> forwarded"
       cath <## "      hey"
 

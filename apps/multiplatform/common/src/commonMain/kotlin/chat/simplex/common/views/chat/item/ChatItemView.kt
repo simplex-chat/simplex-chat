@@ -442,11 +442,11 @@ fun ChatItemView(
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatFeature -> {
-            CIChatFeatureView(cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndChatFeature -> {
-            CIChatFeatureView(cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatPreference -> {
@@ -454,23 +454,23 @@ fun ChatItemView(
             CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
           }
           is CIContent.SndChatPreference -> {
-            CIChatFeatureView(cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvGroupFeature -> {
-            CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as ChatInfo.Group).groupInfo.membership).iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndGroupFeature -> {
-            CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as ChatInfo.Group).groupInfo.membership).iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatFeatureRejected -> {
-            CIChatFeatureView(cItem, c.feature, Color.Red, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, Color.Red, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvGroupFeatureRejected -> {
-            CIChatFeatureView(cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndModerated -> DeletedItem()

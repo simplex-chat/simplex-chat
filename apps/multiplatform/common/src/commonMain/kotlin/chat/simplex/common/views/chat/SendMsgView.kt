@@ -39,6 +39,7 @@ fun SendMsgView(
   isDirectChat: Boolean,
   liveMessageAlertShown: SharedPreference<Boolean>,
   sendMsgEnabled: Boolean,
+  sendButtonEnabled: Boolean,
   nextSendGrpInv: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
@@ -75,7 +76,8 @@ fun SendMsgView(
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-      cs.endLiveDisabled
+        cs.endLiveDisabled ||
+        !sendButtonEnabled
     PlatformTextField(composeState, sendMsgEnabled, sendMsgButtonDisabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
       if (!cs.inProgress) {
         sendMessage(null)
@@ -430,7 +432,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary)
+        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary.copy(alpha = 0.75f))
         .padding(3.dp)
     )
   }
@@ -552,6 +554,7 @@ fun PreviewSendMsgView() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
@@ -586,6 +589,7 @@ fun PreviewSendMsgViewEditing() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
@@ -620,6 +624,7 @@ fun PreviewSendMsgViewInProgress() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
