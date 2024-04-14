@@ -1730,4 +1730,15 @@
     <string name="network_type_ethernet">有線イーサネット</string>
     <string name="settings_section_title_network_connection">ネットワーク接続</string>
     <string name="network_type_other">その他</string>
+    <string name="group_members_can_send_simplex_links">グループメンバーはSimpleXリンクを送信できます。</string>
+    <string name="feature_roles_owners">オーナー</string>
+    <string name="simplex_links_are_prohibited_in_group">このグループではSimpleXリンクは禁止されています。</string>
+    <string name="simplex_links_not_allowed">SimpleXtリンクは許可されていません</string>
+    <string name="feature_roles_admins">管理者</string>
+    <string name="feature_roles_all_members">全てのメンバー</string>
+    <string name="allow_to_send_simplex_links">SimpleXリンクの送信を許可</string>
+    <string name="voice_messages_not_allowed">音声メッセージは許可されていません</string>
+    <string name="files_and_media_not_allowed">ファイルとメディアは許可されていません</string>
+    <string name="prohibit_sending_simplex_links">SimpleXリンクの送信禁止</string>
+    <string name="simplex_links">SimpleXリンク</string>
 </resources>
