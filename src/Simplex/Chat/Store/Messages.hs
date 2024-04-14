@@ -411,7 +411,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
       Just CIFFContact {chatName, msgDir, contactId, chatItemId} ->
         (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, chatItemId)
       Just CIFFGroup {chatName, msgDir, groupId, chatItemId} ->
-        (Just CIFFContact_, Just chatName, Just msgDir, Nothing, groupId, chatItemId)
+        (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, chatItemId)
 
 ciTimedRow :: Maybe CITimed -> (Maybe Int, Maybe UTCTime)
 ciTimedRow (Just CITimed {ttl, deleteAt}) = (Just ttl, deleteAt)
@@ -1468,8 +1468,8 @@ toCIForwardedFrom :: ChatItemForwardedFromRow -> Maybe CIForwardedFrom
 toCIForwardedFrom (fwdFromTag, fwdFromChatName, fwdFromMsgDir, fwdFromContactId, fwdFromGroupId, fwdFromChatItemId) =
   case (fwdFromTag, fwdFromChatName, fwdFromMsgDir, fwdFromContactId, fwdFromGroupId, fwdFromChatItemId) of
     (Just CIFFUnknown_, Nothing, Nothing, Nothing, Nothing, Nothing) -> Just CIFFUnknown
-    (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, chatId) -> Just $ CIFFContact chatName msgDir contactId chatId
-    (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, chatId) -> Just $ CIFFGroup chatName msgDir groupId chatId
+    (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, ciId) -> Just $ CIFFContact chatName msgDir contactId ciId
+    (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, ciId) -> Just $ CIFFGroup chatName msgDir groupId ciId
     _ -> Nothing
 
 type GroupQuoteRow = QuoteRow :. MaybeGroupMemberRow
@@ -1874,7 +1874,7 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False}, formattedText = Nothing}
+  pure $ ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
@@ -1891,7 +1891,7 @@ updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = 
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (DBCIBlockedByAdmin, deletedTs, currentTs, userId, groupId, itemId)
-  pure $ ci {meta = (meta ci) {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False}, formattedText = Nothing}
+  pure $ ci {meta = (meta ci) {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False, deletable = False}, formattedText = Nothing}
 
 pattern DBCINotDeleted :: Int
 pattern DBCINotDeleted = 0

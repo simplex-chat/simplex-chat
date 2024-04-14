@@ -2,7 +2,7 @@
 title: Použití vlastních serverů WebRTC ICE v SimpleX Chat
 revision: 31.01.2023
 ---
-| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/WEBRTC.md), [FR](/docs/lang/fr/WEBRTC.md) |
+| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/WEBRTC.md), [FR](/docs/lang/fr/WEBRTC.md), [PL](/docs/lang/pl/WEBRTC.md) |
 
 # Použití vlastních serverů WebRTC ICE v SimpleX Chat
 

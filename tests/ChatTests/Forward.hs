@@ -5,6 +5,7 @@ module ChatTests.Forward where
 
 import ChatClient
 import ChatTests.Utils
+import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as B
 import System.Directory (copyFile, doesFileExist)
 import Test.Hspec hiding (it)
@@ -25,6 +26,7 @@ chatForwardTests = do
     it "preserve original forward info" testForwardPreserveInfo
     it "quoted message is not included" testForwardQuotedMsg
     it "editing is prohibited" testForwardEditProhibited
+    it "delete for other" testForwardDeleteForOther
   describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
     it "with relative paths: from contact to contact" testForwardFileContactToContact
@@ -157,15 +159,32 @@ testForwardGroupToGroup =
       bob #> "#team hey"
       alice <# "#team bob> hey"
 
+      threadDelay 1000000
+
       alice `send` "#club <- #team hi"
       alice <# "#club <- you #team"
       alice <## "      hi"
       cath <# "#club alice> -> forwarded"
       cath <## "      hi"
 
+      threadDelay 1000000
+
       alice `send` "#club <- #team hey"
       alice <# "#club <- #team"
       alice <## "      hey"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hey"
+
+      -- read chat
+      alice ##> "/tail #club 2"
+      alice <# "#club <- you #team"
+      alice <## "      hi"
+      alice <# "#club <- #team"
+      alice <## "      hey"
+
+      cath ##> "/tail #club 2"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hi"
       cath <# "#club alice> -> forwarded"
       cath <## "      hey"
 
@@ -306,6 +325,27 @@ testForwardEditProhibited =
       msgId <- lastItemId alice
       alice ##> ("/_update item @3 " <> msgId <> " text hey edited")
       alice <## "cannot update this item"
+
+testForwardDeleteForOther :: HasCallStack => FilePath -> IO ()
+testForwardDeleteForOther =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+
+      alice `send` "@cath <- @bob hey"
+      alice <# "@cath <- @bob"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
+
+      msgId <- lastItemId alice
+      alice ##> ("/_delete item @3 " <> msgId <> " broadcast")
+      alice <## "message marked deleted"
+      cath <# "alice> [marked deleted] hey"
 
 testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
 testForwardFileNoFilesFolder =

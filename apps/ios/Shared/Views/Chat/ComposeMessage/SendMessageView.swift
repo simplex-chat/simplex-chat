@@ -20,6 +20,7 @@ struct SendMessageView: View {
     var nextSendGrpInv: Bool = false
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
+    var disableSendButton = false
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
@@ -184,7 +185,8 @@ struct SendMessageView: View {
             !composeState.sendEnabled ||
             composeState.inProgress ||
             (!voiceMessageAllowed && composeState.voicePreview) ||
-            composeState.endLiveDisabled
+            composeState.endLiveDisabled ||
+            disableSendButton
         )
         .frame(width: 29, height: 29)
         .contextMenu{

@@ -3,7 +3,7 @@ title: Terminal CLI
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md) |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
 
 # SimpleX Chat terminal (console) app for Linux/MacOS/Windows
 
@@ -102,7 +102,7 @@ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 
 #### In any OS
 
-1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 9.6.3 and cabal 3.10.1.0:
+1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 9.6.4 and cabal 3.10.1.0:
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh

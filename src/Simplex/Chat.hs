@@ -83,6 +83,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
+import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
@@ -787,8 +788,8 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
-      (ct, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, editable}}) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
-      case (mode, msgDir, itemSharedMsgId, editable) of
+      (ct, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
+      case (mode, msgDir, itemSharedMsgId, deletable) of
         (CIDMInternal, _, _, _) -> deleteDirectCI user ct ci True False
         (CIDMBroadcast, SMDSnd, Just itemSharedMId, True) -> do
           assertDirectAllowed user MDSnd ct XMsgDel_
@@ -799,8 +800,8 @@ processChatCommand' vr = \case
         (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       Group gInfo ms <- withStore $ \db -> getGroup db vr user chatId
-      CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, editable}} <- withStore $ \db -> getGroupChatItem db user chatId itemId
-      case (mode, msgDir, itemSharedMsgId, editable) of
+      CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, deletable}} <- withStore $ \db -> getGroupChatItem db user chatId itemId
+      case (mode, msgDir, itemSharedMsgId, deletable) of
         (CIDMInternal, _, _, _) -> deleteGroupCI user gInfo ci True False Nothing =<< liftIO getCurrentTime
         (CIDMBroadcast, SMDSnd, Just itemSharedMId, True) -> do
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
@@ -932,7 +933,7 @@ processChatCommand' vr = \case
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded = Just ciff}} _ = Just ciff
           forwardCIFF _ ciff = ciff
           forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
-          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}}
+          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath, cryptoArgs = fromArgs}}}
             | ciFileLoaded fileStatus =
                 chatReadVar filesFolder >>= \case
                   Nothing ->
@@ -948,14 +949,31 @@ processChatCommand' vr = \case
                           cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
                           let toCF = CryptoFile fsNewPath cfArgs
                           -- to keep forwarded file in case original is deleted
-                          liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ do
-                            lb <- CF.readFile (fromCF {filePath = fsFromPath} :: CryptoFile)
-                            CF.writeFile toCF lb
+                          liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
                           pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
                       )
                       (pure Nothing)
             | otherwise = pure Nothing
           forwardCryptoFile _ = pure Nothing
+          copyCryptoFile :: CryptoFile -> CryptoFile -> ExceptT CF.FTCryptoError IO ()
+          copyCryptoFile fromCF@CryptoFile {filePath = fsFromPath, cryptoArgs = fromArgs} toCF@CryptoFile {cryptoArgs = toArgs} = do
+            fromSizeFull <- getFileSize fsFromPath
+            let fromSize = fromSizeFull - maybe 0 (const $ toInteger C.authTagSize) fromArgs
+            CF.withFile fromCF ReadMode $ \fromH ->
+              CF.withFile toCF WriteMode $ \toH -> do
+                copyChunks fromH toH fromSize
+                forM_ fromArgs $ \_ -> CF.hGetTag fromH
+                forM_ toArgs $ \_ -> liftIO $ CF.hPutTag toH
+            where
+              copyChunks :: CF.CryptoFileHandle -> CF.CryptoFileHandle -> Integer -> ExceptT CF.FTCryptoError IO ()
+              copyChunks r w size = do
+                let chSize = min size U.chunkSize
+                    chSize' = fromIntegral chSize
+                    size' = size - chSize
+                ch <- liftIO $ CF.hGet r chSize'
+                when (B.length ch /= chSize') $ throwError $ CF.FTCEFileIOError "encrypting file: unexpected EOF"
+                liftIO . CF.hPut w $ LB.fromStrict ch
+                when (size' > 0) $ copyChunks r w size'
   APIUserRead userId -> withUserId userId $ \user -> withStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
