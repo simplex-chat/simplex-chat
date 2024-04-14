@@ -8,7 +8,7 @@ FROM ubuntu:${TAG} AS build
 RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev llvm-12 llvm-12-dev libnuma-dev libssl-dev
 
 # Specify bootstrap Haskell versions
-ENV BOOTSTRAP_HASKELL_GHC_VERSION=9.6.3
+ENV BOOTSTRAP_HASKELL_GHC_VERSION=9.6.4
 ENV BOOTSTRAP_HASKELL_CABAL_VERSION=3.10.1.0
 
 # Install ghcup
