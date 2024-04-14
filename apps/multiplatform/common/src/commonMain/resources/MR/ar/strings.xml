@@ -1729,4 +1729,16 @@
     <string name="network_type_no_network_connection">لا إتصال شبكة</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="network_type_other">أخرى</string>
+    <string name="simplex_links_not_allowed">روابط SimpleX غير مسموح بها</string>
+    <string name="voice_messages_not_allowed">الرسائل الصوتية غير مسموح بها</string>
+    <string name="simplex_links">روابط SimpleX</string>
+    <string name="allow_to_send_simplex_links">السماح بإرسال روابط SimpleX.</string>
+    <string name="prohibit_sending_simplex_links">منع إرسال روابط SimpleX</string>
+    <string name="feature_roles_all_members">كل الأعضاء</string>
+    <string name="group_members_can_send_simplex_links">يمكن لأعضاء المجموعة إرسال روابط SimpleX.</string>
+    <string name="simplex_links_are_prohibited_in_group">روابط SimpleX محظورة في هذه المجموعة.</string>
+    <string name="feature_roles_admins">المشرفين</string>
+    <string name="feature_enabled_for">مفعّل لـ</string>
+    <string name="feature_roles_owners">المالكون</string>
+    <string name="files_and_media_not_allowed">الملفات والوسائط غير مسموح بها</string>
 </resources>
