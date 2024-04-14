@@ -1812,4 +1812,16 @@
     <string name="network_type_other">Andere</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="network_type_ethernet">Kabelgebundenes Ethernet</string>
+    <string name="files_and_media_not_allowed">Dateien und Medien sind nicht erlaubt</string>
+    <string name="simplex_links_not_allowed">SimpleX-Links sind nicht erlaubt</string>
+    <string name="voice_messages_not_allowed">Sprachnachrichten sind nicht erlaubt</string>
+    <string name="simplex_links">SimpleX-Links</string>
+    <string name="group_members_can_send_simplex_links">Gruppenmitglieder können SimpleX-Links senden.</string>
+    <string name="feature_roles_admins">Administratoren</string>
+    <string name="feature_roles_all_members">Alle Mitglieder</string>
+    <string name="feature_enabled_for">Für aktiviert</string>
+    <string name="feature_roles_owners">Eigentümer</string>
+    <string name="simplex_links_are_prohibited_in_group">In dieser Gruppe sind SimpleX-Links verboten.</string>
+    <string name="prohibit_sending_simplex_links">Das Senden von SimpleX-Links verbieten</string>
+    <string name="allow_to_send_simplex_links">Das Senden von SimpleX-Links erlauben.</string>
 </resources>
