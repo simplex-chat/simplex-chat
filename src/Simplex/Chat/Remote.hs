@@ -50,7 +50,7 @@ import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Util (liftIOEither, encryptFile)
+import Simplex.Chat.Util (encryptFile, liftIOEither)
 import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
@@ -76,7 +76,7 @@ minRemoteCtrlVersion = AppVersion [5, 6, 0, 0]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [5, 6, 0, 0]
+minRemoteHostVersion = AppVersion [5, 7, 0, 0]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
