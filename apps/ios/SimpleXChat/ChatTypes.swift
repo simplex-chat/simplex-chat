@@ -2805,7 +2805,7 @@ public enum CIForwardedFrom: Decodable {
     public func text(_ chatType: ChatType) -> LocalizedStringKey {
         chatType == .local
         ? (chatName == "" ? "saved" : "saved from \(chatName)")
-        :"forwarded"
+        : "forwarded"
     }
 }
 

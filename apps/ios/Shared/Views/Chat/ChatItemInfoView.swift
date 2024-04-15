@@ -76,6 +76,14 @@ struct ChatItemInfoView: View {
         return numTabs
     }
 
+    private var local: Bool {
+        switch ci.chatDir {
+        case .localSnd: true
+        case .localRcv: true
+        default: false
+        }
+    }
+
     @ViewBuilder private func itemInfoView() -> some View {
         if numTabs > 1 {
             TabView(selection: $selection) {
@@ -101,7 +109,7 @@ struct ChatItemInfoView: View {
                 if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
                     forwardedFromTab(forwardedFromItem)
                         .tabItem {
-                            Label("Forwarded from", systemImage: "arrowshape.turn.up.forward")
+                            Label(local ? "Saved from" : "Forwarded from", systemImage: "arrowshape.turn.up.forward")
                         }
                         .tag(CIInfoTab.forwarded)
                 }
@@ -292,7 +300,7 @@ struct ChatItemInfoView: View {
             VStack(alignment: .leading, spacing: 16) {
                 details()
                 Divider().padding(.vertical)
-                Text("Forwarded from")
+                Text(local ? "Saved from" : "Forwarded from")
                     .font(.title2)
                     .padding(.bottom, 4)
                 forwardedFromView(forwardedFromItem)
@@ -322,9 +330,12 @@ struct ChatItemInfoView: View {
                 }
             }
 
-            Text("Information about where you forwarded this message from is not known to recipient(s).")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            if !local {
+                Divider()
+                Text("Information about where you forwarded this message from is not known to recipient(s).")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
