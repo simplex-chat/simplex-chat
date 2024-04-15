@@ -2308,9 +2308,9 @@ Ezt nem vonható vissza!</target>
         <target>Üdvözlő üzenetet megadása… (opcionális)</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter your name…" xml:space="preserve">
+      <trans-unit id="Enter your name…" xml:space="preserve" approved="no">
         <source>Enter your name…</source>
-        <target>Adja meg nevét…</target>
+        <target state="translated">Adjon meg egy nevet…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
@@ -3508,9 +3508,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Egy üzenet eltüntetése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make profile private!" xml:space="preserve">
+      <trans-unit id="Make profile private!" xml:space="preserve" approved="no">
         <source>Make profile private!</source>
-        <target>Tegye priváttá profilját!</target>
+        <target state="translated">Tegye priváttá a profilját!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
@@ -6548,9 +6548,9 @@ SimpleX servers cannot see your profile.</source>
 A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
+      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve" approved="no">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target>Profilja, ismerősök és az elküldött üzenetek az eszközön kerülnek tárolásra.</target>
+        <target state="translated">Profilja, ismerősei és az elküldött üzenetei az eszközön kerülnek tárolásra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
@@ -6628,9 +6628,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>mindig</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="and %lld other events" xml:space="preserve">
+      <trans-unit id="and %lld other events" xml:space="preserve" approved="no">
         <source>and %lld other events</source>
-        <target>és %lld egyéb esemény</target>
+        <target state="translated">és %lld további esemény</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
@@ -7050,7 +7050,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target state="translated">elhagyta a szobát</target>
+        <target state="translated">elhagyta a csoportot</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -7387,7 +7387,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="you left" xml:space="preserve" approved="no">
         <source>you left</source>
-        <target state="translated">elhagyta a szobát</target>
+        <target state="translated">elhagyta a csoportot</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
