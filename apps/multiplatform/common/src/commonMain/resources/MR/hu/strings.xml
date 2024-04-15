@@ -755,7 +755,7 @@
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Összekapcsolt számítógép beállítások</string>
     <string name="rcv_group_event_invited_via_your_group_link">meghívott a csoport hivatkozásán keresztül</string>
-    <string name="rcv_group_event_member_left">elhagyta</string>
+    <string name="rcv_group_event_member_left">elhagyta a szobát</string>
     <string name="linked_desktops">Összekapcsolt számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
     <string name="muted_when_inactive">Némítás, ha inaktív!</string>
@@ -773,7 +773,7 @@
     <string name="v4_3_irreversible_message_deletion">Visszafordíthatatlan üzenettörlés</string>
     <string name="videos_limit_desc">Egyszerre csak 10 videó küldhető el</string>
     <string name="only_you_can_add_message_reactions">Csak ön adhat hozzá üzenetreakciókat.</string>
-    <string name="group_member_status_left">elhagyta</string>
+    <string name="group_member_status_left">elhagyta a szobát</string>
     <string name="message_deletion_prohibited">Ebben a csevegésben az üzenetek visszafordíthatatlan törlése le van tiltva.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
     <string name="description_via_contact_address_link_incognito">inkognitó az ismerős azonosító hivatkozásán keresztül</string>
@@ -1262,7 +1262,7 @@
     <string name="reset_verb">Alaphelyzetbe állítás</string>
     <string name="only_your_contact_can_add_message_reactions">Csak az ismerőse tud üzenetreakciókat küldeni.</string>
     <string name="voice_messages">Hangüzenetek</string>
-    <string name="snd_group_event_user_left">elhagyta</string>
+    <string name="snd_group_event_user_left">elhagyta a szobát</string>
     <string name="icon_descr_record_voice_message">Hangüzenet rögzítése</string>
     <string name="auth_simplex_lock_turned_on">SimpleX zárolás bekapcsolva</string>
     <string name="member_contact_send_direct_message">közvetlen üzenet küldése</string>
