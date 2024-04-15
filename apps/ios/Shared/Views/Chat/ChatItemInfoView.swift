@@ -109,7 +109,7 @@ struct ChatItemInfoView: View {
                 if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
                     forwardedFromTab(forwardedFromItem)
                         .tabItem {
-                            Label(local ? "Saved from" : "Forwarded from", systemImage: "arrowshape.turn.up.forward")
+                            Label(local ? "Saved" : "Forwarded", systemImage: "arrowshape.turn.up.forward")
                         }
                         .tag(CIInfoTab.forwarded)
                 }
@@ -324,8 +324,8 @@ struct ChatItemInfoView: View {
             }
 
             if !local {
-                Divider()
-                Text("Information about where you forwarded this message from is not known to recipient(s).")
+                Divider().padding(.top, 32)
+                Text("Recipient(s) can't see who this message is from.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -335,14 +335,15 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func forwardedFromSender(_ forwardedFromItem: AChatItem) -> some View {
         HStack {
             ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
-                .frame(width: 42, height: 42)
-                .padding(.trailing, 2)
+                .frame(width: 48, height: 48)
+                .padding(.trailing, 6)
 
             if forwardedFromItem.chatItem.chatDir.sent {
                 VStack(alignment: .leading) {
                     Text("you")
+                        .italic()
                         .foregroundColor(.primary)
-                    Text("@ \(forwardedFromItem.chatInfo.chatViewName)")
+                    Text(forwardedFromItem.chatInfo.chatViewName)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
@@ -351,7 +352,7 @@ struct ChatItemInfoView: View {
                     Text(groupMember.chatViewName)
                         .foregroundColor(.primary)
                         .lineLimit(1)
-                    Text("@ \(forwardedFromItem.chatInfo.chatViewName)")
+                    Text(forwardedFromItem.chatInfo.chatViewName)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
