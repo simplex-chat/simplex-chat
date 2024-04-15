@@ -24,6 +24,7 @@ chatForwardTests = do
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
   describe "interactions with forwarded messages" $ do
     it "preserve original forward info" testForwardPreserveInfo
+    it "received forwarded message is saved with new forward info" testForwardRcvMsgNewInfo
     it "quoted message is not included" testForwardQuotedMsg
     it "editing is prohibited" testForwardEditProhibited
     it "delete for other" testForwardDeleteForOther
@@ -275,6 +276,37 @@ testForwardPreserveInfo =
       alice <## "      hey"
       dan <# "#team alice> -> forwarded"
       dan <## "      hey"
+
+testForwardRcvMsgNewInfo :: HasCallStack => FilePath -> IO ()
+testForwardRcvMsgNewInfo =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      connectUsers bob dan
+      createCCNoteFolder alice
+      connectUsers alice bob
+      connectUsers alice cath
+
+      dan #> "@bob hey"
+      bob <# "dan> hey"
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+
+      bob `send` "@alice <- @dan hey"
+      bob <# "@alice <- @dan"
+      bob <## "      hey"
+      alice <# "bob> -> forwarded"
+      alice <## "      hey"
+
+      alice `send` "* <- @bob hey"
+      alice <# "* <- @bob"
+      alice <## "      hey"
+
+      alice `send` "@cath <- * hey"
+      alice <# "@cath <- @bob"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
 
 testForwardQuotedMsg :: HasCallStack => FilePath -> IO ()
 testForwardQuotedMsg =

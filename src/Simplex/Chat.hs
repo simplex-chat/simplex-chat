@@ -930,10 +930,12 @@ processChatCommand' vr = \case
           forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure (fmc, MDRcv)
           forwardMC _ = throwChatError CEInvalidForward
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
-          forwardCIFF ChatItem {meta = CIMeta {itemForwarded = Just ciff}} _ = Just ciff
-          forwardCIFF _ ciff = ciff
+          forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
+            Nothing -> ciff
+            Just CIFFUnknown -> ciff
+            Just prevCIFF -> Just prevCIFF
           forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
-          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath, cryptoArgs = fromArgs}}}
+          forwardCryptoFile ChatItem {file = Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}}
             | ciFileLoaded fileStatus =
                 chatReadVar filesFolder >>= \case
                   Nothing ->
