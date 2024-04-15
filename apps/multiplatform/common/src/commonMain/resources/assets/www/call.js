@@ -118,7 +118,7 @@ const processCommand = (function () {
         }
         catch (e) {
             console.log("Error while constructing RTCPeerConnection, will try without 'stuns' specified: " + e);
-            let withoutStuns = (_a = config.peerConnectionConfig.iceServers) === null || _a === void 0 ? void 0 : _a.filter((elem) => typeof elem.urls === "string" ? !elem.urls.startsWith("stuns:") : !elem.urls.some((url) => url.startsWith("stuns:")));
+            const withoutStuns = (_a = config.peerConnectionConfig.iceServers) === null || _a === void 0 ? void 0 : _a.filter((elem) => typeof elem.urls === "string" ? !elem.urls.startsWith("stuns:") : !elem.urls.some((url) => url.startsWith("stuns:")));
             config.peerConnectionConfig.iceServers = withoutStuns;
             pc = new RTCPeerConnection(config.peerConnectionConfig);
         }

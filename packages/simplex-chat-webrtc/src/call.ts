@@ -326,7 +326,7 @@ const processCommand = (function () {
       pc = new RTCPeerConnection(config.peerConnectionConfig)
     } catch (e) {
       console.log("Error while constructing RTCPeerConnection, will try without 'stuns' specified: " + e)
-      let withoutStuns = config.peerConnectionConfig.iceServers?.filter((elem) =>
+      const withoutStuns = config.peerConnectionConfig.iceServers?.filter((elem) =>
         typeof elem.urls === "string" ? !elem.urls.startsWith("stuns:") : !elem.urls.some((url) => url.startsWith("stuns:"))
       )
       config.peerConnectionConfig.iceServers = withoutStuns
