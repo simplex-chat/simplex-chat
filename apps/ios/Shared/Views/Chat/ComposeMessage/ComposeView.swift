@@ -761,7 +761,15 @@ struct ComposeView: View {
                 }
             }
         }
-        await MainActor.run { clearState(live: live) }
+        await MainActor.run {
+            let wasForwarding = composeState.forwarding
+            clearState(live: live)
+            if wasForwarding,
+               chatModel.draftChatId == chat.chatInfo.id,
+               let draft = chatModel.draft {
+                composeState = draft
+            }
+        }
         return sent
 
         func sending() async {
