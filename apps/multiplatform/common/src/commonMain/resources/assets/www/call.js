@@ -38,7 +38,7 @@ const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
         { urls: ["stun:stun.simplex.im:443"] },
-        //{ urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
+        //{urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"},
         { urls: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
@@ -471,8 +471,22 @@ const processCommand = (function () {
             }
             return;
         }
-        for (const t of call.localStream.getTracks())
-            t.stop();
+        if (!call.screenShareEnabled) {
+            for (const t of call.localStream.getTracks())
+                t.stop();
+        }
+        else {
+            // Don't stop audio track if switching to screenshare
+            for (const t of call.localStream.getVideoTracks())
+                t.stop();
+            // Replace new track from screenshare with old track from recording device
+            for (const t of localStream.getAudioTracks()) {
+                t.stop();
+                localStream.removeTrack(t);
+            }
+            for (const t of call.localStream.getAudioTracks())
+                localStream.addTrack(t);
+        }
         call.localCamera = camera;
         const audioTracks = localStream.getAudioTracks();
         const videoTracks = localStream.getVideoTracks();
@@ -531,7 +545,9 @@ const processCommand = (function () {
                 //},
                 //aspectRatio: 1.33,
             },
-            audio: true,
+            audio: false,
+            // This works with Chrome, Edge, Opera, but not with Firefox and Safari
+            // systemAudio: "include"
         };
         return navigator.mediaDevices.getDisplayMedia(constraints);
     }
