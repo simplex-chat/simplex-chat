@@ -322,7 +322,7 @@ struct ChatItemInfoView: View {
                 }
             }
 
-            Text("Information about where this message was forwarded from is not known to recipients.")
+            Text("Information about where you forwarded this message from is not known to recipient(s).")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
