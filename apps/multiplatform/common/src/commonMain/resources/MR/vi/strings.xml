@@ -119,4 +119,10 @@
 \n<b>Xin lưu ý</b>: nếu bạn có nhiều kết nối, mức tiêu thụ pin và lưu lượng truy cập của bạn có thể cao hơn đáng kể và một số kết nối có thể không thành công.</string>
     <string name="icon_descr_audio_call">cuộc gọi thoại</string>
     <string name="v4_6_audio_video_calls">Các cuộc gọi thoại và video</string>
+    <string name="settings_audio_video_calls">Các cuộc gọi thoại và video</string>
+    <string name="audio_video_calls">Các cuộc gọi thoại/video</string>
+    <string name="feature_roles_all_members">tất cả các thành viên</string>
+    <string name="calls_prohibited_with_this_contact">Các cuộc gọi thoại/video bị cấm.</string>
+    <string name="allow_to_send_simplex_links">Cho phép gửi liên kết SimpleX.</string>
+    <string name="feature_roles_admins">quản trị viên</string>
 </resources>
