@@ -577,6 +577,9 @@ const processCommand = (function () {
     // setupVideoElement(videos.remote)
     videos.local.srcObject = call.localStream
     videos.remote.srcObject = call.remoteStream
+    // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
+    videos.local.play()
+    videos.remote.play()
   }
 
   async function setupEncryptionWorker(call: Call) {
@@ -652,7 +655,9 @@ const processCommand = (function () {
       codecs.splice(selectedCodecIndex, 1)
       codecs.unshift(selectedCodec)
       for (const t of call.connection.getTransceivers()) {
-        if (t.sender.track?.kind === "video") {
+        // Firefox doesn't have this function implemented:
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1396922
+        if (t.sender.track?.kind === "video" && t.setCodecPreferences) {
           t.setCodecPreferences(codecs)
         }
       }
