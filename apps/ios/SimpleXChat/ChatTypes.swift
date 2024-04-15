@@ -2794,12 +2794,23 @@ public enum CIForwardedFrom: Decodable {
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
     case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
 
-    public var chatName: String? {
-        switch self {
-        case .unknown: return nil
-        case let .contact(chatName, _, _, _): return chatName
-        case let .group(chatName, _, _, _): return chatName
+    public func text(_ chatType: ChatType) -> String {
+        if chatType == .local {
+            switch self {
+            case .unknown:
+                savedStr
+            case let .contact(chatName, _, _, _):
+                chatName == "" ? savedStr : String.localizedStringWithFormat("saved from %@", chatName)
+            case let .group(chatName, _, _, _):
+                chatName == "" ? savedStr : String.localizedStringWithFormat("saved from %@", chatName)
+            }
+        } else {
+            NSLocalizedString("forwarded", comment: "forwarded chat item header")
         }
+    }
+
+    private var savedStr: String {
+        NSLocalizedString("saved", comment: "forwarded chat item header")
     }
 }
 

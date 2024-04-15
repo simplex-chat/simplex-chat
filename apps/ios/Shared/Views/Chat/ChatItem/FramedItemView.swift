@@ -67,12 +67,7 @@ struct FramedItemView: View {
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    if chat.chatInfo.chatType == .local,
-                       let fromChatName = itemForwarded.chatName {
-                        framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text("saved from \(fromChatName)").italic(), padBottom: true)
-                    } else {
-                        framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text("forwarded").italic(), padBottom: true)
-                    }
+                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), padBottom: true)
                 }
 
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: framedMsgContentView)
