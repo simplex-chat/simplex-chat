@@ -252,37 +252,6 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                details()
-                Divider().padding(.vertical)
-                Text("Forwarded from")
-                    .font(.title2)
-                    .padding(.bottom, 4)
-
-                Button {
-                    Task {
-                        await MainActor.run {
-                            chatModel.chatId = forwardedFromItem.chatInfo.id
-                            dismiss()
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 12) {
-                        ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
-                            .frame(width: 63, height: 63)
-                        Text(forwardedFromItem.chatInfo.chatViewName)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                    }
-                }
-            }
-            .padding()
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
-    }
-
     @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
@@ -316,6 +285,47 @@ struct ChatItemInfoView: View {
         (qi.chatDir?.sent ?? false)
         ? (colorScheme == .light ? sentColorLight : sentColorDark)
         : Color(uiColor: .tertiarySystemGroupedBackground)
+    }
+
+    @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                Text("Forwarded from")
+                    .font(.title2)
+                    .padding(.bottom, 4)
+                forwardedFromView(forwardedFromItem)
+            }
+            .padding()
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func forwardedFromView(_ forwardedFromItem: AChatItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                Task {
+                    await MainActor.run {
+                        chatModel.chatId = forwardedFromItem.chatInfo.id
+                        dismiss()
+                    }
+                }
+            } label: {
+                HStack {
+                    ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
+                        .frame(width: 30, height: 30)
+                        .padding(.trailing, 2)
+                    Text(forwardedFromItem.chatInfo.chatViewName)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                }
+            }
+
+            Text("Information about where this message was forwarded from is not known to recipients.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
     }
 
     @ViewBuilder private func deliveryTab(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
