@@ -46,7 +46,7 @@ struct ChatItemForwardingView: View {
                         searchFieldView(text: $searchText, focussed: $searchFocused)
                             .padding(.leading, 2)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                        let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
+                        let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { filterChatSearched($0, s) }
                         ForEach(chats) { chat in
                             Divider()
                             forwardListNavLinkView(chat)
@@ -73,6 +73,22 @@ struct ChatItemForwardingView: View {
             filteredChats.insert(privateNotes, at: 0)
         }
         return filteredChats
+    }
+
+    private func filterChatSearched(_ chat: Chat, _ searchStr: String) -> Bool {
+        let cInfo = chat.chatInfo
+        return switch cInfo {
+        case let .direct(contact):
+            viewNameContains(cInfo, searchStr) ||
+            contact.profile.displayName.localizedLowercase.contains(searchStr) ||
+            contact.fullName.localizedLowercase.contains(searchStr)
+        default:
+            viewNameContains(cInfo, searchStr)
+        }
+
+        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
+            cInfo.chatViewName.localizedLowercase.contains(s)
+        }
     }
 
     private func canForwardToChat(_ chat: Chat) -> Bool {
