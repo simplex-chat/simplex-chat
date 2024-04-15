@@ -41,18 +41,25 @@ struct ChatItemForwardingView: View {
         VStack(alignment: .leading) {
             let chatsToForwardTo = filterChatsToForwardTo()
             if !chatsToForwardTo.isEmpty {
-                List {
-                    Section {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
                         searchFieldView(text: $searchText, focussed: $searchFocused)
                             .padding(.leading, 2)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                         let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
                         ForEach(chats) { chat in
+                            Divider()
                             forwardListNavLinkView(chat)
                                 .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(Color(uiColor: .systemBackground))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
                 }
+                .background(Color(.systemGroupedBackground))
             } else {
                 emptyList()
             }
@@ -106,7 +113,7 @@ struct ChatItemForwardingView: View {
                 }
             }
         } label: {
-            HStack{
+            HStack {
                 ChatInfoImage(chat: chat)
                     .frame(width: 30, height: 30)
                     .padding(.trailing, 2)
@@ -122,6 +129,7 @@ struct ChatItemForwardingView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
