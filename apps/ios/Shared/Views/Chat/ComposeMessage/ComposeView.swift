@@ -687,7 +687,8 @@ struct ComposeView: View {
                 chat: chat,
                 contextItem: forwardedItem,
                 contextIcon: "arrowshape.turn.up.forward",
-                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                showSender: false
             )
         }
     }
@@ -713,7 +714,7 @@ struct ComposeView: View {
         } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
             sent = await forwardItem(ci, fromChatInfo)
             if !composeState.message.isEmpty {
-                sent = await send(checkLinkPreview(), quoted: nil, live: false, ttl: nil)
+                sent = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: nil)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
