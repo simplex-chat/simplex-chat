@@ -100,9 +100,9 @@ struct ChatItemForwardingView: View {
                         chatModel.forwardToChatId = chat.id
                         chatModel.forward = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
                         dismiss()
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        chatModel.chatId = chat.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            chatModel.chatId = chat.id
+                        }
                     }
                 }
             } else {
