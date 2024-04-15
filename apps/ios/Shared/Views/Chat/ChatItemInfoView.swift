@@ -320,14 +320,7 @@ struct ChatItemInfoView: View {
                     }
                 }
             } label: {
-                HStack {
-                    ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
-                        .frame(width: 30, height: 30)
-                        .padding(.trailing, 2)
-                    Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                }
+                forwardedFromSender(forwardedFromItem)
             }
 
             if !local {
@@ -335,6 +328,37 @@ struct ChatItemInfoView: View {
                 Text("Information about where you forwarded this message from is not known to recipient(s).")
                     .font(.caption)
                     .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder private func forwardedFromSender(_ forwardedFromItem: AChatItem) -> some View {
+        HStack {
+            ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
+                .frame(width: 42, height: 42)
+                .padding(.trailing, 2)
+
+            if forwardedFromItem.chatItem.chatDir.sent {
+                VStack(alignment: .leading) {
+                    Text("you")
+                        .foregroundColor(.primary)
+                    Text("@ \(forwardedFromItem.chatInfo.chatViewName)")
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            } else if case let .groupRcv(groupMember) = forwardedFromItem.chatItem.chatDir {
+                VStack(alignment: .leading) {
+                    Text(groupMember.chatViewName)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text("@ \(forwardedFromItem.chatInfo.chatViewName)")
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            } else {
+                Text(forwardedFromItem.chatInfo.chatViewName)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
             }
         }
     }
