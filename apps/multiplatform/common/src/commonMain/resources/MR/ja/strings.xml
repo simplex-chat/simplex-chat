@@ -1724,7 +1724,7 @@
     <string name="permissions_record_audio">マイク</string>
     <string name="permissions_grant">通話許可を付与</string>
     <string name="permissions_open_settings">設定を開く</string>
-    <string name="network_type_cellular">セルラー</string>
+    <string name="network_type_cellular">モバイル回線</string>
     <string name="network_type_no_network_connection">ネットワーク接続なし</string>
     <string name="network_type_network_wifi">Wi-Fi</string>
     <string name="network_type_ethernet">有線イーサネット</string>
