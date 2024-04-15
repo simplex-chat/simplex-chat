@@ -7048,9 +7048,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>csatlakozás mint %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target>elhagyta</target>
+        <target state="translated">elhagyta a szobát</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -7385,9 +7385,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>megváltoztatta %1$@ szerepkörét erre: %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you left" xml:space="preserve">
+      <trans-unit id="you left" xml:space="preserve" approved="no">
         <source>you left</source>
-        <target>elhagyta</target>
+        <target state="translated">elhagyta a szobát</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
