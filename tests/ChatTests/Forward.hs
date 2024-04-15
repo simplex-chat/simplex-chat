@@ -24,7 +24,7 @@ chatForwardTests = do
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
   describe "interactions with forwarded messages" $ do
     it "preserve original forward info" testForwardPreserveInfo
-    fit "received forwarded message is saved with new forward info" testForwardRcvMsgNewInfo
+    it "received forwarded message is saved with new forward info" testForwardRcvMsgNewInfo
     it "quoted message is not included" testForwardQuotedMsg
     it "editing is prohibited" testForwardEditProhibited
     it "delete for other" testForwardDeleteForOther
