@@ -74,7 +74,7 @@
     <string name="clear_chat_warning">Minden üzenet törlésre kerül - ezt nem vonható vissza! Az üzenetek CSAK az ön számára törlődnek.</string>
     <string name="icon_descr_call_ended">Hívás befejeződött</string>
     <string name="settings_section_title_calls">HÍVÁSOK</string>
-    <string name="rcv_group_and_other_events">és %d egyéb esemény</string>
+    <string name="rcv_group_and_other_events">és %d további esemény</string>
     <string name="address_section_title">Cím</string>
     <string name="connect_plan_already_joining_the_group">Csatlakozás folyamatban!</string>
     <string name="auto_accept_contact">Automatikus elfogadás</string>
@@ -580,7 +580,7 @@
     <string name="v4_6_group_welcome_message">Csoport üdvözlő üzenete</string>
     <string name="group_display_name_field">Csoport neve:</string>
     <string name="error_sending_message_contact_invitation">Hiba a meghívó küldésekor</string>
-    <string name="display_name">Adja meg nevét:</string>
+    <string name="display_name">Adjon meg egy nevet:</string>
     <string name="error_saving_user_password">Hiba a felhasználó jelszavának mentésekor</string>
     <string name="export_theme">Téma exportálása</string>
     <string name="enter_this_device_name">Eszköznév megadása…</string>
@@ -755,7 +755,7 @@
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Összekapcsolt számítógép beállítások</string>
     <string name="rcv_group_event_invited_via_your_group_link">meghívott a csoport hivatkozásán keresztül</string>
-    <string name="rcv_group_event_member_left">elhagyta a szobát</string>
+    <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
     <string name="linked_desktops">Összekapcsolt számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
     <string name="muted_when_inactive">Némítás, ha inaktív!</string>
@@ -773,7 +773,7 @@
     <string name="v4_3_irreversible_message_deletion">Visszafordíthatatlan üzenettörlés</string>
     <string name="videos_limit_desc">Egyszerre csak 10 videó küldhető el</string>
     <string name="only_you_can_add_message_reactions">Csak ön adhat hozzá üzenetreakciókat.</string>
-    <string name="group_member_status_left">elhagyta a szobát</string>
+    <string name="group_member_status_left">elhagyta a csoportot</string>
     <string name="message_deletion_prohibited">Ebben a csevegésben az üzenetek visszafordíthatatlan törlése le van tiltva.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
     <string name="description_via_contact_address_link_incognito">inkognitó az ismerős azonosító hivatkozásán keresztül</string>
@@ -800,7 +800,7 @@
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
     <string name="feature_offered_item_with_param">ajánlott %s: %2s</string>
     <string name="not_compatible">Nem kompatibilis!</string>
-    <string name="make_profile_private">Tegye priváttá profilját!</string>
+    <string name="make_profile_private">Tegye priváttá a profilját!</string>
     <string name="message_delivery_error_title">Üzenetkézbesítési hiba</string>
     <string name="v4_5_multiple_chat_profiles">Több csevegőprofil</string>
     <string name="marked_deleted_description">töröltnek jelölve</string>
@@ -1262,7 +1262,7 @@
     <string name="reset_verb">Alaphelyzetbe állítás</string>
     <string name="only_your_contact_can_add_message_reactions">Csak az ismerőse tud üzenetreakciókat küldeni.</string>
     <string name="voice_messages">Hangüzenetek</string>
-    <string name="snd_group_event_user_left">elhagyta a szobát</string>
+    <string name="snd_group_event_user_left">elhagyta a csoportot</string>
     <string name="icon_descr_record_voice_message">Hangüzenet rögzítése</string>
     <string name="auth_simplex_lock_turned_on">SimpleX zárolás bekapcsolva</string>
     <string name="member_contact_send_direct_message">közvetlen üzenet küldése</string>
@@ -1416,7 +1416,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">Ismerősei engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem az eszközön kerül tárolásra.</string>
     <string name="open_port_in_firewall_desc">Ha engedélyezni szeretné, hogy egy mobilalkalmazás csatlakozzon a számítógéphez, akkor nyissa meg ezt a portot a tűzfalában, ha engedélyezte azt</string>
-    <string name="your_profile_is_stored_on_your_device">Profilja, ismerősök és az elküldött üzenetek az eszközön kerülnek tárolásra.</string>
+    <string name="your_profile_is_stored_on_your_device">Profilja, ismerősei és az elküldött üzenetei az eszközön kerülnek tárolásra.</string>
     <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez válassza ki az <b>Alkalmazás akkumulátor használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívó hivatkozás!</string>
     <string name="to_start_a_new_chat_help_header">Új csevegés kezdése</string>
@@ -1460,7 +1460,7 @@
     <string name="sending_via">Küldés ezen keresztül:</string>
     <string name="v5_0_polish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">A kézbesítési jelentések küldése engedélyezésre kerül az összes látható csevegési profilban lévő minden ismerős számára.</string>
-    <string name="v4_6_audio_video_calls_descr">Bluetooth támogatás és egyéb fejlesztések.</string>
+    <string name="v4_6_audio_video_calls_descr">Bluetooth támogatás és további fejlesztések.</string>
     <string name="in_developing_desc">Ez a funkció még nem támogatott. Próbálja meg a következő kiadásban.</string>
     <string name="share_text_updated_at">A bejegyzés frissítve: %s</string>
     <string name="skip_inviting_button">Tagok meghívásának kihagyása</string>
@@ -1723,7 +1723,7 @@
     <string name="network_type_cellular">Mobilhálózat</string>
     <string name="settings_section_title_network_connection">Internetkapcsolat</string>
     <string name="network_type_no_network_connection">Nincs hálózati kapcsolat</string>
-    <string name="network_type_other">Egyéb</string>
+    <string name="network_type_other">További</string>
     <string name="network_type_network_wifi">Wi-Fi</string>
     <string name="forwarded_description">továbbküldve</string>
     <string name="simplex_links_not_allowed">A SimpleX hivatkozások küldése le van tiltva</string>
