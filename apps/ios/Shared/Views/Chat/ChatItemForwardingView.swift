@@ -102,7 +102,6 @@ struct ChatItemForwardingView: View {
                      contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
                  )
             } else {
-                
                 composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
                 chatModel.chatId = chat.id
             }
