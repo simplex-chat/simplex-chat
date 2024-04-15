@@ -38,7 +38,7 @@ const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
         { urls: ["stun:stun.simplex.im:443"] },
-        //{ urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
+        //{urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"},
         { urls: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
@@ -111,7 +111,17 @@ const processCommand = (function () {
         });
     }
     async function initializeCall(config, mediaType, aesKey) {
-        const pc = new RTCPeerConnection(config.peerConnectionConfig);
+        var _a;
+        let pc;
+        try {
+            pc = new RTCPeerConnection(config.peerConnectionConfig);
+        }
+        catch (e) {
+            console.log("Error while constructing RTCPeerConnection, will try without 'stuns' specified: " + e);
+            let withoutStuns = (_a = config.peerConnectionConfig.iceServers) === null || _a === void 0 ? void 0 : _a.filter((elem) => typeof elem.urls === "string" ? !elem.urls.startsWith("stuns:") : !elem.urls.some((url) => url.startsWith("stuns:")));
+            config.peerConnectionConfig.iceServers = withoutStuns;
+            pc = new RTCPeerConnection(config.peerConnectionConfig);
+        }
         const remoteStream = new MediaStream();
         const localCamera = VideoCamera.User;
         const localStream = await getLocalMediaStream(mediaType, localCamera);

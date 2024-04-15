@@ -321,7 +321,17 @@ const processCommand = (function () {
   }
 
   async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
-    const pc = new RTCPeerConnection(config.peerConnectionConfig)
+    let pc: RTCPeerConnection
+    try {
+      pc = new RTCPeerConnection(config.peerConnectionConfig)
+    } catch (e) {
+      console.log("Error while constructing RTCPeerConnection, will try without 'stuns' specified: " + e)
+      let withoutStuns = config.peerConnectionConfig.iceServers?.filter((elem) =>
+        typeof elem.urls === "string" ? !elem.urls.startsWith("stuns:") : !elem.urls.some((url) => url.startsWith("stuns:"))
+      )
+      config.peerConnectionConfig.iceServers = withoutStuns
+      pc = new RTCPeerConnection(config.peerConnectionConfig)
+    }
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
