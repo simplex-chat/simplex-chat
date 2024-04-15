@@ -40,20 +40,19 @@ struct FramedItemView: View {
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                let headerPadBottom = chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil
                 if let di = chatItem.meta.itemDeleted {
                     switch di {
                     case let .moderated(_, byGroupMember):
-                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic(), padBottom: headerPadBottom)
+                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
                     case .blocked:
-                        framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic(), padBottom: headerPadBottom)
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
                     case .blockedByAdmin:
-                        framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic(), padBottom: headerPadBottom)
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
                     case .deleted:
-                        framedItemHeader(icon: "trash", caption: Text("marked deleted").italic(), padBottom: headerPadBottom)
+                        framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
                     }
                 } else if chatItem.meta.isLive {
-                    framedItemHeader(caption: Text("LIVE"), padBottom: headerPadBottom)
+                    framedItemHeader(caption: Text("LIVE"))
                 }
 
                 if let qi = chatItem.quotedItem {
@@ -67,7 +66,7 @@ struct FramedItemView: View {
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), padBottom: true)
+                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
 
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: framedMsgContentView)
@@ -166,7 +165,7 @@ struct FramedItemView: View {
         )
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, padBottom: Bool) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = true) -> some View {
         let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
@@ -181,7 +180,7 @@ struct FramedItemView: View {
         .foregroundColor(.secondary)
         .padding(.horizontal, 12)
         .padding(.top, 6)
-        .padding(.bottom, padBottom ? 6 : 0)
+        .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, colorScheme))
