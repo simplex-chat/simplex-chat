@@ -94,9 +94,16 @@ struct ChatItemForwardingView: View {
 
     @ViewBuilder private func forwardListNavLinkView(_ chat: Chat) -> some View {
         Button {
-            composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
             dismiss()
-            if chat.id != fromChatInfo.id {
+            if chat.id == fromChatInfo.id {
+                 composeState = ComposeState(
+                     message: composeState.message,
+                     preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
+                     contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
+                 )
+            } else {
+                
+                composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
                 chatModel.chatId = chat.id
             }
         } label: {
