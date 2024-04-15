@@ -83,7 +83,11 @@ struct ChatView: View {
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
-            if cId != nil {
+            showChatInfoSheet = false
+            if let cId {
+                if let c = chatModel.getChat(cId) {
+                    chat = c
+                }
                 initChatView()
             } else {
                 dismiss()
@@ -251,11 +255,8 @@ struct ChatView: View {
                 }
             }
         }
-        if chatModel.forwardToChatId == cInfo.id, let forward = chatModel.forward {
-            composeState = forward
-            chatModel.forwardToChatId = nil
-            chatModel.forward = nil
-        } else if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+           let draft = chatModel.draft {
             composeState = draft
         }
         if chat.chatStats.unreadChat {
@@ -346,8 +347,8 @@ struct ChatView: View {
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
                 }
-                .onChange(of: chatModel.chatId) { _ in
-                    if let chatId = chatModel.chatId, let c = chatModel.getChat(chatId) {
+                .onChange(of: chatModel.chatId) { chatId in
+                    if let chatId, let c = chatModel.getChat(chatId) {
                         chat = c
                         showChatInfoSheet = false
                         loadChat(chat: c)

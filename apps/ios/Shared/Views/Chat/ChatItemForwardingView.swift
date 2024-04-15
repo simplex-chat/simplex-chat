@@ -94,25 +94,10 @@ struct ChatItemForwardingView: View {
 
     @ViewBuilder private func forwardListNavLinkView(_ chat: Chat) -> some View {
         Button {
+            composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
+            dismiss()
             if chat.id != fromChatInfo.id {
-                Task {
-                    await MainActor.run {
-                        chatModel.forwardToChatId = chat.id
-                        chatModel.forward = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
-                        dismiss()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            chatModel.chatId = chat.id
-                        }
-                    }
-                }
-            } else {
-                let currentComposeState = composeState
-                composeState = ComposeState(
-                    message: currentComposeState.message,
-                    preview: currentComposeState.linkPreview != nil ? currentComposeState.preview : .noPreview,
-                    contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
-                )
-                dismiss()
+                chatModel.chatId = chat.id
             }
         } label: {
             HStack {

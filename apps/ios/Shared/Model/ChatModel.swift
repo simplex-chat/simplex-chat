@@ -100,8 +100,6 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    @Published var forward: ComposeState?
-    @Published var forwardToChatId: String?
     // tracks keyboard height via subscription in AppDelegate
     @Published var keyboardHeight: CGFloat = 0
     @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
