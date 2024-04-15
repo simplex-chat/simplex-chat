@@ -1730,4 +1730,17 @@
     <string name="network_type_cellular">移动网络</string>
     <string name="network_type_no_network_connection">无网络连接</string>
     <string name="network_type_other">其他</string>
+    <string name="forwarded_description">已转发</string>
+    <string name="simplex_links_not_allowed">不允许SimpleX 链接</string>
+    <string name="files_and_media_not_allowed">不允许文件和媒体</string>
+    <string name="voice_messages_not_allowed">不允许语音消息</string>
+    <string name="simplex_links">SimpleX 链接</string>
+    <string name="allow_to_send_simplex_links">允许发送 SimpleX 链接。</string>
+    <string name="group_members_can_send_simplex_links">群成员可发送 SimpleX 链接。</string>
+    <string name="prohibit_sending_simplex_links">禁止发送 SimpleX 链接</string>
+    <string name="simplex_links_are_prohibited_in_group">此群禁止 SimpleX 链接。</string>
+    <string name="feature_roles_owners">所有者</string>
+    <string name="feature_enabled_for">启用对象</string>
+    <string name="feature_roles_admins">管理员</string>
+    <string name="feature_roles_all_members">所有成员</string>
 </resources>
