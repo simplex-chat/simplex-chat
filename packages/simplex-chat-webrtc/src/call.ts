@@ -695,6 +695,7 @@ const processCommand = (function () {
     replaceTracks(pc, videoTracks)
     call.localStream = localStream
     videos.local.srcObject = localStream
+    videos.local.play()
   }
 
   function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
