@@ -125,4 +125,9 @@
     <string name="calls_prohibited_with_this_contact">Các cuộc gọi thoại/video bị cấm.</string>
     <string name="allow_to_send_simplex_links">Cho phép gửi liên kết SimpleX.</string>
     <string name="feature_roles_admins">quản trị viên</string>
+    <string name="group_member_role_author">tác giả</string>
+    <string name="authentication_cancelled">Quá trình xác thực đã bị hủy bỏ</string>
+    <string name="la_authenticate">Xác thực</string>
+    <string name="auth_unavailable">Quá trình xác thực không có sẵn</string>
+    <string name="la_auth_failed">Quá trình xác thực đã thất bại</string>
 </resources>
