@@ -21,8 +21,8 @@
     <string name="thousand_abbreviation">k</string>
     <string name="live">NA ŻYWO</string>
     <string name="marked_deleted_description">zaznaczona jako usunięta</string>
-    <string name="moderated_description">moderowany</string>
-    <string name="moderated_item_description">moderowany przez %s</string>
+    <string name="moderated_description">zmoderowane</string>
+    <string name="moderated_item_description">zmoderowane przez %s</string>
     <string name="sending_files_not_yet_supported">wysyłanie plików nie jest jeszcze obsługiwane</string>
     <string name="receiving_files_not_yet_supported">odbieranie plików nie jest jeszcze obsługiwane</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu.</string>
@@ -997,7 +997,7 @@
     <string name="stop_chat_to_export_import_or_delete_chat_database">Zatrzymaj czat, aby wyeksportować, zaimportować lub usunąć bazę danych czatu. Podczas zatrzymania chatu nie będzie można odbierać ani wysyłać wiadomości.</string>
     <string name="smp_servers_test_some_failed">Niektóre serwery nie przeszły testu:</string>
     <string name="thank_you_for_installing_simplex">Dziękujemy za zainstalowanie SimpleX Chat!</string>
-    <string name="moderate_message_will_be_marked_warning">Wiadomość zostanie oznaczona jako moderowana dla wszystkich członków.</string>
+    <string name="moderate_message_will_be_marked_warning">Wiadomość zostanie oznaczona jako zmoderowana dla wszystkich członków.</string>
     <string name="member_role_will_be_changed_with_notification">Rola zostanie zmieniona na \"%s\". Wszyscy w grupie zostaną powiadomieni.</string>
     <string name="delete_files_and_media_desc">Tego działania nie można cofnąć - wszystkie odebrane i wysłane pliki oraz media zostaną usunięte. Obrazy o niskiej rozdzielczości pozostaną.</string>
     <string name="switch_receiving_address_desc">Adres odbiorczy zostanie zmieniony na inny serwer. Zmiana adresu zostanie zakończona gdy nadawca będzie online.</string>
@@ -1215,7 +1215,7 @@
     <string name="received_message">Otrzymano wiadomość</string>
     <string name="sent_message">Wyślij wiadomość</string>
     <string name="info_row_deleted_at">Usunięto o</string>
-    <string name="info_row_moderated_at">Moderowany o</string>
+    <string name="info_row_moderated_at">Zmoderowane o</string>
     <string name="share_text_received_at">Otrzymane o: %s</string>
     <string name="info_row_updated_at">Rekord zaktualizowany o</string>
     <string name="info_row_sent_at">Wysłano o</string>
@@ -1226,7 +1226,7 @@
     <string name="info_row_disappears_at">Znika o</string>
     <string name="share_text_disappears_at">Znika o: %s</string>
     <string name="info_menu">Info</string>
-    <string name="share_text_moderated_at">Moderowany o: %s</string>
+    <string name="share_text_moderated_at">Zmoderowane o: %s</string>
     <string name="edit_history">Historia</string>
     <string name="info_row_received_at">Otrzymane o</string>
     <string name="current_version_timestamp">%s (aktualny)</string>
@@ -1370,7 +1370,7 @@
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Baza danych zostanie zaszyfrowana, a kod dostępu do niej zapisany w ustawieniach.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Uwaga</b>: przekaźniki wiadomości i plików są połączone za pośrednictwem serwera proxy SOCKS. Połączenia i wysyłanie podglądów linków korzystają z połączenia bezpośredniego.]]></string>
     <string name="encrypt_local_files">Zaszyfruj lokalne pliki</string>
-    <string name="you_can_change_it_later">Losowy kod dostępu jest trzymany w ustawieniach w niezaszyfrowanej postaci.
+    <string name="you_can_change_it_later">Losowe hasło jest trzymane w ustawieniach w niezaszyfrowanej postaci
 \nMożesz zmienić je później.</string>
     <string name="database_encryption_will_be_updated_in_settings">Kod dostępu szyfrujący bazę danych zostanie zaktualizowany i zapisany w ustawieniach.</string>
     <string name="remove_passphrase_from_settings">Usunąć kod dostępu z ustawień?</string>
