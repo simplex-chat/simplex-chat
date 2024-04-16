@@ -18,12 +18,12 @@ In many countries around the world, phone numbers are attached to biometrics dat
 
 Messaging is still not where it needs to be. Privacy is confused with security, when both are not synonymous, and there are major gaps in helping users understand the fundamental differences. 
 
-<img src="./images/20240416-whatsapp.jpg" class="float-to-right" width="50%">
+<img src="./images/20240416-whatsapp.jpg" class="float-to-right" width="38%">
 
 For example, while WhatsApp messages are [end-to-end encrypted](https://faq.whatsapp.com/820124435853543), let’s consider what you give up when you use it, per its own listings in app stores:
 
 - App activity (app interactions, in-app search history, and other user-generated content)
-Location
+- Location
 - Financial information (user payment info and payment history)
 - Contacts and their phone numbers
 - Groups you’re a member of
@@ -34,6 +34,8 @@ Location
 This is called [metadata](https://en.wikipedia.org/wiki/Metadata). It reveals a wealth of information about you and your connections, and in the hands of a centralized monopoly, this can and does get misused in incredibly dangerous ways. Once such metadata is logged, it can create very detailed profiles about who you are, everywhere you’ve been, and everyone you’ve ever spoken to. In settling for apps that normalize this while giving you the illusion of privacy in their marketing, we are doing ourselves a disservice by accepting this as the default. Collectively, we aren’t doing enough to protect ourselves and our social graph from this invasive overreach. 
 
 When stored, aggregated and analyzed, this metadata provides ample information that could potentially incriminate someone or be submitted to authorities. When WhatsApp and Facebook Messenger enabled end-to-end encryption for messages, of course it was a welcome and widely celebrated change. But it’s important to remember that not all end-to-end encryption utilizes the same standards, [some implementations are more secure](https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html#how-secure-is-end-to-end-encryption-in-different-messengers) than others, so it’s something that shouldn’t necessarily be accepted at face value. More importantly: collecting and storing an obscene amount of metadata should invite global scrutiny, considering this data is often combined with whatever other information companies like Meta harvest about your identity (which is [a lot](https://www.vox.com/recode/23172691/meta-tracking-privacy-hospitals).)
+
+<img src="./images/20240416-metadata.png" class="float-to-right" width="38%">
 
 This is one of the many reasons why we need to resist giving out our phone numbers just to access an app, especially to do something as personal and intimate as private messaging. Even though users can sometimes mask their numbers with a username, their identity on the app is still fundamentally tied to their phone number. App operators have access to this, as well as user contacts. Additionally, with a simple modification to the app's source code, the contacts may also gain access in some cases. This should raise more concerns about privacy, and it makes the need for anonymity difficult to achieve. 
 
