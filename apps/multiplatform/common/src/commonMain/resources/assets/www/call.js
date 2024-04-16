@@ -38,7 +38,7 @@ const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
         { urls: ["stun:stun.simplex.im:443"] },
-        //{ urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
+        //{urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"},
         { urls: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
@@ -376,6 +376,9 @@ const processCommand = (function () {
         // setupVideoElement(videos.remote)
         videos.local.srcObject = call.localStream;
         videos.remote.srcObject = call.remoteStream;
+        // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
+        videos.local.play();
+        videos.remote.play();
     }
     async function setupEncryptionWorker(call) {
         if (call.aesKey) {
@@ -448,7 +451,9 @@ const processCommand = (function () {
             codecs.splice(selectedCodecIndex, 1);
             codecs.unshift(selectedCodec);
             for (const t of call.connection.getTransceivers()) {
-                if (((_a = t.sender.track) === null || _a === void 0 ? void 0 : _a.kind) === "video") {
+                // Firefox doesn't have this function implemented:
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=1396922
+                if (((_a = t.sender.track) === null || _a === void 0 ? void 0 : _a.kind) === "video" && t.setCodecPreferences) {
                     t.setCodecPreferences(codecs);
                 }
             }
@@ -486,6 +491,7 @@ const processCommand = (function () {
         replaceTracks(pc, videoTracks);
         call.localStream = localStream;
         videos.local.srcObject = localStream;
+        videos.local.play();
     }
     function replaceTracks(pc, tracks) {
         if (!tracks.length)
