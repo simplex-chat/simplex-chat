@@ -738,12 +738,16 @@ object ChatController {
 
   suspend fun apiSendMessage(rh: Long?, type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
     val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live, ttl)
+    return processSendMessageCmd(rh, cmd)
+  }
+
+  private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): AChatItem? {
     val r = sendCmd(rh, cmd)
     return when (r) {
       is CR.NewChatItem -> r.chatItem
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiSendMessage", generalGetString(MR.strings.error_sending_message), r)
+          apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)
         }
         null
       }
@@ -770,6 +774,13 @@ object ChatController {
       }
     }
   }
+
+  suspend fun apiForwardChatItem(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemId: Long): ChatItem? {
+    val cmd = CC.ApiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId)
+    return processSendMessageCmd(rh, cmd)?.chatItem
+  }
+
+
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
@@ -1971,7 +1982,6 @@ object ChatController {
       }
       is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-        cleanupFile(r.chatItem)
       }
       is CR.SndFileError -> {
         if (r.chatItem_ != null) {
@@ -2396,6 +2406,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
+  class ApiForwardChatItem(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemId: Long): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
@@ -2539,6 +2550,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
+    is ApiForwardChatItem -> "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} $itemId"
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -2677,6 +2689,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
     is ApiChatItemReaction -> "apiChatItemReaction"
+    is ApiForwardChatItem -> "apiForwardChatItem"
     is ApiNewGroup -> "apiNewGroup"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"

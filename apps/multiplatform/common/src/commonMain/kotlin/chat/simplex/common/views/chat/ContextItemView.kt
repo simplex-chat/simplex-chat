@@ -24,6 +24,7 @@ import kotlinx.datetime.Clock
 fun ContextItemView(
   contextItem: ChatItem,
   contextIcon: Painter,
+  showSender: Boolean = true,
   cancelContextItem: () -> Unit
 ) {
   val sent = contextItem.chatDir.sent
@@ -31,14 +32,34 @@ fun ContextItemView(
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
 
   @Composable
-  fun msgContentView(lines: Int) {
+  fun MessageText(lines: Int) {
     MarkdownText(
       contextItem.text, contextItem.formattedText,
+      sender = null,
       toggleSecrets = false,
       maxLines = lines,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
     )
+  }
+
+  @Composable
+  fun Attachment() {
+    when (contextItem.content.msgContent) {
+      is MsgContent.MCFile -> Icon(painterResource(MR.images.ic_draft_filled), null, tint = MaterialTheme.colors.secondary)
+      is MsgContent.MCImage -> Icon(painterResource(MR.images.ic_image), null, tint = MaterialTheme.colors.secondary)
+      is MsgContent.MCVoice -> Icon(painterResource(MR.images.ic_play_arrow_filled), null, tint = MaterialTheme.colors.secondary)
+      else -> {}
+    }
+  }
+
+  @Composable
+  fun ContextMsgPreview(lines: Int) {
+    Row {
+      Attachment()
+      Spacer(Modifier.width(4.dp))
+      MessageText(lines)
+    }
   }
 
   Row(
@@ -64,7 +85,7 @@ fun ContextItemView(
         tint = MaterialTheme.colors.secondary,
       )
       val sender = contextItem.memberDisplayName
-      if (sender != null) {
+      if (showSender && sender != null) {
         Column(
           horizontalAlignment = Alignment.Start,
           verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -73,10 +94,10 @@ fun ContextItemView(
             sender,
             style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
           )
-          msgContentView(lines = 2)
+          ContextMsgPreview(lines = 2)
         }
       } else {
-        msgContentView(lines = 3)
+        ContextMsgPreview(lines = 3)
       }
     }
     IconButton(onClick = cancelContextItem) {

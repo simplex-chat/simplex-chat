@@ -236,6 +236,13 @@ fun ChatItemView(
                     showMenu.value = false
                   })
                 }
+                if (cItem.meta.itemDeleted == null && !cItem.isLiveDummy && !live) {
+                  ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
+                    chatModel.chatId.value = null
+                    chatModel.sharedContent.value = SharedContent.Forward(cItem, cInfo)
+                    showMenu.value = false
+                  })
+                }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 if (revealed.value) {
                   HideItemAction(revealed, showMenu)
@@ -458,11 +465,11 @@ fun ChatItemView(
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvGroupFeature -> {
-            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as ChatInfo.Group).groupInfo.membership).iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndGroupFeature -> {
-            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as ChatInfo.Group).groupInfo.membership).iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatFeatureRejected -> {

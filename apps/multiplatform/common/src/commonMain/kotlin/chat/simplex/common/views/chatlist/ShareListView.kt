@@ -74,7 +74,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      users.size > 1 || chatModel.remoteHosts.isNotEmpty() -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -118,7 +118,8 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
             is SharedContent.Text -> stringResource(MR.strings.share_message)
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
-            else -> stringResource(MR.strings.share_message)
+            is SharedContent.Forward -> stringResource(MR.strings.forward_message)
+            null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,

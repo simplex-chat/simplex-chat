@@ -20,6 +20,7 @@ import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,8 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.openDirectChat
+import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -36,6 +39,7 @@ sealed class CIInfoTab {
   class Delivery(val memberDeliveryStatuses: List<MemberDeliveryStatus>): CIInfoTab()
   object History: CIInfoTab()
   class Quote(val quotedItem: CIQuote): CIInfoTab()
+  class Forwarded(val forwardedFromChatItem: AChatItem): CIInfoTab()
 }
 
 @Composable
@@ -151,6 +155,76 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
     }
   }
 
+  val local = when (ci.chatDir) {
+    is CIDirection.LocalSnd -> true
+    is CIDirection.LocalRcv -> true
+    else -> false
+  }
+
+  @Composable
+  fun ForwardedFromSender(forwardedFromItem: AChatItem) {
+    @Composable
+    fun ChatPreviewTitleText(text: String, color: Color, fontStyle: FontStyle = FontStyle.Normal) {
+      Text(
+        text,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.h3,
+        fontStyle = fontStyle,
+        color = color
+      )
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      ChatInfoImage(forwardedFromItem.chatInfo, size = 72.dp)
+      Column(
+        modifier = Modifier
+          .padding(horizontal = 8.dp)
+          .weight(1F)
+      ) {
+        Column {
+          if (forwardedFromItem.chatItem.chatDir.sent) {
+            ChatPreviewTitleText(text = stringResource(MR.strings.sender_you_pronoun), color = MaterialTheme.colors.primary, fontStyle = FontStyle.Italic)
+            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+            Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp))
+          } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
+            ChatPreviewTitleText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, color = MaterialTheme.colors.primary)
+            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+            Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp))
+          } else {
+            Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp))
+          }
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun ForwardedFromView(forwardedFromItem: AChatItem) {
+    Column {
+      SectionItemView(
+        click = {
+          withBGApi {
+            if (forwardedFromItem.chatInfo is ChatInfo.Direct) {
+              openDirectChat(chatModel.remoteHostId(), forwardedFromItem.chatInfo.apiId, chatModel)
+            } else {
+              openGroupChat(chatModel.remoteHostId(), forwardedFromItem.chatInfo.apiId, chatModel)
+            }
+          }
+          ModalManager.end.closeModals()
+        },
+        padding = PaddingValues(start = 15.dp, end = DEFAULT_PADDING)
+      ) {
+        ForwardedFromSender(forwardedFromItem)
+      }
+
+      if (!local) {
+        Divider(Modifier.padding(start = DEFAULT_PADDING, top = 40.dp, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF))
+        Text(stringResource(MR.strings.recipients_can_not_see_who_message_from), Modifier.padding(horizontal = DEFAULT_PADDING), fontSize = 12.sp, color = MaterialTheme.colors.secondary)
+      }
+    }
+  }
+
   @Composable
   fun Details() {
     AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
@@ -217,6 +291,22 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
+      }
+      SectionBottomSpacer()
+    }
+  }
+
+  @Composable
+  fun ForwardedFromTab(forwardedFromItem: AChatItem) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+      Details()
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionView {
+        Text(stringResource(if (local) MR.strings.saved_from_chat_item_info_title else MR.strings.forwarded_from_chat_item_info_title),
+          style = MaterialTheme.typography.h2,
+          modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING))
+        ForwardedFromView(forwardedFromItem)
       }
       SectionBottomSpacer()
     }
@@ -297,6 +387,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       is CIInfoTab.Delivery -> stringResource(MR.strings.delivery)
       is CIInfoTab.History -> stringResource(MR.strings.edit_history)
       is CIInfoTab.Quote -> stringResource(MR.strings.in_reply_to)
+      is CIInfoTab.Forwarded -> stringResource(if (local) MR.strings.saved_chat_item_info_tab else MR.strings.forwarded_chat_item_info_tab)
     }
   }
 
@@ -305,6 +396,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       is CIInfoTab.Delivery -> MR.images.ic_double_check
       is CIInfoTab.History -> MR.images.ic_history
       is CIInfoTab.Quote -> MR.images.ic_reply
+      is CIInfoTab.Forwarded -> MR.images.ic_forward
     }
   }
 
@@ -314,6 +406,9 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       numTabs += 1
     }
     if (ci.quotedItem != null) {
+      numTabs += 1
+    }
+    if (ciInfo.forwardedFromChatItem != null) {
       numTabs += 1
     }
     return numTabs
@@ -344,6 +439,10 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
             is CIInfoTab.Quote -> {
               QuoteTab(sel.quotedItem)
             }
+
+            is CIInfoTab.Forwarded -> {
+              ForwardedFromTab(sel.forwardedFromChatItem)
+            }
           }
         }
         val availableTabs = mutableListOf<CIInfoTab>()
@@ -353,6 +452,9 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
         availableTabs.add(CIInfoTab.History)
         if (ci.quotedItem != null) {
           availableTabs.add(CIInfoTab.Quote(ci.quotedItem))
+        }
+        if (ciInfo.forwardedFromChatItem != null) {
+          availableTabs.add(CIInfoTab.Forwarded(ciInfo.forwardedFromChatItem))
         }
         TabRow(
           selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
