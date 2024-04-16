@@ -1,6 +1,6 @@
 ---
 layout: layouts/article.html
-title: "The dangers of metadata in messengers "
+title: "The dangers of metadata in messengers"
 date: 2024-04-16
 previewBody: blog_previews/20240416.html
 image: images/20240416-metadata.png
