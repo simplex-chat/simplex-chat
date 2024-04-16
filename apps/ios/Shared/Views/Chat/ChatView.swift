@@ -83,7 +83,11 @@ struct ChatView: View {
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
-            if cId != nil {
+            showChatInfoSheet = false
+            if let cId {
+                if let c = chatModel.getChat(cId) {
+                    chat = c
+                }
                 initChatView()
             } else {
                 dismiss()
@@ -251,7 +255,8 @@ struct ChatView: View {
                 }
             }
         }
-        if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+           let draft = chatModel.draft {
             composeState = draft
         }
         if chat.chatStats.unreadChat {
@@ -342,8 +347,8 @@ struct ChatView: View {
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
                 }
-                .onChange(of: chatModel.chatId) { _ in
-                    if let chatId = chatModel.chatId, let c = chatModel.getChat(chatId) {
+                .onChange(of: chatModel.chatId) { chatId in
+                    if let chatId, let c = chatModel.getChat(chatId) {
                         chat = c
                         showChatInfoSheet = false
                         loadChat(chat: c)
@@ -539,6 +544,7 @@ struct ChatView: View {
         @State private var revealed = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
+        @State private var showForwardingSheet: Bool = false
 
         @State private var allowMenu: Bool = true
 
@@ -693,6 +699,14 @@ struct ChatView: View {
                 }) {
                     ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
                 }
+                .sheet(isPresented: $showForwardingSheet) {
+                    if #available(iOS 16.0, *) {
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                            .presentationDetents([.fraction(0.8)])
+                    } else {
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                    }
+                }
         }
 
         private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
@@ -775,6 +789,9 @@ struct ChatView: View {
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction(ci))
                 }
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                    menu.append(forwardUIAction(ci))
+                }
                 if !ci.isLiveDummy {
                     menu.append(viewInfoUIAction(ci))
                 }
@@ -823,6 +840,15 @@ struct ChatView: View {
                         composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                     }
                 }
+            }
+        }
+
+        private func forwardUIAction(_ ci: ChatItem) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Forward", comment: "chat item action"),
+                image: UIImage(systemName: "arrowshape.turn.up.forward")
+            ) { _ in
+                showForwardingSheet = true
             }
         }
 
