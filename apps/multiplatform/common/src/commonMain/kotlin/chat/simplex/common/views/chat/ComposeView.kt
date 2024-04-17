@@ -482,7 +482,9 @@ fun ComposeView(
       if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)
       sending()
     }
-    clearCurrentDraft()
+    if (!cs.forwarding || chatModel.draft.value?.forwarding == true) {
+      clearCurrentDraft()
+    }
 
     if (chat.nextSendGrpInv) {
       sendMemberContactInvitation()
@@ -799,7 +801,10 @@ fun ComposeView(
       is SharedContent.Text -> onMessageChange(shared.text)
       is SharedContent.Media -> composeState.processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> composeState.processPickedFile(shared.uri, shared.text)
-      is SharedContent.Forward -> composeState.value = composeState.value.copy(contextItem = ComposeContextItem.ForwardingItem(shared.chatItem, shared.fromChatInfo))
+      is SharedContent.Forward -> composeState.value = composeState.value.copy(
+        contextItem = ComposeContextItem.ForwardingItem(shared.chatItem, shared.fromChatInfo),
+        preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
+      )
       null -> {}
     }
     chatModel.sharedContent.value = null
