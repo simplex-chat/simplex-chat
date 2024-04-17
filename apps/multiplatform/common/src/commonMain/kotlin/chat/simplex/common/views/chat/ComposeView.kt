@@ -419,9 +419,8 @@ fun ComposeView(
       )
       if (chatItem != null) {
         chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
-        return chatItem
       }
-      return null
+      return chatItem
     }
 
     fun checkLinkPreview(): MsgContent {
