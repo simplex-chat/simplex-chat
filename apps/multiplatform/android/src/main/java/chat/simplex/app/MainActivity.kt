@@ -105,8 +105,12 @@ class MainActivity: FragmentActivity() {
       AppLock.laFailed.value = true
     }
     if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
+      val sharedContent = chatModel.sharedContent.value
+      if (sharedContent is SharedContent.Forward) {
+        chatModel.chatId.value = sharedContent.fromChatInfo.id
+      }
       // Drop shared content
-      SimplexApp.context.chatModel.sharedContent.value = null
+      chatModel.sharedContent.value = null
       if (canFinishActivity) {
         finish()
       }

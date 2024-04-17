@@ -418,7 +418,7 @@ fun ComposeView(
         itemId = forwardedItem.id
       )
       if (chatItem != null) {
-        chatModel.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem)
+        chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
         return chatItem
       }
       return null

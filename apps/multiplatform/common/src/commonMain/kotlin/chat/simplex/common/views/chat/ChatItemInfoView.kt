@@ -20,7 +20,6 @@ import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,8 +29,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.openDirectChat
-import chat.simplex.common.views.chatlist.openGroupChat
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -43,7 +41,7 @@ sealed class CIInfoTab {
 }
 
 @Composable
-fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
+fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
   val appColors = CurrentColors.collectAsState().value.appColors
   val uriHandler = LocalUriHandler.current
@@ -164,14 +162,13 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
   @Composable
   fun ForwardedFromSender(forwardedFromItem: AChatItem) {
     @Composable
-    fun ChatPreviewTitleText(text: String, color: Color, fontStyle: FontStyle = FontStyle.Normal) {
+    fun ChatPreviewTitleText(text: String, fontStyle: FontStyle = FontStyle.Normal) {
       Text(
         text,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
-        fontStyle = fontStyle,
-        color = color
+        fontStyle = fontStyle
       )
     }
 
@@ -184,11 +181,11 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       ) {
         Column {
           if (forwardedFromItem.chatItem.chatDir.sent) {
-            ChatPreviewTitleText(text = stringResource(MR.strings.sender_you_pronoun), color = MaterialTheme.colors.primary, fontStyle = FontStyle.Italic)
+            ChatPreviewTitleText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
             Spacer(Modifier.height(DEFAULT_PADDING_HALF))
             Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp))
           } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
-            ChatPreviewTitleText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, color = MaterialTheme.colors.primary)
+            ChatPreviewTitleText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
             Spacer(Modifier.height(DEFAULT_PADDING_HALF))
             Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp))
           } else {
@@ -205,11 +202,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       SectionItemView(
         click = {
           withBGApi {
-            if (forwardedFromItem.chatInfo is ChatInfo.Direct) {
-              openDirectChat(chatModel.remoteHostId(), forwardedFromItem.chatInfo.apiId, chatModel)
-            } else {
-              openGroupChat(chatModel.remoteHostId(), forwardedFromItem.chatInfo.apiId, chatModel)
-            }
+            openChat(chatRh, forwardedFromItem.chatInfo, chatModel)
           }
           ModalManager.end.closeModals()
         },

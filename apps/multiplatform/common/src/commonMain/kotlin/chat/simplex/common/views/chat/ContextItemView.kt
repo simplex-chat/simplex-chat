@@ -55,7 +55,7 @@ fun ContextItemView(
 
   @Composable
   fun ContextMsgPreview(lines: Int) {
-    Row {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Attachment()
       Spacer(Modifier.width(4.dp))
       MessageText(lines)
