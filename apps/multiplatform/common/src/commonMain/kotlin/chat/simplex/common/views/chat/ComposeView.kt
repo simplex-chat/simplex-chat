@@ -593,10 +593,13 @@ fun ComposeView(
       }
     }
     val wasForwarding = cs.forwarding
+    val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItem)?.fromChatInfo?.id
     clearState(live)
     val draft = chatModel.draft.value
-    if (wasForwarding && chatModel.draftChatId.value == chat.chatInfo.id && draft != null) {
+    if (wasForwarding && chatModel.draftChatId.value == chat.chatInfo.id && forwardingFromChatId != chat.chatInfo.id && draft != null) {
       composeState.value = draft
+    } else {
+      clearCurrentDraft()
     }
     return sent
   }
@@ -943,6 +946,17 @@ fun ComposeView(
         }
         chatModel.removeLiveDummy()
         CIFile.cachedRemoteFileRequests.clear()
+      }
+      if (appPlatform.isDesktop) {
+        // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
+        DisposableEffect(Unit) {
+          onDispose {
+            if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
+              chatModel.draft.value = composeState.value
+              chatModel.draftChatId.value = chat.id
+            }
+          }
+        }
       }
 
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }

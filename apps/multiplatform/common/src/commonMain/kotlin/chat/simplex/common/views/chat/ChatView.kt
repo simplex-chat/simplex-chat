@@ -53,8 +53,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = rememberSaveable(saver = ComposeState.saver()) {
     val draft = chatModel.draft.value
+    val sharedContent = chatModel.sharedContent.value
     mutableStateOf(
-      if (chatModel.draftChatId.value == chatId && draft != null && chatModel.sharedContent.value !is SharedContent.Forward) {
+      if (chatModel.draftChatId.value == chatId && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == chatId)) {
         draft
       } else {
         ComposeState(useLinkPreviews = useLinkPreviews)
