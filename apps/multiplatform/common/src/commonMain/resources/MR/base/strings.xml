@@ -826,6 +826,9 @@
   <string name="permissions_grant_in_settings">Grant in settings</string>
   <string name="permissions_find_in_settings_and_grant">Find this permission in Android settings and grant it manually.</string>
   <string name="permissions_open_settings">Open settings</string>
+  <string name="audio_device_earpiece">Earpiece</string>
+  <string name="audio_device_speaker">Speaker</string>
+  <string name="audio_device_wired_headphones">Headphones</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
