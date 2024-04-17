@@ -4,20 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.runtime.*
+import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import kotlinx.datetime.Clock
 
 @Composable
@@ -32,34 +34,43 @@ fun ContextItemView(
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
 
   @Composable
-  fun MessageText(lines: Int) {
+  fun MessageText(attachment: ImageResource?, lines: Int) {
+    val text = buildAnnotatedString {
+      if (attachment != null) {
+        appendInlineContent(id = "attachmentIcon")
+        append(" ")
+      }
+      append(contextItem.text)
+    }
+    val inlineContent: Map<String, InlineTextContent>? = if (attachment != null) mapOf(
+      "attachmentIcon" to InlineTextContent(
+        Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
+      ) {
+        Icon(painterResource(attachment), null, tint = MaterialTheme.colors.secondary)
+      }
+    ) else null
     MarkdownText(
-      contextItem.text, contextItem.formattedText,
+      text, if (inlineContent != null) null else contextItem.formattedText,
       sender = null,
       toggleSecrets = false,
       maxLines = lines,
+      inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
     )
   }
 
-  @Composable
-  fun Attachment() {
+  fun attachment(): ImageResource? =
     when (contextItem.content.msgContent) {
-      is MsgContent.MCFile -> Icon(painterResource(MR.images.ic_draft_filled), null, tint = MaterialTheme.colors.secondary)
-      is MsgContent.MCImage -> Icon(painterResource(MR.images.ic_image), null, tint = MaterialTheme.colors.secondary)
-      is MsgContent.MCVoice -> Icon(painterResource(MR.images.ic_play_arrow_filled), null, tint = MaterialTheme.colors.secondary)
-      else -> {}
+      is MsgContent.MCFile -> MR.images.ic_draft_filled
+      is MsgContent.MCImage -> MR.images.ic_image
+      is MsgContent.MCVoice -> MR.images.ic_play_arrow_filled
+      else -> null
     }
-  }
 
   @Composable
   fun ContextMsgPreview(lines: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Attachment()
-      Spacer(Modifier.width(4.dp))
-      MessageText(lines)
-    }
+    MessageText(remember(contextItem.id) { attachment() }, lines)
   }
 
   Row(
