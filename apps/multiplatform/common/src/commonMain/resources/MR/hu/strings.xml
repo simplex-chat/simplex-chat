@@ -1273,7 +1273,7 @@
     <string name="lock_not_enabled">SimpleX zárolás nincs engedélyezve!</string>
     <string name="chat_lock">SimpleX zárolás</string>
     <string name="your_settings">Beállítások</string>
-    <string name="your_chat_database">Csevegési adatbázisa</string>
+    <string name="your_chat_database">Csevegési adatbázis</string>
     <string name="rcv_group_event_member_deleted">%1$s eltávolítva</string>
     <string name="smp_servers_test_failed">A kiszolgáló tesztje sikertelen!</string>
     <string name="verify_connection">Kapcsolat ellenőrzése</string>
@@ -1291,7 +1291,7 @@
     <string name="unhide_chat_profile">Csevegési profil felfedése</string>
     <string name="v5_0_large_files_support">Videók és fájlok 1Gb méretig</string>
     <string name="network_option_tcp_connection_timeout">TCP kapcsolat időtúllépés</string>
-    <string name="connect__your_profile_will_be_shared">A %1$s SimpleX azonosítója megosztásra kerül.</string>
+    <string name="connect__your_profile_will_be_shared">A(z) %1$s nevű profiljának SimpleX azonosítója megosztásra fog kerülni.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Ön már csatlakozott ehhez: %1$s.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Jelenlegi csevegési adatbázis TÖRLÉSRE és FELCSERÉLÉSRE kerül az importált által!
 \nEz a művelet nem vonható vissza - profiljai, ismerősei, csevegési üzenetei és fájljai véglegesen törölve lesznek!</string>
