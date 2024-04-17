@@ -6474,14 +6474,14 @@ Kapcsolódási kérés megismétlése?</target>
         <target>Hívások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat database" xml:space="preserve">
+      <trans-unit id="Your chat database" xml:space="preserve" approved="no">
         <source>Your chat database</source>
-        <target>Csevegési adatbázisa</target>
+        <target state="translated">Csevegési adatbázis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
+      <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve" approved="no">
         <source>Your chat database is not encrypted - set passphrase to encrypt it.</source>
-        <target>Csevegési adatbázisa nincs titkosítva – adjon meg egy jelmondatot a titkosításhoz.</target>
+        <target state="translated">A csevegési adatbázis nincs titkosítva – adjon meg egy jelmondatot a titkosításhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve">
@@ -6536,9 +6536,9 @@ Megszakíthatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt kés
         <target>Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
+      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve" approved="no">
         <source>Your profile **%@** will be shared.</source>
-        <target>**%@** nevű profilja megosztásra kerül.</target>
+        <target state="translated">A(z) **%@** nevű profilja megosztásra fog kerülni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
