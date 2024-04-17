@@ -106,11 +106,11 @@ class MainActivity: FragmentActivity() {
     }
     if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
       val sharedContent = chatModel.sharedContent.value
+      // Drop shared content
+      chatModel.sharedContent.value = null
       if (sharedContent is SharedContent.Forward) {
         chatModel.chatId.value = sharedContent.fromChatInfo.id
       }
-      // Drop shared content
-      chatModel.sharedContent.value = null
       if (canFinishActivity) {
         finish()
       }

@@ -83,11 +83,11 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       }
       else -> NavigationButtonBack(onButtonClicked = {
         val sharedContent = chatModel.sharedContent.value
+        // Drop shared content
+        chatModel.sharedContent.value = null
         if (sharedContent is SharedContent.Forward) {
           chatModel.chatId.value = sharedContent.fromChatInfo.id
         }
-        // Drop shared content
-        chatModel.sharedContent.value = null
       })
     }
   }
