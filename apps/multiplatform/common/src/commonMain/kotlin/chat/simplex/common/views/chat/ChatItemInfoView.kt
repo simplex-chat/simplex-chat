@@ -203,8 +203,8 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         click = {
           withBGApi {
             openChat(chatRh, forwardedFromItem.chatInfo, chatModel)
+            ModalManager.end.closeModals()
           }
-          ModalManager.end.closeModals()
         },
         padding = PaddingValues(start = 15.dp, end = DEFAULT_PADDING)
       ) {
