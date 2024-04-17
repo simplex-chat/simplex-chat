@@ -35,22 +35,24 @@ fun ContextItemView(
 
   @Composable
   fun MessageText(attachment: ImageResource?, lines: Int) {
-    val text = buildAnnotatedString {
-      if (attachment != null) {
-        appendInlineContent(id = "attachmentIcon")
-        append(" ")
+    val inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = if (attachment != null) {
+      remember(contextItem.id) {
+        val inlineContentBuilder: AnnotatedString.Builder.() -> Unit = {
+          appendInlineContent(id = "attachmentIcon")
+          append(" ")
+        }
+        val inlineContent = mapOf(
+          "attachmentIcon" to InlineTextContent(
+            Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
+          ) {
+            Icon(painterResource(attachment), null, tint = MaterialTheme.colors.secondary)
+          }
+        )
+        inlineContentBuilder to inlineContent
       }
-      append(contextItem.text)
-    }
-    val inlineContent: Map<String, InlineTextContent>? = if (attachment != null) mapOf(
-      "attachmentIcon" to InlineTextContent(
-        Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(attachment), null, tint = MaterialTheme.colors.secondary)
-      }
-    ) else null
+    } else null
     MarkdownText(
-      text, if (inlineContent != null) null else contextItem.formattedText,
+      contextItem.text, contextItem.formattedText,
       sender = null,
       toggleSecrets = false,
       maxLines = lines,
