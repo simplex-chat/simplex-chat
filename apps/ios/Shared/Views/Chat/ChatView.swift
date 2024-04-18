@@ -183,7 +183,7 @@ struct ChatView: View {
                                 .disabled(!contact.ready || !contact.active)
                             }
                             searchButton()
-                            toggleNtfsButton(chat)
+                            ToggleNtfsButton(chat: chat)
                                 .disabled(!contact.ready || !contact.active)
                         } label: {
                             Image(systemName: "ellipsis")
@@ -212,7 +212,7 @@ struct ChatView: View {
                         }
                         Menu {
                             searchButton()
-                            toggleNtfsButton(chat)
+                            ToggleNtfsButton(chat: chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -1198,14 +1198,18 @@ struct ChatView: View {
     }
 }
 
-@ViewBuilder func toggleNtfsButton(_ chat: Chat) -> some View {
-    Button {
-        toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
-    } label: {
-        if chat.chatInfo.ntfsEnabled {
-            Label("Mute", systemImage: "speaker.slash")
-        } else {
-            Label("Unmute", systemImage: "speaker.wave.2")
+struct ToggleNtfsButton: View {
+    @ObservedObject var chat: Chat
+
+    var body: some View {
+        Button {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        } label: {
+            if chat.chatInfo.ntfsEnabled {
+                Label("Mute", systemImage: "speaker.slash")
+            } else {
+                Label("Unmute", systemImage: "speaker.wave.2")
+            }
         }
     }
 }
