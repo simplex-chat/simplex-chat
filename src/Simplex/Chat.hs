@@ -84,6 +84,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
 import qualified Simplex.Chat.Util as U
+import Simplex.FileTransfer.Agent (ipAddressProtected)
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
@@ -108,7 +109,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -425,7 +426,7 @@ startReceiveUserFiles user = do
   filesToReceive <- withStore' (`getRcvFilesToReceive` user)
   forM_ filesToReceive $ \ft ->
     flip catchChatError (toView . CRChatError (Just user)) $
-      toView =<< receiveFile' user ft Nothing Nothing
+      toView =<< receiveFile' user ft False Nothing Nothing
 
 restoreCalls :: CM' ()
 restoreCalls = do
@@ -2014,12 +2015,12 @@ processChatCommand' vr = \case
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
-  ReceiveFile fileId encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
+  ReceiveFile fileId userApprovedRelays encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withFileLock "receiveFile" fileId . procCmd $ do
       (user, ft) <- withStore (`getRcvFileTransferById` fileId)
       encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
       ft' <- (if encrypt then setFileToEncrypt else pure) ft
-      receiveFile' user ft' rcvInline_ filePath_
+      receiveFile' user ft' userApprovedRelays rcvInline_ filePath_
   SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withFileLock "setFileToReceive" fileId . procCmd $ do
       encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
@@ -2064,13 +2065,8 @@ processChatCommand' vr = \case
                   liftIO $ removeFile fsFilePath `catchAll_` pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
-                ci <- withStore $ \db -> do
-                  liftIO $ do
-                    updateCIFileStatus db user fileId CIFSRcvInvitation
-                    updateRcvFileStatus db fileId FSNew
-                    updateRcvFileAgentId db fileId Nothing
-                  lookupChatItemByFileId db vr user fileId
-                pure $ CRRcvFileCancelled user ci ftr
+                aci_ <- resetCIFileStatus user fileId
+                pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
     withStore (\db -> lookupChatItemByFileId db vr user fileId) >>= \case
       Nothing -> do
@@ -2969,9 +2965,9 @@ setFileToEncrypt ft@RcvFileTransfer {fileId} = do
   withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
   pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
 
-receiveFile' :: User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> CM ChatResponse
-receiveFile' user ft rcvInline_ filePath_ = do
-  (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchChatError` processError
+receiveFile' :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM ChatResponse
+receiveFile' user ft userApprovedRelays rcvInline_ filePath_ = do
+  (CRRcvFileAccepted user <$> acceptFileReceive user ft userApprovedRelays rcvInline_ filePath_) `catchChatError` processError
   where
     processError = \case
       -- TODO AChatItem in Cancelled events
@@ -2979,8 +2975,8 @@ receiveFile' user ft rcvInline_ filePath_ = do
       ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
       e -> throwError e
 
-acceptFileReceive :: User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> CM AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId, cryptoArgs} rcvInline_ filePath_ = do
+acceptFileReceive :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM AChatItem
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId, cryptoArgs} userApprovedRelays rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
@@ -3002,7 +2998,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         ci <- xftpAcceptRcvFT db vr user fileId filePath
         rfd <- getRcvFileDescrByRcvFileId db fileId
         pure (ci, rfd)
-      receiveViaCompleteFD user fileId rfd cryptoArgs
+      receiveViaCompleteFD user fileId rfd userApprovedRelays cryptoArgs
       pure ci
     -- group & direct file protocol
     _ -> do
@@ -3047,18 +3043,62 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
              )
 
-receiveViaCompleteFD :: User -> FileTransferId -> RcvFileDescr -> Maybe CryptoFileArgs -> CM ()
-receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} cfArgs =
+receiveViaCompleteFD :: User -> FileTransferId -> RcvFileDescr -> Bool -> Maybe CryptoFileArgs -> CM ()
+receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} userApprovedRelays cfArgs =
   when fileDescrComplete $ do
     rd <- parseFileDescription fileDescrText
-    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs
-    startReceivingFile user fileId
-    withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
+    if userApprovedRelays
+      then receive' rd True
+      else do
+        let rdSrvs = collectDescrSrvs rd
+        unknownSrvs <- filterUnknownSrvs rdSrvs
+        if null unknownSrvs
+          then receive' rd True
+          else
+            ifM
+              (ipProtectedForSrvs rdSrvs)
+              (receive' rd False)
+              (abortNotApproved unknownSrvs)
+  where
+    receive' :: ValidFileDescription 'FRecipient -> Bool -> CM ()
+    receive' rd approvedRelays = do
+      aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approvedRelays
+      startReceivingFile user fileId
+      withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
+    collectDescrSrvs :: ValidFileDescription 'FRecipient -> [XFTPServer]
+    collectDescrSrvs (FD.ValidFileDescription FD.FileDescription {chunks}) =
+      concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
+    filterUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
+    filterUnknownSrvs rdSrvs = do
+      ChatConfig {defaultServers = DefaultAgentServers {xftp = defXftp}} <- asks config
+      storedSrvs <- map (\ServerCfg {server} -> protoServer server) <$> withStore' (`getProtocolServers` user)
+      let defXftp' = L.map protoServer defXftp
+          knownSrvs = fromMaybe defXftp' $ nonEmpty storedSrvs
+      pure $ filter (`notElem` knownSrvs) rdSrvs
+    ipProtectedForSrvs :: [XFTPServer] -> CM Bool
+    ipProtectedForSrvs rdSrvs = do
+      netCfg <- lift $ withAgent' getNetworkConfig
+      pure $ all (ipAddressProtected netCfg) rdSrvs
+    abortNotApproved :: [XFTPServer] -> CM ()
+    abortNotApproved unknownSrvs = do
+      aci_ <- resetCIFileStatus user fileId
+      forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
+      throwChatError $ CEFileAbortedNotApproved fileId unknownSrvs
+
+resetCIFileStatus :: User -> FileTransferId -> CM (Maybe AChatItem)
+resetCIFileStatus user fileId = do
+  vr <- chatVersionRange
+  withStore $ \db -> do
+    liftIO $ do
+      updateCIFileStatus db user fileId CIFSRcvInvitation
+      updateRcvFileStatus db fileId FSNew
+      updateRcvFileAgentId db fileId Nothing
+    lookupChatItemByFileId db vr user fileId
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize
-  aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs
+  aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs True
   withStore $ \db -> do
     liftIO $ do
       updateRcvFileStatus db fileId FSConnected
@@ -4748,7 +4788,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     autoAcceptFile :: Maybe (RcvFileTransfer, CIFile 'MDRcv) -> CM ()
     autoAcceptFile = mapM_ $ \(ft, CIFile {fileSize}) -> do
       ChatConfig {autoAcceptFileSize = sz} <- asks config
-      when (sz > fileSize) $ receiveFile' user ft Nothing Nothing >>= toView
+      when (sz > fileSize) $ receiveFile' user ft False Nothing Nothing >>= toView
 
     messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> CM ()
     messageFileDescription ct@Contact {contactId} sharedMsgId fileDescr = do
@@ -4774,7 +4814,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           ci <- withStore $ \db -> getAChatItemBySharedMsgId db user cd sharedMsgId
           toView $ CRRcvFileDescrReady user ci ft' rfd
         case (fileStatus, xftpRcvFile) of
-          (RFSAccepted _, Just XFTPRcvFile {}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
+          (RFSAccepted _, Just XFTPRcvFile {}) -> receiveViaCompleteFD user fileId rfd False cryptoArgs
           _ -> pure ()
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
@@ -7185,7 +7225,7 @@ chatCommandP =
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
-      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> (" approved_relays=" *> onOffP <|> pure False) <*> optional (" encrypt=" *> onOffP) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
       "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
