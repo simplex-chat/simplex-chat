@@ -3098,6 +3098,7 @@ resetCIFileStatus user fileId = do
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize
+  -- currently the only use case is user migrating via their configured servers, so we pass approvedRelays = True
   aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs True
   withStore $ \db -> do
     liftIO $ do
