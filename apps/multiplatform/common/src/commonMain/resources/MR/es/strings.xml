@@ -87,7 +87,7 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">La base de datos será cifrada y la contraseña se guardará en Keystore.</string>
     <string name="delete_contact_question">¿Eliminar contacto\?</string>
     <string name="delete_message__question">¿Eliminar mensaje\?</string>
-    <string name="delete_chat_profile_question">¿Eliminar perfil de chat?</string>
+    <string name="delete_chat_profile_question">¿Eliminar perfil?</string>
     <string name="rcv_group_event_group_deleted">grupo eliminado</string>
     <string name="delete_group_question">¿Eliminar grupo\?</string>
     <string name="delete_messages_after">Eliminar en</string>
@@ -194,7 +194,7 @@
     <string name="delete_chat_archive_question">¿Eliminar archivo del chat\?</string>
     <string name="create_group_link">Crear enlace de grupo</string>
     <string name="delete_link">Eliminar enlace</string>
-    <string name="users_delete_question">¿Eliminar perfil de chat?</string>
+    <string name="users_delete_question">¿Eliminar perfil?</string>
     <string name="ttl_hour">%d hora</string>
     <string name="ttl_day">%d día</string>
     <string name="v4_5_multiple_chat_profiles_descr">Nombre y avatar diferentes, aislamiento de transporte.</string>
@@ -621,7 +621,7 @@
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
-    <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</string>
+    <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el (los) destinatario(s) a medida que se escribe</string>
     <string name="icon_descr_sent_msg_status_send_failed">error de envío</string>
     <string name="sending_via">Enviando vía</string>
     <string name="contact_developers">Por favor, actualiza la aplicación y ponte en contacto con los desarrolladores.</string>
@@ -673,7 +673,7 @@
     <string name="receiving_via">Recibiendo vía</string>
     <string name="network_option_protocol_timeout">Tiempo de espera del protocolo</string>
     <string name="network_option_seconds_label">seg</string>
-    <string name="users_delete_with_connections">Perfil y conexiones de servidor</string>
+    <string name="users_delete_with_connections">Datos del perfil y conexiones</string>
     <string name="prohibit_sending_disappearing_messages">No se permiten mensajes temporales.</string>
     <string name="only_you_can_send_voice">Sólo tú puedes enviar mensajes de voz.</string>
     <string name="only_your_contact_can_send_voice">Sólo tu contacto puede enviar mensajes de voz.</string>
@@ -1017,7 +1017,7 @@
     <string name="show_developer_options">Mostrar opciones de desarrollador</string>
     <string name="hide_dev_options">Ocultar:</string>
     <string name="show_dev_options">Mostrar:</string>
-    <string name="delete_chat_profile">Eliminar perfil de chat</string>
+    <string name="delete_chat_profile">Eliminar perfil</string>
     <string name="profile_password">Contraseña del perfil</string>
     <string name="unhide_chat_profile">Mostrar perfil oculto</string>
     <string name="unhide_profile">Mostrar perfil</string>
@@ -1264,7 +1264,7 @@
     <string name="abort_switch_receiving_address">Cancelar cambio de dirección</string>
     <string name="files_and_media">Archivos y multimedia</string>
     <string name="prohibit_sending_files">No se permite el envío de archivos y multimedia.</string>
-    <string name="files_are_prohibited_in_group">No se permiten archivos y multimedia en este grupo.</string>
+    <string name="files_are_prohibited_in_group">Los archivos y multimedia no están permitidos en este grupo.</string>
     <string name="group_members_can_send_files">Los miembros del grupo pueden enviar archivos y multimedia.</string>
     <string name="allow_to_send_files">Se permite enviar archivos y multimedia</string>
     <string name="favorite_chat">Favorito</string>
