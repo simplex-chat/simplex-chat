@@ -90,6 +90,7 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
+import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
@@ -2065,7 +2066,7 @@ processChatCommand' vr = \case
                   liftIO $ removeFile fsFilePath `catchAll_` pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
-                aci_ <- resetCIFileStatus user fileId
+                aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
     withStore (\db -> lookupChatItemByFileId db vr user fileId) >>= \case
@@ -3081,16 +3082,16 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ all (ipAddressProtected netCfg) rdSrvs
     abortNotApproved :: [XFTPServer] -> CM ()
     abortNotApproved unknownSrvs = do
-      aci_ <- resetCIFileStatus user fileId
+      aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileAbortedNotApproved fileId unknownSrvs
 
-resetCIFileStatus :: User -> FileTransferId -> CM (Maybe AChatItem)
-resetCIFileStatus user fileId = do
+resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
+resetRcvCIFileStatus user fileId ciFileStatus = do
   vr <- chatVersionRange
   withStore $ \db -> do
     liftIO $ do
-      updateCIFileStatus db user fileId CIFSRcvInvitation
+      updateCIFileStatus db user fileId ciFileStatus
       updateRcvFileStatus db fileId FSNew
       updateRcvFileAgentId db fileId Nothing
     lookupChatItemByFileId db vr user fileId
@@ -3757,6 +3758,10 @@ processAgentMsgRcvFile _corrId aFileId msg = do
         RFERR e
           | temporaryAgentError e ->
               throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+          | e == XFTP XFTP.NOT_APPROVED -> do
+              aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
+              agentXFTPDeleteRcvFile aFileId fileId
+              forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
           | otherwise -> do
               ci <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId CIFSRcvError
