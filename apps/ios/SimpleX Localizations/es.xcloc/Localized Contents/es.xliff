@@ -1756,9 +1756,9 @@ This is your own one-time link!</source>
         <target>Eliminar perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat profile?" xml:space="preserve">
+      <trans-unit id="Delete chat profile?" xml:space="preserve" approved="no">
         <source>Delete chat profile?</source>
-        <target>¿Eliminar el perfil?</target>
+        <target state="translated">¿Eliminar perfil?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2708,9 +2708,9 @@ This cannot be undone!</source>
         <target>Archivos y multimedia</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve" approved="no">
         <source>Files and media are prohibited in this group.</source>
-        <target>No se permiten archivos y multimedia en este grupo.</target>
+        <target state="translated">Los archivos y multimedia no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media prohibited!" xml:space="preserve">
@@ -4289,9 +4289,9 @@ Error: %@</target>
         <target>Notas privadas</target>
         <note>name of notes to self</note>
       </trans-unit>
-      <trans-unit id="Profile and server connections" xml:space="preserve">
+      <trans-unit id="Profile and server connections" xml:space="preserve" approved="no">
         <source>Profile and server connections</source>
-        <target>Perfil y conexiones de servidor</target>
+        <target state="translated">Datos del perfil y conexiones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -4879,9 +4879,9 @@ Error: %@</target>
         <target>Enviar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve">
+      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve" approved="no">
         <source>Send a live message - it will update for the recipient(s) as you type it</source>
-        <target>Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</target>
+        <target state="translated">Envía un mensaje en vivo: se actualizará para el (los) destinatario(s) a medida que se escribe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
