@@ -3109,6 +3109,7 @@ public struct CIFile: Decodable {
             case .rcvInvitation: return false
             case .rcvAccepted: return false
             case .rcvTransfer: return false
+            case .rcvAborted: return false
             case .rcvCancelled: return false
             case .rcvComplete: return true
             case .rcvError: return false
@@ -3133,6 +3134,7 @@ public struct CIFile: Decodable {
             case .rcvInvitation: return nil
             case .rcvAccepted: return rcvCancelAction
             case .rcvTransfer: return rcvCancelAction
+            case .rcvAborted: return nil
             case .rcvCancelled: return nil
             case .rcvComplete: return nil
             case .rcvError: return nil
@@ -3247,6 +3249,7 @@ public enum CIFileStatus: Decodable, Equatable {
     case rcvInvitation
     case rcvAccepted
     case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
+    case rcvAborted
     case rcvComplete
     case rcvCancelled
     case rcvError
@@ -3262,6 +3265,7 @@ public enum CIFileStatus: Decodable, Equatable {
         case .rcvInvitation: return "rcvInvitation"
         case .rcvAccepted: return "rcvAccepted"
         case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
+        case .rcvAborted: return "rcvAborted"
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
         case .rcvError: return "rcvError"

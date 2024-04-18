@@ -38,7 +38,7 @@ struct CIImageView: View {
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {
-                            case .rcvInvitation:
+                            case .rcvInvitation, .rcvAborted:
                                 Task {
                                     if let user = m.currentUser {
                                         await receiveFile(user: user, fileId: file.fileId)
@@ -103,6 +103,7 @@ struct CIImageView: View {
             case .rcvInvitation: fileIcon("arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case .rcvTransfer: progressView()
+            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 10, 13)
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case .rcvError: fileIcon("xmark", 10, 13)
             case .invalid: fileIcon("questionmark", 10, 13)

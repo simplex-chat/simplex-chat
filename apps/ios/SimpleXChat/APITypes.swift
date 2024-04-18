@@ -125,7 +125,7 @@ public enum ChatCommand {
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
+    case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
     case setFileToReceive(fileId: Int64, encrypted: Bool?)
     case cancelFile(fileId: Int64)
     // remote desktop commands
@@ -284,7 +284,7 @@ public enum ChatCommand {
             case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
             case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
@@ -1715,6 +1715,7 @@ public enum ChatErrorType: Decodable {
     case fileImageType(filePath: String)
     case fileImageSize(filePath: String)
     case fileNotReceived(fileId: Int64)
+    case fileAbortedNotApproved(fileId: Int64, unknownServers: [String])
     // case xFTPRcvFile
     // case xFTPSndFile
     case fallbackToSMPProhibited(fileId: Int64)

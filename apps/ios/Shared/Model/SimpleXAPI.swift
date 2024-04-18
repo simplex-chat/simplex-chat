@@ -939,14 +939,19 @@ func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationF
     }
 }
 
-func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
+func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = false, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(
+        fileId: fileId,
+        userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
+        encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+        auto: auto
+    ) {
         await chatItemSimpleUpdate(user, chatItem)
     }
 }
 
-func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
-    let r = await chatSendCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
+func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
+    let r = await chatSendCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
     let am = AlertManager.shared
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     if case .rcvFileAcceptedSndCancelled = r {
@@ -966,6 +971,24 @@ func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil, auto: B
             logger.debug("apiReceiveFile ignoring fileCancelled error")
         case .fileAlreadyReceiving:
             logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
+        case let .fileAbortedNotApproved(fileId, unknownServers):
+            logger.debug("apiReceiveFile fileAbortedNotApproved error")
+            am.showAlert(Alert(
+                title: Text("Download from unknown relays?"),
+                message: Text("If you're not using tor or VPN, your IP address will be visible to these XFTP relays:\n\(unknownServers.joined(separator: "\n"))"),
+                primaryButton: .destructive(
+                    Text("Download"),
+                    action: {
+                        Task {
+                            logger.debug("apiReceiveFile fileAbortedNotApproved alert - in Task")
+                            if let user = ChatModel.shared.currentUser {
+                                await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
+                            }
+                        }
+                    }
+                ),
+                secondaryButton: .cancel()
+            ))
         default:
             logger.error("apiReceiveFile error: \(String(describing: r))")
             am.showAlertMsg(

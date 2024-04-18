@@ -696,7 +696,7 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
 }
 
 func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil) -> AChatItem? {
-    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, userApprovedRelays: false, encrypted: encrypted, inline: inline))
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
