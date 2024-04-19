@@ -690,7 +690,7 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Elutasítás esetén a feladó NEM kap értesítést.</string>
     <string name="icon_descr_expand_role">Szerepkör kiválasztásának bővítése</string>
     <string name="image_will_be_received_when_contact_is_online">A kép akkor érkezik meg, amikor az ismerőse elérhető lesz, várjon, vagy ellenőrizze később!</string>
-    <string name="group_member_status_invited">meghívott</string>
+    <string name="group_member_status_invited">meghívta</string>
     <string name="invalid_connection_link">Érvénytelen kapcsolati hivatkozás</string>
     <string name="mute_chat">Némítás</string>
     <string name="no_details">nincsenek részletek</string>
@@ -731,7 +731,7 @@
     <string name="v4_6_group_moderation_descr">Most már az adminok is:
 \n- törölhetik a tagok üzeneteit.
 \n- letilthatnak tagokat (\"megfigyelő\" szerepkör)</string>
-    <string name="rcv_group_event_member_added">%1$s meghívott</string>
+    <string name="rcv_group_event_member_added">meghívta %1$s-t</string>
     <string name="message_reactions_are_prohibited">Ebben a csoportban az üzenetreakciók le vannak tiltva.</string>
     <string name="network_use_onion_hosts_no">Nem</string>
     <string name="item_info_no_text">nincs szöveg</string>
@@ -754,7 +754,7 @@
     <string name="notification_new_contact_request">Új kapcsolattartási kérelem</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Összekapcsolt számítógép beállítások</string>
-    <string name="rcv_group_event_invited_via_your_group_link">meghívott a csoport hivatkozásán keresztül</string>
+    <string name="rcv_group_event_invited_via_your_group_link">meghívta a csoport hivatkozásán keresztül</string>
     <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
     <string name="linked_desktops">Összekapcsolt számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
@@ -794,7 +794,7 @@
     <string name="loading_remote_file_title">A fájl betöltése</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
-    <string name="display_name_invited_to_connect">meghívott</string>
+    <string name="display_name_invited_to_connect">meghívta</string>
     <string name="add_contact">Egyszer használatos meghívó hivatkozás</string>
     <string name="notifications">Értesítések</string>
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
@@ -1072,7 +1072,7 @@
     <string name="shutdown_alert_question">Leállítás?</string>
     <string name="enter_passphrase_notification_title">Jelmondat szükséges</string>
     <string name="onboarding_notifications_mode_title">Privát értesítések</string>
-    <string name="you_invited_a_contact">Meghívott egy ismerőst</string>
+    <string name="you_invited_a_contact">Meghívta egy ismerősét</string>
     <string name="is_not_verified">%s nincs ellenőrizve</string>
     <string name="contact_tap_to_connect">Koppintson a csatlakozáshoz</string>
     <string name="this_device_name">Ennek az eszköznek a neve</string>
