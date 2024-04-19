@@ -941,7 +941,7 @@ processChatCommand' vr = \case
               | ciFileLoaded fileStatus ->
                   chatReadVar filesFolder >>= \case
                     Nothing ->
-                      ifM (doesFileExist filePath) (pure $ Just fromCF) errNoFile
+                      ifM (doesFileExist filePath) (pure $ Just fromCF) (throwChatError CEForwardNoFile)
                     Just filesFolder -> do
                       let fsFromPath = filesFolder </> filePath
                       ifM
@@ -956,10 +956,8 @@ processChatCommand' vr = \case
                             liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
                             pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
                         )
-                        errNoFile
-            _ -> errNoFile
-            where
-              errNoFile = throwChatError $ CEForwardNoFile
+                        (throwChatError CEForwardNoFile)
+            _ -> throwChatError CEForwardNoFile
           copyCryptoFile :: CryptoFile -> CryptoFile -> ExceptT CF.FTCryptoError IO ()
           copyCryptoFile fromCF@CryptoFile {filePath = fsFromPath, cryptoArgs = fromArgs} toCF@CryptoFile {cryptoArgs = toArgs} = do
             fromSizeFull <- getFileSize fsFromPath
