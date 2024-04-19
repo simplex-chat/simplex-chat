@@ -50,11 +50,13 @@ testSchemaMigrations = withTmpFiles $ do
   whenM (doesFileExist testSchema) $ removeFile testSchema
   where
     testDownMigration st m = do
+      putStrLn $ "down migration " <> name m
       let downMigr = fromJust $ toDownMigration m
       schema <- getSchema testDB testSchema
       Migrations.run st $ MTRUp [m]
       schema' <- getSchema testDB testSchema
-      schema' `shouldNotBe` schema
+      unless (name m `elem` skipComparisonForUpMigrations) $
+        schema' `shouldNotBe` schema
       Migrations.run st $ MTRDown [downMigr]
       unless (name m `elem` skipComparisonForDownMigrations) $ do
         schema'' <- getSchema testDB testSchema
@@ -62,6 +64,12 @@ testSchemaMigrations = withTmpFiles $ do
       Migrations.run st $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
+
+skipComparisonForUpMigrations :: [String]
+skipComparisonForUpMigrations =
+  [ -- schema doesn't change
+    "20240419_enable_pq_support"
+  ]
 
 skipComparisonForDownMigrations :: [String]
 skipComparisonForDownMigrations =
