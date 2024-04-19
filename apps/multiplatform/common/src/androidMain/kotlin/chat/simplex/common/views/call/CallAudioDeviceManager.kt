@@ -59,6 +59,7 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   }
 
   private val listener: OnCommunicationDeviceChangedListener = OnCommunicationDeviceChangedListener { device ->
+    devices.value = am.availableCommunicationDevices
     currentDevice.value = device
   }
 
