@@ -176,17 +176,17 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       ChatInfoImage(forwardedFromItem.chatInfo, size = 57.dp)
       Column(
         modifier = Modifier
-          .padding(horizontal = 8.dp)
+          .padding(start = 15.dp)
           .weight(1F)
       ) {
         if (forwardedFromItem.chatItem.chatDir.sent) {
           ItemText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
-          Spacer(Modifier.height(8.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+          Spacer(Modifier.height(7.dp))
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
         } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
           ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
-          Spacer(Modifier.height(8.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+          Spacer(Modifier.height(7.dp))
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
         } else {
           ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground)
         }
