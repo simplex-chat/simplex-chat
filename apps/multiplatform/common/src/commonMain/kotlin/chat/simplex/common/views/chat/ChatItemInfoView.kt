@@ -210,7 +210,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       }
 
       if (!local) {
-        Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 25.dp, end = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF))
+        Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 41.dp, end = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF))
         Text(stringResource(MR.strings.recipients_can_not_see_who_message_from), Modifier.padding(horizontal = DEFAULT_PADDING), fontSize = 12.sp, color = MaterialTheme.colors.secondary)
       }
     }
@@ -253,7 +253,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
         SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -278,7 +278,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
@@ -292,7 +292,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView {
         Text(stringResource(if (local) MR.strings.saved_from_chat_item_info_title else MR.strings.forwarded_from_chat_item_info_title),
           style = MaterialTheme.typography.h2,
@@ -352,7 +352,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
         SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -441,6 +441,9 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
         if (ciInfo.forwardedFromChatItem != null) {
           availableTabs.add(CIInfoTab.Forwarded(ciInfo.forwardedFromChatItem))
+        }
+        if (availableTabs.none { it.javaClass == selection.value.javaClass }) {
+          selection.value = availableTabs.first()
         }
         LaunchedEffect(ciInfo) {
           if (ciInfo.forwardedFromChatItem != null && selection.value is CIInfoTab.Forwarded) {
