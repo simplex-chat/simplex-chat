@@ -367,7 +367,6 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
-                  "-optl-lHSrts_thr"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -392,8 +391,6 @@
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
-                  # We also need to keep the rts init method around.
-                  "hs_init_with_rtsopts"
                 ];
                 postInstall = ''
                   set -x
