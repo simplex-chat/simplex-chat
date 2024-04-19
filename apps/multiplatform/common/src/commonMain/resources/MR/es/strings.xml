@@ -1744,4 +1744,14 @@
     <string name="prohibit_sending_simplex_links">No permitir el envío de enlaces SimpleX</string>
     <string name="feature_roles_all_members">todos los miembros</string>
     <string name="allow_to_send_simplex_links">Permitir enviar enlaces SimpleX.</string>
+    <string name="saved_description">guardado</string>
+    <string name="saved_from_description">guardado desde %s</string>
+    <string name="saved_chat_item_info_tab">Guardado</string>
+    <string name="saved_from_chat_item_info_title">Guardado desde</string>
+    <string name="forwarded_from_chat_item_info_title">Reenviado por</string>
+    <string name="download_file">Descargar</string>
+    <string name="forward_chat_item">Reenviar</string>
+    <string name="forwarded_chat_item_info_tab">Reenviado</string>
+    <string name="forward_message">Mensaje reenviado…</string>
+    <string name="recipients_can_not_see_who_message_from">Los destinatarios no ven de quién procede este mensaje.</string>
 </resources>
