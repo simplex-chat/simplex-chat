@@ -303,6 +303,7 @@
   <string name="revoke_file__message">File will be deleted from servers.</string>
   <string name="revoke_file__confirm">Revoke</string>
   <string name="forward_chat_item">Forward</string>
+  <string name="download_file">Download</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>

@@ -19,6 +19,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -40,6 +41,7 @@ fun chatEventText(eventText: String, ts: String): AnnotatedString =
 
 @Composable
 fun ChatItemView(
+  rhId: Long?,
   cInfo: ChatInfo,
   cItem: ChatItem,
   composeState: MutableState<ComposeState>,
@@ -195,10 +197,14 @@ fun ChatItemView(
                 }
                 val clipboard = LocalClipboardManager.current
                 val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
-                val copyAndShareAllowed = when {
-                  cItem.content.text.isNotEmpty() -> true
+                fun fileForwardingAllowed() = when {
                   cItem.file != null && chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded -> true
                   getLoadedFilePath(cItem.file) != null -> true
+                  else -> false
+                }
+                val copyAndShareAllowed = when {
+                  cItem.content.text.isNotEmpty() -> true
+                  fileForwardingAllowed() -> true
                   else -> false
                 }
 
@@ -227,8 +233,19 @@ fun ChatItemView(
                     showMenu.value = false
                   })
                 }
-                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file?.fileSource] != false && cItem.file?.loaded == true))) {
+                if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                   SaveContentItemAction(cItem, saveFileLauncher, showMenu)
+                } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
+                  ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
+                    withBGApi {
+                      Log.d(TAG, "ChatItemView downloadFileAction")
+                      val user = chatModel.currentUser.value
+                      if (user != null) {
+                        controller.receiveFile(rhId, user, cItem.file.fileId)
+                      }
+                    }
+                    showMenu.value = false
+                  })
                 }
                 if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
                   ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
@@ -236,7 +253,10 @@ fun ChatItemView(
                     showMenu.value = false
                   })
                 }
-                if (cItem.meta.itemDeleted == null && !cItem.isLiveDummy && !live) {
+                if (cItem.meta.itemDeleted == null &&
+                  (cItem.file == null || fileForwardingAllowed()) &&
+                  !cItem.isLiveDummy && !live
+                  ) {
                   ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
                     chatModel.chatId.value = null
                     chatModel.sharedContent.value = SharedContent.Forward(cItem, cInfo)
@@ -789,6 +809,7 @@ expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 fun PreviewChatItemView() {
   SimpleXTheme {
     ChatItemView(
+      rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
@@ -825,6 +846,7 @@ fun PreviewChatItemView() {
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
+      rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
       useLinkPreviews = true,
