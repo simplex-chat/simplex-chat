@@ -3563,9 +3563,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>A tag szerepköre meg fog változni erre: "%@". A csoport minden tagja értesítést kap róla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>A tag szerepköre meg fog változni erre: "%@". A tag új meghívást fog kapni.</target>
+        <target state="translated">A tag szerepköre meg fog változni erre: "%@". A tag új meghívót fog kapni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
