@@ -210,7 +210,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       }
 
       if (!local) {
-        Divider(Modifier.padding(start = DEFAULT_PADDING, top = 40.dp, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF))
+        Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 25.dp, end = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF))
         Text(stringResource(MR.strings.recipients_can_not_see_who_message_from), Modifier.padding(horizontal = DEFAULT_PADDING), fontSize = 12.sp, color = MaterialTheme.colors.secondary)
       }
     }
