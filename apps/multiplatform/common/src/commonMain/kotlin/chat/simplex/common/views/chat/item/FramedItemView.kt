@@ -87,14 +87,14 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, padBottom: Boolean) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = true) {
     val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
     val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(
       Modifier
         .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
         .fillMaxWidth()
-        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (padBottom) 6.dp else 0.dp),
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -202,29 +202,28 @@ fun FramedItemView(
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          val firstHeaderPadBottom = ci.quotedItem == null && ci.meta.itemForwarded == null
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
               is CIDeleted.Moderated -> {
-                FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag), padBottom = firstHeaderPadBottom)
+                FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
               }
               is CIDeleted.Blocked -> {
-                FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand), padBottom = firstHeaderPadBottom)
+                FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
               }
               is CIDeleted.BlockedByAdmin -> {
-                FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand), padBottom = firstHeaderPadBottom)
+                FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
               }
               is CIDeleted.Deleted -> {
-                FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete), padBottom = firstHeaderPadBottom)
+                FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
               }
             }
           } else if (ci.meta.isLive) {
-            FramedItemHeader(stringResource(MR.strings.live), false, padBottom = firstHeaderPadBottom)
+            FramedItemHeader(stringResource(MR.strings.live), false)
           }
           if (ci.quotedItem != null) {
             ciQuoteView(ci.quotedItem)
           } else if (ci.meta.itemForwarded != null) {
-            FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), padBottom = true)
+            FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
           }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
