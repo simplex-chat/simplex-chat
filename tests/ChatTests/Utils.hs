@@ -31,7 +31,6 @@ import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -617,7 +616,7 @@ checkActionDeletesFile file action = do
 
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
-  "peer chat protocol version range: " <> vRangeStr (supportedChatVRange PQSupportOff)
+  "peer chat protocol version range: " <> vRangeStr supportedChatVRange
 
 vRangeStr :: VersionRange v -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"

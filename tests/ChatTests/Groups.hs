@@ -18,7 +18,6 @@ import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -150,19 +149,19 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   where
-    _0 = supportedChatVRange PQSupportOff -- don't create direct connections
+    _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
     -- having host configured with older version doesn't have effect in tests
     -- because host uses current code and sends version in MemberInfo
     testNoDirect vrMem2 vrMem3 noConns =
       it
         ( "host "
-            <> vRangeStr (supportedChatVRange PQSupportOff)
+            <> vRangeStr supportedChatVRange
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
-        $ testNoGroupDirectConns (supportedChatVRange PQSupportOff) vrMem2 vrMem3 noConns
+        $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
@@ -3594,9 +3593,9 @@ testConfigureGroupDeliveryReceipts tmp =
 
 testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> FilePath -> IO ()
 testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = const hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = const mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp testCfg {chatVRange = const mem3VRange} "cath" cathProfile $ \cath -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
         if noDirectConns
           then contactsDontExist bob cath

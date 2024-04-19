@@ -172,21 +172,21 @@ testAgentCfgV1 =
 testCfgVPrev :: ChatConfig
 testCfgVPrev =
   testCfg
-    { chatVRange = \_ -> prevRange $ chatVRange testCfg PQSupportOff,
+    { chatVRange = prevRange $ chatVRange testCfg,
       agentConfig = testAgentCfgVPrev
     }
 
 testCfgVNext :: ChatConfig
 testCfgVNext =
   testCfg
-    { chatVRange = \_ -> mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
+    { chatVRange = mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
       agentConfig = testAgentCfgVNext
     }
 
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = const v1Range,
+    { chatVRange = v1Range,
       agentConfig = testAgentCfgV1
     }
 
@@ -210,7 +210,7 @@ testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {chatVRange = const groupCreateDirectVRange}
+mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
 
 groupCreateDirectVRange :: VersionRangeChat
 groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
@@ -220,7 +220,7 @@ testCfgGroupLinkViaContact =
   mkCfgGroupLinkViaContact testCfg
 
 mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
-mkCfgGroupLinkViaContact cfg = cfg {chatVRange = const groupLinkViaContactVRange}
+mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
 
 groupLinkViaContactVRange :: VersionRangeChat
 groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)

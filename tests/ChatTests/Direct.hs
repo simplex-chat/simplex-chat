@@ -25,7 +25,6 @@ import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -116,14 +115,14 @@ chatDirectTests = do
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "negotiate connection peer chat protocol version range" $ do
     describe "peer version range correctly set for new connection via invitation" $ do
-      testInvVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
-      testInvVRange (supportedChatVRange PQSupportOff) vr11
-      testInvVRange vr11 (supportedChatVRange PQSupportOff)
+      testInvVRange supportedChatVRange supportedChatVRange
+      testInvVRange supportedChatVRange vr11
+      testInvVRange vr11 supportedChatVRange
       testInvVRange vr11 vr11
     describe "peer version range correctly set for new connection via contact request" $ do
-      testReqVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
-      testReqVRange (supportedChatVRange PQSupportOff) vr11
-      testReqVRange vr11 (supportedChatVRange PQSupportOff)
+      testReqVRange supportedChatVRange supportedChatVRange
+      testReqVRange supportedChatVRange vr11
+      testReqVRange vr11 supportedChatVRange
       testReqVRange vr11 vr11
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
@@ -2660,8 +2659,8 @@ testConfigureDeliveryReceipts tmp =
 
 testConnInvChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnInvChatVRange ct1VRange ct2VRange tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = const ct1VRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = const ct2VRange} "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
       connectUsers alice bob
 
       alice ##> "/i bob"
@@ -2672,8 +2671,8 @@ testConnInvChatVRange ct1VRange ct2VRange tmp =
 
 testConnReqChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnReqChatVRange ct1VRange ct2VRange tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = const ct1VRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = const ct2VRange} "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
       alice ##> "/ad"
       cLink <- getContactLink alice True
       bob ##> ("/c " <> cLink)
@@ -2700,7 +2699,7 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange bob supportedChatVRange
 
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2709,10 +2708,10 @@ testUpdatePeerChatVRange tmp =
       alice <# "bob> hello 1"
 
       alice ##> "/i bob"
-      contactInfoChatVRange alice (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange alice supportedChatVRange
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange bob supportedChatVRange
 
     withTestChatCfg tmp cfg11 "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2724,9 +2723,9 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange bob supportedChatVRange
   where
-    cfg11 = testCfg {chatVRange = const vr11} :: ChatConfig
+    cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
 
 testGetNetworkStatuses :: HasCallStack => FilePath -> IO ()
 testGetNetworkStatuses tmp = do

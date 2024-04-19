@@ -328,7 +328,7 @@ createUserContactLink db User {userId} agentConnId cReq subMode =
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
-getUserAddressConnections :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> ExceptT StoreError IO [Connection]
+getUserAddressConnections :: DB.Connection -> VersionRangeChat -> User -> ExceptT StoreError IO [Connection]
 getUserAddressConnections db vr User {userId} = do
   cs <- liftIO getUserAddressConnections_
   if null cs then throwError SEUserContactLinkNotFound else pure cs
@@ -349,7 +349,7 @@ getUserAddressConnections db vr User {userId} = do
           |]
           (userId, userId)
 
-getUserContactLinks :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> IO [(Connection, UserContact)]
+getUserContactLinks :: DB.Connection -> VersionRangeChat -> User -> IO [(Connection, UserContact)]
 getUserContactLinks db vr User {userId} =
   map toUserContactConnection
     <$> DB.query
@@ -475,7 +475,7 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
       |]
       (userId, cReqSchema1, cReqSchema2)
 
-getContactWithoutConnViaAddress :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
 getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   ctId_ <-
     maybeFirstRow fromOnly $
