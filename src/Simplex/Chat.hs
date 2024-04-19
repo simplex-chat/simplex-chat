@@ -103,7 +103,7 @@ import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKNoPQ, pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKNoPQ, pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -634,20 +634,6 @@ processChatCommand' vr = \case
     ok_
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
-  APISetPQEncryption onOff -> chatWriteVar pqExperimentalEnabled onOff >> ok_
-  APISetContactPQ ctId pqEnc -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user ctId
-    case activeConn of
-      Just conn@Connection {connId, pqSupport, pqEncryption}
-        | pqEncryption == pqEnc -> pure $ CRContactPQAllowed user ct pqEnc
-        | otherwise -> do
-            let pqSup = PQSupport $ pqEnc == PQEncOn || pqSupport == PQSupportOn
-                conn' = conn {pqSupport = pqSup, pqEncryption = pqEnc} :: Connection
-                ct' = ct {activeConn = Just conn'} :: Contact
-            withStore' $ \db -> updateConnSupportPQ db connId pqSup pqEnc
-            pure $ CRContactPQAllowed user ct' pqEnc
-      Nothing -> throwChatError $ CEContactNotActive ct
-  SetContactPQ cName pqEnc -> withContactName cName (`APISetContactPQ` pqEnc)
   APIExportArchive cfg -> checkChatStopped $ lift (exportArchive cfg) >> ok_
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -1925,7 +1911,7 @@ processChatCommand' vr = \case
         unless (maxVersion peerChatVRange >= groupDirectInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
-        (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOff subMode
+        (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
         -- [incognito] reuse membership incognito profile
         ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         -- TODO not sure it is correct to set connections status here?
@@ -6681,6 +6667,7 @@ createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
   connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode IKPQOff subMode
   pure (cmdId, connId)
 
+-- TODO PQ parameter
 joinAgentConnectionAsync :: User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
@@ -6983,9 +6970,6 @@ chatCommandP =
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
-      "/_pq @" *> (APISetContactPQ <$> A.decimal <* A.space <*> (PQEncryption <$> onOffP)),
-      "/pq @" *> (SetContactPQ <$> displayName <* A.space <*> (PQEncryption <$> onOffP)),
-      "/pq " *> (APISetPQEncryption . PQSupport <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),

@@ -13,8 +13,6 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
-import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
@@ -25,7 +23,6 @@ import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
@@ -34,8 +31,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -204,65 +200,6 @@ cc ?#> cmd = do
 cc #$> (cmd, f, res) = do
   cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
-
--- / PQ combinators
-
-(\#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
-(\#>) = sndRcv PQEncOff False
-
-(+#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
-(+#>) = sndRcv PQEncOn False
-
-(++#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
-(++#>) = sndRcv PQEncOn True
-
-sndRcv :: HasCallStack => PQEncryption -> Bool -> (TestCC, String) -> TestCC -> IO ()
-sndRcv pqEnc enabled (cc1, msg) cc2 = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  let cmd = "@" <> name2 <> " " <> msg
-  cc1 `send` cmd
-  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
-  cc1 <# cmd
-  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
-  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
-  cc2 <# (name1 <> "> " <> msg)
-  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
-
-(\:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
-(\:#>) = sndRcvImg PQEncOff False
-
-(+:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
-(+:#>) = sndRcvImg PQEncOn False
-
-(++:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
-(++:#>) = sndRcvImg PQEncOn True
-
-sndRcvImg :: HasCallStack => PQEncryption -> Bool -> (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
-sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  g <- C.newRandom
-  img <- atomically $ B64.encode <$> C.randomBytes lrgLen g
-  cc1 `send` ("/_send @2 json {\"msgContent\":{\"type\":\"image\",\"text\":\"" <> msg <> "\",\"image\":\"" <> B.unpack img <> "\"}}")
-  cc1 .<## "}}"
-  cc1 <### ([ConsoleString (name2 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime ("@" <> name2 <> " " <> msg)])
-  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
-  cc1 `pqVerForContact` 2 `shouldReturn` v1
-  cc2 <### ([ConsoleString (name1 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime (name1 <> "> " <> msg)])
-  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
-  cc2 `pqVerForContact` 2 `shouldReturn` v2
-  where
-    lrgLen = maxEncodedMsgLength * 3 `div` 4 - 110 -- 98 is ~ max size for binary image preview given the rest of the message
-
-genProfileImg :: IO ByteString
-genProfileImg = do
-  g <- C.newRandom
-  atomically $ B64.encode <$> C.randomBytes lrgLen g
-  where
-    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
-
--- PQ combinators /
 
 chat :: String -> [(Int, String)]
 chat = map (\(a, _, _) -> a) . chat''
@@ -571,34 +508,6 @@ getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
     maybeFirstRow fromOnly $
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
-
-pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
-pqSndForContact = pqForContact_ pqSndEnabled PQEncOff
-
-pqRcvForContact :: TestCC -> ContactId -> IO PQEncryption
-pqRcvForContact = pqForContact_ pqRcvEnabled PQEncOff
-
-pqForContact :: TestCC -> ContactId -> IO PQEncryption
-pqForContact = pqForContact_ (Just . connPQEnabled) (error "impossible")
-
-pqSupportForCt :: TestCC -> ContactId -> IO PQSupport
-pqSupportForCt = pqForContact_ (\Connection {pqSupport} -> Just pqSupport) PQSupportOff
-
-pqVerForContact :: TestCC -> ContactId -> IO VersionChat
-pqVerForContact = pqForContact_ (Just . connChatVersion) (error "impossible")
-
-pqForContact_ :: (Connection -> Maybe a) -> a -> TestCC -> ContactId -> IO a
-pqForContact_ pqSel def cc contactId = (fromMaybe def . pqSel) <$> getCtConn cc contactId
-
-getCtConn :: TestCC -> ContactId -> IO Connection
-getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no connection") pure . contactConn
-
-getTestCCContact :: TestCC -> ContactId -> IO Contact
-getTestCCContact cc contactId = do
-  let TestCC {chatController = ChatController {config = ChatConfig {chatVRange = vr}}} = cc
-  withCCTransaction cc $ \db ->
-    withCCUser cc $ \user ->
-      runExceptT (getContact db vr user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

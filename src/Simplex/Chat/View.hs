@@ -342,7 +342,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
   CRRemoteCtrlStopped {} -> ["remote controller stopped"]
-  CRContactPQAllowed u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": enable " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption"]
   CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
