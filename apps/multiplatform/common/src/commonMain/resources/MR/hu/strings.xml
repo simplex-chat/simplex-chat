@@ -1738,4 +1738,14 @@
     <string name="files_and_media_not_allowed">Fájlok és média tartalom küldése le van tiltva</string>
     <string name="allow_to_send_simplex_links">A SimpleX hivatkozások küldése engedélyezve van.</string>
     <string name="feature_enabled_for">Számukra engedélyezve:</string>
+    <string name="saved_description">mentett</string>
+    <string name="saved_from_description">mentve innen: %s</string>
+    <string name="forwarded_from_chat_item_info_title">Továbbítva innen:</string>
+    <string name="recipients_can_not_see_who_message_from">A címzett(ek) nem látja(k), hogy kitől származik ez az üzenet.</string>
+    <string name="saved_chat_item_info_tab">Mentett</string>
+    <string name="saved_from_chat_item_info_title">Mentve innen:</string>
+    <string name="download_file">Letöltés</string>
+    <string name="forward_chat_item">Továbbítás</string>
+    <string name="forwarded_chat_item_info_tab">Továbbított</string>
+    <string name="forward_message">Üzenet továbbítása…</string>
 </resources>
