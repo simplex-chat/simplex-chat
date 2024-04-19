@@ -1741,4 +1741,14 @@
     <string name="feature_enabled_for">Ingeschakeld voor</string>
     <string name="allow_to_send_simplex_links">Sta het verzenden van SimpleX-links toe.</string>
     <string name="group_members_can_send_simplex_links">Groepsleden kunnen SimpleX-links verzenden.</string>
+    <string name="saved_description">opgeslagen</string>
+    <string name="saved_from_description">opgeslagen van %s</string>
+    <string name="forward_chat_item">Doorsturen</string>
+    <string name="forwarded_chat_item_info_tab">Doorgestuurd</string>
+    <string name="recipients_can_not_see_who_message_from">Ontvanger(s) kunnen niet zien van wie dit bericht afkomstig is.</string>
+    <string name="saved_from_chat_item_info_title">Opgeslagen van</string>
+    <string name="forward_message">Bericht doorsturen…</string>
+    <string name="download_file">Downloaden</string>
+    <string name="forwarded_from_chat_item_info_title">Doorgestuurd vanuit</string>
+    <string name="saved_chat_item_info_tab">Opgeslagen</string>
 </resources>
