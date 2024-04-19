@@ -1507,7 +1507,7 @@
     <string name="smp_servers_per_user">A jelenlegi csevegési profilhoz tartozó új kapcsolatok kiszolgálói</string>
     <string name="receiving_via">Fogadás ezen keresztül:</string>
     <string name="store_passphrase_securely_without_recover">Tárolja el biztonságosan jelmondát, mert ha elveszti azt, akkor NEM férhet hozzá a csevegéshez.</string>
-    <string name="member_role_will_be_changed_with_invitation">A szerepkör \"%s\"-re fog változni. A tag új meghívót kap.</string>
+    <string name="member_role_will_be_changed_with_invitation">A tag szerepköre erre fog változni: \"%s\". A tag új meghívót fog kapni.</string>
     <string name="icon_descr_profile_image_placeholder">profilkép helyőrző</string>
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza - profiljai, ismerősei, üzenetei és fájljai véglegesen törlésre kerülnek.</string>
