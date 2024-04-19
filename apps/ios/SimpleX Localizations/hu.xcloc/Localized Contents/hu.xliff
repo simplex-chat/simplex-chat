@@ -6354,9 +6354,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem az eszközön kerül tárolásra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You invited a contact" xml:space="preserve">
+      <trans-unit id="You invited a contact" xml:space="preserve" approved="no">
         <source>You invited a contact</source>
-        <target>Meghívott egy ismerőst</target>
+        <target state="translated">Meghívta egy ismerősét</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You joined this group" xml:space="preserve">
@@ -7018,24 +7018,24 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>meghívás a(z) %@ csoportba</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invited" xml:space="preserve">
+      <trans-unit id="invited" xml:space="preserve" approved="no">
         <source>invited</source>
-        <target>meghívott</target>
+        <target state="translated">meghívta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="invited %@" xml:space="preserve">
+      <trans-unit id="invited %@" xml:space="preserve" approved="no">
         <source>invited %@</source>
-        <target>%@ meghívott</target>
+        <target state="translated">meghívta %@-t</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="invited to connect" xml:space="preserve">
+      <trans-unit id="invited to connect" xml:space="preserve" approved="no">
         <source>invited to connect</source>
-        <target>meghívott, hogy csatlakozzon</target>
+        <target state="translated">meghívta</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="invited via your group link" xml:space="preserve">
+      <trans-unit id="invited via your group link" xml:space="preserve" approved="no">
         <source>invited via your group link</source>
-        <target>meghívott a csoport hivatkozásán keresztül</target>
+        <target state="translated">meghívta a csoport hivatkozásán keresztül</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
