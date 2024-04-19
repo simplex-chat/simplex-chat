@@ -1906,7 +1906,8 @@ processChatCommand' vr = \case
         unless (maxVersion peerChatVRange >= groupDirectInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
-        (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+        -- TODO PQ should negotitate contact connection with PQSupportOn?
+        (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         -- TODO not sure it is correct to set connections status here?
@@ -5870,9 +5871,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         joinConn subMode = do
           -- [incognito] send membership incognito profile
           let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing False
+          -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
           dm <- encodeConnInfo $ XInfo p
-          -- TODO PQ check version?
-          joinAgentConnectionAsync' user True connReq dm subMode PQSupportOn
+          joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
           createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CRNewMemberContactReceivedInv user mCt' g m'
@@ -6661,13 +6662,9 @@ createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
   pure (cmdId, connId)
 
 joinAgentConnectionAsync :: User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM (CommandId, ConnId)
-joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode =
-  joinAgentConnectionAsync' user enableNtfs cReqUri cInfo subMode PQSupportOff
-
-joinAgentConnectionAsync' :: User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> PQSupport -> CM (CommandId, ConnId)
-joinAgentConnectionAsync' user enableNtfs cReqUri cInfo subMode pqSup = do
+joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo pqSup subMode
+  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo PQSupportOff subMode
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
