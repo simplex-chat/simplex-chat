@@ -6028,15 +6028,20 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 sameMemberId :: MemberId -> GroupMember -> Bool
 sameMemberId memId GroupMember {memberId} = memId == memberId
 
--- TODO v5.7 for contacts only version upgrade should trigger enabling PQ support/encryption
 updatePeerChatVRange :: Connection -> VersionRangeChat -> CM Connection
-updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
+updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange, connType, pqSupport, pqEncryption} msgVRange = do
   v' <- lift $ upgradedConnVersion v msgVRange
-  if msgVRange /= peerChatVRange || v' /= v
+  conn' <- if msgVRange /= peerChatVRange || v' /= v
     then do
       withStore' $ \db -> setPeerChatVRange db connId v' msgVRange
       pure conn {connChatVersion = v', peerChatVRange = msgVRange}
     else pure conn
+  -- TODO v6.0 remove/review: for contacts only version upgrade should trigger enabling PQ support/encryption
+  if connType == ConnContact && v' >= pqEncryptionCompressionVersion && (pqSupport /= PQSupportOn || pqEncryption /= PQEncOn)
+    then do
+      withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn PQEncOn
+      pure conn' {pqSupport = PQSupportOn, pqEncryption = PQEncOn}
+    else pure conn'
 
 updateMemberChatVRange :: GroupMember -> Connection -> VersionRangeChat -> CM (GroupMember, Connection)
 updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do

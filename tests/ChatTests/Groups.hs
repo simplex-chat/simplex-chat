@@ -3884,6 +3884,17 @@ testMemberContactMessage =
         (bob <## "alice (Alice): contact is connected")
 
       bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+
+      -- exchanging messages will enable PQ (see Chat "TODO PQ" - perhaps connection should be negotiated with PQ on)
+      alice <##> bob
+      alice <##> bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob `send` "@alice hey"
+      bob <## "alice: quantum resistant end-to-end encryption enabled"
+      bob <# "@alice hey"
+      alice <## "bob: quantum resistant end-to-end encryption enabled"
+      alice <# "bob> hey"
       alice <##> bob
 
       -- bob and cath connect
