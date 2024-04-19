@@ -29,8 +29,8 @@
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
-      let drv' = { extra-modules, pkgs', compiler-nix-name, ... }: pkgs'.haskell-nix.project {
-        inherit compiler-nix-name;
+      let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
+        compiler-nix-name = "ghc963";
         index-state = "2023-12-12T00:00:00Z";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
@@ -51,7 +51,7 @@
         })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
-      let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; compiler-nix-name = "ghc964"; }; in
+      let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
       let withHydraLibPkg = pkg: pkg.overrideAttrs (old: {
@@ -262,7 +262,7 @@
 
               # STATIC aarch64-linux
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
-              "armv7a-android:lib:support" = (drv' { extra-modules = []; pkgs' = android32Pkgs; compiler-nix-name = "ghc8107"; } ).android-support.components.library.override (p: {
+              "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override (p: {
                 smallAddressSpace = true;
                 # we won't want -dyamic (see aarch64-android:lib:simplex-chat)
                 enableShared = false;
@@ -325,7 +325,6 @@
                 '';
               });
               "armv7a-android:lib:simplex-chat" = (drv' {
-                compiler-nix-name = "ghc8107";
                 pkgs' = android32Pkgs;
                 extra-modules = [{
                   packages.text.flags.simdutf = false;
@@ -341,7 +340,7 @@
                   ];
                   # 32 bit patches
                   packages.basement.patches = [
-                    # ./scripts/nix/basement-pr-573.patch
+                    ./scripts/nix/basement-pr-573.patch
                   ];
                   packages.memory.patches = [
                     ./scripts/nix/memory-pr-99.patch
@@ -434,7 +433,6 @@
                 '';
               });
               "aarch64-android:lib:simplex-chat" = (drv' {
-                compiler-nix-name = "ghc964";
                 pkgs' = androidPkgs;
                 extra-modules = [{
                   packages.text.flags.simdutf = false;
