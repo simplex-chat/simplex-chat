@@ -272,18 +272,6 @@ func apiGetAppSettings(settings: AppSettings) throws -> AppSettings {
     throw r
 }
 
-func apiSetPQEncryption(_ enable: Bool) throws {
-    let r = chatSendCmdSync(.apiSetPQEncryption(enable: enable))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetContactPQ(_ contactId: Int64, _ enable: Bool) async throws -> Contact {
-    let r = await chatSendCmd(.apiSetContactPQ(contactId: contactId, enable: enable))
-    if case let .contactPQAllowed(_, contact, _) = r { return contact }
-    throw r
-}
-
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -1320,7 +1308,6 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
-    try apiSetPQEncryption(pqExperimentalEnabledDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {

@@ -40,7 +40,7 @@ let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
 public let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
 public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
-public let GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED = "pqExperimentalEnabled"
+public let GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED = "pqExperimentalEnabled" // no longer used
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -196,8 +196,6 @@ public let initialRandomDBPassphraseGroupDefault = BoolDefault(defaults: groupDe
 public let confirmDBUpgradesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CONFIRM_DB_UPGRADES)
 
 public let callKitEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CALL_KIT_ENABLED)
-
-public let pqExperimentalEnabledDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED)
 
 public class DateDefault {
     var defaults: UserDefaults
