@@ -1090,9 +1090,9 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
       .collect {
         try {
           if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.size)) {
-            listState.animateScrollToItem(0)
+            if (appPlatform.isAndroid) listState.animateScrollToItem(0) else listState.scrollToItem(0)
           } else {
-            listState.animateScrollBy(scrollDistance)
+            if (appPlatform.isAndroid) listState.animateScrollBy(scrollDistance) else listState.scrollBy(scrollDistance)
           }
         } catch (e: CancellationException) {
           /**
