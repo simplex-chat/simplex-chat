@@ -87,7 +87,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = true) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false) {
     val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
     val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(

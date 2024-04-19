@@ -165,7 +165,7 @@ struct FramedItemView: View {
         )
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = true) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
         let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
