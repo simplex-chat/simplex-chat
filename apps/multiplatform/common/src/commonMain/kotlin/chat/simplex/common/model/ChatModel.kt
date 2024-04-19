@@ -111,7 +111,7 @@ object ChatModel {
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
 
-  // working with external intents
+  // working with external intents or internal forwarding of chat items
   val sharedContent = mutableStateOf(null as SharedContent?)
 
   val filesToDelete = mutableSetOf<File>()
@@ -1753,7 +1753,7 @@ data class ChatItem (
   val allowAddReaction: Boolean get() =
     meta.itemDeleted == null && !isLiveDummy && (reactions.count { it.userReacted } < 3)
 
-  private val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
+  val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
 
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
@@ -2298,8 +2298,26 @@ enum class MsgDirection {
 @Serializable
 sealed class CIForwardedFrom {
   @Serializable @SerialName("unknown") object Unknown: CIForwardedFrom()
-  @Serializable @SerialName("contact") class Contact(val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
-  @Serializable @SerialName("group") class Group(val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+  @Serializable @SerialName("contact") class Contact(override val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+
+  open val chatName: String
+    get() = when (this) {
+        Unknown -> ""
+        is Contact -> chatName
+        is Group -> chatName
+      }
+
+  fun text(chatType: ChatType): String =
+    if (chatType == ChatType.Local) {
+      if (chatName.isEmpty()) {
+        generalGetString(MR.strings.saved_description)
+      } else {
+        generalGetString(MR.strings.saved_from_description).format(chatName)
+      }
+    } else {
+      generalGetString(MR.strings.forwarded_description)
+    }
 }
 
 @Serializable
