@@ -860,7 +860,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><strong>In simplex-chat repo</strong></p>
 <ul>
 <li>
-<p><code>stable</code> - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.4).</p>
+<p><code>stable</code> - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.3).</p>
 </li>
 <li>
 <p><code>stable-android</code> - used to build stable Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
@@ -869,7 +869,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><code>stable-ios</code> - used to build stable iOS core library with Nix (GHC 8.10.7) – this branch should be the same as <code>stable-android</code> except Nix configuration files. Deprecated.</p>
 </li>
 <li>
-<p><code>master</code> - branch for beta version releases (GHC 9.6.4).</p>
+<p><code>master</code> - branch for beta version releases (GHC 9.6.3).</p>
 </li>
 <li>
 <p><code>master-ghc8107</code> - branch for beta version releases (GHC 8.10.7). Deprecated.</p>
@@ -888,7 +888,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><strong>In simplexmq repo</strong></p>
 <ul>
 <li>
-<p><code>master</code> - uses GHC 9.6.4 its commit should be used in <code>master</code> branch of simplex-chat repo.</p>
+<p><code>master</code> - uses GHC 9.6.3 its commit should be used in <code>master</code> branch of simplex-chat repo.</p>
 </li>
 <li>
 <p><code>master-ghc8107</code> - its commit should be used in <code>master-android</code> (and <code>master-ios</code>) branch of simplex-chat repo. Deprecated.</p>
@@ -930,23 +930,23 @@ window.addEventListener('scroll',changeHeaderBg);
 <ol start="7">
 <li>Independently, <code>master</code> branch of simplexmq repo should be merged to <code>stable</code> branch on stable releases.</li>
 </ol>
-<h2 id="differences-between-ghc-8107-and-ghc-964" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.4</h2>
+<h2 id="differences-between-ghc-8107-and-ghc-963" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.3</h2>
 <ol>
 <li>The main difference is related to <code>DuplicateRecordFields</code> extension.</li>
 </ol>
-<p>It is no longer possible in GHC 9.6.4 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:</p>
+<p>It is no longer possible in GHC 9.6.3 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:</p>
 <pre><code class="language-haskell">{-# LANGUAGE DuplicateRecordFields #-}
--- use this in GHC 9.6.4 when needed
+-- use this in GHC 9.6.3 when needed
 {-# LANGUAGE OverloadedRecordDot #-}
 
--- GHC 9.6.4 syntax
+-- GHC 9.6.3 syntax
 let x = record.field
 
--- GHC 8.10.7 syntax absent in GHC 9.6.4
+-- GHC 8.10.7 syntax removed in GHC 9.6.3
 let x = field (record :: Record)
 </code></pre>
 <p>It is still possible to specify type when using record update syntax, use this pragma to suppress compiler warning:</p>
-<pre><code class="language-haskell">-- use this in GHC 9.6.4 when needed
+<pre><code class="language-haskell">-- use this in GHC 9.6.3 when needed
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 let r' = (record :: Record) {field = value}
@@ -954,7 +954,7 @@ let r' = (record :: Record) {field = value}
 <ol start="2">
 <li>Most monad functions now have to be imported from <code>Control.Monad</code>, and not from specific monad modules (e.g. <code>Control.Monad.Except</code>).</li>
 </ol>
-<pre><code class="language-haskell">-- use this in GHC 9.6.4 when needed
+<pre><code class="language-haskell">-- use this in GHC 9.6.3 when needed
 import Control.Monad
 </code></pre>
 <p><a href="https://github.com/simplex-chat/simplex-chat/pull/2975/files">This PR</a> has all the differences.</p>
