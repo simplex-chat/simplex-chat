@@ -168,8 +168,6 @@ struct ChatInfoView: View {
                 if let conn = contact.activeConn {
                     Section {
                         infoRow(Text(String("E2E encryption")), conn.connPQEnabled ? "Quantum resistant" : "Standard")
-                    } header: {
-                        Text(String("Quantum resistant E2E encryption"))
                     }
                 }
 
