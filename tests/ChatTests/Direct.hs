@@ -134,7 +134,7 @@ chatDirectTests = do
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
   where
-    runTestAddContact alice bob = do
+    runTestAddContact pqExpected alice bob = do
       alice ##> "/_connect 1"
       inv <- getInvitation alice
       bob ##> ("/_connect 1 " <> inv)
@@ -143,46 +143,50 @@ testAddContact = versionTestMatrix2 runTestAddContact
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      chatsEmpty alice bob
+      chatsEmpty
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
       alice ##> "/_unread chat @2 on"
       alice <## "ok"
       alice ##> "/_unread chat @2 off"
       alice <## "ok"
-      chatsOneMessage alice bob
+      chatsOneMessage
       bob #> "@alice hello there"
       alice <# "bob> hello there"
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
-      chatsManyMessages alice bob
-    chatsEmpty alice bob = do
-      alice @@@ [("@bob", lastChatFeature)]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
-      bob @@@ [("@alice", lastChatFeature)]
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
-    chatsOneMessage alice bob = do
-      alice @@@ [("@bob", "hello there 🙂")]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
-      bob @@@ [("@alice", "hello there 🙂")]
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂")])
-    chatsManyMessages alice bob = do
-      alice @@@ [("@bob", "how are you?")]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
-      bob @@@ [("@alice", "how are you?")]
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
-      -- pagination
-      alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
-      alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
-      -- search
-      alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
-      -- read messages
-      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      alice #$> ("/_read chat @2", id, "ok")
-      bob #$> ("/_read chat @2", id, "ok")
-      alice #$> ("/read user", id, "ok")
-      alice #$> ("/_read user 1", id, "ok")
+      chatsManyMessages
+      where
+        chatsEmpty = do
+          alice @@@ [("@bob", lastChatFeature)]
+          alice #$> ("/_get chat @2 count=100", chat, features)
+          bob @@@ [("@alice", lastChatFeature)]
+          bob #$> ("/_get chat @2 count=100", chat, features)
+        chatsOneMessage = do
+          alice @@@ [("@bob", "hello there 🙂")]
+          alice #$> ("/_get chat @2 count=100", chat, features <> [(1, "hello there 🙂")])
+          bob @@@ [("@alice", "hello there 🙂")]
+          bob #$> ("/_get chat @2 count=100", chat, features <> [(0, "hello there 🙂")])
+        chatsManyMessages = do
+          alice @@@ [("@bob", "how are you?")]
+          alice #$> ("/_get chat @2 count=100", chat, features <> [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
+          bob @@@ [("@alice", "how are you?")]
+          bob #$> ("/_get chat @2 count=100", chat, features <> [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
+          -- pagination
+          alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
+          alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, features <> [(1, "hello there 🙂")])
+          -- search
+          alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
+          -- read messages
+          alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
+          bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
+          alice #$> ("/_read chat @2", id, "ok")
+          bob #$> ("/_read chat @2", id, "ok")
+          alice #$> ("/read user", id, "ok")
+          alice #$> ("/_read user 1", id, "ok")
+        features = if pqExpected
+          then chatFeatures
+          else (0, e2eeInfoNoPQStr) : tail chatFeatures
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -2086,7 +2090,7 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items before=13 count=10"
       alice
-        <##? [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+        <##? [ ConsoleString ("bob> " <> e2eeInfoPQStr),
                "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
@@ -2157,7 +2161,7 @@ testUserPrivacy =
       alice <## "messages are shown"
       alice <## "profile is visible"
     chatHistory =
-      [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+      [ ConsoleString ("bob> " <> e2eeInfoPQStr),
         "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
@@ -2339,6 +2343,7 @@ testMarkContactVerified =
       alice <## "sending messages via: localhost"
       alice <## "you've shared main profile with this contact"
       alice <## connVerified
+      alice <## "quantum resistant end-to-end encryption"
       alice <## currentChatVRangeInfo
       where
         connVerified
@@ -2509,6 +2514,7 @@ testSyncRatchetCodeReset tmp =
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
       bob <## connVerified
+      bob <## "quantum resistant end-to-end encryption"
       bob <## currentChatVRangeInfo
       where
         connVerified
@@ -2751,4 +2757,5 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "sending messages via: localhost"
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
+  cc <## "quantum resistant end-to-end encryption"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
