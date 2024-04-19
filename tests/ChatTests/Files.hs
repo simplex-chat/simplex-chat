@@ -617,20 +617,8 @@ testXFTPWithRelativePaths =
     withXFTPServer $ do
       -- agent is passed xftp work directory only on chat start,
       -- so for test we work around by stopping and starting chat
-      alice ##> "/_stop"
-      alice <## "chat stopped"
-      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
-      alice #$> ("/_temp_folder ./tests/tmp/alice_xftp", id, "ok")
-      alice ##> "/_start"
-      alice <## "chat started"
-
-      bob ##> "/_stop"
-      bob <## "chat stopped"
-      bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
-      bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
-      bob ##> "/_start"
-      bob <## "chat started"
-
+      setRelativePaths alice "./tests/fixtures" "./tests/tmp/alice_xftp"
+      setRelativePaths bob "./tests/tmp/bob_files" "./tests/tmp/bob_xftp"
       connectUsers alice bob
 
       alice #> "/f @bob test.pdf"
@@ -787,7 +775,8 @@ testXFTPCancelRcvRepeat =
       bob ##> "/fr 1 ./tests/tmp"
       bob
         <### [ "saving file 1 from alice to ./tests/tmp/testfile_1",
-               "started receiving file 1 (testfile) from alice"
+               "started receiving file 1 (testfile) from alice",
+               StartsWith "chat db error: SERcvFileNotFoundXFTP"
              ]
       bob <## "completed receiving file 1 (testfile) from alice"
 

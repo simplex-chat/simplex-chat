@@ -87,15 +87,16 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false) {
     val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
     val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(
       Modifier
         .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
         .fillMaxWidth()
-        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       if (icon != null) {
         Icon(
@@ -184,7 +185,7 @@ fun FramedItemView(
   }
 
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
-      !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
+      !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
 
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
@@ -219,7 +220,11 @@ fun FramedItemView(
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(MR.strings.live), false)
           }
-          ci.quotedItem?.let { ciQuoteView(it) }
+          if (ci.quotedItem != null) {
+            ciQuoteView(ci.quotedItem)
+          } else if (ci.meta.itemForwarded != null) {
+            FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+          }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
               Column(

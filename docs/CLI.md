@@ -3,7 +3,7 @@ title: Terminal CLI
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md) |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
 
 # SimpleX Chat terminal (console) app for Linux/MacOS/Windows
 

@@ -15,7 +15,8 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (GroupMemberRole (..), VersionRangeChat)
+import Simplex.Chat.Types (VersionRangeChat)
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import System.Directory (copyFile)
@@ -1509,6 +1510,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Message reactions: on"
       alice <## "Voice messages: on"
       alice <## "Files and media: on"
+      alice <## "SimpleX links: on"
       alice <## "Recent history: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
@@ -2501,6 +2503,7 @@ testPlanHostContactDeletedGroupLinkKnown =
 testPlanGroupLinkOwn :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkOwn tmp =
   withNewTestChatCfg tmp testCfgGroupLinkViaContact "alice" aliceProfile $ \alice -> do
+    threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
@@ -5184,7 +5187,11 @@ testGroupHistoryWelcomeMessage =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!"), (0, "welcome to team")]
+      -- sometimes there are "connected" and feature items in between,
+      -- so we filter them out; `shouldContain` then checks order is correct
+      let expected = [(0, "hello"), (0, "hey!"), (0, "welcome to team")]
+          r' = filter (`elem` expected) r
+      r' `shouldContain` expected
 
       -- message delivery works after sending history
       alice #> "#team 1"

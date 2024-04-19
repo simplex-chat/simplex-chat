@@ -69,6 +69,8 @@ fun activeCallDestroyWebView() = withApi {
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
+  val call = remember { chatModel.activeCall }.value
+  val scope = rememberCoroutineScope()
   val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
   val proximityLock = remember {
     val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -76,6 +78,13 @@ actual fun ActiveCallView() {
       pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, androidAppContext.packageName + ":proximityLock")
     } else {
       null
+    }
+  }
+  val wasConnected = rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(call) {
+    if (call?.callState == CallState.Connected && !wasConnected.value) {
+      CallSoundsPlayer.vibrate(2)
+      wasConnected.value = true
     }
   }
   DisposableEffect(Unit) {
@@ -107,6 +116,10 @@ actual fun ActiveCallView() {
     }
     am.registerAudioDeviceCallback(audioCallback, null)
     onDispose {
+      CallSoundsPlayer.stop()
+      if (wasConnected.value) {
+        CallSoundsPlayer.vibrate()
+      }
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
       if (proximityLock?.isHeld == true) {
@@ -122,8 +135,6 @@ actual fun ActiveCallView() {
       if (proximityLock?.isHeld == false) proximityLock.acquire()
     }
   }
-  val scope = rememberCoroutineScope()
-  val call = chatModel.activeCall.value
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
@@ -136,6 +147,9 @@ actual fun ActiveCallView() {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
+            setCallSound(call.soundSpeaker, audioViaBluetooth)
+            CallSoundsPlayer.startConnectingCallSound(scope)
+            activeCallWaitDeliveryReceipt(scope)
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
@@ -144,6 +158,7 @@ actual fun ActiveCallView() {
           is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
             updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
+            CallSoundsPlayer.stop()
           }
           is WCallResponse.Ice -> withBGApi {
             chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)

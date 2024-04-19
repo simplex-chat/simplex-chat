@@ -126,7 +126,7 @@ struct CIVideoView: View {
                 if !decryptionInProgress {
                     Button {
                         decrypt(file: file) {
-                            if let decrypted = urlDecrypted {
+                            if urlDecrypted != nil {
                                 videoPlaying = true
                                 player?.play()
                             }

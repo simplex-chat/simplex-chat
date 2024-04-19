@@ -65,6 +65,8 @@ struct FramedItemView: View {
                                 }
                             }
                         }
+                } else if let itemForwarded = chatItem.meta.itemForwarded {
+                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
 
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: framedMsgContentView)
@@ -163,7 +165,7 @@ struct FramedItemView: View {
         )
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
         let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
@@ -178,7 +180,7 @@ struct FramedItemView: View {
         .foregroundColor(.secondary)
         .padding(.horizontal, 12)
         .padding(.top, 6)
-        .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
+        .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, colorScheme))
@@ -353,9 +355,9 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 
 func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
-        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
     } else if case let .video(text, _, _) = ci.content.msgContent {
-        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
     }
     return false
 }

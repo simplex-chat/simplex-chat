@@ -45,6 +45,15 @@ import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
+data ChatLockEntity
+  = CLInvitation ByteString
+  | CLConnection Int64
+  | CLContact ContactId
+  | CLGroup GroupId
+  | CLUserContact Int64
+  | CLFile Int64
+  deriving (Eq, Ord)
+
 -- These error type constructors must be added to mobile apps
 data StoreError
   = SEDuplicateName

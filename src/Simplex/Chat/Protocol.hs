@@ -45,10 +45,11 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (compress1, decompressBatch)
-import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOn, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -587,6 +588,7 @@ parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
     mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"

@@ -150,6 +150,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   doesFileExist stored `shouldReturn` True
 
   alice ##> "/clear *"
+  alice <## "notes: all messages are removed"
   alice ##> "/fs 1"
   alice <## "file 1 not found"
   alice ##> "/tail"
@@ -180,6 +181,7 @@ testOtherFiles =
     bob ##> "/tail *"
     bob <# "* test"
     bob ##> "/clear *"
+    bob <## "notes: all messages are removed"
     bob ##> "/tail *"
     bob ##> "/fs 1"
     bob <## "receiving file 1 (test.jpg) complete, path: test.jpg"

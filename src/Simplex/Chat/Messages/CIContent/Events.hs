@@ -7,6 +7,7 @@ module Simplex.Chat.Messages.CIContent.Events where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as J
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Parsers (dropPrefix, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption)

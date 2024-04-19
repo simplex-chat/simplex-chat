@@ -6,7 +6,6 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -20,13 +19,20 @@ import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
+
+private val featureRoles: List<Pair<GroupMemberRole?, String>> = listOf(
+  null to generalGetString(MR.strings.feature_roles_all_members),
+  GroupMemberRole.Admin to generalGetString(MR.strings.feature_roles_admins),
+  GroupMemberRole.Owner to generalGetString(MR.strings.feature_roles_owners)
+)
 
 @Composable
-fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () -> Unit,) {
+fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () -> Unit) {
   val groupInfo = remember { derivedStateOf {
     val ch = m.getChat(chatId)
     val g = (ch?.chatInfo as? ChatInfo.Group)?.groupInfo
-    if (g == null || ch?.remoteHostId != rhId) null else g
+    if (g == null || ch.remoteHostId != rhId) null else g
   }}
   val gInfo = groupInfo.value ?: return
   var preferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(gInfo.fullGroupPreferences) }
@@ -81,7 +87,7 @@ private fun GroupPreferencesLayout(
     val onTTLUpdated = { ttl: Int? ->
       applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
     }
-    FeatureSection(GroupFeature.TimedMessages, timedMessages, groupInfo, preferences, onTTLUpdated) { enable ->
+    FeatureSection(GroupFeature.TimedMessages, timedMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       if (enable == GroupFeatureEnabled.ON) {
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
       } else {
@@ -90,33 +96,45 @@ private fun GroupPreferencesLayout(
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
-    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo, preferences, onTTLUpdated) {
-      applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
+    val directMessagesRole = remember(preferences) { mutableStateOf(preferences.directMessages.role) }
+    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, directMessagesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(directMessages = RoleGroupPreference(enable = enable, role)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
-    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo, preferences, onTTLUpdated) {
-      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
+    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = enable)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
-    FeatureSection(GroupFeature.Reactions, allowReactions, groupInfo, preferences, onTTLUpdated) {
-      applyPrefs(preferences.copy(reactions = GroupPreference(enable = it)))
+    FeatureSection(GroupFeature.Reactions, allowReactions, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(reactions = GroupPreference(enable = enable)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
-    FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
-      applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
+    val voiceRole = remember(preferences) { mutableStateOf(preferences.voice.role) }
+    FeatureSection(GroupFeature.Voice, allowVoice, voiceRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(voice = RoleGroupPreference(enable = enable, role)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
-    FeatureSection(GroupFeature.Files, allowFiles, groupInfo, preferences, onTTLUpdated) {
-      applyPrefs(preferences.copy(files = GroupPreference(enable = it)))
+    val filesRole = remember(preferences) { mutableStateOf(preferences.files.role) }
+    FeatureSection(GroupFeature.Files, allowFiles, filesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(files = RoleGroupPreference(enable = enable, role)))
     }
+
+    // TODO enable simplexLinks preference in 5.8
+//    SectionDividerSpaced(true, maxBottomPadding = false)
+//    val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
+//    val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
+//    FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+//      applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
+//    }
+
     SectionDividerSpaced(true, maxBottomPadding = false)
     val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
-    FeatureSection(GroupFeature.History, enableHistory, groupInfo, preferences, onTTLUpdated) {
-      applyPrefs(preferences.copy(history = GroupPreference(enable = it)))
+    FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
     if (groupInfo.canEdit) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
@@ -134,10 +152,11 @@ private fun GroupPreferencesLayout(
 private fun FeatureSection(
   feature: GroupFeature,
   enableFeature: State<GroupFeatureEnabled>,
+  enableForRole: State<GroupMemberRole?>? = null,
   groupInfo: GroupInfo,
   preferences: FullGroupPreferences,
   onTTLUpdated: (Int?) -> Unit,
-  onSelected: (GroupFeatureEnabled) -> Unit
+  onSelected: (GroupFeatureEnabled, GroupMemberRole?) -> Unit
 ) {
   SectionView {
     val on = enableFeature.value == GroupFeatureEnabled.ON
@@ -151,7 +170,7 @@ private fun FeatureSection(
         iconTint,
         enableFeature.value == GroupFeatureEnabled.ON,
       ) { checked ->
-        onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF)
+        onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
       }
       if (timedOn) {
         val ttl = rememberSaveable(preferences.timedMessages) { mutableStateOf(preferences.timedMessages.ttl) }
@@ -165,6 +184,18 @@ private fun FeatureSection(
           onSelected = onTTLUpdated
         )
       }
+      if (enableFeature.value == GroupFeatureEnabled.ON && enableForRole != null) {
+        ExposedDropDownSettingRow(
+          generalGetString(MR.strings.feature_enabled_for),
+          featureRoles,
+          enableForRole,
+          // remove in v5.8
+          enabled = remember { mutableStateOf(false) },
+          onSelected = { value ->
+            onSelected(enableFeature.value, value)
+          }
+        )
+      }
     } else {
       InfoRow(
         feature.text,
@@ -175,6 +206,14 @@ private fun FeatureSection(
       if (timedOn) {
         InfoRow(generalGetString(MR.strings.delete_after), timeText(preferences.timedMessages.ttl))
       }
+      if (enableFeature.value == GroupFeatureEnabled.ON && enableForRole != null) {
+        InfoRow(generalGetString(MR.strings.feature_enabled_for), featureRoles.firstOrNull { it.first == enableForRole.value }?.second ?: generalGetString(MR.strings.feature_roles_all_members), textColor = MaterialTheme.colors.secondary)
+      }
+    }
+  }
+  KeyChangeEffect(enableFeature.value) {
+    if (enableFeature.value == GroupFeatureEnabled.OFF) {
+      onSelected(enableFeature.value, null)
     }
   }
   SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))

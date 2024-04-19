@@ -30,6 +30,7 @@ import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -315,6 +316,7 @@ groupFeatures'' =
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
     ((0, "Files and media: on"), Nothing, Nothing),
+    ((0, "SimpleX links: on"), Nothing, Nothing),
     ((0, "Recent history: on"), Nothing, Nothing)
   ]
 
@@ -721,3 +723,12 @@ linkAnotherSchema link
 
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+
+setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
+setRelativePaths cc filesFolder tempFolder = do
+  cc ##> "/_stop"
+  cc <## "chat stopped"
+  cc #$> ("/_files_folder " <> filesFolder, id, "ok")
+  cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
+  cc ##> "/_start"
+  cc <## "chat started"

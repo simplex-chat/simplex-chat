@@ -339,10 +339,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
+    itemForwarded :: Maybe CIForwardedFrom,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
+    deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
@@ -350,15 +352,16 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let editable = case itemContent of
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
+  let deletable = case itemContent of
         CISndMsgContent _ ->
           case chatTypeI @c of
             SCTLocal -> isNothing itemDeleted
             _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
+      editable = deletable && isNothing itemForwarded
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -368,10 +371,12 @@ dummyMeta itemId ts itemText =
       itemText,
       itemStatus = CISSndNew,
       itemSharedMsgId = Nothing,
+      itemForwarded = Nothing,
       itemDeleted = Nothing,
       itemEdited = False,
       itemTimed = Nothing,
       itemLive = Nothing,
+      deletable = False,
       editable = False,
       forwardedByMember = Nothing,
       createdAt = ts,
@@ -547,6 +552,21 @@ ciFileEnded = \case
   CIFSRcvComplete -> True
   CIFSRcvError -> True
   CIFSInvalid {} -> True
+
+ciFileLoaded :: CIFileStatus d -> Bool
+ciFileLoaded = \case
+  CIFSSndStored -> True
+  CIFSSndTransfer {} -> True
+  CIFSSndComplete -> True
+  CIFSSndCancelled -> True
+  CIFSSndError -> True
+  CIFSRcvInvitation -> False
+  CIFSRcvAccepted -> False
+  CIFSRcvTransfer {} -> False
+  CIFSRcvCancelled -> False
+  CIFSRcvComplete -> True
+  CIFSRcvError -> False
+  CIFSInvalid {} -> False
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
@@ -981,11 +1001,43 @@ itemDeletedTs = \case
   CIBlockedByAdmin ts -> ts
   CIModerated ts _ -> ts
 
+data CIForwardedFrom
+  = CIFFUnknown
+  | CIFFContact {chatName :: Text, msgDir :: MsgDirection, contactId :: Maybe ContactId, chatItemId :: Maybe ChatItemId}
+  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
+  deriving (Show)
+
+cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
+cmForwardedFrom = \case
+  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
+  _ -> Nothing
+
+data CIForwardedFromTag
+  = CIFFUnknown_
+  | CIFFContact_
+  | CIFFGroup_
+
+instance FromField CIForwardedFromTag where fromField = fromTextField_ textDecode
+
+instance ToField CIForwardedFromTag where toField = toField . textEncode
+
+instance TextEncoding CIForwardedFromTag where
+  textDecode = \case
+    "unknown" -> Just CIFFUnknown_
+    "contact" -> Just CIFFContact_
+    "group" -> Just CIFFGroup_
+    _ -> Nothing
+  textEncode = \case
+    CIFFUnknown_ -> "unknown"
+    CIFFContact_ -> "contact"
+    CIFFGroup_ -> "group"
+
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
-    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
+    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus],
+    forwardedFromChatItem :: Maybe AChatItem
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
@@ -1043,6 +1095,8 @@ instance ChatTypeI c => ToJSON (CIDeleted c) where
   toJSON = J.toJSON . jsonCIDeleted
   toEncoding = J.toEncoding . jsonCIDeleted
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CIFF") ''CIForwardedFrom)
+
 $(JQ.deriveJSON defaultJSON ''CITimed)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "SSP") ''SndCIStatusProgress)
@@ -1065,8 +1119,6 @@ instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemVersion)
-
-$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''CIMeta)
@@ -1156,6 +1208,8 @@ instance forall c. ChatTypeI c => FromJSON (CChatItem c) where
 instance ChatTypeI c => ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
+
+$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
 
