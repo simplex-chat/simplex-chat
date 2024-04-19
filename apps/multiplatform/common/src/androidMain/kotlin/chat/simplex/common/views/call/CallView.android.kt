@@ -85,10 +85,7 @@ actual fun ActiveCallView() {
       wasConnected.value = true
     }
   }
-  val currentAudioDevice = remember { mutableStateOf(null as AudioDeviceInfo?) }
-  val callAudioDeviceManager = remember { CallAudioDeviceManagerInterface.new {
-    currentAudioDevice.value = it
-  } }
+  val callAudioDeviceManager = remember { CallAudioDeviceManagerInterface.new() }
   DisposableEffect(Unit) {
     callAudioDeviceManager.start()
     onDispose {
@@ -123,7 +120,7 @@ actual fun ActiveCallView() {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
-            callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker)
+            callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
             CallSoundsPlayer.startConnectingCallSound(scope)
             activeCallWaitDeliveryReceipt(scope)
           }
@@ -144,7 +141,7 @@ actual fun ActiveCallView() {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
                 updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = Clock.System.now()) }
-                callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker)
+                callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
             } catch (e: Throwable) {
@@ -153,7 +150,7 @@ actual fun ActiveCallView() {
           is WCallResponse.Connected -> {
             updateActiveCall(call) { it.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo) }
             scope.launch {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker)
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
             }
           }
           is WCallResponse.End -> {
@@ -239,7 +236,7 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceM
       if (call != null) {
         call = call.copy(soundSpeaker = !call.soundSpeaker)
         chatModel.activeCall.value = call
-        callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker)
+        callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
       }
     },
     flipCamera = { chatModel.callCommand.add(WCallCommand.Camera(call.localCamera.flipped)) }

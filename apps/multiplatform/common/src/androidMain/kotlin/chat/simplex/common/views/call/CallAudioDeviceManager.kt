@@ -2,14 +2,15 @@ package chat.simplex.common.views.call
 
 import android.content.Context
 import android.media.*
+import android.media.AudioManager.OnCommunicationDeviceChangedListener
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.helpers.generalGetString
 import dev.icerock.moko.resources.ImageResource
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import java.util.concurrent.Executors
 
 interface CallAudioDeviceManagerInterface {
   val devices: State<List<AudioDeviceInfo>>
@@ -17,22 +18,22 @@ interface CallAudioDeviceManagerInterface {
   fun start()
   fun stop()
   // AudioDeviceInfo.AudioDeviceType
-  fun selectLastExternalDeviceOrDefault(speaker: Boolean)
+  fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean)
   // AudioDeviceInfo.AudioDeviceType
   fun selectDevice(id: Int)
 
   companion object {
-    fun new(audioDeviceChanged: (AudioDeviceInfo) -> Unit): CallAudioDeviceManagerInterface =
+    fun new(): CallAudioDeviceManagerInterface =
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        PostSCallAudioDeviceManager(audioDeviceChanged)
+        PostSCallAudioDeviceManager()
       } else {
-        PreSCallAudioDeviceManager(audioDeviceChanged)
+        PreSCallAudioDeviceManager()
       }
   }
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
-class PostSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> Unit): CallAudioDeviceManagerInterface {
+class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   private val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   override val devices: MutableState<List<AudioDeviceInfo>> = mutableStateOf(emptyList())
   override val currentDevice: MutableState<AudioDeviceInfo?> = mutableStateOf(null)
@@ -46,9 +47,7 @@ class PostSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> U
       Log.d(TAG, "Added audio devices2: ${devices.value.map { it.type }}")
 
       if (devices.value.size - oldDevices.size > 0) {
-        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true)
-      } else {
-        adaptToCurrentlyActiveDevice()
+        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
       }
     }
 
@@ -56,26 +55,36 @@ class PostSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> U
       Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
       super.onAudioDevicesRemoved(removedDevices)
       devices.value = am.availableCommunicationDevices
-      adaptToCurrentlyActiveDevice()
     }
+  }
+
+  private val listener: OnCommunicationDeviceChangedListener = OnCommunicationDeviceChangedListener { device ->
+    currentDevice.value = device
   }
 
   override fun start() {
     am.registerAudioDeviceCallback(audioCallback, null)
+    am.addOnCommunicationDeviceChangedListener(Executors.newSingleThreadExecutor(), listener)
   }
 
   override fun stop() {
     am.unregisterAudioDeviceCallback(audioCallback)
+    am.removeOnCommunicationDeviceChangedListener(listener)
   }
 
-  override fun selectLastExternalDeviceOrDefault(speaker: Boolean) {
+  override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
     am.mode = AudioManager.MODE_IN_COMMUNICATION
+    val commDevice = am.communicationDevice
+    if (keepAnyNonEarpiece && commDevice != null && commDevice.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+      // some external device or speaker selected already, no need to change it
+      return
+    }
+
     val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
     val externalDevice = devices.value.lastOrNull { it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
-    // Already selected
+    // External device already selected
     if (externalDevice != null && externalDevice.type == am.communicationDevice?.type) {
-      adaptToCurrentlyActiveDevice()
       return
     }
     if (externalDevice != null) {
@@ -85,7 +94,6 @@ class PostSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> U
         am.setCommunicationDevice(it)
       }
     }
-    adaptToCurrentlyActiveDevice()
   }
 
   override fun selectDevice(id: Int) {
@@ -94,24 +102,10 @@ class PostSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> U
     if (device != null && am.communicationDevice?.id != id ) {
       am.setCommunicationDevice(device)
     }
-    adaptToCurrentlyActiveDevice()
-  }
-
-  private fun adaptToCurrentlyActiveDevice() {
-    am.availableCommunicationDevices.forEach { println("LALAL ${it.id} ${it.type} ${it.productName} ${it.isSink} ${it.audioProfiles} ") }
-
-    val newCurrentDevice = am.communicationDevice
-
-    if (currentDevice.value?.id != newCurrentDevice?.id) {
-      currentDevice.value = newCurrentDevice
-      if (newCurrentDevice != null) {
-        audioDeviceChanged(newCurrentDevice)
-      }
-    }
   }
 }
 
-class PreSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> Unit): CallAudioDeviceManagerInterface {
+class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   private val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   override val devices: MutableState<List<AudioDeviceInfo>> = mutableStateOf(emptyList())
   override val currentDevice: MutableState<AudioDeviceInfo?> = mutableStateOf(null)
@@ -125,7 +119,7 @@ class PreSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> Un
       val addedCount = devices.value.size - wasSize
       if (addedCount > 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
         // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true)
+        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
       }
     }
 
@@ -134,11 +128,11 @@ class PreSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> Un
       super.onAudioDevicesRemoved(removedDevices)
       val wasSize = devices.value.size
       devices.value = devices.value.filterNot { removedDevices.any { rm -> rm.id == it.id } }
-      val removedCount = wasSize - devices.value.size
-      if (devices.value.count { it.hasSupportedType() } == 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
+      //val removedCount = wasSize - devices.value.size
+      //if (devices.value.count { it.hasSupportedType() } == 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
         // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true)
-      }
+        //selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, true)
+      //}
     }
   }
 
@@ -150,10 +144,10 @@ class PreSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> Un
     am.unregisterAudioDeviceCallback(audioCallback)
   }
 
-  override fun selectLastExternalDeviceOrDefault(speaker: Boolean) {
+  override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
     val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-    val externalDevice = devices.value.lastOrNull { it.hasSupportedType() && it.isSource && it.isSink }
+    val externalDevice = devices.value.lastOrNull { it.hasSupportedType() && it.isSink }
     if (externalDevice != null) {
       am.isSpeakerphoneOn = false
       am.startBluetoothSco()
@@ -184,9 +178,6 @@ class PreSCallAudioDeviceManager(val audioDeviceChanged: (AudioDeviceInfo) -> Un
 
   private fun adaptToCurrentlyActiveDevice(newCurrentDevice: AudioDeviceInfo?) {
     currentDevice.value = newCurrentDevice
-    if (newCurrentDevice != null) {
-      audioDeviceChanged(newCurrentDevice)
-    }
   }
 
   private fun AudioDeviceInfo.hasSupportedType(): Boolean = when (type) {
