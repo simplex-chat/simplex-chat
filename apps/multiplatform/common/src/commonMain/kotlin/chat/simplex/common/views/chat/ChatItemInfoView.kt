@@ -13,9 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -162,35 +161,34 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   @Composable
   fun ForwardedFromSender(forwardedFromItem: AChatItem) {
     @Composable
-    fun ChatPreviewTitleText(text: String, fontStyle: FontStyle = FontStyle.Normal) {
+    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground) {
       Text(
         text,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.h3,
-        fontStyle = fontStyle
+        style = MaterialTheme.typography.body1,
+        fontStyle = fontStyle,
+        color = color,
       )
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-      ChatInfoImage(forwardedFromItem.chatInfo, size = 72.dp)
+      ChatInfoImage(forwardedFromItem.chatInfo, size = 57.dp)
       Column(
         modifier = Modifier
           .padding(horizontal = 8.dp)
           .weight(1F)
       ) {
-        Column {
-          if (forwardedFromItem.chatItem.chatDir.sent) {
-            ChatPreviewTitleText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
-            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-            Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp))
-          } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
-            ChatPreviewTitleText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
-            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-            Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp))
-          } else {
-            Text(forwardedFromItem.chatInfo.chatViewName, maxLines = 1, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp))
-          }
+        if (forwardedFromItem.chatItem.chatDir.sent) {
+          ItemText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
+          Spacer(Modifier.height(8.dp))
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+        } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
+          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
+          Spacer(Modifier.height(8.dp))
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+        } else {
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground)
         }
       }
     }
@@ -206,7 +204,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
             ModalManager.end.closeModals()
           }
         },
-        padding = PaddingValues(start = 15.dp, end = DEFAULT_PADDING)
+        padding = PaddingValues(start = 17.dp, end = DEFAULT_PADDING)
       ) {
         ForwardedFromSender(forwardedFromItem)
       }
@@ -414,11 +412,6 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
       ) {
-        LaunchedEffect(ciInfo) {
-          if (ciInfo.memberDeliveryStatuses != null) {
-            selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
-          }
-        }
         Column(Modifier.weight(1f)) {
           when (val sel = selection.value) {
             is CIInfoTab.Delivery -> {
@@ -448,6 +441,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
         if (ciInfo.forwardedFromChatItem != null) {
           availableTabs.add(CIInfoTab.Forwarded(ciInfo.forwardedFromChatItem))
+        }
+        LaunchedEffect(ciInfo) {
+          if (ciInfo.forwardedFromChatItem != null && selection.value is CIInfoTab.Forwarded) {
+            selection.value = CIInfoTab.Forwarded(ciInfo.forwardedFromChatItem)
+          } else if (ciInfo.memberDeliveryStatuses != null) {
+            selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
+          }
         }
         TabRow(
           selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
