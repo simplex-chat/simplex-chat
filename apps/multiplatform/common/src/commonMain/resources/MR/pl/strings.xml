@@ -1743,4 +1743,14 @@
     <string name="network_type_no_network_connection">Brak połączenia z siecią</string>
     <string name="prohibit_sending_simplex_links">Zabroń wysyłania linków SimpleX</string>
     <string name="simplex_links">Linki SimpleX</string>
+    <string name="forwarded_chat_item_info_tab">Przekazane dalej</string>
+    <string name="forwarded_from_chat_item_info_title">Przekazane dalej od</string>
+    <string name="recipients_can_not_see_who_message_from">Odbiorca/y nie mogą zobaczyć od kogo jest ta wiadomość.</string>
+    <string name="saved_from_chat_item_info_title">Zapisane od</string>
+    <string name="download_file">Pobierz</string>
+    <string name="forward_chat_item">Przekaż dalej</string>
+    <string name="forward_message">Przekaż wiadomość…</string>
+    <string name="saved_chat_item_info_tab">Zapisane</string>
+    <string name="saved_description">zapisane</string>
+    <string name="saved_from_description">zapisane od %s</string>
 </resources>
