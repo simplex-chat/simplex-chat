@@ -435,7 +435,7 @@
     <string name="onboarding_notifications_mode_subtitle">Można to później zmienić w ustawieniach.</string>
     <string name="make_private_connection">Nawiąż prywatne połączenie</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Wiele osób pytało: <i>jeśli SimpleX nie ma identyfikatora użytkownika, jak może dostarczać wiadomości\?</i>]]></string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Tylko urządzenia klienckie przechowują profile użytkowników, kontakty, grupy i wiadomości wysyłane za pomocą <b>dwuwarstwowego szyfrowania end-to-end</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Tylko urządzenia klienckie przechowują profile użytkowników, kontakty, grupy i wiadomości wysyłane za pomocą <b>dwuwarstwowego szyfrowania end-to-end</b>.]]></string>
     <string name="onboarding_notifications_mode_periodic">Okresowo</string>
     <string name="onboarding_notifications_mode_title">Prywatne powiadomienia</string>
     <string name="read_more_in_github_with_link"><![CDATA[Przeczytaj więcej na naszym <font color="#0088ff">repozytorium GitHub</font>.]]></string>
@@ -578,7 +578,7 @@
     <string name="database_is_not_encrypted">Twoja baza danych czatu nie jest zaszyfrowana - ustaw kod dostępu, aby ją chronić.</string>
     <string name="keychain_is_storing_securely">Android Keystore służy do bezpiecznego przechowywania kodu dostępu - umożliwia to działanie usługi powiadomień.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore będzie używany do bezpiecznego przechowywania kodu dostępu po ponownym uruchomieniu aplikacji lub zmianie kodu dostępu - pozwoli to na otrzymywanie powiadomień.</string>
-    <string name="impossible_to_recover_passphrase"><b> Uwaga</b>: NIE będziesz w stanie odzyskać ani zmienić kodu dostępu, jeśli je zgubisz.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b> Uwaga</b>: NIE będziesz w stanie odzyskać ani zmienić kodu dostępu, jeśli je zgubisz.]]></string>
     <string name="cannot_access_keychain">Nie można uzyskać dostępu do Keystore w celu zapisania hasła bazy danych</string>
     <string name="change_database_passphrase_question">Zmienić kod dostępu do bazy danych?</string>
     <string name="database_passphrase_will_be_updated">Kod dostępu szyfrujący bazę danych zostanie zaktualizowany.</string>
@@ -1640,7 +1640,7 @@
     <string name="unable_to_open_browser_title">Błąd podczas otwierania przeglądarki</string>
     <string name="unable_to_open_browser_desc">Do połączeń wymagana jest domyślna przeglądarka. Proszę skonfigurować domyślną przeglądarkę systemową, i podzielić się informacją z twórcami.</string>
     <string name="e2ee_info_pq_short">Ten czat jest chroniony przez szyfrowanie e2e odporne na ataki kwantowe.</string>
-    <string name="e2ee_info_no_pq">Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacji.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacji.]]></string>
     <string name="auth_open_migration_to_another_device">Otwórz ekran migrowania</string>
     <string name="migrate_from_another_device">Zmigruj z innego urządzenia</string>
     <string name="set_passphrase">Ustaw kod dostępu</string>
@@ -1710,7 +1710,7 @@
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Nie możesz</b> używać tej samej bazy na dwóch urządzeniach.]]></string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Plik został usunięty lub łącze jest nieprawidłowe</string>
     <string name="migrate_from_device_finalize_migration">Dokończ migrację</string>
-    <string name="e2ee_info_pq">Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie e2e odporne na ataki kwantowe</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacjiszyfrowanie e2e odporne na ataki kwantoweszyfrowanie e2e odporne na ataki kwantowe.</string>
+    <string name="e2ee_info_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie e2e odporne na ataki kwantowe</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacjiszyfrowanie e2e odporne na ataki kwantoweszyfrowanie e2e odporne na ataki kwantowe.]]></string>
     <string name="v5_6_app_data_migration_descr">Zmigruj do innego urządzenia przez kod QR.</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Proszę potwierdzić, że ustawienia sieciowe są prawidłowe dla tego urządzenia.</string>
     <string name="conn_event_enabled_pq">szyfrowanie e2e odporne na ataki kwantowe</string>

@@ -1645,8 +1645,8 @@
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
-    <string name="e2ee_info_no_pq">تتم حماية الرسائل والملفات والمكالمات عن طريق <b>التعمية بين الطرفين</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.</string>
-    <string name="e2ee_info_pq">تتم حماية الرسائل والملفات والمكالمات عن طريق <b>التعمية بين الطرفين المقاوم للكم</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[تتم حماية الرسائل والملفات والمكالمات عن طريق <b>التعمية بين الطرفين</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[تتم حماية الرسائل والملفات والمكالمات عن طريق <b>التعمية بين الطرفين المقاوم للكم</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.]]></string>
     <string name="e2ee_info_no_pq_short">هذه الدردشة محمية بالتعمية بين الطرفين.</string>
     <string name="e2ee_info_pq_short">هذه الدردشة محمية بالتعمية بين الطرفين المقاوم للكم.</string>
     <string name="auth_open_migration_to_another_device">افتح شاشة الترحيل</string>
@@ -1718,9 +1718,9 @@
     <string name="migrate_from_device_bytes_uploaded">رُفع %s</string>
     <string name="migrate_from_device_upload_failed">فشل الرفع</string>
     <string name="migrate_from_device_uploading_archive">جارِ الرفع الأرشيف</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>لا يجوز</b> استخدام نفس قاعدة البيانات على جهازين.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>لا يجوز</b> استخدام نفس قاعدة البيانات على جهازين.]]></string>
     <string name="migrate_from_device_try_again">يمكنك إعطاء محاولة أخرى.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">اختر <i>رحّل من جهاز آخر</i> على الجهاز الجديد و امسح رمز QR ضوئيًا.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[اختر <i>رحّل من جهاز آخر</i> على الجهاز الجديد و امسح رمز QR ضوئيًا.]]></string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">تحذير: بدء الدردشة على أجهزة متعددة غير مدعوم وسيؤدي إلى فشل تسليم الرسائل</string>
     <string name="settings_section_title_network_connection">إتصال شبكة</string>
     <string name="forwarded_description">محوّلة</string>

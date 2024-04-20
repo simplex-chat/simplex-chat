@@ -114,7 +114,7 @@
     <string name="audio_call_no_encryption">cuộc gọi thoại (không được mã hóa đầu cuối)</string>
     <string name="icon_descr_audio_off">Tắt âm</string>
     <string name="icon_descr_asked_to_receive">Yêu cầu để nhận hình ảnh</string>
-    <string name="network_session_mode_user_description">Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho mỗi hồ sơ trò chuyện bạn có trong ứng dụng</b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho mỗi hồ sơ trò chuyện bạn có trong ứng dụng</b>.]]></string>
     <string name="network_session_mode_entity_description">Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho từng liên hệ và thành viên nhóm</b>.
 \n<b>Xin lưu ý</b>: nếu bạn có nhiều kết nối, mức tiêu thụ pin và lưu lượng truy cập của bạn có thể cao hơn đáng kể và một số kết nối có thể không thành công.</string>
     <string name="icon_descr_audio_call">cuộc gọi thoại</string>

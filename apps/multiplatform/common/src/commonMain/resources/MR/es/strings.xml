@@ -73,7 +73,7 @@
     <string name="smp_servers_add_to_another_device">Añadir a otro dispositivo</string>
     <string name="app_version_name">Versión de la aplicación: v%s</string>
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
-    <string name="impossible_to_recover_passphrase"><b>Recuerda</b>: NO podrás recuperar o cambiar la frase de contraseña si la pierdes.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Recuerda</b>: NO podrás recuperar o cambiar la frase de contraseña si la pierdes.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.]]></string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar los mensajes enviados de forma irreversible. (24 horas)</string>
@@ -1383,7 +1383,7 @@
     <string name="rcv_group_event_open_chat">Abrir</string>
     <string name="v5_3_encrypt_local_files">Cifra archivos almacenados y multimedia</string>
     <string name="error_creating_member_contact">Error al establecer contacto con el miembro</string>
-    <string name="socks_proxy_setting_limitations"><b>Recuerda</b>: los servidores de retransmisión están conectados mediante SOCKS proxy. Las llamadas y las previsualizaciones de enlaces usan conexión directa.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Recuerda</b>: los servidores de retransmisión están conectados mediante SOCKS proxy. Las llamadas y las previsualizaciones de enlaces usan conexión directa.]]></string>
     <string name="encrypt_local_files">Cifra archivos locales</string>
     <string name="v5_3_new_desktop_app">Nueva aplicación para ordenador!</string>
     <string name="v5_3_new_interface_languages">6 idiomas nuevos para el interfaz</string>
@@ -1689,12 +1689,12 @@
     <string name="migrate_from_device_creating_archive_link">Creando enlace al archivo</string>
     <string name="migrate_from_device_delete_database_from_device">Eliminar base de datos de este dispositivo</string>
     <string name="migrate_from_device_finalize_migration">Finalizar migración</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Atención</b>: el archivo será eliminado.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Atención</b>: el archivo será eliminado.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Comprueba tu conexión a internet y vuelve a intentarlo</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Confirma que recuerdas la frase de contraseña de la base de datos para migrarla.</string>
     <string name="migrate_from_device_error_verifying_passphrase">Error al verificar la frase de contraseña:</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Recuerda</b>: usar la misma base de datos en dos dispositivos hará que falle el descifrado de mensajes como protección de seguridad.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">En el nuevo dispositivo selecciona <i>Migrar desde otro dispositivo</i> y escanea el código QR.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Recuerda</b>: usar la misma base de datos en dos dispositivos hará que falle el descifrado de mensajes como protección de seguridad.]]></string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[En el nuevo dispositivo selecciona <i>Migrar desde otro dispositivo</i> y escanea el código QR.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Confirmar configuración de red</string>
     <string name="migrate_from_device_confirm_upload">Confirmar subida</string>
     <string name="migrate_to_device_download_failed">Descarga fallida</string>
@@ -1703,8 +1703,8 @@
     <string name="migrate_from_device_error_saving_settings">Error al guardar ajustes</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">El archivo exportado no existe</string>
     <string name="migrate_from_device_chat_should_be_stopped">Para continuar, Chat debe estar parado.</string>
-    <string name="e2ee_info_no_pq">Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo</b> con secreto perfecto hacía adelante, repudio y recuperación tras ataque.</string>
-    <string name="e2ee_info_pq">Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo resistente a tecnología cuántica</b> con secreto perfecto hacía adelante, repudio y recuperación tras ataque.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo</b> con secreto perfecto hacía adelante, repudio y recuperación tras ataque.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo resistente a tecnología cuántica</b> con secreto perfecto hacía adelante, repudio y recuperación tras ataque.]]></string>
     <string name="migrate_to_device_title">Migrar aquí</string>
     <string name="migrate_from_device_to_another_device">Migrar a otro dispositivo</string>
     <string name="v5_6_app_data_migration_descr">Migrar a otro dispositivo mediante código QR.</string>
@@ -1715,7 +1715,7 @@
     <string name="v5_6_quantum_resistant_encryption">Cifrado resistente a tecnología cuántica</string>
     <string name="set_passphrase">Establecer frase de contraseña</string>
     <string name="e2ee_info_pq_short">Este chat está protegido por cifrado de extremo a extremo resistente a tecnología cuántica.</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><b>No debes</b> usar la misma base de datos en dos dispositivos.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>No debes</b> usar la misma base de datos en dos dispositivos.]]></string>
     <string name="error_showing_desktop_notification">Error al mostrar notificación, contacta con los desarrolladores.</string>
     <string name="permissions_camera_and_record_audio">Cámara y micrófono</string>
     <string name="permissions_grant_in_settings">Concédelo en ajustes.</string>

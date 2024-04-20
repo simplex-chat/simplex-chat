@@ -677,7 +677,7 @@
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a hivatkozást.]]></string>
     <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz csatlakozik.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor az ismerőse befejezte annak feltöltését.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>.]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Kapott SimpleX Chat meghívó hivatkozását megnyithatja böngészőjében:</string>
     <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:</string>
     <string name="found_desktop">Megtalált számítógép</string>
@@ -1358,7 +1358,7 @@
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a Beállításokban</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor tud csatlakozni a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="mtr_error_different">különböző átköltöztetés az alkalmazásban/adatbázisban: %s / %s</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Ön már csatlakozik a következőhöz: <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Ön már csatlakozik a következőhöz: <b>%1$s</b>.]]></string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a hivatkozás nem érvényes kapcsolati hivatkozás!</string>
     <string name="to_verify_compare">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy szkennelje be) az ismerőse eszközén lévő kódot.</string>
@@ -1386,7 +1386,7 @@
     <string name="v5_1_better_messages_descr">- hangüzenetek 5 percig.
 \n- egyedi eltűnési időhatár.
 \n- előzmény szerkesztése.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Válassza a <i>Használat számítógépről</i> menüpontot a mobil alkalmazásban és olvassa be a QR-kódot.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Használat számítógépről</i> menüpontot a mobil alkalmazásban és olvassa be a QR-kódot.]]></string>
     <string name="sender_at_ts">%s at %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor csatlakozik, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
@@ -1512,7 +1512,7 @@
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza - profiljai, ismerősei, üzenetei és fájljai véglegesen törlésre kerülnek.</string>
     <string name="info_row_updated_at">A bejegyzés frissítve</string>
-    <string name="read_more_in_user_guide_with_link">További információ a &lt;font color=#0088ff&gt;Használati útmutatóban&lt;/font&gt; olvasható.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet hash-e más.</string>

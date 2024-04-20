@@ -625,7 +625,7 @@
     <string name="receipts_section_contacts">Kontaktai</string>
     <string name="settings_developer_tools">Plėtotojo įrankiai</string>
     <string name="clear_note_folder_warning">Visos žinutės bus ištrintos – to bus neįmanoma atšaukti!</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Pridėti kontaktą</b>: sukurti naują pakvietimo nuorodą arba prisijungti per gautą nuorodą.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Pridėti kontaktą</b>: sukurti naują pakvietimo nuorodą arba prisijungti per gautą nuorodą.]]></string>
     <string name="camera_not_available">Fotoaparatas neprieinamas</string>
     <string name="contacts_can_mark_messages_for_deletion">Kontaktai gali pažymėti žinutes ištrynimui; jūs galėsite jas peržiūrėti.</string>
     <string name="create_another_profile_button">Sukurti profilį</string>
@@ -770,7 +770,7 @@
     <string name="delete_pending_connection__question">Ištrinti laukiantį prisijungimą?</string>
     <string name="create_chat_profile">Sukurti pokalbių profilį</string>
     <string name="network_disable_socks_info">Jei patvirtinsite, žinučių serveriai galės matyti jūsų IP adresą, ir jūsų tiekėjas - prie kurių serverių jungiatės.</string>
-    <string name="socks_proxy_setting_limitations"><b>Atkreipkite dėmesį</b>: žinučių ir failų perdavimas yra prijungtas per SOCKS tarpinį serverį. Skambučiams ir nuorodų peržiūrų siuntimui naudojamas tiesioginis ryšys.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Atkreipkite dėmesį</b>: žinučių ir failų perdavimas yra prijungtas per SOCKS tarpinį serverį. Skambučiams ir nuorodų peržiūrų siuntimui naudojamas tiesioginis ryšys.]]></string>
     <string name="invalid_name">Netinkamas vardas!</string>
     <string name="create_your_profile">Sukurti savo profilį</string>
     <string name="people_can_connect_only_via_links_you_share">Asmenys gali prisijungti prie jūsų tik per nuorodas kuriomis dalinatės.</string>
@@ -818,7 +818,7 @@
     <string name="migrate_from_device_database_init">Ruošiamas įkėlimas</string>
     <string name="migrate_from_device_archive_and_upload">Archyvuoti ir įkelti</string>
     <string name="migrate_from_device_delete_database_from_device">Ištrinti duomenų bazę iš šio įrengino</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Įspėjimas</b>: archyvas bus ištrintas.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Įspėjimas</b>: archyvas bus ištrintas.]]></string>
     <string name="or_scan_qr_code">Arba nuskanuokite QR kodą</string>
     <string name="v5_0_app_passcode">Programėlės prieigos kodas</string>
     <string name="connect_plan_connect_to_yourself">Prisijungti prie savęs?</string>
@@ -826,7 +826,7 @@
     <string name="correct_name_to">Pataisyti pavadinimą į %s?</string>
     <string name="icon_descr_server_status_pending">Laukiama</string>
     <string name="database_encryption_will_be_updated">Duomenų bazės šifravimo slaptafrazė bus atnaujinta ir saugoma raktų saugykloje.</string>
-    <string name="remote_host_error_bad_state">Prisijungimas prie mobiliojo <b>%s</b> yra blogos būsenos</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Prisijungimas prie mobiliojo <b>%s</b> yra blogos būsenos]]></string>
     <string name="blocked_by_admin_item_description">užblokuota administratoriaus</string>
     <string name="simplex_link_mode_full">Pilna nuoroda</string>
     <string name="immune_to_spam_and_abuse">Atsparu šlamštui ir piktnaudžiavimui</string>
@@ -893,7 +893,7 @@
     <string name="clear_note_folder_question">Išvalyti privačius užrašus?</string>
     <string name="clear_verification">Išvalyti patvirtinimą</string>
     <string name="chat_console">Pokalbių konsolė</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 darbastalis: nuskanuokite rodomą QR kodą iš programėlės, su <b>Skanuoti QR kodą</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 darbastalis: nuskanuokite rodomą QR kodą iš programėlės, su <b>Skanuoti QR kodą</b>.]]></string>
     <string name="how_to">Kaip tai daryti</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Jei pasirinksite atmesti, siuntėjui nebus apie tai pranešta.</string>
     <string name="gallery_image_button">Nuotrauka</string>
@@ -916,7 +916,7 @@
     <string name="v5_4_block_group_members">Blokuokite grupės narius</string>
     <string name="v5_1_self_destruct_passcode">Savaiminio susinaikinimo prieigos kodas</string>
     <string name="v5_4_better_groups_descr">Greitesnis prisijungimas ir patikimesnės žinutės.</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Atkreipkite dėmesį</b>: naudojant tą pačią duomenų bazę dviejuose įrenginiuose, žinučių iššifravimas iš jūsų prisijungimų bus sugadintas saugumo sumetimais.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Atkreipkite dėmesį</b>: naudojant tą pačią duomenų bazę dviejuose įrenginiuose, žinučių iššifravimas iš jūsų prisijungimų bus sugadintas saugumo sumetimais.]]></string>
     <string name="failed_to_create_user_invalid_title">Netinkamas rodomas vardas!</string>
     <string name="la_change_app_passcode">Keisti prieigos kodą</string>
     <string name="la_enter_app_passcode">Įvesti prieigos kodą</string>
@@ -958,7 +958,7 @@
     <string name="icon_descr_image_snd_complete">Nuotrauka išsiųsta</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Nuotrauka bus gauta kai jūsų kontaktas užbaigs jos įkėlimą.</string>
     <string name="switch_receiving_address_question">Pakeisti gavimo adresą?</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Jei negalite susitikti asmeniškai, galite <b>nuskanuoti QR kodą vaizdo skambutyje</b>, arba jūsų kontaktas gali pasidalinti pakvietimo nuoroda.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Jei negalite susitikti asmeniškai, galite <b>nuskanuoti QR kodą vaizdo skambutyje</b>, arba jūsų kontaktas gali pasidalinti pakvietimo nuoroda.]]></string>
     <string name="or_show_this_qr_code">Arba parodykite šį kodą</string>
     <string name="enter_one_ICE_server_per_line">ICE serveriai (vienas per liniją)</string>
     <string name="install_simplex_chat_for_terminal">Įdiegti SimpleX Chat terminalui</string>
@@ -996,8 +996,8 @@
     <string name="service_notifications">Momentiniai pranešimai!</string>
     <string name="service_notifications_disabled">Momentiniai pranešimai yra išjungti!</string>
     <string name="icon_descr_profile_image_placeholder">profilio nuotraukos vietos ženklas</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Jei negalite susitkti asmeniškai, <b>parodykite QR kodą vaizdo skambutyje</b>, arba pasidalinkite nuoroda.</string>
-    <string name="read_more_in_user_guide_with_link">Skaitykite daugiau &lt;font color=#0088ff&gt;naudotojo vadove&lt;/font&gt;.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Jei negalite susitkti asmeniškai, <b>parodykite QR kodą vaizdo skambutyje</b>, arba pasidalinkite nuoroda.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Skaitykite daugiau <font color="#0088ff">naudotojo vadove</font>.]]></string>
     <string name="if_you_cant_meet_in_person">Jei negalite susitikti asmeniškai, parodykite QR kodą vaizdo skambutyje, arba pasidalinkite nuoroda.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Įklijuokite nuorodą, kurią gavote prisijungimui prie savo kontakto…</string>
     <string name="callstate_received_answer">gautas atsakas…</string>
@@ -1018,7 +1018,7 @@
     <string name="message_deletion_prohibited_in_chat">Negrįžtamas žinučių ištrynimas yra draudžiamas šioje grupėje.</string>
     <string name="connect_plan_group_already_exists">Grupė jau egzistuoja!</string>
     <string name="bad_desktop_address">Blogas darbastalio adresas</string>
-    <string name="open_on_mobile_and_scan_qr_code">Atidarykite <i>Naudoti iš darbastalio</i> mobilioje programėlėje ir nuskanuokite QR kodą.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Atidarykite <i>Naudoti iš darbastalio</i> mobilioje programėlėje ir nuskanuokite QR kodą.]]></string>
     <string name="desktop_app_version_is_incompatible">Darbastalio programėlės versija %s nėra suderinama su šia programėle.</string>
     <string name="group_member_role_author">autorius</string>
     <string name="send_receipts_disabled_alert_title">Kvitai yra išjungti</string>
@@ -1094,13 +1094,13 @@
     <string name="remote_ctrl_error_inactive">Darbastalis yra neaktyvus</string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Failas buvo ištrintas arba nuoroda netinkama</string>
     <string name="migrate_to_device_importing_archive">Importuojamas archyvas</string>
-    <string name="new_desktop"><i>(naujas)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(naujas)</i>]]></string>
     <string name="open_port_in_firewall_title">Atidarykite prievadą ugniasienėje</string>
     <string name="or_paste_archive_link">Arba įklijuokite archyvo nuorodą</string>
     <string name="agent_internal_error_desc">Prašome pranešti tai kūrėjams:
 \n%s</string>
     <string name="random_port">Atsitiktinis</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Pasirinkite <i>Persikelti iš kito įrenginio</i> naujame įrenginyje ir nuskanuokite QR kodą.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Pasirinkite <i>Persikelti iš kito įrenginio</i> naujame įrenginyje ir nuskanuokite QR kodą.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Patvirtinti tinklo nustatymus</string>
     <string name="migrate_from_device_cancel_migration">Atšaukti perkelimą</string>
     <string name="migrate_to_device_chat_migrated">Pokalbiai perkelti!</string>
@@ -1163,7 +1163,7 @@
     <string name="show_developer_options">Rodyti kūrėjo parinktis</string>
     <string name="share_address_with_contacts_question">Bendrinti adresą su kontaktais?</string>
     <string name="show_internal_errors">Rodyti vidines klaidas</string>
-    <string name="disable_onion_hosts_when_not_supported">Nustatykite <i>Naudoti .onion serverius</i> į Ne jei SOCKS tarpinis serveris nepalaiko jų.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Nustatykite <i>Naudoti .onion serverius</i> į Ne jei SOCKS tarpinis serveris nepalaiko jų.]]></string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Sustabdykite pokalbius, kad eksportuoti, importuoti ar ištrinti duomenų bazę. Jūs negalėsite siųsti ir gauti žinučių kai pokalbiai yra sustabdyti.</string>
     <string name="text_field_set_contact_placeholder">Nustatyti kontakto vardą…</string>
     <string name="sync_connection_force_desc">Šifravimas veikia ir nauja šifravimo sutartis nėra reikalinga. Tai gali sukelti ryšio klaidų!</string>
@@ -1206,7 +1206,7 @@
     <string name="v4_4_french_interface_descr">Dėkojame naudotojams - prisidėkite per Weblate!</string>
     <string name="remote_ctrl_error_timeout">Baigėsi skirtasis laikas jungiantis prie darbastalio</string>
     <string name="in_developing_desc">Ši galimybė dar nėra palaikoma. Išbandykite sekantį leidimą.</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Tai yra jūsų nuoroda grupei <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Tai yra jūsų nuoroda grupei <b>%1$s</b>!]]></string>
     <string name="to_connect_via_link_title">Kad prisijungti su nuoroda</string>
     <string name="this_link_is_not_a_valid_connection_link">Ši nuoroda nėra tinkama prisijungimo nuoroda!</string>
     <string name="receipts_section_description">Šie nustatymai yra jūsų dabartiniam profiliui</string>
@@ -1240,7 +1240,7 @@
     <string name="session_code">Sesijos kodas</string>
     <string name="this_device">Šis įrenginys</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Tai yra jūsų vienkartinė nuoroda!</string>
-    <string name="remote_host_error_timeout">Baigėsi skirtasis laikas jungiantis prie mobiliojo <b>%s</b></string>
+    <string name="remote_host_error_timeout"><![CDATA[Baigėsi skirtasis laikas jungiantis prie mobiliojo <b>%s</b>]]></string>
     <string name="open_port_in_firewall_desc">Kad leisti mobiliajai programėlei prisijungti prie darbastalio, atidarykite šį prievadą savo ugniasienėje, jei ją turite įgalinę.</string>
     <string name="migrate_from_device_stopping_chat">Sustabdomi pokalbiai</string>
     <string name="migrate_from_device_bytes_uploaded">%s įkeltas</string>
@@ -1345,22 +1345,22 @@
     <string name="dont_enable_receipts">Neįjungti</string>
     <string name="enable_receipts_all">Įjungti</string>
     <string name="disconnect_desktop_question">Atjungti darbalaukį?</string>
-    <string name="remote_host_disconnected_from">Atsijungta nuo mobiliojo: <b>%s</b> su priežaistimi: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Atsijungta nuo mobiliojo: <b>%s</b> su priežaistimi: %s]]></string>
     <string name="disconnect_remote_hosts">Atjungti mobiliuosius</string>
     <string name="discover_on_network">Atrasti per vietinį tinklą</string>
     <string name="migrate_to_device_enter_passphrase">Įvesti slaptafrazę</string>
     <string name="enter_this_device_name">Įvesti šio įrenginio pavadinimą…</string>
     <string name="migrate_to_device_error_downloading_archive">Įvyko klaida atsisiunčiant archyvą</string>
     <string name="migrate_from_device_error_deleting_database">Įvyko klaida ištrinant duomenų bazę</string>
-    <string name="e2ee_info_no_pq">Žinutės, failai ir skambučiai yra apsaugoti <b>visapusiu šifravimu</b> su tobulu priekiniu slaptumu, išsižadėjimu ir atsigavimu įsilaužus.</string>
-    <string name="e2ee_info_pq">Žinutės, failai ir skambučiai yra apsaugoti <b>kvantiškai atspariu visapusiu šifravimu</b> su tobulu priekiniu slaptumu, išsižadėjimu ir atsigavimu įsilaužus.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Žinutės, failai ir skambučiai yra apsaugoti <b>visapusiu šifravimu</b> su tobulu priekiniu slaptumu, išsižadėjimu ir atsigavimu įsilaužus.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Žinutės, failai ir skambučiai yra apsaugoti <b>kvantiškai atspariu visapusiu šifravimu</b> su tobulu priekiniu slaptumu, išsižadėjimu ir atsigavimu įsilaužus.]]></string>
     <string name="failed_to_create_user_duplicate_desc">Jau turite pokalbių profilį su tuo pačiu rodomu vardu. Pasirinkite kitą vardą.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Jau esate prisijungę prie %1$s.</string>
     <string name="error_setting_address">Įvyko klaida nustatant adresą</string>
     <string name="error_synchronizing_connection">Įvyko klaida sinchronizuojant prisijungimą</string>
     <string name="sender_may_have_deleted_the_connection_request">Siuntėjas gali būti ištrynęs prisijungimo užklausą.</string>
     <string name="smp_server_test_secure_queue">Saugi eilė</string>
-    <string name="turn_off_battery_optimization">Kad tai naudoti, prašome <b>leisti SimpleX veikti fone</b> sekančiame dialoge. Kitaip, pranešimai bus išjungti.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Kad tai naudoti, prašome <b>leisti SimpleX veikti fone</b> sekančiame dialoge. Kitaip, pranešimai bus išjungti.]]></string>
     <string name="smp_server_test_upload_file">Įkelti failą</string>
     <string name="notifications_mode_off">Veikia kai programėlė yra atidaryta</string>
     <string name="la_could_not_be_verified">Negalėjote būti patvirtintas; bandykite vėl.</string>
@@ -1418,7 +1418,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto (klaida: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto.</string>
     <string name="no_details">nėra detalių</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Kad išlaikyti jūsų privatumą, vietoj tiesioginių pranešimų, programėlė turi <b>SimpleX fono tarnybą</b> - ji naudoja kelis procentus akumuliatoriaus per dieną.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Kad išlaikyti jūsų privatumą, vietoj tiesioginių pranešimų, programėlė turi <b>SimpleX fono tarnybą</b> - ji naudoja kelis procentus akumuliatoriaus per dieną.]]></string>
     <string name="periodic_notifications_desc">Programėlė periodiškai gauna naujas žinutes — ji sunaudoja kelis procentus baterijos per dieną. Programa nenaudoja tiesioginių pranešimų — duomenys iš jūsų įrenginio į serverius nesiunčiami.</string>
     <string name="one_time_link">Vienkartinė pakvietimo nuoroda</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Neprarasite savo kontaktų, jei vėliau ištrinsite savo adresą.</string>
@@ -1439,8 +1439,8 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Pristatymo kvitų siuntimas bus įjungtas visiems kontaktams visuose matomuose pokalbių profiliuose.</string>
     <string name="linked_desktops">Susieti darbastaliai</string>
     <string name="scan_qr_code_from_desktop">Nuskanuoti QR kodą iš darbastalio</string>
-    <string name="remote_host_error_disconnected">Mobilusis <b>%s</b> buvo atjungtas</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Jau yra prisijungiama prie <b>%1$s</b>.</string>
+    <string name="remote_host_error_disconnected"><![CDATA[Mobilusis <b>%s</b> buvo atjungtas]]></string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Jau yra prisijungiama prie <b>%1$s</b>.]]></string>
     <string name="you_can_share_your_address">Galite bendrinti savo adresą kaip nuorodą ar QR kodą - bet kas galės prisijungti prie jūsų.</string>
     <string name="update_network_session_mode_question">Atnaujinti transporto izoliacijos režimą?</string>
     <string name="save_auto_accept_settings">Išsaugoti automatinio priėmimo nustatymus</string>
@@ -1479,8 +1479,8 @@
     <string name="your_contacts_will_remain_connected">Jūsų kontaktai išliks prisijungę.</string>
     <string name="your_XFTP_servers">Jūsų XFTP serveriai</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Prisijungsite kai jūsų prisijungimo užklausa bus patvirtinta, palaukite arba patikrinkite vėliau!</string>
-    <string name="remote_host_error_busy">Mobilusis <b>%s</b> yra užsiėmęs</string>
-    <string name="remote_host_error_inactive">Mobilusis \u0020<b>%s</b> yra neaktyvus</string>
+    <string name="remote_host_error_busy"><![CDATA[Mobilusis <b>%s</b> yra užsiėmęs]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Mobilusis \u0020<b>%s</b> yra neaktyvus]]></string>
     <string name="custom_time_unit_months">mėnesiai</string>
     <string name="message_delivery_error_desc">Tikriausiai šis kontaktas ištrynė prisijungimą su jumis.</string>
     <string name="user_mute">Nutildyti</string>
@@ -1496,10 +1496,10 @@
     <string name="v4_2_auto_accept_contact_requests_desc">Su nebūtina sveikinimo žinute.</string>
     <string name="v5_5_message_delivery_descr">Su sumažintu akumuliatoriaus naudojimu.</string>
     <string name="you_are_invited_to_group">Esate kviečiami į grupę</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Galite &lt;font color=#0088ff&gt;prisijungti prie SimpleX Chat kūrėjų, kad klausti klausimus ir gauti atnaujinimus&lt;/font&gt;.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Galite <font color="#0088ff">prisijungti prie SimpleX Chat kūrėjų, kad klausti klausimus ir gauti atnaujinimus</font>.]]></string>
     <string name="you_can_make_address_visible_via_settings">Galite padaryti tai matomą savo SimpleX kontaktams per nustatymus.</string>
     <string name="linked_desktop_options">Susieto darbastalio parinktys</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Jau esate grupėje <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Jau esate grupėje <b>%1$s</b>.]]></string>
     <string name="user_unmute">Pašalinti nutildymą</string>
     <string name="waiting_for_mobile_to_connect">Laukiama kol mobilusis prisijungs:</string>
     <string name="error_showing_desktop_notification">Įvyko klaida rodant pranešimą, susisiekite su kūrėjais.</string>
@@ -1522,9 +1522,9 @@
     <string name="scan_code_from_contacts_app">Nuskanuoti saugumo kodą iš jūsų kontakto programėlės.</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Prisijungsite prie grupės kai grupės nuorodos savininkas bus prisijungęs, palaukite arba patikrinkite vėliau!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Prisijungsite kai jūsų konktakto įrenginys bus prisijungęs, palaukite arba patikrinkite vėliau!</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobilusis: bakstelėkite <b>Atidaryti mobilioje programėlėje</b>, tada bakstelėkite <b>Prisijungti</b> programėlėje.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobilusis: bakstelėkite <b>Atidaryti mobilioje programėlėje</b>, tada bakstelėkite <b>Prisijungti</b> programėlėje.]]></string>
     <string name="smp_servers_use_server_for_new_conn">Naudoti naujiems prisijungimams</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Galite prisijungti paspausdami ant nuorodos. Jei ji atsidaro naršyklėje, paspauskite ant <b>Atidaryti mobilioje programėlėje</b> mygtuko.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Galite prisijungti paspausdami ant nuorodos. Jei ji atsidaro naršyklėje, paspauskite ant <b>Atidaryti mobilioje programėlėje</b> mygtuko.]]></string>
     <string name="unable_to_open_browser_title">Įvyko klaida atveriant naršyklę</string>
     <string name="secret_text">paslaptis</string>
     <string name="shutdown_alert_desc">Pranešimai nustos veikti iki tol kol paleisite programėlę iš naujo</string>
@@ -1535,12 +1535,12 @@
     <string name="v5_1_message_reactions">Žinučių reakcijos</string>
     <string name="v5_6_app_data_migration_descr">Persikelti į kitą įrenginį su QR kodu.</string>
     <string name="migrate_from_device_migration_complete">Persikėlimas baigtas</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">Jūs <b>turite nenaudoti</b> tos pačios duomenų bazės dviejuose įrenginiuose.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Jūs <b>turite nenaudoti</b> tos pačios duomenų bazės dviejuose įrenginiuose.]]></string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Įspėjimas: pokalbių paleidimas keliuose įrenginiuose vienu metu nėra palaikomas ir sukels žinučių pristatymo problemas</string>
     <string name="migrate_from_device_verify_database_passphrase">Patvirtinti duomenų bazės slaptafrazę</string>
     <string name="migrate_from_device_verify_passphrase">Patvirtinti slaptafrazę</string>
     <string name="mute_chat">Nutildyti</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Jūs kontroliuojate per kurį serverį (-us) <b>gauti</b> žinutes, jūsų kontaktai - serverius kuriuos naudojate siųsti jiems žinutes.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Jūs kontroliuojate per kurį serverį (-us) <b>gauti</b> žinutes, jūsų kontaktai - serverius kuriuos naudojate siųsti jiems žinutes.]]></string>
     <string name="relay_server_protects_ip">Tarpinis serveris apsaugo jūsų IP adresą, bet jis gali stebėti skambučio trukmę.</string>
     <string name="status_no_e2e_encryption">nėra visapusio šifravimo</string>
     <string name="new_database_archive">Naujas duomenų bazės archyvas</string>
@@ -1556,8 +1556,8 @@
     <string name="moderated_description">moderuota</string>
     <string name="connection_error_auth_desc">Nebent jūsų kontaktas ištrynė šį prisijungimą arba nuoroda jau buvo panaudota, tai gali būti klaida - prašome ją pranešti.
 \nKad prisijungti, paprašykite savo kontakto sukurti kitą prisijungimo nuorodą ir patikrinkite, kad turite stabilų interneto ryšį.</string>
-    <string name="system_restricted_background_warn">Kad įjungti pranešimus, prašome pasirinkti <b>Programėlės akumuliatoriaus naudojimas</b> / <b>Neapribotas</b> programėlės nustatymuose.</string>
-    <string name="system_restricted_background_in_call_warn">Kad daryti skambučius fone, prašome pasirinkti <b>Programėlės akumuliatoriaus naudojimas</b> / <b>Neapribotas</b> programėlės nustatymuose.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Kad įjungti pranešimus, prašome pasirinkti <b>Programėlės akumuliatoriaus naudojimas</b> / <b>Neapribotas</b> programėlės nustatymuose.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Kad daryti skambučius fone, prašome pasirinkti <b>Programėlės akumuliatoriaus naudojimas</b> / <b>Neapribotas</b> programėlės nustatymuose.]]></string>
     <string name="system_restricted_background_in_call_title">Nėra foninių skambučių</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Jums reikės autentifikuotis kai paleidžiate programėlę arba pratęsiate jos naudojimą po 30 sekundžių fone.</string>
     <string name="no_history">Nėra istorijos</string>
@@ -1609,9 +1609,9 @@
     <string name="self_destruct_new_display_name">Naujas rodomas vardas:</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">pakeitėte adresą %s</string>
     <string name="icon_descr_expand_role">Išplėsti rolių pasirinkimą</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Jau jungiatės prie grupės <b>%1$s</b>.</string>
-    <string name="many_people_asked_how_can_it_deliver">Daug žmonių klausė: <i>jei SimpleX neturi naudotojų identifikatorių, kaip jis gali pristatyti žinutes?</i></string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Tik klientų įrenginiai saugo naudotojų profilius, kontaktus, grupes ir išsiųstas žinutes su <b>dviejų sluoksnių visapusiu šifravimu</b>.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Jau jungiatės prie grupės <b>%1$s</b>.]]></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Daug žmonių klausė: <i>jei SimpleX neturi naudotojų identifikatorių, kaip jis gali pristatyti žinutes?</i>]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Tik klientų įrenginiai saugo naudotojų profilius, kontaktus, grupes ir išsiųstas žinutes su <b>dviejų sluoksnių visapusiu šifravimu</b>.]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Kad apsaugoti privatumą, vietoj naudotojų ID naudojamų visose kitose platformose, SimpleX turi identifikatorius žinučių eilėms, skirtingus kiekvienam jūsų kontaktui.</string>
     <string name="privacy_message_draft">Žinutės juodraštis</string>
     <string name="settings_restart_app">Paleisti iš naujo</string>
@@ -1620,7 +1620,7 @@
     <string name="only_you_can_delete_messages">Tik jūs galite ištrinti žinutes negrįžtamai (jūsų kontaktas gali pažymėti jas ištrynimui). (24 valandas)</string>
     <string name="v4_5_transport_isolation">Transporto izoliacija</string>
     <string name="v5_3_simpler_incognito_mode_descr">Įjunkite inkognito režimą prisijungimo metu.</string>
-    <string name="remote_host_error_missing">Mobilusis \u0020<b>%s</b> yra dingęs</string>
+    <string name="remote_host_error_missing"><![CDATA[Mobilusis \u0020<b>%s</b> yra dingęs]]></string>
     <string name="connect_plan_repeat_join_request">Pakartoti prisijungimo užklausą?</string>
     <string name="error_showing_content">Įvyko klaida rodant turinį</string>
     <string name="error_showing_message">Įvyko klaida rodant žinutę</string>
@@ -1645,7 +1645,7 @@
     <string name="verify_connection">Patvirtinti prisijungimą</string>
     <string name="scan_from_mobile">Nuskanuoti iš mobiliojo</string>
     <string name="verify_code_on_mobile">Patvirtinkite kodą mobiliąjame</string>
-    <string name="remote_host_was_disconnected_toast">Mobilusis <b>%s</b> buvo atjungtas</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Mobilusis <b>%s</b> buvo atjungtas]]></string>
     <string name="users_delete_data_only">Tik vietinio profilio duomenys</string>
     <string name="connect_plan_repeat_connection_request">Pakartoti prisijungimo užklausą?</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Jau yra prisijungiama su šia vienkartine nuoroda!</string>
@@ -1710,7 +1710,7 @@
     <string name="restart_chat_button">Paleisti pokalbius iš naujo</string>
     <string name="migrate_to_device_title">Persikelti į čia</string>
     <string name="migrate_to_device_migrating">Persikėliama</string>
-    <string name="remote_host_error_bad_version">Moblusis <b>%s</b> turi nepalaikomą versiją. Įsitikinkite, kad naudojate tą pačią versiją abiejuose įrenginiuose</string>
+    <string name="remote_host_error_bad_version"><![CDATA[Moblusis <b>%s</b> turi nepalaikomą versiją. Įsitikinkite, kad naudojate tą pačią versiją abiejuose įrenginiuose]]></string>
     <string name="new_mobile_device">Naujas mobilusis įrenginys</string>
     <string name="no_connected_mobile">Nėra prisijungusių mobiliųjų</string>
     <string name="unlink_desktop">Atsieti</string>

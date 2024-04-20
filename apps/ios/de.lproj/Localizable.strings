@@ -3482,7 +3482,7 @@
 /* simplex link type */
 "SimpleX group link" = "SimpleX Gruppen-Link";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "SimpleX links" = "SimpleX-Links";
 
 /* No comment provided by engineer. */
@@ -3948,7 +3948,7 @@
 "Use iOS call interface" = "iOS Anrufschnittstelle nutzen";
 
 /* No comment provided by engineer. */
-"Use new incognito profile" = "Nutzen Sie das neue Inkognito-Profil";
+"Use new incognito profile" = "Ein neues Inkognito-Profil nutzen";
 
 /* No comment provided by engineer. */
 "Use only local notifications?" = "Nur lokale Benachrichtigungen nutzen?";
