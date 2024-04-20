@@ -1724,4 +1724,23 @@
     <string name="permissions_open_settings">Ouvrir les paramètres</string>
     <string name="permissions_camera">Caméra</string>
     <string name="permissions_find_in_settings_and_grant">Retrouvez cette permission dans les paramètres d\'Android et octroyez-la manuellement.</string>
+    <string name="forwarded_description">transféré</string>
+    <string name="settings_section_title_network_connection">Connexion au réseau</string>
+    <string name="network_type_cellular">Cellulaire</string>
+    <string name="files_and_media_not_allowed">Fichiers et médias non autorisés</string>
+    <string name="simplex_links_not_allowed">Les liens SimpleX ne sont pas autorisés</string>
+    <string name="voice_messages_not_allowed">Les messages vocaux ne sont pas autorisés</string>
+    <string name="feature_roles_admins">admins</string>
+    <string name="feature_roles_all_members">tous les membres</string>
+    <string name="allow_to_send_simplex_links">Autorise l\'envoi de liens SimpleX.</string>
+    <string name="feature_enabled_for">Activé pour</string>
+    <string name="group_members_can_send_simplex_links">Les membres du groupe peuvent envoyer des liens SimpleX.</string>
+    <string name="feature_roles_owners">propriétaires</string>
+    <string name="prohibit_sending_simplex_links">Interdire l\'envoi de liens SimpleX</string>
+    <string name="simplex_links_are_prohibited_in_group">Les liens SimpleX sont interdits dans ce groupe.</string>
+    <string name="network_type_no_network_connection">Pas de connexion au réseau</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Ethernet câblé</string>
+    <string name="simplex_links">Liens SimpleX</string>
+    <string name="network_type_other">Autres</string>
 </resources>

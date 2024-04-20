@@ -102,4 +102,32 @@
     <string name="la_app_passcode">Mật mã ứng dụng</string>
     <string name="settings_section_title_icon">BIỂU TƯỢNG ỨNG DỤNG</string>
     <string name="v5_0_app_passcode">Mật mã ứng dụng</string>
+    <string name="app_version_name">Phiên bản ứng dụng: v%s</string>
+    <string name="app_version_title">Phiên bản ứng dụng</string>
+    <string name="v5_3_new_interface_languages_descr">Tiếng Ả Rập, tiếng Bungari, tiếng Phần Lan, tiếng Do Thái, tiếng Thái và tiếng Ukraina - trân thành gửi lời cảm ơn tới các tình nguyện viên dịch thuật và Weblate.</string>
+    <string name="migrate_from_device_archiving_database">Lưu trữ cơ sở dữ liệu</string>
+    <string name="migrate_from_device_archive_and_upload">Lưu trữ và tải lên</string>
+    <string name="icon_descr_audio_on">Mở âm</string>
+    <string name="icon_descr_video_asked_to_receive">Yêu cầu để nhận video</string>
+    <string name="attach">Gắn</string>
+    <string name="call_service_notification_audio_call">Cuộc gọi thoại</string>
+    <string name="audio_call_no_encryption">cuộc gọi thoại (không được mã hóa đầu cuối)</string>
+    <string name="icon_descr_audio_off">Tắt âm</string>
+    <string name="icon_descr_asked_to_receive">Yêu cầu để nhận hình ảnh</string>
+    <string name="network_session_mode_user_description">Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho mỗi hồ sơ trò chuyện bạn có trong ứng dụng</b>.</string>
+    <string name="network_session_mode_entity_description">Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho từng liên hệ và thành viên nhóm</b>.
+\n<b>Xin lưu ý</b>: nếu bạn có nhiều kết nối, mức tiêu thụ pin và lưu lượng truy cập của bạn có thể cao hơn đáng kể và một số kết nối có thể không thành công.</string>
+    <string name="icon_descr_audio_call">cuộc gọi thoại</string>
+    <string name="v4_6_audio_video_calls">Các cuộc gọi thoại và video</string>
+    <string name="settings_audio_video_calls">Các cuộc gọi thoại và video</string>
+    <string name="audio_video_calls">Các cuộc gọi thoại/video</string>
+    <string name="feature_roles_all_members">tất cả các thành viên</string>
+    <string name="calls_prohibited_with_this_contact">Các cuộc gọi thoại/video bị cấm.</string>
+    <string name="allow_to_send_simplex_links">Cho phép gửi liên kết SimpleX.</string>
+    <string name="feature_roles_admins">quản trị viên</string>
+    <string name="group_member_role_author">tác giả</string>
+    <string name="authentication_cancelled">Quá trình xác thực đã bị hủy bỏ</string>
+    <string name="la_authenticate">Xác thực</string>
+    <string name="auth_unavailable">Quá trình xác thực không có sẵn</string>
+    <string name="la_auth_failed">Quá trình xác thực đã thất bại</string>
 </resources>

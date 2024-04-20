@@ -1430,8 +1430,8 @@
     <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
     <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
     <string name="connect_via_link_incognito">Inkognito verbinden</string>
-    <string name="connect_use_current_profile">Nutzen Sie das aktuelle Profil</string>
-    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil verwenden</string>
+    <string name="connect_use_current_profile">Das aktuelle Profil nutzen</string>
+    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil nutzen</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.]]></string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
     <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
@@ -1805,4 +1805,23 @@
     <string name="permissions_camera">Kamera</string>
     <string name="permissions_camera_and_record_audio">Kamera und Mikrofon</string>
     <string name="permissions_grant">Erteilen Sie die Berechtigung(en), um Anrufe zu tätigen</string>
+    <string name="forwarded_description">weitergeleitet</string>
+    <string name="settings_section_title_network_connection">Netzwerkverbindung</string>
+    <string name="network_type_no_network_connection">Keine Netzwerkverbindung</string>
+    <string name="network_type_cellular">Zellulär</string>
+    <string name="network_type_other">Andere</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Kabelgebundenes Ethernet</string>
+    <string name="files_and_media_not_allowed">Dateien und Medien sind nicht erlaubt</string>
+    <string name="simplex_links_not_allowed">SimpleX-Links sind nicht erlaubt</string>
+    <string name="voice_messages_not_allowed">Sprachnachrichten sind nicht erlaubt</string>
+    <string name="simplex_links">SimpleX-Links</string>
+    <string name="group_members_can_send_simplex_links">Gruppenmitglieder können SimpleX-Links senden.</string>
+    <string name="feature_roles_admins">Administratoren</string>
+    <string name="feature_roles_all_members">Alle Mitglieder</string>
+    <string name="feature_enabled_for">Für aktiviert</string>
+    <string name="feature_roles_owners">Eigentümer</string>
+    <string name="simplex_links_are_prohibited_in_group">In dieser Gruppe sind SimpleX-Links verboten.</string>
+    <string name="prohibit_sending_simplex_links">Das Senden von SimpleX-Links verbieten</string>
+    <string name="allow_to_send_simplex_links">Das Senden von SimpleX-Links erlauben.</string>
 </resources>

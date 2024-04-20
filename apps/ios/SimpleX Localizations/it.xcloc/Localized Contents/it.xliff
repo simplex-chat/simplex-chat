@@ -102,9 +102,9 @@
         <target>%1$@ alle %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
-      <trans-unit id="%@ connected" xml:space="preserve">
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
         <source>%@ connected</source>
-        <target>%@ si è connesso/a</target>
+        <target state="translated">%@ connesso/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ downloaded" xml:space="preserve">
