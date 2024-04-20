@@ -1743,4 +1743,14 @@
     <string name="feature_enabled_for">启用对象</string>
     <string name="feature_roles_admins">管理员</string>
     <string name="feature_roles_all_members">所有成员</string>
+    <string name="download_file">下载</string>
+    <string name="forward_message">转发消息…</string>
+    <string name="forward_chat_item">转发</string>
+    <string name="recipients_can_not_see_who_message_from">收件人看不到这条消息来自何人。</string>
+    <string name="saved_description">已保存</string>
+    <string name="saved_chat_item_info_tab">已保存</string>
+    <string name="saved_from_chat_item_info_title">保存自</string>
+    <string name="saved_from_description">保存自%s</string>
+    <string name="forwarded_chat_item_info_tab">已转发</string>
+    <string name="forwarded_from_chat_item_info_title">转发自</string>
 </resources>
