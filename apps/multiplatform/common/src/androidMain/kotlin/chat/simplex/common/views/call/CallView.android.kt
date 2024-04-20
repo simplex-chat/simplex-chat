@@ -296,7 +296,8 @@ private fun ActiveCallOverlayLayout(
       fun SelectSoundDevice() {
         if (devices.size == 2 &&
           devices.all { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE || it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER } ||
-          currentDevice.value == null
+          currentDevice.value == null ||
+          devices.none { it.id == currentDevice.value?.id }
         ) {
           ToggleSoundButton(call, enabled, toggleSound)
         } else {

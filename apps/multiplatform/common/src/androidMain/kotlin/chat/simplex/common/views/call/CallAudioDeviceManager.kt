@@ -118,10 +118,10 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
       val wasSize = devices.value.size
       devices.value += addedDevices.filter { it.hasSupportedType() }
       val addedCount = devices.value.size - wasSize
-      if (addedCount > 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
+      //if (addedCount > 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
         // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
         selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
-      }
+      //}
     }
 
     override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
@@ -130,9 +130,9 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
       val wasSize = devices.value.size
       devices.value = devices.value.filterNot { removedDevices.any { rm -> rm.id == it.id } }
       //val removedCount = wasSize - devices.value.size
-      //if (devices.value.count { it.hasSupportedType() } == 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
+      //if (devices.value.count { it.hasSupportedType() } == 2 && chatModel.activeCall.value?.callState == CallState.Connected) {
         // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-        //selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, true)
+        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, true)
       //}
     }
   }
@@ -148,18 +148,17 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
     val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-    val externalDevice = devices.value.lastOrNull { it.hasSupportedType() && it.isSink }
+    val externalDevice = devices.value.lastOrNull { it.hasSupportedType() && it.isSource && it.isSink && it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
     if (externalDevice != null) {
-      am.isSpeakerphoneOn = false
-      am.startBluetoothSco()
-      adaptToCurrentlyActiveDevice(externalDevice)
+      selectDevice(externalDevice.id)
     } else {
       am.stopBluetoothSco()
+      am.isWiredHeadsetOn = false
       am.isSpeakerphoneOn = preferredSecondaryDevice == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+      am.isBluetoothScoOn = false
       val newCurrentDevice = devices.value.firstOrNull { it.type == preferredSecondaryDevice }
       adaptToCurrentlyActiveDevice(newCurrentDevice)
     }
-    am.isBluetoothScoOn = am.isBluetoothScoAvailableOffCall && externalDevice != null
   }
 
   override fun selectDevice(id: Int) {
@@ -167,14 +166,23 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     val isExternalDevice = device != null && device.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && device.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
     if (isExternalDevice) {
       am.isSpeakerphoneOn = false
-      am.startBluetoothSco()
+      if (device?.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES) {
+        am.isWiredHeadsetOn = true
+        am.stopBluetoothSco()
+        am.isBluetoothScoOn = false
+      } else {
+        am.isWiredHeadsetOn = false
+        am.startBluetoothSco()
+        am.isBluetoothScoOn = true
+      }
       adaptToCurrentlyActiveDevice(device)
     } else {
       am.stopBluetoothSco()
+      am.isWiredHeadsetOn = false
       am.isSpeakerphoneOn = device?.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+      am.isBluetoothScoOn = false
       adaptToCurrentlyActiveDevice(device)
     }
-    am.isBluetoothScoOn = am.isBluetoothScoAvailableOffCall && isExternalDevice
   }
 
   private fun adaptToCurrentlyActiveDevice(newCurrentDevice: AudioDeviceInfo?) {
@@ -182,6 +190,9 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   }
 
   private fun AudioDeviceInfo.hasSupportedType(): Boolean = when (type) {
+    AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> true
+    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> true
+
     AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> true
     AudioDeviceInfo.TYPE_BLE_HEADSET -> true
     AudioDeviceInfo.TYPE_BLE_SPEAKER -> true
