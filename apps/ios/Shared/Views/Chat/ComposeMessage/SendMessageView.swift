@@ -54,13 +54,11 @@ struct SendMessageView: View {
                             .padding(.vertical, 8)
                             .frame(maxWidth: .infinity)
                     } else {
-                        let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
                         NativeTextEditor(
                             text: $composeState.message,
                             disableEditing: $composeState.inProgress,
                             height: $teHeight,
                             focused: $keyboardVisible,
-                            alignment: alignment,
                             onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
@@ -110,6 +108,7 @@ struct SendMessageView: View {
         } else if showVoiceMessageButton
             && composeState.message.isEmpty
             && !composeState.editing
+            && !composeState.forwarding
             && composeState.liveMessage == nil
             && ((composeState.noPreview && vmrs == .noRecording)
                 || (vmrs == .recording && holdingVMR)) {
@@ -225,7 +224,8 @@ struct SendMessageView: View {
 
     @ViewBuilder private func sendButtonContextMenuItems() -> some View {
         if composeState.liveMessage == nil,
-           !composeState.editing {
+           !composeState.editing,
+           !composeState.forwarding {
             if case .noContextItem = composeState.contextItem,
                !composeState.voicePreview,
                let send = sendLiveMessage,

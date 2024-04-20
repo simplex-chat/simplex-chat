@@ -2784,15 +2784,29 @@ public enum CIDeleted: Decodable {
     }
 }
 
-public enum MsgDirection: Decodable {
-    case rcv
-    case snd
+public enum MsgDirection: String, Decodable {
+    case rcv = "rcv"
+    case snd = "snd"
 }
 
 public enum CIForwardedFrom: Decodable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
     case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
+
+    var chatName: String {
+        switch self {
+        case .unknown: ""
+        case let .contact(chatName, _, _, _): chatName
+        case let .group(chatName, _, _, _): chatName
+        }
+    }
+
+    public func text(_ chatType: ChatType) -> LocalizedStringKey {
+        chatType == .local
+        ? (chatName == "" ? "saved" : "saved from \(chatName)")
+        : "forwarded"
+    }
 }
 
 public enum CIDeleteMode: String, Decodable {
