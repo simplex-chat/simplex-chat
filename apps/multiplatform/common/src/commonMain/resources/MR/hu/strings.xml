@@ -1748,4 +1748,7 @@
     <string name="forward_chat_item">Továbbítás</string>
     <string name="forwarded_chat_item_info_tab">Továbbított</string>
     <string name="forward_message">Üzenet továbbítása…</string>
+    <string name="audio_device_wired_headphones">Fejhallgató</string>
+    <string name="audio_device_speaker">Hangszóró</string>
+    <string name="audio_device_earpiece">Fülhallgató</string>
 </resources>
