@@ -245,9 +245,10 @@ const processCommand = (function () {
   }
 
   const defaultIceServers: RTCIceServer[] = [
+    {urls: ["stuns:stun.simplex.im:443"]},
     {urls: ["stun:stun.simplex.im:443"]},
-    {urls: ["turn:turn.simplex.im:443?transport=udp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
-    {urls: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
+    //{urls: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"},
+    {urls: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"},
   ]
 
   function getCallConfig(encodedInsertableStreams: boolean, iceServers?: RTCIceServer[], relay?: boolean): CallConfig {
@@ -320,7 +321,17 @@ const processCommand = (function () {
   }
 
   async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
-    const pc = new RTCPeerConnection(config.peerConnectionConfig)
+    let pc: RTCPeerConnection
+    try {
+      pc = new RTCPeerConnection(config.peerConnectionConfig)
+    } catch (e) {
+      console.log("Error while constructing RTCPeerConnection, will try without 'stuns' specified: " + e)
+      const withoutStuns = config.peerConnectionConfig.iceServers?.filter((elem) =>
+        typeof elem.urls === "string" ? !elem.urls.startsWith("stuns:") : !elem.urls.some((url) => url.startsWith("stuns:"))
+      )
+      config.peerConnectionConfig.iceServers = withoutStuns
+      pc = new RTCPeerConnection(config.peerConnectionConfig)
+    }
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
@@ -576,6 +587,9 @@ const processCommand = (function () {
     // setupVideoElement(videos.remote)
     videos.local.srcObject = call.localStream
     videos.remote.srcObject = call.remoteStream
+    // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
+    videos.local.play()
+    videos.remote.play()
   }
 
   async function setupEncryptionWorker(call: Call) {
@@ -651,7 +665,9 @@ const processCommand = (function () {
       codecs.splice(selectedCodecIndex, 1)
       codecs.unshift(selectedCodec)
       for (const t of call.connection.getTransceivers()) {
-        if (t.sender.track?.kind === "video") {
+        // Firefox doesn't have this function implemented:
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1396922
+        if (t.sender.track?.kind === "video" && t.setCodecPreferences) {
           t.setCodecPreferences(codecs)
         }
       }
@@ -673,7 +689,18 @@ const processCommand = (function () {
       }
       return
     }
-    for (const t of call.localStream.getTracks()) t.stop()
+    if (!call.screenShareEnabled) {
+      for (const t of call.localStream.getTracks()) t.stop()
+    } else {
+      // Don't stop audio track if switching to screenshare
+      for (const t of call.localStream.getVideoTracks()) t.stop()
+      // Replace new track from screenshare with old track from recording device
+      for (const t of localStream.getAudioTracks()) {
+        t.stop()
+        localStream.removeTrack(t)
+      }
+      for (const t of call.localStream.getAudioTracks()) localStream.addTrack(t)
+    }
     call.localCamera = camera
 
     const audioTracks = localStream.getAudioTracks()
@@ -689,6 +716,7 @@ const processCommand = (function () {
     replaceTracks(pc, videoTracks)
     call.localStream = localStream
     videos.local.srcObject = localStream
+    videos.local.play()
   }
 
   function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
@@ -738,7 +766,9 @@ const processCommand = (function () {
         //},
         //aspectRatio: 1.33,
       },
-      audio: true,
+      audio: false,
+      // This works with Chrome, Edge, Opera, but not with Firefox and Safari
+      // systemAudio: "include"
     }
     return navigator.mediaDevices.getDisplayMedia(constraints)
   }

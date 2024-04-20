@@ -1,30 +1,15 @@
 package chat.simplex.common.views.call
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.nanohttpd.protocols.http.IHTTPSession
 import org.nanohttpd.protocols.http.response.Response
@@ -45,6 +30,7 @@ actual fun ActiveCallView() {
     if (call != null) withBGApi { chatModel.callManager.endCall(call) }
   }
   BackHandler(onBack = endCall)
+  val scope = rememberCoroutineScope()
   WebRTCController(chatModel.callCommand) { apiMsg ->
     Log.d(TAG, "received from WebRTCController: $apiMsg")
     val call = chatModel.activeCall.value
@@ -56,6 +42,8 @@ actual fun ActiveCallView() {
           val callType = CallType(call.localMedia, r.capabilities)
           chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
           chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
+          CallSoundsPlayer.startConnectingCallSound(scope)
+          activeCallWaitDeliveryReceipt(scope)
         }
         is WCallResponse.Offer -> withBGApi {
           chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
@@ -64,6 +52,7 @@ actual fun ActiveCallView() {
         is WCallResponse.Answer -> withBGApi {
           chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
           chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+          CallSoundsPlayer.stop()
         }
         is WCallResponse.Ice -> withBGApi {
           chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
@@ -121,6 +110,7 @@ actual fun ActiveCallView() {
     // After the first call, End command gets added to the list which prevents making another calls
     chatModel.callCommand.removeAll { it is WCallCommand.End }
     onDispose {
+      CallSoundsPlayer.stop()
       chatModel.activeCallViewIsVisible.value = false
       chatModel.callCommand.clear()
     }

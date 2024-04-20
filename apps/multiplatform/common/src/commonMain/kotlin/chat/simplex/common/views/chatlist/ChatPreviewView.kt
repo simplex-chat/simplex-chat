@@ -90,7 +90,7 @@ fun ChatPreviewView(
     Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
   }
 
-  fun messageDraft(draft: ComposeState): Pair<AnnotatedString, Map<String, InlineTextContent>> {
+  fun messageDraft(draft: ComposeState): Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>> {
     fun attachment(): Pair<ImageResource, String?>? =
       when (draft.preview) {
         is ComposePreview.FilePreview -> MR.images.ic_draft_filled to draft.preview.fileName
@@ -100,7 +100,7 @@ fun ChatPreviewView(
       }
 
     val attachment = attachment()
-    val text = buildAnnotatedString {
+    val inlineContentBuilder: AnnotatedString.Builder.() -> Unit = {
       appendInlineContent(id = "editIcon")
       append(" ")
       if (attachment != null) {
@@ -110,7 +110,6 @@ fun ChatPreviewView(
         }
         append(" ")
       }
-      append(draft.message)
     }
     val inlineContent: Map<String, InlineTextContent> = mapOf(
       "editIcon" to InlineTextContent(
@@ -124,7 +123,7 @@ fun ChatPreviewView(
         Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(MR.images.ic_edit_note), null, tint = MaterialTheme.colors.secondary)
       }
     )
-    return text to inlineContent
+    return inlineContentBuilder to inlineContent
   }
 
   @Composable
@@ -169,7 +168,7 @@ fun ChatPreviewView(
     if (ci != null) {
       if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
         val (text: CharSequence, inlineTextContent) = when {
-          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
+          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft) }
           ci.meta.itemDeleted == null -> ci.text to null
           else -> markedDeletedText(ci.meta) to null
         }

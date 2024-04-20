@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
     var feature: Feature
@@ -18,7 +19,7 @@ struct CIChatFeatureView: View {
     var iconColor: Color
 
     var body: some View {
-        if !revealed, let fs = mergedFeautures() {
+        if !revealed, let fs = mergedFeatures() {
             HStack {
                 ForEach(fs, content: featureIconView)
             }
@@ -47,7 +48,7 @@ struct CIChatFeatureView: View {
         }
     }
 
-    private func mergedFeautures() -> [FeatureInfo]? {
+    private func mergedFeatures() -> [FeatureInfo]? {
         var fs: [FeatureInfo] = []
         var icons: Set<String> = []
         if var i = m.getChatItemIndex(chatItem) {
@@ -67,8 +68,8 @@ struct CIChatFeatureView: View {
         switch ci.content {
         case let .rcvChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor, param)
         case let .sndChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor, param)
-        case let .rcvGroupFeature(feature, preference, param): FeatureInfo(feature, preference.enable.iconColor, param)
-        case let .sndGroupFeature(feature, preference, param): FeatureInfo(feature, preference.enable.iconColor, param)
+        case let .rcvGroupFeature(feature, preference, param, role): FeatureInfo(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor, param)
+        case let .sndGroupFeature(feature, preference, param, role): FeatureInfo(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor, param)
         default: nil
         }
     }
@@ -103,6 +104,6 @@ struct CIChatFeatureView: View {
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), revealed: Binding.constant(true), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
+        CIChatFeatureView(chat: Chat.sampleData, chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), revealed: Binding.constant(true), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
     }
 }

@@ -353,11 +353,20 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
+func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64) async -> ChatItem? {
+    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId)
+    return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
+}
+
 func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
-    let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
+    return await processSendMessageCmd(toChatType: type, cmd: cmd)
+}
+
+private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async -> ChatItem? {
+    let chatModel = ChatModel.shared
     let r: ChatResponse
-    if type == .direct {
+    if toChatType == .direct {
         var cItem: ChatItem? = nil
         let endTask = beginBGTask({
             if let cItem = cItem {
@@ -397,7 +406,7 @@ func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) 
 }
 
 private func sendMessageErrorAlert(_ r: ChatResponse) {
-    logger.error("apiSendMessage error: \(String(describing: r))")
+    logger.error("send message error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
         message: "Error: \(String(describing: r))"
@@ -530,6 +539,12 @@ func getNetworkConfig() async throws -> NetCfg? {
 
 func setNetworkConfig(_ cfg: NetCfg, ctrl: chat_ctrl? = nil) throws {
     let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg), ctrl)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo) throws {
+    let r = chatSendCmdSync(.apiSetNetworkInfo(networkInfo: networkInfo))
     if case .cmdOk = r { return }
     throw r
 }
@@ -1297,6 +1312,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     defer { m.ctrlInitInProgress = false }
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
+    NetworkObserver.shared.restartMonitor()
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
@@ -1462,6 +1478,8 @@ class ChatReceiver {
     private var receiveMessages = true
     private var _lastMsgTime = Date.now
 
+    var messagesChannel: ((ChatResponse) -> Void)? = nil
+
     static let shared = ChatReceiver()
 
     var lastMsgTime: Date { get { _lastMsgTime } }
@@ -1479,6 +1497,9 @@ class ChatReceiver {
             if let msg = await chatRecvMsg() {
                 self._lastMsgTime = .now
                 await processReceivedMsg(msg)
+                if let messagesChannel {
+                    messagesChannel(msg)
+                }
             }
             _ = try? await Task.sleep(nanoseconds: 7_500_000)
         }
@@ -1791,7 +1812,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .sndFileCompleteXFTP(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
     case let .sndFileError(user, aChatItem, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)

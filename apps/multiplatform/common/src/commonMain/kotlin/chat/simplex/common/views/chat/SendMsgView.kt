@@ -39,6 +39,7 @@ fun SendMsgView(
   isDirectChat: Boolean,
   liveMessageAlertShown: SharedPreference<Boolean>,
   sendMsgEnabled: Boolean,
+  sendButtonEnabled: Boolean,
   nextSendGrpInv: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
@@ -71,11 +72,12 @@ fun SendMsgView(
       }
     }
     val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
-        cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
+        !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-      cs.endLiveDisabled
+        cs.endLiveDisabled ||
+        !sendButtonEnabled
     PlatformTextField(composeState, sendMsgEnabled, sendMsgButtonDisabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
       if (!cs.inProgress) {
         sendMessage(null)
@@ -155,7 +157,7 @@ fun SendMsgView(
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
 
-            if (cs.liveMessage == null && !cs.editing && !nextSendGrpInv || sendMsgEnabled) {
+            if (cs.liveMessage == null && !cs.editing && !cs.forwarding && !nextSendGrpInv || sendMsgEnabled) {
               if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&
@@ -430,7 +432,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary)
+        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary.copy(alpha = 0.75f))
         .padding(3.dp)
     )
   }
@@ -552,6 +554,7 @@ fun PreviewSendMsgView() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
@@ -586,6 +589,7 @@ fun PreviewSendMsgViewEditing() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
@@ -620,6 +624,7 @@ fun PreviewSendMsgViewInProgress() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,

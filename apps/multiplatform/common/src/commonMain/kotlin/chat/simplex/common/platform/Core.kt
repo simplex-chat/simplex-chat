@@ -9,7 +9,6 @@ import chat.simplex.common.views.helpers.DatabaseUtils.randomDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
 import java.io.File
 import java.nio.ByteBuffer
 
@@ -88,6 +87,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       Log.d(TAG, "Unable to migrate successfully: $res")
       return
     }
+    platform.androidRestartNetworkObserver()
     controller.apiSetTempFolder(coreTmpDir.absolutePath)
     controller.apiSetFilesFolder(appFilesDir.absolutePath)
     if (appPlatform.isDesktop) {

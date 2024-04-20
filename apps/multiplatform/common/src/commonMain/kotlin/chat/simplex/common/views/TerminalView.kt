@@ -85,6 +85,7 @@ fun TerminalLayout(
             isDirectChat = false,
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             sendMsgEnabled = true,
+            sendButtonEnabled = true,
             nextSendGrpInv = false,
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,

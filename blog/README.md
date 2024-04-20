@@ -1,5 +1,13 @@
 # Blog
 
+Apr 16. 2024 [The dangers of metadata in messengers](./20240416-dangers-of-metadata-in-messengers.md)
+
+_By [Esra'a al Shafei](https://mastodon.social/@alshafei)_
+
+It's important not to be complacent with the current standards of messaging, where metadata aggregation is still normalized in apps falsely and dangerously marketed as "private". This is a post exploring the fundamental differences between privacy and security.
+
+---
+
 Apr 4. 2024 [Why I joined SimpleX Chat](./20240404-why-i-joined-simplex-chat-esraa-al-shafei.md)
 
 _By [Esra'a al Shafei](https://mastodon.social/@alshafei)_
