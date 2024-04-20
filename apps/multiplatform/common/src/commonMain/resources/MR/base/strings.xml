@@ -1456,6 +1456,7 @@
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
   <string name="network_option_protocol_timeout">Protocol timeout</string>
   <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
+  <string name="network_option_rcv_concurrency">Receiving concurrency</string>
   <string name="network_option_ping_interval">PING interval</string>
   <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
