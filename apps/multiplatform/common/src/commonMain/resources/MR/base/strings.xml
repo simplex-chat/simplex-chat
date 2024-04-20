@@ -836,6 +836,9 @@
   <string name="permissions_grant_in_settings">Grant in settings</string>
   <string name="permissions_find_in_settings_and_grant">Find this permission in Android settings and grant it manually.</string>
   <string name="permissions_open_settings">Open settings</string>
+  <string name="audio_device_earpiece">Earpiece</string>
+  <string name="audio_device_speaker">Speaker</string>
+  <string name="audio_device_wired_headphones">Headphones</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -1456,6 +1459,7 @@
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
   <string name="network_option_protocol_timeout">Protocol timeout</string>
   <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
+  <string name="network_option_rcv_concurrency">Receiving concurrency</string>
   <string name="network_option_ping_interval">PING interval</string>
   <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
