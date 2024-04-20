@@ -1743,4 +1743,14 @@
     <string name="feature_roles_admins">amministratori</string>
     <string name="feature_roles_all_members">tutti i membri</string>
     <string name="simplex_links_are_prohibited_in_group">I link di SimpleX sono vietati in questo gruppo.</string>
+    <string name="saved_description">salvato</string>
+    <string name="saved_from_chat_item_info_title">Salvato da</string>
+    <string name="forward_message">Inoltra messaggio…</string>
+    <string name="forwarded_chat_item_info_tab">Inoltrato</string>
+    <string name="forwarded_from_chat_item_info_title">Inoltrato da</string>
+    <string name="download_file">Scarica</string>
+    <string name="forward_chat_item">Inoltra</string>
+    <string name="recipients_can_not_see_who_message_from">I destinatari non possono vedere da chi proviene questo messaggio.</string>
+    <string name="saved_chat_item_info_tab">Salvato</string>
+    <string name="saved_from_description">salvato da %s</string>
 </resources>
