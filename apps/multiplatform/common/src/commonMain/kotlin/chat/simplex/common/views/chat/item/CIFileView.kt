@@ -59,18 +59,11 @@ fun CIFileView(
     }
   }
 
-  fun fileSizeValid(): Boolean {
-    if (file != null) {
-      return file.fileSize <= getMaxFileSize(file.fileProtocol)
-    }
-    return false
-  }
-
   fun fileAction() {
     if (file != null) {
       when {
         file.fileStatus is CIFileStatus.RcvInvitation -> {
-          if (fileSizeValid()) {
+          if (fileSizeValid(file)) {
             receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
@@ -165,7 +158,7 @@ fun CIFileView(
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvInvitation ->
-            if (fileSizeValid())
+            if (fileSizeValid(file))
               fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
             else
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
@@ -215,6 +208,8 @@ fun CIFileView(
     }
   }
 }
+
+fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
 
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =

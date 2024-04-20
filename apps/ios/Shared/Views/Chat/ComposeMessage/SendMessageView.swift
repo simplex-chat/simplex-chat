@@ -54,13 +54,11 @@ struct SendMessageView: View {
                             .padding(.vertical, 8)
                             .frame(maxWidth: .infinity)
                     } else {
-                        let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
                         NativeTextEditor(
                             text: $composeState.message,
                             disableEditing: $composeState.inProgress,
                             height: $teHeight,
                             focused: $keyboardVisible,
-                            alignment: alignment,
                             onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
