@@ -62,7 +62,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       },
       members = chatModel.groupMembers
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
-        .sortedBy { it.displayName.lowercase() },
+        .sortedByDescending { it.memberRole },
       developerTools,
       groupLink,
       addMembers = {
