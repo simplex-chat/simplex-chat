@@ -51,7 +51,7 @@ struct AdvancedNetworkSettings: View {
                     }
                     .disabled(currentNetCfg == NetCfg.proxyDefaults)
 
-                    timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [5_000000, 7_500000, 10_000000, 15_000000, 20_000000, 30_000000, 40_000000], label: secondsLabel)
+                    timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 25_000000, 35_000000, 50_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout per KB", selection: $netCfg.tcpTimeoutPerKb, values: [2_500, 5_000, 10_000, 15_000, 20_000, 30_000], label: secondsLabel)
                     intSettingPicker("Receiving concurrency", selection: $netCfg.rcvConcurrency, values: [1, 2, 4, 8, 12, 16, 24], label: "")
