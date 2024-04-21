@@ -41,6 +41,12 @@
 "(" = "(";
 
 /* No comment provided by engineer. */
+"(new)" = "(新規)";
+
+/* No comment provided by engineer. */
+"(this device v%@)" = "(このデバイス v%@)";
+
+/* No comment provided by engineer. */
 ")" = ")";
 
 /* No comment provided by engineer. */
@@ -53,7 +59,13 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[GitHub でスターを付ける](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
+"**Add contact**: to create a new invitation link, or connect via a link you received." = "**コンタクトの追加**: 新しい招待リンクを作成するか、受け取ったリンクから接続します。";
+
+/* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**新しい連絡先を追加**: 連絡先のワンタイム QR コードまたはリンクを作成します。";
+
+/* No comment provided by engineer. */
+"**Create group**: to create a new group." = "**グループ作成**: 新しいグループを作成する。";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e 暗号化**音声通話";
@@ -68,6 +80,9 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**最もプライベート**: SimpleX Chat 通知サーバーを使用せず、バックグラウンドで定期的にメッセージをチェックします (アプリの使用頻度によって異なります)。";
 
 /* No comment provided by engineer. */
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**注意**: 2つの端末で同じデータベースを使用すると、セキュリティ保護として、あなたが接続しているメッセージの復号化が解除されます。";
+
+/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**注意**: パスフレーズを紛失すると、パスフレーズを復元または変更できなくなります。";
 
 /* No comment provided by engineer. */
@@ -75,6 +90,9 @@
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**警告**: 即時の プッシュ通知には、キーチェーンに保存されたパスフレーズが必要です。";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**警告**: アーカイブデータは削除されます。";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*太字*";
@@ -118,6 +136,9 @@
 /* No comment provided by engineer. */
 "%@ connected" = "%@ 接続中";
 
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ ダウンロード済";
+
 /* notification title */
 "%@ is connected!" = "%@ 接続中!";
 
@@ -130,8 +151,14 @@
 /* No comment provided by engineer. */
 "%@ servers" = "%@ サーバー";
 
+/* No comment provided by engineer. */
+"%@ uploaded" = "%@ アップロード済";
+
 /* notification title */
 "%@ wants to connect!" = "%@ が接続を希望しています!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld members" = "%@や%@など%lld人のメンバー";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld other members connected" = "%@, %@ および %lld 人のメンバーが接続中";
@@ -173,7 +200,16 @@
 "%lld file(s) with total size of %@" = "%lld 個のファイル（合計サイズ: %@）";
 
 /* No comment provided by engineer. */
+"%lld group events" = "%lld件のグループイベント";
+
+/* No comment provided by engineer. */
 "%lld members" = "%lld 人のメンバー";
+
+/* No comment provided by engineer. */
+"%lld messages blocked" = "%lld件のメッセージをブロック";
+
+/* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lldのメッセージが管理者によりブロック済";
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld 件のメッセージが削除されました";
@@ -2867,7 +2903,7 @@
 /* simplex link type */
 "SimpleX group link" = "SimpleXグループリンク";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "SimpleX links" = "SimpleXリンク";
 
 /* No comment provided by engineer. */

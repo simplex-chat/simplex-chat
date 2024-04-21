@@ -38,7 +38,7 @@
 ": " = ": ";
 
 /* No comment provided by engineer. */
-"!1 colored!" = "!1 kolorowy!";
+"!1 colored!" = "!1 pokolorowany!";
 
 /* No comment provided by engineer. */
 "." = ".";
@@ -80,22 +80,22 @@
 "**e2e encrypted** video call" = "**szyfrowane e2e** połączenie wideo";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Bardziej prywatny**: sprawdzanie nowych wiadomości co 20 minut. Token urządzenia jest współdzielony z serwerem SimpleX Chat, ale nie informacje o liczbie kontaktów lub wiadomości.";
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Bardziej prywatny**: sprawdzanie nowych wiadomości odbywa się co 20 minut. Współdzielony z serwerem SimpleX Chat jest token urządzenia, lecz nie informacje o liczbie kontaktów lub wiadomości.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Najbardziej prywatny**: nie korzystaj z serwera powiadomień SimpleX Chat, sprawdzaj wiadomości okresowo w tle (zależy jak często korzystasz z aplikacji).";
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Najbardziej prywatny**: nie korzystaj z serwera powiadomień SimpleX Chat, wiadomości sprawdzane są co jakiś czas w tle (zależne od tego jak często korzystasz z aplikacji).";
 
 /* No comment provided by engineer. */
-"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "*Uwaga*: używanie tej samej bazy danych na dwóch urządzeniach zepsuje odszyfrowywanie wiadomości twoich połączeń, jako zabezpieczenie.";
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "*Uwaga*: w celach bezpieczeństwa użycie tej samej bazy danych na dwóch różnych urządzeniach spowoduje brak możliwości odszyfrowywania wiadomości z Twoich połączeń.";
 
 /* No comment provided by engineer. */
-"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Uwaga**: NIE będziesz w stanie odzyskać lub zmienić hasła, jeśli je stracisz.";
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Uwaga**: NIE będziesz w stanie odzyskać lub zmienić kodu dostępu, jeśli go stracisz.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Zalecane**: token urządzenia i powiadomienia są wysyłane do serwera powiadomień SimpleX Chat, ale nie treść wiadomości, rozmiar lub od kogo jest.";
+"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Zalecane**: do serwera powiadomień SimpleX Chat wysyłany jest token urządzenia i powiadomienia, lecz nie treść wiadomości, jej rozmiar lub od kogo ona jest.";
 
 /* No comment provided by engineer. */
-"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Uwaga**: Natychmiastowe powiadomienia push wymagają hasła zapisanego w Keychain.";
+"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Uwaga**: Natychmiastowe powiadomienia push wymagają zapisania kodu dostępu w Keychain.";
 
 /* No comment provided by engineer. */
 "**Warning**: the archive will be removed." = "**Ostrzeżenie**: archiwum zostanie usunięte.";
@@ -2844,10 +2844,10 @@
 "Please contact group admin." = "Skontaktuj się z administratorem grupy.";
 
 /* No comment provided by engineer. */
-"Please enter correct current passphrase." = "Wprowadź poprawne aktualne hasło.";
+"Please enter correct current passphrase." = "Wprowadź poprawny obecny kod dostępu.";
 
 /* No comment provided by engineer. */
-"Please enter the previous password after restoring database backup. This action can not be undone." = "Proszę podać poprzednie hasło po przywróceniu kopii zapasowej bazy danych. Tej czynności nie można cofnąć.";
+"Please enter the previous password after restoring database backup. This action can not be undone." = "Proszę podać poprzedni kod dostępu po przywróceniu kopii zapasowej bazy danych. Tej czynności nie można cofnąć.";
 
 /* No comment provided by engineer. */
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "Prosimy o jego zapamiętanie lub bezpieczne przechowywanie - nie ma możliwości odzyskania utraconego pinu!";
@@ -2859,10 +2859,10 @@
 "Please restart the app and migrate the database to enable push notifications." = "Uruchom ponownie aplikację i przeprowadź migrację bazy danych, aby włączyć powiadomienia push.";
 
 /* No comment provided by engineer. */
-"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Prosimy o bezpieczne przechowywanie hasła, w przypadku jego utraty NIE będzie można uzyskać dostępu do czatu.";
+"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Przechowuj kod dostępu w bezpieczny sposób, w przypadku jego utraty NIE będzie można uzyskać dostępu do czatu.";
 
 /* No comment provided by engineer. */
-"Please store passphrase securely, you will NOT be able to change it if you lose it." = "Prosimy o bezpieczne przechowywanie hasła, w przypadku jego utraty NIE będzie można go zmienić.";
+"Please store passphrase securely, you will NOT be able to change it if you lose it." = "Przechowuj kod dostępu w bezpieczny sposób, w przypadku jego utraty NIE będzie można go zmienić.";
 
 /* No comment provided by engineer. */
 "Polish interface" = "Polski interfejs";
@@ -2871,7 +2871,7 @@
 "Possibly, certificate fingerprint in server address is incorrect" = "Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy";
 
 /* No comment provided by engineer. */
-"Post-quantum E2EE" = "Postkwantowe E2EE";
+"Post-quantum E2EE" = "Postkwantowe szyfrowanie E2E";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Zachowaj ostatnią wersję roboczą wiadomości wraz z załącznikami.";
@@ -3482,7 +3482,7 @@
 /* simplex link type */
 "SimpleX group link" = "Link grupy SimpleX";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "SimpleX links" = "Linki SimpleX";
 
 /* No comment provided by engineer. */

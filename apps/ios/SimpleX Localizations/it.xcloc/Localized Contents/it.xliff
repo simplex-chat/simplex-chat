@@ -104,7 +104,7 @@
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve">
         <source>%@ connected</source>
-        <target>%@ si è connesso/a</target>
+        <target>%@ connesso/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ downloaded" xml:space="preserve">
