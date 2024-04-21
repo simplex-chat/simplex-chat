@@ -261,7 +261,8 @@
               # "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
 
               # STATIC aarch64-linux
-              "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
+              # "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
+
               "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override (p: {
                 smallAddressSpace = true;
                 # we won't want -dyamic (see aarch64-android:lib:simplex-chat)
