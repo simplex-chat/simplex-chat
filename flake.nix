@@ -140,18 +140,18 @@
               # STATIC x86_64-linux
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
               # STATIC i686-linux
-              "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
-                pkgs' = pkgs.pkgsCross.musl32;
-                extra-modules = [{
-                  # 32 bit patches
-                  packages.basement.patches = [
-                    ./scripts/nix/basement-pr-573.patch
-                  ];
-                  packages.memory.patches = [
-                    ./scripts/nix/memory-pr-99.patch
-                  ];
-                }];
-              }).simplex-chat.components.exes.simplex-chat;
+              # "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
+              #   pkgs' = pkgs.pkgsCross.musl32;
+              #   extra-modules = [{
+              #     # 32 bit patches
+              #     packages.basement.patches = [
+              #       ./scripts/nix/basement-pr-573.patch
+              #     ];
+              #     packages.memory.patches = [
+              #       ./scripts/nix/memory-pr-99.patch
+              #     ];
+              #   }];
+              # }).simplex-chat.components.exes.simplex-chat;
               # WINDOWS x86_64-mingwW64
               # "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
               #   pkgs' = pkgs.pkgsCross.mingwW64;
