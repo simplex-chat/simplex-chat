@@ -839,6 +839,7 @@
   <string name="audio_device_earpiece">Earpiece</string>
   <string name="audio_device_speaker">Speaker</string>
   <string name="audio_device_wired_headphones">Headphones</string>
+  <string name="audio_device_bluetooth">Bluetooth</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>

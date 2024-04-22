@@ -64,6 +64,7 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   }
 
   override fun start() {
+    am.mode = AudioManager.MODE_IN_COMMUNICATION
     am.registerAudioDeviceCallback(audioCallback, null)
     am.addOnCommunicationDeviceChangedListener(Executors.newSingleThreadExecutor(), listener)
   }
@@ -75,7 +76,6 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
   override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
-    am.mode = AudioManager.MODE_IN_COMMUNICATION
     val commDevice = am.communicationDevice
     if (keepAnyNonEarpiece && commDevice != null && commDevice.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
       // some external device or speaker selected already, no need to change it
@@ -98,7 +98,6 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   }
 
   override fun selectDevice(id: Int) {
-    am.mode = AudioManager.MODE_IN_COMMUNICATION
     val device = devices.value.lastOrNull { it.id == id }
     if (device != null && am.communicationDevice?.id != id ) {
       am.setCommunicationDevice(device)
@@ -115,40 +114,32 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Added audio devices: ${addedDevices.map { it.type }}")
       super.onAudioDevicesAdded(addedDevices)
-      val wasSize = devices.value.size
-      devices.value += addedDevices.filter { it.hasSupportedType() }
-      val addedCount = devices.value.size - wasSize
-      //if (addedCount > 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
-        // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
-      //}
+      devices.value = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).filter { it.hasSupportedType() }.excludeSameType().excludeEarpieceIfWired()
+      selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
     }
 
     override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
       super.onAudioDevicesRemoved(removedDevices)
-      val wasSize = devices.value.size
-      devices.value = devices.value.filterNot { removedDevices.any { rm -> rm.id == it.id } }
-      //val removedCount = wasSize - devices.value.size
-      //if (devices.value.count { it.hasSupportedType() } == 2 && chatModel.activeCall.value?.callState == CallState.Connected) {
-        // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, true)
-      //}
+      devices.value = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).filter { it.hasSupportedType() }.excludeSameType().excludeEarpieceIfWired()
+      selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, true)
     }
   }
 
   override fun start() {
+    am.mode = AudioManager.MODE_IN_COMMUNICATION
     am.registerAudioDeviceCallback(audioCallback, null)
   }
 
   override fun stop() {
     am.unregisterAudioDeviceCallback(audioCallback)
+    am.stopBluetoothSco()
   }
 
   override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
     val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-    val externalDevice = devices.value.lastOrNull { it.hasSupportedType() && it.isSource && it.isSink && it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+    val externalDevice = devices.value.lastOrNull { it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
     if (externalDevice != null) {
       selectDevice(externalDevice.id)
     } else {
@@ -166,7 +157,7 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     val isExternalDevice = device != null && device.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && device.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
     if (isExternalDevice) {
       am.isSpeakerphoneOn = false
-      if (device?.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES) {
+      if (device?.type == AudioDeviceInfo.TYPE_WIRED_HEADSET || device?.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES) {
         am.isWiredHeadsetOn = true
         am.stopBluetoothSco()
         am.isBluetoothScoOn = false
@@ -194,11 +185,18 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> true
 
     AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> true
-    AudioDeviceInfo.TYPE_BLE_HEADSET -> true
-    AudioDeviceInfo.TYPE_BLE_SPEAKER -> true
     AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> true
     else -> false
   }
+
+  private fun List<AudioDeviceInfo>.excludeSameType(): List<AudioDeviceInfo> =
+    groupBy { it.type }.flatMap { devices -> listOf(devices.value.minByOrNull { it.id }!!) }
+
+  // Earpiece will not work if there is a wired connection
+  private fun List<AudioDeviceInfo>.excludeEarpieceIfWired(): List<AudioDeviceInfo> =
+    if (any { it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET || it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES })
+      filter { it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+    else this
 }
 
 val AudioDeviceInfo.icon: ImageResource
@@ -225,11 +223,15 @@ val AudioDeviceInfo.name: StringResource?
     AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
     AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
     AudioDeviceInfo.TYPE_BLE_HEADSET,
-    AudioDeviceInfo.TYPE_BLE_SPEAKER -> null // Use product name instead
+    AudioDeviceInfo.TYPE_BLE_SPEAKER -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      // Use product name instead
+      null
+    } else {
+      MR.strings.audio_device_bluetooth
+    }
 
     AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> MR.strings.audio_device_wired_headphones
 
     AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE -> null // Use product name instead
     else -> null // Use product name instead
   }
-
