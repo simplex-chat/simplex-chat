@@ -84,11 +84,11 @@ chatDirectTests = do
     it "create user with default servers" testCreateUserDefaultServers
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
-    fit "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
+    it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
-    fit "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
+    it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
