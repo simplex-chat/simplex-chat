@@ -543,6 +543,12 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_wifi_tethering,
         titleId = MR.strings.v5_7_network,
         descrId = MR.strings.v5_7_network_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_7_new_interface_languages,
+        descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),

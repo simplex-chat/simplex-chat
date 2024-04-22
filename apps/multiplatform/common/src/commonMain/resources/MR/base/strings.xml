@@ -1771,6 +1771,7 @@
   <string name="v5_7_call_sounds_descr">When connecting audio and video calls.</string>
   <string name="v5_7_network">Network management</string>
   <string name="v5_7_network_descr">More reliable network connection.</string>
+  <string name="v5_7_new_interface_languages">Lithuanian UI</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
