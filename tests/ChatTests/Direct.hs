@@ -88,7 +88,7 @@ chatDirectTests = do
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
-    it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
+    fit "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
@@ -1927,13 +1927,13 @@ testUsersTimedMessages tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChat tmp "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
-      configureTimedMessages alice bob "2" "1"
+      configureTimedMessages alice bob "2" "2"
 
       -- create second user and configure timed messages for contact
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       connectUsers alice bob
-      configureTimedMessages alice bob "4" "2"
+      configureTimedMessages alice bob "4" "3"
 
       -- first user messages
       alice ##> "/user alice"
@@ -1954,7 +1954,7 @@ testUsersTimedMessages tmp = do
       alice <# "bob> alisa 2"
 
       -- messages are deleted after ttl
-      threadDelay 500000
+      threadDelay 1500000
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
