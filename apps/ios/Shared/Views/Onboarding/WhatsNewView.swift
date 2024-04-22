@@ -378,9 +378,12 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.7",
-        // TODO
-        post: URL(string: "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"),
         features: [
+            FeatureDescription(
+                icon: "key",
+                title: "Quantum resistant encryption",
+                description: "Will be auto-enabled for contacts with v5.7!"
+            ),
             FeatureDescription(
                 icon: "arrowshape.turn.up.forward",
                 title: "Message forwarding",
