@@ -18,7 +18,7 @@ interface CallAudioDeviceManagerInterface {
   fun start()
   fun stop()
   // AudioDeviceInfo.AudioDeviceType
-  fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean)
+  fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyExternal: Boolean)
   // AudioDeviceInfo.AudioDeviceType
   fun selectDevice(id: Int)
 
@@ -74,24 +74,24 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     am.removeOnCommunicationDeviceChangedListener(listener)
   }
 
-  override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
+  override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyExternal: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
     val commDevice = am.communicationDevice
-    if (keepAnyNonEarpiece && commDevice != null && commDevice.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
-      // some external device or speaker selected already, no need to change it
+    if (keepAnyExternal && commDevice != null && commDevice.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE && commDevice.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+      // some external device selected already, no need to change it
       return
     }
 
-    val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-    val externalDevice = devices.value.lastOrNull { it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+    val preferredInternalDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+    val externalDevice = devices.value.lastOrNull { it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE && it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
     // External device already selected
     if (externalDevice != null && externalDevice.type == am.communicationDevice?.type) {
       return
     }
     if (externalDevice != null) {
       am.setCommunicationDevice(externalDevice)
-    } else if (am.communicationDevice?.type != preferredSecondaryDevice) {
-      am.availableCommunicationDevices.firstOrNull { it.type == preferredSecondaryDevice }?.let {
+    } else if (am.communicationDevice?.type != preferredInternalDevice) {
+      am.availableCommunicationDevices.firstOrNull { it.type == preferredInternalDevice }?.let {
         am.setCommunicationDevice(it)
       }
     }
@@ -136,25 +136,25 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     am.stopBluetoothSco()
   }
 
-  override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyNonEarpiece: Boolean) {
+  override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyExternal: Boolean) {
     Log.d(TAG, "selectLastExternalDeviceOrDefault: set audio mode, speaker enabled: $speaker")
-    val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-    val externalDevice = devices.value.lastOrNull { it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+    val preferredInternalDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+    val externalDevice = devices.value.lastOrNull { it.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE && it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
     if (externalDevice != null) {
       selectDevice(externalDevice.id)
     } else {
       am.stopBluetoothSco()
       am.isWiredHeadsetOn = false
-      am.isSpeakerphoneOn = preferredSecondaryDevice == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+      am.isSpeakerphoneOn = preferredInternalDevice == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
       am.isBluetoothScoOn = false
-      val newCurrentDevice = devices.value.firstOrNull { it.type == preferredSecondaryDevice }
+      val newCurrentDevice = devices.value.firstOrNull { it.type == preferredInternalDevice }
       adaptToCurrentlyActiveDevice(newCurrentDevice)
     }
   }
 
   override fun selectDevice(id: Int) {
     val device = devices.value.lastOrNull { it.id == id }
-    val isExternalDevice = device != null && device.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && device.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+    val isExternalDevice = device != null && device.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE && device.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
     if (isExternalDevice) {
       am.isSpeakerphoneOn = false
       if (device?.type == AudioDeviceInfo.TYPE_WIRED_HEADSET || device?.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES) {
