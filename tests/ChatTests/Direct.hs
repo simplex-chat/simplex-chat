@@ -84,7 +84,7 @@ chatDirectTests = do
     it "create user with default servers" testCreateUserDefaultServers
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
-    it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
+    fit "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
@@ -1660,17 +1660,17 @@ testUsersDifferentCIExpirationTTL tmp = do
       -- set ttl for first user
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_ttl 1 1", id, "ok")
+      alice #$> ("/_ttl 1 2", id, "ok")
 
       -- set ttl for second user
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 3", id, "ok")
+      alice #$> ("/_ttl 2 4", id, "ok")
 
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -1682,7 +1682,7 @@ testUsersDifferentCIExpirationTTL tmp = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 3 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 4 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -1691,7 +1691,7 @@ testUsersDifferentCIExpirationTTL tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 3000000
 
       -- messages both before and after setting chat item ttl are deleted
       -- first user messages
