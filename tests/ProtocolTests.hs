@@ -50,7 +50,7 @@ testDhPubKey :: C.PublicKeyX448
 testDhPubKey = "MEIwBQYDK2VvAzkAmKuSYeQ/m0SixPDS8Wq8VBaTS1cW+Lp0n0h4Diu+kUpR+qXx4SDJ32YGEFoGFGSbGPry5Ychr6U="
 
 testE2ERatchetParams :: RcvE2ERatchetParamsUri 'C.X448
-testE2ERatchetParams = E2ERatchetParamsUri (supportedE2EEncryptVRange PQSupportOn) testDhPubKey testDhPubKey Nothing
+testE2ERatchetParams = E2ERatchetParamsUri supportedE2EEncryptVRange testDhPubKey testDhPubKey Nothing
 
 testConnReq :: ConnectionRequestUri 'CMInvitation
 testConnReq = CRInvitationUri connReqData testE2ERatchetParams

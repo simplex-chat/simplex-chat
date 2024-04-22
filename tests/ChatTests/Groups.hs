@@ -3903,13 +3903,16 @@ testMemberContactMessage =
       -- exchanging messages will enable PQ (see Chat "TODO PQ" - perhaps connection should be negotiated with PQ on)
       alice <##> bob
       alice <##> bob
-      alice #> "@bob hi"
-      bob <# "alice> hi"
-      bob `send` "@alice hey"
-      bob <## "alice: quantum resistant end-to-end encryption enabled"
-      bob <# "@alice hey"
+
+      alice `send` "@bob hi"
       alice <## "bob: quantum resistant end-to-end encryption enabled"
+      alice <# "@bob hi"
+      bob <## "alice: quantum resistant end-to-end encryption enabled"
+      bob <# "alice> hi"
+
+      bob #> "@alice hey"
       alice <# "bob> hey"
+
       alice <##> bob
 
       -- bob and cath connect

@@ -44,7 +44,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
-import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
@@ -146,8 +146,8 @@ testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
   testAgentCfg
     { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = \_ -> prevRange $ supportedSMPAgentVRange PQSupportOff,
-      e2eEncryptVRange = \_ -> prevRange $ supportedE2EEncryptVRange PQSupportOff,
+      smpAgentVRange = prevRange supportedSMPAgentVRange,
+      e2eEncryptVRange = prevRange supportedE2EEncryptVRange,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
@@ -155,8 +155,8 @@ testAgentCfgVNext :: AgentConfig
 testAgentCfgVNext =
   testAgentCfg
     { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = \_ -> mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
-      e2eEncryptVRange = \_ -> mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
+      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
+      e2eEncryptVRange = mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
@@ -164,8 +164,8 @@ testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = \_ -> versionToRange duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = \_ -> versionToRange CR.kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = versionToRange duplexHandshakeSMPAgentVersion,
+      e2eEncryptVRange = versionToRange CR.kdfX3DHE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange batchCmdsSMPVersion}
     }
 
