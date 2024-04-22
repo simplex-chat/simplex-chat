@@ -1765,6 +1765,14 @@
   <string name="v5_6_picture_in_picture_calls_descr">Use the app while in the call.</string>
   <string name="v5_6_safer_groups">Safer groups</string>
   <string name="v5_6_safer_groups_descr">Admins can block a member for all.</string>
+  <string name="v5_7_quantum_resistant_encryption_descr">Will be enabled in direct chats!</string>
+  <string name="v5_7_forward">Forward and save messages</string>
+  <string name="v5_7_forward_descr">Message source remains private.</string>
+  <string name="v5_7_call_sounds">In-call sounds</string>
+  <string name="v5_7_call_sounds_descr">When connecting audio and video calls.</string>
+  <string name="v5_7_network">Network management</string>
+  <string name="v5_7_network_descr">More reliable network connection.</string>
+  <string name="v5_7_new_interface_languages">Lithuanian UI</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

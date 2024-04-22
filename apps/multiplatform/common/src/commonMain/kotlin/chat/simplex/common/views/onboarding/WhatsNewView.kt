@@ -521,6 +521,37 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v5.7",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_vpn_key_filled,
+        titleId = MR.strings.v5_6_quantum_resistant_encryption,
+        descrId = MR.strings.v5_7_quantum_resistant_encryption_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_forward,
+        titleId = MR.strings.v5_7_forward,
+        descrId = MR.strings.v5_7_forward_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_music_note,
+        titleId = MR.strings.v5_7_call_sounds,
+        descrId = MR.strings.v5_7_call_sounds_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_wifi_tethering,
+        titleId = MR.strings.v5_7_network,
+        descrId = MR.strings.v5_7_network_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_7_new_interface_languages,
+        descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version
