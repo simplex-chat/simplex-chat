@@ -46,6 +46,7 @@ chatDirectTests = do
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
+    it "send large message" testLargeMessage
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -723,6 +724,20 @@ testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bo
   bob <## "there"
   cath <# "alice> hello"
   cath <## "there"
+
+testLargeMessage :: HasCallStack => FilePath -> IO ()
+testLargeMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      img <- genProfileImg
+      let profileImage = "data:image/png;base64," <> B.unpack img
+      alice `send` ("/_profile 1 {\"displayName\": \"alice2\", \"fullName\": \"\", \"image\": \"" <> profileImage <> "\"}")
+      _trimmedCmd1 <- getTermLine alice
+      alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
+      bob <## "contact alice changed to alice2"
+      bob <## "use @alice2 <message> to send messages"
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
