@@ -62,7 +62,7 @@ struct GroupChatInfoView: View {
         NavigationView {
             let members = chatModel.groupMembers
                 .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
-                .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
+                .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
 
             List {
                 groupInfoHeader()

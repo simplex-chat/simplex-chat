@@ -140,7 +140,7 @@
 "%@ at %@:" = "%1$@ alle %2$@:";
 
 /* No comment provided by engineer. */
-"%@ connected" = "%@ si è connesso/a";
+"%@ connected" = "%@ connesso/a";
 
 /* No comment provided by engineer. */
 "%@ downloaded" = "%@ scaricati";
@@ -3482,7 +3482,7 @@
 /* simplex link type */
 "SimpleX group link" = "Link gruppo SimpleX";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "SimpleX links" = "Link di SimpleX";
 
 /* No comment provided by engineer. */

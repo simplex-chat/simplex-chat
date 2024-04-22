@@ -159,7 +159,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-          listOf(5_000000, 7_500000, 10_000000, 15_000000, 20_000000, 30_000000, 40_000000), secondsLabel
+          listOf(10_000000, 15_000000, 20_000000, 25_000000, 35_000000, 50_000000), secondsLabel
         )
       }
       SectionItemView {
