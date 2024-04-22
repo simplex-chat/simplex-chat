@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -126,7 +125,7 @@ actual fun ActiveCallView() {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
               callAudioDeviceManager.start()
             } else {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.supportsVideo(), true)
             }
             CallSoundsPlayer.startConnectingCallSound(scope)
             activeCallWaitDeliveryReceipt(scope)
@@ -138,7 +137,7 @@ actual fun ActiveCallView() {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
               callAudioDeviceManager.start()
             } else {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.supportsVideo(), true)
             }
           }
           is WCallResponse.Answer -> withBGApi {
@@ -241,11 +240,10 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceM
     selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
     toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled)) },
     toggleSound = {
-      var call = chatModel.activeCall.value
-      if (call != null) {
-        call = call.copy(soundSpeaker = !call.soundSpeaker)
-        chatModel.activeCall.value = call
-        callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
+      val enableSpeaker = callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+      val preferredInternalDevice = callAudioDeviceManager.devices.value.firstOrNull { it.type == if (enableSpeaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+      if (preferredInternalDevice != null) {
+        callAudioDeviceManager.selectDevice(preferredInternalDevice.id)
       }
     },
     flipCamera = { chatModel.callCommand.add(WCallCommand.Camera(call.localCamera.flipped)) }
@@ -308,7 +306,8 @@ private fun ActiveCallOverlayLayout(
           currentDevice.value == null ||
           devices.none { it.id == currentDevice.value?.id }
         ) {
-          ToggleSoundButton(call, enabled, toggleSound)
+          val isSpeaker = currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+          ToggleSoundButton(call, enabled, isSpeaker, toggleSound)
         } else {
           ExposedDropDownSettingWithIcon(
             devices.map { Triple(it, it.icon, if (it.name != null) generalGetString(it.name!!) else it.productName.toString()) },
@@ -404,8 +403,8 @@ private fun ToggleAudioButton(call: Call, enabled: Boolean = true, toggleAudio: 
 }
 
 @Composable
-private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> Unit) {
-  if (call.soundSpeaker) {
+private fun ToggleSoundButton(call: Call, enabled: Boolean, speaker: Boolean, toggleSound: () -> Unit) {
+  if (speaker) {
     ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, enabled, toggleSound)
   } else {
     ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, enabled, toggleSound)
