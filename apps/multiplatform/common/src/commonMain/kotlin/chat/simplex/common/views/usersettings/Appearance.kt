@@ -212,7 +212,7 @@ object AppearanceScope {
       "it" to "Italiano",
       "iw" to "עִברִית",
       "ja" to "日本語",
-      "lt" to "Lietuvių kalba",
+      "lt" to "Lietuvių",
       "nl" to "Nederlands",
       "pl" to "Polski",
       "pt-BR" to "Português, Brasil",
