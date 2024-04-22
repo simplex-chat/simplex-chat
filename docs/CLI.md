@@ -102,7 +102,7 @@ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 
 #### In any OS
 
-1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 9.6.4 and cabal 3.10.1.0:
+1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 9.6.3 and cabal 3.10.1.0:
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh

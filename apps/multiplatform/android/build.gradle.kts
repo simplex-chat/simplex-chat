@@ -94,6 +94,7 @@ android {
         "it",
         "iw",
         "ja",
+        "lt",
         "nl",
         "pl",
         "pt-rBR",
