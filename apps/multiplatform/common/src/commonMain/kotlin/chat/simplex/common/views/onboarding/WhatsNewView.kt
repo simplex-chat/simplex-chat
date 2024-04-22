@@ -540,7 +540,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.v5_7_call_sounds_descr
       ),
       FeatureDescription(
-        icon = MR.images.ic_wifi_off,
+        icon = MR.images.ic_wifi_tethering,
         titleId = MR.strings.v5_7_network,
         descrId = MR.strings.v5_7_network_descr
       )
