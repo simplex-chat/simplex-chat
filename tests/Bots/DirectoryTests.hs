@@ -809,7 +809,9 @@ testRestoreDirectory tmp = do
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
         groupFoundN 3 cath "privacy"
-        groupFound cath "security"
+        cath #> "@SimpleX-Directory security"
+        cath <## "SimpleX-Directory: quantum resistant end-to-end encryption enabled"
+        groupFoundN' 2 cath "security"
 
 listGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
 listGroups superUser bob cath = do
@@ -1055,6 +1057,10 @@ groupFound = groupFoundN 2
 groupFoundN :: Int -> TestCC -> String -> IO ()
 groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
+  groupFoundN' count u name
+
+groupFoundN' :: Int -> TestCC -> String -> IO ()
+groupFoundN' count u name = do
   u <# ("SimpleX-Directory> > " <> name)
   u <## "      Found 1 group(s)."
   u <#. ("SimpleX-Directory> " <> name)
