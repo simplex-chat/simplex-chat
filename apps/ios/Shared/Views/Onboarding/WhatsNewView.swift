@@ -375,6 +375,28 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
+    ),
+    VersionDescription(
+        version: "v5.7",
+        // TODO
+        post: URL(string: "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"),
+        features: [
+            FeatureDescription(
+                icon: "arrowshape.turn.up.forward",
+                title: "Message forwarding",
+                description: "Forward between chats, save to notes."
+            ),
+            FeatureDescription(
+                icon: "music.note",
+                title: "Call sounds",
+                description: "When connecting audio and video calls."
+            ),
+            FeatureDescription(
+                icon: "wifi.slash",
+                title: "On weak network",
+                description: "Better connectivity and reduced traffic."
+            )
+        ]
     )
 ]
 
