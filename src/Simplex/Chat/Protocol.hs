@@ -49,7 +49,6 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (compress1, decompressBatch)
-import Simplex.Messaging.Crypto.Ratchet (PQSupport (..), pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -70,14 +69,11 @@ import Simplex.Messaging.Version hiding (version)
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 7
+currentChatVersion = VersionChat 8
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
--- TODO remove parameterization in 5.7
-supportedChatVRange :: PQSupport -> VersionRangeChat
-supportedChatVRange pq = mkVersionRange initialChatVersion $ case pq of
-  PQSupportOn -> pqEncryptionCompressionVersion
-  PQSupportOff -> currentChatVersion
+supportedChatVRange :: VersionRangeChat
+supportedChatVRange = mkVersionRange initialChatVersion currentChatVersion
 {-# INLINE supportedChatVRange #-}
 
 -- version range that supports skipping establishing direct connections in a group and establishing direct connection via x.grp.direct.inv

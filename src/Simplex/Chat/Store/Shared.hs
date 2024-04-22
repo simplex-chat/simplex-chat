@@ -166,12 +166,12 @@ type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe 
 
 type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
 
-toConnection :: (PQSupport -> VersionRangeChat) -> ConnectionRow -> Connection
+toConnection :: VersionRangeChat -> ConnectionRow -> Connection
 toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, chatV, minVer, maxVer)) =
   Connection
     { connId,
       agentConnId = AgentConnId acId,
-      connChatVersion = fromMaybe (vr pqSupport `peerConnChatVersion` peerChatVRange) chatV,
+      connChatVersion = fromMaybe (vr `peerConnChatVersion` peerChatVRange) chatV,
       peerChatVRange = peerChatVRange,
       connLevel,
       viaContact,
@@ -201,7 +201,7 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGr
     entityId_ ConnSndFile = sndFileId
     entityId_ ConnUserContact = userContactLinkId
 
-toMaybeConnection :: (PQSupport -> VersionRangeChat) -> MaybeConnectionRow -> Maybe Connection
+toMaybeConnection :: VersionRangeChat -> MaybeConnectionRow -> Maybe Connection
 toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just pqSupport, Just pqEncryption, pqSndEnabled_, pqRcvEnabled_, Just authErrCounter, connChatVersion, Just minVer, Just maxVer)) =
   Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, connChatVersion, minVer, maxVer))
 toMaybeConnection _ _ = Nothing
@@ -382,7 +382,7 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
 
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool, Maybe CustomData)
 
-toContact :: (PQSupport -> VersionRangeChat) -> User -> ContactRow :. MaybeConnectionRow -> Contact
+toContact :: VersionRangeChat -> User -> ContactRow :. MaybeConnectionRow -> Contact
 toContact vr user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, customData)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
