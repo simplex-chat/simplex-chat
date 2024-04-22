@@ -1741,4 +1741,18 @@
     <string name="feature_enabled_for">مفعّل لـ</string>
     <string name="feature_roles_owners">المالكون</string>
     <string name="files_and_media_not_allowed">الملفات والوسائط غير مسموح بها</string>
+    <string name="forwarded_chat_item_info_tab">محوّلة</string>
+    <string name="forward_message">حوّل الرسالة…</string>
+    <string name="network_option_rcv_concurrency">تلقي التزامن</string>
+    <string name="recipients_can_not_see_who_message_from">لا يستطيع المُستلم/ون معرفة مَن أرسل هذه الرسالة.</string>
+    <string name="saved_description">حُفظت</string>
+    <string name="saved_from_chat_item_info_title">حُفظت مِن</string>
+    <string name="saved_from_description">حُفظت مِن %s</string>
+    <string name="audio_device_speaker">السماعة</string>
+    <string name="audio_device_earpiece">سماعة الأذن</string>
+    <string name="audio_device_wired_headphones">سماعات الرأس</string>
+    <string name="forwarded_from_chat_item_info_title">محوّلة مِن</string>
+    <string name="saved_chat_item_info_tab">حُفظت</string>
+    <string name="download_file">نزّل</string>
+    <string name="forward_chat_item">حوّل</string>
 </resources>
