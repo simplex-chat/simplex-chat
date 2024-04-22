@@ -382,22 +382,22 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "key",
                 title: "Quantum resistant encryption",
-                description: "Will be auto-enabled for contacts with v5.7!"
+                description: "Enabled automatically in direct chats!"
             ),
             FeatureDescription(
                 icon: "arrowshape.turn.up.forward",
-                title: "Message forwarding",
-                description: "Forward between chats, save to notes."
+                title: "Forward and save messages",
+                description: "The source is visible only to you."
             ),
             FeatureDescription(
                 icon: "music.note",
-                title: "Call sounds",
+                title: "In-call sounds",
                 description: "When connecting audio and video calls."
             ),
             FeatureDescription(
-                icon: "wifi.slash",
-                title: "On weak network",
-                description: "Better connectivity and reduced traffic."
+                icon: "wifi",
+                title: "Better networking",
+                description: "Reduced traffic on weak networks."
             )
         ]
     )
