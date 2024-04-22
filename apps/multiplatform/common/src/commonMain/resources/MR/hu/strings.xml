@@ -1752,4 +1752,5 @@
     <string name="audio_device_speaker">Hangszóró</string>
     <string name="audio_device_earpiece">Fülhallgató</string>
     <string name="network_option_rcv_concurrency">Egyidejű fogadás</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
 </resources>
