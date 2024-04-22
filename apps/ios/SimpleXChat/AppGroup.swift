@@ -29,6 +29,7 @@ let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
+let GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY = "networkRcvConcurrency"
 let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
 let GROUP_DEFAULT_NETWORK_SMP_PING_COUNT = "networkSMPPingCount"
 let GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE = "networkEnableKeepAlive"
@@ -55,6 +56,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
+        GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY: NetCfg.defaults.rcvConcurrency,
         GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
         GROUP_DEFAULT_NETWORK_SMP_PING_COUNT: NetCfg.defaults.smpPingCount,
         GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE: NetCfg.defaults.enableKeepAlive,
@@ -276,6 +278,7 @@ public func getNetCfg() -> NetCfg {
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
+    let rcvConcurrency = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY)
     let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
     let smpPingCount = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_COUNT)
     let enableKeepAlive = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE)
@@ -295,6 +298,7 @@ public func getNetCfg() -> NetCfg {
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpTimeoutPerKb: tcpTimeoutPerKb,
+        rcvConcurrency: rcvConcurrency,
         tcpKeepAlive: tcpKeepAlive,
         smpPingInterval: smpPingInterval,
         smpPingCount: smpPingCount,
@@ -308,6 +312,7 @@ public func setNetCfg(_ cfg: NetCfg) {
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
+    groupDefaults.set(cfg.rcvConcurrency, forKey: GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY)
     groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
     groupDefaults.set(cfg.smpPingCount, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_COUNT)
     if let tcpKeepAlive = cfg.tcpKeepAlive {

@@ -72,7 +72,7 @@ fun SendMsgView(
       }
     }
     val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
-        cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
+        !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
@@ -157,7 +157,7 @@ fun SendMsgView(
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
 
-            if (cs.liveMessage == null && !cs.editing && !nextSendGrpInv || sendMsgEnabled) {
+            if (cs.liveMessage == null && !cs.editing && !cs.forwarding && !nextSendGrpInv || sendMsgEnabled) {
               if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&

@@ -1248,6 +1248,7 @@ public struct NetCfg: Codable, Equatable {
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
+    public var rcvConcurrency: Int // pool size
     public var tcpKeepAlive: KeepAliveOpts?
     public var smpPingInterval: Int // microseconds
     public var smpPingCount: Int // times
@@ -1256,9 +1257,10 @@ public struct NetCfg: Codable, Equatable {
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 20_000_000,
+        tcpConnectTimeout: 25_000_000,
         tcpTimeout: 15_000_000,
         tcpTimeoutPerKb: 10_000,
+        rcvConcurrency: 12,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1268,9 +1270,10 @@ public struct NetCfg: Codable, Equatable {
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 30_000_000,
+        tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
         tcpTimeoutPerKb: 15_000,
+        rcvConcurrency: 8,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,

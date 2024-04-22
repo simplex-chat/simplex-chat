@@ -4,26 +4,29 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.runtime.*
+import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import kotlinx.datetime.Clock
 
 @Composable
 fun ContextItemView(
   contextItem: ChatItem,
   contextIcon: Painter,
+  showSender: Boolean = true,
   cancelContextItem: () -> Unit
 ) {
   val sent = contextItem.chatDir.sent
@@ -31,14 +34,45 @@ fun ContextItemView(
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
 
   @Composable
-  fun msgContentView(lines: Int) {
+  fun MessageText(attachment: ImageResource?, lines: Int) {
+    val inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = if (attachment != null) {
+      remember(contextItem.id) {
+        val inlineContentBuilder: AnnotatedString.Builder.() -> Unit = {
+          appendInlineContent(id = "attachmentIcon")
+          append(" ")
+        }
+        val inlineContent = mapOf(
+          "attachmentIcon" to InlineTextContent(
+            Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
+          ) {
+            Icon(painterResource(attachment), null, tint = MaterialTheme.colors.secondary)
+          }
+        )
+        inlineContentBuilder to inlineContent
+      }
+    } else null
     MarkdownText(
       contextItem.text, contextItem.formattedText,
+      sender = null,
       toggleSecrets = false,
       maxLines = lines,
+      inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
     )
+  }
+
+  fun attachment(): ImageResource? =
+    when (contextItem.content.msgContent) {
+      is MsgContent.MCFile -> MR.images.ic_draft_filled
+      is MsgContent.MCImage -> MR.images.ic_image
+      is MsgContent.MCVoice -> MR.images.ic_play_arrow_filled
+      else -> null
+    }
+
+  @Composable
+  fun ContextMsgPreview(lines: Int) {
+    MessageText(remember(contextItem.id) { attachment() }, lines)
   }
 
   Row(
@@ -64,7 +98,7 @@ fun ContextItemView(
         tint = MaterialTheme.colors.secondary,
       )
       val sender = contextItem.memberDisplayName
-      if (sender != null) {
+      if (showSender && sender != null) {
         Column(
           horizontalAlignment = Alignment.Start,
           verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -73,10 +107,10 @@ fun ContextItemView(
             sender,
             style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
           )
-          msgContentView(lines = 2)
+          ContextMsgPreview(lines = 2)
         }
       } else {
-        msgContentView(lines = 3)
+        ContextMsgPreview(lines = 3)
       }
     }
     IconButton(onClick = cancelContextItem) {
