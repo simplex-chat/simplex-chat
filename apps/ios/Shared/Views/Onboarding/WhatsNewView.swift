@@ -382,12 +382,12 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "key",
                 title: "Quantum resistant encryption",
-                description: "Enabled automatically in direct chats!"
+                description: "Will be enabled in direct chats!"
             ),
             FeatureDescription(
                 icon: "arrowshape.turn.up.forward",
                 title: "Forward and save messages",
-                description: "The source is visible only to you."
+                description: "Message source remains private."
             ),
             FeatureDescription(
                 icon: "music.note",
@@ -395,9 +395,9 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "When connecting audio and video calls."
             ),
             FeatureDescription(
-                icon: "wifi",
-                title: "Better networking",
-                description: "Reduced traffic on weak networks."
+                icon: "antenna.radiowaves.left.and.right",
+                title: "Network management",
+                description: "More reliable network connection."
             )
         ]
     )
