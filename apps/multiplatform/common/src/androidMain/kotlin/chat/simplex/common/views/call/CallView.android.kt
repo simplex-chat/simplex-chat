@@ -87,7 +87,9 @@ actual fun ActiveCallView() {
   }
   val callAudioDeviceManager = remember { CallAudioDeviceManagerInterface.new() }
   DisposableEffect(Unit) {
-    callAudioDeviceManager.start()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      callAudioDeviceManager.start()
+    }
     onDispose {
       CallSoundsPlayer.stop()
       if (wasConnected.value) {
@@ -120,13 +122,24 @@ actual fun ActiveCallView() {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
-            callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+              // Starting is delayed to make Android <= 11 working good with Bluetooth
+              callAudioDeviceManager.start()
+            } else {
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
+            }
             CallSoundsPlayer.startConnectingCallSound(scope)
             activeCallWaitDeliveryReceipt(scope)
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
             updateActiveCall(call) { it.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities) }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+              // Starting is delayed to make Android <= 11 working good with Bluetooth
+              callAudioDeviceManager.start()
+            } else {
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
+            }
           }
           is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
@@ -141,7 +154,6 @@ actual fun ActiveCallView() {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
                 updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = Clock.System.now()) }
-                callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
             } catch (e: Throwable) {
@@ -149,9 +161,6 @@ actual fun ActiveCallView() {
             }
           is WCallResponse.Connected -> {
             updateActiveCall(call) { it.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo) }
-            scope.launch {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.soundSpeaker, true)
-            }
           }
           is WCallResponse.End -> {
             withBGApi { chatModel.callManager.endCall(call) }
