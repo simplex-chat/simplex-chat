@@ -195,15 +195,14 @@ Of course! Please check these tutorials: [SMP server](./SERVER.md) and [XFTP ser
 
 ### How are you funded?
 
-SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. There are more details here on the VCs involved and amounts raised: 
-https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html#how-is-it-funded-and-what-is-the-business-model
+SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. Read [more details](../blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md#how-is-it-funded-and-what-is-the-business-model).
 
 ### Why VCs?
 
 Here are some reflections on VC funding being a necessity for a project at this scale, as well as sustainability and profitability for longtime operations: https://www.poberezkin.com/posts/2023-10-31-why-privacy-impossible-without-venture-funding.html
 
 And another perspective from a team member on the delicate balance of venture-backed and nonprofit structures, and the plans for the SimpleX network protocols to evolve under the stewardship of nonprofit entities in various jurisdictions, so that its continued evolution aligns more closely with the vision of community-driven, independent and transparent governance:
-https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html
+[https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html](../blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.md).
 
 ### What will be the business model?
 
