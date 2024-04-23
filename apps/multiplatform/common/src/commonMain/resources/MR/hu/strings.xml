@@ -99,7 +99,7 @@
     <string name="smp_servers_add_to_another_device">Hozzáadás egy másik eszközhöz</string>
     <string name="allow_message_reactions">Az üzenetreakciók küldése engedélyezve van.</string>
     <string name="icon_descr_cancel_file_preview">Fájl előnézet megszakítása</string>
-    <string name="all_group_members_will_remain_connected">Minden csoporttag csatlakozva marad.</string>
+    <string name="all_group_members_will_remain_connected">Minden csoporttag kapcsolatban marad.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Több akkumulátort használ</b>! Háttérszolgáltatás mindig fut - az értesítések megjelennek, amint az üzenetek elérhetővé válnak.]]></string>
     <string name="block_member_confirmation">Letiltás</string>
     <string name="group_member_role_admin">admin</string>
@@ -180,9 +180,9 @@
     <string name="change_member_role_question">Csoport szerepkör megváltoztatása?</string>
     <string name="change_lock_mode">Zárolási mód megváltoztatása</string>
     <string name="notification_contact_connected">Csatlakozott</string>
-    <string name="rcv_group_event_member_connected">csatlakozva</string>
+    <string name="rcv_group_event_member_connected">kapcsolódva</string>
     <string name="connect_via_link_verb">Kapcsolódás</string>
-    <string name="group_member_status_connected">csatlakozva</string>
+    <string name="group_member_status_connected">kapcsolódva</string>
     <string name="connected_mobile">Csatlakoztatott telefon</string>
     <string name="server_connected">kapcsolódva</string>
     <string name="change_role">Szerepkör megváltoztatása</string>
@@ -195,7 +195,7 @@
     <string name="connect_button">Kapcsolódás</string>
     <string name="connect_via_member_address_alert_title">Közvetlen csatlakozás?</string>
     <string name="smp_server_test_connect">Kapcsolódás</string>
-    <string name="rcv_group_event_member_created_contact">közvetlenül csatlakozva</string>
+    <string name="rcv_group_event_member_created_contact">közvetlenül kapcsolódva</string>
     <string name="connection_local_display_name">kapcsolat %1$d</string>
     <string name="status_contact_has_e2e_encryption">az ismerős e2e titkosítással rendelkezik</string>
     <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerű profillal.</string>
@@ -1522,7 +1522,7 @@
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti SimpleX beli ismerősei számára a Beállításokban.</string>
-    <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerüljön elküldésre az új tagok számára.</string>
+    <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott kód nem egy SimpleX hivatkozás QR-kód.</string>
     <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX hivatkozás.</string>
     <string name="you_can_view_invitation_link_again">A meghívó hivatkozását újra megtekintheti a kapcsolat részleteinél.</string>
