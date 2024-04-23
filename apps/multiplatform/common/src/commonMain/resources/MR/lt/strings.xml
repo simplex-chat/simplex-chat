@@ -1722,4 +1722,21 @@
     <string name="migrate_from_device_upload_failed">Įkėlimas nepavyko</string>
     <string name="migrate_from_device_uploading_archive">Įkeliamas archyvas</string>
     <string name="migrate_from_device_try_again">Galite bandyti dar kartą.</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="feature_roles_all_members">visi nariai</string>
+    <string name="audio_device_earpiece">Ausinė</string>
+    <string name="audio_device_wired_headphones">Ausinės</string>
+    <string name="feature_roles_admins">administratoriai</string>
+    <string name="forwarded_chat_item_info_tab">Persiųsta</string>
+    <string name="download_file">Atsisiųsti</string>
+    <string name="forward_chat_item">Persiųsti</string>
+    <string name="files_and_media_not_allowed">Failai ir medija neleidžiami</string>
+    <string name="forwarded_description">persiųsta</string>
+    <string name="allow_to_send_simplex_links">Leisti siųsti SimpleX nuorodas</string>
+    <string name="group_members_can_send_simplex_links">Grupės nariai gali siųsti SimpleX nuorodas.</string>
+    <string name="feature_enabled_for">Įjungta:</string>
+    <string name="network_type_cellular">Mobilusis</string>
+    <string name="v5_7_forward">Persiųskite ir išsaugokite žinutes</string>
+    <string name="forwarded_from_chat_item_info_title">Persiųsta iš</string>
+    <string name="forward_message">Persiųsti žinutę…</string>
 </resources>
