@@ -1753,4 +1753,15 @@
     <string name="saved_from_description">保存自%s</string>
     <string name="forwarded_chat_item_info_tab">已转发</string>
     <string name="forwarded_from_chat_item_info_title">转发自</string>
+    <string name="audio_device_bluetooth">蓝牙</string>
+    <string name="network_option_rcv_concurrency">并行接收</string>
+    <string name="audio_device_earpiece">耳机</string>
+    <string name="audio_device_wired_headphones">头戴式耳机</string>
+    <string name="audio_device_speaker">扬声器</string>
+    <string name="v5_7_call_sounds">通话声音</string>
+    <string name="v5_7_forward_descr">消息来源保持私密。</string>
+    <string name="v5_7_network_descr">更可靠的网络连接。</string>
+    <string name="v5_7_network">网络管理</string>
+    <string name="v5_7_forward">转发并保存消息</string>
+    <string name="v5_7_new_interface_languages">立陶宛语用户界面</string>
 </resources>
