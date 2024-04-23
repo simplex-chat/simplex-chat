@@ -1606,9 +1606,6 @@
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* No comment provided by engineer. */
-"Error allowing contact PQ encryption" = "Ошибка разрешения квантово-устойчивого шифрования";
-
-/* No comment provided by engineer. */
 "Error changing address" = "Ошибка при изменении адреса";
 
 /* No comment provided by engineer. */
@@ -2869,9 +2866,6 @@
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Возможно, хэш сертификата в адресе сервера неверный";
-
-/* No comment provided by engineer. */
-"Post-quantum E2EE" = "Квантово-устойчивое E2EE";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Сохранить последний черновик, вместе с вложениями.";
