@@ -70,19 +70,12 @@ struct CIFileView: View {
         return false
     }
 
-    private func fileSizeValid() -> Bool {
-        if let file = file {
-            return file.fileSize <= getMaxFileSize(file.fileProtocol)
-        }
-        return false
-    }
-
     private func fileAction() {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation, .rcvAborted:
-                if fileSizeValid() {
+                if fileSizeValid(file) {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -144,7 +137,7 @@ struct CIFileView: View {
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvInvitation:
-                if fileSizeValid() {
+                if fileSizeValid(file) {
                     fileIcon("arrow.down.doc.fill", color: .accentColor)
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
@@ -202,6 +195,13 @@ struct CIFileView: View {
             .rotationEffect(.degrees(-90))
             .frame(width: 30, height: 30)
     }
+}
+
+func fileSizeValid(_ file: CIFile?) -> Bool {
+    if let file = file {
+        return file.fileSize <= getMaxFileSize(file.fileProtocol)
+    }
+    return false
 }
 
 func saveCryptoFile(_ fileSource: CryptoFile) {

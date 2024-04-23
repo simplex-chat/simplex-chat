@@ -95,8 +95,8 @@ private fun featureInfo(ci: ChatItem, chatInfo: ChatInfo): FeatureInfo? =
   when (ci.content) {
     is CIContent.RcvChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param, ci.content.feature.name)
     is CIContent.SndChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param, ci.content.feature.name)
-    is CIContent.RcvGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enabled(ci.content.memberRole_, (chatInfo as ChatInfo.Group).groupInfo.membership).iconColor, ci.content.param, ci.content.groupFeature.name)
-    is CIContent.SndGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enabled(ci.content.memberRole_, (chatInfo as ChatInfo.Group).groupInfo.membership).iconColor, ci.content.param, ci.content.groupFeature.name)
+    is CIContent.RcvGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enabled(ci.content.memberRole_, (chatInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, ci.content.param, ci.content.groupFeature.name)
+    is CIContent.SndGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enabled(ci.content.memberRole_, (chatInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, ci.content.param, ci.content.groupFeature.name)
     else -> null
   }
 

@@ -1798,4 +1798,19 @@
 \nЭто может занять несколько минут.</string>
     <string name="unable_to_open_browser_title">Ошибка открытия браузера</string>
     <string name="unable_to_open_browser_desc">Для звонков требуется веб-браузер по умолчанию. Пожалуйста, настройте браузер по умолчанию в системе и поделитесь дополнительной информацией с разработчиками.</string>
+    <string name="network_type_other">Другaя сеть</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Проводная сеть</string>
+    <string name="network_type_cellular">Мобильная сеть</string>
+    <string name="settings_section_title_network_connection">Интернет-соединение</string>
+    <string name="network_type_no_network_connection">Нет интернет-соединения</string>
+    <string name="error_showing_desktop_notification">Ошибка при показе уведомления, свяжитесь с разработчиками.</string>
+    <string name="permissions_camera">Камера</string>
+    <string name="permissions_camera_and_record_audio">Камера и микрофон</string>
+    <string name="permissions_find_in_settings_and_grant">Найдите это разрешение в настройках Android и добавьте его вручную.</string>
+    <string name="permissions_grant_in_settings">Разрешить в настройках</string>
+    <string name="permissions_required">Дать разрешение</string>
+    <string name="permissions_grant">Дать разрешение для совершения звонков</string>
+    <string name="permissions_record_audio">Микрофон</string>
+    <string name="permissions_open_settings">Открыть настройки</string>
 </resources>

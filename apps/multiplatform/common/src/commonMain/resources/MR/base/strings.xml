@@ -47,6 +47,8 @@
   <string name="live">LIVE</string>
   <string name="moderated_description">moderated</string>
   <string name="forwarded_description">forwarded</string>
+  <string name="saved_description">saved</string>
+  <string name="saved_from_description">saved from %s</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
   <string name="error_showing_message">error showing message</string>
@@ -268,6 +270,11 @@
   <string name="edit_history">History</string>
   <string name="no_history">No history</string>
   <string name="in_reply_to">In reply to</string>
+  <string name="saved_chat_item_info_tab">Saved</string>
+  <string name="forwarded_chat_item_info_tab">Forwarded</string>
+  <string name="saved_from_chat_item_info_title">Saved from</string>
+  <string name="forwarded_from_chat_item_info_title">Forwarded from</string>
+  <string name="recipients_can_not_see_who_message_from">Recipient(s) can\'t see who this message is from.</string>
   <string name="delivery">Delivery</string>
   <string name="no_info_on_delivery">No delivery information</string>
   <string name="delete_verb">Delete</string>
@@ -295,6 +302,8 @@
   <string name="revoke_file__title">Revoke file?</string>
   <string name="revoke_file__message">File will be deleted from servers.</string>
   <string name="revoke_file__confirm">Revoke</string>
+  <string name="forward_chat_item">Forward</string>
+  <string name="download_file">Download</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
@@ -329,6 +338,7 @@
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
+  <string name="forward_message">Forward message…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -826,6 +836,10 @@
   <string name="permissions_grant_in_settings">Grant in settings</string>
   <string name="permissions_find_in_settings_and_grant">Find this permission in Android settings and grant it manually.</string>
   <string name="permissions_open_settings">Open settings</string>
+  <string name="audio_device_earpiece">Earpiece</string>
+  <string name="audio_device_speaker">Speaker</string>
+  <string name="audio_device_wired_headphones">Headphones</string>
+  <string name="audio_device_bluetooth">Bluetooth</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -1446,6 +1460,7 @@
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
   <string name="network_option_protocol_timeout">Protocol timeout</string>
   <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
+  <string name="network_option_rcv_concurrency">Receiving concurrency</string>
   <string name="network_option_ping_interval">PING interval</string>
   <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
@@ -1750,6 +1765,14 @@
   <string name="v5_6_picture_in_picture_calls_descr">Use the app while in the call.</string>
   <string name="v5_6_safer_groups">Safer groups</string>
   <string name="v5_6_safer_groups_descr">Admins can block a member for all.</string>
+  <string name="v5_7_quantum_resistant_encryption_descr">Will be enabled in direct chats!</string>
+  <string name="v5_7_forward">Forward and save messages</string>
+  <string name="v5_7_forward_descr">Message source remains private.</string>
+  <string name="v5_7_call_sounds">In-call sounds</string>
+  <string name="v5_7_call_sounds_descr">When connecting audio and video calls.</string>
+  <string name="v5_7_network">Network management</string>
+  <string name="v5_7_network_descr">More reliable network connection.</string>
+  <string name="v5_7_new_interface_languages">Lithuanian UI</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

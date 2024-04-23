@@ -68,7 +68,7 @@ fun MarkdownText (
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
   linkMode: SimplexLinkMode,
-  inlineContent: Map<String, InlineTextContent>? = null,
+  inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val textLayoutDirection = remember (text) {
@@ -119,6 +119,7 @@ fun MarkdownText (
     }
     if (formattedText == null) {
       val annotatedText = buildAnnotatedString {
+        inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
         if (text is String) append(text)
         else if (text is AnnotatedString) append(text)
@@ -127,10 +128,11 @@ fun MarkdownText (
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent ?: mapOf())
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
     } else {
       var hasAnnotations = false
       val annotatedText = buildAnnotatedString {
+        inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
         for ((i, ft) in formattedText.withIndex()) {
           if (ft.format == null) append(ft.text)
@@ -210,7 +212,7 @@ fun MarkdownText (
           }
         )
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       }
     }
   }

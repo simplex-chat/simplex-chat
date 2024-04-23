@@ -12,7 +12,7 @@ import chat.simplex.common.ui.theme.*
 
 @Composable
 fun CIEventView(text: AnnotatedString) {
-  Text(text, Modifier.padding(horizontal = 6.dp, vertical = 6.dp), style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp))
+  Text(text, Modifier.padding(horizontal = 6.dp, vertical = 6.dp), style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp), maxLines = 3)
 }
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

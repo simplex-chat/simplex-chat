@@ -1712,4 +1712,34 @@
     <string name="migrate_from_device_check_connection_and_try_again">Проверете вашата интернет връзка и опитайте отново</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Внимание</b>: архивът ще бъде изтрит.]]></string>
     <string name="v5_6_quantum_resistant_encryption_descr">Активиране в личните чатове (БЕТА)!</string>
+    <string name="allow_to_send_simplex_links">Разрешаване на SimpleX изпращане на връзки /линкове/.</string>
+    <string name="forwarded_description">1. препратено
+\n2. предадено</string>
+    <string name="error_showing_desktop_notification">Грешка при показване на уведомление
+\nГрешка при показване на съобщение</string>
+    <string name="permissions_open_settings">Отворени настройки</string>
+    <string name="permissions_find_in_settings_and_grant">"Намерете това разрешение /права/  в настройките на Android и го задайте ръчно."</string>
+    <string name="network_type_other">Друг
+\nДруги</string>
+    <string name="network_type_cellular">Мобилна мрежа</string>
+    <string name="network_type_no_network_connection">Няма мрежова връзка</string>
+    <string name="network_type_network_wifi">Безжична мрежа</string>
+    <string name="network_type_ethernet">Кабелна мрежа /кабелна технология/</string>
+    <string name="simplex_links_not_allowed">SimpleX връзките не са разрешени</string>
+    <string name="voice_messages_not_allowed">Гласовите съобщения не са разрешени</string>
+    <string name="permissions_grant_in_settings">Предоставян в настройките</string>
+    <string name="settings_section_title_network_connection">Мрежова връзка</string>
+    <string name="simplex_links">SimpleX връзки
+\nСимпълХикс връзки</string>
+    <string name="prohibit_sending_simplex_links">Забранено изпращането на SimpleX връзки</string>
+    <string name="group_members_can_send_simplex_links">Членовете на групата могат да изпращат връзки към SimpleX.</string>
+    <string name="simplex_links_are_prohibited_in_group">SimpleX връзки са забранени в тази група.</string>
+    <string name="feature_enabled_for">Активиране на
+\nАктивиране за</string>
+    <string name="feature_roles_owners">Собственици</string>
+    <string name="permissions_camera">Камера</string>
+    <string name="permissions_camera_and_record_audio">Камера и микрофон</string>
+    <string name="permissions_required">Предоставени разрешения</string>
+    <string name="permissions_grant">Дадени разрешение(я) за извършване на повикване</string>
+    <string name="permissions_record_audio">Микрофон</string>
 </resources>

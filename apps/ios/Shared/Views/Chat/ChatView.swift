@@ -183,7 +183,7 @@ struct ChatView: View {
                                 .disabled(!contact.ready || !contact.active)
                             }
                             searchButton()
-                            toggleNtfsButton(chat)
+                            ToggleNtfsButton(chat: chat)
                                 .disabled(!contact.ready || !contact.active)
                         } label: {
                             Image(systemName: "ellipsis")
@@ -212,7 +212,7 @@ struct ChatView: View {
                         }
                         Menu {
                             searchButton()
-                            toggleNtfsButton(chat)
+                            ToggleNtfsButton(chat: chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -785,11 +785,15 @@ struct ChatView: View {
                     } else {
                         menu.append(saveFileAction(fileSource))
                     }
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
+                    menu.append(downloadFileAction(file))
                 }
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction(ci))
                 }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                if ci.meta.itemDeleted == nil
+                    && (ci.file == nil || (fileSource != nil && fileExists))
+                    && !ci.isLiveDummy && !live {
                     menu.append(forwardUIAction(ci))
                 }
                 if !ci.isLiveDummy {
@@ -949,7 +953,21 @@ struct ChatView: View {
                 saveCryptoFile(fileSource)
             }
         }
-        
+
+        private func downloadFileAction(_ file: CIFile) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Download", comment: "chat item action"),
+                image: UIImage(systemName: "arrow.down.doc")
+            ) { _ in
+                Task {
+                    logger.debug("ChatView downloadFileAction, in Task")
+                    if let user = m.currentUser {
+                        await receiveFile(user: user, fileId: file.fileId)
+                    }
+                }
+            }
+        }
+
         private func editAction(_ ci: ChatItem) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Edit", comment: "chat item action"),
@@ -1198,14 +1216,18 @@ struct ChatView: View {
     }
 }
 
-@ViewBuilder func toggleNtfsButton(_ chat: Chat) -> some View {
-    Button {
-        toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
-    } label: {
-        if chat.chatInfo.ntfsEnabled {
-            Label("Mute", systemImage: "speaker.slash")
-        } else {
-            Label("Unmute", systemImage: "speaker.wave.2")
+struct ToggleNtfsButton: View {
+    @ObservedObject var chat: Chat
+
+    var body: some View {
+        Button {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        } label: {
+            if chat.chatInfo.ntfsEnabled {
+                Label("Mute", systemImage: "speaker.slash")
+            } else {
+                Label("Unmute", systemImage: "speaker.wave.2")
+            }
         }
     }
 }

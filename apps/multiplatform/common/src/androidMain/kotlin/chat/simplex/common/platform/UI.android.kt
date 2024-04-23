@@ -67,10 +67,13 @@ actual fun getKeyboardState(): State<KeyboardState> {
   return keyboardState
 }
 
-actual fun hideKeyboard(view: Any?) {
+actual fun hideKeyboard(view: Any?, clearFocus: Boolean) {
   // LALAL
   //  LocalSoftwareKeyboardController.current?.hide()
   if (view is View) {
+    if (clearFocus) {
+      view.clearFocus()
+    }
     (androidAppContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
   }
 }

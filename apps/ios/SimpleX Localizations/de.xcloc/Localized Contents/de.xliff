@@ -743,6 +743,10 @@
         <target>Unwiederbringliches löschen von gesendeten Nachrichten erlauben. (24 Stunden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
+        <source>Allow to send SimpleX links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve">
         <source>Allow to send files and media.</source>
         <target>Das Senden von Dateien und Medien erlauben.</target>
@@ -1081,6 +1085,10 @@
       <trans-unit id="Cannot receive file" xml:space="preserve">
         <source>Cannot receive file</source>
         <target>Datei kann nicht empfangen werden</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cellular" xml:space="preserve">
+        <source>Cellular</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve">
@@ -2078,6 +2086,10 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Datenbank herabstufen und den Chat öffnen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Download" xml:space="preserve">
+        <source>Download</source>
+        <note>chat item action</note>
+      </trans-unit>
       <trans-unit id="Download failed" xml:space="preserve">
         <source>Download failed</source>
         <target>Herunterladen fehlgeschlagen</target>
@@ -2187,6 +2199,10 @@ Das kann nicht rückgängig gemacht werden!</target>
         <source>Enable self-destruct passcode</source>
         <target>Selbstzerstörungs-Zugangscode aktivieren</target>
         <note>set passcode view</note>
+      </trans-unit>
+      <trans-unit id="Enabled for" xml:space="preserve">
+        <source>Enabled for</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
         <source>Encrypt</source>
@@ -2713,6 +2729,10 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>In dieser Gruppe sind Dateien und Medien nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Files and media not allowed" xml:space="preserve">
+        <source>Files and media not allowed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Files and media prohibited!" xml:space="preserve">
         <source>Files and media prohibited!</source>
         <target>Dateien und Medien sind nicht erlaubt!</target>
@@ -2776,6 +2796,18 @@ Das kann nicht rückgängig gemacht werden!</target>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>Für Konsole</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forward" xml:space="preserve">
+        <source>Forward</source>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Forwarded" xml:space="preserve">
+        <source>Forwarded</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarded from" xml:space="preserve">
+        <source>Forwarded from</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
@@ -2886,6 +2918,10 @@ Das kann nicht rückgängig gemacht werden!</target>
       <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Group members can irreversibly delete sent messages. (24 hours)</source>
         <target>Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
+        <source>Group members can send SimpleX links.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send direct messages." xml:space="preserve">
@@ -3753,6 +3789,10 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Netzwerk &amp; Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Network connection" xml:space="preserve">
+        <source>Network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
         <source>Network settings</source>
         <target>Netzwerkeinstellungen</target>
@@ -3861,6 +3901,10 @@ Das ist Ihr Link für die Gruppe %@!</target>
       <trans-unit id="No history" xml:space="preserve">
         <source>No history</source>
         <target>Kein Nachrichtenverlauf</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No network connection" xml:space="preserve">
+        <source>No network connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -4075,6 +4119,10 @@ Das ist Ihr Link für die Gruppe %@!</target>
       <trans-unit id="Or show this code" xml:space="preserve">
         <source>Or show this code</source>
         <target>Oder diesen QR-Code anzeigen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Other" xml:space="preserve">
+        <source>Other</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4339,6 +4387,10 @@ Fehler: %@</target>
         <target>Reaktionen auf Nachrichten nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
+        <source>Prohibit sending SimpleX links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
         <target>Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.</target>
@@ -4469,6 +4521,10 @@ Fehler: %@</target>
         <target>Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Receiving concurrency" xml:space="preserve">
+        <source>Receiving concurrency</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
         <target>Der Empfang der Datei wird beendet.</target>
@@ -4482,6 +4538,10 @@ Fehler: %@</target>
       <trans-unit id="Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." xml:space="preserve">
         <source>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</source>
         <target>Aktueller Nachrichtenverlauf und verbesserter [Gruppenverzeichnis-Bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Recipient(s) can't see who this message is from." xml:space="preserve">
+        <source>Recipient(s) can't see who this message is from.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
@@ -4784,9 +4844,17 @@ Fehler: %@</target>
         <target>Begrüßungsmeldung speichern?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved" xml:space="preserve">
+        <source>Saved</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
         <source>Saved WebRTC ICE servers will be removed</source>
         <target>Gespeicherte WebRTC ICE-Server werden entfernt</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Saved from" xml:space="preserve">
+        <source>Saved from</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved message" xml:space="preserve">
@@ -5212,6 +5280,14 @@ Fehler: %@</target>
       <trans-unit id="SimpleX links" xml:space="preserve">
         <source>SimpleX links</source>
         <target>SimpleX-Links</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
+        <source>SimpleX links are prohibited in this group.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links not allowed" xml:space="preserve">
+        <source>SimpleX links not allowed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -5927,7 +6003,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
-        <target>Nutzen Sie das neue Inkognito-Profil</target>
+        <target>Ein neues Inkognito-Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
@@ -6050,6 +6126,10 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>In dieser Gruppe sind Sprachnachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Voice messages not allowed" xml:space="preserve">
+        <source>Voice messages not allowed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
         <source>Voice messages prohibited!</source>
         <target>Sprachnachrichten sind nicht erlaubt!</target>
@@ -6128,6 +6208,14 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
         <target>Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil auch für die Gruppen verwendet, für die Sie von diesem Kontakt eingeladen werden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="WiFi" xml:space="preserve">
+        <source>WiFi</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wired ethernet" xml:space="preserve">
+        <source>Wired ethernet</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With encrypted files and media." xml:space="preserve">
@@ -6613,6 +6701,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Admin</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="admins" xml:space="preserve">
+        <source>admins</source>
+        <note>feature role</note>
+      </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
         <target>Verschlüsselung von %@ zustimmen…</target>
@@ -6622,6 +6714,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>agreeing encryption…</source>
         <target>Verschlüsselung zustimmen…</target>
         <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="all members" xml:space="preserve">
+        <source>all members</source>
+        <note>feature role</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
         <source>always</source>
@@ -6953,6 +7049,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>event happened</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="forwarded" xml:space="preserve">
+        <source>forwarded</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
         <target>Gruppe gelöscht</target>
@@ -7160,6 +7260,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Eigentümer</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="owners" xml:space="preserve">
+        <source>owners</source>
+        <note>feature role</note>
+      </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
         <source>peer-to-peer</source>
         <target>Peer-to-Peer</target>
@@ -7209,6 +7313,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>removed you</source>
         <target>hat Sie aus der Gruppe entfernt</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="saved" xml:space="preserve">
+        <source>saved</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="saved from %@" xml:space="preserve">
+        <source>saved from %@</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve">
         <source>sec</source>
@@ -7349,6 +7461,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>yes</source>
         <target>Ja</target>
         <note>pref value</note>
+      </trans-unit>
+      <trans-unit id="you" xml:space="preserve">
+        <source>you</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
         <source>you are invited to group</source>
