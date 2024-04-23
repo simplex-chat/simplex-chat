@@ -83,4 +83,8 @@
     <string name="allow_your_contacts_to_call">Permite contactelor tale să te apeleze.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permite contactelor tale să trimită mesaje vocale.</string>
     <string name="all_your_contacts_will_remain_connected">Toate contactele tale vor rămâne conectate.</string>
+    <string name="cancel_verb">Anulare</string>
+    <string name="camera_not_available">Camera indisponibilă</string>
+    <string name="permissions_camera_and_record_audio">Camera și microfon</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>Atenție</b>: arhiva va fi ștearsă.</string>
 </resources>
