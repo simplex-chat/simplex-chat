@@ -1753,4 +1753,9 @@
     <string name="recipients_can_not_see_who_message_from">I destinatari non possono vedere da chi proviene questo messaggio.</string>
     <string name="saved_chat_item_info_tab">Salvato</string>
     <string name="saved_from_description">salvato da %s</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="audio_device_earpiece">Auricolari</string>
+    <string name="audio_device_wired_headphones">Cuffie</string>
+    <string name="audio_device_speaker">Altoparlante</string>
+    <string name="network_option_rcv_concurrency">Ricezione concomitanza</string>
 </resources>

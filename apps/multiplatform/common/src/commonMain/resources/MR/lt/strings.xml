@@ -1129,7 +1129,7 @@
     <string name="profile_update_event_set_new_address">nustatyti naują kontakto adresą</string>
     <string name="profile_update_event_set_new_picture">nustatyti naują profilio nuotrauką</string>
     <string name="conn_event_disabled_pq">Standartinis visapusis šifravimas</string>
-    <string name="send_receipts">Nusiuntimo kvitai</string>
+    <string name="send_receipts">Pristatymo kvitai</string>
     <string name="info_row_sent_at">Nusiųsta</string>
     <string name="v4_5_italian_interface_descr">Dėkojame naudotojams - prisidėkite per Weblate!</string>
     <string name="is_not_verified">%s nėra patvirtintas</string>
@@ -1224,7 +1224,7 @@
     <string name="share_address">Bendrinti adresą</string>
     <string name="enable_sending_recent_history">Siųsti naujiems nariams iki 100 paskutinių žinučių.</string>
     <string name="receipts_contacts_override_enabled">Kvitų siuntimas yra įjungtas %d kontaktams</string>
-    <string name="receipts_groups_override_enabled">Kvitų siuntimas yra įjungtas %d grupėms</string>
+    <string name="receipts_groups_override_enabled">Pristatymo kvitai yra įjungti %d grupėms</string>
     <string name="set_database_passphrase">Nustatyti duomenų slaptafrazę</string>
     <string name="set_passphrase">Nustatyti slaptafrazę</string>
     <string name="privacy_show_last_messages">Rodyti paskutines žinutes</string>
@@ -1369,7 +1369,7 @@
     <string name="revoke_file__action">Atšaukti failą</string>
     <string name="revoke_file__title">Atšaukti failą?</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">neteisėtas siuntimas</string>
-    <string name="search_or_paste_simplex_link">Ieškoti arba įklijuoti SimpleX nuorodą</string>
+    <string name="search_or_paste_simplex_link">Ieškoti ar įklijuoti SimpleX nuorodą</string>
     <string name="you_need_to_allow_to_send_voice">Jūs turite leisti savo kontaktui siųsti balso žinutes, kad galėtumėte siųsti jas.</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(nuskanuokite ar įklijuokite iš iškarpinės)</string>
     <string name="you_accepted_connection">Priėmėte prisijungimą</string>
@@ -1670,7 +1670,7 @@
     <string name="call_connection_peer_to_peer">lygiaverčiai mazgai</string>
     <string name="remove_passphrase_from_settings">Pašalinti slaptafrazę iš nustatymų?</string>
     <string name="settings_section_title_delivery_receipts">SIŲSTI PRISTATYMO KVITUS PAS</string>
-    <string name="receipts_groups_override_disabled">Pristatymo kvitų siuntimas yra išjungtas %d grupėms</string>
+    <string name="receipts_groups_override_disabled">Pristatymo kvitai yra išjungti %d grupėms</string>
     <string name="you_must_use_the_most_recent_version_of_database">Turite naudoti pačią naujausią pokalbių duomenų bazės versiją TIK viename įrenginyje, kitaip galite nebegauti žinučių iš kai kurių kontaktų.</string>
     <string name="new_passphrase">Nauja slaptafrazė…</string>
     <string name="rcv_group_event_member_deleted">pašalino %1$s</string>
@@ -1722,4 +1722,26 @@
     <string name="migrate_from_device_upload_failed">Įkėlimas nepavyko</string>
     <string name="migrate_from_device_uploading_archive">Įkeliamas archyvas</string>
     <string name="migrate_from_device_try_again">Galite bandyti dar kartą.</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="feature_roles_all_members">visi nariai</string>
+    <string name="audio_device_earpiece">Ausinė</string>
+    <string name="audio_device_wired_headphones">Ausinės</string>
+    <string name="feature_roles_admins">administratoriai</string>
+    <string name="forwarded_chat_item_info_tab">Persiųsta</string>
+    <string name="download_file">Atsisiųsti</string>
+    <string name="forward_chat_item">Persiųsti</string>
+    <string name="files_and_media_not_allowed">Failai ir medija neleidžiami</string>
+    <string name="forwarded_description">persiųsta</string>
+    <string name="allow_to_send_simplex_links">Leisti siųsti SimpleX nuorodas</string>
+    <string name="group_members_can_send_simplex_links">Grupės nariai gali siųsti SimpleX nuorodas.</string>
+    <string name="feature_enabled_for">Įjungta:</string>
+    <string name="network_type_cellular">Mobilusis</string>
+    <string name="v5_7_forward">Persiųskite ir išsaugokite žinutes</string>
+    <string name="forwarded_from_chat_item_info_title">Persiųsta iš</string>
+    <string name="forward_message">Persiųsti žinutę…</string>
+    <string name="v5_7_forward_descr">Žinutės šaltinis išlieka privatus.</string>
+    <string name="v5_7_network_descr">Patikimesnis tinklo ryšys.</string>
+    <string name="settings_section_title_network_connection">Tinklo ryšys</string>
+    <string name="v5_7_call_sounds">Garsai skambučio metu</string>
+    <string name="v5_7_new_interface_languages">Lietuviškas UI</string>
 </resources>
