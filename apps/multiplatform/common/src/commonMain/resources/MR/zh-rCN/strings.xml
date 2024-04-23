@@ -1764,4 +1764,6 @@
     <string name="v5_7_network">网络管理</string>
     <string name="v5_7_forward">转发并保存消息</string>
     <string name="v5_7_new_interface_languages">立陶宛语用户界面</string>
+    <string name="v5_7_call_sounds_descr">连接音频和视频通话时。</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">将在私聊中启用！</string>
 </resources>
