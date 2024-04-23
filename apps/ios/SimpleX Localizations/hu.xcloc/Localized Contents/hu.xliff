@@ -1319,9 +1319,9 @@
         <target>Kapcsolódás automatikusan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect incognito" xml:space="preserve">
+      <trans-unit id="Connect incognito" xml:space="preserve" approved="no">
         <source>Connect incognito</source>
-        <target>Inkognítóban csatlakozva</target>
+        <target state="translated">Kapcsolódás inkognitóban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -1373,9 +1373,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Csatlakoztatott számítógép</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected to desktop" xml:space="preserve">
+      <trans-unit id="Connected to desktop" xml:space="preserve" approved="no">
         <source>Connected to desktop</source>
-        <target>Csatlakozva a számítógéphez</target>
+        <target state="translated">Kapcsolódva a számítógéphez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -5927,7 +5927,7 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve" approved="no">
         <source>Up to 100 last messages are sent to new members.</source>
-        <target state="translated">Legfeljebb az utolsó 100 üzenet kerüljön elküldésre az új tagok számára.</target>
+        <target state="translated">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
@@ -6295,9 +6295,9 @@ A csatlakozáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsola
         <target>Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected to %@." xml:space="preserve">
+      <trans-unit id="You are already connected to %@." xml:space="preserve" approved="no">
         <source>You are already connected to %@.</source>
-        <target>Már csatlakozva van ehhez: %@.</target>
+        <target state="translated">Már kapcsolódva van hozzá: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
@@ -7143,14 +7143,14 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>meghívás a(z) %@ csoportba</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invited" xml:space="preserve">
+      <trans-unit id="invited" xml:space="preserve" approved="no">
         <source>invited</source>
-        <target>meghívott</target>
+        <target state="translated">meghívta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve" approved="no">
         <source>invited %@</source>
-        <target state="translated">%@ meghívta</target>
+        <target state="translated">meghívta %@-t</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve" approved="no">
