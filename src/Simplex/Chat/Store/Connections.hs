@@ -36,7 +36,6 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Util (eitherToMaybe)
 
 getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
@@ -64,7 +63,7 @@ getChatLockEntity db agentConnId = do
       ExceptT . firstRow fromOnly (SEInternalError "group member connection group_id not found") $
         DB.query db "SELECT group_id FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
-getConnectionEntity :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
+getConnectionEntity :: DB.Connection -> VersionRangeChat -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
@@ -185,7 +184,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
-getConnectionEntityByConnReq :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
+getConnectionEntityByConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
 getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   connId_ <-
     maybeFirstRow fromOnly $
@@ -196,7 +195,7 @@ getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2)
 -- multiple connections can have same via_contact_uri_hash if request was repeated;
 -- this function searches for latest connection with contact so that "known contact" plan would be chosen;
 -- deleted connections are filtered out to allow re-connecting via same contact address
-getContactConnEntityByConnReqHash :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
+getContactConnEntityByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
 getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2) = do
   connId_ <-
     maybeFirstRow fromOnly $
@@ -216,7 +215,7 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
         (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
-getConnectionsToSubscribe :: DB.Connection -> (PQSupport -> VersionRangeChat) -> IO ([ConnId], [ConnectionEntity])
+getConnectionsToSubscribe :: DB.Connection -> VersionRangeChat -> IO ([ConnId], [ConnectionEntity])
 getConnectionsToSubscribe db vr = do
   aConnIds <- map fromOnly <$> DB.query_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1"
   entities <- forM aConnIds $ \acId -> do
