@@ -1753,4 +1753,12 @@
     <string name="audio_device_earpiece">Fülhallgató</string>
     <string name="network_option_rcv_concurrency">Egyidejű fogadás</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">A közvetlen csevegésekben engedélyezve lesz!</string>
+    <string name="v5_7_new_interface_languages">Litván kezelőfelület</string>
+    <string name="v5_7_network_descr">Megbízhatóbb hálózati kapcsolat.</string>
+    <string name="v5_7_network">Hálózatkezelés</string>
+    <string name="v5_7_call_sounds_descr">Amikor egy bejövő hang- vagy videóhívás érkezik.</string>
+    <string name="v5_7_forward">Üzenetek továbbítása és mentése</string>
+    <string name="v5_7_call_sounds">Bejövő hívás csengőhangja</string>
+    <string name="v5_7_forward_descr">Az üzenet forrása titokban marad.</string>
 </resources>
