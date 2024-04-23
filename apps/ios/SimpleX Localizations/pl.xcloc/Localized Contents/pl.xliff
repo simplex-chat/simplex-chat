@@ -2354,11 +2354,6 @@ To nie może być cofnięte!</target>
         <target>Błąd dodawania członka(ów)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve">
-        <source>Error allowing contact PQ encryption</source>
-        <target>Błąd pozwalania kontaktowi na szyfrowanie PQ</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
         <source>Error changing address</source>
         <target>Błąd zmiany adresu</target>
@@ -2802,6 +2797,10 @@ To nie może być cofnięte!</target>
         <source>Forward</source>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Forward and save messages" xml:space="preserve">
+        <source>Forward and save messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
         <source>Forwarded</source>
         <note>No comment provided by engineer.</note>
@@ -3162,6 +3161,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
         <target>W odpowiedzi na</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In-call sounds" xml:space="preserve">
+        <source>In-call sounds</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3639,6 +3642,10 @@ To jest twój link do grupy %@!</target>
         <target>Reakcje wiadomości są zabronione w tej grupie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message source remains private." xml:space="preserve">
+        <source>Message source remains private.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>Tekst wiadomości</target>
@@ -3754,6 +3761,10 @@ To jest twój link do grupy %@!</target>
         <target>Więcej ulepszeń już wkrótce!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="More reliable network connection." xml:space="preserve">
+        <source>More reliable network connection.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
         <source>Most likely this connection is deleted.</source>
         <target>Najprawdopodobniej to połączenie jest usunięte.</target>
@@ -3791,6 +3802,10 @@ To jest twój link do grupy %@!</target>
       </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
         <source>Network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network management" xml:space="preserve">
+        <source>Network management</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -4291,11 +4306,6 @@ Błąd: %@</target>
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
         <target>Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy</target>
         <note>server test error</note>
-      </trans-unit>
-      <trans-unit id="Post-quantum E2EE" xml:space="preserve">
-        <source>Post-quantum E2EE</source>
-        <target>Postkwantowe szyfrowanie E2E</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
@@ -6200,6 +6210,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
         <target>Gdy dostępny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
+        <source>When connecting audio and video calls.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
         <source>When people request to connect, you can accept or reject it.</source>
         <target>Kiedy ludzie proszą o połączenie, możesz je zaakceptować lub odrzucić.</target>
@@ -6212,6 +6226,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
         <source>WiFi</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
+        <source>Will be enabled in direct chats!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wired ethernet" xml:space="preserve">
