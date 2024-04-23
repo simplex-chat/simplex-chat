@@ -86,6 +86,6 @@
     <string name="cancel_verb">Anulare</string>
     <string name="camera_not_available">Camera indisponibilă</string>
     <string name="permissions_camera_and_record_audio">Camera și microfon</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Atenție</b>: arhiva va fi ștearsă.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Atenție</b>: arhiva va fi ștearsă.]]></string>
     <string name="icon_descr_cancel_file_preview">Anulează previzualizarea fișierului</string>
 </resources>
