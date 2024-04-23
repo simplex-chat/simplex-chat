@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -22,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -398,22 +396,41 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           showItemDetails = { cInfo, cItem ->
-            withBGApi {
+            suspend fun loadChatItemInfo(): ChatItemInfo? {
               val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
               if (ciInfo != null) {
                 if (chat.chatInfo is ChatInfo.Group) {
                   setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
                 }
-                ModalManager.end.closeModals()
-                ModalManager.end.showModalCloseable(endButtons = {
-                  ShareButton {
-                    clipboard.shareText(itemInfoShareText(chatModel, cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+              }
+              return ciInfo
+            }
+            withBGApi {
+              var initialCiInfo = loadChatItemInfo() ?: return@withBGApi
+              ModalManager.end.closeModals()
+              ModalManager.end.showModalCloseable(endButtons = {
+                ShareButton {
+                  clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
+                }
+              }) { close ->
+                var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
+                ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+                LaunchedEffect(cItem.id) {
+                  withContext(Dispatchers.Default) {
+                    for (apiResp in controller.messagesChannel) {
+                      val msg = apiResp.resp
+                      if (apiResp.remoteHostId == chatRh &&
+                        msg is CR.ChatItemStatusUpdated &&
+                        msg.chatItem.chatItem.id == cItem.id
+                      ) {
+                        ciInfo = loadChatItemInfo() ?: return@withContext
+                        initialCiInfo = ciInfo
+                      }
+                    }
                   }
-                }) { close ->
-                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
-                  KeyChangeEffect(chatModel.chatId.value) {
-                    close()
-                  }
+                }
+                KeyChangeEffect(chatModel.chatId.value) {
+                  close()
                 }
               }
             }
