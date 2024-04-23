@@ -52,7 +52,7 @@
     <string name="users_delete_all_chats_deleted">Toate conversațiile și mesajele vor fi șterse - operațiunea este definitivă!</string>
     <string name="clear_note_folder_warning">Toate mesajele vor fi șterse - operațiunea este definitivă!</string>
     <string name="allow_message_reactions_only_if">Permite reacții la mesaje doar dacă și contactul tău le permite.</string>
-    <string name="allow_to_delete_messages">Permite ștergerea ireversibila a mesajelor trimise. (24 ore)</string>
+    <string name="allow_to_delete_messages">Permite ștergerea ireversibilă a mesajelor trimise. (24 ore)</string>
     <string name="allow_to_send_files">Permite trimiterea de fișiere și media.</string>
     <string name="v5_1_self_destruct_passcode_descr">Toate datele sunt șterse când este introdusă.</string>
     <string name="all_group_members_will_remain_connected">Toți membrii grupului vor rămâne conectați.</string>
@@ -69,4 +69,23 @@
     <string name="allow_to_send_disappearing">Permite trimiterea de mesaje efemere.</string>
     <string name="allow_to_send_voice">Permite trimiterea de mesaje vocale.</string>
     <string name="allow_disappearing_messages_only_if">Permite mesaje efemere doar dacă le permite contactul tău.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Permite contactelor tale să trimită mesaje care dispar.</string>
+    <string name="appearance_settings">Aspect</string>
+    <string name="app_version_title">Versiunea aplicației</string>
+    <string name="feature_roles_all_members">toți membrii</string>
+    <string name="allow_to_send_simplex_links">Permite trimiterea linkurilor SimpleX.</string>
+    <string name="feature_roles_admins">administratori</string>
+    <string name="v5_6_safer_groups_descr">Administratorii pot bloca un membru pentru toți.</string>
+    <string name="chat_preferences_always">întotdeauna</string>
+    <string name="app_version_name">Versiunea aplicației: v%s</string>
+    <string name="allow_your_contacts_irreversibly_delete">Permite contactelor tale să șteargă ireversibil mesajele trimise. (24 de ore)</string>
+    <string name="allow_your_contacts_adding_message_reactions">Permite contactelor tale să adauge reacții la mesaje.</string>
+    <string name="allow_your_contacts_to_call">Permite contactelor tale să te apeleze.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Permite contactelor tale să trimită mesaje vocale.</string>
+    <string name="all_your_contacts_will_remain_connected">Toate contactele tale vor rămâne conectate.</string>
+    <string name="cancel_verb">Anulare</string>
+    <string name="camera_not_available">Camera indisponibilă</string>
+    <string name="permissions_camera_and_record_audio">Camera și microfon</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Atenție</b>: arhiva va fi ștearsă.]]></string>
+    <string name="icon_descr_cancel_file_preview">Anulează previzualizarea fișierului</string>
 </resources>

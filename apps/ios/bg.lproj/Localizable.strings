@@ -86,6 +86,9 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Най-поверително**: не използвайте сървъра за известия SimpleX Chat, периодично проверявайте съобщенията във фонов режим (зависи от това колко често използвате приложението).";
 
 /* No comment provided by engineer. */
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Моля, обърнете внимание**: използването на една и съща база данни на две устройства ще наруши декриптирането на съобщенията от вашите връзки като защита на сигурността.";
+
+/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Моля, обърнете внимание**: НЯМА да можете да възстановите или промените паролата, ако я загубите.";
 
 /* No comment provided by engineer. */
@@ -93,6 +96,9 @@
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Внимание**: Незабавните push известия изискват парола, запазена в Keychain.";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**Внимание**: архивът ще бъде изтрит.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*удебелен*";
@@ -136,6 +142,9 @@
 /* No comment provided by engineer. */
 "%@ connected" = "%@ свързан";
 
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ изтеглено";
+
 /* notification title */
 "%@ is connected!" = "%@ е свързан!";
 
@@ -147,6 +156,9 @@
 
 /* No comment provided by engineer. */
 "%@ servers" = "%@ сървъри";
+
+/* No comment provided by engineer. */
+"%@ uploaded" = "%@ качено";
 
 /* notification title */
 "%@ wants to connect!" = "%@ иска да се свърже!";
@@ -377,6 +389,9 @@
 /* member role */
 "admin" = "админ";
 
+/* feature role */
+"admins" = "администратори";
+
 /* No comment provided by engineer. */
 "Admins can block a member for all." = "Администраторите могат да блокират член за всички.";
 
@@ -403,6 +418,9 @@
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Всички членове на групата ще останат свързани.";
+
+/* feature role */
+"all members" = "всички членове";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Всички съобщения ще бъдат изтрити - това не може да бъде отменено!";
@@ -451,6 +469,9 @@
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Позволи изпращане на файлове и медия.";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "Разрешаване на изпращане на SimpleX линкове.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Позволи изпращане на гласови съобщения.";
@@ -696,6 +717,9 @@
 "Cannot receive file" = "Файлът не може да бъде получен";
 
 /* No comment provided by engineer. */
+"Cellular" = "Мобилна мрежа";
+
+/* No comment provided by engineer. */
 "Change" = "Промени";
 
 /* No comment provided by engineer. */
@@ -779,6 +803,9 @@
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Китайски и Испански интерфейс";
+
+/* No comment provided by engineer. */
+"Choose _Migrate from another device_ on the new device and scan QR code." = "Изберете _Мигриране от друго устройство_ на новото устройство и сканирайте QR кода.";
 
 /* No comment provided by engineer. */
 "Choose file" = "Избери файл";
@@ -1386,6 +1413,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Понижи версията и отвори чата";
 
+/* chat item action */
+"Download" = "Изтегли";
+
 /* No comment provided by engineer. */
 "Download failed" = "Неуспешно изтегляне";
 
@@ -1460,6 +1490,9 @@
 
 /* enabled status */
 "enabled" = "активирано";
+
+/* No comment provided by engineer. */
+"Enabled for" = "Активирано за";
 
 /* enabled status */
 "enabled for contact" = "активирано за контакт";
@@ -1589,9 +1622,6 @@
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Грешка при добавяне на член(ове)";
-
-/* No comment provided by engineer. */
-"Error allowing contact PQ encryption" = "Грешка при разрешаване на PQ криптиране за контакт";
 
 /* No comment provided by engineer. */
 "Error changing address" = "Грешка при промяна на адреса";
@@ -1819,6 +1849,9 @@
 "Files and media are prohibited in this group." = "Файловете и медията са забранени в тази група.";
 
 /* No comment provided by engineer. */
+"Files and media not allowed" = "Файлове и медия не са разрешени";
+
+/* No comment provided by engineer. */
 "Files and media prohibited!" = "Файловете и медията са забранени!";
 
 /* No comment provided by engineer. */
@@ -1856,6 +1889,18 @@
 
 /* No comment provided by engineer. */
 "For console" = "За конзолата";
+
+/* chat item action */
+"Forward" = "Препрати";
+
+/* No comment provided by engineer. */
+"forwarded" = "препратено";
+
+/* No comment provided by engineer. */
+"Forwarded" = "Препратено";
+
+/* No comment provided by engineer. */
+"Forwarded from" = "Препратено от";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Намерено настолно устройство";
@@ -1934,6 +1979,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send files and media." = "Членовете на групата могат да изпращат файлове и медия.";
+
+/* No comment provided by engineer. */
+"Group members can send SimpleX links." = "Членовете на групата могат да изпращат SimpleX линкове.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Членовете на групата могат да изпращат гласови съобщения.";
@@ -2437,6 +2485,12 @@
 "Messages from %@ will be shown!" = "Съобщенията от %@ ще бъдат показани!";
 
 /* No comment provided by engineer. */
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Съобщенията, файловете и разговорите са защитени чрез **криптиране от край до край** с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.";
+
+/* No comment provided by engineer. */
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Съобщенията, файловете и разговорите са защитени чрез **квантово устойчиво e2e криптиране** с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.";
+
+/* No comment provided by engineer. */
 "Migrate device" = "Мигрирай устройството";
 
 /* No comment provided by engineer. */
@@ -2521,6 +2575,9 @@
 "Network & servers" = "Мрежа и сървъри";
 
 /* No comment provided by engineer. */
+"Network connection" = "Мрежова връзка";
+
+/* No comment provided by engineer. */
 "Network settings" = "Мрежови настройки";
 
 /* No comment provided by engineer. */
@@ -2597,6 +2654,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Няма история";
+
+/* No comment provided by engineer. */
+"No network connection" = "Няма мрежова връзка";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Няма разрешение за запис на гласово съобщение";
@@ -2744,8 +2804,14 @@
 /* No comment provided by engineer. */
 "Or show this code" = "Или покажи този код";
 
+/* No comment provided by engineer. */
+"Other" = "Други";
+
 /* member role */
 "owner" = "собственик";
+
+/* feature role */
+"owners" = "собственици";
 
 /* No comment provided by engineer. */
 "Passcode" = "Код за достъп";
@@ -2850,9 +2916,6 @@
 "Possibly, certificate fingerprint in server address is incorrect" = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
 
 /* No comment provided by engineer. */
-"Post-quantum E2EE" = "Постквантово E2EE";
-
-/* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Запазете последната чернова на съобщението с прикачени файлове.";
 
 /* No comment provided by engineer. */
@@ -2914,6 +2977,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending files and media." = "Забрани изпращането на файлове и медия.";
+
+/* No comment provided by engineer. */
+"Prohibit sending SimpleX links." = "Забранете изпращането на SimpleX линкове.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Забрани изпращането на гласови съобщения.";
@@ -2994,6 +3060,9 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Получаващият адрес ще бъде променен към друг сървър. Промяната на адреса ще завърши, след като подателят е онлайн.";
 
 /* No comment provided by engineer. */
+"Receiving concurrency" = "Паралелност на получаване";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Получаващият се файл ще бъде спрян.";
 
 /* No comment provided by engineer. */
@@ -3001,6 +3070,9 @@
 
 /* No comment provided by engineer. */
 "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Скорошна история и подобрен [bot за директория за групи](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPd jdLW3%23%2F%3Fv%3D1-2% 26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
+"Recipient(s) can't see who this message is from." = "Получателят(ите) не могат да видят от кого е това съобщение.";
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Получателите виждат актуализации, докато ги въвеждате.";
@@ -3196,6 +3268,18 @@
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Запази съобщението при посрещане?";
+
+/* No comment provided by engineer. */
+"saved" = "запазено";
+
+/* No comment provided by engineer. */
+"Saved" = "Запазено";
+
+/* No comment provided by engineer. */
+"Saved from" = "Запазено от";
+
+/* No comment provided by engineer. */
+"saved from %@" = "запазено от %@";
 
 /* message info title */
 "Saved message" = "Запазено съобщение";
@@ -3463,6 +3547,12 @@
 
 /* chat feature */
 "SimpleX links" = "SimpleX линкове";
+
+/* No comment provided by engineer. */
+"SimpleX links are prohibited in this group." = "SimpleX линкове са забранени в тази група.";
+
+/* No comment provided by engineer. */
+"SimpleX links not allowed" = "SimpleX линковете не са разрешени";
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "SimpleX заключване";
@@ -4029,6 +4119,9 @@
 "Voice messages are prohibited in this group." = "Гласовите съобщения са забранени в тази група.";
 
 /* No comment provided by engineer. */
+"Voice messages not allowed" = "Гласовите съобщения не са разрешени";
+
+/* No comment provided by engineer. */
 "Voice messages prohibited!" = "Гласовите съобщения са забранени!";
 
 /* No comment provided by engineer. */
@@ -4086,6 +4179,12 @@
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когато споделяте инкогнито профил с някого, този профил ще се използва за групите, в които той ви кани.";
 
 /* No comment provided by engineer. */
+"WiFi" = "WiFi";
+
+/* No comment provided by engineer. */
+"Wired ethernet" = "Кабелен Ethernet";
+
+/* No comment provided by engineer. */
 "With encrypted files and media." = "С криптирани файлове и медия.";
 
 /* No comment provided by engineer. */
@@ -4107,7 +4206,13 @@
 "yes" = "да";
 
 /* No comment provided by engineer. */
+"you" = "вие";
+
+/* No comment provided by engineer. */
 "You" = "Вие";
+
+/* No comment provided by engineer. */
+"You **must not** use the same database on two devices." = "**Не трябва** да използвате една и съща база данни на две устройства.";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "Вие приехте връзката";

@@ -728,7 +728,7 @@
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
-        <target>送信済みメッセージの永久削除を許可する。</target>
+        <target>送信済みメッセージの永久削除を許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -767,7 +767,7 @@
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
-        <target>送信相手が永久メッセージ削除するのを許可する。</target>
+        <target>送信相手が永久メッセージ削除するのを許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
@@ -987,7 +987,7 @@
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages. (24 hours)</source>
-        <target>あなたと連絡相手が送信済みメッセージを永久削除できます。</target>
+        <target>あなたと連絡相手が送信済みメッセージを永久削除できます。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
@@ -2818,7 +2818,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Group members can irreversibly delete sent messages. (24 hours)</source>
-        <target>グループのメンバーがメッセージを完全削除することができます。</target>
+        <target>グループのメンバーがメッセージを完全削除することができます。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
@@ -3890,7 +3890,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</source>
-        <target>メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。</target>
+        <target>メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve">
@@ -3915,7 +3915,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)</source>
-        <target>メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。</target>
+        <target>メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can make calls." xml:space="preserve">

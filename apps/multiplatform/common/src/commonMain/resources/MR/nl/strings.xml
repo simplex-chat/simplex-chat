@@ -1728,7 +1728,7 @@
     <string name="network_type_no_network_connection">Geen netwerkverbinding</string>
     <string name="network_type_other">Ander</string>
     <string name="network_type_network_wifi">Wifi</string>
-    <string name="network_type_ethernet">Wired ethernet</string>
+    <string name="network_type_ethernet">Bekabeld Ethernet</string>
     <string name="files_and_media_not_allowed">Bestanden en media niet toegestaan</string>
     <string name="simplex_links_not_allowed">SimpleX-links zijn niet toegestaan</string>
     <string name="voice_messages_not_allowed">Spraakberichten niet toegestaan</string>
@@ -1751,4 +1751,7 @@
     <string name="download_file">Downloaden</string>
     <string name="forwarded_from_chat_item_info_title">Doorgestuurd vanuit</string>
     <string name="saved_chat_item_info_tab">Opgeslagen</string>
+    <string name="audio_device_earpiece">Oortje</string>
+    <string name="audio_device_wired_headphones">Koptelefoon</string>
+    <string name="audio_device_speaker">Luidspreker</string>
 </resources>
