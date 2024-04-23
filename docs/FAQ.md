@@ -1,7 +1,7 @@
 ---
 title: Frequently Asked Questions
 permalink: /faq/index.html
-revision: 10.04.2024
+revision: 23.04.2024
 ---
 
 # Frequently Asked Questions

@@ -1,3 +1,9 @@
+---
+title: Security Policy
+permalink: /security/index.html
+revision: 23.04.2024
+---
+
 # Security Policy
 
 While great care is taken to ensure the highest level of security and privacy in SimpleX network servers and clients, all software can have flaws, and we believe it is a critical part of an organization's social responsibility to minimize the impact of these flaws through continual vulnerability discovery efforts, defense in depth design, and prompt remediation and notification.
