@@ -1988,6 +1988,7 @@ public struct MigrationFileLinkData: Codable {
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
+    public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
     public var privacyLinkPreviews: Bool? = nil
     public var privacyShowChatPreviews: Bool? = nil
@@ -2011,6 +2012,7 @@ public struct AppSettings: Codable, Equatable {
         let def = AppSettings.defaults
         if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
         if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+        if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -2035,6 +2037,7 @@ public struct AppSettings: Codable, Equatable {
         AppSettings (
             networkConfig: NetCfg.defaults,
             privacyEncryptLocalFiles: true,
+            privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
             privacyShowChatPreviews: true,
