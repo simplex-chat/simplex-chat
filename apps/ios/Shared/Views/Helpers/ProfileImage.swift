@@ -9,33 +9,37 @@
 import SwiftUI
 import SimpleXChat
 
+let defaultProfileImageCorner = 22.5
+
 struct ProfileImage: View {
     var imageStr: String? = nil
     var iconName: String = "person.crop.circle.fill"
     var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
-    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var cornerRadius = 25.0
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
         if let image = imageStr,
            let data = Data(base64Encoded: dropImagePrefix(image)),
            let uiImage = UIImage(data: data) {
-            let v = Image(uiImage: uiImage)
-                .resizable()
-                .frame(width: size, height: size)
-            if cornerRadius <= 0 {
-                v.clipShape(Rectangle())
-            } else if cornerRadius >= 50 {
-                v.clipShape(Circle())
-            } else {
-                v.clipShape(RoundedRectangle(cornerRadius: size * cornerRadius / 100, style: .continuous))
-            }
+            clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius)
         } else {
             Image(systemName: iconName)
                 .resizable()
                 .foregroundColor(color)
                 .frame(width: size, height: size)
         }
+    }
+}
+
+@ViewBuilder func clipProfileImage(_ img: Image, size: CGFloat, radius: Double) -> some View {
+    let v = img.resizable().frame(width: size, height: size)
+    if radius <= 0 {
+        v.clipShape(Rectangle())
+    } else if radius >= 50 {
+        v.clipShape(Circle())
+    } else {
+        v.clipShape(RoundedRectangle(cornerRadius: size * radius / 100, style: .continuous))
     }
 }
 

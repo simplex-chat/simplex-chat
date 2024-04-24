@@ -17,12 +17,14 @@ let interfaceStyleNames: [LocalizedStringKey] = ["System", "Light", "Dark"]
 let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
 
 struct AppearanceSettings: View {
+    @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @State private var iconLightTapped = false
     @State private var iconDarkTapped = false
     @State private var userInterfaceStyle = getUserInterfaceStyleDefault()
     @State private var uiTintColor = getUIAccentColorDefault()
-    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = 25.0
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
 
     var body: some View {
         VStack{
@@ -45,21 +47,19 @@ struct AppearanceSettings: View {
                     }
                 }
 
-                Section("Profile image") {
-                    VStack {
+                Section("Profile images") {
+                    HStack(spacing: 16) {
+                        if let img = m.currentUser?.image, img != "" {
+                            ProfileImage(imageStr: img, size: 60)
+                        } else {
+                            clipProfileImage(Image(colorScheme == .light ? "icon-dark" : "icon-light"), size: 60, radius: profileImageCornerRadius)
+                        }
+
                         Slider(
                             value: $profileImageCornerRadius,
                             in: 0...50,
-                            step: 0.5
+                            step: 2.5
                         )
-
-                        if profileImageCornerRadius <= 0 {
-                            Text("Square")
-                        } else if profileImageCornerRadius >= 50 {
-                            Text("Circle")
-                        } else {
-                            Text(String(format: "%.1f", profileImageCornerRadius) + "%")
-                        }
                     }
                     .foregroundColor(.secondary)
                 }
