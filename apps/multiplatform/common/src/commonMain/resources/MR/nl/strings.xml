@@ -1754,4 +1754,14 @@
     <string name="audio_device_earpiece">Oortje</string>
     <string name="audio_device_wired_headphones">Koptelefoon</string>
     <string name="audio_device_speaker">Luidspreker</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="v5_7_forward_descr">Berichtbron blijft privé.</string>
+    <string name="v5_7_network">Netwerkbeheer</string>
+    <string name="v5_7_call_sounds_descr">Bij het verbinden van audio- en video-oproepen.</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">Wordt ingeschakeld in directe chats!</string>
+    <string name="network_option_rcv_concurrency">Gelijktijdig ontvangen</string>
+    <string name="v5_7_forward">Berichten doorsturen en opslaan</string>
+    <string name="v5_7_call_sounds">Geluiden tijdens het bellen</string>
+    <string name="v5_7_new_interface_languages">Litouwse gebruikersinterface</string>
+    <string name="v5_7_network_descr">Betrouwbaardere netwerkverbinding.</string>
 </resources>

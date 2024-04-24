@@ -1831,7 +1831,7 @@
     <string name="forwarded_from_chat_item_info_title">Weitergeleitet von</string>
     <string name="forward_message">Nachricht weiterleiten…</string>
     <string name="audio_device_wired_headphones">Kopfhörer</string>
-    <string name="network_option_rcv_concurrency">Gleichzeitiger Empfang</string>
+    <string name="network_option_rcv_concurrency">Gelijktijdige ontvangst</string>
     <string name="recipients_can_not_see_who_message_from">Empfänger können nicht sehen, von wem die Nachricht stammt.</string>
     <string name="saved_from_description">abgespeichert von %s</string>
     <string name="saved_chat_item_info_tab">Abgespeichert</string>
