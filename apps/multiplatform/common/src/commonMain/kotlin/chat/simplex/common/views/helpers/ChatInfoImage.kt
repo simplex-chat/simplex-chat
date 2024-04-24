@@ -131,7 +131,7 @@ fun ProfileImageForActiveCall(
       imageBitmap,
       stringResource(MR.strings.image_descr_profile_image),
       contentScale = ContentScale.Crop,
-      modifier = Modifier.size(size).clip(CircleShape)
+      modifier = Modifier.size(size).clip(ProfileIconShape())
     )
   }
 }

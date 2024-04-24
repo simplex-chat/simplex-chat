@@ -36,9 +36,9 @@ expect fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_image).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
-      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center) {
+      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
         Box(Modifier.offset(x = -(size / 12).dp)) {
           if (!image.isNullOrEmpty()) {
@@ -47,15 +47,20 @@ object AppearanceScope {
             ProfileImage(size.dp, if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark)
           }
         }
-        Spacer(Modifier.width(DEFAULT_PADDING - (size / 12).dp))
-        Slider(remember { appPreferences.profileImageCornerRadius.state }.value, valueRange = 0f..50f, steps = 20, onValueChange = {
-          val diff = it % 2.5f
-          appPreferences.profileImageCornerRadius.set(it + (if (diff >= 1.25f) -diff + 2.5f else -diff))
-        },
+        Spacer(Modifier.width(DEFAULT_PADDING_HALF - (size / 12).dp))
+        Slider(
+          remember { appPreferences.profileImageCornerRadius.state }.value,
+          valueRange = 0f..50f,
+          steps = 20,
+          onValueChange = {
+            val diff = it % 2.5f
+            appPreferences.profileImageCornerRadius.set(it + (if (diff >= 1.25f) -diff + 2.5f else -diff))
+          },
           colors = SliderDefaults.colors(
             activeTickColor = Color.Transparent,
             inactiveTickColor = Color.Transparent,
-          ))
+          )
+        )
       }
     }
   }

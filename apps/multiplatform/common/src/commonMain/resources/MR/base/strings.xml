@@ -1033,7 +1033,7 @@
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
-  <string name="settings_section_title_profile_image">Profile image</string>
+  <string name="settings_section_title_profile_images">Profile images</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_network_connection">Network connection</string>
@@ -1771,6 +1771,8 @@
   <string name="v5_7_forward_descr">Message source remains private.</string>
   <string name="v5_7_call_sounds">In-call sounds</string>
   <string name="v5_7_call_sounds_descr">When connecting audio and video calls.</string>
+  <string name="v5_7_shape_profile_images">Shape profile images</string>
+  <string name="v5_7_shape_profile_images_descr">Square, circle, or anything in between.</string>
   <string name="v5_7_network">Network management</string>
   <string name="v5_7_network_descr">More reliable network connection.</string>
   <string name="v5_7_new_interface_languages">Lithuanian UI</string>

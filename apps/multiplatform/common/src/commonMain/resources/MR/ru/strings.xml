@@ -1848,5 +1848,7 @@
     <string name="v5_7_new_interface_languages">Литовский интерфейс</string>
     <string name="v5_7_forward_descr">Источник сообщения остаётся конфиденциальным.</string>
     <string name="v5_7_call_sounds_descr">Во время соединения аудио и видео звонков.</string>
+    <string name="v5_7_shape_profile_images">Форма картинок профилей</string>
+    <string name="v5_7_shape_profile_images_descr">Квадрат, круг и все, что между ними.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Будет включено в прямых разговорах!</string>
 </resources>
