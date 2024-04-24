@@ -2918,7 +2918,6 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
   aciContent_ <- callStatusItemContent user ct chatItemId receivedStatus
   forM_ aciContent_ $ \aciContent -> do
     timed_ <- callTimed ct aciContent
-    -- TODO update
     updateDirectChatItemView user ct chatItemId aciContent False timed_ msgId_
     forM_ (timed_ >>= timedDeleteAt') $
       startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId)
