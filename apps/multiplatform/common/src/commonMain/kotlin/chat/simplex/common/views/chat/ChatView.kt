@@ -1010,13 +1010,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     swipeableModifier,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                   ) {
-                    Box(
-                      Modifier
-                        .clip(CircleShape)
-                        .clickable {
-                          showMemberInfo(chat.chatInfo.groupInfo, member)
-                        }
-                    ) {
+                    Box(Modifier.clickable { showMemberInfo(chat.chatInfo.groupInfo, member) }) {
                       MemberImage(member)
                     }
                     ChatItemViewShortHand(cItem, range)
