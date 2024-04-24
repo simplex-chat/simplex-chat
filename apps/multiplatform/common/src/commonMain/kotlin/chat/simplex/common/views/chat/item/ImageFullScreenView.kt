@@ -146,7 +146,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
               onDispose { playersToRelease.add(decrypted) }
             }
           } else if (media.fileSource != null) {
-            VideoViewEncrypted(uriDecrypted, media.fileSource, preview)
+            VideoViewEncrypted(uriDecrypted, media.fileSource, preview, close)
           }
         }
       }
@@ -163,10 +163,13 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
 expect fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap)
 
 @Composable
-private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: CryptoFile, defaultPreview: ImageBitmap) {
+private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: CryptoFile, defaultPreview: ImageBitmap, close: () -> Unit) {
   LaunchedEffect(Unit) {
     withBGApi {
       uriUnencrypted.value = fileSource.decryptedGetOrCreate()
+      if (uriUnencrypted.value == null) {
+        close()
+      }
     }
   }
   Box(contentAlignment = Alignment.Center) {
