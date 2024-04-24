@@ -20,8 +20,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.platform.base64ToBitmap
-import chat.simplex.common.ui.theme.NoteFolderIconColor
-import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -86,6 +85,16 @@ fun ProfileImage(
       )
     }
   }
+}
+
+@Composable
+fun ProfileImage(size: Dp, image: ImageResource) {
+  Image(
+    painterResource(image),
+    stringResource(MR.strings.image_descr_profile_image),
+    contentScale = ContentScale.Crop,
+    modifier = Modifier.size(size).padding(size / 12).clip(ProfileIconShape())
+  )
 }
 
 @Composable

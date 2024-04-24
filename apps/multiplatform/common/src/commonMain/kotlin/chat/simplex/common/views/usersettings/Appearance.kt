@@ -38,18 +38,13 @@ object AppearanceScope {
   fun ProfileImageSection() {
     SectionView(stringResource(MR.strings.settings_section_title_profile_image).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
-      Row(horizontalArrangement = Arrangement.Center) {
+      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center) {
         val size = 60
         Box(Modifier.offset(x = -(size / 12).dp)) {
           if (!image.isNullOrEmpty()) {
             ProfileImage(size.dp, image, MR.images.ic_simplex_light, color = Color.Unspecified)
           } else {
-            Image(
-              painterResource(if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark),
-              stringResource(MR.strings.image_descr_profile_image),
-              contentScale = ContentScale.Crop,
-              modifier = Modifier.size(size.dp).padding(size.dp / 12).clip(ProfileIconShape())
-            )
+            ProfileImage(size.dp, if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark)
           }
         }
         Spacer(Modifier.width(DEFAULT_PADDING - (size / 12).dp))
