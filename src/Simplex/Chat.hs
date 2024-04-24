@@ -729,7 +729,8 @@ processChatCommand' vr = \case
                     currentTs <- liftIO getCurrentTime
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                    updateDirectChatItem' db user contactId ci (CISndMsgContent mc) live Nothing $ Just msgId
+                    let edited = itemLive /= Just True
+                    updateDirectChatItem' db user contactId ci (CISndMsgContent mc) edited live Nothing $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
                   pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
                 else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
@@ -751,7 +752,8 @@ processChatCommand' vr = \case
                     currentTs <- liftIO getCurrentTime
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                    updateGroupChatItem db user groupId ci (CISndMsgContent mc) live $ Just msgId
+                    let edited = itemLive /= Just True
+                    updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                   pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
                 else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
@@ -765,7 +767,7 @@ processChatCommand' vr = \case
           | otherwise -> withStore' $ \db -> do
               currentTs <- getCurrentTime
               addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-              ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc)
+              ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc) True
               pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
         _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -1144,7 +1146,7 @@ processChatCommand' vr = \case
         let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
         withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
         timed_ <- contactCITimed ct
-        updateDirectChatItemView user ct chatItemId aciContent False timed_ Nothing
+        updateDirectChatItemView user ct chatItemId aciContent False False timed_ Nothing
         forM_ (timed_ >>= timedDeleteAt') $
           startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId)
         pure Nothing
@@ -1159,7 +1161,7 @@ processChatCommand' vr = \case
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
         withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
-        updateDirectChatItemView user ct chatItemId aciContent False Nothing $ Just msgId
+        updateDirectChatItemView user ct chatItemId aciContent False False Nothing $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallAnswer contactId rtcSession ->
@@ -1169,7 +1171,7 @@ processChatCommand' vr = \case
         let callState' = CallNegotiated {localCallType, peerCallType, localCallSession = rtcSession, peerCallSession, sharedKey}
             aciContent = ACIContent SMDSnd $ CISndCall CISCallNegotiated 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallAnswer callId CallAnswer {rtcSession})
-        updateDirectChatItemView user ct chatItemId aciContent False Nothing $ Just msgId
+        updateDirectChatItemView user ct chatItemId aciContent False False Nothing $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallExtraInfo contactId rtcExtraInfo ->
@@ -2607,7 +2609,7 @@ processChatCommand' vr = \case
           | status == CIGISPending -> do
               let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = newStatus} memRole
               timed_ <- contactCITimed ct
-              updateDirectChatItemView user ct itemId aciContent False timed_ Nothing
+              updateDirectChatItemView user ct itemId aciContent False False timed_ Nothing
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId, itemId)
         _ -> pure () -- prohibited
@@ -2918,7 +2920,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
   aciContent_ <- callStatusItemContent user ct chatItemId receivedStatus
   forM_ aciContent_ $ \aciContent -> do
     timed_ <- callTimed ct aciContent
-    updateDirectChatItemView user ct chatItemId aciContent False timed_ msgId_
+    updateDirectChatItemView user ct chatItemId aciContent False False timed_ msgId_
     forM_ (timed_ >>= timedDeleteAt') $
       startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId)
 
@@ -2935,9 +2937,9 @@ callTimed ct aciContent =
     aciContentCallStatus (ACIContent _ (CIRcvCall st _)) = Just st
     aciContentCallStatus _ = Nothing
 
-updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
-updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) live timed_ msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent live timed_ msgId_
+updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
+updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
+  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
   toView $ CRChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
@@ -3970,7 +3972,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ci_ <- withStore $ \db ->
                 getDirectChatItemLast db user contactId
                   >>= liftIO
-                    . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing Nothing)
+                    . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False False Nothing Nothing)
                     . mdeUpdatedCI e
               case ci_ of
                 Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
@@ -4352,7 +4354,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             ci_ <- withStore $ \db ->
               getGroupMemberChatItemLast db user groupId (groupMemberId' m)
                 >>= liftIO
-                  . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
+                  . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False False Nothing)
                   . mdeUpdatedCI e
             case ci_ of
               Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
@@ -4816,7 +4818,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ci <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs content Nothing timed_ live
         ci' <- withStore' $ \db -> do
           createChatItemVersion db (chatItemId' ci) brokerTs mc
-          updateDirectChatItem' db user contactId ci content live Nothing Nothing
+          updateDirectChatItem' db user contactId ci content True live Nothing Nothing
         toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
       where
         brokerTs = metaBrokerTs msgMeta
@@ -4834,7 +4836,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         when changed $
                           addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                         reactions <- getDirectCIReactions db ct sharedMsgId
-                        updateDirectChatItem' db user contactId ci {reactions} content live Nothing $ Just msgId
+                        let edited = itemLive /= Just True
+                        updateDirectChatItem' db user contactId ci {reactions} content edited live Nothing $ Just msgId
                       toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
                       startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
                     else toView $ CRChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
@@ -4966,7 +4969,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) brokerTs content Nothing timed_ live
         ci' <- withStore' $ \db -> do
           createChatItemVersion db (chatItemId' ci) brokerTs mc
-          ci' <- updateGroupChatItem db user groupId ci content live Nothing
+          ci' <- updateGroupChatItem db user groupId ci content True live Nothing
           blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
         toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
       where
@@ -4985,7 +4988,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         when changed $
                           addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                         reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
-                        updateGroupChatItem db user groupId ci {reactions} content live $ Just msgId
+                        let edited = itemLive /= Just True
+                        updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
                       toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                     else toView $ CRChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
@@ -5533,7 +5537,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   atomically $ TM.delete ctId' calls
               forM_ aciContent_ $ \aciContent -> do
                 timed_ <- callTimed ct aciContent
-                updateDirectChatItemView user ct chatItemId aciContent False timed_ $ Just msgId
+                updateDirectChatItemView user ct chatItemId aciContent False False timed_ $ Just msgId
                 forM_ (timed_ >>= timedDeleteAt') $
                   startProximateTimedItemThread user (ChatRef CTDirect ctId', chatItemId)
 
