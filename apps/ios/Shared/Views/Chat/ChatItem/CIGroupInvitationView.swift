@@ -46,7 +46,7 @@ struct CIGroupInvitationView: View {
                         }
                     } else {
                         groupInvitationText()
-                            .padding(.trailing, 60)
+                            .padding(.trailing, 80)
                             .overlay(DetermineWidth())
                     }
                 }
