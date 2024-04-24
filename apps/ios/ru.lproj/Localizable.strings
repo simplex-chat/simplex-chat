@@ -389,6 +389,9 @@
 /* member role */
 "admin" = "админ";
 
+/* feature role */
+"admins" = "админы";
+
 /* No comment provided by engineer. */
 "Admins can block a member for all." = "Админы могут заблокировать члена группы.";
 
@@ -415,6 +418,9 @@
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Все члены группы, которые соединились через эту ссылку, останутся в группе.";
+
+/* feature role */
+"all members" = "все члены";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Все сообщения будут удалены - это нельзя отменить!";
@@ -463,6 +469,9 @@
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Разрешить посылать файлы и медиа.";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "Разрешить отправлять ссылки SimpleX.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Разрешить отправлять голосовые сообщения.";
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Cannot receive file" = "Невозможно получить файл";
+
+/* No comment provided by engineer. */
+"Cellular" = "Мобильная сеть";
 
 /* No comment provided by engineer. */
 "Change" = "Поменять";
@@ -1401,6 +1413,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Откатить версию и открыть чат";
 
+/* chat item action */
+"Download" = "Загрузить";
+
 /* No comment provided by engineer. */
 "Download failed" = "Ошибка загрузки";
 
@@ -1475,6 +1490,9 @@
 
 /* enabled status */
 "enabled" = "включено";
+
+/* No comment provided by engineer. */
+"Enabled for" = "Включено для";
 
 /* enabled status */
 "enabled for contact" = "включено для контакта";
@@ -1831,6 +1849,9 @@
 "Files and media are prohibited in this group." = "Файлы и медиа запрещены в этой группе.";
 
 /* No comment provided by engineer. */
+"Files and media not allowed" = "Файлы и медиа не разрешены";
+
+/* No comment provided by engineer. */
 "Files and media prohibited!" = "Файлы и медиа запрещены!";
 
 /* No comment provided by engineer. */
@@ -1868,6 +1889,21 @@
 
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
+
+/* chat item action */
+"Forward" = "Переслать";
+
+/* No comment provided by engineer. */
+"Forward and save messages" = "Переслать и сохранить сообщение";
+
+/* No comment provided by engineer. */
+"forwarded" = "переслано";
+
+/* No comment provided by engineer. */
+"Forwarded" = "Переслано";
+
+/* No comment provided by engineer. */
+"Forwarded from" = "Переслано из";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Компьютер найден";
@@ -1946,6 +1982,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send files and media." = "Члены группы могут слать файлы и медиа.";
+
+/* No comment provided by engineer. */
+"Group members can send SimpleX links." = "Члены группы могут отправлять ссылки SimpleX.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Члены группы могут отправлять голосовые сообщения.";
@@ -2087,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "В ответ на";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Звуки во время звонков";
 
 /* No comment provided by engineer. */
 "Incognito" = "Инкогнито";
@@ -2434,6 +2476,9 @@
 "message received" = "получено сообщение";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Источник сообщения остаётся конфиденциальным.";
+
+/* No comment provided by engineer. */
 "Message text" = "Текст сообщения";
 
 /* No comment provided by engineer. */
@@ -2517,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Дополнительные улучшения скоро!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Более надежное соединение с сетью.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Скорее всего, соединение удалено.";
 
@@ -2537,6 +2585,12 @@
 
 /* No comment provided by engineer. */
 "Network & servers" = "Сеть & серверы";
+
+/* No comment provided by engineer. */
+"Network connection" = "Интернет-соединение";
+
+/* No comment provided by engineer. */
+"Network management" = "Статус сети";
 
 /* No comment provided by engineer. */
 "Network settings" = "Настройки сети";
@@ -2615,6 +2669,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Нет истории";
+
+/* No comment provided by engineer. */
+"No network connection" = "Нет интернет-соединения";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Нет разрешения для записи голосового сообщения";
@@ -2762,8 +2819,14 @@
 /* No comment provided by engineer. */
 "Or show this code" = "Или покажите этот код";
 
+/* No comment provided by engineer. */
+"Other" = "Другaя сеть";
+
 /* member role */
 "owner" = "владелец";
+
+/* feature role */
+"owners" = "владельцы";
 
 /* No comment provided by engineer. */
 "Passcode" = "Код доступа";
@@ -2931,6 +2994,9 @@
 "Prohibit sending files and media." = "Запретить слать файлы и медиа.";
 
 /* No comment provided by engineer. */
+"Prohibit sending SimpleX links." = "Запретить отправку ссылок SimpleX.";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Запретить отправлять голосовые сообщений.";
 
 /* No comment provided by engineer. */
@@ -3009,6 +3075,9 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Адрес получения сообщений будет перемещён на другой сервер. Изменение адреса завершится после того как отправитель будет онлайн.";
 
 /* No comment provided by engineer. */
+"Receiving concurrency" = "Одновременный приём";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Приём файла будет прекращён.";
 
 /* No comment provided by engineer. */
@@ -3016,6 +3085,9 @@
 
 /* No comment provided by engineer. */
 "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "История сообщений и улучшенный [каталог групп](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
+"Recipient(s) can't see who this message is from." = "Получатели не видят от кого это сообщение.";
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Получатели видят их в то время как Вы их набираете.";
@@ -3211,6 +3283,18 @@
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Сохранить приветственное сообщение?";
+
+/* No comment provided by engineer. */
+"saved" = "сохранено";
+
+/* No comment provided by engineer. */
+"Saved" = "Сохранено";
+
+/* No comment provided by engineer. */
+"Saved from" = "Сохранено из";
+
+/* No comment provided by engineer. */
+"saved from %@" = "сохранено из %@";
 
 /* message info title */
 "Saved message" = "Сохраненное сообщение";
@@ -3478,6 +3562,12 @@
 
 /* chat feature */
 "SimpleX links" = "SimpleX ссылки";
+
+/* No comment provided by engineer. */
+"SimpleX links are prohibited in this group." = "Ссылки SimpleX запрещены в этой группе.";
+
+/* No comment provided by engineer. */
+"SimpleX links not allowed" = "Ссылки SimpleX не разрешены";
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "Блокировка SimpleX";
@@ -4044,6 +4134,9 @@
 "Voice messages are prohibited in this group." = "Голосовые сообщения запрещены в этой группе.";
 
 /* No comment provided by engineer. */
+"Voice messages not allowed" = "Голосовые сообщения не разрешены";
+
+/* No comment provided by engineer. */
 "Voice messages prohibited!" = "Голосовые сообщения запрещены!";
 
 /* No comment provided by engineer. */
@@ -4095,10 +4188,22 @@
 "When available" = "Когда возможно";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Во время соединения аудио и видео звонков.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Когда Вы получите запрос на соединение, Вы можете принять или отклонить его.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когда Вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.";
+
+/* No comment provided by engineer. */
+"WiFi" = "WiFi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Будет включено в прямых разговорах!";
+
+/* No comment provided by engineer. */
+"Wired ethernet" = "Проводная сеть";
 
 /* No comment provided by engineer. */
 "With encrypted files and media." = "С зашифрованными файлами и медиа.";
@@ -4120,6 +4225,9 @@
 
 /* pref value */
 "yes" = "да";
+
+/* No comment provided by engineer. */
+"you" = "Вы";
 
 /* No comment provided by engineer. */
 "You" = "Вы";
