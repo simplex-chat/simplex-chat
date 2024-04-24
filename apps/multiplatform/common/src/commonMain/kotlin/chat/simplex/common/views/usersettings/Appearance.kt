@@ -5,14 +5,16 @@ import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.ContentScale
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -24,7 +26,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.*
 import kotlinx.serialization.encodeToString
-import java.io.File
 import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
@@ -34,6 +35,37 @@ expect fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 
 object AppearanceScope {
   @Composable
+  fun ProfileImageSection() {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_image).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      val image = remember { chatModel.currentUser }.value?.image
+      Row(horizontalArrangement = Arrangement.Center) {
+        val size = 60
+        Box(Modifier.offset(x = -(size / 12).dp)) {
+          if (!image.isNullOrEmpty()) {
+            ProfileImage(size.dp, image, MR.images.ic_simplex_light, color = Color.Unspecified)
+          } else {
+            Image(
+              painterResource(if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark),
+              stringResource(MR.strings.image_descr_profile_image),
+              contentScale = ContentScale.Crop,
+              modifier = Modifier.size(size.dp).padding(size.dp / 12).clip(ProfileIconShape())
+            )
+          }
+        }
+        Spacer(Modifier.width(DEFAULT_PADDING - (size / 12).dp))
+        Slider(remember { appPreferences.profileImageCornerRadius.state }.value, valueRange = 0f..50f, steps = 20, onValueChange = {
+          val diff = it % 2.5f
+          appPreferences.profileImageCornerRadius.set(it + (if (diff >= 1.25f) -diff + 2.5f else -diff))
+        },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          ))
+      }
+    }
+  }
+
+  @Composable
   fun ThemesSection(
     systemDarkTheme: SharedPreference<String?>,
     showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -41,7 +73,7 @@ object AppearanceScope {
   ) {
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
-      val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
+      val darkTheme = isSystemInDarkTheme()
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
         ThemeManager.applyTheme(it, darkTheme)

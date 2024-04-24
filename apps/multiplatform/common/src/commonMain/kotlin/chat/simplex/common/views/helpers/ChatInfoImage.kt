@@ -3,19 +3,22 @@ package chat.simplex.common.views.helpers
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.InspectableValue
+import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatInfo
+import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.common.ui.theme.NoteFolderIconColor
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -79,9 +82,19 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
+        modifier = Modifier.size(size).padding(size / 12).clip(ProfileIconShape())
       )
     }
+  }
+}
+
+@Composable
+fun ProfileIconShape(): Shape {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  return when {
+    percent.value <= 0 -> RectangleShape
+    percent.value >= 50 -> CircleShape
+    else -> RoundedCornerShape(PercentCornerSize(percent.value))
   }
 }
 
@@ -112,6 +125,25 @@ fun ProfileImageForActiveCall(
       modifier = Modifier.size(size).clip(CircleShape)
     )
   }
+}
+
+/** (c) [androidx.compose.foundation.shape.CornerSize] */
+private data class PercentCornerSize(
+  private val percent: Float
+) : CornerSize, InspectableValue {
+  init {
+    if (percent < 0 || percent > 100) {
+      throw IllegalArgumentException("The percent should be in the range of [0, 100]")
+    }
+  }
+
+  override fun toPx(shapeSize: Size, density: Density) =
+    shapeSize.minDimension * (percent / 100f)
+
+  override fun toString(): String = "CornerSize(size = $percent%)"
+
+  override val valueOverride: String
+    get() = "$percent%"
 }
 
 
