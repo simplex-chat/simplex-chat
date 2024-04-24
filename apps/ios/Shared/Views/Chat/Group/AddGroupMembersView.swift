@@ -194,8 +194,7 @@ struct AddGroupMembersViewCommon: View {
             }
         } label: {
             HStack{
-                ProfileImage(imageStr: contact.image)
-                    .frame(width: 30, height: 30)
+                ProfileImage(imageStr: contact.image, size: 30)
                     .padding(.trailing, 2)
                 Text(ChatInfo.direct(contact: contact).chatViewName)
                     .foregroundColor(prohibitedToInviteIncognito ? .secondary : .primary)

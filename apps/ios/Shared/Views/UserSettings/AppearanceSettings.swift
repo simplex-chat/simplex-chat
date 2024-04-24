@@ -22,6 +22,7 @@ struct AppearanceSettings: View {
     @State private var iconDarkTapped = false
     @State private var userInterfaceStyle = getUserInterfaceStyleDefault()
     @State private var uiTintColor = getUIAccentColorDefault()
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = 25.0
 
     var body: some View {
         VStack{
@@ -42,6 +43,25 @@ struct AppearanceSettings: View {
                         Spacer().frame(width: 16)
                         updateAppIcon(image: "icon-dark", icon: "DarkAppIcon", tapped: $iconDarkTapped)
                     }
+                }
+
+                Section("Profile image") {
+                    VStack {
+                        Slider(
+                            value: $profileImageCornerRadius,
+                            in: 0...50,
+                            step: 0.5
+                        )
+
+                        if profileImageCornerRadius <= 0 {
+                            Text("Square")
+                        } else if profileImageCornerRadius >= 50 {
+                            Text("Circle")
+                        } else {
+                            Text(String(format: "%.1f", profileImageCornerRadius) + "%")
+                        }
+                    }
+                    .foregroundColor(.secondary)
                 }
 
                 Section {
@@ -93,7 +113,7 @@ struct AppearanceSettings: View {
             }
             ._onButtonGesture { tapped.wrappedValue = $0 } perform: {}
             .overlay(tapped.wrappedValue ? Color.secondary : Color.clear)
-            .cornerRadius(20)
+            .cornerRadius(13.5)
     }
 }
 

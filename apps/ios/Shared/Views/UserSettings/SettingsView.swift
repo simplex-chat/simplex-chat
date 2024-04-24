@@ -45,6 +45,7 @@ let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -87,6 +88,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
+    DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: 25.0,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -425,8 +427,7 @@ struct ProfilePreview: View {
 
     var body: some View {
         HStack {
-            ProfileImage(imageStr: profileOf.image, color: color)
-                .frame(width: 44, height: 44)
+            ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
                 .padding(.vertical, 6)
             VStack(alignment: .leading) {

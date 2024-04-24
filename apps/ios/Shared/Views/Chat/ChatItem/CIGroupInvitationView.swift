@@ -100,9 +100,9 @@ struct CIGroupInvitationView: View {
             ProfileImage(
                 imageStr: groupInvitation.groupProfile.image,
                 iconName: "person.2.circle.fill",
+                size: 44,
                 color: color
             )
-            .frame(width: 44, height: 44)
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
                 let p = groupInvitation.groupProfile

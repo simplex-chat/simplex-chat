@@ -2890,7 +2890,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Group image" xml:space="preserve">
         <source>Group image</source>
-        <target>Аватар группы</target>
+        <target>Картинка группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group invitation" xml:space="preserve">
@@ -4371,7 +4371,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
         <source>Profile image</source>
-        <target>Аватар</target>
+        <target>Картинка профиля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">

@@ -1951,7 +1951,7 @@
 "Group full name (optional)" = "Полное имя (необязательно)";
 
 /* No comment provided by engineer. */
-"Group image" = "Аватар группы";
+"Group image" = "Картинка группы";
 
 /* No comment provided by engineer. */
 "Group invitation" = "Приглашение в группу";
@@ -2958,7 +2958,7 @@
 "Profile and server connections" = "Профиль и соединения на сервере";
 
 /* No comment provided by engineer. */
-"Profile image" = "Аватар";
+"Profile image" = "Картинка профиля";
 
 /* No comment provided by engineer. */
 "Profile name" = "Имя профиля";
