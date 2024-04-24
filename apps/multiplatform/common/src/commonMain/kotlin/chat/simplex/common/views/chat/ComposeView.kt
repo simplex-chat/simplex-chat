@@ -551,14 +551,17 @@ fun ComposeView(
                 CryptoFile.plain(actualFile.name)
               }
             }
-            files.add(file ?: return null)
+            if (file != null) {
+              files.add(file)
+              msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
+            }
             deleteUnusedFiles()
           } else {
             files.add(CryptoFile.plain(tmpFile.absolutePath))
             // It will be deleted on JVM shutdown or next start (if the app crashes unexpectedly)
             filesToDelete.remove(tmpFile)
+            msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
           }
-          msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
