@@ -271,8 +271,7 @@ struct ChatInfoView: View {
     private func contactInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
-            ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 192, height: 192)
+            ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
             if contact.verified {

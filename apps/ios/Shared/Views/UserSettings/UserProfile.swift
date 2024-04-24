@@ -188,9 +188,7 @@ struct UserProfile: View {
 }
 
 func profileImageView(_ imageStr: String?) -> some View {
-    ProfileImage(imageStr: imageStr)
-        .aspectRatio(1, contentMode: .fit)
-        .frame(maxWidth: 192, maxHeight: 192)
+    ProfileImage(imageStr: imageStr, size: 192)
 }
 
 func editImageButton(action: @escaping () -> Void) -> some View {

@@ -395,6 +395,11 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "When connecting audio and video calls."
             ),
             FeatureDescription(
+                icon: "person.crop.square",
+                title: "Shape profile images",
+                description: "Square, circle, or anything in between."
+            ),
+            FeatureDescription(
                 icon: "antenna.radiowaves.left.and.right",
                 title: "Network management",
                 description: "More reliable network connection."

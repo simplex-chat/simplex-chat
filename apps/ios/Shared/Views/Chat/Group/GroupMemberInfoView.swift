@@ -305,8 +305,7 @@ struct GroupMemberInfoView: View {
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {
         VStack {
-            ProfileImage(imageStr: mem.image, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 192, height: 192)
+            ProfileImage(imageStr: mem.image, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
             if mem.verified {
