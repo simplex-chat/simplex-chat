@@ -2961,6 +2961,9 @@
 "Profile image" = "Картинка профиля";
 
 /* No comment provided by engineer. */
+"Profile images" = "Картинки профилей";
+
+/* No comment provided by engineer. */
 "Profile name" = "Имя профиля";
 
 /* No comment provided by engineer. */
@@ -3503,6 +3506,9 @@
 /* No comment provided by engineer. */
 "Settings" = "Настройки";
 
+/* No comment provided by engineer. */
+"Shape profile images" = "Форма картинок профилей";
+
 /* chat item action */
 "Share" = "Поделиться";
 
@@ -3604,6 +3610,9 @@
 
 /* notification title */
 "Somebody" = "Контакт";
+
+/* No comment provided by engineer. */
+"Square, circle, or anything in between." = "Квадрат, круг и все, что между ними.";
 
 /* chat item text */
 "standard end-to-end encryption" = "стандартное end-to-end шифрование";

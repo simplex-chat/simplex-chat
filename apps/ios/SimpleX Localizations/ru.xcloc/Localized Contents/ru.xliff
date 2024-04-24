@@ -4374,6 +4374,11 @@ Error: %@</source>
         <target>Картинка профиля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Profile images" xml:space="preserve">
+        <source>Profile images</source>
+        <target>Картинки профилей</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
         <source>Profile name</source>
         <target>Имя профиля</target>
@@ -5194,6 +5199,11 @@ Error: %@</source>
         <target>Настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Shape profile images" xml:space="preserve">
+        <source>Shape profile images</source>
+        <target>Форма картинок профилей</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
         <target>Поделиться</target>
@@ -5358,6 +5368,11 @@ Error: %@</source>
         <source>Somebody</source>
         <target>Контакт</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
+        <source>Square, circle, or anything in between.</source>
+        <target>Квадрат, круг и все, что между ними.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
