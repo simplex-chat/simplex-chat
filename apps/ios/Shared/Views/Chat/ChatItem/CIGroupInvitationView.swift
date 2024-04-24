@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIGroupInvitationView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
@@ -56,9 +57,7 @@ struct CIGroupInvitationView: View {
                 }
             }
 
-            chatItem.timestampText
-                .font(.caption)
-                .foregroundColor(.secondary)
+            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -137,8 +136,8 @@ struct CIGroupInvitationView: View {
 struct CIGroupInvitationView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            CIGroupInvitationView(chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin)
-            CIGroupInvitationView(chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin)
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin)
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin)
         }
     }
 }
