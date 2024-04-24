@@ -35,9 +35,7 @@ struct CICallItemView: View {
             case .error: missedCallIcon(sent).foregroundColor(.orange)
             }
 
-            chatItem.timestampText
-                .font(.caption)
-                .foregroundColor(.secondary)
+            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false)
                 .padding(.bottom, 8)
                 .padding(.horizontal, 12)
         }
