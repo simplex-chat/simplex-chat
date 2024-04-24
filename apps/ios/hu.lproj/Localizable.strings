@@ -877,7 +877,7 @@
 "Connect automatically" = "Kapcsolódás automatikusan";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Inkognítóban csatlakozva";
+"Connect incognito" = "Kapcsolódás inkognitóban";
 
 /* No comment provided by engineer. */
 "Connect to desktop" = "Kapcsolódás számítógéphez";
@@ -916,7 +916,7 @@
 "connected directly" = "közvetlenül kapcsolódva";
 
 /* No comment provided by engineer. */
-"Connected to desktop" = "Csatlakozva a számítógéphez";
+"Connected to desktop" = "Kapcsolódva a számítógéphez";
 
 /* No comment provided by engineer. */
 "connecting" = "kapcsolódás";
@@ -1894,6 +1894,9 @@
 "Forward" = "Továbbítás";
 
 /* No comment provided by engineer. */
+"Forward and save messages" = "Üzenetek továbbítása és mentése";
+
+/* No comment provided by engineer. */
 "forwarded" = "továbbított";
 
 /* No comment provided by engineer. */
@@ -2125,6 +2128,9 @@
 "In reply to" = "Válasz neki";
 
 /* No comment provided by engineer. */
+"In-call sounds" = "Bejövő hívás csengőhangja";
+
+/* No comment provided by engineer. */
 "Incognito" = "Inkognitó";
 
 /* No comment provided by engineer. */
@@ -2239,10 +2245,10 @@
 "Invite to group" = "Meghívás a csoportba";
 
 /* No comment provided by engineer. */
-"invited" = "meghívott";
+"invited" = "meghívta";
 
 /* rcv group event chat item */
-"invited %@" = "%@ meghívta";
+"invited %@" = "meghívta %@-t";
 
 /* chat list item title */
 "invited to connect" = "meghívta, hogy csatlakozzon";
@@ -2470,6 +2476,9 @@
 "message received" = "üzenet érkezett";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Az üzenet forrása titokban marad.";
+
+/* No comment provided by engineer. */
 "Message text" = "Üzenet szövege";
 
 /* No comment provided by engineer. */
@@ -2553,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Hamarosan további fejlesztések érkeznek!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Megbízhatóbb hálózati kapcsolat.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Valószínűleg ez a kapcsolat törlésre került.";
 
@@ -2576,6 +2588,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Internetkapcsolat";
+
+/* No comment provided by engineer. */
+"Network management" = "Hálózatkezelés";
 
 /* No comment provided by engineer. */
 "Network settings" = "Hálózati beállítások";
@@ -3957,7 +3972,7 @@
 "Unread" = "Olvasatlan";
 
 /* No comment provided by engineer. */
-"Up to 100 last messages are sent to new members." = "Legfeljebb az utolsó 100 üzenet kerüljön elküldésre az új tagok számára.";
+"Up to 100 last messages are sent to new members." = "Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.";
 
 /* No comment provided by engineer. */
 "Update" = "Frissítés";
@@ -4173,6 +4188,9 @@
 "When available" = "Amikor elérhető";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Amikor egy bejövő hang- vagy videóhívás érkezik.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Csatlakozási kérelmek esetében, elfogadhatja vagy elutasíthatja azokat.";
 
 /* No comment provided by engineer. */
@@ -4180,6 +4198,9 @@
 
 /* No comment provided by engineer. */
 "WiFi" = "Wi-Fi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "A közvetlen csevegésekben engedélyezve lesz!";
 
 /* No comment provided by engineer. */
 "Wired ethernet" = "Vezetékes Ethernet";
@@ -4224,7 +4245,7 @@
 "You already have a chat profile with the same display name. Please choose another name." = "Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.";
 
 /* No comment provided by engineer. */
-"You are already connected to %@." = "Már csatlakozva van ehhez: %@.";
+"You are already connected to %@." = "Már kapcsolódva van hozzá: %@.";
 
 /* No comment provided by engineer. */
 "You are already connecting to %@." = "Már folyamatban van a csatlakozás ehhez: %@.";

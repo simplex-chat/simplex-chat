@@ -2803,9 +2803,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Doorsturen</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Forward and save messages" xml:space="preserve" approved="no">
+      <trans-unit id="Forward and save messages" xml:space="preserve">
         <source>Forward and save messages</source>
-        <target state="translated">Berichten doorsturen en opslaan</target>
+        <target>Berichten doorsturen en opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3173,9 +3173,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>In antwoord op</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In-call sounds" xml:space="preserve" approved="no">
+      <trans-unit id="In-call sounds" xml:space="preserve">
         <source>In-call sounds</source>
-        <target state="translated">Geluiden tijdens het bellen</target>
+        <target>Geluiden tijdens het bellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3653,9 +3653,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Reacties op berichten zijn verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message source remains private." xml:space="preserve" approved="no">
+      <trans-unit id="Message source remains private." xml:space="preserve">
         <source>Message source remains private.</source>
-        <target state="translated">Berichtbron blijft privé.</target>
+        <target>Berichtbron blijft privé.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -3773,9 +3773,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Meer verbeteringen volgen snel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="More reliable network connection." xml:space="preserve" approved="no">
+      <trans-unit id="More reliable network connection." xml:space="preserve">
         <source>More reliable network connection.</source>
-        <target state="translated">Betrouwbaardere netwerkverbinding.</target>
+        <target>Betrouwbaardere netwerkverbinding.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
@@ -3818,9 +3818,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Netwerkverbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network management" xml:space="preserve" approved="no">
+      <trans-unit id="Network management" xml:space="preserve">
         <source>Network management</source>
-        <target state="translated">Netwerkbeheer</target>
+        <target>Netwerkbeheer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -4549,9 +4549,9 @@ Fout: %@</target>
         <target>Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Receiving concurrency" xml:space="preserve" approved="no">
+      <trans-unit id="Receiving concurrency" xml:space="preserve">
         <source>Receiving concurrency</source>
-        <target state="translated">Gelijktijdig ontvangen</target>
+        <target>Gelijktijdig ontvangen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -6235,9 +6235,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Wanneer beschikbaar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When connecting audio and video calls." xml:space="preserve" approved="no">
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
         <source>When connecting audio and video calls.</source>
-        <target state="translated">Bij het verbinden van audio- en video-oproepen.</target>
+        <target>Bij het verbinden van audio- en video-oproepen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
@@ -6255,9 +6255,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Wifi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve" approved="no">
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
         <source>Will be enabled in direct chats!</source>
-        <target state="translated">Wordt ingeschakeld in directe chats!</target>
+        <target>Wordt ingeschakeld in directe chats!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wired ethernet" xml:space="preserve">
