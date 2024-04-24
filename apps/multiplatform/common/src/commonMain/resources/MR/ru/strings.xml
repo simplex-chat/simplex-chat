@@ -1820,7 +1820,7 @@
     <string name="audio_device_speaker">Громкоговоритель</string>
     <string name="v5_7_call_sounds">Звуки во время звонков</string>
     <string name="v5_7_network_descr">Более надежное соединение с сетью.</string>
-    <string name="v5_7_network">Управление соединением</string>
+    <string name="v5_7_network">Статус сети</string>
     <string name="saved_description">сохранено</string>
     <string name="saved_from_description">сохранено из %s</string>
     <string name="forwarded_chat_item_info_tab">Переслано</string>

@@ -1894,13 +1894,16 @@
 "Forward" = "Weiterleiten";
 
 /* No comment provided by engineer. */
+"Forward and save messages" = "Nachrichten weiterleiten und speichern";
+
+/* No comment provided by engineer. */
 "forwarded" = "weitergeleitet";
 
 /* No comment provided by engineer. */
 "Forwarded" = "Weitergeleitet";
 
 /* No comment provided by engineer. */
-"Forwarded from" = "Weitergeleitet von";
+"Forwarded from" = "Weitergeleitet aus";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Gefundener Desktop";
@@ -2123,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "Als Antwort auf";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Klingeltöne";
 
 /* No comment provided by engineer. */
 "Incognito" = "Inkognito";
@@ -2470,6 +2476,9 @@
 "message received" = "Nachricht empfangen";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Die Nachrichtenquelle bleibt privat.";
+
+/* No comment provided by engineer. */
 "Message text" = "Nachrichtentext";
 
 /* No comment provided by engineer. */
@@ -2553,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Weitere Verbesserungen sind bald verfügbar!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Zuverlässigere Netzwerkverbindung.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Wahrscheinlich ist diese Verbindung gelöscht worden.";
 
@@ -2576,6 +2588,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Netzwerkverbindung";
+
+/* No comment provided by engineer. */
+"Network management" = "Netzwerk-Verwaltung";
 
 /* No comment provided by engineer. */
 "Network settings" = "Netzwerkeinstellungen";
@@ -4173,6 +4188,9 @@
 "When available" = "Wenn verfügbar";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Bei der Verbindung über Audio- und Video-Anrufe.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Wenn Personen eine Verbindung anfordern, können Sie diese annehmen oder ablehnen.";
 
 /* No comment provided by engineer. */
@@ -4180,6 +4198,9 @@
 
 /* No comment provided by engineer. */
 "WiFi" = "WiFi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Wird in direkten Chats automatisch aktiviert!";
 
 /* No comment provided by engineer. */
 "Wired ethernet" = "Kabelgebundenes Netzwerk";

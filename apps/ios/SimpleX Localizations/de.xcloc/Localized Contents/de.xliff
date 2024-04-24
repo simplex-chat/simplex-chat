@@ -2803,9 +2803,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Weiterleiten</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Forward and save messages" xml:space="preserve" approved="no">
+      <trans-unit id="Forward and save messages" xml:space="preserve">
         <source>Forward and save messages</source>
-        <target state="translated">Nachrichten weiterleiten und speichern</target>
+        <target>Nachrichten weiterleiten und speichern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -2813,9 +2813,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Weitergeleitet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarded from" xml:space="preserve" approved="no">
+      <trans-unit id="Forwarded from" xml:space="preserve">
         <source>Forwarded from</source>
-        <target state="translated">Weitergeleitet aus</target>
+        <target>Weitergeleitet aus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
@@ -3173,9 +3173,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Als Antwort auf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In-call sounds" xml:space="preserve" approved="no">
+      <trans-unit id="In-call sounds" xml:space="preserve">
         <source>In-call sounds</source>
-        <target state="translated">Klingeltöne</target>
+        <target>Klingeltöne</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3653,9 +3653,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>In dieser Gruppe sind Reaktionen auf Nachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message source remains private." xml:space="preserve" approved="no">
+      <trans-unit id="Message source remains private." xml:space="preserve">
         <source>Message source remains private.</source>
-        <target state="translated">Die Nachrichtenquelle bleibt privat.</target>
+        <target>Die Nachrichtenquelle bleibt privat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -3773,9 +3773,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Weitere Verbesserungen sind bald verfügbar!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="More reliable network connection." xml:space="preserve" approved="no">
+      <trans-unit id="More reliable network connection." xml:space="preserve">
         <source>More reliable network connection.</source>
-        <target state="translated">Zuverlässigere Netzwerkverbindung.</target>
+        <target>Zuverlässigere Netzwerkverbindung.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
@@ -3818,9 +3818,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Netzwerkverbindung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network management" xml:space="preserve" approved="no">
+      <trans-unit id="Network management" xml:space="preserve">
         <source>Network management</source>
-        <target state="translated">Netzwerk-Verwaltung</target>
+        <target>Netzwerk-Verwaltung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -6235,9 +6235,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Wenn verfügbar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When connecting audio and video calls." xml:space="preserve" approved="no">
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
         <source>When connecting audio and video calls.</source>
-        <target state="translated">Bei der Verbindung über Audio- und Video-Anrufe.</target>
+        <target>Bei der Verbindung über Audio- und Video-Anrufe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
@@ -6255,9 +6255,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>WiFi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve" approved="no">
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
         <source>Will be enabled in direct chats!</source>
-        <target state="translated">Wird in direkten Chats automatisch aktiviert!</target>
+        <target>Wird in direkten Chats automatisch aktiviert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wired ethernet" xml:space="preserve">
