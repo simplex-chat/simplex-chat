@@ -1894,6 +1894,9 @@
 "Forward" = "Doorsturen";
 
 /* No comment provided by engineer. */
+"Forward and save messages" = "Berichten doorsturen en opslaan";
+
+/* No comment provided by engineer. */
 "forwarded" = "doorgestuurd";
 
 /* No comment provided by engineer. */
@@ -2123,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "In antwoord op";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Geluiden tijdens het bellen";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incognito";
@@ -2470,6 +2476,9 @@
 "message received" = "bericht ontvangen";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Berichtbron blijft privé.";
+
+/* No comment provided by engineer. */
 "Message text" = "Bericht tekst";
 
 /* No comment provided by engineer. */
@@ -2553,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Meer verbeteringen volgen snel!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Betrouwbaardere netwerkverbinding.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Hoogstwaarschijnlijk is deze verbinding verwijderd.";
 
@@ -2576,6 +2588,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Netwerkverbinding";
+
+/* No comment provided by engineer. */
+"Network management" = "Netwerkbeheer";
 
 /* No comment provided by engineer. */
 "Network settings" = "Netwerk instellingen";
@@ -3058,6 +3073,9 @@
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.";
+
+/* No comment provided by engineer. */
+"Receiving concurrency" = "Gelijktijdig ontvangen";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Het ontvangen van het bestand wordt gestopt.";
@@ -4170,6 +4188,9 @@
 "When available" = "Wanneer beschikbaar";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Bij het verbinden van audio- en video-oproepen.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Wanneer mensen vragen om verbinding te maken, kunt u dit accepteren of weigeren.";
 
 /* No comment provided by engineer. */
@@ -4177,6 +4198,9 @@
 
 /* No comment provided by engineer. */
 "WiFi" = "Wifi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Wordt ingeschakeld in directe chats!";
 
 /* No comment provided by engineer. */
 "Wired ethernet" = "Bekabeld Ethernet";

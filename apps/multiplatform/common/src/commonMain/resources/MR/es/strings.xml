@@ -788,8 +788,8 @@
     <string name="first_platform_without_user_ids">La primera plataforma sin identificadores de usuario: diseñada para la privacidad.</string>
     <string name="alert_message_no_group">Este grupo ya no existe.</string>
     <string name="accept_feature_set_1_day">Establecer 1 día</string>
-    <string name="v4_4_french_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
-    <string name="v4_5_italian_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
+    <string name="v4_4_french_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
+    <string name="v4_5_italian_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="v4_5_private_filenames_descr">Para proteger la zona horaria, los archivos de imagen/voz usan la hora UTC.</string>
     <string name="v4_5_transport_isolation">Aislamiento de transporte</string>
     <string name="to_share_with_your_contact">(para compartir con tu contacto)</string>
@@ -934,7 +934,7 @@
     <string name="app_name">SimpleX</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
     <string name="you_will_join_group">Te conectarás con todos los miembros del grupo.</string>
-    <string name="sender_you_pronoun">tú</string>
+    <string name="sender_you_pronoun">tu</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
     <string name="description_via_contact_address_link">mediante enlace de dirección de contacto</string>
     <string name="description_via_group_link">mediante enlace de grupo</string>
@@ -984,7 +984,7 @@
     <string name="v4_6_audio_video_calls_descr">Ahora con soporte bluetooth y otras mejoras.</string>
     <string name="v4_6_group_welcome_message_descr">¡Guarda un mensaje para ser mostrado a los miembros nuevos!</string>
     <string name="v4_6_chinese_spanish_interface">Interfaz en chino y español</string>
-    <string name="v4_6_chinese_spanish_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="error_updating_user_privacy">Error al actualizar privacidad de usuario</string>
     <string name="confirm_password">Confirmar contraseña</string>
     <string name="v4_6_reduced_battery_usage">Reducción consumo de batería</string>
@@ -1112,7 +1112,7 @@
     <string name="v5_0_app_passcode">Código de acceso de la aplicación</string>
     <string name="v5_0_polish_interface">Interfaz en polaco</string>
     <string name="v5_0_app_passcode_descr">Úsalo en lugar de la autenticación del sistema.</string>
-    <string name="v5_0_polish_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
+    <string name="v5_0_polish_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="v5_0_large_files_support">Vídeos y archivos de hasta 1Gb</string>
     <string name="v5_0_large_files_support_descr">¡Rápido y sin necesidad de esperar a que el remitente esté en línea!</string>
     <string name="auth_open_chat_profiles">Abrir perfiles</string>
@@ -1238,7 +1238,7 @@
     <string name="v5_1_better_messages_descr">- mensajes de voz de hasta 5 minutos.
 \n- tiempo personalizado para mensajes temporales.
 \n- historial de edición.</string>
-    <string name="whats_new_thanks_to_users_contribute_weblate">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="v5_1_better_messages">Mensajes mejorados</string>
     <string name="v5_1_self_destruct_passcode_descr">Al introducirlo todos los datos son eliminados.</string>
     <string name="v5_1_custom_themes_descr">Personalizar y compartir temas de color.</string>
@@ -1731,7 +1731,7 @@
     <string name="simplex_links_not_allowed">Enlaces SimpleX no permitidos</string>
     <string name="voice_messages_not_allowed">Mensajes de voz no permitidos</string>
     <string name="simplex_links">Enlaces SimpleX</string>
-    <string name="group_members_can_send_simplex_links">Los miembros del grupo pueden enviar enlaces SimpleX</string>
+    <string name="group_members_can_send_simplex_links">Los miembros del grupo pueden enviar enlaces SimpleX.</string>
     <string name="simplex_links_are_prohibited_in_group">Los enlaces SimpleX no se permiten en este grupo.</string>
     <string name="feature_roles_owners">propietarios</string>
     <string name="network_type_cellular">Móvil</string>
@@ -1754,4 +1754,17 @@
     <string name="forwarded_chat_item_info_tab">Reenviado</string>
     <string name="forward_message">Mensaje reenviado…</string>
     <string name="recipients_can_not_see_who_message_from">Los destinatarios no ven de quién procede este mensaje.</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="network_option_rcv_concurrency">Concurrencia en la recepción</string>
+    <string name="audio_device_earpiece">Auriculares</string>
+    <string name="audio_device_wired_headphones">Auriculares</string>
+    <string name="audio_device_speaker">Altavoz</string>
+    <string name="v5_7_forward">Reenviar y guardar mensajes</string>
+    <string name="v5_7_call_sounds">Sonido de llamada</string>
+    <string name="v5_7_new_interface_languages">Interfaz en lituano</string>
+    <string name="v5_7_network">Gestión de la red</string>
+    <string name="v5_7_forward_descr">El autor del mensaje se mantiene privado.</string>
+    <string name="v5_7_call_sounds_descr">Al iniciar llamadas de audio y vídeo.</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">¡Será habilitado en los chats directos!</string>
+    <string name="v5_7_network_descr">Conexión de red más fiable.</string>
 </resources>

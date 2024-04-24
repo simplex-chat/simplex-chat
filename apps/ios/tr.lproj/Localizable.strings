@@ -389,6 +389,9 @@
 /* member role */
 "admin" = "yönetici";
 
+/* feature role */
+"admins" = "yöneticiler";
+
 /* No comment provided by engineer. */
 "Admins can block a member for all." = "Yöneticiler bir üyeyi tamamen engelleyebilirler.";
 
@@ -415,6 +418,9 @@
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tüm grup üyeleri bağlı kalacaktır.";
+
+/* feature role */
+"all members" = "bütün üyeler";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Tüm mesajlar silinecektir - bu geri alınamaz!";
@@ -463,6 +469,9 @@
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Dosya ve medya göndermeye izin ver.";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "SimpleX bağlantıları göndilmesine izin ver.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Sesli mesaj göndermeye izin ver.";
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Cannot receive file" = "Dosya alınamıyor";
+
+/* No comment provided by engineer. */
+"Cellular" = "Hücresel Veri";
 
 /* No comment provided by engineer. */
 "Change" = "Değiştir";
@@ -1401,6 +1413,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Sürüm düşür ve sohbeti aç";
 
+/* chat item action */
+"Download" = "İndir";
+
 /* No comment provided by engineer. */
 "Download failed" = "Yükleme başarısız oldu";
 
@@ -1475,6 +1490,9 @@
 
 /* enabled status */
 "enabled" = "etkin";
+
+/* No comment provided by engineer. */
+"Enabled for" = "Şunlar için etkinleştirildi";
 
 /* enabled status */
 "enabled for contact" = "konuşulan kişi için etkinleşti";
@@ -1831,6 +1849,9 @@
 "Files and media are prohibited in this group." = "Dosyalar ve medya bu grupta yasaklandı.";
 
 /* No comment provided by engineer. */
+"Files and media not allowed" = "Dosyalar ve medyaya izin verilmiyor";
+
+/* No comment provided by engineer. */
 "Files and media prohibited!" = "Dosyalar ve medya yasaklandı!";
 
 /* No comment provided by engineer. */
@@ -1868,6 +1889,21 @@
 
 /* No comment provided by engineer. */
 "For console" = "Konsol için";
+
+/* chat item action */
+"Forward" = "İlet";
+
+/* No comment provided by engineer. */
+"Forward and save messages" = "Mesajları ilet ve kaydet";
+
+/* No comment provided by engineer. */
+"forwarded" = "iletildi";
+
+/* No comment provided by engineer. */
+"Forwarded" = "İletildi";
+
+/* No comment provided by engineer. */
+"Forwarded from" = "Şuradan iletildi";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Bilgisayar bulundu";
@@ -1946,6 +1982,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send files and media." = "Grup üyeleri dosyalar ve medya gönderebilir.";
+
+/* No comment provided by engineer. */
+"Group members can send SimpleX links." = "Grup üyeleri SimpleX bağlantıları gönderebilir.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Grup üyeleri sesli mesajlar gönderebilir.";
@@ -2087,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "Cevap olarak";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Arama içi sesler";
 
 /* No comment provided by engineer. */
 "Incognito" = "Gizli";
@@ -2434,6 +2476,9 @@
 "message received" = "mesaj alındı";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Mesaj kaynağı gizli kalır.";
+
+/* No comment provided by engineer. */
 "Message text" = "Mesaj yazısı";
 
 /* No comment provided by engineer. */
@@ -2517,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Daha fazla geliştirmeler yakında geliyor!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Daha güvenilir ağ bağlantısı.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Büyük ihtimalle bu bağlantı silinmiş.";
 
@@ -2537,6 +2585,12 @@
 
 /* No comment provided by engineer. */
 "Network & servers" = "Ağ & sunucular";
+
+/* No comment provided by engineer. */
+"Network connection" = "Ağ bağlantısı";
+
+/* No comment provided by engineer. */
+"Network management" = "Ağ yönetimi";
 
 /* No comment provided by engineer. */
 "Network settings" = "Ağ ayarları";
@@ -2615,6 +2669,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Geçmiş yok";
+
+/* No comment provided by engineer. */
+"No network connection" = "Ağ bağlantısı yok";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Sesli mesaj kaydetmek için izin yok";
@@ -2762,8 +2819,14 @@
 /* No comment provided by engineer. */
 "Or show this code" = "Veya bu kodu göster";
 
+/* No comment provided by engineer. */
+"Other" = "Diğer";
+
 /* member role */
 "owner" = "sahip";
+
+/* feature role */
+"owners" = "sahipler";
 
 /* No comment provided by engineer. */
 "Passcode" = "Şifre";
@@ -2931,6 +2994,9 @@
 "Prohibit sending files and media." = "Dosyalar ve medya gönderimlerini yasakla.";
 
 /* No comment provided by engineer. */
+"Prohibit sending SimpleX links." = "SimpleX bağlantısı gönderimini yasakla.";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Sesli mesajların gönderimini yasakla.";
 
 /* No comment provided by engineer. */
@@ -3009,6 +3075,9 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Alıcı adresi farklı bir sunucuya değiştirilecektir. Gönderici çevrimiçi olduktan sonra adres değişikliği tamamlanacaktır.";
 
 /* No comment provided by engineer. */
+"Receiving concurrency" = "Eşzamanlılık alınıyor";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Dosya alımı durdurulacaktır.";
 
 /* No comment provided by engineer. */
@@ -3016,6 +3085,9 @@
 
 /* No comment provided by engineer. */
 "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Yakın geçmiş ve geliştirilmiş [dizin botu](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex. im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
+"Recipient(s) can't see who this message is from." = "Alıcı(lar) bu mesajın kimden geldiğini göremez.";
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Alıcılar yazdığına göre güncellemeleri görecektir.";
@@ -3211,6 +3283,18 @@
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Hoşgeldin mesajı kaydedilsin mi?";
+
+/* No comment provided by engineer. */
+"saved" = "kaydedildi";
+
+/* No comment provided by engineer. */
+"Saved" = "Kaydedildi";
+
+/* No comment provided by engineer. */
+"Saved from" = "Tarafından kaydedildi";
+
+/* No comment provided by engineer. */
+"saved from %@" = "%@ tarafından kaydedildi";
 
 /* message info title */
 "Saved message" = "Kaydedilmiş mesaj";
@@ -3478,6 +3562,12 @@
 
 /* chat feature */
 "SimpleX links" = "SimpleX bağlantıları";
+
+/* No comment provided by engineer. */
+"SimpleX links are prohibited in this group." = "SimpleX bağlantıları bu grupta yasaklandı.";
+
+/* No comment provided by engineer. */
+"SimpleX links not allowed" = "SimpleX bağlantılarına izin verilmiyor";
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "SimpleX Kilidi";
@@ -4044,6 +4134,9 @@
 "Voice messages are prohibited in this group." = "Bu grupta sesli mesajlar yasaktır.";
 
 /* No comment provided by engineer. */
+"Voice messages not allowed" = "Sesli mesajlara izin verilmiyor";
+
+/* No comment provided by engineer. */
 "Voice messages prohibited!" = "Sesli mesajlar yasaktır!";
 
 /* No comment provided by engineer. */
@@ -4095,10 +4188,22 @@
 "When available" = "Mevcut olduğunda";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Sesli ve görüntülü aramalara bağlanırken.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "İnsanlar bağlantı talebinde bulunduğunda, kabul edebilir veya reddedebilirsiniz.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.";
+
+/* No comment provided by engineer. */
+"WiFi" = "WiFi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Doğrudan sohbetlerde etkinleştirilecektir!";
+
+/* No comment provided by engineer. */
+"Wired ethernet" = "Kablolu ethernet";
 
 /* No comment provided by engineer. */
 "With encrypted files and media." = "Şifrelenmiş dosyalar ve medya ile birlikte.";
@@ -4120,6 +4225,9 @@
 
 /* pref value */
 "yes" = "evet";
+
+/* No comment provided by engineer. */
+"you" = "sen";
 
 /* No comment provided by engineer. */
 "You" = "Sen";
