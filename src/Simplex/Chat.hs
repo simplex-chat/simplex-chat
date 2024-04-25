@@ -1146,7 +1146,7 @@ processChatCommand' vr = \case
         let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
         withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
         timed_ <- contactCITimed ct
-        updateDirectChatItemView user ct chatItemId aciContent False False timed_ Nothing
+        updateDirectChatItemView user ct chatItemId aciContent timed_ Nothing
         forM_ (timed_ >>= timedDeleteAt') $
           startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId)
         pure Nothing
@@ -1161,7 +1161,7 @@ processChatCommand' vr = \case
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
         withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
-        updateDirectChatItemView user ct chatItemId aciContent False False Nothing $ Just msgId
+        updateDirectChatItemView user ct chatItemId aciContent Nothing $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallAnswer contactId rtcSession ->
@@ -1171,7 +1171,7 @@ processChatCommand' vr = \case
         let callState' = CallNegotiated {localCallType, peerCallType, localCallSession = rtcSession, peerCallSession, sharedKey}
             aciContent = ACIContent SMDSnd $ CISndCall CISCallNegotiated 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallAnswer callId CallAnswer {rtcSession})
-        updateDirectChatItemView user ct chatItemId aciContent False False Nothing $ Just msgId
+        updateDirectChatItemView user ct chatItemId aciContent Nothing $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallExtraInfo contactId rtcExtraInfo ->
@@ -2612,7 +2612,7 @@ processChatCommand' vr = \case
           | status == CIGISPending -> do
               let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = newStatus} memRole
               timed_ <- contactCITimed ct
-              updateDirectChatItemView user ct itemId aciContent False False timed_ Nothing
+              updateDirectChatItemView user ct itemId aciContent timed_ Nothing
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId, itemId)
         _ -> pure () -- prohibited
@@ -2923,7 +2923,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
   aciContent_ <- callStatusItemContent user ct chatItemId receivedStatus
   forM_ aciContent_ $ \aciContent -> do
     timed_ <- callTimed ct aciContent
-    updateDirectChatItemView user ct chatItemId aciContent False False timed_ msgId_
+    updateDirectChatItemView user ct chatItemId aciContent timed_ msgId_
     forM_ (timed_ >>= timedDeleteAt') $
       startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId)
 
@@ -2940,9 +2940,9 @@ callTimed ct aciContent =
     aciContentCallStatus (ACIContent _ (CIRcvCall st _)) = Just st
     aciContentCallStatus _ = Nothing
 
-updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
-updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
+updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Maybe CITimed -> Maybe MessageId -> CM ()
+updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) timed_ msgId_ = do
+  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent False False timed_ msgId_
   toView $ CRChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
@@ -5540,7 +5540,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   atomically $ TM.delete ctId' calls
               forM_ aciContent_ $ \aciContent -> do
                 timed_ <- callTimed ct aciContent
-                updateDirectChatItemView user ct chatItemId aciContent False False timed_ $ Just msgId
+                updateDirectChatItemView user ct chatItemId aciContent timed_ $ Just msgId
                 forM_ (timed_ >>= timedDeleteAt') $
                   startProximateTimedItemThread user (ChatRef CTDirect ctId', chatItemId)
 
