@@ -33,13 +33,17 @@ struct ProfileImage: View {
 }
 
 @ViewBuilder func clipProfileImage(_ img: Image, size: CGFloat, radius: Double) -> some View {
-    let v = img.resizable().frame(width: size, height: size)
+    let v = img.resizable()
     if radius <= 0 {
-        v.clipShape(Rectangle())
+        let sz = size * 0.95
+        v.frame(width: sz, height: sz).clipShape(Rectangle()).padding((size - sz) / 2)
     } else if radius >= 50 {
-        v.clipShape(Circle())
+        v.frame(width: size, height: size).clipShape(Circle())
     } else {
-        v.clipShape(RoundedRectangle(cornerRadius: size * radius / 100, style: .continuous))
+        let sz = size * (95 + radius / 10) / 100
+        v.frame(width: sz, height: sz)
+        .clipShape(RoundedRectangle(cornerRadius: sz * radius / 100, style: .continuous))
+        .padding((size - sz) / 2)
     }
 }
 

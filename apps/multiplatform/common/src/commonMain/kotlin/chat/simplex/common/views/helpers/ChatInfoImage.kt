@@ -18,8 +18,7 @@ import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
-import chat.simplex.common.platform.appPreferences
-import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -81,7 +80,7 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = Modifier.size(size).padding(size / 12).clip(ProfileIconShape())
+        modifier = ProfileIconModifier(size)
       )
     }
   }
@@ -93,18 +92,30 @@ fun ProfileImage(size: Dp, image: ImageResource) {
     painterResource(image),
     stringResource(MR.strings.image_descr_profile_image),
     contentScale = ContentScale.Crop,
-    modifier = Modifier.size(size).padding(size / 12).clip(ProfileIconShape())
+    modifier = ProfileIconModifier(size)
   )
 }
 
 @Composable
-fun ProfileIconShape(): Shape {
+fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
-  return when {
-    percent.value <= 0 -> RectangleShape
-    percent.value >= 50 -> CircleShape
-    else -> RoundedCornerShape(PercentCornerSize(percent.value))
+  val r = percent.value
+  Log.e(TAG,"r: $r")
+  val m = when {
+    r <= 1 -> {
+      val sz = size * 950 / 1000
+      Log.e(TAG,"sz: $sz")
+      Modifier.size(sz).clip(RectangleShape).padding((size - sz) / 2)
+    }
+    r >= 49 ->
+      Modifier.size(size).clip(CircleShape)
+    else -> {
+      val sz = size * (950 + r) / 1000
+      Log.e(TAG,"sz: $sz")
+      Modifier.size(sz).clip(RoundedCornerShape(size = sz * r / 100)).padding((size - sz) / 2)
+    }
   }
+  return if (padding) m.padding(size / 12) else m
 }
 
 /** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
@@ -131,30 +142,10 @@ fun ProfileImageForActiveCall(
       imageBitmap,
       stringResource(MR.strings.image_descr_profile_image),
       contentScale = ContentScale.Crop,
-      modifier = Modifier.size(size).clip(ProfileIconShape())
+      modifier = ProfileIconModifier(size, padding = false) // Modifier.size(size).clip(ProfileIconShape())
     )
   }
 }
-
-/** (c) [androidx.compose.foundation.shape.CornerSize] */
-private data class PercentCornerSize(
-  private val percent: Float
-) : CornerSize, InspectableValue {
-  init {
-    if (percent < 0 || percent > 100) {
-      throw IllegalArgumentException("The percent should be in the range of [0, 100]")
-    }
-  }
-
-  override fun toPx(shapeSize: Size, density: Density) =
-    shapeSize.minDimension * (percent / 100f)
-
-  override fun toString(): String = "CornerSize(size = $percent%)"
-
-  override val valueOverride: String
-    get() = "$percent%"
-}
-
 
 @Preview
 @Composable
