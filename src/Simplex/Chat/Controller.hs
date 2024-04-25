@@ -776,21 +776,23 @@ data DebugAck = DebugAck
     lastCmd :: Maybe (Text, UTCTime), -- was there ANY command result delivered here?
     lastMsg :: Maybe UTCTime, -- if yes, the ACK should happen
     lastAck :: Maybe UTCTime, -- if sent, the OK should happen or a new MSG
-    lasOK :: Maybe UTCTime, -- server got ACK, waiting for new messages
+    lastOK :: Maybe UTCTime, -- server got ACK, waiting for new messages
     -- from getAgentSubscriptions, via rId
     inActive :: Bool, -- should the delivery work right now?
     inPending :: Bool, -- is there a temporary error?
     -- from some receive queue
-    host :: TransportHost, -- what's the server for this connection?
+    server :: Maybe (Text, String), -- what's the server for this connection? -- XXX: reveals private servers and association
     hasSMPClient :: Bool, -- is there an active client for it?
     hasSubWorker :: Bool, -- a session was recently restarted and tries to resubscribe
     hasDeliveryWorker :: Bool, -- connection's delivery worker is active, double-take on session status
     -- from Connection
-    connStatus_ :: ConnStatus, -- does the protocol permits delivery
-    connAuthErrors :: (Int, Bool), -- number of AUTH errors before connection gets disabled
-    createdAt :: UTCTime
+    connStatus_ :: Maybe ConnStatus, -- does the protocol permits delivery
+    connAuthErrors :: Maybe (Int, Bool), -- number of AUTH errors before connection gets disabled
+    createdAt :: Maybe UTCTime
   }
   deriving Show
+-- XXX: attach NetworkConfig ?
+-- TransportSessionMode ?
 
 -- some of these can only be used as command responses
 allowRemoteEvent :: ChatResponse -> Bool

@@ -91,14 +91,18 @@ import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
+import qualified Simplex.Messaging.Agent.Client as AC
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
+import qualified Simplex.Messaging.Agent.Store as AS
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import qualified Simplex.Messaging.Agent.Store.SQLite as ADB
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
+import qualified Simplex.Messaging.Agent.TRcvQueues as RQ
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -2149,14 +2153,55 @@ processChatCommand' vr = \case
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
-  DebugAcks -> lift $ do
+  DebugAcks -> do
     acs <- mapM readTVarIO =<< readTVarIO =<< asks agentConnStatuses
-    liftIO $ print acs
-    -- acs' <- forM (M.toList acs) $ \(acId, agentConnStatus) -> do
-    --   debugAckKey <- error "TODO: resolve connId into DebugAckKey"
-    --   let da = error "TODO: DebugAck {}"
-    --   pure (debugAckKey, da)
-    pure $ CRDebugAcks mempty -- (M.fromList acs')
+    fmap (CRDebugAcks . M.fromList) . forM (M.toList acs) $ \(acId@(AgentConnId acId'), agentConnStatus) -> do
+      user_ <- withStore' (`getUserByAConnId` acId)
+
+      rq' <- withAgent $ \ac -> liftIO . (`runReaderT` agentEnv ac) . runExceptT $ do
+        AS.RcvQueue {server, rcvId, status, smpClientVersion} <- AC.withStore ac (`ADB.getPrimaryRcvQueue` acId')
+        pure (server, (rcvId, status, smpClientVersion))
+
+      (inActive, inPending) <- case (user_, rq') of
+        (Just User {userId}, Right (srv, (rcvId', _, _))) -> do
+          let tSess = (userId, srv, Just acId')
+          withAgent $ \AgentClient {activeSubs, pendingSubs} -> do
+            active <- atomically (RQ.getSessQueues tSess activeSubs)
+            pending <- atomically (RQ.getSessQueues tSess pendingSubs)
+            pure
+              ( any (\AS.RcvQueue {rcvId} -> rcvId == rcvId') active,
+                any (\AS.RcvQueue {rcvId} -> rcvId == rcvId') pending
+              )
+        _ -> pure (False, False)
+
+      entity_ <- forM user_ $ \user -> withStore (\db -> getConnectionEntity db vr user acId)
+      conn_ <- forM entity_ $ \case
+        RcvDirectMsgConnection {entityConnection} -> pure entityConnection
+        RcvGroupMsgConnection {entityConnection} -> pure entityConnection
+        SndFileConnection {entityConnection} -> pure entityConnection
+        RcvFileConnection {entityConnection} -> pure entityConnection
+        UserContactConnection {entityConnection} -> pure entityConnection
+
+      let AgentConnStatus {lastCmd, lastCmdTag, lastMsg, ackSent, okRcvd} = agentConnStatus
+      pure
+        ( decodeLatin1 $ strEncode acId,
+          DebugAck
+            { lastCmd = Just (decodeLatin1 $ strEncode lastCmdTag, lastCmd),
+              lastMsg,
+              lastAck = ackSent,
+              lastOK = okRcvd,
+              inActive,
+              inPending,
+              server = either (const Nothing) (\(SMP.ProtocolServer {host, port}, _) -> Just (decodeLatin1 . strEncode $ L.head host, port)) rq',
+              hasSMPClient = True, -- TODO
+              hasSubWorker = False, -- TODO
+              hasDeliveryWorker = False, -- TODO
+              connStatus_ = (\Connection {connStatus} -> connStatus) <$> conn_,
+              -- agent connstatus?
+              connAuthErrors = (\c@Connection {authErrCounter} -> (authErrCounter, connDisabled c)) <$> conn_,
+              createdAt = (\Connection {createdAt} -> createdAt) <$> conn_
+            }
+        )
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
