@@ -46,6 +46,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
       decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
       return
     }
     getAppFileUri(tmpFile.absolutePath)
@@ -112,6 +113,7 @@ fun saveImage(ciFile: CIFile?) {
               decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
             } catch (e: Exception) {
               Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+              AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
               return@createTmpFileAndDelete
             }
             tmpFile.inputStream().use { it.copyTo(outputStream) }

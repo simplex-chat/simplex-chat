@@ -123,8 +123,7 @@ struct ChatItemForwardingView: View {
             }
         } label: {
             HStack {
-                ChatInfoImage(chat: chat)
-                    .frame(width: 30, height: 30)
+                ChatInfoImage(chat: chat, size: 30)
                     .padding(.trailing, 2)
                 Text(chat.chatInfo.chatViewName)
                     .foregroundColor(.primary)

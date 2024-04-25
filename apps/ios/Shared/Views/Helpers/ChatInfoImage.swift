@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatInfoImage: View {
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
+    var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
 
     var body: some View {
@@ -28,6 +29,7 @@ struct ChatInfoImage: View {
         return ProfileImage(
             imageStr: chat.chatInfo.image,
             iconName: iconName,
+            size: size,
             color: iconColor
         )
     }
@@ -36,8 +38,9 @@ struct ChatInfoImage: View {
 struct ChatInfoImage_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoImage(
-            chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-            , color:  Color(red: 0.9, green: 0.9, blue: 0.9)
+            chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
+            size: 63,
+            color:  Color(red: 0.9, green: 0.9, blue: 0.9)
         )
         .previewLayout(.fixed(width: 63, height: 63))
     }

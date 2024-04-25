@@ -94,8 +94,8 @@ actual fun ActiveCallView() {
       if (wasConnected.value) {
         CallSoundsPlayer.vibrate()
       }
-      dropAudioManagerOverrides()
       callAudioDeviceManager.stop()
+      dropAudioManagerOverrides()
       if (proximityLock?.isHeld == true) {
         proximityLock.release()
       }

@@ -1606,9 +1606,6 @@
 "Error adding member(s)" = "Erreur lors de l'ajout de membre·s";
 
 /* No comment provided by engineer. */
-"Error allowing contact PQ encryption" = "Erreur lors de la négociation du chiffrement PQ";
-
-/* No comment provided by engineer. */
 "Error changing address" = "Erreur de changement d'adresse";
 
 /* No comment provided by engineer. */
@@ -2869,9 +2866,6 @@
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
-
-/* No comment provided by engineer. */
-"Post-quantum E2EE" = "E2EE post-quantique";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserver le brouillon du dernier message, avec les pièces jointes.";

@@ -65,6 +65,7 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
   override fun start() {
     am.mode = AudioManager.MODE_IN_COMMUNICATION
+    currentDevice.value = am.communicationDevice
     am.registerAudioDeviceCallback(audioCallback, null)
     am.addOnCommunicationDeviceChangedListener(Executors.newSingleThreadExecutor(), listener)
   }

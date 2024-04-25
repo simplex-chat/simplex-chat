@@ -378,6 +378,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.7",
+        post: URL(string: "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"),
         features: [
             FeatureDescription(
                 icon: "key",
@@ -393,6 +394,11 @@ private let versionDescriptions: [VersionDescription] = [
                 icon: "music.note",
                 title: "In-call sounds",
                 description: "When connecting audio and video calls."
+            ),
+            FeatureDescription(
+                icon: "person.crop.square",
+                title: "Shape profile images",
+                description: "Square, circle, or anything in between."
             ),
             FeatureDescription(
                 icon: "antenna.radiowaves.left.and.right",

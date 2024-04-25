@@ -176,6 +176,13 @@ fun ChatItemView(
         }
 
         @Composable
+        fun DeleteItemMenu() {
+          DefaultDropdownMenu(showMenu) {
+            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+          }
+        }
+
+        @Composable
         fun MsgContentItemDropdownMenu() {
           val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
           when {
@@ -305,10 +312,13 @@ fun ChatItemView(
                 } else {
                   ExpandItemAction(revealed, showMenu)
                 }
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
               }
             }
             else -> {
-              showMenu.value = false
+              DefaultDropdownMenu(showMenu) {
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+              }
             }
           }
         }
@@ -355,7 +365,8 @@ fun ChatItemView(
         }
 
         @Composable fun CallItem(status: CICallStatus, duration: Int) {
-          CICallItemView(cInfo, cItem, status, duration, acceptCall)
+          CICallItemView(cInfo, cItem, status, duration, acceptCall, cInfo.timedMessagesTTL)
+          DeleteItemMenu()
         }
 
         fun mergedGroupEventText(chatItem: ChatItem): String? {
@@ -439,12 +450,22 @@ fun ChatItemView(
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
           is CIContent.RcvIntegrityError -> if (developerTools) {
             IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+            DeleteItemMenu()
           } else {
             Box(Modifier.size(0.dp)) {}
           }
-          is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
-          is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
-          is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+          is CIContent.RcvDecryptionError -> {
+            CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
+            DeleteItemMenu()
+          }
+          is CIContent.RcvGroupInvitation -> {
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
+            DeleteItemMenu()
+          }
+          is CIContent.SndGroupInvitation -> {
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
+            DeleteItemMenu()
+          }
           is CIContent.RcvDirectEventContent -> {
             EventItemView()
             MsgContentItemDropdownMenu()
@@ -479,6 +500,7 @@ fun ChatItemView(
           is CIContent.RcvChatPreference -> {
             val ct = if (cInfo is ChatInfo.Direct) cInfo.contact else null
             CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
+            DeleteItemMenu()
           }
           is CIContent.SndChatPreference -> {
             CIChatFeatureView(cInfo, cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
@@ -507,7 +529,10 @@ fun ChatItemView(
           is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
           is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
           is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
-          is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
+          is CIContent.InvalidJSON -> {
+            CIInvalidJSONView(c.json)
+            DeleteItemMenu()
+          }
         }
       }
 
@@ -574,7 +599,7 @@ fun DeleteItemAction(
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
-      if (!revealed.value && cItem.meta.itemDeleted != null) {
+      if (!revealed.value) {
         val currIndex = chatModel.getChatItemIndexOrNull(cItem)
         val ciCategory = cItem.mergeCategory
         if (currIndex != null && ciCategory != null) {
