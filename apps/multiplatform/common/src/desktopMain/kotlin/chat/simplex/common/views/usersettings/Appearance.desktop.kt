@@ -63,6 +63,9 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
     SectionDividerSpaced(maxTopPadding = true)
+    ProfileImageSection()
+
+    SectionDividerSpaced(maxTopPadding = true)
     ThemesSection(systemDarkTheme, showSettingsModal, editColor)
     SectionBottomSpacer()
   }

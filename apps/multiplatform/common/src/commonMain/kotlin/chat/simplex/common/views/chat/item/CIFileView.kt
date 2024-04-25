@@ -222,6 +222,7 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
             decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
           } catch (e: Exception) {
             Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+            AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
             tmpFile.delete()
             return@createTmpFileAndDelete
           }

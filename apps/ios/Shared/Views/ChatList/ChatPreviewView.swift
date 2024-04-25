@@ -23,8 +23,7 @@ struct ChatPreviewView: View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat)
-                    .frame(width: 63, height: 63)
+                ChatInfoImage(chat: chat, size: 63)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
             }

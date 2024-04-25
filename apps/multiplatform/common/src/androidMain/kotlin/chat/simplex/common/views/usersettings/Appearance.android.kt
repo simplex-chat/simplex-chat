@@ -12,10 +12,12 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
@@ -34,11 +36,13 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay
 
-enum class AppIcon(val resId: Int) {
-  DEFAULT(R.drawable.icon_round_common),
-  DARK_BLUE(R.drawable.icon_dark_blue_round_common),
+enum class AppIcon(val image: ImageResource) {
+  DEFAULT(MR.images.ic_simplex_light),
+  DARK_BLUE(MR.images.ic_simplex_dark),
 }
 
 @Composable
@@ -122,9 +126,8 @@ fun AppearanceScope.AppearanceLayout(
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
-          val mipmap = ContextCompat.getDrawable(LocalContext.current, item.resId)!!
           Image(
-            bitmap = mipmap.toBitmap().asImageBitmap(),
+            painterResource(item.image),
             contentDescription = "",
             contentScale = ContentScale.Fit,
             modifier = Modifier
@@ -132,6 +135,7 @@ fun AppearanceScope.AppearanceLayout(
               .size(70.dp)
               .clickable { changeIcon(item) }
               .padding(10.dp)
+              .clip(CircleShape)
           )
 
           if (index + 1 != AppIcon.values().size) {
@@ -140,6 +144,9 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
     }
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)
     ThemesSection(systemDarkTheme, showSettingsModal, editColor)

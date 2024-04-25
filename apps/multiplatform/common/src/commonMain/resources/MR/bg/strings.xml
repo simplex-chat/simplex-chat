@@ -1712,34 +1712,55 @@
     <string name="migrate_from_device_check_connection_and_try_again">Проверете вашата интернет връзка и опитайте отново</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Внимание</b>: архивът ще бъде изтрит.]]></string>
     <string name="v5_6_quantum_resistant_encryption_descr">Активиране в личните чатове (БЕТА)!</string>
-    <string name="allow_to_send_simplex_links">Разрешаване на SimpleX изпращане на връзки /линкове/.</string>
-    <string name="forwarded_description">1. препратено
-\n2. предадено</string>
-    <string name="error_showing_desktop_notification">Грешка при показване на уведомление
-\nГрешка при показване на съобщение</string>
-    <string name="permissions_open_settings">Отворени настройки</string>
-    <string name="permissions_find_in_settings_and_grant">"Намерете това разрешение /права/  в настройките на Android и го задайте ръчно."</string>
-    <string name="network_type_other">Друг
-\nДруги</string>
+    <string name="allow_to_send_simplex_links">Разрешаване на изпращане на SimpleX линкове.</string>
+    <string name="forwarded_description">препратено</string>
+    <string name="error_showing_desktop_notification">Грешка при показване на известие, свържете се с разработчиците.</string>
+    <string name="permissions_open_settings">Отвори настройки</string>
+    <string name="permissions_find_in_settings_and_grant">Намерете това разрешение в настройките на Android и го задайте ръчно.</string>
+    <string name="network_type_other">Други</string>
     <string name="network_type_cellular">Мобилна мрежа</string>
     <string name="network_type_no_network_connection">Няма мрежова връзка</string>
-    <string name="network_type_network_wifi">Безжична мрежа</string>
-    <string name="network_type_ethernet">Кабелна мрежа /кабелна технология/</string>
-    <string name="simplex_links_not_allowed">SimpleX връзките не са разрешени</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="network_type_ethernet">Кабелен Ethernet</string>
+    <string name="simplex_links_not_allowed">SimpleX линковете не са разрешени</string>
     <string name="voice_messages_not_allowed">Гласовите съобщения не са разрешени</string>
-    <string name="permissions_grant_in_settings">Предоставян в настройките</string>
+    <string name="permissions_grant_in_settings">Предоставяне в настройките</string>
     <string name="settings_section_title_network_connection">Мрежова връзка</string>
-    <string name="simplex_links">SimpleX връзки
-\nСимпълХикс връзки</string>
-    <string name="prohibit_sending_simplex_links">Забранено изпращането на SimpleX връзки</string>
-    <string name="group_members_can_send_simplex_links">Членовете на групата могат да изпращат връзки към SimpleX.</string>
-    <string name="simplex_links_are_prohibited_in_group">SimpleX връзки са забранени в тази група.</string>
-    <string name="feature_enabled_for">Активиране на
-\nАктивиране за</string>
-    <string name="feature_roles_owners">Собственици</string>
+    <string name="simplex_links">SimpleX линкове</string>
+    <string name="prohibit_sending_simplex_links">Забранете изпращането на SimpleX линкове</string>
+    <string name="group_members_can_send_simplex_links">Членовете на групата могат да изпращат SimpleX линкове.</string>
+    <string name="simplex_links_are_prohibited_in_group">SimpleX линкове са забранени в тази група.</string>
+    <string name="feature_enabled_for">Активирано за</string>
+    <string name="feature_roles_owners">собственици</string>
     <string name="permissions_camera">Камера</string>
     <string name="permissions_camera_and_record_audio">Камера и микрофон</string>
-    <string name="permissions_required">Предоставени разрешения</string>
+    <string name="permissions_required">Предоставяне на разрешения</string>
     <string name="permissions_grant">Дадени разрешение(я) за извършване на повикване</string>
     <string name="permissions_record_audio">Микрофон</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="audio_device_wired_headphones">Слушалки жични</string>
+    <string name="network_option_rcv_concurrency">Паралелност на получаване</string>
+    <string name="v5_7_forward">Препращане и запазване на съобщения</string>
+    <string name="v5_7_call_sounds">Звуци по време на разговор</string>
+    <string name="saved_description">запазено</string>
+    <string name="saved_from_description">запазено от %s</string>
+    <string name="saved_chat_item_info_tab">Запазено</string>
+    <string name="saved_from_chat_item_info_title">Запазено от</string>
+    <string name="recipients_can_not_see_who_message_from">Получателят(ите) не могат да видят от кого е това съобщение.</string>
+    <string name="download_file">Изтегли</string>
+    <string name="forward_message">Препращане на съобщение…</string>
+    <string name="files_and_media_not_allowed">Файлове и медия не са разрешени</string>
+    <string name="feature_roles_all_members">всички членове</string>
+    <string name="feature_roles_admins">администратори</string>
+    <string name="forward_chat_item">Препрати</string>
+    <string name="audio_device_earpiece">Слушалки безжични</string>
+    <string name="forwarded_chat_item_info_tab">Препратено</string>
+    <string name="forwarded_from_chat_item_info_title">Препратено от</string>
+    <string name="audio_device_speaker">Високоговорител</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">Ще бъде активирано в личните чатове!</string>
+    <string name="v5_7_forward_descr">Източникът на съобщението остава скрит.</string>
+    <string name="v5_7_network">Управление на мрежата</string>
+    <string name="v5_7_call_sounds_descr">При свързване на аудио и видео разговори.</string>
+    <string name="v5_7_network_descr">По-надеждна мрежова връзка.</string>
+    <string name="v5_7_new_interface_languages">Литовски потребителски интерфейс</string>
 </resources>

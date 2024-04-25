@@ -70,7 +70,7 @@ actual class VideoPlayer actual constructor(
         }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.stackTraceToString())
         brokenVideo.value = true
         return false
       }

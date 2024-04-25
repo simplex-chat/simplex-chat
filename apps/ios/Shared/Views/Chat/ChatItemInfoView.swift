@@ -334,8 +334,7 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func forwardedFromSender(_ forwardedFromItem: AChatItem) -> some View {
         HStack {
-            ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo))
-                .frame(width: 48, height: 48)
+            ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo), size: 48)
                 .padding(.trailing, 6)
 
             if forwardedFromItem.chatItem.chatDir.sent {
@@ -405,8 +404,7 @@ struct ChatItemInfoView: View {
 
     private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
         HStack{
-            ProfileImage(imageStr: member.image)
-                .frame(width: 30, height: 30)
+            ProfileImage(imageStr: member.image, size: 30)
                 .padding(.trailing, 2)
             Text(member.chatViewName)
                 .lineLimit(1)
