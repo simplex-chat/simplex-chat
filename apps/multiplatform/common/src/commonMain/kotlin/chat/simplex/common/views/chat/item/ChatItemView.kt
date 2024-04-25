@@ -365,7 +365,7 @@ fun ChatItemView(
         }
 
         @Composable fun CallItem(status: CICallStatus, duration: Int) {
-          CICallItemView(cInfo, cItem, status, duration, acceptCall)
+          CICallItemView(cInfo, cItem, status, duration, acceptCall, cInfo.timedMessagesTTL)
           DeleteItemMenu()
         }
 
@@ -459,11 +459,11 @@ fun ChatItemView(
             DeleteItemMenu()
           }
           is CIContent.RcvGroupInvitation -> {
-            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
             DeleteItemMenu()
           }
           is CIContent.SndGroupInvitation -> {
-            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
             DeleteItemMenu()
           }
           is CIContent.RcvDirectEventContent -> {

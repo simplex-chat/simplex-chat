@@ -9,14 +9,20 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.res.MR
 
 @Composable
-fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, duration: Int, acceptCall: (Contact) -> Unit) {
+fun CICallItemView(
+  cInfo: ChatInfo,
+  cItem: ChatItem,
+  status: CICallStatus,
+  duration: Int,
+  acceptCall: (Contact) -> Unit,
+  timedMessagesTTL: Int?
+) {
   val sent = cItem.chatDir.sent
   Column(
     Modifier
@@ -41,12 +47,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
       CICallStatus.Error -> {}
     }
 
-    Text(
-      cItem.timestampText,
-      color = MaterialTheme.colors.secondary,
-      fontSize = 14.sp,
-      modifier = Modifier.padding(start = 3.dp)
-    )
+    CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false)
   }
 }
 
