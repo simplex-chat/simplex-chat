@@ -32,6 +32,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
             showToast(generalGetString(MR.strings.file_saved))
           } catch (e: Exception) {
             Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+            AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
           }
         } else {
           copyFileToFile(File(absolutePath), to) {}

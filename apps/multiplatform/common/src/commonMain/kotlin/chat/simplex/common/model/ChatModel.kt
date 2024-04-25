@@ -2696,7 +2696,12 @@ data class CryptoFile(
   private fun decryptToTmpFile(): URI? {
     val absoluteFilePath = if (isAbsolutePath) filePath else getAppFilePath(filePath)
     val tmpFile = createTmpFileIfNeeded()
-    decryptCryptoFile(absoluteFilePath, cryptoArgs ?: return null, tmpFile.absolutePath)
+    try {
+      decryptCryptoFile(absoluteFilePath, cryptoArgs ?: return null, tmpFile.absolutePath)
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+    }
     return tmpFile.toURI()
   }
 

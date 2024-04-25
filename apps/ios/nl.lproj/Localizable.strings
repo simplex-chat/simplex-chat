@@ -389,6 +389,9 @@
 /* member role */
 "admin" = "Beheerder";
 
+/* feature role */
+"admins" = "beheerders";
+
 /* No comment provided by engineer. */
 "Admins can block a member for all." = "Beheerders kunnen een lid voor iedereen blokkeren.";
 
@@ -415,6 +418,9 @@
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Alle groepsleden blijven verbonden.";
+
+/* feature role */
+"all members" = "alle leden";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Alle berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!";
@@ -463,6 +469,9 @@
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Sta toe om bestanden en media te verzenden.";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "Sta toe dat SimpleX-links worden verzonden.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Sta toe om spraak berichten te verzenden.";
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Cannot receive file" = "Kan bestand niet ontvangen";
+
+/* No comment provided by engineer. */
+"Cellular" = "Mobiel";
 
 /* No comment provided by engineer. */
 "Change" = "Veranderen";
@@ -1401,6 +1413,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Downgraden en chat openen";
 
+/* chat item action */
+"Download" = "Downloaden";
+
 /* No comment provided by engineer. */
 "Download failed" = "Download mislukt";
 
@@ -1475,6 +1490,9 @@
 
 /* enabled status */
 "enabled" = "ingeschakeld";
+
+/* No comment provided by engineer. */
+"Enabled for" = "Ingeschakeld voor";
 
 /* enabled status */
 "enabled for contact" = "ingeschakeld voor contact";
@@ -1604,9 +1622,6 @@
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Fout bij het toevoegen van leden";
-
-/* No comment provided by engineer. */
-"Error allowing contact PQ encryption" = "Fout bij het toestaan van contact PQ-versleuteling";
 
 /* No comment provided by engineer. */
 "Error changing address" = "Fout bij wijzigen van adres";
@@ -1834,6 +1849,9 @@
 "Files and media are prohibited in this group." = "Bestanden en media zijn verboden in deze groep.";
 
 /* No comment provided by engineer. */
+"Files and media not allowed" = "Bestanden en media niet toegestaan";
+
+/* No comment provided by engineer. */
 "Files and media prohibited!" = "Bestanden en media verboden!";
 
 /* No comment provided by engineer. */
@@ -1871,6 +1889,21 @@
 
 /* No comment provided by engineer. */
 "For console" = "Voor console";
+
+/* chat item action */
+"Forward" = "Doorsturen";
+
+/* No comment provided by engineer. */
+"Forward and save messages" = "Berichten doorsturen en opslaan";
+
+/* No comment provided by engineer. */
+"forwarded" = "doorgestuurd";
+
+/* No comment provided by engineer. */
+"Forwarded" = "Doorgestuurd";
+
+/* No comment provided by engineer. */
+"Forwarded from" = "Doorgestuurd vanuit";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Desktop gevonden";
@@ -1949,6 +1982,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send files and media." = "Groepsleden kunnen bestanden en media verzenden.";
+
+/* No comment provided by engineer. */
+"Group members can send SimpleX links." = "Groepsleden kunnen SimpleX-links verzenden.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Groepsleden kunnen spraak berichten verzenden.";
@@ -2090,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "In antwoord op";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Geluiden tijdens het bellen";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incognito";
@@ -2437,6 +2476,9 @@
 "message received" = "bericht ontvangen";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Berichtbron blijft privé.";
+
+/* No comment provided by engineer. */
 "Message text" = "Bericht tekst";
 
 /* No comment provided by engineer. */
@@ -2520,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Meer verbeteringen volgen snel!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Betrouwbaardere netwerkverbinding.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Hoogstwaarschijnlijk is deze verbinding verwijderd.";
 
@@ -2540,6 +2585,12 @@
 
 /* No comment provided by engineer. */
 "Network & servers" = "Netwerk & servers";
+
+/* No comment provided by engineer. */
+"Network connection" = "Netwerkverbinding";
+
+/* No comment provided by engineer. */
+"Network management" = "Netwerkbeheer";
 
 /* No comment provided by engineer. */
 "Network settings" = "Netwerk instellingen";
@@ -2618,6 +2669,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Geen geschiedenis";
+
+/* No comment provided by engineer. */
+"No network connection" = "Geen netwerkverbinding";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Geen toestemming om spraakbericht op te nemen";
@@ -2765,8 +2819,14 @@
 /* No comment provided by engineer. */
 "Or show this code" = "Of laat deze code zien";
 
+/* No comment provided by engineer. */
+"Other" = "Ander";
+
 /* member role */
 "owner" = "Eigenaar";
+
+/* feature role */
+"owners" = "eigenaren";
 
 /* No comment provided by engineer. */
 "Passcode" = "Toegangscode";
@@ -2871,9 +2931,6 @@
 "Possibly, certificate fingerprint in server address is incorrect" = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
 
 /* No comment provided by engineer. */
-"Post-quantum E2EE" = "Post-quantum E2EE";
-
-/* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Bewaar het laatste berichtconcept, met bijlagen.";
 
 /* No comment provided by engineer. */
@@ -2935,6 +2992,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending files and media." = "Verbied het verzenden van bestanden en media.";
+
+/* No comment provided by engineer. */
+"Prohibit sending SimpleX links." = "Verbied het verzenden van SimpleX-links";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Verbieden het verzenden van spraak berichten.";
@@ -3015,6 +3075,9 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.";
 
 /* No comment provided by engineer. */
+"Receiving concurrency" = "Gelijktijdig ontvangen";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Het ontvangen van het bestand wordt gestopt.";
 
 /* No comment provided by engineer. */
@@ -3022,6 +3085,9 @@
 
 /* No comment provided by engineer. */
 "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Recente geschiedenis en verbeterde [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
+"Recipient(s) can't see who this message is from." = "Ontvanger(s) kunnen niet zien van wie dit bericht afkomstig is.";
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Ontvangers zien updates terwijl u ze typt.";
@@ -3217,6 +3283,18 @@
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Welkomst bericht opslaan?";
+
+/* No comment provided by engineer. */
+"saved" = "opgeslagen";
+
+/* No comment provided by engineer. */
+"Saved" = "Opgeslagen";
+
+/* No comment provided by engineer. */
+"Saved from" = "Opgeslagen van";
+
+/* No comment provided by engineer. */
+"saved from %@" = "opgeslagen van %@";
 
 /* message info title */
 "Saved message" = "Opgeslagen bericht";
@@ -3484,6 +3562,12 @@
 
 /* chat feature */
 "SimpleX links" = "SimpleX links";
+
+/* No comment provided by engineer. */
+"SimpleX links are prohibited in this group." = "SimpleX-links zijn in deze groep verboden.";
+
+/* No comment provided by engineer. */
+"SimpleX links not allowed" = "SimpleX-links zijn niet toegestaan";
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "SimpleX Vergrendelen";
@@ -4050,6 +4134,9 @@
 "Voice messages are prohibited in this group." = "Spraak berichten zijn verboden in deze groep.";
 
 /* No comment provided by engineer. */
+"Voice messages not allowed" = "Spraakberichten niet toegestaan";
+
+/* No comment provided by engineer. */
 "Voice messages prohibited!" = "Spraak berichten verboden!";
 
 /* No comment provided by engineer. */
@@ -4101,10 +4188,22 @@
 "When available" = "Wanneer beschikbaar";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Bij het verbinden van audio- en video-oproepen.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Wanneer mensen vragen om verbinding te maken, kunt u dit accepteren of weigeren.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.";
+
+/* No comment provided by engineer. */
+"WiFi" = "Wifi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Wordt ingeschakeld in directe chats!";
+
+/* No comment provided by engineer. */
+"Wired ethernet" = "Bekabeld Ethernet";
 
 /* No comment provided by engineer. */
 "With encrypted files and media." = "‐Met versleutelde bestanden en media.";
@@ -4126,6 +4225,9 @@
 
 /* pref value */
 "yes" = "Ja";
+
+/* No comment provided by engineer. */
+"you" = "jij";
 
 /* No comment provided by engineer. */
 "You" = "Jij";

@@ -728,7 +728,7 @@
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
-        <target>送信済みメッセージの永久削除を許可する。</target>
+        <target>送信済みメッセージの永久削除を許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -767,7 +767,7 @@
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
-        <target>送信相手が永久メッセージ削除するのを許可する。</target>
+        <target>送信相手が永久メッセージ削除するのを許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
@@ -987,7 +987,7 @@
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages. (24 hours)</source>
-        <target>あなたと連絡相手が送信済みメッセージを永久削除できます。</target>
+        <target>あなたと連絡相手が送信済みメッセージを永久削除できます。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
@@ -2274,10 +2274,6 @@ This cannot be undone!</source>
         <target>メンバー追加にエラー発生</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve">
-        <source>Error allowing contact PQ encryption</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
         <source>Error changing address</source>
         <target>アドレス変更にエラー発生</target>
@@ -2707,6 +2703,10 @@ This cannot be undone!</source>
         <source>Forward</source>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Forward and save messages" xml:space="preserve">
+        <source>Forward and save messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
         <source>Forwarded</source>
         <note>No comment provided by engineer.</note>
@@ -2818,7 +2818,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Group members can irreversibly delete sent messages. (24 hours)</source>
-        <target>グループのメンバーがメッセージを完全削除することができます。</target>
+        <target>グループのメンバーがメッセージを完全削除することができます。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
@@ -3057,6 +3057,10 @@ This cannot be undone!</source>
       <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
         <target>返信先</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In-call sounds" xml:space="preserve">
+        <source>In-call sounds</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3514,6 +3518,10 @@ This is your link for group %@!</source>
         <target>このグループではメッセージへのリアクションは禁止されています。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message source remains private." xml:space="preserve">
+        <source>Message source remains private.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>メッセージ内容</target>
@@ -3618,6 +3626,10 @@ This is your link for group %@!</source>
         <target>まだまだ改善してまいります！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="More reliable network connection." xml:space="preserve">
+        <source>More reliable network connection.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
         <source>Most likely this connection is deleted.</source>
         <target>おそらく、この接続は削除されています。</target>
@@ -3655,6 +3667,10 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
         <source>Network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network management" xml:space="preserve">
+        <source>Network management</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -3874,7 +3890,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</source>
-        <target>メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。</target>
+        <target>メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve">
@@ -3899,7 +3915,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)</source>
-        <target>メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。</target>
+        <target>メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can make calls." xml:space="preserve">
@@ -4137,10 +4153,6 @@ Error: %@</source>
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
         <target>サーバアドレスの証明証IDが正しくないかもしれません</target>
         <note>server test error</note>
-      </trans-unit>
-      <trans-unit id="Post-quantum E2EE" xml:space="preserve">
-        <source>Post-quantum E2EE</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
@@ -5972,6 +5984,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>利用可能時に</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
+        <source>When connecting audio and video calls.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
         <source>When people request to connect, you can accept or reject it.</source>
         <target>接続が要求されたら、それを受け入れるか拒否するかを選択できます。</target>
@@ -5984,6 +6000,10 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
         <source>WiFi</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
+        <source>Will be enabled in direct chats!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wired ethernet" xml:space="preserve">

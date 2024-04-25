@@ -1606,9 +1606,6 @@
 "Error adding member(s)" = "Помилка додавання користувача(ів)";
 
 /* No comment provided by engineer. */
-"Error allowing contact PQ encryption" = "Помилка, що дозволяє шифрування контакту PQ";
-
-/* No comment provided by engineer. */
 "Error changing address" = "Помилка зміни адреси";
 
 /* No comment provided by engineer. */
@@ -2869,9 +2866,6 @@
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Можливо, в адресі сервера неправильно вказано відбиток сертифіката";
-
-/* No comment provided by engineer. */
-"Post-quantum E2EE" = "Пост-квантовий E2EE";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Зберегти чернетку останнього повідомлення з вкладеннями.";
