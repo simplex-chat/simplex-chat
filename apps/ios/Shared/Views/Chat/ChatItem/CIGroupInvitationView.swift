@@ -38,16 +38,22 @@ struct CIGroupInvitationView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             groupInvitationText()
                                 .overlay(DetermineWidth())
-                            Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                                .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
-                                .font(.callout)
-                                .padding(.trailing, 60)
-                                .overlay(DetermineWidth())
+                            (
+                                Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
+                                    .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
+                                    .font(.callout)
+                                + Text("   ")
+                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false)
+                            )
+                            .overlay(DetermineWidth())
                         }
                     } else {
-                        groupInvitationText()
-                            .padding(.trailing, 80)
-                            .overlay(DetermineWidth())
+                        (
+                            groupInvitationText()
+                            + Text("   ")
+                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false)
+                        )
+                        .overlay(DetermineWidth())
                     }
                 }
                 .padding(.bottom, 2)
@@ -114,7 +120,7 @@ struct CIGroupInvitationView: View {
         }
     }
 
-    private func groupInvitationText() -> some View {
+    private func groupInvitationText() -> Text {
         Text(groupInvitationStr())
             .font(.callout)
     }
