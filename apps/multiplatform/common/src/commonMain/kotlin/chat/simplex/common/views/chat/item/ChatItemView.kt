@@ -525,22 +525,10 @@ fun ChatItemView(
           is CIContent.SndModerated -> DeletedItem()
           is CIContent.RcvModerated -> DeletedItem()
           is CIContent.RcvBlocked -> DeletedItem()
-          is CIContent.SndDirectE2EEInfo -> {
-            DirectE2EEInfoText(c.e2eeInfo)
-            DeleteItemMenu()
-          }
-          is CIContent.RcvDirectE2EEInfo -> {
-            DirectE2EEInfoText(c.e2eeInfo)
-            DeleteItemMenu()
-          }
-          is CIContent.SndGroupE2EEInfo -> {
-            E2EEInfoNoPQText()
-            DeleteItemMenu()
-          }
-          is CIContent.RcvGroupE2EEInfo -> {
-            E2EEInfoNoPQText()
-            DeleteItemMenu()
-          }
+          is CIContent.SndDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
+          is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
+          is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
+          is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
           is CIContent.InvalidJSON -> {
             CIInvalidJSONView(c.json)
             DeleteItemMenu()
