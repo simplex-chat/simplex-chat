@@ -106,14 +106,18 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = max(0f, percent.value)
   val pad = if (padding) size / 12 else 0.dp
-  return if (r >= 50) {
-    Modifier.size(size).padding(pad).clip(CircleShape)
-  } else if (r <= 0) {
-    val sz = (size - 2 * pad) * squareToCircleRatio
-    Modifier.size(size).padding((size - sz) / 2)
-  } else {
-    val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
-    Modifier.size(size).padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
+  val m = Modifier.size(size)
+  return when {
+    r >= 50 ->
+      m.padding(pad).clip(CircleShape)
+    r <= 0 -> {
+      val sz = (size - 2 * pad) * squareToCircleRatio
+      m.padding((size - sz) / 2)
+    }
+    else -> {
+      val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
+      m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
+    }
   }
 }
 
@@ -141,7 +145,7 @@ fun ProfileImageForActiveCall(
       imageBitmap,
       stringResource(MR.strings.image_descr_profile_image),
       contentScale = ContentScale.Crop,
-      modifier = ProfileIconModifier(size, padding = false) // Modifier.size(size).clip(ProfileIconShape())
+      modifier = ProfileIconModifier(size, padding = false)
     )
   }
 }
