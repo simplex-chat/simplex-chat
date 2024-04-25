@@ -15,6 +15,7 @@ struct CIMetaView: View {
     var metaColor = Color.secondary
     var paleMetaColor = Color(UIColor.tertiaryLabel)
     var showStatus = true
+    var showEdited = true
 
     var body: some View {
         if chatItem.isDeletedContent {
@@ -26,24 +27,24 @@ struct CIMetaView: View {
             switch meta.itemStatus {
             case let .sndSent(sndProgress):
                 switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus)
-                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus)
+                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited)
+                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited)
                 }
             case let .sndRcvd(_, sndProgress):
                 switch sndProgress {
                 case .complete:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited)
                     }
                 case .partial:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited)
                     }
                 }
             default:
-                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus)
+                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited)
             }
         }
     }
@@ -62,10 +63,11 @@ func ciMetaText(
     color: Color = .clear,
     transparent: Bool = false,
     sent: SentCheckmark? = nil,
-    showStatus: Bool = true
+    showStatus: Bool = true,
+    showEdited: Bool = true
 ) -> Text {
     var r = Text("")
-    if meta.itemEdited {
+    if showEdited, meta.itemEdited {
         r = r + statusIconText("pencil", color)
     }
     if meta.disappearing {

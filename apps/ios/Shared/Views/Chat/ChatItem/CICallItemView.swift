@@ -35,7 +35,7 @@ struct CICallItemView: View {
             case .error: missedCallIcon(sent).foregroundColor(.orange)
             }
 
-            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false)
+            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false, showEdited: false)
                 .padding(.bottom, 8)
                 .padding(.horizontal, 12)
         }

@@ -57,7 +57,7 @@ struct CIGroupInvitationView: View {
                 }
             }
 
-            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false)
+            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false, showEdited: false)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
