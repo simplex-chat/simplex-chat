@@ -78,19 +78,21 @@ func ciMetaText(
         }
         r = r + Text(" ")
     }
-    if showStatus, let (icon, statusColor) = meta.statusIcon(color) {
-        let t = Text(Image(systemName: icon)).font(.caption2)
-        let gap = Text("  ").kerning(-1.25)
-        let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
-        switch sent {
-        case nil: r = r + t1
-        case .sent: r = r + t1 + gap
-        case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
-        case .rcvd2: r = r + gap + t1
+    if showStatus {
+        if let (icon, statusColor) = meta.statusIcon(color) {
+            let t = Text(Image(systemName: icon)).font(.caption2)
+            let gap = Text("  ").kerning(-1.25)
+            let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
+            switch sent {
+            case nil: r = r + t1
+            case .sent: r = r + t1 + gap
+            case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
+            case .rcvd2: r = r + gap + t1
+            }
+            r = r + Text(" ")
+        } else if !meta.disappearing {
+            r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
         }
-        r = r + Text(" ")
-    } else if !meta.disappearing {
-        r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
     }
     if let enc = encrypted {
         r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")

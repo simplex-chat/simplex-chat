@@ -82,18 +82,20 @@ private fun CIMetaText(
     }
     Spacer(Modifier.width(4.dp))
   }
-  val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
-  if (showStatus && statusIcon != null) {
-    val (icon, statusColor) = statusIcon
-    if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
-      Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
-    } else {
-      StatusIconText(painterResource(icon), statusColor)
+  if (showStatus) {
+    val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
+    if (statusIcon != null) {
+      val (icon, statusColor) = statusIcon
+      if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
+        Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
+      } else {
+        StatusIconText(painterResource(icon), statusColor)
+      }
+      Spacer(Modifier.width(4.dp))
+    } else if (!meta.disappearing) {
+      StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
+      Spacer(Modifier.width(4.dp))
     }
-    Spacer(Modifier.width(4.dp))
-  } else if (!meta.disappearing) {
-    StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
-    Spacer(Modifier.width(4.dp))
   }
   if (encrypted != null) {
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
@@ -114,7 +116,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, showSt
       res += shortTimeText(ttl)
     }
   }
-  if ((showStatus && meta.statusIcon(CurrentColors.value.colors.secondary) != null) || !meta.disappearing) {
+  if (showStatus && (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing)) {
     res += iconSpace
   }
   if (encrypted != null) {
