@@ -609,8 +609,6 @@ extension WebRTCClient {
                 try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
                 try self.rtcAudioSession.overrideOutputAudioPort(enabled ? .speaker : .none)
                 try self.rtcAudioSession.setActive(true)
-                logger.debug("LALAL AUDIO in \(self.rtcAudioSession.currentRoute.inputs.description)")
-                logger.debug("LALAL AUDIO out \(self.rtcAudioSession.currentRoute.outputs.description)")
                 logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled) success")
             } catch let error {
                 logger.debug("Error configuring AVAudioSession: \(error)")
