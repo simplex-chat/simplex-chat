@@ -829,7 +829,7 @@ struct ChatView: View {
             } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 menu.append(revealed ? shrinkUIAction() : expandUIAction())
                 menu.append(deleteUIAction(ci))
-            } else {
+            } else if ci.showLocalDelete {
                 menu.append(deleteUIAction(ci))
             }
             return menu

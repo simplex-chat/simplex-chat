@@ -2437,6 +2437,16 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var showLocalDelete: Bool {
+        switch content {
+        case .sndDirectE2EEInfo: return false
+        case .rcvDirectE2EEInfo: return false
+        case .sndGroupE2EEInfo: return false
+        case .rcvGroupE2EEInfo: return false
+        default: return true
+        }
+    }
+
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
