@@ -33,7 +33,9 @@ fun CIMetaView(
       red = minOf(metaColor.red * 1.33F, 1F),
       green = minOf(metaColor.green * 1.33F, 1F),
       blue = minOf(metaColor.red * 1.33F, 1F))
-  }
+  },
+  showStatus: Boolean = true,
+  showEdited: Boolean = true
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
@@ -44,15 +46,31 @@ fun CIMetaView(
         modifier = Modifier.padding(start = 3.dp)
       )
     } else {
-      CIMetaText(chatItem.meta, timedMessagesTTL, encrypted = chatItem.encryptedFile, metaColor, paleMetaColor)
+      CIMetaText(
+        chatItem.meta,
+        timedMessagesTTL,
+        encrypted = chatItem.encryptedFile,
+        metaColor,
+        paleMetaColor,
+        showStatus = showStatus,
+        showEdited = showEdited
+      )
     }
   }
 }
 
 @Composable
 // changing this function requires updating reserveSpaceForMeta
-private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: Color, paleColor: Color) {
-  if (meta.itemEdited) {
+private fun CIMetaText(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  color: Color,
+  paleColor: Color,
+  showStatus: Boolean = true,
+  showEdited: Boolean = true
+) {
+  if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
     Spacer(Modifier.width(3.dp))
   }
@@ -65,7 +83,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: 
     Spacer(Modifier.width(4.dp))
   }
   val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
-  if (statusIcon != null) {
+  if (showStatus && statusIcon != null) {
     val (icon, statusColor) = statusIcon
     if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
       Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
@@ -85,10 +103,10 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: 
 }
 
 // the conditions in this function should match CIMetaText
-fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?): String {
+fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, showStatus: Boolean = true, showEdited: Boolean = true): String {
   val iconSpace = "    "
   var res = ""
-  if (meta.itemEdited) res += iconSpace
+  if (showEdited && meta.itemEdited) res += iconSpace
   if (meta.itemTimed != null) {
     res += iconSpace
     val ttl = meta.itemTimed.ttl
@@ -96,7 +114,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?): Strin
       res += shortTimeText(ttl)
     }
   }
-  if (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing) {
+  if ((showStatus && meta.statusIcon(CurrentColors.value.colors.secondary) != null) || !meta.disappearing) {
     res += iconSpace
   }
   if (encrypted != null) {
