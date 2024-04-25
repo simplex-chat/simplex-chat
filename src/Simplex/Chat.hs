@@ -40,7 +40,7 @@ import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, partition, sortOn)
+import Data.List (find, foldl', isSuffixOf, nub, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -3086,7 +3086,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
     collectDescrSrvs :: ValidFileDescription 'FRecipient -> [XFTPServer]
     collectDescrSrvs (FD.ValidFileDescription FD.FileDescription {chunks}) =
-      concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
+      nub $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     filterUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     filterUnknownSrvs rdSrvs = do
       ChatConfig {defaultServers = DefaultAgentServers {xftp = defXftp}} <- asks config
