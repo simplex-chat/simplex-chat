@@ -9,11 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.buildAnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
@@ -26,7 +27,8 @@ fun CIGroupInvitationView(
   groupInvitation: CIGroupInvitation,
   memberRole: GroupMemberRole,
   chatIncognito: Boolean = false,
-  joinGroup: (Long, () -> Unit) -> Unit
+  joinGroup: (Long, () -> Unit) -> Unit,
+  timedMessagesTTL: Int?
 ) {
   val sent = ci.chatDir.sent
   val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending
@@ -69,13 +71,15 @@ fun CIGroupInvitationView(
   }
 
   @Composable
-  fun groupInvitationText() {
-    when {
-      sent -> Text(stringResource(MR.strings.you_sent_group_invitation))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Pending -> Text(stringResource(MR.strings.you_are_invited_to_group))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Accepted -> Text(stringResource(MR.strings.you_joined_this_group))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Rejected -> Text(stringResource(MR.strings.you_rejected_group_invitation))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Expired -> Text(stringResource(MR.strings.group_invitation_expired))
+  fun groupInvitationStr(): String {
+    return when {
+      sent -> stringResource(MR.strings.you_sent_group_invitation)
+      else -> when(groupInvitation.status) {
+        CIGroupInvitationStatus.Pending -> stringResource(MR.strings.you_are_invited_to_group)
+        CIGroupInvitationStatus.Accepted -> stringResource(MR.strings.you_joined_this_group)
+        CIGroupInvitationStatus.Rejected -> stringResource(MR.strings.you_rejected_group_invitation)
+        CIGroupInvitationStatus.Expired -> stringResource(MR.strings.group_invitation_expired)
+      }
     }
   }
 
@@ -109,20 +113,24 @@ fun CIGroupInvitationView(
           Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
             Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
             if (action) {
-              groupInvitationText()
+              Text(groupInvitationStr())
               Text(
-                stringResource(
-                  if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join
-                ),
+                buildAnnotatedString {
+                  append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
+                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false)) }
+                },
                 color = if (inProgress.value)
                   MaterialTheme.colors.secondary
                 else
                   if (chatIncognito) Indigo else MaterialTheme.colors.primary
               )
             } else {
-              Box(Modifier.padding(end = 48.dp)) {
-                groupInvitationText()
-              }
+              Text(
+                buildAnnotatedString {
+                  append(groupInvitationStr())
+                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false)) }
+                }
+              )
             }
           }
         }
@@ -136,12 +144,7 @@ fun CIGroupInvitationView(
         }
       }
 
-      Text(
-        ci.timestampText,
-        color = MaterialTheme.colors.secondary,
-        fontSize = 14.sp,
-        modifier = Modifier.padding(start = 3.dp)
-      )
+      CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false)
     }
   }
 }
@@ -157,7 +160,8 @@ fun PendingCIGroupInvitationViewPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = { _, _ -> }
+      joinGroup = { _, _ -> },
+      timedMessagesTTL = null
     )
   }
 }
@@ -173,7 +177,8 @@ fun CIGroupInvitationViewAcceptedPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = { _, _ -> }
+      joinGroup = { _, _ -> },
+      timedMessagesTTL = null
     )
   }
 }
@@ -189,7 +194,8 @@ fun CIGroupInvitationViewLongNamePreview() {
         status = CIGroupInvitationStatus.Accepted
       ),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = { _, _ -> }
+      joinGroup = { _, _ -> },
+      timedMessagesTTL = null
     )
   }
 }
