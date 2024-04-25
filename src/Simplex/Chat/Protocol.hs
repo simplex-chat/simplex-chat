@@ -48,7 +48,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
-import Simplex.Messaging.Compression (compress1, decompress1)
+import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -570,7 +570,7 @@ parseChatMessages s = case B.head s of
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
-      Right compressed -> concatMap (either (pure . Left) parseChatMessages) $ L.map decompress1 compressed
+      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseChatMessages . decompress1) compressed
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
