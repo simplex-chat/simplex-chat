@@ -103,6 +103,8 @@ The cases when SimpleX Chat Ltd may share the data temporarily stored on the ser
 
 At the time of updating this document, we have never provided or have been requested the access to the preset relay servers or any information from the servers by any third parties. If we are ever requested to provide such access or information, we will follow the due legal process to limit any information shared with the third parties to the minimally required by law.
 
+We will publish information we are legally allowed to share about such requests in the [Transparency reports](./docs/TRANSPARENCY.md).
+
 ### Updates
 
 We will update this Privacy Policy as needed so that it is current, accurate, and as clear as possible. Your continued use of our software applications and preset relays infrastructure confirms your acceptance of our updated Privacy Policy.
@@ -131,7 +133,7 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Traffic and device costs**. You are solely responsible for the traffic and device costs that you incur while using our Applications, and any associated taxes.
 
-**Legal and acceptable usage**. You agree to use our Applications only for legal and acceptable purposes. You will not use (or assist others in using) our Applications in ways that: 1) violate or infringe the rights of Software users, SimpleX Chat Ltd, or others, including privacy, publicity, intellectual property, or other proprietary rights; 2) involve sending illegal or impermissible communications, e.g. spam. While we cannot access content or identify messages or groups, in some cases the links to the illegal or impermissible communications available via our Applications can be shared publicly on social media or websites. We reserve the right to remove such links from the preset servers and disrupt the conversations that send illegal content via our servers, whether they were reported by the users or discovered by our team.
+**Legal usage**. You agree to use our Applications only for legal purposes. You will not use (or assist others in using) our Applications in ways that: 1) violate or infringe the rights of Software users, SimpleX Chat Ltd, or others, including privacy, publicity, intellectual property, or other proprietary rights; 2) involve sending illegal communications, e.g. spam. While we cannot access content or identify messages or groups, in some cases the links to the illegal communications available via our Applications can be shared publicly on social media or websites. We reserve the right to remove such links from the preset servers and disrupt the conversations that send illegal content via our servers, whether they were reported by the users or discovered by our team.
 
 **Damage to SimpleX Chat Ltd**. You must not (or assist others to) access, use, modify, distribute, transfer, or exploit our Applications in unauthorized manners, or in ways that harm Software users, SimpleX Chat Ltd, our Infrastructure, or any other systems. For example, you must not 1) access our Infrastructure or systems without authorization, in any way other than by using the Software; 2) disrupt the integrity or performance of our Infrastructure; 3) collect information about our users in any manner; or 4) sell, rent, or charge for our Infrastructure. This does not prohibit you from providing your own Infrastructure to others, whether free or for a fee, as long as you do not violate these Conditions and AGPLv3 license, including the requirement to publish any modifications of the relay server software.
 
@@ -165,4 +167,4 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Ending these conditions**. You may end these Conditions with SimpleX Chat Ltd at any time by deleting our Applications from your devices and discontinuing use of our Infrastructure. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the conditions, Enforcing the conditions, and Ending these conditions will survive termination of your relationship with SimpleX Chat Ltd.
 
-Updated February 24, 2024
+Updated April 24, 2024
