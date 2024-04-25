@@ -27,6 +27,7 @@ import androidx.core.text.HtmlCompat
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import java.io.*
 import java.net.URI
@@ -187,7 +188,12 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   return if (filePath != null && file != null) {
     try {
       val data = if (file.fileSource?.cryptoArgs != null) {
-        readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
+        try {
+          readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
+        } catch (e: Exception) {
+          Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+          return null
+        }
       } else {
         File(getAppFilePath(file.fileName)).readBytes()
       }

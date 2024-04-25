@@ -127,8 +127,7 @@ struct UserPicker: View {
             }
         }, label: {
             HStack(spacing: 0) {
-                ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))
-                    .frame(width: 44, height: 44)
+                ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemFill))
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                     .fontWeight(user.activeUser ? .medium : .regular)

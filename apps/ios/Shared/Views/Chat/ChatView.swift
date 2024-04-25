@@ -597,8 +597,7 @@ struct ChatView: View {
                                 .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image)
-                                .frame(width: memberImageSize, height: memberImageSize)
+                            ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize)
                                 .onTapGesture {
                                     if chatView.membersLoaded {
                                         selectedMember = m.getGroupMember(member.groupMemberId)

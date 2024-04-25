@@ -623,6 +623,14 @@ ciCallInfoText status duration = case status of
   CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
 
+callComplete :: CICallStatus -> Bool
+callComplete = \case
+  CISCallMissed -> True
+  CISCallRejected -> True
+  CISCallEnded -> True
+  CISCallError -> True
+  _ -> False
+
 $(JQ.deriveJSON defaultJSON ''E2EInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)

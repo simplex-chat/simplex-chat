@@ -534,23 +534,34 @@ fun ComposeView(
           AudioPlayer.stop(tmpFile.absolutePath)
           if (remoteHost == null) {
             val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
-            files.add(withContext(Dispatchers.IO) {
+            val file = withContext(Dispatchers.IO) {
               if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
-                val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
-                tmpFile.delete()
+                val args = try {
+                  encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
+                } catch (e: Exception) {
+                  Log.e(TAG, "Unable to encrypt plain file: " + e.stackTraceToString())
+                  AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+                  return@withContext null
+                } finally {
+                  tmpFile.delete()
+                }
                 CryptoFile(actualFile.name, args)
               } else {
                 Files.move(tmpFile.toPath(), actualFile.toPath())
                 CryptoFile.plain(actualFile.name)
               }
-            })
+            }
+            if (file != null) {
+              files.add(file)
+              msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
+            }
             deleteUnusedFiles()
           } else {
             files.add(CryptoFile.plain(tmpFile.absolutePath))
             // It will be deleted on JVM shutdown or next start (if the app crashes unexpectedly)
             filesToDelete.remove(tmpFile)
+            msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
           }
-          msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
