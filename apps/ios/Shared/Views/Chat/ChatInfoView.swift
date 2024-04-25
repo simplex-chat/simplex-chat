@@ -49,7 +49,7 @@ func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) 
     }
 }
 
-private func serverHost(_ s: String) -> String {
+func serverHost(_ s: String) -> String {
     if let i = s.range(of: "@")?.lowerBound {
         return String(s[i...].dropFirst())
     } else {

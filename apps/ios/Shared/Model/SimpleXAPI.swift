@@ -963,7 +963,7 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
             logger.debug("apiReceiveFile fileAbortedNotApproved error")
             am.showAlert(Alert(
                 title: Text("Download from unknown relays?"),
-                message: Text("If you're not using tor or VPN, your IP address will be visible to these XFTP relays:\n\(unknownServers.joined(separator: "\n"))"),
+                message: Text("If you're not using tor or VPN, your IP address will be visible to these XFTP relays:\n\(unknownServers.map(serverHost).joined(separator: "\n"))"),
                 primaryButton: .destructive(
                     Text("Download"),
                     action: {
