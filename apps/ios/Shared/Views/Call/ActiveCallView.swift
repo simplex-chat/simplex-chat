@@ -111,7 +111,7 @@ struct ActiveCallView: View {
                         call.localCapabilities = capabilities
                     }
                     if call.supportsVideo {
-                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: .defaultToSpeaker)
+                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
                     }
                     CallSoundsPlayer.shared.startConnectingCallSound()
                     activeCallWaitDeliveryReceipt()
@@ -236,6 +236,7 @@ struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
     var client: WebRTCClient
+    let callAudioDeviceManager = CallAudioDeviceManager()
 
     var body: some View {
         VStack {
@@ -251,7 +252,13 @@ struct ActiveCallOverlay: View {
                 HStack {
                     toggleAudioButton()
                     Spacer()
-                    Color.clear.frame(width: 40, height: 40)
+                    if AVAudioSession.sharedInstance().availableInputs?.allSatisfy({ $0.portType == .builtInMic }) == true {
+                        Color.clear.frame(width: 40, height: 40)
+                    } else {
+                        AudioDevicePicker()
+                            .scaleEffect(1.8)
+                            .frame(maxWidth: 40, maxHeight: 40)
+                    }
                     Spacer()
                     endCallButton()
                     Spacer()
@@ -292,14 +299,28 @@ struct ActiveCallOverlay: View {
                     toggleAudioButton()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
-                    toggleSpeakerButton()
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    // Check if the only input is microphone. And in this case show toggle button, If there are more inputs, it probably means something like bluetooth headphones are available and in this case show iOS button for choosing different output. There is no way to get available outputs, only inputs
+                    if AVAudioSession.sharedInstance().availableInputs?.allSatisfy({ $0.portType == .builtInMic }) == true {
+                        toggleSpeakerButton()
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else {
+                        AudioDevicePicker()
+                            .scaleEffect(1.8)
+                            .frame(maxWidth: 50, maxHeight: 40)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
                 .padding(.bottom, 60)
                 .padding(.horizontal, 48)
             }
         }
         .frame(maxWidth: .infinity)
+        .onAppear {
+            callAudioDeviceManager.start()
+        }
+        .onDisappear {
+            callAudioDeviceManager.stop()
+        }
     }
 
     private func audioCallInfoView(_ call: Call) -> some View {

@@ -103,7 +103,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = true
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: .mixWithOthers)
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
             logger.debug("audioSession category set")
             try audioSession.setActive(true)
             logger.debug("audioSession activated")
