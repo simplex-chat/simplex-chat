@@ -351,6 +351,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
+  CRDebugAcks {debugAcks} -> [plain $ LB.unpack (J.encode debugAcks)]
   CRDebugLocks {chatLockName, chatEntityLocks, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "chat entity locks: " <> LB.unpack (J.encode chatEntityLocks),

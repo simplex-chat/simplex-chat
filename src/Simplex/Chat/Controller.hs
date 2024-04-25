@@ -207,6 +207,7 @@ data ChatController = ChatController
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
+    agentConnStatuses :: TMap AgentConnId (TVar AgentConnStatus),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -232,6 +233,15 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
   }
+
+data AgentConnStatus = AgentConnStatus
+  { lastCmd :: UTCTime,
+    lastCmdTag :: ACommandTag 'Agent 'AEConn,
+    lastMsg :: Maybe UTCTime, -- no message yet / got an MSG to ack
+    ackSent :: Maybe UTCTime,
+    okRcvd :: Maybe UTCTime -- ACK delivered, resulting in OK or MSG
+  }
+  deriving (Show)
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)
@@ -488,6 +498,7 @@ data ChatCommand
   | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
+  | DebugAcks
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats
@@ -735,6 +746,7 @@ data ChatResponse
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
+  | CRDebugAcks {debugAcks :: Map DebugAckKey DebugAck}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
@@ -754,6 +766,31 @@ data ChatResponse
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
+
+-- entity marker + id: @34
+-- using names would make a dump unshareable
+type DebugAckKey = Text
+
+data DebugAck = DebugAck
+  { -- from agentConnStatuses
+    lastCmd :: Maybe (Text, UTCTime), -- was there ANY command result delivered here?
+    lastMsg :: Maybe UTCTime, -- if yes, the ACK should happen
+    lastAck :: Maybe UTCTime, -- if sent, the OK should happen or a new MSG
+    lasOK :: Maybe UTCTime, -- server got ACK, waiting for new messages
+    -- from getAgentSubscriptions, via rId
+    inActive :: Bool, -- should the delivery work right now?
+    inPending :: Bool, -- is there a temporary error?
+    -- from some receive queue
+    host :: TransportHost, -- what's the server for this connection?
+    hasSMPClient :: Bool, -- is there an active client for it?
+    hasSubWorker :: Bool, -- a session was recently restarted and tries to resubscribe
+    hasDeliveryWorker :: Bool, -- connection's delivery worker is active, double-take on session status
+    -- from Connection
+    connStatus_ :: ConnStatus, -- does the protocol permits delivery
+    connAuthErrors :: (Int, Bool), -- number of AUTH errors before connection gets disabled
+    createdAt :: UTCTime
+  }
+  deriving Show
 
 -- some of these can only be used as command responses
 allowRemoteEvent :: ChatResponse -> Bool
@@ -1455,6 +1492,8 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
+
+$(JQ.deriveJSON defaultJSON ''DebugAck)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

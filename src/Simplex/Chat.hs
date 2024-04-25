@@ -227,6 +227,7 @@ newChatController
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
     connNetworkStatuses <- atomically TM.empty
+    agentConnStatuses <- atomically TM.empty
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- atomically TM.empty
@@ -263,6 +264,7 @@ newChatController
           inputQ,
           outputQ,
           connNetworkStatuses,
+          agentConnStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -2147,6 +2149,14 @@ processChatCommand' vr = \case
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
+  DebugAcks -> lift $ do
+    acs <- mapM readTVarIO =<< readTVarIO =<< asks agentConnStatuses
+    liftIO $ print acs
+    -- acs' <- forM (M.toList acs) $ \(acId, agentConnStatus) -> do
+    --   debugAckKey <- error "TODO: resolve connId into DebugAckKey"
+    --   let da = error "TODO: DebugAck {}"
+    --   pure (debugAckKey, da)
+    pure $ CRDebugAcks mempty -- (M.fromList acs')
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
@@ -3528,18 +3538,43 @@ expireChatItems user@User {userId} ttl sync = do
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
 processAgentMessage :: ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> CM ()
-processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
-  toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
-processAgentMessage _ connId DEL_CONN =
-  toView $ CRAgentConnDeleted (AgentConnId connId)
+processAgentMessage _ connId (DEL_RCVQ srv qId err_) = do
+  let acId = AgentConnId connId
+  asks agentConnStatuses >>= atomically . TM.delete acId
+  toView $ CRAgentRcvQueueDeleted acId srv (AgentQueueId qId) err_
+processAgentMessage _ connId DEL_CONN = do
+  let acId = AgentConnId connId
+  asks agentConnStatuses >>= atomically . TM.delete acId
+  toView $ CRAgentConnDeleted acId
 processAgentMessage corrId connId msg = do
-  lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
+  let acId = AgentConnId connId
+  lift $ trackAgentConn acId msg
+  lockEntity <- critical (withStore (`getChatLockEntity` acId))
   withEntityLock "processAgentMessage" lockEntity $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
-    critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
+    critical (withStore' (`getUserByAConnId` acId)) >>= \case
       Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
-      _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+      _ -> throwChatError $ CENoConnectionUser acId
+
+trackAgentConn :: AgentConnId -> ACommand 'Agent 'AEConn -> CM' ()
+trackAgentConn acId msg = do
+  now <- liftIO getCurrentTime
+  asks agentConnStatuses >>= atomically . TM.alterF (updateConn now) acId
+  where
+    updateConn now = \case
+      Nothing -> Just <$> newTVar (status now Nothing Nothing Nothing)
+      Just v -> Just v <$ modifyTVar' v (\AgentConnStatus {lastMsg, ackSent, okRcvd} -> status now lastMsg ackSent okRcvd)
+    status now lastMsg ackSent okRcvd = AgentConnStatus
+      { lastCmd = now,
+        lastCmdTag,
+        lastMsg = if isMSG then Just now else lastMsg,
+        ackSent,
+        okRcvd = if isOK then Just now else okRcvd
+      }
+    lastCmdTag = aCommandTag msg
+    isMSG = lastCmdTag == MSG_
+    isOK = lastCmdTag == OK_
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -4643,7 +4678,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         Left e -> ackMsg msgMeta Nothing >> throwError e
       where
         ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
-        ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
+        ackMsg MsgMeta {recipient = (msgId, _)} rcpt = do
+          withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
+          acs <- asks agentConnStatuses
+          liftIO $ do
+            let acId = AgentConnId cId
+            now <- getCurrentTime
+            atomically $ TM.lookup acId acs >>= mapM_ (\v -> modifyTVar' v $ \cs -> cs {ackSent = Just now})
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> CM ()
     sentMsgDeliveryEvent Connection {connId} msgId =
@@ -7271,6 +7312,7 @@ chatCommandP =
       "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
+      "/debug acks" $> DebugAcks,
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,
