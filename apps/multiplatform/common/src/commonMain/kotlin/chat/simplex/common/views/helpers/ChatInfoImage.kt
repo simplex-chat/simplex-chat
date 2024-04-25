@@ -101,21 +101,23 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = percent.value
   Log.e(TAG,"r: $r")
-  val m = when {
+  return when {
     r <= 1 -> {
       val sz = size * 950 / 1000
       Log.e(TAG,"sz: $sz")
-      Modifier.size(sz).clip(RectangleShape).padding((size - sz) / 2)
+      Modifier
+        .size(sz).padding(if (padding) size / 12 else 0.dp).padding((size - sz) / 2).clip(RectangleShape)
     }
     r >= 49 ->
-      Modifier.size(size).clip(CircleShape)
+      Modifier.size(size).padding(if (padding) size / 12 else 0.dp).clip(CircleShape)
     else -> {
       val sz = size * (950 + r) / 1000
       Log.e(TAG,"sz: $sz")
-      Modifier.size(sz).clip(RoundedCornerShape(size = sz * r / 100)).padding((size - sz) / 2)
+      Modifier
+        .size(sz).padding(if (padding) size / 12 else 0.dp).padding((size - sz) / 2)
+        .clip(RoundedCornerShape(PercentCornerSize(r)))
     }
   }
-  return if (padding) m.padding(size / 12) else m
 }
 
 /** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
@@ -145,6 +147,25 @@ fun ProfileImageForActiveCall(
       modifier = ProfileIconModifier(size, padding = false) // Modifier.size(size).clip(ProfileIconShape())
     )
   }
+}
+
+/** (c) [androidx.compose.foundation.shape.CornerSize] */
+private data class PercentCornerSize(
+  private val percent: Float
+) : CornerSize, InspectableValue {
+  init {
+    if (percent < 0 || percent > 100) {
+      throw IllegalArgumentException("The percent should be in the range of [0, 100]")
+    }
+  }
+
+  override fun toPx(shapeSize: Size, density: Density) =
+    shapeSize.minDimension * (percent / 100f)
+
+  override fun toString(): String = "CornerSize(size = $percent%)"
+
+  override val valueOverride: String
+    get() = "$percent%"
 }
 
 @Preview
