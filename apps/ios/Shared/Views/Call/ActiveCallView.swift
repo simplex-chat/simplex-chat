@@ -110,8 +110,8 @@ struct ActiveCallView: View {
                         call.callState = .invitationSent
                         call.localCapabilities = capabilities
                     }
-                    if call.supportsVideo {
-                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: .defaultToSpeaker)
+                    if call.supportsVideo && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
+                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
                     }
                     CallSoundsPlayer.shared.startConnectingCallSound()
                     activeCallWaitDeliveryReceipt()
@@ -235,6 +235,7 @@ struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
     var client: WebRTCClient
+    @ObservedObject private var deviceManager = CallAudioDeviceManager.shared
 
     var body: some View {
         VStack {
@@ -250,7 +251,16 @@ struct ActiveCallOverlay: View {
                 HStack {
                     toggleAudioButton()
                     Spacer()
-                    Color.clear.frame(width: 40, height: 40)
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                        toggleSpeakerButton()
+                            .frame(width: 40, height: 40)
+                    } else if call.hasMedia {
+                        AudioDevicePicker()
+                            .scaleEffect(2)
+                            .frame(maxWidth: 40, maxHeight: 40)
+                    } else {
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                     Spacer()
                     endCallButton()
                     Spacer()
@@ -291,14 +301,33 @@ struct ActiveCallOverlay: View {
                     toggleAudioButton()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
-                    toggleSpeakerButton()
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    // Check if the only input is microphone. And in this case show toggle button, 
+                    // If there are more inputs, it probably means something like bluetooth headphones are available
+                    // and in this case show iOS button for choosing different output.
+                    // There is no way to get available outputs, only inputs
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                        toggleSpeakerButton()
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else if call.hasMedia {
+                        AudioDevicePicker()
+                            .scaleEffect(2)
+                            .frame(maxWidth: 50, maxHeight: 40)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else {
+                        Color.clear.frame(width: 50, height: 40)
+                    }
                 }
                 .padding(.bottom, 60)
                 .padding(.horizontal, 48)
             }
         }
         .frame(maxWidth: .infinity)
+        .onAppear {
+            deviceManager.start()
+        }
+        .onDisappear {
+            deviceManager.stop()
+        }
     }
 
     private func audioCallInfoView(_ call: Call) -> some View {
@@ -376,11 +405,16 @@ struct ActiveCallOverlay: View {
     private func toggleSpeakerButton() -> some View {
         controlButton(call, call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
             Task {
-                client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
+                let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+                client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
                 DispatchQueue.main.async {
-                    call.speakerEnabled = !call.speakerEnabled
+                    call.speakerEnabled = !speakerEnabled
                 }
             }
+        }
+        .onAppear {
+            deviceManager.call = call
+            //call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
         }
     }
 
