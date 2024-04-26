@@ -139,7 +139,6 @@ struct ActiveCallView: View {
                     await MainActor.run {
                         call.callState = .negotiated
                         CallSoundsPlayer.shared.stop()
-                        try? AVAudioSession.sharedInstance().setCategory(.soloAmbient)
                     }
                 }
             case let .ice(iceCandidates):
