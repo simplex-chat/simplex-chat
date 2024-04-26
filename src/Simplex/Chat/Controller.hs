@@ -207,7 +207,7 @@ data ChatController = ChatController
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
-    agentConnStatuses :: TMap AgentConnId (TVar AgentConnStatus),
+    agentDeliveryStatuses :: TMap AgentConnId (TVar AgentDeliveryStatus),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -234,14 +234,20 @@ data ChatController = ChatController
     contactMergeEnabled :: TVar Bool
   }
 
-data AgentConnStatus = AgentConnStatus
+data AgentDeliveryStatus = AgentDeliveryStatus
   { lastCmd :: UTCTime,
-    lastCmdTag :: ACommandTag 'Agent 'AEConn,
-    lastMsg :: Maybe UTCTime, -- no message yet / got an MSG to ack
-    ackSent :: Maybe UTCTime,
-    okRcvd :: Maybe UTCTime -- ACK delivered, resulting in OK or MSG
+    isMSG :: Bool, -- False for RCVD
+    connId :: Maybe Int64, -- chat connection ID
+    eventTag :: Maybe Text, -- tshow of ACMEventTag (for JSON instances)
+    ackSent :: Maybe (UTCTime, Text), -- strEncode of random CorrId
+    pendingAcks :: Map Text Bool
   }
-  deriving (Show)
+  deriving (Show) -- for ChatResponse
+
+agentDeliveryOk :: AgentDeliveryStatus -> Bool
+agentDeliveryOk AgentDeliveryStatus {ackSent, pendingAcks} = case ackSent of
+  Nothing -> False
+  Just (_, corrId) -> M.lookup corrId pendingAcks == Just True && and pendingAcks
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)
@@ -498,7 +504,8 @@ data ChatCommand
   | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
-  | DebugAcks
+  | DebugDelivery
+  -- | DebugConnection Int64
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats
@@ -746,7 +753,7 @@ data ChatResponse
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
-  | CRDebugAcks {debugAcks :: Map DebugAckKey DebugAck}
+  | CRDebugDelivery {debugDelivery :: Map Text AgentDeliveryStatus}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
@@ -1495,7 +1502,11 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
-$(JQ.deriveJSON defaultJSON ''DebugAck)
+$(JQ.deriveJSON defaultJSON ''AgentDeliveryStatus)
+
+-- $(JQ.deriveJSON defaultJSON ''DebugDelivery)
+
+-- $(JQ.deriveJSON defaultJSON ''DebugConnection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
