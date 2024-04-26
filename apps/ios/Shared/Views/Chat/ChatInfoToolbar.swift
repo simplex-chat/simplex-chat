@@ -25,11 +25,11 @@ struct ChatInfoToolbar: View {
             }
             ChatInfoImage(
                 chat: chat,
+                size: imageSize,
                 color: colorScheme == .dark
                         ? chatImageColorDark
                         : chatImageColorLight
             )
-            .frame(width: imageSize, height: imageSize)
             .padding(.trailing, 4)
             VStack {
                 let t = Text(cInfo.displayName).font(.headline)

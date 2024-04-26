@@ -192,7 +192,6 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
           readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
         } catch (e: Exception) {
           Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
-          AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
           return null
         }
       } else {

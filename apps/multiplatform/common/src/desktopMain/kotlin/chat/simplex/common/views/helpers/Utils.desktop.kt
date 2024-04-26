@@ -12,11 +12,9 @@ import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
-import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.*
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
@@ -143,7 +141,6 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
       if (bitmap != null) bitmap to data else null
     } catch (e: Exception) {
       Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
-      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
       null
     }
   } else {

@@ -16,8 +16,7 @@ struct ContactRequestView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            ChatInfoImage(chat: chat)
-                .frame(width: 63, height: 63)
+            ChatInfoImage(chat: chat, size: 63)
                 .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {

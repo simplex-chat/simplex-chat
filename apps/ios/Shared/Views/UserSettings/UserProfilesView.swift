@@ -309,8 +309,7 @@ struct UserProfilesView: View {
             }
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))
-                    .frame(width: 44, height: 44)
+                ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemFill))
                     .padding(.vertical, 4)
                     .padding(.trailing, 12)
                 Text(user.chatViewName)

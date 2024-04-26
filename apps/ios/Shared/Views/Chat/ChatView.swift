@@ -597,8 +597,7 @@ struct ChatView: View {
                                 .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image)
-                                .frame(width: memberImageSize, height: memberImageSize)
+                            ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize)
                                 .onTapGesture {
                                     if chatView.membersLoaded {
                                         selectedMember = m.getGroupMember(member.groupMemberId)
@@ -828,6 +827,9 @@ struct ChatView: View {
                 menu.append(deleteUIAction(ci))
             } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 menu.append(revealed ? shrinkUIAction() : expandUIAction())
+                menu.append(deleteUIAction(ci))
+            } else if ci.showLocalDelete {
+                menu.append(deleteUIAction(ci))
             }
             return menu
         }
@@ -1040,7 +1042,7 @@ struct ChatView: View {
                 image: UIImage(systemName: "trash"),
                 attributes: [.destructive]
             ) { _ in
-                if !revealed && ci.meta.itemDeleted != nil,
+                if !revealed,
                    let currIndex = m.getChatItemIndex(ci),
                    let ciCategory = ci.mergeCategory {
                     let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
