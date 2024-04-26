@@ -2181,7 +2181,7 @@ processChatCommand' vr = \case
           Nothing -> "idle"
           Just Nothing -> "waiting"
           Just (Just _async) -> "working"
-    conn@Connection {connStatus, createdAt} <-
+    connection <-
       withStore (\db -> getConnectionEntity db vr user acId) >>= \case
         RcvDirectMsgConnection {entityConnection} -> pure entityConnection
         RcvGroupMsgConnection {entityConnection} -> pure entityConnection
@@ -2201,9 +2201,7 @@ processChatCommand' vr = \case
             smpClientStatus,
             subWorkerStatus,
             queueStatus = tshow rqStatus,
-            connStatus_ = connStatus,
-            connAuthErrors = (authErrCounter conn, connDisabled conn),
-            createdAt = createdAt
+            connection
           }
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
@@ -7576,4 +7574,4 @@ dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrCo
 agentDeliveryStatus :: AgentConnId -> (AgentDeliveryStatus -> AgentDeliveryStatus) -> CM' ()
 agentDeliveryStatus acId f = do
   ads <- asks agentDeliveryStatuses
-  atomically $ TM.lookup acId ads >>= mapM_ (`modifyTVar'`f)
+  atomically $ TM.lookup acId ads >>= mapM_ (`modifyTVar'` f)

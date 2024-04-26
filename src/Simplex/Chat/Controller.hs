@@ -786,10 +786,7 @@ data DebugConnectionStatus = DebugConnectionStatus
     server :: (Text, String), -- what's the server for this connection? -- XXX: reveals private servers and association
     smpClientStatus :: Text, -- is there an active client for it?
     subWorkerStatus :: Text, -- a session was recently restarted and tries to resubscribe
-    -- from Connection
-    connStatus_ :: ConnStatus, -- does the protocol permits delivery
-    connAuthErrors :: (Int, Bool), -- number of AUTH errors before connection gets disabled
-    createdAt :: UTCTime
+    connection :: Connection
   }
   deriving (Show)
 
