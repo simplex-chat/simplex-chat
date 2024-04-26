@@ -2153,10 +2153,53 @@ processChatCommand' vr = \case
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
-  DebugDelivery -> do
+  DebugDelivery showAll -> do
     ads <- mapM readTVarIO =<< readTVarIO =<< asks agentDeliveryStatuses
-    let collect (acId, ds) = if agentDeliveryOk ds then Nothing else Just (decodeLatin1 $ strEncode acId, ds)
+    let collect (acId, ds) = if not showAll && agentDeliveryOk ds then Nothing else Just (decodeLatin1 $ strEncode acId, ds)
     pure $ CRDebugDelivery . M.fromList . mapMaybe collect $ M.toList ads
+  DebugConnection acId@(AgentConnId acId') -> do
+    user@User {userId} <- withStore' (`getUserByAConnId` acId) >>= maybe (throwChatError undefined) pure
+    AS.RcvQueue {server, rcvId = rcvId', status = rqStatus} <- withAgent $ \ac ->
+      -- dive into agent internals
+      liftIOEither . (`runReaderT` agentEnv ac) . runExceptT $ AC.withStore ac $ \adb ->
+        ADB.getPrimaryRcvQueue adb acId'
+    let tSess = (userId, server, Just acId')
+        SMP.ProtocolServer {host, port} = server
+    AgentClient {activeSubs, pendingSubs, smpClients, smpSubWorkers} <- withAgent pure
+    inActive <- any (\AS.RcvQueue {rcvId} -> rcvId == rcvId') <$> atomically (RQ.getSessQueues tSess activeSubs)
+    inPending <- any (\AS.RcvQueue {rcvId} -> rcvId == rcvId') <$> atomically (RQ.getSessQueues tSess pendingSubs)
+    smpClient <- atomically (TM.lookup (tSess $> Nothing) smpClients) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    smpClientIsolated <- atomically (TM.lookup tSess smpClients) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    let smpClientStatus = case smpClient <|> smpClientIsolated of
+          Nothing -> "missing"
+          Just Nothing -> "connecting"
+          Just (Just (Left err)) -> tshow err
+          Just (Just (Right _client)) -> "connected"
+    subWorker <- atomically (TM.lookup (tSess $> Nothing) smpSubWorkers) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    subWorkerIsolated <- atomically (TM.lookup tSess smpSubWorkers) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    let subWorkerStatus = case subWorker <|> subWorkerIsolated of
+          Nothing -> "idle"
+          Just Nothing -> "waiting"
+          Just (Just _async) -> "working"
+    conn@Connection {connStatus, createdAt} <- withStore (\db -> getConnectionEntity db vr user acId) >>= \case
+      RcvDirectMsgConnection {entityConnection} -> pure entityConnection
+      RcvGroupMsgConnection {entityConnection} -> pure entityConnection
+      SndFileConnection {entityConnection} -> pure entityConnection
+      RcvFileConnection {entityConnection} -> pure entityConnection
+      UserContactConnection {entityConnection} -> pure entityConnection
+    deliveryStatus <- mapM readTVarIO . M.lookup acId =<< readTVarIO =<< asks agentDeliveryStatuses
+    pure $ CRDebugConnection DebugConnectionStatus
+      { deliveryStatus,
+        inActive,
+        inPending,
+        server = (decodeLatin1 $ strEncode host, port),
+        smpClientStatus,
+        subWorkerStatus,
+        queueStatus = tshow rqStatus,
+        connStatus_ = connStatus,
+        connAuthErrors = (authErrCounter conn, connDisabled conn),
+        createdAt = createdAt
+      }
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
@@ -7310,7 +7353,8 @@ chatCommandP =
       "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
-      "/debug delivery" $> DebugDelivery,
+      "/debug delivery" *> (DebugDelivery <$> (" all" $> True <|> pure False)),
+      "/debug conn " *> (DebugConnection . AgentConnId <$> base64P), -- TODO get by decimal connId too
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,

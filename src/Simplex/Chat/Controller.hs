@@ -504,8 +504,8 @@ data ChatCommand
   | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
-  | DebugDelivery
-  -- | DebugConnection Int64
+  | DebugDelivery Bool
+  | DebugConnection AgentConnId
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats
@@ -754,6 +754,7 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugDelivery {debugDelivery :: Map Text AgentDeliveryStatus}
+  | CRDebugConnection {debugConnection :: DebugConnectionStatus}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
@@ -774,30 +775,22 @@ data ChatResponse
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
--- entity marker + id: @34
--- using names would make a dump unshareable
-type DebugAckKey = Text
-
-data DebugAck = DebugAck
-  { -- from agentConnStatuses
-    lastCmd :: Maybe (Text, UTCTime), -- was there ANY command result delivered here?
-    lastMsg :: Maybe UTCTime, -- if yes, the ACK should happen
-    lastAck :: Maybe UTCTime, -- if sent, the OK should happen or a new MSG
-    lastOK :: Maybe UTCTime, -- server got ACK, waiting for new messages
-    -- from getAgentSubscriptions, via rId
+data DebugConnectionStatus = DebugConnectionStatus
+  { deliveryStatus :: Maybe AgentDeliveryStatus,
+    -- from agent's TRecvQ via rcvId
     inActive :: Bool, -- should the delivery work right now?
     inPending :: Bool, -- is there a temporary error?
-    -- from some receive queue
-    server :: Maybe (Text, String), -- what's the server for this connection? -- XXX: reveals private servers and association
-    hasSMPClient :: Bool, -- is there an active client for it?
-    hasSubWorker :: Bool, -- a session was recently restarted and tries to resubscribe
-    hasDeliveryWorker :: Bool, -- connection's delivery worker is active, double-take on session status
+    -- from receive queue
+    queueStatus :: Text,
+    server :: (Text, String), -- what's the server for this connection? -- XXX: reveals private servers and association
+    smpClientStatus :: Text, -- is there an active client for it?
+    subWorkerStatus :: Text, -- a session was recently restarted and tries to resubscribe
     -- from Connection
-    connStatus_ :: Maybe ConnStatus, -- does the protocol permits delivery
-    connAuthErrors :: Maybe (Int, Bool), -- number of AUTH errors before connection gets disabled
-    createdAt :: Maybe UTCTime
+    connStatus_ :: ConnStatus, -- does the protocol permits delivery
+    connAuthErrors :: (Int, Bool), -- number of AUTH errors before connection gets disabled
+    createdAt :: UTCTime
   }
-  deriving Show
+  deriving (Show)
 -- XXX: attach NetworkConfig ?
 -- TransportSessionMode ?
 
@@ -1504,9 +1497,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
 $(JQ.deriveJSON defaultJSON ''AgentDeliveryStatus)
 
--- $(JQ.deriveJSON defaultJSON ''DebugDelivery)
-
--- $(JQ.deriveJSON defaultJSON ''DebugConnection)
+$(JQ.deriveJSON defaultJSON ''DebugConnectionStatus)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
