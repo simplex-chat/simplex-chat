@@ -1150,6 +1150,7 @@ testDatabaseEncryption tmp = do
       alice <## "error: chat not stopped"
       alice ##> "/db decrypt mykey"
       alice <## "error: chat not stopped"
+      threadDelay 100000
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db decrypt mykey"
