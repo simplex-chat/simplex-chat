@@ -236,6 +236,7 @@ struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
     var client: WebRTCClient
+    let callAudioDeviceManager = CallAudioDeviceManager()
 
     var body: some View {
         VStack {
@@ -319,6 +320,12 @@ struct ActiveCallOverlay: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .onAppear {
+            callAudioDeviceManager.start()
+        }
+        .onDisappear {
+            callAudioDeviceManager.stop()
+        }
     }
 
     private func audioCallInfoView(_ call: Call) -> some View {
