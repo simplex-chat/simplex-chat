@@ -76,7 +76,7 @@ To reduce traffic and battery usage, this release made connection timeouts depen
 
 ### Customizable shape of profile images
 
-To make the interface more customizable, you can now change the shapes of profile images to anything from squares with sharp corners to circles, as before, via the Appearance menu in the app Settings. The default shape of profile images is changed to squares with rounded corners.
+To customizable the interface, you can now change the shapes of profile images to anything from squares with sharp corners to circles, as before, via the Appearance menu in the app Settings. The default shape of profile images is changed to squares with rounded corners.
 
 <img src="./images/20240426-profile1.png" width="288"> <img src="./images/20240426-profile2.png" width="288"> <img src="./images/20240426-profile3.png" width="288">
 
