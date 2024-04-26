@@ -4686,8 +4686,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> CM ()) -> CM ()
     withCompletedCommand Connection {connId} agentMsg action = do
       let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
-      if agentMsgTag == APCT SAEConn OK_ && corrId /= ""
-        then markDelivery
+      pending_ <- mapM readTVarIO =<< atomically . TM.lookup acId =<< asks agentDeliveryStatuses
+      if agentMsgTag == APCT SAEConn OK_ && corrId /= "" && maybe False (M.member ackKey . pendingAcks) pending_
+        then lift $ agentDeliveryStatus acId $ \ad@AgentDeliveryStatus {pendingAcks} -> ad {pendingAcks = M.adjust (const True) ackKey pendingAcks}
         else do
           cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
           case cmdData_ of
@@ -4699,9 +4700,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
             Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
       where
-        markDelivery = do
-          let ackKey = decodeLatin1 $ strEncode corrId
-          lift $ agentDeliveryStatus (AgentConnId agentConnId) $ \ad@AgentDeliveryStatus {pendingAcks} -> ad {pendingAcks = M.adjust (const True) ackKey pendingAcks}
+        acId = AgentConnId agentConnId
+        ackKey = decodeLatin1 $ strEncode corrId
         err cmdId msg = do
           withStore' $ \db -> updateCommandStatus db user cmdId CSError
           throwChatError . CEAgentCommandError $ msg
