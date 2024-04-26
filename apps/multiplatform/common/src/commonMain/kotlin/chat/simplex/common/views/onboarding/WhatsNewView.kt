@@ -523,6 +523,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v5.7",
+    post = "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html",
     features = listOf(
       FeatureDescription(
         icon = MR.images.ic_vpn_key_filled,
@@ -538,6 +539,11 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_music_note,
         titleId = MR.strings.v5_7_call_sounds,
         descrId = MR.strings.v5_7_call_sounds_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_account_box,
+        titleId = MR.strings.v5_7_shape_profile_images,
+        descrId = MR.strings.v5_7_shape_profile_images_descr
       ),
       FeatureDescription(
         icon = MR.images.ic_wifi_tethering,

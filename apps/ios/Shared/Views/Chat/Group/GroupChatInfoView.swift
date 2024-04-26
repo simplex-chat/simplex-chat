@@ -172,8 +172,7 @@ struct GroupChatInfoView: View {
     private func groupInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
-            ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 192, height: 192)
+            ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
             Text(cInfo.displayName)
@@ -217,8 +216,7 @@ struct GroupChatInfoView: View {
         var body: some View {
             let member = groupMember.wrapped
             let v = HStack{
-                ProfileImage(imageStr: member.image)
-                    .frame(width: 38, height: 38)
+                ProfileImage(imageStr: member.image, size: 38)
                     .padding(.trailing, 2)
                 // TODO server connection status
                 VStack(alignment: .leading) {

@@ -3,24 +3,26 @@ package chat.simplex.common.views.helpers
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.InspectableValue
+import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatInfo
-import chat.simplex.common.platform.base64ToBitmap
-import chat.simplex.common.ui.theme.NoteFolderIconColor
-import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import kotlin.math.max
 
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
@@ -79,8 +81,42 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
+        modifier = ProfileIconModifier(size)
       )
+    }
+  }
+}
+
+@Composable
+fun ProfileImage(size: Dp, image: ImageResource) {
+  Image(
+    painterResource(image),
+    stringResource(MR.strings.image_descr_profile_image),
+    contentScale = ContentScale.Crop,
+    modifier = ProfileIconModifier(size)
+  )
+}
+
+private const val squareToCircleRatio = 0.935f
+
+private const val radiusFactor = (1 - squareToCircleRatio) / 50
+
+@Composable
+fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = max(0f, percent.value)
+  val pad = if (padding) size / 12 else 0.dp
+  val m = Modifier.size(size)
+  return when {
+    r >= 50 ->
+      m.padding(pad).clip(CircleShape)
+    r <= 0 -> {
+      val sz = (size - 2 * pad) * squareToCircleRatio
+      m.padding((size - sz) / 2)
+    }
+    else -> {
+      val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
+      m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
     }
   }
 }
@@ -109,11 +145,10 @@ fun ProfileImageForActiveCall(
       imageBitmap,
       stringResource(MR.strings.image_descr_profile_image),
       contentScale = ContentScale.Crop,
-      modifier = Modifier.size(size).clip(CircleShape)
+      modifier = ProfileIconModifier(size, padding = false)
     )
   }
 }
-
 
 @Preview
 @Composable
