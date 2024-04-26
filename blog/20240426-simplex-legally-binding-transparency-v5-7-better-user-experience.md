@@ -1,4 +1,3 @@
-
 ---
 layout: layouts/article.html
 title: "SimpleX network: legally binding transparency, v5.7 released with better user experience for calls and messages"

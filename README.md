@@ -412,13 +412,13 @@ We have never provided or have been requested access to our servers or any infor
 
 We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network to access messaging servers. We will be improving the client applications to reduce the opportunities for traffic correlation.
 
-Please read more in [Terms & privacy policy](./PRIVACY.md).
+Please read more in [Privacy Policy](./PRIVACY.md).
 
 ## Security contact
 
-To report a security vulnerability, please send us email to chat@simplex.chat. We will coordinate the fix and disclosure. Please do NOT report security vulnerabilities via GitHub issues.
+Please see our [Security Policy](./docs/SECURITY.md) on how to report security vulnerabilities to us. We will coordinate the fix and disclosure.
 
-Please treat any findings of possible traffic correlation attacks allowing to correlate two different conversations to the same user, other than covered in [the threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#threat-model), as security vulnerabilities, and follow this disclosure process.
+Please do NOT report security vulnerabilities via GitHub issues.
 
 ## License
 
