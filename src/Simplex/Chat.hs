@@ -2181,25 +2181,28 @@ processChatCommand' vr = \case
           Nothing -> "idle"
           Just Nothing -> "waiting"
           Just (Just _async) -> "working"
-    conn@Connection {connStatus, createdAt} <- withStore (\db -> getConnectionEntity db vr user acId) >>= \case
-      RcvDirectMsgConnection {entityConnection} -> pure entityConnection
-      RcvGroupMsgConnection {entityConnection} -> pure entityConnection
-      SndFileConnection {entityConnection} -> pure entityConnection
-      RcvFileConnection {entityConnection} -> pure entityConnection
-      UserContactConnection {entityConnection} -> pure entityConnection
+    conn@Connection {connStatus, createdAt} <-
+      withStore (\db -> getConnectionEntity db vr user acId) >>= \case
+        RcvDirectMsgConnection {entityConnection} -> pure entityConnection
+        RcvGroupMsgConnection {entityConnection} -> pure entityConnection
+        SndFileConnection {entityConnection} -> pure entityConnection
+        RcvFileConnection {entityConnection} -> pure entityConnection
+        UserContactConnection {entityConnection} -> pure entityConnection
     deliveryStatus <- mapM readTVarIO . M.lookup acId =<< readTVarIO =<< asks agentDeliveryStatuses
-    pure $ CRDebugConnection DebugConnectionStatus
-      { deliveryStatus,
-        inActive,
-        inPending,
-        server = (decodeLatin1 $ strEncode host, port),
-        smpClientStatus,
-        subWorkerStatus,
-        queueStatus = tshow rqStatus,
-        connStatus_ = connStatus,
-        connAuthErrors = (authErrCounter conn, connDisabled conn),
-        createdAt = createdAt
-      }
+    pure $
+      CRDebugConnection
+        DebugConnectionStatus
+          { deliveryStatus,
+            inActive,
+            inPending,
+            server = (decodeLatin1 $ strEncode host, port),
+            smpClientStatus,
+            subWorkerStatus,
+            queueStatus = tshow rqStatus,
+            connStatus_ = connStatus,
+            connAuthErrors = (authErrCounter conn, connDisabled conn),
+            createdAt = createdAt
+          }
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
@@ -2983,7 +2986,7 @@ callTimed ct aciContent =
   case aciContentCallStatus aciContent of
     Just callStatus
       | callComplete callStatus -> do
-        contactCITimed ct
+          contactCITimed ct
     _ -> pure Nothing
   where
     aciContentCallStatus :: ACIContent -> Maybe CICallStatus
@@ -3579,8 +3582,10 @@ expireChatItems user@User {userId} ttl sync = do
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
 processAgentMessage :: ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> CM ()
-processAgentMessage _ connId (DEL_RCVQ srv qId err_) = toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
-processAgentMessage _ connId DEL_CONN = toView $ CRAgentConnDeleted (AgentConnId connId)
+processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
+  toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
+processAgentMessage _ connId DEL_CONN =
+  toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   let acId = AgentConnId connId
       acTag = aCommandTag msg
@@ -3600,8 +3605,8 @@ trackNewDelivery acId isMSG = do
   asks agentDeliveryStatuses >>= atomically . TM.alterF (updateConn now) acId
   where
     updateConn lastCmd = \case
-      Nothing -> Just <$> newTVar AgentDeliveryStatus {lastCmd, isMSG, connId = Nothing, eventTag = Nothing,ackSent = Nothing, pendingAcks = M.empty}
-      Just v -> Just v <$ modifyTVar' v (\AgentDeliveryStatus {pendingAcks} -> AgentDeliveryStatus {lastCmd, isMSG, connId = Nothing, eventTag = Nothing,ackSent = Nothing, pendingAcks = M.filter not pendingAcks})
+      Nothing -> Just <$> newTVar AgentDeliveryStatus {lastCmd, isMSG, connId = Nothing, eventTag = Nothing, ackSent = Nothing, pendingAcks = M.empty}
+      Just v -> Just v <$ modifyTVar' v (\AgentDeliveryStatus {pendingAcks} -> AgentDeliveryStatus {lastCmd, isMSG, connId = Nothing, eventTag = Nothing, ackSent = Nothing, pendingAcks = M.filter not pendingAcks})
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -4679,20 +4684,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> CM ()) -> CM ()
     withCompletedCommand Connection {connId} agentMsg action = do
       let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
-      if agentMsgTag  == APCT SAEConn OK_ && corrId /= "" then markDelivery else do
-        cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
-        case cmdData_ of
-          Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
-            | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
-                withStore' $ \db -> deleteCommand db user cmdId
-                action cmdData
-            | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
-          Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
-          Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
+      if agentMsgTag == APCT SAEConn OK_ && corrId /= ""
+        then markDelivery
+        else do
+          cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
+          case cmdData_ of
+            Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
+              | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
+                  withStore' $ \db -> deleteCommand db user cmdId
+                  action cmdData
+              | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
+            Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
+            Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
       where
-        markDelivery = lift $ agentDeliveryStatus (AgentConnId agentConnId) $ \ad@AgentDeliveryStatus {pendingAcks} -> ad {pendingAcks = M.adjust (const True) ackKey pendingAcks}
-          where
-            ackKey = decodeLatin1 $ strEncode corrId
+        markDelivery = do
+          let ackKey = decodeLatin1 $ strEncode corrId
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) $ \ad@AgentDeliveryStatus {pendingAcks} -> ad {pendingAcks = M.adjust (const True) ackKey pendingAcks}
         err cmdId msg = do
           withStore' $ \db -> updateCommandStatus db user cmdId CSError
           throwChatError . CEAgentCommandError $ msg
@@ -4718,10 +4725,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
         ackMsg MsgMeta {recipient = (msgId, _)} rcpt = do
-          ackId <- drgRandomBytes 24
-          withAgent $ \a -> ackMessageAsync a ackId cId msgId rcpt
+          ackCorrId <- drgRandomBytes 24
+          withAgent $ \a -> ackMessageAsync a ackCorrId cId msgId rcpt
           now <- liftIO getCurrentTime
-          let ackKey = decodeLatin1 $ strEncode ackId
+          let ackKey = decodeLatin1 $ strEncode ackCorrId
           lift . agentDeliveryStatus (AgentConnId agentConnId) $ \ad@AgentDeliveryStatus {pendingAcks} ->
             ad {ackSent = Just (now, ackKey), pendingAcks = M.insert ackKey False pendingAcks}
 
@@ -7567,4 +7574,4 @@ dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrCo
 agentDeliveryStatus :: AgentConnId -> (AgentDeliveryStatus -> AgentDeliveryStatus) -> CM' ()
 agentDeliveryStatus acId f = do
   ads <- asks agentDeliveryStatuses
-  atomically $ TM.lookup acId ads >>= mapM_ (\v -> modifyTVar' v f)
+  atomically $ TM.lookup acId ads >>= mapM_ (`modifyTVar'`f)

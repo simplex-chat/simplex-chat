@@ -791,6 +791,7 @@ data DebugConnectionStatus = DebugConnectionStatus
     createdAt :: UTCTime
   }
   deriving (Show)
+
 -- XXX: attach NetworkConfig ?
 -- TransportSessionMode ?
 
