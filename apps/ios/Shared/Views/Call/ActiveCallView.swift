@@ -236,7 +236,7 @@ struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
     var client: WebRTCClient
-    let callAudioDeviceManager = CallAudioDeviceManager()
+    @ObservedObject private var deviceManager = CallAudioDeviceManager.shared
 
     var body: some View {
         VStack {
@@ -252,7 +252,7 @@ struct ActiveCallOverlay: View {
                 HStack {
                     toggleAudioButton()
                     Spacer()
-                    if false && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
                         toggleSpeakerButton()
                             .frame(width: 40, height: 40)
                     } else if call.hasMedia {
@@ -302,8 +302,11 @@ struct ActiveCallOverlay: View {
                     toggleAudioButton()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
-                    // Check if the only input is microphone. And in this case show toggle button, If there are more inputs, it probably means something like bluetooth headphones are available and in this case show iOS button for choosing different output. There is no way to get available outputs, only inputs
-                    if false && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
+                    // Check if the only input is microphone. And in this case show toggle button, 
+                    // If there are more inputs, it probably means something like bluetooth headphones are available
+                    // and in this case show iOS button for choosing different output.
+                    // There is no way to get available outputs, only inputs
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
                         toggleSpeakerButton()
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     } else if call.hasMedia {
@@ -321,10 +324,10 @@ struct ActiveCallOverlay: View {
         }
         .frame(maxWidth: .infinity)
         .onAppear {
-            callAudioDeviceManager.start()
+            deviceManager.start()
         }
         .onDisappear {
-            callAudioDeviceManager.stop()
+            deviceManager.stop()
         }
     }
 
@@ -403,14 +406,16 @@ struct ActiveCallOverlay: View {
     private func toggleSpeakerButton() -> some View {
         controlButton(call, call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
             Task {
-                client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
+                let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+                client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
                 DispatchQueue.main.async {
-                    call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+                    call.speakerEnabled = !speakerEnabled
                 }
             }
         }
         .onAppear {
-            call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+            deviceManager.call = call
+            //call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
         }
     }
 

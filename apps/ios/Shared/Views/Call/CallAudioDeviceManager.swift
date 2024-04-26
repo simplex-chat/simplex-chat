@@ -10,50 +10,58 @@ import Foundation
 import SwiftUI
 import SimpleXChat
 import AVKit
+import WebRTC
 
-class CallAudioDeviceManager {
+class CallAudioDeviceManager: ObservableObject {
+    static let shared = CallAudioDeviceManager()
     let audioSession: AVAudioSession
     let nc = NotificationCenter.default
 
-    @State var devices: [AVAudioSessionPortDescription]
-    @State var currentDevice: AVAudioSessionPortDescription? = nil
-    @State var availableInputs: [AVAudioSessionPortDescription] = []
+    var call: Call?
+    var timer: Timer? = nil
+
+    // Actually, only one output
+    @Published var outputs: [AVAudioSessionPortDescription]
+    @Published var currentDevice: AVAudioSessionPortDescription? = nil
+    // All devices that can record audio (the ones that can play audio are not included)
+    @Published var availableInputs: [AVAudioSessionPortDescription] = []
 
 
     init(_ audioSession: AVAudioSession? = nil) {
-        self.audioSession = audioSession ?? AVAudioSession.sharedInstance()
-        self.devices = self.audioSession.currentRoute.outputs
+        self.audioSession = audioSession ?? RTCAudioSession.sharedInstance().session
+        self.outputs = self.audioSession.currentRoute.outputs
         self.availableInputs = self.audioSession.availableInputs ?? []
     }
 
-    @objc func audioCallback(notification: Notification) {
-        logger.debug("LALAL CALLED")
-        guard let userInfo = notification.userInfo,
-              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
-            return
-        }
+    func reloadDevices() {
+        outputs = audioSession.currentRoute.outputs
+        currentDevice = audioSession.currentRoute.outputs.first
+        availableInputs = audioSession.availableInputs ?? []
+        call?.speakerEnabled = currentDevice?.portType == .builtInSpeaker
 
-        switch reason {
-        case .newDeviceAvailable:
-            devices = audioSession.currentRoute.outputs
-        case .oldDeviceUnavailable:
-            devices = audioSession.currentRoute.outputs
-        case .override:
-            currentDevice = audioSession.currentRoute.outputs.first
-        default: ()
+
+        // Workaround situation:
+        // have bluetooth device connected, choosing speaker, disconnecting bluetooth device. In this case iOS will not post notification, so do it manually
+        timer?.invalidate()
+        if availableInputs.contains(where: { $0.portType != .builtInReceiver && $0.portType != .builtInSpeaker }) {
+            timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { t in
+                self.reloadDevices()
+            }
         }
-        self.availableInputs = audioSession.availableInputs ?? []
-        logger.debug("LALAL inputs \(String(describing: self.availableInputs))")
+    }
+
+    @objc func audioCallback(notification: Notification) {
+        reloadDevices()
+
+        logger.debug("Changes in devices, current audio devices: \(String(describing: self.availableInputs.map({ $0.portType.rawValue }))), output: \(String(describing: self.currentDevice?.portType.rawValue))")
     }
 
     func start() {
-        logger.debug("LALAL START")
         nc.addObserver(self, selector: #selector(audioCallback), name: AVAudioSession.routeChangeNotification, object: nil)
     }
 
     func stop() {
-        logger.debug("LALAL STOP")
         nc.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
+        timer?.invalidate()
     }
 }
