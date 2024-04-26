@@ -9,12 +9,13 @@
 import Foundation
 import SwiftUI
 import UIKit
-import MediaPlayer
+import AVKit
 
 struct AudioDevicePicker: UIViewRepresentable {
     func makeUIView(context: Context) -> some UIView {
-        let v = MPVolumeView(frame: .zero)
-        v.showsVolumeSlider = false
+        let v = AVRoutePickerView(frame: .zero)
+        v.activeTintColor = .white
+        v.tintColor = .white
         return v
     }
 

@@ -103,7 +103,23 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = true
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+            let supportsVideo = ChatModel.shared.activeCall?.supportsVideo == true
+            if supportsVideo {
+                try audioSession.setCategory(.playAndRecord, mode: .videoChat, options: [.defaultToSpeaker, .mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+            } else {
+                try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+            }
+            // Without any delay sound is not playing from speaker or external device in incoming call
+            Task {
+                for i in 0 ... 3 {
+                    try? await Task.sleep(nanoseconds: UInt64(i) * 300_000000)
+                    if let preferred = audioSession.preferredInputDevice() {
+                        await MainActor.run { try? audioSession.setPreferredInput(preferred) }
+                    } else if supportsVideo {
+                        await MainActor.run { try? audioSession.overrideOutputAudioPort(.speaker) }
+                    }
+                }
+            }
             logger.debug("audioSession category set")
             try audioSession.setActive(true)
             logger.debug("audioSession activated")

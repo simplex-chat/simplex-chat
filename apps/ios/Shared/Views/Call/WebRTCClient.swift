@@ -605,9 +605,23 @@ extension WebRTCClient {
                 self.rtcAudioSession.unlockForConfiguration()
             }
             do {
-                try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
-                try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
-                try self.rtcAudioSession.overrideOutputAudioPort(enabled ? .speaker : .none)
+                let hasExternalAudioDevice = self.rtcAudioSession.session.hasExternalAudioDevice()
+                if enabled {
+                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat.rawValue)
+                    if hasExternalAudioDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
+                        try self.rtcAudioSession.setPreferredInput(preferred)
+                    } else {
+                        try self.rtcAudioSession.overrideOutputAudioPort(.speaker)
+                    }
+                } else {
+                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+                    try self.rtcAudioSession.overrideOutputAudioPort(.none)
+                }
+                if hasExternalAudioDevice {
+                    logger.debug("WebRTCClient: configuring session with external device available, skip configuring speaker")
+                }
                 try self.rtcAudioSession.setActive(true)
                 logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled) success")
             } catch let error {
@@ -655,6 +669,17 @@ extension WebRTCClient {
         activeCall.wrappedValue?.connection.transceivers
         .compactMap { $0.sender.track as? T }
         .forEach { $0.isEnabled = enabled }
+    }
+}
+
+extension AVAudioSession {
+    func hasExternalAudioDevice() -> Bool {
+        availableInputs?.allSatisfy({ $0.portType == .builtInMic }) != true
+    }
+
+    func preferredInputDevice() -> AVAudioSessionPortDescription? {
+//        logger.debug("Preferred input device: \(String(describing: self.availableInputs?.filter({ $0.portType != .builtInMic })))")
+        return availableInputs?.filter({ $0.portType != .builtInMic }).last
     }
 }
 

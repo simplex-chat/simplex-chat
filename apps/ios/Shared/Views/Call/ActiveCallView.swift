@@ -110,7 +110,7 @@ struct ActiveCallView: View {
                         call.callState = .invitationSent
                         call.localCapabilities = capabilities
                     }
-                    if call.supportsVideo {
+                    if call.supportsVideo && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
                         try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
                     }
                     CallSoundsPlayer.shared.startConnectingCallSound()
@@ -251,12 +251,15 @@ struct ActiveCallOverlay: View {
                 HStack {
                     toggleAudioButton()
                     Spacer()
-                    if AVAudioSession.sharedInstance().availableInputs?.allSatisfy({ $0.portType == .builtInMic }) == true {
-                        Color.clear.frame(width: 40, height: 40)
-                    } else {
+                    if false && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
+                        toggleSpeakerButton()
+                            .frame(width: 40, height: 40)
+                    } else if call.hasMedia {
                         AudioDevicePicker()
-                            .scaleEffect(1.8)
+                            .scaleEffect(2)
                             .frame(maxWidth: 40, maxHeight: 40)
+                    } else {
+                        Color.clear.frame(width: 40, height: 40)
                     }
                     Spacer()
                     endCallButton()
@@ -299,14 +302,16 @@ struct ActiveCallOverlay: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
                     // Check if the only input is microphone. And in this case show toggle button, If there are more inputs, it probably means something like bluetooth headphones are available and in this case show iOS button for choosing different output. There is no way to get available outputs, only inputs
-                    if AVAudioSession.sharedInstance().availableInputs?.allSatisfy({ $0.portType == .builtInMic }) == true {
+                    if false && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
                         toggleSpeakerButton()
                             .frame(maxWidth: .infinity, alignment: .trailing)
-                    } else {
+                    } else if call.hasMedia {
                         AudioDevicePicker()
-                            .scaleEffect(1.8)
+                            .scaleEffect(2)
                             .frame(maxWidth: 50, maxHeight: 40)
                             .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else {
+                        Color.clear.frame(width: 50, height: 40)
                     }
                 }
                 .padding(.bottom, 60)
@@ -393,9 +398,12 @@ struct ActiveCallOverlay: View {
             Task {
                 client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
                 DispatchQueue.main.async {
-                    call.speakerEnabled = !call.speakerEnabled
+                    call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
                 }
             }
+        }
+        .onAppear {
+            call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
         }
     }
 
