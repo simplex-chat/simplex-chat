@@ -2189,10 +2189,12 @@ processChatCommand' vr = \case
         RcvFileConnection {entityConnection} -> pure entityConnection
         UserContactConnection {entityConnection} -> pure entityConnection
     deliveryStatus <- mapM readTVarIO . M.lookup acId =<< readTVarIO =<< asks agentDeliveryStatuses
+    networkStatus <- M.lookup acId <$> chatReadVar connNetworkStatuses
     pure $
       CRDebugConnection
         DebugConnectionStatus
           { deliveryStatus,
+            networkStatus,
             inActive,
             inPending,
             server = (decodeLatin1 $ strEncode host, port),

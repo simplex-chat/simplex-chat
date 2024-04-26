@@ -777,6 +777,7 @@ data ChatResponse
 
 data DebugConnectionStatus = DebugConnectionStatus
   { deliveryStatus :: Maybe AgentDeliveryStatus,
+    networkStatus :: Maybe NetworkStatus,
     -- from agent's TRecvQ via rcvId
     inActive :: Bool, -- should the delivery work right now?
     inPending :: Bool, -- is there a temporary error?
@@ -791,9 +792,6 @@ data DebugConnectionStatus = DebugConnectionStatus
     createdAt :: UTCTime
   }
   deriving (Show)
-
--- XXX: attach NetworkConfig ?
--- TransportSessionMode ?
 
 -- some of these can only be used as command responses
 allowRemoteEvent :: ChatResponse -> Bool
