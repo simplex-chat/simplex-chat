@@ -7,6 +7,83 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>SimpleX network: legally binding transparency, v5.7 released with better calls and messages</title>
+                <link>https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html</link>
+                <description>&lt;h1 id=&quot;simplex-network-legally-binding-transparency-v57-released-with-better-calls-and-messages&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: legally binding transparency, v5.7 released with better calls and messages&lt;/h1&gt;
+&lt;p&gt;What&#39;s new in v5.7:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html#quantum-resistant-end-to-end-encryption&quot;&gt;quantum resistant end-to-end encryption&lt;/a&gt; with all contacts.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html#forward-and-save-messages&quot;&gt;forward and save messages&lt;/a&gt; without revealing the source.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html#in-call-sounds-and-switching-sound-sources&quot;&gt;in-call sounds and switching sound sources&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html#network-management&quot;&gt;better network connection management&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html#customizable-shape-of-profile-images&quot;&gt;customizable profile images&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, we added Lithuanian interface language to the Android and desktop apps, thanks to &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat&quot;&gt;our users and Weblate&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;legally-binding-transparency&quot; tabindex=&quot;-1&quot;&gt;Legally binding transparency&lt;/h2&gt;
+&lt;p&gt;We are committed to open-source, privacy and security. Here are the recent changes we made:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;We now have a &lt;a href=&quot;https://simplex.chat/transparency/&quot;&gt;Transparency Reports&lt;/a&gt; page.&lt;/li&gt;
+&lt;li&gt;We updated our &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md&quot;&gt;Privacy Policy&lt;/a&gt; to remove undefined terms &amp;quot;impermissible&amp;quot; and &amp;quot;acceptable&amp;quot;, which would allow us to remove anything we don&#39;t like, without any clarity on what that is. You can see the edits &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/pull/4076/files&quot;&gt;here&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;We published a new page with &lt;a href=&quot;https://simplex.chat/faq/&quot;&gt;Frequently Asked Questions&lt;/a&gt;, thanks to the guidance from users.&lt;/li&gt;
+&lt;li&gt;We also have a new &lt;a href=&quot;https://simplex.chat/security/&quot;&gt;Security Policy&lt;/a&gt; – we welcome your feedback on it.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;What do we mean by “legally binding transparency?”. It includes these principles:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Accountability: an empty promise or commitment to transparency that is not legally binding is just marketing, and can provide opportunities for the organizations to be misleading or not disclose important information that can affect their users privacy and security.&lt;/li&gt;
+&lt;li&gt;Consistency: often, there&#39;s a disconnect between marketing claims and legally binding policies. Our approach is to ensure that promises made in marketing materials or any external communications align with our legally binding documents, so that users can rely on our promises, and know exactly what to expect from us.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;For example:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;we use open-source code, and we made a legally binding commitment to use the published code in all released apps and deployed preset servers.&lt;/li&gt;
+&lt;li&gt;we use precise and technical language in the Privacy Policy defining what data and metadata can be accessed via the preset relays.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If you see any inconsistency between technical parameters of SimpleX Network and what is promised in our Privacy Policy please raise it with us.&lt;/p&gt;
+&lt;h2 id=&quot;whats-new-in-v57&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v5.7&lt;/h2&gt;
+&lt;p&gt;This release focus is improving the app usability, and preparing the foundation for v5.8 that will provide an in-built protection of user IP addresses when connecting to unknown file and messaging servers, reducing the need to use Tor (which would still remain supported via SOCKS proxy, for additional privacy).&lt;/p&gt;
+&lt;h3 id=&quot;quantum-resistant-end-to-end-encryption&quot; tabindex=&quot;-1&quot;&gt;Quantum resistant end-to-end encryption&lt;/h3&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240426-pq.png&quot; width=&quot;288&quot; class=&quot;float-right&quot; /&gt;
+&lt;p&gt;We &lt;a href=&quot;https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html&quot;&gt;wrote before&lt;/a&gt; about how quantum resistant encryption was added to SimpleX Chat and also about other properties of end-to-end encryption, possible attacks on its security and known mitigations.&lt;/p&gt;
+&lt;p&gt;Quantum resistant encryption will now be enabled by default in all direct chats. For the new conversations it will be enabled from the beginning, and for the existing conversations it will be agreed after you exchange several messages with your contacts - you will see a notice in the conversation when it happens.&lt;/p&gt;
+&lt;p&gt;You can still safely downgrade the app to an earlier version if needed, as v5.6 already supports quantum resistant encryption.&lt;/p&gt;
+&lt;p&gt;With the users who have an earlier version, the app will work using the conventional encryption, which is still very secure. It&#39;s important that we augmented the conventional encryption with post-quantum cryptographic algorithm rather than replaced it, using a hybrid construction as recommended by the cryptography experts.&lt;/p&gt;
+&lt;p&gt;The groups currently do not support quantum resistant encryption yet - we plan to add it in the future to small groups.&lt;/p&gt;
+&lt;h3 id=&quot;forward-and-save-messages&quot; tabindex=&quot;-1&quot;&gt;Forward and save messages&lt;/h3&gt;
+&lt;p&gt;You can now save received messages to private notes and forward them to your contacts and groups. This is both more convenient than copy-pasting the messages, and also more private - you can forward files and preserve a disappearing file in your private notes without saving them outside of the app.&lt;/p&gt;
+&lt;p&gt;You can see and navigate to the original source of the message via the message information, but the recipient of the message can only see that it was forwarded, but not from which conversation - in this way you can show that the message was quoted from another source without revealing the source (&lt;a href=&quot;https://en.wikipedia.org/wiki/Chatham_House_rule&quot;&gt;Chatham House Rule&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240426-forward1.png&quot; width=&quot;288&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240426-forward2.png&quot; width=&quot;288&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240426-forward3.png&quot; width=&quot;288&quot; /&gt;&lt;/p&gt;
+&lt;h3 id=&quot;in-call-sounds-and-switching-sound-sources&quot; tabindex=&quot;-1&quot;&gt;In-call sounds and switching sound sources&lt;/h3&gt;
+&lt;p&gt;This was the most frequent request of the users who use SimpleX Chat for audio and video calls - to add sound indication to the connection progress, as happens in all other apps. This release added these sounds and also vibration when call connects and disconnects.&lt;/p&gt;
+&lt;p&gt;You can also switch between bluetooth headphones, speakerphone and earpiece via the new button in the call.&lt;/p&gt;
+&lt;h3 id=&quot;network-management&quot; tabindex=&quot;-1&quot;&gt;Network management&lt;/h3&gt;
+&lt;p&gt;To reduce traffic and battery usage, this release made connection timeouts dependent on which network your device uses - timeouts will be larger when you are on mobile connection and smaller when on WiFi. It also makes connection attempts very infrequent when the device is not connected to network.&lt;/p&gt;
+&lt;h3 id=&quot;customizable-shape-of-profile-images&quot; tabindex=&quot;-1&quot;&gt;Customizable shape of profile images&lt;/h3&gt;
+&lt;p&gt;To customizable the interface, you can now change the shapes of profile images to anything from squares with sharp corners to circles, as before, via the Appearance menu in the app Settings. The default shape of profile images is changed to squares with rounded corners.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240426-profile1.png&quot; width=&quot;288&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240426-profile2.png&quot; width=&quot;288&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240426-profile3.png&quot; width=&quot;288&quot; /&gt;&lt;/p&gt;
+&lt;h2 id=&quot;simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX network&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/docs/faq.html&quot;&gt;Frequently asked questions&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donates to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;We are planning a 3rd party security audit for the protocols and cryptography design in July 2024, and also the security audit for an implementation in December 2024/January 2025, and it would hugely help us if some part of this $50,000+ expense is covered with donations.&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX network based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</description>
+                
+                
+                <pubDate>26 Apr 2024</pubDate>
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html</guid>
+            </item>
+            <item>
                 <title>The dangers of metadata in messengers</title>
                 <link>https://simplex.chat/blog/20240416-dangers-of-metadata-in-messengers.html</link>
                 <description>&lt;h1 id=&quot;the-dangers-of-metadata-in-messengers&quot; tabindex=&quot;-1&quot;&gt;The dangers of metadata in messengers&lt;/h1&gt;
