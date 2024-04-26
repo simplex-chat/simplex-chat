@@ -1,5 +1,20 @@
 # Blog
 
+Apr 26, 2024 [SimpleX network: legally binding transparency, v5.7 released with better calls and messages](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
+
+We published Transparency Reports, Security Policy, and Frequently Asked Questions, and updated Privacy Policy.
+
+We are committed to have full consistency between marketing promises and legally binding documents.
+
+What's new in v5.7:
+- quantum resistant end-to-end encryption with all contacts.
+- forward and save messages without revealing the source.
+- in-call sounds and switching sound sources.
+- better network connection management.
+- customizable profile images
+
+---
+
 Apr 16. 2024 [The dangers of metadata in messengers](./20240416-dangers-of-metadata-in-messengers.md)
 
 _By [Esra'a al Shafei](https://mastodon.social/@alshafei)_

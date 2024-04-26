@@ -234,6 +234,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Apr 26, 2024. SimpleX network: legally binding transparency, v5.7 released with better calls and messages.](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
+
 [Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
 
 [Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
