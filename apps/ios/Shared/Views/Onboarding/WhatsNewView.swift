@@ -378,6 +378,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.7",
+        post: URL(string: "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"),
         features: [
             FeatureDescription(
                 icon: "key",

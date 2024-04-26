@@ -18,11 +18,11 @@ import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
-import chat.simplex.common.platform.appPreferences
-import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import kotlin.math.max
 
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
@@ -81,7 +81,7 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = Modifier.size(size).padding(size / 12).clip(ProfileIconShape())
+        modifier = ProfileIconModifier(size)
       )
     }
   }
@@ -93,17 +93,31 @@ fun ProfileImage(size: Dp, image: ImageResource) {
     painterResource(image),
     stringResource(MR.strings.image_descr_profile_image),
     contentScale = ContentScale.Crop,
-    modifier = Modifier.size(size).padding(size / 12).clip(ProfileIconShape())
+    modifier = ProfileIconModifier(size)
   )
 }
 
+private const val squareToCircleRatio = 0.935f
+
+private const val radiusFactor = (1 - squareToCircleRatio) / 50
+
 @Composable
-fun ProfileIconShape(): Shape {
+fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = max(0f, percent.value)
+  val pad = if (padding) size / 12 else 0.dp
+  val m = Modifier.size(size)
   return when {
-    percent.value <= 0 -> RectangleShape
-    percent.value >= 50 -> CircleShape
-    else -> RoundedCornerShape(PercentCornerSize(percent.value))
+    r >= 50 ->
+      m.padding(pad).clip(CircleShape)
+    r <= 0 -> {
+      val sz = (size - 2 * pad) * squareToCircleRatio
+      m.padding((size - sz) / 2)
+    }
+    else -> {
+      val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
+      m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
+    }
   }
 }
 
@@ -131,30 +145,10 @@ fun ProfileImageForActiveCall(
       imageBitmap,
       stringResource(MR.strings.image_descr_profile_image),
       contentScale = ContentScale.Crop,
-      modifier = Modifier.size(size).clip(ProfileIconShape())
+      modifier = ProfileIconModifier(size, padding = false)
     )
   }
 }
-
-/** (c) [androidx.compose.foundation.shape.CornerSize] */
-private data class PercentCornerSize(
-  private val percent: Float
-) : CornerSize, InspectableValue {
-  init {
-    if (percent < 0 || percent > 100) {
-      throw IllegalArgumentException("The percent should be in the range of [0, 100]")
-    }
-  }
-
-  override fun toPx(shapeSize: Size, density: Density) =
-    shapeSize.minDimension * (percent / 100f)
-
-  override fun toString(): String = "CornerSize(size = $percent%)"
-
-  override val valueOverride: String
-    get() = "$percent%"
-}
-
 
 @Preview
 @Composable
