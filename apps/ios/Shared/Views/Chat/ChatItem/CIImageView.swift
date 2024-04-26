@@ -17,7 +17,6 @@ struct CIImageView: View {
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
     @State var scrollProxy: ScrollViewProxy?
-    @State var metaColor: Color
     @State private var showFullScreenImage = false
 
     var body: some View {
@@ -103,7 +102,7 @@ struct CIImageView: View {
             case .rcvInvitation: fileIcon("arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case .rcvTransfer: progressView()
-            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 10, 13)
+            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case .rcvError: fileIcon("xmark", 10, 13)
             case .invalid: fileIcon("questionmark", 10, 13)
@@ -117,7 +116,7 @@ struct CIImageView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(metaColor)
+            .foregroundColor(.white)
             .padding(padding)
     }
 

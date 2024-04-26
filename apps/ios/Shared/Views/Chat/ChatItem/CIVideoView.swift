@@ -288,7 +288,7 @@ struct CIVideoView: View {
                 } else {
                     progressView()
                 }
-            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 10, 13)
+            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case .rcvError: fileIcon("xmark", 10, 13)
             case .invalid: fileIcon("questionmark", 10, 13)

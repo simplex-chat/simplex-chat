@@ -150,7 +150,7 @@ struct CIFileView: View {
                     progressView()
                 }
             case .rcvAborted:
-                fileIcon("exclamationmark.arrow.circlepath", color: .accentColor)
+                fileIcon("doc.fill", color: .accentColor, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)

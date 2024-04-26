@@ -952,7 +952,9 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
         }
     } else if let networkErrorAlert = networkErrorAlert(r) {
         logger.error("apiReceiveFile network error: \(String(describing: r))")
-        am.showAlert(networkErrorAlert)
+        if !auto {
+            am.showAlert(networkErrorAlert)
+        }
     } else {
         switch chatError(r) {
         case .fileCancelled:
@@ -961,28 +963,32 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
             logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
         case let .fileAbortedNotApproved(fileId, unknownServers):
             logger.debug("apiReceiveFile fileAbortedNotApproved error")
-            am.showAlert(Alert(
-                title: Text("Download from unknown relays?"),
-                message: Text("If you're not using tor or VPN, your IP address will be visible to these XFTP relays:\n\(unknownServers.map(serverHost).joined(separator: "\n"))"),
-                primaryButton: .destructive(
-                    Text("Download"),
-                    action: {
-                        Task {
-                            logger.debug("apiReceiveFile fileAbortedNotApproved alert - in Task")
-                            if let user = ChatModel.shared.currentUser {
-                                await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
+            if !auto {
+                am.showAlert(Alert(
+                    title: Text("Download from unknown relays?"),
+                    message: Text("If you're not using tor or VPN, your IP address will be visible to these XFTP relays:\n\(unknownServers.map{ "• " + serverHost($0) }.sorted().joined(separator: "\n"))"),
+                    primaryButton: .destructive(
+                        Text("Download"),
+                        action: {
+                            Task {
+                                logger.debug("apiReceiveFile fileAbortedNotApproved alert - in Task")
+                                if let user = ChatModel.shared.currentUser {
+                                    await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
+                                }
                             }
                         }
-                    }
-                ),
-                secondaryButton: .cancel()
-            ))
+                    ),
+                    secondaryButton: .cancel()
+                ))
+            }
         default:
             logger.error("apiReceiveFile error: \(String(describing: r))")
-            am.showAlertMsg(
-                title: "Error receiving file",
-                message: "Error: \(String(describing: r))"
-            )
+            if !auto {
+                am.showAlertMsg(
+                    title: "Error receiving file",
+                    message: "Error: \(String(describing: r))"
+                )
+            }
         }
     }
     return nil
