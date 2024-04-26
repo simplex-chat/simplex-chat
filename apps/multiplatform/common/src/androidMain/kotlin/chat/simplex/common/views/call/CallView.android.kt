@@ -689,6 +689,7 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
           this.clearHistory()
           this.clearCache(true)
           this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
+          this.setBackgroundColor(android.graphics.Color.BLACK)
           val webViewSettings = this.settings
           webViewSettings.allowFileAccess = true
           webViewSettings.allowContentAccess = true
