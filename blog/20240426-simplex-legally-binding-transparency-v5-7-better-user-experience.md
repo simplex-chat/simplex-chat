@@ -1,15 +1,25 @@
 ---
 layout: layouts/article.html
-title: "SimpleX network: legally binding transparency, v5.7 released with better user experience for calls and messages"
+title: "SimpleX network: legally binding transparency, v5.7 released with better calls and messages"
 date: 2024-04-26
-preview: blog_previews/20240323.html
-draft: true
+previewBody: blog_previews/20240426.html
+image: images/20240426-profile.png
+imageBottom: true
 permalink: "/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"
 ---
 
-# SimpleX network: legally binding transparency, v5.7 released with better user experience for calls and messages
+# SimpleX network: legally binding transparency, v5.7 released with better calls and messages
 
-## Legally binding transparency 
+What's new in v5.7:
+- [quantum resistant end-to-end encryption](#quantum-resistant-end-to-end-encryption) with all contacts.
+- [forward and save messages](#forward-and-save-messages) without revealing the source.
+- [in-call sounds and switching sound sources](#in-call-sounds-and-switching-sound-sources).
+- [better network connection management](#network-management).
+- [customizable profile images](#customizable-shape-of-profile-images)
+
+Also, we added Lithuanian interface language to the Android and desktop apps, thanks to [our users and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
+
+## Legally binding transparency
 
 We are committed to open-source, privacy and security. Here are the recent changes we made:
 
@@ -32,9 +42,9 @@ If you see any inconsistency between technical parameters of SimpleX Network and
 
 This release focus is improving the app usability, and preparing the foundation for v5.8 that will provide an in-built protection of user IP addresses when connecting to unknown file and messaging servers, reducing the need to use Tor (which would still remain supported via SOCKS proxy, for additional privacy).
 
-### Quantum resistant encryption
+### Quantum resistant end-to-end encryption
 
-TODO picture
+<img src="./images/20240426-pq.png" width="288" class="float-right">
 
 We [wrote before](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md) about how quantum resistant encryption was added to SimpleX Chat and also about other properties of end-to-end encryption, possible attacks on its security and known mitigations.
 
@@ -48,25 +58,27 @@ The groups currently do not support quantum resistant encryption yet - we plan t
 
 ### Forward and save messages
 
-TODO picture
-
 You can now save received messages to private notes and forward them to your contacts and groups. This is both more convenient than copy-pasting the messages, and also more private - you can forward files and preserve a disappearing file in your private notes without saving them outside of the app.
 
 You can see and navigate to the original source of the message via the message information, but the recipient of the message can only see that it was forwarded, but not from which conversation - in this way you can show that the message was quoted from another source without revealing the source ([Chatham House Rule](https://en.wikipedia.org/wiki/Chatham_House_rule)).
 
-### In-call sounds
+<img src="./images/20240426-forward1.png" width="288"> <img src="./images/20240426-forward2.png" width="288"> <img src="./images/20240426-forward3.png" width="288">
+
+### In-call sounds and switching sound sources
 
 This was the most frequent request of the users who use SimpleX Chat for audio and video calls - to add sound indication to the connection progress, as happens in all other apps. This release added these sounds and also vibration when call connects and disconnects.
 
-### Customize shapes of profile images in the app
-
-To make the interface more customizable, you can now change the shapes of profile images to anything from squares with sharp corners to circles, as before, via the Appearance menu in the app Settings. The default shape of profile images is changed to squares with rounded corners.
-
-TODO pictures
+You can also switch between bluetooth headphones, speakerphone and earpiece via the new button in the call.
 
 ### Network management
 
 To reduce traffic and battery usage, this release made connection timeouts dependent on which network your device uses - timeouts will be larger when you are on mobile connection and smaller when on WiFi. It also makes connection attempts very infrequent when the device is not connected to network.
+
+### Customizable shape of profile images
+
+To make the interface more customizable, you can now change the shapes of profile images to anything from squares with sharp corners to circles, as before, via the Appearance menu in the app Settings. The default shape of profile images is changed to squares with rounded corners.
+
+<img src="./images/20240426-profile1.png" width="288"> <img src="./images/20240426-profile2.png" width="288"> <img src="./images/20240426-profile3.png" width="288">
 
 ## SimpleX network
 
