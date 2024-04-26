@@ -1491,9 +1491,9 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
-$(JQ.deriveJSON defaultJSON ''AgentDeliveryStatus)
+$(JQ.deriveJSON J.defaultOptions ''AgentDeliveryStatus)
 
-$(JQ.deriveJSON defaultJSON ''DebugConnectionStatus)
+$(JQ.deriveJSON J.defaultOptions ''DebugConnectionStatus)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
