@@ -4694,9 +4694,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
                   withStore' $ \db -> deleteCommand db user cmdId
                   action cmdData
-              | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
-            Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
-            Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
+              | otherwise -> logWarn $ "not matching connection id or unexpected response, corrId = " <> tshow corrId
+            Just CommandData {cmdId, cmdConnId = Nothing} -> logWarn $ "no command connection id, corrId = " <> tshow corrId
+            Nothing -> logWarn $ "command not found, corrId = " <> tshow corrId
       where
         acId = AgentConnId agentConnId
         ackKey = decodeLatin1 $ strEncode corrId
