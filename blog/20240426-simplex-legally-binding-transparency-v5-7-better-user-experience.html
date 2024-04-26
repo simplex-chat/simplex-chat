@@ -38,14 +38,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SimpleX blog: SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service</title>
+    <title>SimpleX blog: SimpleX network: legally binding transparency, v5.7 released with better user experience for calls and messages</title>
     <meta name="Content-Type" content="text/html;charset=utf-8" />
-    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html" />
-    <meta property="og:url" content="https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html" />
+    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html" />
+    <meta property="og:url" content="https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html" />
     <meta property="og:type" content="article" />
-    <meta property="og:title" content="SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service" />
+    <meta property="og:title" content="SimpleX network: legally binding transparency, v5.7 released with better user experience for calls and messages" />
     
-      <meta property="og:image" content="https://simplex.chat/blog/images/simplex-desktop-light.png" />
+      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -378,92 +378,8 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
-      <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v53-released-desktop-app-local-file-encryption-and-improved-groups" tabindex="-1">SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups</h1>
-<p><strong>Published:</strong> September 25, 2023</p>
-<p><strong>What's new in v5.3:</strong></p>
-<ul>
-<li><a href="#multiplatform-desktop-app">new desktop app!</a>!</li>
-<li><a href="#group-directory-service-and-other-group-improvements">directory service and other group improvements</a>.</li>
-<li><a href="#encrypted-local-files-and-media-with-forward-secrecy">encrypted local files and media with forward secrecy</a>.</li>
-<li><a href="#simplified-incognito-mode">simplified incognito mode</a>.</li>
-</ul>
-<p>There are a lot of other improvements and fixes in this release:</p>
-<ul>
-<li>improved app responsiveness and stability.</li>
-<li>app memory usage is reduced by 40%.</li>
-<li>new privacy settings: show last messages &amp; save draft.</li>
-<li>fixes:
-<ul>
-<li>bug preventing group members connecting (it will only help the new connections).</li>
-<li>playing videos on full screen<sup>**</sup>.</li>
-<li>screen reader for messages<sup>**</sup>.</li>
-<li>reduced background crashes<sup>**</sup>.</li>
-</ul>
-</li>
-</ul>
-<p>Also, we added 6 new interface languages: Arabic<sup><em></sup>, Bulgarian, Finnish, Hebrew<sup></em></sup>, Thai and Ukrainian - thanks to <a href="https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat">our users and Weblate</a>.</p>
-<p>* Android app.</p>
-<p>** iOS app.</p>
-<h2 id="multiplatform-desktop-app" tabindex="-1">Multiplatform desktop app</h2>
-<img src="./images/simplex-desktop-light.png" width="640">
-<p>Thanks a lot to everybody who was testing the desktop app since July – it really helped to make it stable!</p>
-<p>To use desktop app you need to <strong>create a new profile</strong>. As SimpleX platform has no user accounts, it's not as simple as for centralized apps to access the same profile from two devices.</p>
-<p>The next app version will allow using your mobile profile from desktop app. For now, as a workaround, you can join groups from both mobile and desktop devices, and use small groups instead of direct conversations.</p>
-<p>When you start the app first time, you will be offered to <strong>set database passphrase</strong> – you have to memorize it, as there is no way to recover it. If you skip it, a random passphrase will be generated and stored on your desktop device as plaintext (unencrypted) – you can change it later.</p>
-<p>Other limitations of the desktop app:</p>
-<ul>
-<li>you cannot send voice messages.</li>
-<li>there is no support for calls yet.</li>
-</ul>
-<p>You can download the desktop app for Linux and Mac via <a href="https://simplex.chat/downloads">downloads page</a>. Windows version will be available soon.</p>
-<h2 id="group-directory-service-and-other-group-improvements" tabindex="-1">Group directory service and other group improvements</h2>
-<img src="./images/20230925-directory.png" width="330" class="float-to-left">
-<p>Directory service provides a way to search for public groups submitted by the users. To use it, you need to connect to it via SimpleX Chat, as you would connect to any other contact, and type some words to search.</p>
-<p>You can also create and register your group, with some limitations explained <a href="docs/directory.html">here</a>.</p>
-<p>Other group improvements in this release:</p>
-<ul>
-<li>
-<p>you can send delivery receipts to the groups up to 20 members.</p>
-</li>
-<li>
-<p>if the group settings allow it, you can send direct messages to group members even after you deleted the contact.</p>
-</li>
-<li>
-<p>connections between members are made faster, and the bug that prevented the connections in some cases is fixed in this release.</p>
-</li>
-</ul>
-<p>The next release will reduce the time it takes to send messages to the group, especially when there are many members or when you have a slow device storage.</p>
-<h2 id="encrypted-local-files-and-media-with-forward-secrecy" tabindex="-1">Encrypted local files and media with forward secrecy</h2>
-<img src="./images/20230925-encrypted.png" width="330" class="float-to-left">
-<p>All messages, files and media sent via SimpleX Chat were always end-to-end encrypted from the very beginning. SimpleX Chat uses double-ratchet algorithm with encrypted message headers, for the best possible meta-data protection.</p>
-<p>You contacts, groups and messages are stored in the local database on your device, and this database was encrypted from <a href="20220928-simplex-chat-v4-encrypted-database.html">v4.0 released a year ago</a>.</p>
-<p>But until this version all files and media in the app storage were not encrypted, and when you exported the chat archive, they were unencrypted there as well.</p>
-<p>From v5.3 all files and media (except videos, for now) are encrypted with a random symmetric key - in many cases they are encrypted before they are written to the storage. Local file encryption can be disabled via Privacy &amp; Security settings, for example, if you need to access the files from the storage outside of the app.</p>
-<p>In addition to the videos that are stored unencrypted, there are other rare scenarios when the received files may be unencrypted in this release. Files have an open or closed lock icons to indicate whether they were encrypted locally. These limitations will be addressed in the next release. In any case, all files and media are always sent end-to-end encrypted, without any exceptions.</p>
-<p>The keys used to encrypt files locally are associated with the messages and stored in the encrypted database. If you delete a message with the attached file or media, the key will be irreversibly deleted as well. Even if an attacker gains access to your database passphrase later and to the copy of the encrypted file, they won't be able to decrypt the file.</p>
-<p>This approach provides forward secrecy for locally stored files, unlike file encryption schemes used in some other apps when the same passphrase is used for all files.</p>
-<h2 id="simplified-incognito-mode" tabindex="-1">Simplified incognito mode</h2>
-<img src="./images/20230925-incognito.png" width="330" class="float-to-left">
-<p>Incognito mode was <a href="20220901-simplex-chat-v3.2-incognito-mode.html">added a year ago</a> to improve anonymity of your profile, but it was confusing for some users - it was a global setting, but it only affected the new connections.</p>
-<p>It is now simpler to use - you can decide whether to connect to a contact or join a group using your main profile at a point when you create an invitation link or connect via a link or QR code.</p>
-<p>When you are connecting to people you know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.</p>
-<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
-<p>Some links to answer the most common questions:</p>
-<p><a href="20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment</a>.</p>
-<p><a href="https://simplex.chat/#how-simplex-works">How can SimpleX deliver messages without user identifiers</a>.</p>
-<p><a href="https://simplex.chat/#why-ids-bad-for-privacy">What are the risks to have identifiers assigned to the users</a>.</p>
-<p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
-<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
-<p>Visit our <a href="https://simplex.chat">website</a> to learn more.</p>
-<h2 id="help-us-with-donations" tabindex="-1">Help us with donations</h2>
-<p>Huge thank you to everybody who donated to SimpleX Chat!</p>
-<p>We are prioritizing users privacy and security - it would be impossible without your support.</p>
-<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
-<p>Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.</p>
-<p>See <a href="https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations">this section</a> for the ways to donate.</p>
-<p>Thank you,</p>
-<p>Evgeny</p>
-<p>SimpleX Chat founder</p>
+      <div class="py-6 md:p-[60px]"><h1 id="simplex-network-legally-binding-transparency-v57-released-with-better-user-experience-for-calls-and-messages" tabindex="-1">SimpleX network: legally binding transparency, v5.7 released with better user experience for calls and messages</h1>
+<p>This is a permalink for the post</p>
 </div>
     </section>
 
