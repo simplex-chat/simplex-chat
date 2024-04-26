@@ -1069,6 +1069,7 @@ testMaintenanceMode tmp = do
       bob <# "alice> hi again"
       bob #> "@alice hello"
       alice <# "bob> hello"
+      threadDelay 100000
       -- export / delete / import
       alice ##> "/_stop"
       alice <## "chat stopped"
