@@ -1,16 +1,20 @@
+---
+layout: layouts/privacy.html
+---
+
 # SimpleX Chat Privacy Policy and Conditions of Use
 
 SimpleX Chat is the first communication network based on a new protocol stack that builds on the same ideas of complete openness and decentralization as email and web, with the focus on providing security and privacy of communications, and without compromising on usability.
 
 SimpleX Chat communication protocol is the first protocol that has no user profile IDs of any kind, not even random numbers, cryptographic keys or hashes that identify the users. SimpleX Chat apps allow their users to send messages and files via relay server infrastructure. Relay server owners and providers do not have any access to your messages, thanks to double-ratchet end-to-end encryption algorithm (also known as Signal algorithm - do not confuse with Signal protocols or platform) and additional encryption layers, and they also have no access to your profile and contacts - as they do not provide any user accounts.
 
-Double ratchet algorithm has such important properties as [forward secrecy](./docs/GLOSSARY.md#forward-secrecy), sender [repudiation](./docs/GLOSSARY.md#) and break-in recovery (also known as [post-compromise security](./docs/GLOSSARY.md#post-compromise-security)).
+Double ratchet algorithm has such important properties as [forward secrecy](/docs/GLOSSARY.md#forward-secrecy), sender [repudiation](/docs/GLOSSARY.md#) and break-in recovery (also known as [post-compromise security](/docs/GLOSSARY.md#post-compromise-security)).
 
 If you believe that any part of this document is not aligned with our mission or values, please raise it with us via [email](chat@simplex.chat) or [chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion).
 
 ## Privacy Policy
 
-SimpleX Chat Ltd uses the best industry practices for security and encryption to provide client and server software for secure [end-to-end encrypted](./docs/GLOSSARY.md#end-to-end-encryption) messaging via private connections. This encryption cannot be compromised by the relays servers, even if they are modified or compromised, via [man-in-the-middle attack](./docs/GLOSSARY.md#man-in-the-middle-attack), unlike most other communication platforms, services and networks.
+SimpleX Chat Ltd uses the best industry practices for security and encryption to provide client and server software for secure [end-to-end encrypted](/docs/GLOSSARY.md#end-to-end-encryption) messaging via private connections. This encryption cannot be compromised by the relays servers, even if they are modified or compromised, via [man-in-the-middle attack](/docs/GLOSSARY.md#man-in-the-middle-attack), unlike most other communication platforms, services and networks.
 
 SimpleX Chat software is built on top of SimpleX messaging and application protocols, based on a new message routing protocol allowing to establish private connections without having any kind of addresses or other identifiers assigned to its users - it does not use emails, phone numbers, usernames, identity keys or any other user profile identifiers to pass messages between the user applications.
 
@@ -20,7 +24,7 @@ While SimpleX Chat Ltd is not a communication service provider, and provide publ
 
 We see users and data sovereignty, and device and provider portability as critically important properties for any communication system.
 
-SimpleX Chat security assessment was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+SimpleX Chat security assessment was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2 – see [the announcement](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 ### Your information
 
@@ -34,7 +38,7 @@ You can transfer the profile to another device by creating a backup of the app d
 
 #### Messages and Files
 
-SimpleX relay servers cannot decrypt or otherwise access the content or even the size of your messages and files you send or receive. Each message is padded to a fixed size of 16kb. Each file is sent in chunks of 64kb, 256kb, 1mb or 8mb via all or some of the configured file relay servers. Both messages and files are sent end-to-end encrypted, and the servers do not have technical means to compromise this encryption, because part of the [key exchange](./docs/GLOSSARY.md#key-exchange) happens out-of-band.
+SimpleX relay servers cannot decrypt or otherwise access the content or even the size of your messages and files you send or receive. Each message is padded to a fixed size of 16kb. Each file is sent in chunks of 64kb, 256kb, 1mb or 8mb via all or some of the configured file relay servers. Both messages and files are sent end-to-end encrypted, and the servers do not have technical means to compromise this encryption, because part of the [key exchange](/docs/GLOSSARY.md#key-exchange) happens out-of-band.
 
 Your message history is stored only on your own device and the devices of your contacts. While the recipients' devices are offline, messaging relay servers temporarily store end-to-end encrypted messages – you can configure which relay servers are used to receive the messages from the new contacts, and you can manually change them for the existing contacts too.
 
@@ -82,7 +86,7 @@ Additional technical information can be stored on our servers, including randoml
 
 #### SimpleX Directory
 
-[SimpleX Directory](./docs/DIRECTORY.md) stores: your search requests, the messages and the members profiles in the registered groups. You can connect to SimpleX Directory via [this address](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).
+[SimpleX Directory](/docs/DIRECTORY.md) stores: your search requests, the messages and the members profiles in the registered groups. You can connect to SimpleX Directory via [this address](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).
 
 #### User Support
 

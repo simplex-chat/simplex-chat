@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SimpleX Privacy Policy</title>
+    <meta name="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ permalink }}" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}{{ permalink }}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="{{ title }}" />
+    {% if image %}
+      <meta property="og:image" content="{% cfg 'siteLocation' %}/blog/{{ image }}" />
+    {% else %}
+      <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png" />
+    {% endif %}
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blog.css" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+  </head>
+
+  <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+    {% include "navbar.html" %}
+
+    <section id="article" class="container mt-[25px] mb-[75px] bg-white dark:bg-[#17203D] px-5">
+      <div class="py-6 md:p-[60px]">{{ content | safe }}</div>
+    </section>
+
+    {% include "footer.html" %}
+  </body>
+
+</html>
