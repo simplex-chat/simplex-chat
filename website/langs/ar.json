@@ -15,7 +15,7 @@
     "chat-protocol": "بروتوكول الدردشة",
     "donate": "تبرّع",
     "terminal-cli": "طرفية CLI",
-    "terms-and-privacy-policy": "الشروط وسياسة الخصوصية",
+    "terms-and-privacy-policy": "سياسة الخصوصية",
     "hero-header": "إعادة تعريف الخصوصية",
     "hero-overlay-1-textlink": "لماذا تعتبر معرّفات المستخدم ضارة بالخصوصية؟",
     "hero-overlay-2-textlink": "كيف يعمل SimpleX؟",
@@ -253,5 +253,7 @@
     "docs-dropdown-9": "التنزيلات",
     "please-enable-javascript": "الرجاء تفعيل جافا سكريبت (JavaScript) لرؤية رمز QR.",
     "please-use-link-in-mobile-app": "يُرجى استخدام الرابط في تطبيق الجوال",
-    "docs-dropdown-10": "الشفافية"
+    "docs-dropdown-10": "الشفافية",
+    "docs-dropdown-11": "الأسئلة الأكثر شيوعًا",
+    "docs-dropdown-12": "الأمان"
 }
