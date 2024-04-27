@@ -54,6 +54,7 @@ website/translations.json
 website/src/img/images/
 website/src/images/
 website/src/js/lottie.min.js
+website/src/privacy.md
 # Generated files
 website/package/generated*
 
