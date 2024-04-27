@@ -8,9 +8,9 @@ u="$USER"
 tmp="$(mktemp -d -t)"
 folder="$tmp/simplex-chat"
 
-nix_ver="nix-2.19.2"
+nix_ver="nix-2.22.0"
 nix_url="https://releases.nixos.org/nix/$nix_ver/install"
-nix_hash="435f0d7e11f7c7dffeeab0ec9cc55723f6d3c03352379d785633cf4ddb5caf90"
+nix_hash="4fed7db867186c01ce2a2077da4a6950ed16232efbf78d0cd19700cff80559f9"
 nix_config="sandbox = true
 max-jobs = auto
 experimental-features = nix-command flakes"
@@ -43,12 +43,13 @@ nix_setup() {
 }
 
 git_setup() {
-  [ "$folder" != "." ] && {
+  if [ "$folder" != "." ]; then
     git clone "$repo" "$folder"
-  }
+  fi
 
-  # Switch to nix-android branch
-  git -C "$folder" checkout "$commit"
+  if [ -z ${git_skip+x} ]; then 
+    git -C "$folder" checkout "$commit"
+  fi
 }
 
 checks() {
@@ -100,14 +101,10 @@ build() {
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/multiplatform/android/src/main/AndroidManifest.xml"
   sed -i.bak 's/jniLibs.useLegacyPackaging =.*/jniLibs.useLegacyPackaging = true/' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak '/android {/a lint {abortOnError = false}' "$folder/apps/multiplatform/android/build.gradle.kts"
+  sed -i.bak '/tasks/Q' "$folder/apps/multiplatform/android/build.gradle.kts"
 
   for arch in $arches; do
-
-    tag_full="$(git tag --points-at HEAD | head -n1)"
-    tag_version="${tag_full%%-*}"
-
-    if [ "$arch" = "armv7a" ] && [ -n "$tag_full" ] ; then
-      git checkout "${tag_version}-armv7a"
+    if [ "$arch" = "armv7a" ]; then
       android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
       android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
     else
@@ -150,10 +147,6 @@ build() {
     zipalign -p -f 4 "$tmp/$android_apk_output_final" "$PWD/$android_apk_output_final"
 
     rm -rf "$libs_folder/$android_arch"
-
-    if [ "$arch" = "armv7a" ] && [ -n "$tag_full" ] ; then
-      git checkout "${tag_full}"
-    fi
   done
 }
 
@@ -161,15 +154,22 @@ final() {
   printf 'Simplex-chat was successfully compiled: %s/simplex-chat-*.apk\nDelete nix and gradle caches with "rm -rf /nix && rm $HOME/.nix* && $HOME/.gradle/caches" in case if no longer needed.\n' "$PWD"
 }
 
-main() {
-  while getopts ":s" opt; do
+pre() {
+  while getopts ":sg" opt; do
     case $opt in
       s) folder="." ;;
+      g) git_skip=1 ;;
       *) printf "Flag '-%s' doesn't exist.\n" "$OPTARG"; exit 1 ;;
     esac
   done
+  
   shift $(( $OPTIND - 1 ))
-  commit="$1"; shift 1
+  
+  commit="${1:-HEAD}"
+}
+
+main() {
+  pre "$@"
   git_setup
   checks
   build
