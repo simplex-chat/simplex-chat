@@ -179,7 +179,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         if playback {
             if AVAudioSession.sharedInstance().category != .playback {
                 logger.log("AudioSession: playback")
-                try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playback, options: .duckOthers)
+                try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playback, options: [.duckOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
             }
         } else {
             if AVAudioSession.sharedInstance().category != .soloAmbient {
