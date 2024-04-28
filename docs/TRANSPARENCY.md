@@ -1,12 +1,12 @@
 ---
 title: Transparency Reports
 permalink: /transparency/index.html
-revision: 09.04.2024
+revision: 26.04.2024
 ---
 
 # Transparency Reports
 
-**Updated**: Apr 9, 2024
+**Updated**: Apr 26, 2024
 
 SimpleX Chat Ltd. is a company registered in the UK – it develops communication software enabling users to operate and communicate via SimpleX network, without user profile identifiers of any kind, and without having their data hosted by any network infrastructure operators.
 
@@ -17,8 +17,8 @@ This page will include any and all reports on requests for user data.
 Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.
 
 **Helpful resources**:
-- [Privacy policy](https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md)
-- [Privacy and security: technical details and limitations](https://github.com/simplex-chat/simplex-chat?tab=readme-ov-file#privacy-and-security-technical-details-and-limitations)
+- [Privacy policy](../PRIVACY.md)
+- [Privacy and security: technical details and limitations](../README.md#privacy-and-security-technical-details-and-limitations)
 - Whitepaper:
   - [Trust in servers](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#trust-in-servers)
   - [Encryption Primitives Used](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#encryption-primitives-used)
