@@ -110,19 +110,16 @@ struct PrivacySettings: View {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
+                    settingsRow("externaldrive.connected.to.line.below") {
+                        Toggle("Protect IP address", isOn: $askToApproveRelays)
+                    }
                 } header: {
                     Text("Files")
-                }
-
-                Section {
-                    settingsRow(askToApproveRelays ? "wifi" : "wifi.exclamationmark") {
-                        Toggle("Ask to approve relays", isOn: $askToApproveRelays)
-                    }
                 } footer: {
                     if askToApproveRelays {
-                        Text("To not expose your IP address, app will ask your confirmation before downloading files from unknown XFTP relays (unless you connect via tor onion addresses).")
+                        Text("The app will ask to confirm downloads from unknown file servers (except .onion).")
                     } else {
-                        Text("If you don't use tor or VPN, your IP address will be visible to unknown XFTP relays.")
+                        Text("Without Tor or VPN, your IP address will be visible to file servers.")
                     }
                 }
 
