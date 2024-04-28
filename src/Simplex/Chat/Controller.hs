@@ -236,8 +236,10 @@ data ChatController = ChatController
 
 data AgentDeliveryStatus = AgentDeliveryStatus
   { lastCmd :: UTCTime,
+    tracking :: Text,
     isMSG :: Bool, -- False for RCVD
     connId :: Maybe Int64, -- chat connection ID
+    msgBodyPfx :: Text,
     eventTag :: Maybe Text, -- tshow of ACMEventTag (for JSON instances)
     ackSent :: Maybe (UTCTime, Text), -- strEncode of random CorrId
     pendingAcks :: Map Text Bool
