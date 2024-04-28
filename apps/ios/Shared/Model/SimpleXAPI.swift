@@ -964,10 +964,17 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
         case let .fileAbortedNotApproved(fileId, unknownServers):
             logger.debug("apiReceiveFile fileAbortedNotApproved error")
             if !auto {
+                let srvs = unknownServers.map { s in
+                    if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
+                        srv.hostnames[0]
+                    } else {
+                        serverHost(s)
+                    }
+                }
                 am.showAlert(Alert(
-                    title: Text("Download from unknown relays?"),
-                    message: Text("If you're not using tor or VPN, your IP address will be visible to these XFTP relays:\n\(unknownServers.map{ "• " + serverHost($0) }.sorted().joined(separator: "\n"))"),
-                    primaryButton: .destructive(
+                    title: Text("Unknown servers!"),
+                    message: Text("Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs.sorted().joined(separator: ", "))."),
+                    primaryButton: .default(
                         Text("Download"),
                         action: {
                             Task {
