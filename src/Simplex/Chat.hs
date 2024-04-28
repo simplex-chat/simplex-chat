@@ -40,12 +40,13 @@ import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, nub, partition, sortOn)
+import Data.List (find, foldl', isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -2929,7 +2930,7 @@ callTimed ct aciContent =
   case aciContentCallStatus aciContent of
     Just callStatus
       | callComplete callStatus -> do
-        contactCITimed ct
+          contactCITimed ct
     _ -> pure Nothing
   where
     aciContentCallStatus :: ACIContent -> Maybe CICallStatus
@@ -3070,37 +3071,35 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     if userApprovedRelays
       then receive' rd True
       else do
-        let rdSrvs = collectDescrSrvs rd
-        unknownSrvs <- filterUnknownSrvs rdSrvs
-        if null unknownSrvs
-          then receive' rd True
-          else
-            ifM
-              (ipProtectedForSrvs rdSrvs)
-              (receive' rd False)
-              (abortNotApproved unknownSrvs)
+        let srvs = fileServers rd
+        unknownSrvs <- getUnknownSrvs srvs
+        let approved = null unknownSrvs
+        ifM
+          ((approved ||) <$> ipProtectedForSrvs srvs)
+          (receive' rd approved)
+          (relaysNotApproved unknownSrvs)
   where
     receive' :: ValidFileDescription 'FRecipient -> Bool -> CM ()
-    receive' rd approvedRelays = do
-      aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approvedRelays
+    receive' rd approved = do
+      aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approved
       startReceivingFile user fileId
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
-    collectDescrSrvs :: ValidFileDescription 'FRecipient -> [XFTPServer]
-    collectDescrSrvs (FD.ValidFileDescription FD.FileDescription {chunks}) =
-      nub $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
-    filterUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
-    filterUnknownSrvs rdSrvs = do
+    fileServers :: ValidFileDescription 'FRecipient -> [XFTPServer]
+    fileServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
+      S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
+    getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
+    getUnknownSrvs srvs = do
       ChatConfig {defaultServers = DefaultAgentServers {xftp = defXftp}} <- asks config
       storedSrvs <- map (\ServerCfg {server} -> protoServer server) <$> withStore' (`getProtocolServers` user)
       let defXftp' = L.map protoServer defXftp
           knownSrvs = fromMaybe defXftp' $ nonEmpty storedSrvs
-      pure $ filter (`notElem` knownSrvs) rdSrvs
+      pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
-    ipProtectedForSrvs rdSrvs = do
+    ipProtectedForSrvs srvs = do
       netCfg <- lift $ withAgent' getNetworkConfig
-      pure $ all (ipAddressProtected netCfg) rdSrvs
-    abortNotApproved :: [XFTPServer] -> CM ()
-    abortNotApproved unknownSrvs = do
+      pure $ all (ipAddressProtected netCfg) srvs
+    relaysNotApproved :: [XFTPServer] -> CM ()
+    relaysNotApproved unknownSrvs = do
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileAbortedNotApproved fileId unknownSrvs
