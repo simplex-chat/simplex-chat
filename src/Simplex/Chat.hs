@@ -2158,7 +2158,7 @@ processChatCommand' vr = \case
     let collect (acId, ds) = if not showAll && agentDeliveryOk ds then Nothing else Just (decodeLatin1 $ strEncode acId, ds)
     pure $ CRDebugDelivery . M.fromList . mapMaybe collect $ M.toList ads
   DebugConnection acId@(AgentConnId acId') -> do
-    user@User {userId} <- withStore' (`getUserByAConnId` acId) >>= maybe (throwChatError undefined) pure
+    user@User {userId} <- withStore' (`getUserByAConnId` acId) >>= maybe (throwError . ChatErrorStore $ SEUserNotFoundByAConnId acId) pure
     AS.RcvQueue {server, rcvId = rcvId', status = rqStatus} <- withAgent $ \ac ->
       -- dive into agent internals
       liftIOEither . (`runReaderT` agentEnv ac) . runExceptT $ AC.withStore ac $ \adb ->

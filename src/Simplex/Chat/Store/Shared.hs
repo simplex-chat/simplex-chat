@@ -59,6 +59,7 @@ data StoreError
   = SEDuplicateName
   | SEUserNotFound {userId :: UserId}
   | SEUserNotFoundByName {contactName :: ContactName}
+  | SEUserNotFoundByAConnId {agentConnId :: AgentConnId}
   | SEUserNotFoundByContactId {contactId :: ContactId}
   | SEUserNotFoundByGroupId {groupId :: GroupId}
   | SEUserNotFoundByFileId {fileId :: FileTransferId}
