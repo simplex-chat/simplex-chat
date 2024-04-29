@@ -120,7 +120,7 @@ chatGroupTests = do
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
-    fit "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
+    it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -4443,6 +4443,10 @@ testGroupMsgForwardLeave =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
 
       bob ##> "/leave #team"
       bob <## "#team: you left the group"
