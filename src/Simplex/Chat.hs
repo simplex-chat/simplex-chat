@@ -3102,7 +3102,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     relaysNotApproved unknownSrvs = do
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
-      throwChatError $ CEFileAbortedNotApproved fileId unknownSrvs
+      throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
 resetRcvCIFileStatus user fileId ciFileStatus = do

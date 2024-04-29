@@ -1110,7 +1110,7 @@ data ChatErrorType
   | CEFileImageType {filePath :: FilePath}
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
-  | CEFileAbortedNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
+  | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
   | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
   | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
