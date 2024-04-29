@@ -120,6 +120,7 @@ chatGroupTests = do
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
+    fit "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -4436,6 +4437,18 @@ testGroupMsgForwardNewMember =
                "cath (Catherine): admin, connected",
                "dan (Daniel): member"
              ]
+
+testGroupMsgForwardLeave :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardLeave =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob ##> "/leave #team"
+      bob <## "#team: you left the group"
+      bob <## "use /d #team to delete the group"
+      alice <## "#team: bob left the group"
+      cath <## "#team: bob left the group"
 
 testGroupHistory :: HasCallStack => FilePath -> IO ()
 testGroupHistory =
