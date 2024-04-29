@@ -961,8 +961,8 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
             logger.debug("apiReceiveFile ignoring fileCancelled error")
         case .fileAlreadyReceiving:
             logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
-        case let .fileAbortedNotApproved(fileId, unknownServers):
-            logger.debug("apiReceiveFile fileAbortedNotApproved error")
+        case let .fileNotApproved(fileId, unknownServers):
+            logger.debug("apiReceiveFile fileNotApproved error")
             if !auto {
                 let srvs = unknownServers.map { s in
                     if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
@@ -978,7 +978,7 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
                         Text("Download"),
                         action: {
                             Task {
-                                logger.debug("apiReceiveFile fileAbortedNotApproved alert - in Task")
+                                logger.debug("apiReceiveFile fileNotApproved alert - in Task")
                                 if let user = ChatModel.shared.currentUser {
                                     await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
                                 }

@@ -1709,7 +1709,7 @@ public enum ChatErrorType: Decodable {
     case fileImageType(filePath: String)
     case fileImageSize(filePath: String)
     case fileNotReceived(fileId: Int64)
-    case fileAbortedNotApproved(fileId: Int64, unknownServers: [String])
+    case fileNotApproved(fileId: Int64, unknownServers: [String])
     // case xFTPRcvFile
     // case xFTPSndFile
     case fallbackToSMPProhibited(fileId: Int64)
