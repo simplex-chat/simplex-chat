@@ -3577,14 +3577,19 @@ processAgentMessageNoConn = \case
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
-  fileId <- withStore (`getXFTPSndFileDBId` AgentSndFileId aFileId)
-  withFileLock "processAgentMsgSndFile" fileId $
+  (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
+  withEntityLock_ cRef_ $ withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
         lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
         throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
+    withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
+    withEntityLock_ cRef_ = case cRef_ of
+      Just (ChatRef CTDirect contactId) -> withContactLock "processAgentMsgSndFile" contactId
+      Just (ChatRef CTGroup groupId) -> withGroupLock "processAgentMsgSndFile" groupId
+      _ -> id
     process :: User -> FileTransferId -> CM ()
     process user fileId = do
       (ft@FileTransferMeta {xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
@@ -3699,14 +3704,19 @@ splitFileDescr rfdText = do
 
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
-  fileId <- withStore (`getXFTPRcvFileDBId` AgentRcvFileId aFileId)
-  withFileLock "processAgentMsgRcvFile" fileId $
+  (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
+  withEntityLock_ cRef_ $ withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
         lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
         throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
   where
+    withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
+    withEntityLock_ cRef_ = case cRef_ of
+      Just (ChatRef CTDirect contactId) -> withContactLock "processAgentMsgRcvFile" contactId
+      Just (ChatRef CTGroup groupId) -> withGroupLock "processAgentMsgRcvFile" groupId
+      _ -> id
     process :: User -> FileTransferId -> CM ()
     process user fileId = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
