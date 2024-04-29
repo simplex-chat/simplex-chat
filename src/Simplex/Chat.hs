@@ -2932,7 +2932,7 @@ callTimed ct aciContent =
   case aciContentCallStatus aciContent of
     Just callStatus
       | callComplete callStatus -> do
-        contactCITimed ct
+          contactCITimed ct
     _ -> pure Nothing
   where
     aciContentCallStatus :: ACIContent -> Maybe CICallStatus
@@ -4269,12 +4269,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right (ACMsg _ chatMsg) ->
               processEvent chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
             Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
+          forwardMsg_ `catchChatError` \_ -> pure ()
           checkSendRcpt $ rights aChatMsgs
-        -- currently only a single message is forwarded
-        let GroupMember {memberRole = membershipMemRole} = membership
-        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
-          [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
-          _ -> pure ()
         where
           aChatMsgs = parseChatMessages msgBody
           brokerTs = metaBrokerTs msgMeta
@@ -4322,22 +4318,27 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
-          forwardMsg_ :: MsgEncodingI e => ChatMessage e -> CM ()
-          forwardMsg_ chatMsg =
-            forM_ (forwardedGroupMsg chatMsg) $ \chatMsg' -> do
-              ChatConfig {highlyAvailable} <- asks config
-              -- members introduced to this invited member
-              introducedMembers <-
-                if memberCategory m == GCInviteeMember
-                  then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
-                  else pure []
-              -- invited members to which this member was introduced
-              invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
-              let GroupMember {memberId} = m
-                  ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
-                  msg = XGrpMsgForward memberId chatMsg' brokerTs
-              unless (null ms) . void $
-                sendGroupMessage' user gInfo ms msg
+          forwardMsg_ :: CM ()
+          forwardMsg_ = do
+            let GroupMember {memberRole = membershipMemRole} = membership
+            when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
+              -- currently only a single message is forwarded
+              [Right (ACMsg _ chatMsg)] ->
+                forM_ (forwardedGroupMsg chatMsg) $ \chatMsg' -> do
+                  ChatConfig {highlyAvailable} <- asks config
+                  -- members introduced to this invited member
+                  introducedMembers <-
+                    if memberCategory m == GCInviteeMember
+                      then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
+                      else pure []
+                  -- invited members to which this member was introduced
+                  invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
+                  let GroupMember {memberId} = m
+                      ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
+                      msg = XGrpMsgForward memberId chatMsg' brokerTs
+                  unless (null ms) . void $
+                    sendGroupMessage' user gInfo ms msg
+              _ -> pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
