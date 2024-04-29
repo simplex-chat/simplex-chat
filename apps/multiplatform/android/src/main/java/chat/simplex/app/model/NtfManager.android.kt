@@ -106,11 +106,14 @@ object NtfManager {
       .setSmallIcon(R.drawable.ntf_icon)
       .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
-      .setLights(0x88FFFF,500,2000)
       .setAutoCancel(true)
       .setVibrate(if (actions.isEmpty()) null else longArrayOf(0, 250, 250, 250))
       .setContentIntent(chatPendingIntent(OpenChatAction, user.userId, chatId))
       .setSilent(if (actions.isEmpty()) recentNotification else false)
+
+    if (appPreferences.notificationLEDEnabled.get()) {
+      builder.setLights(0x88FFFF, 500, 2000)
+    }
 
     for (action in actions) {
       val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -226,7 +229,6 @@ object NtfManager {
       .setVibrate(null)
       .setContentIntent(chatPendingIntent(ShowChatsAction, null, null))
       .setSilent(false)
-
     val summary = NotificationCompat.Builder(context, MessageChannel)
       .setSmallIcon(R.drawable.ntf_icon)
       .setColor(0x88FFFF)
