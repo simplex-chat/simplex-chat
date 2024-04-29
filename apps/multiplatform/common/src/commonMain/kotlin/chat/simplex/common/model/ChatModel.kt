@@ -4,7 +4,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -136,6 +136,8 @@ object ChatModel {
 
   val processedCriticalError: ProcessedErrors<AgentErrorType.CRITICAL> = ProcessedErrors(60_000)
   val processedInternalError: ProcessedErrors<AgentErrorType.INTERNAL> = ProcessedErrors(20_000)
+
+  val backgroundImage by lazy { mutableStateOf(getBackgroundImageOrDefault()) }
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value

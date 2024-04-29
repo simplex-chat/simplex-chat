@@ -14,6 +14,7 @@ expect val dataDir: File
 expect val tmpDir: File
 expect val filesDir: File
 expect val appFilesDir: File
+expect val appearanceDir: File
 expect val coreTmpDir: File
 expect val dbAbsolutePrefixPath: String
 
@@ -76,6 +77,18 @@ fun getAppFilePath(fileName: String): String {
   } else {
     remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_files" + s + fileName
   }
+}
+
+fun getBackgroundImageFilePath(fileName: String): String {
+  val rh = chatModel.currentRemoteHost.value
+  val s = File.separator
+  val path = if (rh == null) {
+    appearanceDir.absolutePath + s + fileName
+  } else {
+    remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_appearance" + s + fileName
+  }
+  File(path).parentFile.mkdirs()
+  return path
 }
 
 fun getLoadedFilePath(file: CIFile?): String? {

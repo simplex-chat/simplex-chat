@@ -1034,6 +1034,7 @@
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
+  <string name="settings_section_title_background_image">Background image</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_network_connection">Network connection</string>
@@ -1519,6 +1520,8 @@
   <string name="import_theme">Import theme</string>
   <string name="import_theme_error">Import theme error</string>
   <string name="import_theme_error_desc">Make sure the file has correct YAML syntax. Export theme to have an example of the theme file structure.</string>
+  <string name="import_background_image_error">Import background image error</string>
+  <string name="import_background_image_desc">Make sure the file can be read correctly.</string>
   <string name="export_theme">Export theme</string>
   <string name="reset_color">Reset colors</string>
   <string name="color_primary">Accent</string>
@@ -1530,6 +1533,10 @@
   <string name="color_title">Title</string>
   <string name="color_sent_message">Sent message</string>
   <string name="color_received_message">Received message</string>
+
+  <!-- Backgrounds -->
+  <string name="background_choose_own_image">Choose you own…</string>
+  <string name="background_cat">Cat</string>
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>

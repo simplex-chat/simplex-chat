@@ -16,6 +16,7 @@ import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.decodeFromStream
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
@@ -156,6 +157,34 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
+fun getBackgroundImageFromUri(uri: URI, withAlertOnException: Boolean = true): Pair<String, ImageBitmap>? {
+  uri.inputStream().use {
+    runCatching {
+      return uri.toFile().name to loadImageBitmap(it!!)
+    }.onFailure {
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.import_background_image_error),
+          text = generalGetString(MR.strings.import_background_image_desc),
+        )
+      }
+    }
+  }
+  return null
+}
+
+fun getBackgroundImageOrDefault(): ImageBitmap {
+  val type = appPreferences.backgroundImageType.get()
+  val res = if (type.custom) {
+    File(getBackgroundImageFilePath(type.filename)).inputStream().use {
+      loadImageBitmap(it)
+    }
+  } else {
+    PredefinedBackgroundImage.from(type.filename)?.res?.image?.toComposeImageBitmap()
+  }
+  return res ?: BackgroundImageType.default.toPredefined()!!.res.image.toComposeImageBitmap()
+}
+
 fun saveImage(uri: URI): CryptoFile? {
   val bitmap = getBitmapFromUri(uri) ?: return null
   return saveImage(bitmap)
@@ -278,6 +307,23 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
 
     null
   }
+}
+
+fun saveBackgroundImage(uri: URI): Pair<String, ImageBitmap>? {
+  val res = getBackgroundImageFromUri(uri, true) ?: return null
+  val destFile = File(getBackgroundImageFilePath(res.first))
+  val inputStream = uri.inputStream()
+  try {
+    Files.copy(inputStream!!, destFile.toPath())
+  } catch (e: Exception) {
+    Log.e(TAG, "Error saving background image: ${e.stackTraceToString()}")
+    return null
+  }
+  return res
+}
+
+fun removeBackgroundImage(fileName: String) {
+  File(getBackgroundImageFilePath(fileName)).delete()
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {

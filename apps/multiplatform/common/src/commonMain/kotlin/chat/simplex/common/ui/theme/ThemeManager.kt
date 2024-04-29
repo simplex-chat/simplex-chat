@@ -152,6 +152,9 @@ object ThemeManager {
     appPrefs.themeOverrides.set(overrides)
     CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight)
   }
-}
 
-private fun Color.toReadableHex(): String = "#" + Integer.toHexString(toArgb())
+  fun String.colorFromReadableHex(): Color =
+    Color(this.replace("#", "").toLongOrNull(16) ?: Color.White.toArgb().toLong())
+
+  fun Color.toReadableHex(): String = "#" + Integer.toHexString(toArgb())
+}

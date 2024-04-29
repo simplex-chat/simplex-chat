@@ -10,6 +10,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.platform.isInNightMode
+import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
+import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.SerialName
@@ -144,11 +146,6 @@ data class ThemeColors(
     )
   }
 }
-
-private fun String.colorFromReadableHex(): Color =
-  Color(this.replace("#", "").toLongOrNull(16) ?: Color.White.toArgb().toLong())
-
-private fun Color.toReadableHex(): String = "#" + Integer.toHexString(toArgb())
 
 @Serializable
 data class ThemeOverrides (

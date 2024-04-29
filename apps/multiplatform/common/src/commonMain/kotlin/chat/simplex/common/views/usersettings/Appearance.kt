@@ -19,14 +19,18 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
+import chat.simplex.common.views.chat.SendReceipts
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.*
 import kotlinx.serialization.encodeToString
 import java.net.URI
+import java.nio.file.Files
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -85,6 +89,49 @@ object AppearanceScope {
       }
     }
     SectionItemView(showSettingsModal { _ -> CustomizeThemeView(editColor) }) { Text(stringResource(MR.strings.customize_theme_title)) }
+  }
+
+  @Composable
+  fun BackgroundImageSection() {
+    SectionView(stringResource(MR.strings.settings_section_title_background_image).uppercase()) {
+      val pref = remember { appPrefs.backgroundImageType.state }
+      val state = remember {
+        val type = appPrefs.backgroundImageType.get()
+        mutableStateOf(if (type.custom) "" else type.filename)
+      }
+      val values = remember {
+        PredefinedBackgroundImage.entries.map { it.filename to generalGetString(it.text) } + ("" to generalGetString(MR.strings.background_choose_own_image))
+      }
+      val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+        if (to != null) {
+          val res = saveBackgroundImage(to)
+          if (res != null) {
+            val (filename, backgroundImage) = res
+            state.value = ""
+            chatModel.backgroundImage.value = backgroundImage
+            appPrefs.backgroundImageType.set(BackgroundImageType.Static(custom = true, filename, BackgroundImageScale.CROP, null))
+          }
+        }
+      }
+      ExposedDropDownSettingRow(
+        stringResource(MR.strings.settings_section_title_background_image),
+        values,
+        state,
+        enabled = remember { mutableStateOf(true) },
+        onSelected = { filename ->
+          if (filename.isEmpty()) {
+            withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
+          } else {
+            if (state.value.isEmpty()) {
+              removeBackgroundImage(appPrefs.backgroundImageType.get().filename)
+            }
+            state.value = filename
+            appPrefs.backgroundImageType.set(PredefinedBackgroundImage.from(filename)!!.type)
+            chatModel.backgroundImage.value = getBackgroundImageOrDefault()
+          }
+        }
+      )
+    }
   }
 
   @Composable

@@ -13,17 +13,18 @@ import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -34,6 +35,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -551,6 +553,8 @@ fun ChatLayout(
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
+  val backgroundImage = remember { chatModel.backgroundImage }
+  val backgroundImageType = remember { appPrefs.backgroundImageType.state }
   Box(
     Modifier
       .fillMaxWidth()
@@ -596,9 +600,13 @@ fun ChatLayout(
           floatingActionButton = { floatingButton.value() },
           contentColor = LocalContentColor.current,
           drawerContentColor = LocalContentColor.current,
+          backgroundColor = Color.Unspecified
         ) { contentPadding ->
+          val primaryColor = MaterialTheme.colors.primary
           BoxWithConstraints(Modifier
             .fillMaxHeight()
+            .background(MaterialTheme.colors.background)
+            .drawBehind { chatViewBackground(backgroundImage.value, backgroundImageType.value, primaryColor) }
             .padding(contentPadding)
           ) {
             ChatItemsList(

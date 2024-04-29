@@ -1,8 +1,10 @@
 package chat.simplex.common.model
 
+import androidx.compose.material.MaterialTheme
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
@@ -11,6 +13,7 @@ import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
@@ -172,6 +175,18 @@ class AppPreferences {
     json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, settingsThemes)
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
+  private val _backgroundImageType = mkStrPreference(SHARED_PREFS_BACKGROUND_IMAGE, json.encodeToString(BackgroundImageType.default))
+  val backgroundImageType: SharedPreference<BackgroundImageType> = SharedPreference(
+    get = fun(): BackgroundImageType {
+      val value = _backgroundImageType.get() ?: return BackgroundImageType.default
+      return try {
+        json.decodeFromString(value)
+      } catch (e: Throwable) {
+        BackgroundImageType.default
+      }
+    },
+    set = fun(type: BackgroundImageType) { _backgroundImageType.set(json.encodeToString(type)) }
+  )
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
   val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
@@ -339,6 +354,7 @@ class AppPreferences {
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES = "Themes"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
+    private const val SHARED_PREFS_BACKGROUND_IMAGE = "BackgroundImage"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
     private const val SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME = "CustomDisappearingMessageTime"
