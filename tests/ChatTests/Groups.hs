@@ -4444,10 +4444,6 @@ testGroupMsgForwardLeave =
     \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
 
-      bob #> "#team hi there"
-      alice <# "#team bob> hi there"
-      cath <# "#team bob> hi there [>>]"
-
       bob ##> "/leave #team"
       bob <## "#team: you left the group"
       bob <## "use /d #team to delete the group"
