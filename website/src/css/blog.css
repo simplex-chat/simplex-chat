@@ -216,3 +216,11 @@ h6{
     margin-left: 3rem;
   }
 }
+
+#article ol > li{
+  list-style-position: inside !important;
+  margin-left: -0px !important;
+}
+#article ol > li::marker {
+  font-weight: 500;
+}
