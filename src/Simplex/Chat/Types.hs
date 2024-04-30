@@ -175,8 +175,8 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
-    customData :: Maybe CustomData
-    -- chatDeleted :: Bool -- TODO read/write from db
+    customData :: Maybe CustomData,
+    chatDeleted :: Bool
   }
   deriving (Eq, Show)
 

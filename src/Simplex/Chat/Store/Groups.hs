@@ -1956,7 +1956,7 @@ createMemberContact
               authErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, customData = Nothing, chatDeleted = False}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -1993,7 +1993,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, customData = Nothing}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, customData = Nothing, chatDeleted = False}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where

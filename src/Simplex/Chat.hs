@@ -1021,20 +1021,23 @@ processChatCommand' vr = \case
             sendDelDeleteConns ct notify
             -- functions below are called in separate transactions to prevent crashes on android
             -- (possibly, race condition on integrity check?)
-            withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
+            withStore' $ \db -> do
+              deleteContactConnections db user ct
+              deleteContactFiles db user ct
             withStore $ \db -> deleteContact db user ct
             pure $ CRContactDeleted user ct
           CDMEntity notify -> do
             cancelFilesInProgress user filesInfo
             sendDelDeleteConns ct notify
-            -- TODO db: delete connection
-            -- TODO db: updateContactStatus to CSDeleted
-            pure $ CRContactDeleted user ct
+            ct' <- withStore $ \db -> do
+              liftIO $ deleteContactConnections db user ct
+              liftIO $ void $ updateContactStatus db user ct CSDeleted
+              getContact db vr user chatId
+            pure $ CRContactDeleted user ct'
           CDMMessages -> do
             void $ processChatCommand $ APIClearChat cRef
-            -- TODO ct <- db: set chat_deleted to deleted
-            -- (can be unset on any new chat item, see updateChatTs)
-            pure $ CRContactDeleted user ct
+            withStore' $ \db -> setContactChatDeleted db user ct True
+            pure $ CRContactDeleted user ct {chatDeleted = True}
       where
         sendDelDeleteConns ct notify = do
           let doSendDel = contactReady ct && contactActive ct && notify
