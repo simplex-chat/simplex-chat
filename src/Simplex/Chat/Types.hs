@@ -176,7 +176,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     customData :: Maybe CustomData
-    -- conversationDeleted :: Bool -- TODO read/write from db
+    -- chatDeleted :: Bool -- TODO read/write from db
   }
   deriving (Eq, Show)
 
