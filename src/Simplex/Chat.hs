@@ -46,6 +46,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -232,6 +233,7 @@ newChatController
     outputQ <- newTBQueueIO tbqSize
     connNetworkStatuses <- atomically TM.empty
     agentDeliveryStatuses <- atomically TM.empty
+    agentSubscriptions <- newTVarIO S.empty
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- atomically TM.empty
@@ -269,6 +271,7 @@ newChatController
           outputQ,
           connNetworkStatuses,
           agentDeliveryStatuses,
+          agentSubscriptions,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -408,6 +411,7 @@ startChatController mainApp = do
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
   let (us, us') = partition activeUser users
+  asks agentSubscriptions >>= atomically . (`writeTVar` S.empty)
   vr <- chatVersionRange'
   subscribe vr us
   subscribe vr us'
@@ -2206,6 +2210,14 @@ processChatCommand' vr = \case
             queueStatus = tshow rqStatus,
             connection
           }
+  DebugSubs -> do
+    ads <- mapM readTVarIO =<< readTVarIO =<< asks agentDeliveryStatuses
+    conns <- readTVarIO =<< asks agentSubscriptions
+    pure . CRDebugSubs . S.toList $ foldl' (\cs (acId, ds) -> if agentDeliveryOk ds then S.delete acId cs else cs) conns (M.toList ads)
+  DebugSubsDetails -> do
+    CRDebugSubs broken <- processChatCommand' vr DebugSubs
+    crs <- mapM (processChatCommand' vr . DebugConnection . Right) broken
+    pure $ CRDebugSubsDetails [dcs | CRDebugConnection dcs <- crs]
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
@@ -3301,6 +3313,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
         let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
         pure (conns, cts, ucs, gs, ms, sfts, rfts, pcs)
   -- subscribe using batched commands
+  asks agentSubscriptions >>= \v -> atomically . modifyTVar' v $ \cs -> foldl' (\cs' acId -> S.insert (AgentConnId acId) cs') cs conns
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
   -- send connection events to view
   contactSubsToView rs cts ce
@@ -6849,6 +6862,7 @@ deleteAgentConnectionAsync user acId = deleteAgentConnectionAsync' user acId Fal
 deleteAgentConnectionAsync' :: User -> ConnId -> Bool -> CM ()
 deleteAgentConnectionAsync' user acId waitDelivery = do
   withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchChatError` (toView . CRChatError (Just user))
+  asks agentSubscriptions >>= \v -> atomically $ modifyTVar v $ S.delete (AgentConnId acId)
 
 deleteAgentConnectionsAsync :: User -> [ConnId] -> CM ()
 deleteAgentConnectionsAsync user acIds = deleteAgentConnectionsAsync' user acIds False
@@ -6857,6 +6871,7 @@ deleteAgentConnectionsAsync' :: User -> [ConnId] -> Bool -> CM ()
 deleteAgentConnectionsAsync' _ [] _ = pure ()
 deleteAgentConnectionsAsync' user acIds waitDelivery = do
   withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchChatError` (toView . CRChatError (Just user))
+  asks agentSubscriptions >>= \v -> atomically $ modifyTVar v $ \as -> foldl' (\as' acId -> S.delete (AgentConnId acId) as') as acIds
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do
@@ -7389,6 +7404,8 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug delivery" *> (DebugDelivery <$> (" all" $> True <|> pure False)),
       "/debug conn " *> (DebugConnection <$> ((Left <$> A.decimal) <|> (Right . AgentConnId <$> base64P))),
+      "/debug subs" $> DebugSubs,
+      "/debug subs details" $> DebugSubsDetails,
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,

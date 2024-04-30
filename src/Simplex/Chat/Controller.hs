@@ -39,6 +39,7 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Set (Set)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -208,6 +209,7 @@ data ChatController = ChatController
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     agentDeliveryStatuses :: TMap AgentConnId (TVar AgentDeliveryStatus),
+    agentSubscriptions :: TVar (Set AgentConnId),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -508,6 +510,8 @@ data ChatCommand
   | ShowVersion
   | DebugDelivery Bool
   | DebugConnection (Either Int64 AgentConnId)
+  | DebugSubs -- Check that all `subscribeUserConnections` are in place and healthy
+  | DebugSubsDetails -- Run DebugConnection on each unhealthy sub
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats
@@ -757,6 +761,8 @@ data ChatResponse
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugDelivery {debugDelivery :: Map Text AgentDeliveryStatus}
   | CRDebugConnection {debugConnection :: DebugConnectionStatus}
+  | CRDebugSubs {brokenSubs :: [AgentConnId]}
+  | CRDebugSubsDetails {debugConnections :: [DebugConnectionStatus]}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
