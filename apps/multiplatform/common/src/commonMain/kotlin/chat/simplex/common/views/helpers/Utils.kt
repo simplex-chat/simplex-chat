@@ -14,12 +14,15 @@ import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
 import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.decodeFromStream
 import java.io.*
 import java.net.URI
+import java.nio.file.CopyOption
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executors
@@ -180,9 +183,9 @@ fun getBackgroundImageOrDefault(): ImageBitmap {
       loadImageBitmap(it)
     }
   } else {
-    PredefinedBackgroundImage.from(type.filename)?.res?.image?.toComposeImageBitmap()
+    PredefinedBackgroundImage.from(type.filename)?.res?.toComposeImageBitmap()
   }
-  return res ?: BackgroundImageType.default.toPredefined()!!.res.image.toComposeImageBitmap()
+  return res ?: BackgroundImageType.default.toPredefined()!!.res.toComposeImageBitmap()!!
 }
 
 fun saveImage(uri: URI): CryptoFile? {
@@ -314,7 +317,7 @@ fun saveBackgroundImage(uri: URI): Pair<String, ImageBitmap>? {
   val destFile = File(getBackgroundImageFilePath(res.first))
   val inputStream = uri.inputStream()
   try {
-    Files.copy(inputStream!!, destFile.toPath())
+    Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
   } catch (e: Exception) {
     Log.e(TAG, "Error saving background image: ${e.stackTraceToString()}")
     return null
@@ -322,8 +325,10 @@ fun saveBackgroundImage(uri: URI): Pair<String, ImageBitmap>? {
   return res
 }
 
-fun removeBackgroundImage(fileName: String) {
-  File(getBackgroundImageFilePath(fileName)).delete()
+fun removeBackgroundImages(except: String? = null) {
+  File(getBackgroundImageFilePath("_")).parentFile.listFiles()?.forEach {
+    if (it.name != except) it.delete()
+  }
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {

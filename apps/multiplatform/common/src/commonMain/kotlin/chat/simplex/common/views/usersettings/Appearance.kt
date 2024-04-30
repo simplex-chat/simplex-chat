@@ -5,19 +5,21 @@ import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
@@ -25,12 +27,12 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
-import chat.simplex.common.views.chat.SendReceipts
+import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.*
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.net.URI
-import java.nio.file.Files
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -92,14 +94,42 @@ object AppearanceScope {
   }
 
   @Composable
-  fun BackgroundImageSection() {
+  fun BackgroundImageSection(
+    showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  ) {
     SectionView(stringResource(MR.strings.settings_section_title_background_image).uppercase()) {
-      val pref = remember { appPrefs.backgroundImageType.state }
-      val state = remember {
+      SectionItemView(showSettingsModal{ _ -> CustomizeBackgroundImageView() }) { Text(stringResource(MR.strings.choose_background_image_title)) }
+    }
+  }
+
+  @Composable
+  fun CustomizeBackgroundImageView() {
+    ColumnWithScrollBar(
+      Modifier.fillMaxWidth(),
+    ) {
+      AppBarTitle(stringResource(MR.strings.choose_background_image_title))
+
+      val backgroundImage = remember { chatModel.backgroundImage }
+      val backgroundImageType = remember { appPrefs.backgroundImageType.state }
+      val defaultBackgroundColor = backgroundImageType.value.defaultBackgroundColor
+      val defaultTintColor = backgroundImageType.value.defaultTintColor
+      Column(Modifier
+        .drawBehind { chatViewBackground(backgroundImage.value, backgroundImageType.value, defaultBackgroundColor, defaultTintColor) }
+        .padding(DEFAULT_PADDING_HALF)
+      ) {
+        PreviewChatItemView(ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), stringResource(MR.strings.background_image_preview_hello_bob)))
+        PreviewChatItemView(ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.background_image_preview_hello_alice)))
+      }
+
+      SectionSpacer()
+
+      val resetColors = { appPrefs.backgroundImageType.set(backgroundImageType.value.copyBackgroundColor(null).copyTintColor(null)) }
+
+      val imageTypeState = remember {
         val type = appPrefs.backgroundImageType.get()
         mutableStateOf(if (type.custom) "" else type.filename)
       }
-      val values = remember {
+      val imageTypeValues = remember {
         PredefinedBackgroundImage.entries.map { it.filename to generalGetString(it.text) } + ("" to generalGetString(MR.strings.background_choose_own_image))
       }
       val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
@@ -107,30 +137,122 @@ object AppearanceScope {
           val res = saveBackgroundImage(to)
           if (res != null) {
             val (filename, backgroundImage) = res
-            state.value = ""
+            imageTypeState.value = ""
             chatModel.backgroundImage.value = backgroundImage
             appPrefs.backgroundImageType.set(BackgroundImageType.Static(custom = true, filename, BackgroundImageScale.CROP, null))
+            removeBackgroundImages(filename)
+            resetColors()
           }
         }
       }
       ExposedDropDownSettingRow(
         stringResource(MR.strings.settings_section_title_background_image),
-        values,
-        state,
-        enabled = remember { mutableStateOf(true) },
+        imageTypeValues,
+        imageTypeState,
         onSelected = { filename ->
           if (filename.isEmpty()) {
             withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
           } else {
-            if (state.value.isEmpty()) {
-              removeBackgroundImage(appPrefs.backgroundImageType.get().filename)
-            }
-            state.value = filename
+            imageTypeState.value = filename
             appPrefs.backgroundImageType.set(PredefinedBackgroundImage.from(filename)!!.type)
             chatModel.backgroundImage.value = getBackgroundImageOrDefault()
+            removeBackgroundImages()
           }
         }
       )
+
+      val type = backgroundImageType.value
+      if (type is BackgroundImageType.Repeated) {
+        val state = remember(type.scale) { mutableStateOf(type.scale) }
+        val values = remember {
+          listOf(
+            0.25f to "0.25x",
+            0.5f to "0.5x",
+            0.75f to "0.75x",
+            1f to "1x",
+          )
+        }
+        ExposedDropDownSettingRow(
+          stringResource(MR.strings.background_image_scale),
+          values,
+          state,
+          onSelected = { scale ->
+            appPrefs.backgroundImageType.set(type.copy(scale = scale))
+          }
+        )
+      } else if (type is BackgroundImageType.Static) {
+        val state = remember(type.scale) { mutableStateOf(type.scale) }
+        val values = remember {
+          BackgroundImageScale.entries.map { it to generalGetString(it.text) }
+        }
+        ExposedDropDownSettingRow(
+          stringResource(MR.strings.background_image_scale),
+          values,
+          state,
+          onSelected = { scale ->
+            appPrefs.backgroundImageType.set(type.copy(scale = scale))
+          }
+        )
+      }
+
+      SectionSpacer()
+
+      var selectedTab by rememberSaveable { mutableStateOf(0) }
+      val availableTabs = listOf(
+        stringResource(MR.strings.background_image_background_color),
+        stringResource(MR.strings.background_image_tint_color),
+      )
+      TabRow(
+        selectedTabIndex = selectedTab,
+        backgroundColor = Color.Transparent,
+        contentColor = MaterialTheme.colors.primary,
+      ) {
+        availableTabs.forEachIndexed { index, title ->
+          Tab(
+            selected = selectedTab == index,
+            onClick = {
+              selectedTab = index
+            },
+            text = { Text(title, fontSize = 13.sp) },
+            selectedContentColor = MaterialTheme.colors.primary,
+            unselectedContentColor = MaterialTheme.colors.secondary,
+          )
+        }
+      }
+
+      if (selectedTab == 0) {
+        var currentColor by remember(backgroundImageType.value.background) { mutableStateOf(backgroundImageType.value.background ?: defaultBackgroundColor) }
+        ColorPicker(backgroundImageType.value.background ?: defaultBackgroundColor) {
+          currentColor = it
+          appPrefs.backgroundImageType.set(appPrefs.backgroundImageType.get().copyBackgroundColor(currentColor))
+        }
+
+        val clipboard = LocalClipboardManager.current
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+          Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
+          Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
+        }
+      } else {
+        var currentColor by remember(backgroundImageType.value.tint) { mutableStateOf(backgroundImageType.value.tint ?: defaultTintColor) }
+        ColorPicker(backgroundImageType.value.tint ?: defaultTintColor) {
+          currentColor = it
+          appPrefs.backgroundImageType.set(appPrefs.backgroundImageType.get().copyTintColor(currentColor))
+        }
+
+        val clipboard = LocalClipboardManager.current
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+          Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
+          Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
+        }
+      }
+
+      if (backgroundImageType.value.background != null || backgroundImageType.value.tint != null) {
+        SectionSpacer()
+        SectionItemView(resetColors) {
+          Text(generalGetString(MR.strings.reset_color), color = colors.primary)
+        }
+      }
+      SectionBottomSpacer()
     }
   }
 

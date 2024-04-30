@@ -85,7 +85,7 @@ fun getBackgroundImageFilePath(fileName: String): String {
   val path = if (rh == null) {
     appearanceDir.absolutePath + s + fileName
   } else {
-    remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_appearance" + s + fileName
+    remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_assets" + s + "wallpapers" + s + fileName
   }
   File(path).parentFile.mkdirs()
   return path

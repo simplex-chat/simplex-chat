@@ -831,14 +831,14 @@ expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 
 @Preview
 @Composable
-fun PreviewChatItemView() {
+fun PreviewChatItemView(
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
+) {
   SimpleXTheme {
     ChatItemView(
       rhId = null,
       ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      ),
+      chatItem,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },

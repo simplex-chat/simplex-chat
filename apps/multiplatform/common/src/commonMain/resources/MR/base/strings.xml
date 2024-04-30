@@ -712,6 +712,7 @@
   <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
+  <string name="choose_background_image_title">Choose background</string>
   <string name="theme_colors_section_title">THEME COLORS</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
@@ -1535,8 +1536,24 @@
   <string name="color_received_message">Received message</string>
 
   <!-- Backgrounds -->
-  <string name="background_choose_own_image">Choose you own…</string>
+  <string name="background_choose_own_image">Choose…</string>
   <string name="background_cat">Cat</string>
+  <string name="background_hearts">Hearts</string>
+  <string name="background_school">School</string>
+  <string name="background_internet">Internet</string>
+  <string name="background_space">Space</string>
+  <string name="background_pets">Pets</string>
+  <string name="background_rabbit">Rabbit</string>
+  <string name="background_image_preview_hello_alice">Hello, Alice</string>
+  <string name="background_image_preview_hello_bob">Hello, Bob</string>
+  <string name="background_image_background_color">Background</string>
+  <string name="background_image_tint_color">Tint</string>
+  <string name="background_image_scale">Scale</string>
+  <string name="background_image_scale_crop">Crop</string>
+  <string name="background_image_scale_fit">Fit</string>
+  <string name="background_image_scale_fill_width">Fill width</string>
+  <string name="background_image_scale_fill_height">Fill height</string>
+  <string name="background_image_scale_fill_bounds">Fill bounds</string>
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>

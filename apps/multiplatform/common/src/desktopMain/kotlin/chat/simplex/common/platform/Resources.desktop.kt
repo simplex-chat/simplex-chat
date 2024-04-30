@@ -1,12 +1,16 @@
 package chat.simplex.common.platform
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import chat.simplex.common.other.mokoresources.customImage
 import chat.simplex.common.simplexWindowState
 import com.russhwolf.settings.*
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
 import java.io.File
@@ -58,3 +62,6 @@ actual fun isRtl(text: CharSequence): Boolean {
     dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT || dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
   }
 }
+
+actual fun ImageResource.toComposeImageBitmap(): ImageBitmap? =
+  customImage().toComposeImageBitmap()
