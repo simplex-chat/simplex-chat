@@ -235,7 +235,7 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
-  | CSDeleted -- contact deleted
+  | CSDeleted
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
