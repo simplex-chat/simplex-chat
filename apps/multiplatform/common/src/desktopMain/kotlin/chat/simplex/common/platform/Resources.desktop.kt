@@ -7,7 +7,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import chat.simplex.common.other.mokoresources.customImage
 import chat.simplex.common.simplexWindowState
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
@@ -64,4 +63,4 @@ actual fun isRtl(text: CharSequence): Boolean {
 }
 
 actual fun ImageResource.toComposeImageBitmap(): ImageBitmap? =
-  customImage().toComposeImageBitmap()
+  image.toComposeImageBitmap()

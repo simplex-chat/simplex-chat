@@ -102,7 +102,6 @@ kotlin {
         implementation("uk.co.caprica:vlcj:4.8.2")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
-        implementation("org.apache.xmlgraphics:batik-transcoder:1.16")
       }
     }
     val desktopTest by getting
