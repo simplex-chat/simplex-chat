@@ -293,7 +293,8 @@ data ChatCommand
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
+  | APIDeleteChat ChatRef Bool Bool -- `keep_conversation` and `notify` flags are only applied to direct chats
+  | APIMarkConversationDeleted ChatRef Bool
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -615,6 +616,7 @@ data ChatResponse
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
+  | CRContactConversationDeleted {user :: User, contact :: Contact, deleted :: Bool}
   | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}

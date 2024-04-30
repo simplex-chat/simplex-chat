@@ -176,6 +176,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     customData :: Maybe CustomData
+    -- conversationDeleted :: Bool -- TODO read/write from db
   }
   deriving (Eq, Show)
 
@@ -234,7 +235,7 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
-  | CSDeleted -- contact deleted by contact
+  | CSDeleted -- contact deleted
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
