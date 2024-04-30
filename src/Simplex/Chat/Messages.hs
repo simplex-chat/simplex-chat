@@ -277,6 +277,12 @@ toChatInfo = \case
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
 
+contactChatDeleted :: ChatDirection c d -> Bool
+contactChatDeleted = \case
+  CDDirectSnd Contact {chatDeleted} -> chatDeleted
+  CDDirectRcv Contact {chatDeleted} -> chatDeleted
+  _ -> False
+
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
     itemSent :: SMsgDirection d,

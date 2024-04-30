@@ -6650,7 +6650,7 @@ saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage 
 saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemForwarded itemTimed live = do
   createdAt <- liftIO getCurrentTime
   ciId <- withStore' $ \db -> do
-    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
@@ -6664,7 +6664,7 @@ saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c
 saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live = do
   createdAt <- liftIO getCurrentTime
   (ciId, quotedItem, itemForwarded) <- withStore' $ \db -> do
-    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
     r@(ciId, _, _) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure r
@@ -6930,7 +6930,7 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
   where
     updateChat :: DB.Connection -> UTCTime -> ChatDirection c d -> [CIContent d] -> IO ()
     updateChat db createdAt cd contents
-      | any ciRequiresAttention contents = updateChatTs db user cd createdAt
+      | any ciRequiresAttention contents || contactChatDeleted cd = updateChatTs db user cd createdAt
       | otherwise = pure ()
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
