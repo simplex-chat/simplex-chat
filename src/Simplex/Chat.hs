@@ -1226,6 +1226,9 @@ processChatCommand' vr = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
+  APISetUserWallpaper _userId _wp -> ok_
+  APISetContactWallpaper _ctId _wp -> ok_
+  APISetGroupWallpaper _gId _wp -> ok_
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
@@ -3578,12 +3581,13 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
-  withEntityLock_ cRef_ $ withFileLock "processAgentMsgSndFile" fileId $
-    withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
-      _ -> do
-        lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
-        throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+  withEntityLock_ cRef_ $
+    withFileLock "processAgentMsgSndFile" fileId $
+      withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+        Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
+        _ -> do
+          lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+          throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
     withEntityLock_ cRef_ = case cRef_ of
@@ -3705,12 +3709,13 @@ splitFileDescr rfdText = do
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
-  withEntityLock_ cRef_ $ withFileLock "processAgentMsgRcvFile" fileId $
-    withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-      Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
-      _ -> do
-        lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
-        throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
+  withEntityLock_ cRef_ $
+    withFileLock "processAgentMsgRcvFile" fileId $
+      withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
+        Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
+        _ -> do
+          lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
+          throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
   where
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
     withEntityLock_ cRef_ = case cRef_ of
@@ -7073,6 +7078,9 @@ chatCommandP =
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
+      "/_set wallpaper user " *> (APISetUserWallpaper <$> A.decimal <*> jsonP),
+      "/_set wallpaper @" *> (APISetContactWallpaper <$> A.decimal <*> jsonP),
+      "/_set wallpaper #" *> (APISetGroupWallpaper <$> A.decimal <*> jsonP),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

@@ -311,6 +311,9 @@ data ChatCommand
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
+  | APISetUserWallpaper UserId ChatWallpaper
+  | APISetContactWallpaper ContactId ChatWallpaper
+  | APISetGroupWallpaper GroupId ChatWallpaper
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
