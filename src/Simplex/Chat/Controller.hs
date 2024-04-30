@@ -507,7 +507,7 @@ data ChatCommand
   | QuitChat
   | ShowVersion
   | DebugDelivery Bool
-  | DebugConnection AgentConnId
+  | DebugConnection (Either Int64 AgentConnId)
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats

@@ -2157,7 +2157,10 @@ processChatCommand' vr = \case
     ads <- mapM readTVarIO =<< readTVarIO =<< asks agentDeliveryStatuses
     let collect (acId, ds) = if not showAll && agentDeliveryOk ds then Nothing else Just (decodeLatin1 $ strEncode acId, ds)
     pure $ CRDebugDelivery . M.fromList . mapMaybe collect $ M.toList ads
-  DebugConnection acId@(AgentConnId acId') -> do
+  DebugConnection (Left connId) -> withUser $ \user -> do
+    Connection {agentConnId} <- withStore $ \db -> getConnectionById db vr user connId
+    processChatCommand $ DebugConnection (Right agentConnId)
+  DebugConnection (Right acId@(AgentConnId acId')) -> do
     user@User {userId} <- withStore' (`getUserByAConnId` acId) >>= maybe (throwError . ChatErrorStore $ SEUserNotFoundByAConnId acId) pure
     AS.RcvQueue {server, rcvId = rcvId', status = rqStatus} <- withAgent $ \ac ->
       -- dive into agent internals
@@ -7385,7 +7388,7 @@ chatCommandP =
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug delivery" *> (DebugDelivery <$> (" all" $> True <|> pure False)),
-      "/debug conn " *> (DebugConnection . AgentConnId <$> base64P), -- TODO get by decimal connId too
+      "/debug conn " *> (DebugConnection <$> ((Left <$> A.decimal) <|> (Right . AgentConnId <$> base64P))),
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,
