@@ -1088,7 +1088,7 @@ processChatCommand' vr = \case
       when deleted $ void $ processChatCommand $ APIClearChat cRef
       -- TODO ct <- db: set conversation_deleted to deleted
       -- (can be unset on any new chat item (see updateChatTs), and on APIMarkConversationDeleted False)
-      -- pure $ CRContactConversationDeleted user ct deleted
+      -- TODO pure $ CRContactConversationDeleted user ct deleted
       ok_
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
