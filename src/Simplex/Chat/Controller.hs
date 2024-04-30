@@ -817,9 +817,9 @@ data ChatListQuery
   deriving (Show)
 
 data ChatDeleteMode
-  = CDMFull {notify :: Bool}
-  | CDMEntity {notify :: Bool}
-  | CDMMessages
+  = CDMFull {notify :: Bool}   -- delete both contact and conversation
+  | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
+  | CDMMessages                -- delete conversation, keep contact - can be re-opened from Contacts view
   deriving (Show)
 
 clqNoFilters :: ChatListQuery

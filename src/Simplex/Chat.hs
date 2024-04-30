@@ -7071,6 +7071,7 @@ chatCommandP =
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
+      "/_delete " *> (APIDeleteChat <$> chatRefP <* A.space <*> jsonP),
       "/_delete " *> (APIDeleteChat <$> chatRefP <*> (CDMFull <$> (A.space *> "notify=" *> onOffP <|> pure True))),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
