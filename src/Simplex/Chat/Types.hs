@@ -545,7 +545,7 @@ fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, prefer
   Profile {displayName, fullName, image, contactLink, preferences}
 
 data ChatWallpaper
-  = CWPreset {preset :: ChatPresetWallpaper, primaryColor :: ChatUIColor, secondaryColor :: ChatUIColor, backgroundColor :: ChatUIColor}
+  = CWPreset {preset :: ChatPresetWallpaper, primaryColor :: Maybe ChatUIColor, secondaryColor :: Maybe ChatUIColor, backgroundColor :: Maybe ChatUIColor}
   | CWFile {fileName :: FilePath}
   deriving (Eq, Show)
 
