@@ -343,7 +343,7 @@ testDeleteContactDeletesProfile =
       connectUsers alice bob
       alice <##> bob
       -- alice deletes contact, profile is deleted
-      alice ##> "/d bob"
+      alice ##> "/_delete @2 {\"type\": \"full\", \"notify\": true}"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
