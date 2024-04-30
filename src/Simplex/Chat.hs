@@ -1033,7 +1033,7 @@ processChatCommand' vr = \case
           CDMMessages -> do
             void $ processChatCommand $ APIClearChat cRef
             -- TODO ct <- db: set chat_deleted to deleted
-            -- (can be unset on any new chat item (see updateChatTs), and on APIMarkConversationDeleted False)
+            -- (can be unset on any new chat item, see updateChatTs)
             pure $ CRContactDeleted user ct
       where
         sendDelDeleteConns ct notify = do
