@@ -293,8 +293,7 @@ data ChatCommand
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef Bool Bool -- `keep_conversation` and `notify` flags are only applied to direct chats
-  | APIMarkConversationDeleted ChatRef Bool
+  | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -616,7 +615,6 @@ data ChatResponse
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
-  | CRContactConversationDeleted {user :: User, contact :: Contact, deleted :: Bool}
   | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
@@ -816,6 +814,12 @@ data PaginationByTime
 data ChatListQuery
   = CLQFilters {favorite :: Bool, unread :: Bool}
   | CLQSearch {search :: String}
+  deriving (Show)
+
+data ChatDeleteMode
+  = CDMFull {notify :: Bool}
+  | CDMEntity {notify :: Bool}
+  | CDMMessages
   deriving (Show)
 
 clqNoFilters :: ChatListQuery
@@ -1380,6 +1384,8 @@ withAgent' action = asks smpAgent >>= liftIO . action
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CDM") ''ChatDeleteMode)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 

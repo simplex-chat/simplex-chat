@@ -1009,29 +1009,34 @@ processChatCommand' vr = \case
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat (ChatRef cType chatId) keepConversation notify -> withUser $ \user@User {userId} -> case cType of
+  APIDeleteChat cRef@(ChatRef cType chatId) chatDeleteMode -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db vr user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       withContactLock "deleteChat direct" chatId . procCmd $
-        if keepConversation
-          then do
-            cancelFilesInProgress user filesInfo
-            sendDelDeleteConns ct
-            -- TODO db: delete connection
-            -- TODO db: updateContactStatus to CSDeleted
-            pure $ CRContactDeleted user ct -- UI to differentiate based on call params
-          else do
+        case chatDeleteMode of
+          CDMFull notify -> do
             cancelFilesInProgress user filesInfo
             deleteFilesLocally filesInfo
-            sendDelDeleteConns ct
+            sendDelDeleteConns ct notify
             -- functions below are called in separate transactions to prevent crashes on android
             -- (possibly, race condition on integrity check?)
             withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
             withStore $ \db -> deleteContact db user ct
             pure $ CRContactDeleted user ct
+          CDMEntity notify -> do
+            cancelFilesInProgress user filesInfo
+            sendDelDeleteConns ct notify
+            -- TODO db: delete connection
+            -- TODO db: updateContactStatus to CSDeleted
+            pure $ CRContactDeleted user ct
+          CDMMessages -> do
+            void $ processChatCommand $ APIClearChat cRef
+            -- TODO ct <- db: set chat_deleted to deleted
+            -- (can be unset on any new chat item (see updateChatTs), and on APIMarkConversationDeleted False)
+            pure $ CRContactDeleted user ct
       where
-        sendDelDeleteConns ct = do
+        sendDelDeleteConns ct notify = do
           let doSendDel = contactReady ct && contactActive ct && notify
           when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchChatError` const (pure ())
           contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db vr userId ct)
@@ -1083,14 +1088,6 @@ processChatCommand' vr = \case
               pure (e_, map aConnId conns)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-  APIMarkConversationDeleted cRef@(ChatRef cType _chatId) deleted -> withUser $ \user -> case cType of
-    CTDirect -> do
-      when deleted $ void $ processChatCommand $ APIClearChat cRef
-      -- TODO ct <- db: set conversation_deleted to deleted
-      -- (can be unset on any new chat item (see updateChatTs), and on APIMarkConversationDeleted False)
-      -- TODO pure $ CRContactConversationDeleted user ct deleted
-      ok_
-    _ -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db vr user chatId
@@ -1540,7 +1537,7 @@ processChatCommand' vr = \case
       CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
         processChatCommand $ APIConnectContactViaAddress userId incognito contactId
       _ -> processChatCommand $ APIConnect userId incognito (Just cReqUri)
-  DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) False True
+  DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) (CDMFull True)
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
     CRContactsList user <$> withStore' (\db -> getUserContacts db vr user)
@@ -1874,7 +1871,7 @@ processChatCommand' vr = \case
     processChatCommand $ APILeaveGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId) False True
+    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId) (CDMFull True)
   ClearGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIClearChat (ChatRef CTGroup groupId)
@@ -7074,8 +7071,7 @@ chatCommandP =
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
-      "/_delete " *> (APIDeleteChat <$> chatRefP <*> (A.space *> "keep_conversation=" *> onOffP <|> pure False) <*> (A.space *> "notify=" *> onOffP <|> pure True)),
-      "/_delete conversation " *> (APIMarkConversationDeleted <$> chatRefP <*> (A.space *> "delete=" *> onOffP)),
+      "/_delete " *> (APIDeleteChat <$> chatRefP <*> (CDMFull <$> (A.space *> "notify=" *> onOffP <|> pure True))),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal),

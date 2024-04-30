@@ -105,7 +105,7 @@ import Simplex.Chat.Migrations.M20240228_pq
 import Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
 import Simplex.Chat.Migrations.M20240324_custom_data
 import Simplex.Chat.Migrations.M20240402_item_forwarded
-import Simplex.Chat.Migrations.M20240430_conversation_deleted
+import Simplex.Chat.Migrations.M20240430_chat_deleted
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -211,7 +211,7 @@ schemaMigrations =
     ("20240313_drop_agent_ack_cmd_id", m20240313_drop_agent_ack_cmd_id, Just down_m20240313_drop_agent_ack_cmd_id),
     ("20240324_custom_data", m20240324_custom_data, Just down_m20240324_custom_data),
     ("20240402_item_forwarded", m20240402_item_forwarded, Just down_m20240402_item_forwarded),
-    ("20240430_conversation_deleted", m20240430_conversation_deleted, Just down_m20240430_conversation_deleted)
+    ("20240430_chat_deleted", m20240430_chat_deleted, Just down_m20240430_chat_deleted)
   ]
 
 -- | The list of migrations in ascending order by date

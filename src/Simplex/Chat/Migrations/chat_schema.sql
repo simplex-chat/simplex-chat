@@ -74,7 +74,7 @@ CREATE TABLE contacts(
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
   custom_data BLOB,
-  conversation_deleted INTEGER NOT NULL DEFAULT 0,
+  chat_deleted INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
