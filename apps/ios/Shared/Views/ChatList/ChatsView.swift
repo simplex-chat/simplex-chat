@@ -1,25 +1,22 @@
 //
-//  ChatListView.swift
-//  SimpleX
+//  ChatsView.swift
+//  SimpleX (iOS)
 //
-//  Created by Evgeny Poberezkin on 27/01/2022.
-//  Copyright © 2022 SimpleX Chat. All rights reserved.
+//  Created by spaced4ndy on 01.05.2024.
+//  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
 import SwiftUI
 import SimpleXChat
 
-struct ChatListView: View {
+struct ChatsView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var showSettings: Bool
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var newChatMenuOption: NewChatMenuOption? = nil
-    @State private var userPickerVisible = false
-    @State private var showConnectDesktop = false
+    @State private var newChatMenuOption: NewChatMenuOption? = nil // TODO remove?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -31,7 +28,7 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
@@ -43,33 +40,16 @@ struct ChatListView: View {
                     if chatModel.chats.isEmpty {
                         onboardingButtons()
                     }
-                    chatListView
+                    chatsView
                 }
             }
-            if userPickerVisible {
-                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
-                    withAnimation {
-                        userPickerVisible.toggle()
-                    }
-                }
-            }
-            UserPicker(
-//                showSettings: $showSettings,
-                homeTab: Binding.constant(.chats),
-                showConnectDesktop: $showConnectDesktop,
-                userPickerVisible: $userPickerVisible
-            )
-        }
-        .sheet(isPresented: $showConnectDesktop) {
-            ConnectDesktopView()
         }
     }
 
-    private var chatListView: some View {
+    private var chatsView: some View {
         VStack {
             chatList
         }
-        .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -90,28 +70,6 @@ struct ChatListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                let user = chatModel.currentUser ?? User.sampleData
-                ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.trailing, 4)
-                    let allRead = chatModel.users
-                        .filter { u in !u.user.activeUser && !u.user.hidden }
-                        .allSatisfy { u in u.unreadCount == 0 }
-                    if !allRead {
-                        unreadBadge(size: 12)
-                    }
-                }
-                .onTapGesture {
-                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    } else {
-                        showSettings = true
-                    }
-                }
-            }
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 4) {
                     Text("Chats")
@@ -121,13 +79,6 @@ struct ChatListView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                switch chatModel.chatRunning {
-                case .some(true): NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
-                case .some(false): chatStoppedIcon()
-                case .none: EmptyView()
-                }
             }
         }
     }
@@ -147,7 +98,7 @@ struct ChatListView: View {
             VStack {
                 List {
                     if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(
+                        ChatsSearchBar(
                             searchMode: $searchMode,
                             searchFocussed: $searchFocussed,
                             searchText: $searchText,
@@ -183,6 +134,7 @@ struct ChatListView: View {
             .foregroundColor(.accentColor)
     }
 
+    // TODO remove?
     private func onboardingButtons() -> some View {
         VStack(alignment: .trailing, spacing: 0) {
             Path { p in
@@ -275,7 +227,7 @@ struct ChatListView: View {
     }
 }
 
-struct ChatListSearchBar: View {
+struct ChatsSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
@@ -342,7 +294,7 @@ struct ChatListSearchBar: View {
         }
         .sheet(isPresented: $showScanCodeSheet) {
             NewChatView(selection: .connect, showQRCodeScanner: true)
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatsView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -390,7 +342,8 @@ struct ChatListSearchBar: View {
     }
 }
 
-func chatStoppedIcon() -> some View {
+// TODO remove
+func chatsStoppedIcon() -> some View {
     Button {
         AlertManager.shared.showAlertMsg(
             title: "Chat is stopped",
@@ -401,7 +354,7 @@ func chatStoppedIcon() -> some View {
     }
 }
 
-struct ChatListView_Previews: PreviewProvider {
+struct ChatsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.chats = [
@@ -420,9 +373,9 @@ struct ChatListView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatListView(showSettings: Binding.constant(false))
+            ChatsView()
                 .environmentObject(chatModel)
-            ChatListView(showSettings: Binding.constant(false))
+            ChatsView()
                 .environmentObject(ChatModel())
         }
     }

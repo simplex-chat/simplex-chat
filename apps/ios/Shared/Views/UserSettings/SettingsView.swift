@@ -154,7 +154,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
-    @Binding var showSettings: Bool
+    @Binding var homeTab: HomeTab
     @State private var showProgress: Bool = false
 
     var body: some View {
@@ -185,7 +185,7 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        UserProfilesView(showSettings: $showSettings)
+                        UserProfilesView(homeTab: $homeTab)
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
@@ -215,7 +215,7 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
+                        MigrateFromDevice(homeTab: $homeTab, showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
@@ -276,7 +276,7 @@ struct SettingsView: View {
                 Section("Help") {
                     if let user = user {
                         NavigationLink {
-                            ChatHelp(showSettings: $showSettings)
+                            ChatHelp(homeTab: $homeTab)
                                 .navigationTitle("Welcome \(user.displayName)!")
                                 .frame(maxHeight: .infinity, alignment: .top)
                         } label: {
@@ -298,7 +298,7 @@ struct SettingsView: View {
                     }
                     settingsRow("number") {
                         Button("Send questions and ideas") {
-                            showSettings = false
+                            homeTab = .chats
                             DispatchQueue.main.async {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
@@ -352,7 +352,7 @@ struct SettingsView: View {
     
     private func chatDatabaseRow() -> some View {
         NavigationLink {
-            DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
+            DatabaseView(homeTab: $homeTab, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
         } label: {
             let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
@@ -446,9 +446,8 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        @State var showSettings = false
 
-        return SettingsView(showSettings: $showSettings)
+        return SettingsView(homeTab: Binding.constant(.chats))
             .environmentObject(chatModel)
     }
 }

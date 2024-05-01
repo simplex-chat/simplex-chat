@@ -9,6 +9,13 @@ import SwiftUI
 import Intents
 import SimpleXChat
 
+enum HomeTab {
+    case settings
+    case contacts
+    case chats
+    case newChat
+}
+
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
@@ -27,7 +34,7 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
-    @State private var showSettings = false
+    @State private var homeTab: HomeTab = .chats
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
@@ -74,7 +81,7 @@ struct ContentView: View {
                 callView(call)
             }
 
-            if !showSettings, let la = chatModel.laRequest {
+            if homeTab != .settings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
                     .onDisappear {
                         // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
@@ -97,9 +104,6 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-        .sheet(isPresented: $showSettings) {
-            SettingsView(showSettings: $showSettings)
-        }
         .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
             Button("System authentication") { initialEnableLA() }
             Button("Passcode entry") { showSetPasscode = true }
@@ -230,7 +234,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
+            HomeView(homeTab: $homeTab).privacySensitive(protectScreen)
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete

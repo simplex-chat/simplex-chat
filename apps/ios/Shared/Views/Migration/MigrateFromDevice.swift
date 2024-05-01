@@ -54,7 +54,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
 struct MigrateFromDevice: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var showSettings: Bool
+    @Binding var homeTab: HomeTab
     @Binding var showProgressOnSettings: Bool
     @State private var migrationState: MigrationFromState = .chatStopInProgress
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
@@ -555,7 +555,7 @@ struct MigrateFromDevice: View {
                     } catch let error {
                         fatalError("Error starting chat \(responseError(error))")
                     }
-                    showSettings = false
+                    homeTab = .chats
                 }
             } catch let error {
                 alert = .error(title: "Error deleting database", error: responseError(error))
@@ -579,7 +579,7 @@ struct MigrateFromDevice: View {
         // Hide settings anyway if chatDbStatus is not ok, probably passphrase needs to be entered
         if dismiss || m.chatDbStatus != .ok {
             await MainActor.run {
-                showSettings = false
+                homeTab = .chats
             }
         }
     }
@@ -729,6 +729,6 @@ private class MigrationChatReceiver {
 
 struct MigrateFromDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateFromDevice(showSettings: Binding.constant(true), showProgressOnSettings: Binding.constant(false))
+        MigrateFromDevice(homeTab: Binding.constant(.chats), showProgressOnSettings: Binding.constant(false))
     }
 }

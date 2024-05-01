@@ -13,7 +13,7 @@ struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.scenePhase) var scenePhase
-    @Binding var showSettings: Bool
+    @Binding var homeTab: HomeTab
     @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
     @State var scrollViewContentSize: CGSize = .zero
@@ -72,7 +72,7 @@ struct UserPicker: View {
                 }
                 Divider()
                 menuButton("Settings", icon: "gearshape") {
-                    showSettings = true
+                    homeTab = .settings
                     withAnimation {
                         userPickerVisible.toggle()
                     }
@@ -106,7 +106,7 @@ struct UserPicker: View {
         let user = u.user
         return Button(action: {
             if user.activeUser {
-                showSettings = true
+                homeTab = .settings
                 withAnimation {
                     userPickerVisible.toggle()
                 }
@@ -181,7 +181,7 @@ struct UserPicker_Previews: PreviewProvider {
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
-            showSettings: Binding.constant(false),
+            homeTab: Binding.constant(.chats),
             showConnectDesktop: Binding.constant(false),
             userPickerVisible: Binding.constant(true)
         )
