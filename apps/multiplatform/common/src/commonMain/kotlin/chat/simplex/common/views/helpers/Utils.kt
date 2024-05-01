@@ -176,9 +176,9 @@ fun getBackgroundImageFromUri(uri: URI, withAlertOnException: Boolean = true): P
   return null
 }
 
-fun getBackgroundImageOrDefault(): ImageBitmap {
-  val type = appPreferences.backgroundImageType.get()
-  val res = if (type.custom) {
+fun getBackgroundImageOrDefault(filename: String? = null): ImageBitmap? {
+  val type = appPreferences.backgroundImageType.get() ?: return null
+  val res = if (type is BackgroundImageType.Static) {
     File(getBackgroundImageFilePath(type.filename)).inputStream().use {
       loadImageBitmap(it)
     }

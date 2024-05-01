@@ -125,7 +125,7 @@ object ThemeManager {
     }
     val overrides = appPrefs.themeOverrides.get().toMutableMap()
     val prevValue = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors())
-    overrides[nonSystemThemeName] = prevValue.withUpdatedColor(name, colorToSet.toReadableHex())
+    overrides[nonSystemThemeName] = prevValue.withUpdatedColor(name, colorToSet?.toReadableHex())
     appPrefs.themeOverrides.set(overrides)
     CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight)
   }

@@ -175,17 +175,17 @@ class AppPreferences {
     json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, settingsThemes)
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
-  private val _backgroundImageType = mkStrPreference(SHARED_PREFS_BACKGROUND_IMAGE, json.encodeToString(BackgroundImageType.default))
-  val backgroundImageType: SharedPreference<BackgroundImageType> = SharedPreference(
-    get = fun(): BackgroundImageType {
-      val value = _backgroundImageType.get() ?: return BackgroundImageType.default
+  private val _backgroundImageType = mkStrPreference(SHARED_PREFS_BACKGROUND_IMAGE, null)
+  val backgroundImageType: SharedPreference<BackgroundImageType?> = SharedPreference(
+    get = fun(): BackgroundImageType? {
+      val value = _backgroundImageType.get() ?: return null
       return try {
         json.decodeFromString(value)
       } catch (e: Throwable) {
-        BackgroundImageType.default
+        null
       }
     },
-    set = fun(type: BackgroundImageType) { _backgroundImageType.set(json.encodeToString(type)) }
+    set = fun(type: BackgroundImageType?) { _backgroundImageType.set(json.encodeToString(type)) }
   )
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)

@@ -9,9 +9,8 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.res.MR
-import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
-import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.serialization.SerialName
@@ -20,13 +19,13 @@ import kotlin.math.*
 
 @Serializable
 enum class PredefinedBackgroundImage(val res: ImageResource, val filename: String, val text: StringResource, val type: BackgroundImageType) {
-  @SerialName("cat") CAT(MR.images.background_cat, "background_cat", MR.strings.background_cat, BackgroundImageType.Repeated(false, "background_cat", 0.5f)),
-  @SerialName("hearts") HEARTS(MR.images.background_hearts, "background_hearts", MR.strings.background_hearts, BackgroundImageType.Repeated(false, "background_hearts", 0.5f)),
-  @SerialName("school") SCHOOL(MR.images.background_school, "background_school", MR.strings.background_school, BackgroundImageType.Repeated(false, "background_school", 0.5f)),
-  @SerialName("internet") INTERNET(MR.images.background_internet, "background_internet", MR.strings.background_internet, BackgroundImageType.Repeated(false, "background_internet", 0.5f)),
-  @SerialName("space") SPACE(MR.images.background_space, "background_space", MR.strings.background_space, BackgroundImageType.Repeated(false, "background_space", 0.5f)),
-  @SerialName("pets") PETS(MR.images.background_pets, "background_pets", MR.strings.background_pets, BackgroundImageType.Repeated(false, "background_pets", 0.5f)),
-  @SerialName("rabbit") RABBIT(MR.images.background_rabbit, "background_rabbit", MR.strings.background_rabbit, BackgroundImageType.Repeated(false, "background_rabbit", 0.5f));
+  @SerialName("cat") CAT(MR.images.background_cat, "simplex_cat", MR.strings.background_cat, BackgroundImageType.Repeated("simplex_cat", 0.5f)),
+  @SerialName("hearts") HEARTS(MR.images.background_hearts, "simplex_hearts", MR.strings.background_hearts, BackgroundImageType.Repeated("simplex_hearts", 0.5f)),
+  @SerialName("school") SCHOOL(MR.images.background_school, "simplex_school", MR.strings.background_school, BackgroundImageType.Repeated("simplex_school", 0.5f)),
+  @SerialName("internet") INTERNET(MR.images.background_internet, "simplex_internet", MR.strings.background_internet, BackgroundImageType.Repeated("simplex_internet", 0.5f)),
+  @SerialName("space") SPACE(MR.images.background_space, "simplex_space", MR.strings.background_space, BackgroundImageType.Repeated("simplex_space", 0.5f)),
+  @SerialName("pets") PETS(MR.images.background_pets, "simplex_pets", MR.strings.background_pets, BackgroundImageType.Repeated("simplex_pets", 0.5f)),
+  @SerialName("rabbit") RABBIT(MR.images.background_rabbit, "simplex_rabbit", MR.strings.background_rabbit, BackgroundImageType.Repeated("simplex_rabbit", 0.5f));
 
   companion object {
     fun from(filename: String): PredefinedBackgroundImage? =
@@ -45,55 +44,24 @@ enum class BackgroundImageScale(val contentScale: ContentScale, val text: String
 
 @Serializable
 sealed class BackgroundImageType {
-  abstract val custom: Boolean
   abstract val filename: String
   @Serializable @SerialName("repeated") data class Repeated(
-    override val custom: Boolean = true,
     override val filename: String,
     val scale: Float,
-    val backgroundColor: String? = null,
-    val tintColor: String? = null
   ): BackgroundImageType()
 
   @Serializable @SerialName("static") data class Static(
-    override val custom: Boolean = true,
     override val filename: String,
     val scale: BackgroundImageScale,
-    val backgroundColor: String? = null,
-    val tintColor: String? = null
   ): BackgroundImageType()
 
-  val background: Color? by lazy {
-    when (this) {
-      is Repeated -> backgroundColor?.colorFromReadableHex()
-      is Static -> backgroundColor?.colorFromReadableHex()
-    }
-  }
+  val background: Color?
+    get() = CurrentColors.value.appColors.wallpaperBackground
 
-  val tint: Color? by lazy {
-    when (this) {
-      is Repeated -> tintColor?.colorFromReadableHex()
-      is Static -> tintColor?.colorFromReadableHex()
-    }
-  }
+  val tint: Color?
+    get() = CurrentColors.value.appColors.wallpaperTint
 
-  fun toPredefined(): PredefinedBackgroundImage? =
-    when (this) {
-      is Repeated -> if (!custom) PredefinedBackgroundImage.from(filename) else null
-      is Static -> if (!custom) PredefinedBackgroundImage.from(filename) else null
-    }
-
-  fun copyBackgroundColor(color: Color?): BackgroundImageType =
-    when (this) {
-      is Repeated -> copy(backgroundColor = color?.toReadableHex())
-      is Static -> copy(backgroundColor = color?.toReadableHex())
-    }
-
-  fun copyTintColor(color: Color?): BackgroundImageType =
-    when (this) {
-      is Repeated -> copy(tintColor = color?.toReadableHex())
-      is Static -> copy(tintColor = color?.toReadableHex())
-    }
+  fun toPredefined(): PredefinedBackgroundImage? = PredefinedBackgroundImage.from(filename)
 
   val defaultBackgroundColor: Color
     @Composable get() = if (this is Static) MaterialTheme.colors.background else MaterialTheme.colors.background
@@ -104,7 +72,7 @@ sealed class BackgroundImageType {
 
   companion object {
     val default: BackgroundImageType =
-      Repeated(custom = false, PredefinedBackgroundImage.CAT.filename, 1f)
+      Repeated(PredefinedBackgroundImage.CAT.filename, 1f)
   }
 }
 

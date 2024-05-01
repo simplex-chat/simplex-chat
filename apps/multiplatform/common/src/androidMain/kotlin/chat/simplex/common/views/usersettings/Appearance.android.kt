@@ -16,12 +16,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -36,6 +38,14 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
+import com.godaddy.android.colorpicker.ClassicColorPicker
+import com.godaddy.android.colorpicker.HsvColor
+import com.smarttoolfactory.colorpicker.model.ColorModel
+import com.smarttoolfactory.colorpicker.picker.*
+import com.smarttoolfactory.colorpicker.selector.SelectorRectHueSaturationHSV
+import com.smarttoolfactory.colorpicker.slider.SliderCircleColorDisplayValueHSV
+import com.smarttoolfactory.colorpicker.widget.ColorDisplayExposedSelectionMenu
+import com.smarttoolfactory.extendedcolors.util.ColorUtil
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay
@@ -151,8 +161,6 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced(maxTopPadding = true)
     ThemesSection(systemDarkTheme, showSettingsModal, editColor)
 
-    SectionDividerSpaced(maxTopPadding = true)
-    BackgroundImageSection(showSettingsModal)
     SectionBottomSpacer()
   }
 }
@@ -175,5 +183,85 @@ fun PreviewAppearanceSettings() {
       showSettingsModal = { {} },
       editColor = { _, _ -> },
     )
+  }
+}
+
+@Composable
+actual fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
+  ColorPickerRectHueSaturationHSV(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(300.dp)
+      .padding(horizontal = DEFAULT_PADDING * 2),
+    initialColor = initialColor,
+    onColorChange = { color: Color, _ ->
+      onColorChanged(color)
+    }
+  )
+}
+
+
+@Composable
+fun ColorPickerRectHueSaturationHSV(
+  modifier: Modifier = Modifier,
+  selectionRadius: Dp = 8.dp,
+  initialColor: Color,
+  onColorChange: (Color, String) -> Unit
+) {
+
+  val hsvArray = ColorUtil.colorToHSV(initialColor)
+
+  var hue by remember { mutableStateOf(hsvArray[0]) }
+  var saturation by remember { mutableStateOf(hsvArray[1]) }
+  var value by remember { mutableStateOf(hsvArray[2]) }
+  var alpha by remember { mutableStateOf(initialColor.alpha) }
+
+  val currentColor =
+    Color.hsv(hue = hue, saturation = saturation, value = value, alpha = alpha)
+
+  var colorModel by remember { mutableStateOf(ColorModel.HSV) }
+
+  onColorChange(currentColor, ColorUtil.colorToHexAlpha(currentColor))
+
+  Column(
+    modifier = modifier,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    SelectorRectHueSaturationHSV(
+      modifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(4 / 3f),
+      hue = hue,
+      saturation = saturation,
+      selectionRadius = selectionRadius,
+      onChange = { h, s ->
+        hue = h
+        saturation = s
+      },
+    )
+
+    Column(modifier = Modifier.padding(8.dp)) {
+      SliderCircleColorDisplayValueHSV(
+        hue = hue,
+        saturation = saturation,
+        value = value,
+        alpha = alpha,
+        onValueChange = {
+          value = it
+        },
+        onAlphaChange = {
+          alpha = it
+        }
+      )
+
+      // Produce crash in runtime. Probably because it relies on old Compose
+      /*ColorDisplayExposedSelectionMenu(
+        color = currentColor,
+        colorModel = colorModel,
+        onColorModelChange = {
+          colorModel = it
+        }
+      )*/
+    }
   }
 }

@@ -9,14 +9,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.defaultLocale
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.ThemeColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
+import com.godaddy.android.colorpicker.ClassicColorPicker
+import com.godaddy.android.colorpicker.HsvColor
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -68,8 +72,18 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced(maxTopPadding = true)
     ThemesSection(systemDarkTheme, showSettingsModal, editColor)
 
-    SectionDividerSpaced(maxTopPadding = true)
-    BackgroundImageSection(showSettingsModal)
     SectionBottomSpacer()
   }
+}
+
+@Composable
+actual fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
+  ClassicColorPicker(modifier = Modifier
+    .fillMaxWidth()
+    .height(300.dp),
+    color = HsvColor.from(color = initialColor), showAlphaBar = true,
+    onColorChanged = { color: HsvColor ->
+      onColorChanged(color.toColor())
+    }
+  )
 }

@@ -1534,6 +1534,8 @@
   <string name="color_title">Title</string>
   <string name="color_sent_message">Sent message</string>
   <string name="color_received_message">Received message</string>
+  <string name="color_wallpaper_background">Wallpaper background</string>
+  <string name="color_wallpaper_tint">Wallpaper tint</string>
 
   <!-- Backgrounds -->
   <string name="background_choose_own_image">Choose…</string>
