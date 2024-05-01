@@ -251,8 +251,8 @@ struct ChatInfoView: View {
                 return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [
-                        .destructive(Text("Delete and notify contact")) { deleteContact(notify: true) },
-                        .destructive(Text("Delete")) { deleteContact(notify: false) },
+                        .destructive(Text("Delete and notify contact")) { deleteContact(chatDeleteMode: .full(notify: true)) },
+                        .destructive(Text("Delete")) { deleteContact(chatDeleteMode: .full(notify: false)) },
                         .cancel()
                     ]
                 )
@@ -260,7 +260,7 @@ struct ChatInfoView: View {
                 return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [
-                        .destructive(Text("Delete")) { deleteContact() },
+                        .destructive(Text("Delete")) { deleteContact(chatDeleteMode: .full(notify: false)) }, // just a default
                         .cancel()
                     ]
                 )
@@ -453,10 +453,10 @@ struct ChatInfoView: View {
         }
     }
 
-    private func deleteContact(notify: Bool? = nil) {
+    private func deleteContact(chatDeleteMode: ChatDeleteMode) {
         Task {
             do {
-                try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, notify: notify)
+                try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatDeleteMode: chatDeleteMode)
                 await MainActor.run {
                     dismiss()
                     chatModel.chatId = nil

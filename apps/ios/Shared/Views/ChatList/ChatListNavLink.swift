@@ -117,8 +117,8 @@ struct ChatListNavLink: View {
                 return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [
-                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat, notify: false) } },
+                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, chatDeleteMode: .full(notify: true)) } },
+                        .destructive(Text("Delete")) { Task { await deleteChat(chat, chatDeleteMode: .full(notify: false)) } },
                         .cancel()
                     ]
                 )
