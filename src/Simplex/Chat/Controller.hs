@@ -816,14 +816,14 @@ data ChatListQuery
   | CLQSearch {search :: String}
   deriving (Show)
 
+clqNoFilters :: ChatListQuery
+clqNoFilters = CLQFilters {favorite = False, unread = False}
+
 data ChatDeleteMode
   = CDMFull {notify :: Bool}   -- delete both contact and conversation
   | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
   | CDMMessages                -- delete conversation, keep contact - can be re-opened from Contacts view
   deriving (Show)
-
-clqNoFilters :: ChatListQuery
-clqNoFilters = CLQFilters {favorite = False, unread = False}
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
