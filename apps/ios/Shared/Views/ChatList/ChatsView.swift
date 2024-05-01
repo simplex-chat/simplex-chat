@@ -28,20 +28,18 @@ struct ChatsView: View {
     }
 
     private var viewBody: some View {
-        ZStack {
-            NavStackCompat(
-                isActive: Binding(
-                    get: { chatModel.chatId != nil },
-                    set: { _ in }
-                ),
-                destination: chatView
-            ) {
-                VStack {
-                    if chatModel.chats.isEmpty {
-                        onboardingButtons()
-                    }
-                    chatsView
+        NavStackCompat(
+            isActive: Binding(
+                get: { chatModel.chatId != nil },
+                set: { _ in }
+            ),
+            destination: chatView
+        ) {
+            VStack {
+                if chatModel.chats.isEmpty {
+                    onboardingButtons()
                 }
+                chatsView
             }
         }
     }
