@@ -167,4 +167,9 @@
     <string name="e2ee_info_pq">پیام‌ها، پرونده‌ها و تماس‌ها به وسیله <b>رمزگذاری سرتاسر مقاوم در برابر کوانتوم</b> با محرمانگی پیشرو، مردودسازی و بازیابی ورود غیرمجاز محافظت شده‌اند.</string>
     <string name="e2ee_info_no_pq_short">این گپ به وسیله رمزگذاری سرتاسر محافظت شده است.</string>
     <string name="e2ee_info_pq_short">این گپ به وسیله رمزگذاری سرتاسر مقاوم در برابر کوانتوم محافظت شده است.</string>
+    <string name="disable_notifications_button">غیرفعال کردن اعلان‌ها</string>
+    <string name="system_restricted_background_desc">SimpleX نمی‌تواند در پس‌زمینه اجرا شود. فقط وقتی برنامه در حال اجراست اعلان‌ها را دریافت خواهید کرد.</string>
+    <string name="periodic_notifications_desc">برنامه پیام‌های جدید را به طور متناوب دریافت می‌کند - درصد معدودی از باتری در روز استفاده می‌کند. برنامه از اعلان‌های رانشی استفاده نمی‌کند - داده‌ای از دستگاه شما به سرورها فرستاده نمی‌شود.</string>
+    <string name="turn_off_battery_optimization_button">اجازه دادن</string>
+    <string name="turn_off_system_restriction_button">باز کردن تنظیمات برنامه</string>
 </resources>
