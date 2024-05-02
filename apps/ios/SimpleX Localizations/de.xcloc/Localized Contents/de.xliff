@@ -4374,8 +4374,9 @@ Fehler: %@</target>
         <target>Profilbild</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile images" xml:space="preserve">
+      <trans-unit id="Profile images" xml:space="preserve" approved="no">
         <source>Profile images</source>
+        <target state="translated">Profil-Bilder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -5198,8 +5199,9 @@ Fehler: %@</target>
         <target>Einstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Shape profile images" xml:space="preserve">
+      <trans-unit id="Shape profile images" xml:space="preserve" approved="no">
         <source>Shape profile images</source>
+        <target state="translated">Form der Profil-Bilder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5367,8 +5369,9 @@ Fehler: %@</target>
         <target>Jemand</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve" approved="no">
         <source>Square, circle, or anything in between.</source>
+        <target state="translated">Quadratisch, kreisförmig oder irgendetwas dazwischen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
@@ -6027,9 +6030,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Verwenden Sie Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use current profile" xml:space="preserve">
+      <trans-unit id="Use current profile" xml:space="preserve" approved="no">
         <source>Use current profile</source>
-        <target>Nutzen Sie das aktuelle Profil</target>
+        <target state="translated">Das aktuelle Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
