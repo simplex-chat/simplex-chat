@@ -382,9 +382,9 @@
         <target>**e2e 暗号化**音声通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
-        <target>**e2e暗号化**ビデオ通話</target>
+        <target state="translated">**エンドツーエンド暗号化済み**の テレビ電話 通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
@@ -432,8 +432,9 @@
         <target>.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="0 sec" xml:space="preserve">
+      <trans-unit id="0 sec" xml:space="preserve" approved="no">
         <source>0 sec</source>
+        <target state="translated">0 秒</target>
         <note>time to disappear</note>
       </trans-unit>
       <trans-unit id="0s" xml:space="preserve">
@@ -682,8 +683,9 @@
         <target>すべての連絡先は維持されます。連絡先に更新されたプロフィールを送信します。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
+        <target state="translated">すべての連絡先、会話、ファイルは安全に暗号化され、設定されたXFTPリレーに分割でアップロードされます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -731,8 +733,9 @@
         <target>送信済みメッセージの永久削除を許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
         <source>Allow to send SimpleX links.</source>
+        <target state="translated">SimpleXリンクの送信を許可。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve">
@@ -785,12 +788,14 @@
         <target>すでに接続済みですか？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Already connecting!" xml:space="preserve">
+      <trans-unit id="Already connecting!" xml:space="preserve" approved="no">
         <source>Already connecting!</source>
+        <target state="translated">既に接続中です！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Already joining the group!" xml:space="preserve">
+      <trans-unit id="Already joining the group!" xml:space="preserve" approved="no">
         <source>Already joining the group!</source>
+        <target state="translated">すでにグループに参加しています！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -813,8 +818,9 @@
         <target>アプリのビルド: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App data migration" xml:space="preserve">
+      <trans-unit id="App data migration" xml:space="preserve" approved="no">
         <source>App data migration</source>
+        <target state="translated">アプリデータの移行</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
