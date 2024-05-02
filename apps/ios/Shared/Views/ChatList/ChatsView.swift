@@ -28,19 +28,11 @@ struct ChatsView: View {
     }
 
     private var viewBody: some View {
-        NavStackCompat(
-            isActive: Binding(
-                get: { chatModel.chatId != nil },
-                set: { _ in }
-            ),
-            destination: chatView
-        ) {
-            VStack {
-                if chatModel.chats.isEmpty {
-                    onboardingButtons()
-                }
-                chatsView
+        VStack {
+            if chatModel.chats.isEmpty {
+                onboardingButtons()
             }
+            chatsView
         }
     }
 
@@ -144,14 +136,6 @@ struct ChatsView: View {
         .background(Color.accentColor)
         .foregroundColor(.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    @ViewBuilder private func chatView() -> some View {
-        if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat).onAppear {
-                loadChat(chat: chat)
-            }
-        }
     }
 
     private func filteredChats() -> [Chat] {

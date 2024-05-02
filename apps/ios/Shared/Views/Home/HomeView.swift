@@ -18,12 +18,35 @@ struct HomeView: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            switch homeTab {
-            case .settings: settingsView()
-            case .contacts: contactsView()
-            case .chats: chatsView()
-            case .newChat: newChatView()
+            NavStackCompat(
+                isActive: Binding(
+                    get: { chatModel.chatId != nil },
+                    set: { _ in }
+                ),
+                destination: chatView
+            ) {
+                VStack {
+                    switch homeTab {
+                    case .settings: settingsView()
+                    case .contacts: contactsView()
+                    case .chats: chatsView()
+                    case .newChat: newChatView()
+                    }
+                }
+                .toolbar {
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        settingsButton()
+                        Spacer()
+                        contactsButton()
+                        Spacer()
+                        chatsButton()
+                        Spacer()
+                        newChatButton()
+                    }
+                }
             }
+            .navigationViewStyle(.stack)
+
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
                     withAnimation {
@@ -36,17 +59,6 @@ struct HomeView: View {
                 showConnectDesktop: $showConnectDesktop,
                 userPickerVisible: $userPickerVisible
             )
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .bottomBar) {
-                settingsButton()
-                Spacer()
-                contactsButton()
-                Spacer()
-                chatsButton()
-                Spacer()
-                newChatButton()
-            }
         }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
@@ -185,6 +197,14 @@ struct HomeView: View {
             AddGroupView()
         case nil:
             EmptyView()
+        }
+    }
+
+    @ViewBuilder private func chatView() -> some View {
+        if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+            ChatView(chat: chat).onAppear {
+                loadChat(chat: chat)
+            }
         }
     }
 }
