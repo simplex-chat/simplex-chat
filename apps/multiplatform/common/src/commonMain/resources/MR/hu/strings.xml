@@ -1387,7 +1387,7 @@
 \n- egyedi eltűnési időhatár.
 \n- előzmény szerkesztése.</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Használat számítógépről</i> menüpontot a mobil alkalmazásban és olvassa be a QR-kódot.]]></string>
-    <string name="sender_at_ts">%s at %s</string>
+    <string name="sender_at_ts">%s ekkor %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsa a <i>Használja az .onion hostokat</i> NEM értékre, ha a SOCKS proxy nem támogatja őket.]]></string>
@@ -1761,4 +1761,7 @@
     <string name="v5_7_forward">Üzenetek továbbítása és mentése</string>
     <string name="v5_7_call_sounds">Bejövő hívás csengőhangja</string>
     <string name="v5_7_forward_descr">Az üzenet forrása titokban marad.</string>
+    <string name="settings_section_title_profile_images">Profilképek</string>
+    <string name="v5_7_shape_profile_images">Profilkép alakzat</string>
+    <string name="v5_7_shape_profile_images_descr">Négyzet, kör vagy bármi a kettő között.</string>
 </resources>
