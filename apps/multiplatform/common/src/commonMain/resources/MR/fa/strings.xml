@@ -156,4 +156,15 @@
 \nممکن است دقایقی زمان ببرد.</string>
     <string name="turn_off_battery_optimization"><![CDATA[برای استفاده از آن، لطفا در دیالوگ بعدی<b>به SimpleX اجازه دهید در پس‌زمینه اجرا شود</b>. در غیر این صورت، اعلان‌ها غیرفعال خواهند شد.]]></string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[برای حفاظت از حریم خصوصیتان، به جای اعلان‌های رانشی، برنامه یک <b>سرویس پس‌زمنیه SimpleX</b> دارد – سرویس، هر روز درصد معدودی از باتری را استفاده می‌کند.]]></string>
+    <string name="saved_description">ذخیره شده</string>
+    <string name="saved_from_description">ذخیره شده از %s</string>
+    <string name="saved_from_chat_item_info_title">ذخیره شده از</string>
+    <string name="forwarded_description">فرستاده شده</string>
+    <string name="e2ee_info_no_pq">پیام‌ها، پرونده‌ها و تماس‌ها به وسیله <b>رمزگذاری سرتاسر</b> با محرمانگی پیشرو، مردودسازی و بازیابی ورود غیرمجاز محافظت شده‌اند.</string>
+    <string name="turning_off_service_and_periodic">بهینه‌سازی باتری فعال است، سرویس پس‌زمینه و درخواست‌های متناوب برای پیام‌های جدید خاموش می‌شوند. می‌توانید آن‌ها را از طریق تنظیمات باز فعال کنید.</string>
+    <string name="periodic_notifications">اعلان‌های متناوب</string>
+    <string name="periodic_notifications_disabled">اعلان‌های متناوب غیرفعالند!</string>
+    <string name="e2ee_info_pq">پیام‌ها، پرونده‌ها و تماس‌ها به وسیله <b>رمزگذاری سرتاسر مقاوم در برابر کوانتوم</b> با محرمانگی پیشرو، مردودسازی و بازیابی ورود غیرمجاز محافظت شده‌اند.</string>
+    <string name="e2ee_info_no_pq_short">این گپ به وسیله رمزگذاری سرتاسر محافظت شده است.</string>
+    <string name="e2ee_info_pq_short">این گپ به وسیله رمزگذاری سرتاسر مقاوم در برابر کوانتوم محافظت شده است.</string>
 </resources>
