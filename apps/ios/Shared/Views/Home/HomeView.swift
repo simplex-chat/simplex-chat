@@ -45,7 +45,6 @@ struct HomeView: View {
                     }
                 }
             }
-            .navigationViewStyle(.stack)
 
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
