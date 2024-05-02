@@ -6,10 +6,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController
-import chat.simplex.common.platform.isInNightMode
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.helpers.*
@@ -17,12 +16,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import chat.simplex.res.MR
+import java.io.File
 
 enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
 
   // Call it only with base theme, not SYSTEM
-  fun hasChangedAnyColor(colors: Colors, appColors: AppColors): Boolean {
+  fun hasChangedAnyColor(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Boolean {
     val palette = when (this) {
       SYSTEM -> return false
       LIGHT -> LightColorPalette
@@ -41,7 +41,9 @@ enum class DefaultTheme {
         colors.secondaryVariant != palette.secondaryVariant ||
         colors.background != palette.background ||
         colors.surface != palette.surface ||
-        appColors != appPalette
+        appColors != appPalette ||
+        appWallpaper.background != null ||
+        appWallpaper.tint != null
   }
 }
 
@@ -49,14 +51,18 @@ data class AppColors(
   val title: Color,
   val sentMessage: Color,
   val receivedMessage: Color,
-  val wallpaperBackground: Color?,
-  val wallpaperTint: Color?,
+)
+
+data class AppWallpaper(
+  val background: Color? = null,
+  val tint: Color? = null,
+  val type: BackgroundImageType? = null
 )
 
 enum class ThemeColor {
   PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, RECEIVED_MESSAGE, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
 
-  fun fromColors(colors: Colors, appColors: AppColors): Color? {
+  fun fromColors(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Color? {
     return when (this) {
       PRIMARY -> colors.primary
       PRIMARY_VARIANT -> colors.primaryVariant
@@ -67,8 +73,8 @@ enum class ThemeColor {
       TITLE -> appColors.title
       SENT_MESSAGE -> appColors.sentMessage
       RECEIVED_MESSAGE -> appColors.receivedMessage
-      WALLPAPER_BACKGROUND -> appColors.wallpaperBackground
-      WALLPAPER_TINT -> appColors.wallpaperTint
+      WALLPAPER_BACKGROUND -> appWallpaper.background
+      WALLPAPER_TINT -> appWallpaper.tint
     }
   }
 
@@ -102,8 +108,6 @@ data class ThemeColors(
   val title: String? = null,
   val sentMessage: String? = null,
   val receivedMessage: String? = null,
-  val wallpaperBackground: String? = null,
-  val wallpaperTint: String? = null,
 ) {
   fun toColors(base: DefaultTheme): Colors {
     val baseColors = when (base) {
@@ -135,8 +139,6 @@ data class ThemeColors(
       title = title?.colorFromReadableHex() ?: baseColors.title,
       sentMessage = sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
       receivedMessage = receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
-      wallpaperBackground = wallpaperBackground?.colorFromReadableHex() ?: baseColors.wallpaperBackground,
-      wallpaperTint = wallpaperTint?.colorFromReadableHex() ?: baseColors.wallpaperTint,
     )
   }
 
@@ -153,16 +155,79 @@ data class ThemeColors(
       title = ac.title.toReadableHex(),
       sentMessage = ac.sentMessage.toReadableHex(),
       receivedMessage = ac.receivedMessage.toReadableHex(),
-      wallpaperBackground = ac.wallpaperBackground?.toReadableHex(),
-      wallpaperTint = ac.wallpaperTint?.toReadableHex(),
     )
+  }
+}
+
+@Serializable
+data class ThemeWallpaper (
+  val preset: String? = null,
+  val scale: Float = 1f,
+  val scaleType: BackgroundImageScaleType? = null,
+  val background: String? = null,
+  val tint: String? = null,
+  val image: String? = null,
+) {
+  fun toAppWallpaper(): AppWallpaper {
+    return AppWallpaper(
+      background = background?.colorFromReadableHex(),
+      tint = tint?.colorFromReadableHex(),
+      type = if (preset != null) {
+        BackgroundImageType.Repeated(filename = preset, scale)
+      } else if (image != null) {
+        BackgroundImageType.Static(
+          filename = image,
+          scale,
+          scaleType ?: BackgroundImageScaleType.FILL
+        )
+      } else
+        null
+    )
+  }
+
+  fun withFilledWallpaper(): ThemeWallpaper {
+    val aw = toAppWallpaper()
+    return ThemeWallpaper(
+      image = if (aw.type is BackgroundImageType.Static) resizeImageToStrSize(aw.type.image, 5_000_000) else null,
+      preset = if (aw.type is BackgroundImageType.Repeated) aw.type.filename else null,
+      scale = if (aw.type is BackgroundImageType.Repeated) aw.type.scale else (aw.type as BackgroundImageType.Static).scale,
+      scaleType = if (aw.type is BackgroundImageType.Static) aw.type.scaleType else null,
+      background = aw.background?.toReadableHex(),
+      tint = aw.tint?.toReadableHex(),
+    )
+  }
+
+ fun import(): ThemeWallpaper =
+   if (preset == null && image != null) {
+     // Need to save image from string and to save its path
+     try {
+       val parsed = base64ToBitmap(image)
+       val filename = saveBackgroundImage(parsed)
+       copy(image = filename)
+     } catch (e: Exception) {
+       ThemeWallpaper()
+     }
+   } else this
+
+  companion object {
+    fun from(type: BackgroundImageType, background: String?, tint: String?): ThemeWallpaper {
+      return ThemeWallpaper(
+        image = if (type is BackgroundImageType.Static) type.filename else null,
+        preset = if (type is BackgroundImageType.Repeated) type.filename else null,
+        scale = if (type is BackgroundImageType.Repeated) type.scale else (type as BackgroundImageType.Static).scale,
+        scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
+        background = background,
+        tint = tint,
+      )
+    }
   }
 }
 
 @Serializable
 data class ThemeOverrides (
   val base: DefaultTheme,
-  val colors: ThemeColors
+  val colors: ThemeColors,
+  val wallpaper: ThemeWallpaper = ThemeWallpaper(),
 ) {
   fun withUpdatedColor(name: ThemeColor, color: String?): ThemeOverrides {
     return copy(colors = when (name) {
@@ -175,9 +240,14 @@ data class ThemeOverrides (
       ThemeColor.TITLE -> colors.copy(title = color)
       ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
       ThemeColor.RECEIVED_MESSAGE -> colors.copy(receivedMessage = color)
-      ThemeColor.WALLPAPER_BACKGROUND -> colors.copy(wallpaperBackground = color)
-      ThemeColor.WALLPAPER_TINT -> colors.copy(wallpaperTint = color)
-    })
+      ThemeColor.WALLPAPER_BACKGROUND -> colors.copy()
+      ThemeColor.WALLPAPER_TINT -> colors.copy()
+    }, wallpaper = when (name) {
+      ThemeColor.WALLPAPER_BACKGROUND -> wallpaper.copy(background = color)
+      ThemeColor.WALLPAPER_TINT -> wallpaper.copy(tint = color)
+      else -> wallpaper.copy()
+    }
+    )
   }
 }
 
@@ -225,8 +295,6 @@ val DarkColorPaletteApp = AppColors(
   title = SimplexBlue,
   sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5),
-  wallpaperBackground = null,
-  wallpaperTint = null,
 )
 
 val LightColorPalette = lightColors(
@@ -246,8 +314,6 @@ val LightColorPaletteApp = AppColors(
   title = SimplexBlue,
   sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5),
-  wallpaperBackground = null,
-  wallpaperTint = null,
 )
 
 val SimplexColorPalette = darkColors(
@@ -268,8 +334,6 @@ val SimplexColorPaletteApp = AppColors(
   title = Color(0xFF267BE5),
   sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5),
-  wallpaperBackground = null,
-  wallpaperTint = null,
 )
 
 val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode()))

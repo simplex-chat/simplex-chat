@@ -597,8 +597,8 @@ fun ChatLayout(
           drawerContentColor = LocalContentColor.current,
           backgroundColor = Color.Unspecified
         ) { contentPadding ->
-          val backgroundImage = remember { chatModel.backgroundImage }.value
-          val backgroundImageType = remember { appPrefs.backgroundImageType.state }.value
+          val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+          val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
           val defaultBackgroundColor = backgroundImageType?.defaultBackgroundColor
           val defaultTintColor = backgroundImageType?.defaultTintColor
           BoxWithConstraints(Modifier

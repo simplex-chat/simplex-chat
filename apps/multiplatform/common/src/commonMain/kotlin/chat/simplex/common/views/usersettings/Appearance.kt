@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
@@ -31,7 +30,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.res.MR
-import com.godaddy.android.colorpicker.*
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.net.URI
@@ -106,8 +104,8 @@ object AppearanceScope {
     ) {
       AppBarTitle(stringResource(MR.strings.choose_background_image_title))
 
-      val backgroundImage = remember { chatModel.backgroundImage }.value
-      val backgroundImageType = remember { appPrefs.backgroundImageType.state }.value
+      val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+      val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
       if (backgroundImage != null && backgroundImageType != null) {
         ChatThemePreview(backgroundImage, backgroundImageType)
 
@@ -123,14 +121,13 @@ object AppearanceScope {
         val imageTypeValues = remember {
           PredefinedBackgroundImage.entries.map { it.filename to generalGetString(it.text) } + ("" to generalGetString(MR.strings.background_choose_own_image))
         }
+        val systemDark = isSystemInDarkTheme()
         val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
           if (to != null) {
-            val res = saveBackgroundImage(to)
-            if (res != null) {
-              val (filename, backgroundImage) = res
+            val filename = saveBackgroundImage(to)
+            if (filename != null) {
               imageTypeState.value = ""
-              chatModel.backgroundImage.value = backgroundImage
-              appPrefs.backgroundImageType.set(BackgroundImageType.Static(filename, BackgroundImageScale.CROP))
+              ThemeManager.saveAndApplyBackgroundImage(BackgroundImageType.Static(filename, 1f, BackgroundImageScaleType.FILL), systemDark)
               removeBackgroundImages(filename)
               resetColors()
             }
@@ -145,8 +142,7 @@ object AppearanceScope {
               withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
             } else {
               imageTypeState.value = filename
-              appPrefs.backgroundImageType.set(PredefinedBackgroundImage.from(filename)!!.type)
-              chatModel.backgroundImage.value = getBackgroundImageOrDefault()
+              ThemeManager.saveAndApplyBackgroundImage(PredefinedBackgroundImage.from(filename)!!.toType(), systemDark)
               removeBackgroundImages()
             }
           }
@@ -159,23 +155,37 @@ object AppearanceScope {
               state.value,
               valueRange = 0.2f..2f,
               onValueChange = {
-                appPrefs.backgroundImageType.set(backgroundImageType.copy(scale = it))
+                ThemeManager.saveAndApplyBackgroundImage(backgroundImageType.copy(scale = it), systemDark)
               }
             )
           }
         } else if (backgroundImageType is BackgroundImageType.Static) {
-          val state = remember(backgroundImageType.scale) { mutableStateOf(backgroundImageType.scale) }
+          val state = remember(backgroundImageType.scaleType) { mutableStateOf(backgroundImageType.scaleType) }
           val values = remember {
-            BackgroundImageScale.entries.map { it to generalGetString(it.text) }
+            BackgroundImageScaleType.entries.map { it to generalGetString(it.text) }
           }
           ExposedDropDownSettingRow(
             stringResource(MR.strings.background_image_scale),
             values,
             state,
-            onSelected = { scale ->
-              appPrefs.backgroundImageType.set(backgroundImageType.copy(scale = scale))
+            onSelected = { scaleType ->
+              ThemeManager.saveAndApplyBackgroundImage(backgroundImageType.copy(scaleType = scaleType), systemDark)
             }
           )
+
+          if (backgroundImageType.scaleType == BackgroundImageScaleType.REPEAT) {
+            val state = remember(backgroundImageType.scale) { mutableStateOf(backgroundImageType.scale) }
+            Row {
+              Text("${state.value}", Modifier.width(50.dp))
+              Slider(
+                state.value,
+                valueRange = 0.2f..2f,
+                onValueChange = {
+                  ThemeManager.saveAndApplyBackgroundImage(backgroundImageType.copy(scale = it), systemDark)
+                }
+              )
+            }
+          }
         }
 
         SectionSpacer()
@@ -245,12 +255,16 @@ object AppearanceScope {
     editColor: (ThemeColor, Color) -> Unit
   ) {
     val currentTheme by CurrentColors.collectAsState()
+    val systemDark = isSystemInDarkTheme()
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
-      val selectedBackground = remember { appPrefs.backgroundImageType.state }.value
+      val selectedBackground = CurrentColors.collectAsState().value.wallpaper.type
       val cornerRadius = remember { appPreferences.profileImageCornerRadius.state }
       fun setBackground(type: BackgroundImageType?) {
-        appPrefs.backgroundImageType.set(type)
-        chatModel.backgroundImage.value = getBackgroundImageOrDefault()
+        if (type is BackgroundImageType.Static) {
+          ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_BACKGROUND, null, systemDark)
+          ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_TINT, null, systemDark)
+        }
+        ThemeManager.saveAndApplyBackgroundImage(type, systemDark)
         removeBackgroundImages(type?.filename)
       }
       @Composable
@@ -272,12 +286,12 @@ object AppearanceScope {
             Modifier
             .size(width, height)
             .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
-            .clickable { setBackground(background?.type) },
+            .clickable { setBackground(background?.toType()) },
             contentAlignment = Alignment.Center
           ) {
             if (background != null) {
               val backgroundImage = remember(background.filename) { PredefinedBackgroundImage.from(background.filename)?.res?.toComposeImageBitmap() }
-              ChatThemePreview(backgroundImage, background.type, withMessages = false)
+              ChatThemePreview(backgroundImage, background.toType(), withMessages = false)
             }
             if ((background == null && selectedBackground == null) || (selectedBackground?.filename == background?.filename)) {
               Checked()
@@ -289,10 +303,9 @@ object AppearanceScope {
         fun OwnBackgroundItem(type: BackgroundImageType?) {
           val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
             if (to != null) {
-              val res = saveBackgroundImage(to)
-              if (res != null) {
-                val (filename, backgroundImage) = res
-                setBackground(BackgroundImageType.Static(filename, BackgroundImageScale.CROP))
+              val filename = saveBackgroundImage(to)
+              if (filename != null) {
+                setBackground(BackgroundImageType.Static(filename, 1f, BackgroundImageScaleType.FILL))
               }
             }
           }
@@ -305,7 +318,7 @@ object AppearanceScope {
               },
             contentAlignment = Alignment.Center
           ) {
-            val backgroundImage = remember { chatModel.backgroundImage }.value
+            val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
             if (type is BackgroundImageType.Static && backgroundImage != null) {
               ChatThemePreview(backgroundImage, type, withMessages = false)
               Checked()
@@ -322,7 +335,7 @@ object AppearanceScope {
           BackgroundItem(background)
         }
         item {
-          OwnBackgroundItem(remember { appPrefs.backgroundImageType.state }.value)
+          OwnBackgroundItem(CurrentColors.collectAsState().value.wallpaper.type)
         }
       }
       if (appPlatform.isDesktop) {
@@ -341,11 +354,11 @@ object AppearanceScope {
       } else {
         LazyHorizontalGrid(
           rows = GridCells.Fixed(1),
-          Modifier.height(70.dp + DEFAULT_PADDING * 2),
+          Modifier.height(120.dp + DEFAULT_PADDING * 2),
           contentPadding = PaddingValues(DEFAULT_PADDING),
           horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
         ) {
-          gridContent(50.dp, 70.dp)
+          gridContent(80.dp, 120.dp)
         }
       }
 
@@ -375,20 +388,20 @@ object AppearanceScope {
 
       AppBarTitle(stringResource(MR.strings.customize_theme_title))
 
-      val backgroundImageType = remember { appPrefs.backgroundImageType.state }.value
-      val backgroundImage = remember { chatModel.backgroundImage }
-      ChatThemePreview(backgroundImage.value, backgroundImageType)
+      val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+      val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
+      ChatThemePreview(backgroundImage, backgroundImageType)
       SectionSpacer()
 
       if (backgroundImageType != null) {
         SectionView(stringResource(MR.strings.settings_section_title_background_image).uppercase()) {
-          val wallpaperBackgroundColor = currentTheme.appColors.wallpaperBackground ?: backgroundImageType.defaultBackgroundColor
+          val wallpaperBackgroundColor = currentTheme.wallpaper.background ?: backgroundImageType.defaultBackgroundColor
             SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND, wallpaperBackgroundColor) }) {
               val title = generalGetString(MR.strings.color_wallpaper_background)
               Text(title)
               Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
             }
-          val wallpaperTintColor = currentTheme.appColors.wallpaperTint ?: backgroundImageType.defaultTintColor
+          val wallpaperTintColor = currentTheme.wallpaper.tint ?: backgroundImageType.defaultTintColor
           SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT, wallpaperTintColor) }) {
             val title = generalGetString(MR.strings.color_wallpaper_tint)
             Text(title)
@@ -446,7 +459,7 @@ object AppearanceScope {
         }
       }
       val isInDarkTheme = isInDarkTheme()
-      if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors)) {
+      if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors, currentTheme.wallpaper)) {
         SectionItemView({ ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme) }) {
           Text(generalGetString(MR.strings.reset_color), color = colors.primary)
         }
@@ -500,9 +513,9 @@ object AppearanceScope {
 
       val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
       if (supportedLiveChange) {
-        val backgroundImageType = remember { appPrefs.backgroundImageType.state }.value
-        val backgroundImage = remember { chatModel.backgroundImage }
-        ChatThemePreview(backgroundImage.value, backgroundImageType)
+        val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+        val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
+        ChatThemePreview(backgroundImage, backgroundImageType)
         SectionSpacer()
       }
 

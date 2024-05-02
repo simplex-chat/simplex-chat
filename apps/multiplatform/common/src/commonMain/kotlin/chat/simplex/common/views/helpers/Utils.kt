@@ -160,34 +160,6 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
-fun getBackgroundImageFromUri(uri: URI, withAlertOnException: Boolean = true): Pair<String, ImageBitmap>? {
-  uri.inputStream().use {
-    runCatching {
-      return uri.toFile().name to loadImageBitmap(it!!)
-    }.onFailure {
-      if (withAlertOnException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.import_background_image_error),
-          text = generalGetString(MR.strings.import_background_image_desc),
-        )
-      }
-    }
-  }
-  return null
-}
-
-fun getBackgroundImageOrDefault(filename: String? = null): ImageBitmap? {
-  val type = appPreferences.backgroundImageType.get() ?: return null
-  val res = if (type is BackgroundImageType.Static) {
-    File(getBackgroundImageFilePath(type.filename)).inputStream().use {
-      loadImageBitmap(it)
-    }
-  } else {
-    PredefinedBackgroundImage.from(type.filename)?.res?.toComposeImageBitmap()
-  }
-  return res ?: BackgroundImageType.default.toPredefined()!!.res.toComposeImageBitmap()!!
-}
-
 fun saveImage(uri: URI): CryptoFile? {
   val bitmap = getBitmapFromUri(uri) ?: return null
   return saveImage(bitmap)
@@ -312,9 +284,9 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
   }
 }
 
-fun saveBackgroundImage(uri: URI): Pair<String, ImageBitmap>? {
-  val res = getBackgroundImageFromUri(uri, true) ?: return null
-  val destFile = File(getBackgroundImageFilePath(res.first))
+fun saveBackgroundImage(uri: URI): String? {
+  val destFileName = generateNewFileName("background", "jpg", File(getBackgroundImageFilePath("")))
+  val destFile = File(getBackgroundImageFilePath(destFileName))
   val inputStream = uri.inputStream()
   try {
     Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -322,9 +294,21 @@ fun saveBackgroundImage(uri: URI): Pair<String, ImageBitmap>? {
     Log.e(TAG, "Error saving background image: ${e.stackTraceToString()}")
     return null
   }
-  return res
+  return destFile.name
 }
 
+fun saveBackgroundImage(image: ImageBitmap): String {
+  val destFileName = generateNewFileName("background", "jpg", File(getBackgroundImageFilePath("")))
+  val destFile = File(getBackgroundImageFilePath(destFileName))
+  val dataResized = resizeImageToDataSize(image, false, maxDataSize = 5_000_000)
+  val output = FileOutputStream(destFile)
+  dataResized.use {
+    it.writeTo(output)
+  }
+  return destFile.name
+}
+
+// TODO: removes all background for all themes. Should remove only unused
 fun removeBackgroundImages(except: String? = null) {
   File(getBackgroundImageFilePath("_")).parentFile.listFiles()?.forEach {
     if (it.name != except) it.delete()

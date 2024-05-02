@@ -1551,11 +1551,9 @@
   <string name="background_image_background_color">Background</string>
   <string name="background_image_tint_color">Tint</string>
   <string name="background_image_scale">Scale</string>
-  <string name="background_image_scale_crop">Crop</string>
+  <string name="background_image_scale_repeat">Repeat</string>
+  <string name="background_image_scale_fill">Fill</string>
   <string name="background_image_scale_fit">Fit</string>
-  <string name="background_image_scale_fill_width">Fill width</string>
-  <string name="background_image_scale_fill_height">Fill height</string>
-  <string name="background_image_scale_fill_bounds">Fill bounds</string>
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>
