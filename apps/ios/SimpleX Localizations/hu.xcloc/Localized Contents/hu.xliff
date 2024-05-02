@@ -97,9 +97,9 @@
         <target state="translated">%@ és %@ kapcsolódott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ at %@:" xml:space="preserve">
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
-        <target>%1$@ %2$@-kor:</target>
+        <target state="translated">%1$@ ekkor: %2$@</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve" approved="no">
@@ -1068,14 +1068,14 @@
         <target>Ismerősök meghívása nem lehetséges!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cancel" xml:space="preserve">
+      <trans-unit id="Cancel" xml:space="preserve" approved="no">
         <source>Cancel</source>
-        <target>Megszakítás</target>
+        <target state="translated">Mégse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cancel migration" xml:space="preserve">
+      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
         <source>Cancel migration</source>
-        <target>Átköltöztetés megszakítása</target>
+        <target state="translated">Átköltöztetés visszavonása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -2568,9 +2568,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Hiba a csevegés elindításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error stopping chat" xml:space="preserve">
+      <trans-unit id="Error stopping chat" xml:space="preserve" approved="no">
         <source>Error stopping chat</source>
-        <target>Hiba a csevegés megszakításakor</target>
+        <target state="translated">Hiba a csevegés megállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -2698,14 +2698,14 @@ Ez a művelet nem vonható vissza!</target>
         <target>A fájl törölve lesz a kiszolgálóról.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>File will be received when your contact completes uploading it.</source>
-        <target>A fájl akkor érkezik meg, amikor ismerőse befejezte annak feltöltést.</target>
+        <target state="translated">A fájl akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>File will be received when your contact is online, please wait or check later!</source>
-        <target>A fájl akkor érkezik meg, amint ismerőse online lesz, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">A fájl akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File: %@" xml:space="preserve">
@@ -3103,14 +3103,14 @@ Ez a művelet nem vonható vissza!</target>
         <target>Figyelmen kívül hagyás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target>A kép akkor érkezik meg, amikor ismerőse befejezte annak feltöltését.</target>
+        <target state="translated">A kép akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>Image will be received when your contact is online, please wait or check later!</source>
-        <target>A kép akkor érkezik meg, amikor ismerős elérhető lesz, várjon vagy ellenőrizze később!</target>
+        <target state="translated">A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
@@ -4007,14 +4007,14 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target state="translated">A kapcsolódáshoz Onion kiszolgálókra lesz szükség. VPN engedélyezése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>Onion host-ok használata, ha azok rendelkezésre állnak. VPN engedélyezése szükséges.</target>
+        <target state="translated">Onion kiszolgálók használata, ha azok rendelkezésre állnak. VPN engedélyezése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will not be used." xml:space="preserve">
+      <trans-unit id="Onion hosts will not be used." xml:space="preserve" approved="no">
         <source>Onion hosts will not be used.</source>
-        <target>Onion host-ok nem lesznek használva.</target>
+        <target state="translated">Onion kiszolgálók nem lesznek használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
@@ -5389,64 +5389,64 @@ Hiba: %@</target>
         <target>Átköltöztetés indítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop" xml:space="preserve">
+      <trans-unit id="Stop" xml:space="preserve" approved="no">
         <source>Stop</source>
-        <target>Megszakítás</target>
+        <target state="translated">Megállítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop SimpleX" xml:space="preserve">
+      <trans-unit id="Stop SimpleX" xml:space="preserve" approved="no">
         <source>Stop SimpleX</source>
-        <target>A SimpleX megszakítása</target>
+        <target state="translated">SimpleX megállítása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Stop chat" xml:space="preserve">
+      <trans-unit id="Stop chat" xml:space="preserve" approved="no">
         <source>Stop chat</source>
-        <target>Csevegési szolgáltatás megszakítása</target>
+        <target state="translated">Csevegési szolgáltatás megállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
+      <trans-unit id="Stop chat to enable database actions" xml:space="preserve" approved="no">
         <source>Stop chat to enable database actions</source>
-        <target>Csevegés megszakítása az adatbázis-műveletek engedélyezéséhez</target>
+        <target state="translated">Csevegés megállítása az adatbázis-műveletek engedélyezéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
+      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
-        <target>A csevegés megszakítása a csevegőadatbázis exportálásához, importálásához vagy törléséhez. A csevegés megszakítása alatt nem tud üzeneteket fogadni és küldeni.</target>
+        <target state="translated">A csevegés megállítása a csevegő adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat?" xml:space="preserve">
+      <trans-unit id="Stop chat?" xml:space="preserve" approved="no">
         <source>Stop chat?</source>
-        <target>Csevegési szolgáltatás megszakítása?</target>
+        <target state="translated">Csevegési szolgáltatás megállítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop file" xml:space="preserve">
+      <trans-unit id="Stop file" xml:space="preserve" approved="no">
         <source>Stop file</source>
-        <target>Fájl megszakítása</target>
+        <target state="translated">Fájl megállítása</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve">
+      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
         <source>Stop receiving file?</source>
-        <target>Fájl fogadás megszakítása?</target>
+        <target state="translated">Fájl fogadás megállítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sending file?" xml:space="preserve">
+      <trans-unit id="Stop sending file?" xml:space="preserve" approved="no">
         <source>Stop sending file?</source>
-        <target>Fájl küldés megszakítása?</target>
+        <target state="translated">Fájl küldés megállítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sharing" xml:space="preserve">
+      <trans-unit id="Stop sharing" xml:space="preserve" approved="no">
         <source>Stop sharing</source>
-        <target>Megosztás megszakítása</target>
+        <target state="translated">Megosztás megállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sharing address?" xml:space="preserve">
+      <trans-unit id="Stop sharing address?" xml:space="preserve" approved="no">
         <source>Stop sharing address?</source>
-        <target>Címmegosztás megszakítása?</target>
+        <target state="translated">Címmegosztás megállítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stopping chat" xml:space="preserve">
+      <trans-unit id="Stopping chat" xml:space="preserve" approved="no">
         <source>Stopping chat</source>
-        <target>Csevegés megszakítása</target>
+        <target state="translated">Csevegés megállítása folyamatban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -5965,9 +5965,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Frissítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
+      <trans-unit id="Update .onion hosts setting?" xml:space="preserve" approved="no">
         <source>Update .onion hosts setting?</source>
-        <target>Tor .onion host beállítások frissítése?</target>
+        <target state="translated">Tor .onion kiszolgálók beállításainak frissítése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update database passphrase" xml:space="preserve">
@@ -6015,9 +6015,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Archívum feltöltése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use .onion hosts" xml:space="preserve">
+      <trans-unit id="Use .onion hosts" xml:space="preserve" approved="no">
         <source>Use .onion hosts</source>
-        <target>Tor .onion hostok használata</target>
+        <target state="translated">Tor .onion kiszolgálók használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -6075,9 +6075,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Felhasználói profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
+      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve" approved="no">
         <source>Using .onion hosts requires compatible VPN provider.</source>
-        <target>A .onion hosztok használatához kompatibilis VPN szolgáltatóra van szükség.</target>
+        <target state="translated">A .onion kiszolgálók használatához kompatibilis VPN szolgáltatóra van szükség.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -6135,14 +6135,14 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Videóhívás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>A videó akkor érkezik meg, amikor az ismerőse befejezte annak feltöltését.</target>
+        <target state="translated">A videó akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>Video will be received when your contact is online, please wait or check later!</source>
-        <target>A videó akkor érkezik meg, amikor az ismerős elérhető, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">A videó akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
@@ -6257,7 +6257,7 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
       </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve" approved="no">
         <source>When people request to connect, you can accept or reject it.</source>
-        <target state="translated">A kapcsolódási kérelmek esetében, elfogadhatja vagy elutasíthatja azokat.</target>
+        <target state="translated">Amikor az emberek kapcsolódást kérelmeznek, ön elfogadhatja vagy elutasíthatja azokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
