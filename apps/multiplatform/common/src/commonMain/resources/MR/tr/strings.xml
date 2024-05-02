@@ -1289,7 +1289,7 @@
     <string name="stop_snd_file__message">Dosya gönderimi durdurulacaktır.</string>
     <string name="moderated_description">yönetildi</string>
     <string name="error_creating_member_contact">Üye bağlantısı oluşturulurken hata</string>
-    <string name="sending_delivery_receipts_will_be_enabled">Tüm kişiler için iletim bilgisi gönderme özelliği etkinleştirilecek</string>
+    <string name="sending_delivery_receipts_will_be_enabled">[Suggested by translate] Tüm kişiler için teslimat makbuzlarının gönderilmesi etkinleştirilecektir.</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="refresh_qr_code">Yenile</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Lütfen unutmayın</b>: mesaj ve dosya yönlendiricileri SOCKS vekili tarafından bağlandı. Aramalar ve bağlantı ön gösterimleri doğrudan bağlantı kullanıyor.]]></string>
@@ -1530,7 +1530,7 @@
     <string name="multicast_discoverable_via_local_network">Yerel ağ üzerinden keşfedilebilir</string>
     <string name="info_row_updated_at">Kayıt güncellendi</string>
     <string name="smp_servers_use_server">Sunucu kullan</string>
-    <string name="share_text_received_at">Şuradan alındı: %s</string>
+    <string name="share_text_received_at">Alınma tarihi: %s</string>
     <string name="add_contact_tab">Kişi Ekle</string>
     <string name="v5_3_discover_join_groups_descr">- dizin hizmetine bağlan
 \n(BETADA!)
