@@ -11,11 +11,16 @@ import SimpleXChat
 
 struct ChatsView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var searchMode = false
-    @FocusState private var searchFocussed
-    @State private var searchText = ""
-    @State private var searchShowingSimplexLink = false
-    @State private var searchChatFilteredBySimplexLink: String? = nil
+
+//    @State private var searchMode = false
+//    @FocusState private var searchFocussed
+//    @State private var searchText = ""
+//    @State private var searchShowingSimplexLink = false
+//    @State private var searchChatFilteredBySimplexLink: String? = nil
+    @Binding var searchText: String
+    @Binding var searchShowingSimplexLink: Bool
+    @Binding var searchChatFilteredBySimplexLink: String?
+
     @State private var newChatMenuOption: NewChatMenuOption? = nil // TODO remove?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
@@ -64,17 +69,17 @@ struct ChatsView: View {
         ZStack {
             VStack {
                 List {
-                    if !chatModel.chats.isEmpty {
-                        ChatsSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                        )
-                        .listRowSeparator(.hidden)
-                        .frame(maxWidth: .infinity)
-                    }
+//                    if !chatModel.chats.isEmpty {
+//                        ChatsSearchBar(
+//                            searchMode: $searchMode,
+//                            searchFocussed: $searchFocussed,
+//                            searchText: $searchText,
+//                            searchShowingSimplexLink: $searchShowingSimplexLink,
+//                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+//                        )
+//                        .listRowSeparator(.hidden)
+//                        .frame(maxWidth: .infinity)
+//                    }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
@@ -252,7 +257,6 @@ struct ChatsSearchBar: View {
                     toggleFilterButton()
                 }
             }
-            Divider()
         }
         .sheet(isPresented: $showScanCodeSheet) {
             NewChatView(selection: .connect, showQRCodeScanner: true)
@@ -345,10 +349,18 @@ struct ChatsView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatsView()
-                .environmentObject(chatModel)
-            ChatsView()
-                .environmentObject(ChatModel())
+            ChatsView(
+                searchText: Binding.constant(""),
+                searchShowingSimplexLink: Binding.constant(false),
+                searchChatFilteredBySimplexLink: Binding.constant(nil)
+            )
+            .environmentObject(chatModel)
+            ChatsView(
+                searchText: Binding.constant(""),
+                searchShowingSimplexLink: Binding.constant(false),
+                searchChatFilteredBySimplexLink: Binding.constant(nil)
+            )
+            .environmentObject(ChatModel())
         }
     }
 }

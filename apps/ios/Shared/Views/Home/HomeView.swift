@@ -16,6 +16,26 @@ struct HomeView: View {
     @State private var showConnectDesktop = false
     @State private var newChatMenuOption: NewChatMenuOption? = nil
 
+    @State private var searchMode = false
+    @FocusState private var searchFocussed
+    @State private var searchText = ""
+    @State private var searchShowingSimplexLink = false
+    @State private var searchChatFilteredBySimplexLink: String? = nil
+
+//    init(homeTab: Binding<HomeTab>) {
+//        // Make the background color of the bottom toolbar fully transparent
+//        let appearance = UIToolbarAppearance()
+//        appearance.configureWithOpaqueBackground()
+//        appearance.shadowColor = .clear
+//        appearance.backgroundColor = .clear
+//        appearance.backgroundImage = UIImage()
+//        UIToolbar.appearance().standardAppearance = appearance
+//        UIToolbar.appearance().compactAppearance = appearance
+//        UIToolbar.appearance().scrollEdgeAppearance = appearance
+//
+//        self._homeTab = homeTab
+//    }
+
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             NavStackCompat(
@@ -25,24 +45,48 @@ struct HomeView: View {
                 ),
                 destination: chatView
             ) {
-                VStack {
-                    switch homeTab {
-                    case .settings: settingsView()
-                    case .contacts: contactsView()
-                    case .chats: chatsView()
-                    case .newChat: newChatView()
+                ZStack {
+                        switch homeTab {
+                        case .settings: settingsView()
+                        case .contacts: contactsView()
+                        case .chats: chatsView()
+                        case .newChat: newChatView()
+                        }
+
+                    VStack {
+                        Spacer()
+                        bottomToolbar()
+                            .background(BlurView(style: .systemMaterial).ignoresSafeArea())
                     }
-                }
-                .toolbar {
-                    ToolbarItemGroup(placement: .bottomBar) {
-                        settingsButton()
-                        Spacer()
-                        contactsButton()
-                        Spacer()
-                        chatsButton()
-                        Spacer()
-                        newChatButton()
-                    }
+
+//                    .toolbar {
+//                        ToolbarItemGroup(placement: .bottomBar) {
+//                            settingsButton()
+//                            Spacer()
+//                            contactsButton()
+//                            Spacer()
+//                            chatsButton()
+//                            Spacer()
+//                            newChatButton()
+//                        }
+//                    }
+//
+//                    if homeTab == .chats {
+//                        VStack {
+//                            Spacer()
+//                            ChatsSearchBar(
+//                                searchMode: $searchMode,
+//                                searchFocussed: $searchFocussed,
+//                                searchText: $searchText,
+//                                searchShowingSimplexLink: $searchShowingSimplexLink,
+//                                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+//                            )
+//                            .padding(.horizontal)
+//                            .padding(.top, 8)
+//                            .background(BlurView(style: .systemMaterial))
+//                        }
+//                    }
+
                 }
             }
 
@@ -61,6 +105,40 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
+        }
+    }
+
+    private func bottomToolbar() -> some View {
+        VStack {
+            if homeTab == .chats {
+                ChatsSearchBar(
+                    searchMode: $searchMode,
+                    searchFocussed: $searchFocussed,
+                    searchText: $searchText,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                )
+                .padding(.horizontal)
+                .padding(.top, 8)
+            }
+
+            Spacer()
+                .frame(height: 8)
+
+            if !searchFocussed {
+                HStack {
+                    settingsButton()
+                    Spacer()
+                    contactsButton()
+                    Spacer()
+                    chatsButton()
+                    Spacer()
+                    newChatButton()
+                }
+                .padding(.horizontal, 12)
+                .padding(.horizontal)
+                .frame(maxWidth: .infinity)
+            }
         }
     }
 
@@ -88,11 +166,10 @@ struct HomeView: View {
                     }
                 }
             } else {
-                VStack(spacing: 4) {
-                    Image(systemName: multiUser ? "person.2.fill" : "gearshape.fill")
-                    Text("Users")
-                        .font(.caption)
-                }
+                iconLabel(
+                    multiUser ? "person.2.fill" : "gearshape.fill",
+                    multiUser ? "Users" : "Settings"
+                )
             }
         }
         .foregroundColor(homeTab == .settings ? .accentColor : .secondary)
@@ -108,11 +185,7 @@ struct HomeView: View {
         Button {
             homeTab = .contacts
         } label: {
-            VStack(spacing: 4) {
-                Image(systemName: "person.crop.circle.fill")
-                Text("Contacts")
-                    .font(.caption)
-            }
+            iconLabel("person.crop.circle.fill", "Contacts")
         }
         .foregroundColor(homeTab == .contacts ? .accentColor : .secondary)
     }
@@ -121,11 +194,7 @@ struct HomeView: View {
         Button {
             homeTab = .chats
         } label: {
-            VStack(spacing: 4) {
-                Image(systemName: "message.fill")
-                Text("Chats")
-                    .font(.caption)
-            }
+            iconLabel("message.fill", "Chats")
         }
         .foregroundColor(homeTab == .chats ? .accentColor : .secondary)
     }
@@ -146,21 +215,24 @@ struct HomeView: View {
                     Text("Create group")
                 }
             } label: {
-                newChatButtonLabel()
+                iconLabel("square.and.pencil", "New chat")
             }
             .foregroundColor(.secondary)
         } else {
             Button {} label: {
-                newChatButtonLabel()
+                iconLabel("square.and.pencil", "New chat")
             }
             .foregroundColor(.accentColor)
         }
     }
 
-    private func newChatButtonLabel() -> some View {
+    private func iconLabel(_ image: String, _ title: LocalizedStringKey) -> some View {
         VStack(spacing: 4) {
-            Image(systemName: "square.and.pencil")
-            Text("New chat")
+            Image(systemName: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+            Text(title)
                 .font(.caption)
         }
     }
@@ -177,10 +249,12 @@ struct HomeView: View {
     }
 
     private func chatsView() -> some View {
-        // TODO remove top bar, move search to bottom
-        // TODO hide toolbar when in chat
         // TODO onboarding buttons (remove?)
-        ChatsView()
+        ChatsView(
+            searchText: $searchText,
+            searchShowingSimplexLink: $searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+        )
     }
 
     @ViewBuilder private func newChatView() -> some View {
@@ -206,6 +280,17 @@ struct HomeView: View {
             }
         }
     }
+}
+
+struct BlurView: UIViewRepresentable {
+    let style: UIBlurEffect.Style
+
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: UIBlurEffect(style: style))
+        return view
+    }
+
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 
 #Preview {
