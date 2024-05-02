@@ -65,29 +65,6 @@ struct ChatsView: View {
             ))
         }
         .listStyle(.plain)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(searchMode)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 4) {
-                    Text("Chats")
-                        .font(.headline)
-                    if chatModel.chats.count > 0 {
-                        toggleFilterButton()
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
-        }
-    }
-
-    private func toggleFilterButton() -> some View {
-        Button {
-            showUnreadAndFavorites = !showUnreadAndFavorites
-        } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .foregroundColor(.accentColor)
-        }
     }
 
     @ViewBuilder private var chatList: some View {
@@ -236,6 +213,7 @@ struct ChatsSearchBar: View {
     @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -286,6 +264,8 @@ struct ChatsSearchBar: View {
                             searchText = ""
                             searchFocussed = false
                         }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
                 }
             }
             Divider()
@@ -325,6 +305,16 @@ struct ChatsSearchBar: View {
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
         }
+    }
+
+    private func toggleFilterButton() -> some View {
+        Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+            .resizable()
+            .foregroundColor(.accentColor)
+            .frame(width: 20, height: 20)
+            .onTapGesture {
+                showUnreadAndFavorites = !showUnreadAndFavorites
+            }
     }
 
     private func connect(_ link: String) {
