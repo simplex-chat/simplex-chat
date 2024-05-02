@@ -377,9 +377,9 @@
         <target>**警告**: アーカイブデータは削除されます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target>**e2e 暗号化**音声通話</target>
+        <target state="translated">**エンドツーエンド暗号化済み**の音声通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
