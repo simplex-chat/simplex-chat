@@ -4374,8 +4374,9 @@ Fout: %@</target>
         <target>profielfoto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile images" xml:space="preserve">
+      <trans-unit id="Profile images" xml:space="preserve" approved="no">
         <source>Profile images</source>
+        <target state="translated">Profiel afbeeldingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -5198,8 +5199,9 @@ Fout: %@</target>
         <target>Instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Shape profile images" xml:space="preserve">
+      <trans-unit id="Shape profile images" xml:space="preserve" approved="no">
         <source>Shape profile images</source>
+        <target state="translated">Vorm profiel afbeeldingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5367,8 +5369,9 @@ Fout: %@</target>
         <target>Iemand</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve" approved="no">
         <source>Square, circle, or anything in between.</source>
+        <target state="translated">Vierkant, cirkel of iets daartussenin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
