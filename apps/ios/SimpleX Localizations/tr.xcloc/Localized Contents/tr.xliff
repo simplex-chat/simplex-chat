@@ -4374,8 +4374,9 @@ Hata: %@</target>
         <target>Profil fotoğrafı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile images" xml:space="preserve">
+      <trans-unit id="Profile images" xml:space="preserve" approved="no">
         <source>Profile images</source>
+        <target state="translated">Profil resimleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -5198,8 +5199,9 @@ Hata: %@</target>
         <target>Ayarlar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Shape profile images" xml:space="preserve">
+      <trans-unit id="Shape profile images" xml:space="preserve" approved="no">
         <source>Shape profile images</source>
+        <target state="translated">Profil resimlerini şekillendir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5367,8 +5369,9 @@ Hata: %@</target>
         <target>Biri</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve" approved="no">
         <source>Square, circle, or anything in between.</source>
+        <target state="translated">Kare,daire, veya aralarında herhangi birşey.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
