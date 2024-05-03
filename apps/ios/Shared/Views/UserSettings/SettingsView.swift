@@ -46,8 +46,7 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
-let DEFAULT_SEARCH_IN_BOTTOM = "searchInBottom"
-let DEFAULT_CHAT_LIST_REVERSED = "chatListReversed"
+let DEFAULT_ONE_HAND_UI = "oneHandUI"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -91,8 +90,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
-    DEFAULT_SEARCH_IN_BOTTOM: false,
-    DEFAULT_CHAT_LIST_REVERSED: false,
+    DEFAULT_ONE_HAND_UI: true,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,

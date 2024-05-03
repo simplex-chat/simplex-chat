@@ -12,19 +12,15 @@ import SimpleXChat
 struct ChatsView: View {
     @EnvironmentObject var chatModel: ChatModel
 
-//    @State private var searchMode = false
-//    @FocusState private var searchFocussed
-//    @State private var searchText = ""
-//    @State private var searchShowingSimplexLink = false
-//    @State private var searchChatFilteredBySimplexLink: String? = nil
-    @Binding var searchText: String
-    @Binding var searchShowingSimplexLink: Bool
-    @Binding var searchChatFilteredBySimplexLink: String?
+    @State private var searchMode = false
+    @FocusState private var searchFocussed
+    @State private var searchText = ""
+    @State private var searchShowingSimplexLink = false
+    @State private var searchChatFilteredBySimplexLink: String? = nil
 
     @State private var newChatMenuOption: NewChatMenuOption? = nil // TODO remove?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @AppStorage(DEFAULT_SEARCH_IN_BOTTOM) private var searchInBottom = false
-    @AppStorage(DEFAULT_CHAT_LIST_REVERSED) private var chatListReversed = false
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -40,6 +36,7 @@ struct ChatsView: View {
                 onboardingButtons()
             }
             chatsView
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         }
     }
 
@@ -67,38 +64,29 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private var chatList: some View {
-        let cs = chatListReversed ? filteredChats().reversed() : filteredChats()
+        let cs = filteredChats()
         ZStack {
             VStack {
                 List {
-//                    if !chatModel.chats.isEmpty {
-//                        ChatsSearchBar(
-//                            searchMode: $searchMode,
-//                            searchFocussed: $searchFocussed,
-//                            searchText: $searchText,
-//                            searchShowingSimplexLink: $searchShowingSimplexLink,
-//                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-//                        )
-//                        .listRowSeparator(.hidden)
-//                        .frame(maxWidth: .infinity)
-//                    }
-
-                    if !searchInBottom {
-                        Color.clear
-                            .listRowSeparator(.hidden)
-                            .frame(height: 40) // account for topToolbar height
+                    if !chatModel.chats.isEmpty {
+                        ChatsSearchBar(
+                            searchMode: $searchMode,
+                            searchFocussed: $searchFocussed,
+                            searchText: $searchText,
+                            searchShowingSimplexLink: $searchShowingSimplexLink,
+                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                        )
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .listRowSeparator(.hidden)
+                        .frame(maxWidth: .infinity)
                     }
-
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
                     .offset(x: -8)
-
-                    Color.clear
-                        .listRowSeparator(.hidden)
-                        .frame(height: searchInBottom ? 80 : 40) // account for bottomToolbar height
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -267,11 +255,6 @@ struct ChatsSearchBar: View {
                             searchFocussed = false
                         }
                 } else if m.chats.count > 0 {
-//                    Text("Filter")
-//                        .foregroundColor(.accentColor)
-//                        .onTapGesture {
-//                            showUnreadAndFavorites = !showUnreadAndFavorites
-//                        }
                     toggleFilterButton()
                 }
             }
@@ -373,18 +356,10 @@ struct ChatsView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatsView(
-                searchText: Binding.constant(""),
-                searchShowingSimplexLink: Binding.constant(false),
-                searchChatFilteredBySimplexLink: Binding.constant(nil)
-            )
-            .environmentObject(chatModel)
-            ChatsView(
-                searchText: Binding.constant(""),
-                searchShowingSimplexLink: Binding.constant(false),
-                searchChatFilteredBySimplexLink: Binding.constant(nil)
-            )
-            .environmentObject(ChatModel())
+            ChatsView()
+                .environmentObject(chatModel)
+            ChatsView()
+                .environmentObject(ChatModel())
         }
     }
 }

@@ -16,27 +16,21 @@ struct HomeView: View {
     @State private var showConnectDesktop = false
     @State private var newChatMenuOption: NewChatMenuOption? = nil
 
-    @State private var searchMode = false
-    @FocusState private var searchFocussed
-    @State private var searchText = ""
-    @State private var searchShowingSimplexLink = false
-    @State private var searchChatFilteredBySimplexLink: String? = nil
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
-    @AppStorage(DEFAULT_SEARCH_IN_BOTTOM) private var searchInBottom = false
-
-//    init(homeTab: Binding<HomeTab>) {
-//        // Make the background color of the bottom toolbar fully transparent
-//        let appearance = UIToolbarAppearance()
-//        appearance.configureWithOpaqueBackground()
-//        appearance.shadowColor = .clear
-//        appearance.backgroundColor = .clear
-//        appearance.backgroundImage = UIImage()
-//        UIToolbar.appearance().standardAppearance = appearance
-//        UIToolbar.appearance().compactAppearance = appearance
-//        UIToolbar.appearance().scrollEdgeAppearance = appearance
-//
-//        self._homeTab = homeTab
-//    }
+    //    init(homeTab: Binding<HomeTab>) {
+    //        // Make the background color of the bottom toolbar fully transparent
+    //        let appearance = UIToolbarAppearance()
+    //        appearance.configureWithOpaqueBackground()
+    //        appearance.shadowColor = .clear
+    //        appearance.backgroundColor = .clear
+    //        appearance.backgroundImage = UIImage()
+    //        UIToolbar.appearance().standardAppearance = appearance
+    //        UIToolbar.appearance().compactAppearance = appearance
+    //        UIToolbar.appearance().scrollEdgeAppearance = appearance
+    //
+    //        self._homeTab = homeTab
+    //    }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -47,38 +41,34 @@ struct HomeView: View {
                 ),
                 destination: chatView
             ) {
-                ZStack {
+//                ZStack {
+                VStack {
                     switch homeTab {
                     case .settings: settingsView()
                     case .contacts: contactsView()
                     case .chats: chatsView()
                     case .newChat: newChatView()
                     }
-
-                    VStack {
-                        topToolbar()
-                            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
+                }
+                .toolbar {
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        settingsButton()
                         Spacer()
-                    }
-
-                    VStack {
+                        contactsButton()
                         Spacer()
-                        bottomToolbar()
-                            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
+                        chatsButton()
+                        Spacer()
+                        newChatButton()
                     }
+                }
 
-//                    .toolbar {
-//                        ToolbarItemGroup(placement: .bottomBar) {
-//                            settingsButton()
-//                            Spacer()
-//                            contactsButton()
-//                            Spacer()
-//                            chatsButton()
-//                            Spacer()
-//                            newChatButton()
-//                        }
+//                    VStack {
+//                        Spacer()
+//                        bottomToolbar()
+//                            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
 //                    }
-//
+//                }
+
 //                    if homeTab == .chats {
 //                        VStack {
 //                            Spacer()
@@ -95,7 +85,6 @@ struct HomeView: View {
 //                        }
 //                    }
 
-                }
             }
 
             if userPickerVisible {
@@ -116,50 +105,19 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder private func topToolbar() -> some View {
-        if !searchInBottom, homeTab == .chats {
-            chatsSearch()
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-        }
-    }
-
     private func bottomToolbar() -> some View {
-        VStack {
-            if searchInBottom, homeTab == .chats {
-                chatsSearch()
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-            }
-
+        HStack {
+            settingsButton()
             Spacer()
-                .frame(height: 8)
-
-            if !searchFocussed {
-                HStack {
-                    settingsButton()
-                    Spacer()
-                    contactsButton()
-                    Spacer()
-                    chatsButton()
-                    Spacer()
-                    newChatButton()
-                }
-                .padding(.horizontal, 12)
-                .padding(.horizontal)
-                .frame(maxWidth: .infinity)
-            }
+            contactsButton()
+            Spacer()
+            chatsButton()
+            Spacer()
+            newChatButton()
         }
-    }
-
-    private func chatsSearch() -> some View {
-        ChatsSearchBar(
-            searchMode: $searchMode,
-            searchFocussed: $searchFocussed,
-            searchText: $searchText,
-            searchShowingSimplexLink: $searchShowingSimplexLink,
-            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-        )
+        .padding(.horizontal, 12)
+        .padding(.horizontal)
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder private func settingsButton() -> some View {
@@ -268,15 +226,16 @@ struct HomeView: View {
         }
     }
 
-    private func chatsView() -> some View {
+    @ViewBuilder private func chatsView() -> some View {
         // TODO onboarding buttons (remove?)
         // TODO for reversed chat list start at bottom
-        ChatsView(
-            searchText: $searchText,
-            searchShowingSimplexLink: $searchShowingSimplexLink,
-            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-        )
-        .padding(.top, 5)
+        if oneHandUI {
+            ChatsView()
+                .padding(.vertical, 5)
+        } else {
+            ChatsView()
+                .padding(.top, 5)
+        }
     }
 
     @ViewBuilder private func newChatView() -> some View {
