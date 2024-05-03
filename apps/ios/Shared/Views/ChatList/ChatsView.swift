@@ -254,6 +254,11 @@ struct ChatsSearchBar: View {
                             searchFocussed = false
                         }
                 } else if m.chats.count > 0 {
+//                    Text("Filter")
+//                        .foregroundColor(.accentColor)
+//                        .onTapGesture {
+//                            showUnreadAndFavorites = !showUnreadAndFavorites
+//                        }
                     toggleFilterButton()
                 }
             }
@@ -296,13 +301,16 @@ struct ChatsSearchBar: View {
     }
 
     private func toggleFilterButton() -> some View {
-        Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-            .resizable()
-            .foregroundColor(.accentColor)
-            .frame(width: 20, height: 20)
-            .onTapGesture {
-                showUnreadAndFavorites = !showUnreadAndFavorites
+        Button {
+            showUnreadAndFavorites = !showUnreadAndFavorites
+        } label: {
+            ZStack {
+                Color.clear
+                    .frame(width: 30, height: 30)
+                Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+                    .foregroundColor(.accentColor)
             }
+        }
     }
 
     private func connect(_ link: String) {
