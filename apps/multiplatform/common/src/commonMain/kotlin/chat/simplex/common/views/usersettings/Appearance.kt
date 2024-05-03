@@ -370,7 +370,7 @@ object AppearanceScope {
     onColorChange: (Color) -> Unit,
     close: () -> Unit,
   ) {
-    Column(
+    ColumnWithScrollBar(
       Modifier
         .fillMaxWidth()
     ) {
