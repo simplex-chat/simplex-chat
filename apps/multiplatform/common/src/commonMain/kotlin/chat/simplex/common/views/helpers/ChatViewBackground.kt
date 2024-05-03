@@ -10,8 +10,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -27,35 +26,95 @@ enum class PredefinedBackgroundImage(
   val text: StringResource,
   val scale: Float,
   val background: Map<DefaultTheme, Color>,
-  val tint: Map<DefaultTheme, Color>
+  val tint: Map<DefaultTheme, Color>,
+  val colors: Map<DefaultTheme, ThemeColors>,
 ) {
   @SerialName("cat") CAT(MR.images.background_cat, "simplex_cat", MR.strings.background_cat, 0.5f,
     mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+       primary = "#ff000000"
+      ),
+      DefaultTheme.DARK to ThemeColors(
+        primary = "#ff000000"
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+        primary = "#ff000000"
+      )
+    )
   ),
   @SerialName("hearts") HEARTS(MR.images.background_hearts, "simplex_hearts", MR.strings.background_hearts, 0.5f,
     mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
   ),
   @SerialName("school") SCHOOL(MR.images.background_school, "simplex_school",  MR.strings.background_school, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
   ),
   @SerialName("internet") INTERNET(MR.images.background_internet, "simplex_internet", MR.strings.background_internet, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
   ),
   @SerialName("space") SPACE(MR.images.background_space, "simplex_space", MR.strings.background_space, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
   ),
   @SerialName("pets") PETS(MR.images.background_pets, "simplex_pets", MR.strings.background_pets, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
   ),
   @SerialName("rabbit") RABBIT(MR.images.background_rabbit, "simplex_rabbit", MR.strings.background_rabbit, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue)
+  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
   );
 
   fun toType(): BackgroundImageType =

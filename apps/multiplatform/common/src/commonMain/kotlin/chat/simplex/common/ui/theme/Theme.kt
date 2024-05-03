@@ -108,7 +108,7 @@ data class ThemeColors(
   val sentMessage: String? = null,
   val receivedMessage: String? = null,
 ) {
-  fun toColors(base: DefaultTheme): Colors {
+  fun toColors(base: DefaultTheme, backgroundTheme: ThemeColors?): Colors {
     val baseColors = when (base) {
       DefaultTheme.LIGHT -> LightColorPalette
       DefaultTheme.DARK -> DarkColorPalette
@@ -117,16 +117,16 @@ data class ThemeColors(
       DefaultTheme.SYSTEM -> LightColorPalette
     }
     return baseColors.copy(
-      primary = primary?.colorFromReadableHex() ?: baseColors.primary,
-      primaryVariant = primaryVariant?.colorFromReadableHex() ?: baseColors.primaryVariant,
-      secondary = secondary?.colorFromReadableHex() ?: baseColors.secondary,
-      secondaryVariant = secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
-      background = background?.colorFromReadableHex() ?: baseColors.background,
-      surface = surface?.colorFromReadableHex() ?: baseColors.surface,
+      primary = primary?.colorFromReadableHex() ?: backgroundTheme?.primary?.colorFromReadableHex() ?: baseColors.primary,
+      primaryVariant = primaryVariant?.colorFromReadableHex() ?: backgroundTheme?.primaryVariant?.colorFromReadableHex() ?: baseColors.primaryVariant,
+      secondary = secondary?.colorFromReadableHex() ?: backgroundTheme?.secondary?.colorFromReadableHex() ?: baseColors.secondary,
+      secondaryVariant = secondaryVariant?.colorFromReadableHex() ?: backgroundTheme?.secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
+      background = background?.colorFromReadableHex() ?: backgroundTheme?.background?.colorFromReadableHex() ?: baseColors.background,
+      surface = surface?.colorFromReadableHex() ?: backgroundTheme?.surface?.colorFromReadableHex() ?: baseColors.surface,
     )
   }
 
-  fun toAppColors(base: DefaultTheme): AppColors {
+  fun toAppColors(base: DefaultTheme, backgroundTheme: ThemeColors?): AppColors {
     val baseColors = when (base) {
       DefaultTheme.LIGHT -> LightColorPaletteApp
       DefaultTheme.DARK -> DarkColorPaletteApp
@@ -135,15 +135,15 @@ data class ThemeColors(
       DefaultTheme.SYSTEM -> LightColorPaletteApp
     }
     return baseColors.copy(
-      title = title?.colorFromReadableHex() ?: baseColors.title,
-      sentMessage = sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
-      receivedMessage = receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
+      title = title?.colorFromReadableHex() ?: backgroundTheme?.title?.colorFromReadableHex() ?: baseColors.title,
+      sentMessage = sentMessage?.colorFromReadableHex() ?: backgroundTheme?.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
+      receivedMessage = receivedMessage?.colorFromReadableHex() ?: backgroundTheme?.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
     )
   }
 
-  fun withFilledColors(base: DefaultTheme): ThemeColors {
-    val c = toColors(base)
-    val ac = toAppColors(base)
+  fun withFilledColors(base: DefaultTheme, backgroundTheme: ThemeColors?): ThemeColors {
+    val c = toColors(base, backgroundTheme)
+    val ac = toAppColors(base, backgroundTheme)
     return ThemeColors(
       primary = c.primary.toReadableHex(),
       primaryVariant = c.primaryVariant.toReadableHex(),

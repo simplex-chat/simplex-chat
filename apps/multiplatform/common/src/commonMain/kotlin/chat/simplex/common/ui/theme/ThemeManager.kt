@@ -7,8 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
 import chat.simplex.common.platform.platform
-import chat.simplex.common.views.helpers.BackgroundImageType
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 
 // https://github.com/rsms/inter
 // I place it here because IDEA shows an error (but still works anyway) when this declaration inside Type.kt
@@ -45,7 +44,8 @@ object ThemeManager {
     if (theme == null) {
       return ActiveTheme(themeName, baseTheme.first, baseTheme.second, baseTheme.third, AppWallpaper())
     }
-    return ActiveTheme(themeName, baseTheme.first, theme.colors.toColors(theme.base), theme.colors.toAppColors(theme.base), theme.wallpaper.toAppWallpaper())
+    val backgroundTheme = if (theme.wallpaper.preset != null) PredefinedBackgroundImage.from(theme.wallpaper.preset)?.colors?.get(theme.base) else null
+    return ActiveTheme(themeName, baseTheme.first, theme.colors.toColors(theme.base, backgroundTheme), theme.colors.toAppColors(theme.base, backgroundTheme), theme.wallpaper.toAppWallpaper())
   }
 
   fun currentThemeOverridesForExport(darkForSystemTheme: Boolean): ThemeOverrides {
@@ -57,7 +57,8 @@ object ThemeManager {
     }
     val overrides = appPrefs.themeOverrides.get().toMutableMap()
     val nonFilledTheme = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(), wallpaper = ThemeWallpaper())
-    return nonFilledTheme.copy(colors = nonFilledTheme.colors.withFilledColors(CurrentColors.value.base), wallpaper = nonFilledTheme.wallpaper.withFilledWallpaper())
+    val backgroundTheme = if (nonFilledTheme.wallpaper.preset != null) PredefinedBackgroundImage.from(nonFilledTheme.wallpaper.preset)?.colors?.get(nonFilledTheme.base) else null
+    return nonFilledTheme.copy(colors = nonFilledTheme.colors.withFilledColors(CurrentColors.value.base, backgroundTheme), wallpaper = nonFilledTheme.wallpaper.withFilledWallpaper())
   }
 
   // colors, default theme enum, localized name of theme
