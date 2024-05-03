@@ -113,7 +113,7 @@ object AppearanceScope {
     val systemDark = isSystemInDarkTheme()
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       val selectedBackground = CurrentColors.collectAsState().value.wallpaper.type
-      val cornerRadius = remember { appPreferences.profileImageCornerRadius.state }
+      val cornerRadius = 22
       fun setBackground(type: BackgroundImageType?) {
         if (type is BackgroundImageType.Static || CurrentColors.value.wallpaper.type is BackgroundImageType.Static) {
           ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_BACKGROUND, null, systemDark)
@@ -122,11 +122,7 @@ object AppearanceScope {
         ThemeManager.saveAndApplyBackgroundImage(type, systemDark)
         removeBackgroundImages(type?.filename)
       }
-      @Composable
-      fun Checked() {
-        Box(Modifier.size(40.dp).background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.9f), RoundedCornerShape(cornerRadius.value.roundToInt())))
-        Icon(painterResource(MR.images.ic_check_filled), null, Modifier.size(25.dp), tint = MaterialTheme.colors.primary)
-      }
+
       @Composable
       fun Plus() {
         Icon(painterResource(MR.images.ic_add), null, Modifier.size(25.dp), tint = MaterialTheme.colors.primary)
@@ -142,17 +138,14 @@ object AppearanceScope {
             Modifier
             .size(width, height)
             .background(MaterialTheme.colors.background)
-            .clip(RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
-            .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
+            .clip(RoundedCornerShape(percent = cornerRadius))
+            .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable { setBackground(background?.toType()) },
             contentAlignment = Alignment.Center
           ) {
             if (background != null) {
               val backgroundImage = remember(background.filename) { PredefinedBackgroundImage.from(background.filename)?.res?.toComposeImageBitmap() }
               ChatThemePreview(CurrentColors.value.base, backgroundImage, background.toType(), withMessages = false)
-            }
-            if (checked) {
-              Checked()
             }
           }
         }
@@ -172,8 +165,8 @@ object AppearanceScope {
           Box(
             Modifier
               .size(width, height)
-              .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
-              .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
+              .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius))
+              .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
               .clickable {
                 withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
               },
@@ -181,7 +174,6 @@ object AppearanceScope {
           ) {
             if (checked) {
               ChatThemePreview(CurrentColors.value.base, backgroundImage, type, withMessages = false)
-              Checked()
             } else {
               Plus()
             }
@@ -198,9 +190,13 @@ object AppearanceScope {
           OwnBackgroundItem(CurrentColors.collectAsState().value.wallpaper.type)
         }
       }
+      val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+      val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
+      ChatThemePreview(CurrentColors.value.base, backgroundImage, backgroundImageType)
+
       if (appPlatform.isDesktop) {
         val itemWidth = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
-        val itemHeight = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2) / 3
+        val itemHeight = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2) / 4
         val rows = ceil((PredefinedBackgroundImage.entries.size + 2) / 4f).roundToInt()
         LazyVerticalGrid(
           columns = GridCells.Fixed(4),
@@ -214,11 +210,11 @@ object AppearanceScope {
       } else {
         LazyHorizontalGrid(
           rows = GridCells.Fixed(1),
-          Modifier.height(120.dp + DEFAULT_PADDING * 2),
+          Modifier.height(80.dp + DEFAULT_PADDING * 2),
           contentPadding = PaddingValues(DEFAULT_PADDING),
           horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
         ) {
-          gridContent(80.dp, 120.dp)
+          gridContent(80.dp, 80.dp)
         }
       }
 
