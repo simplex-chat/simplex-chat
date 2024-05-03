@@ -54,7 +54,6 @@ struct ChatListView: View {
                 }
             }
             UserPicker(
-//                showSettings: $showSettings,
                 homeTab: Binding.constant(.chats),
                 showConnectDesktop: $showConnectDesktop,
                 userPickerVisible: $userPickerVisible

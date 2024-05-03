@@ -25,6 +25,7 @@ struct AppearanceSettings: View {
     @State private var userInterfaceStyle = getUserInterfaceStyleDefault()
     @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
+    @AppStorage(DEFAULT_SEARCH_IN_BOTTOM) private var searchInBottom = false
 
     var body: some View {
         VStack{
@@ -36,6 +37,12 @@ struct AppearanceSettings: View {
                         Button("Change") {
                             UIApplication.shared.open(appSettingsURL)
                         }
+                    }
+                }
+
+                Section("Interface") {
+                    settingsRow("magnifyingglass") {
+                        Toggle("Search in bottom", isOn: $searchInBottom)
                     }
                 }
 

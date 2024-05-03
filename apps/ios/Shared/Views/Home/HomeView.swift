@@ -22,6 +22,8 @@ struct HomeView: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
 
+    @AppStorage(DEFAULT_SEARCH_IN_BOTTOM) private var searchInBottom = false
+
 //    init(homeTab: Binding<HomeTab>) {
 //        // Make the background color of the bottom toolbar fully transparent
 //        let appearance = UIToolbarAppearance()
@@ -46,12 +48,21 @@ struct HomeView: View {
                 destination: chatView
             ) {
                 ZStack {
-                        switch homeTab {
-                        case .settings: settingsView()
-                        case .contacts: contactsView()
-                        case .chats: chatsView()
-                        case .newChat: newChatView()
-                        }
+                    switch homeTab {
+                    case .settings: settingsView()
+                    case .contacts: contactsView()
+                    case .chats:
+                        chatsView()
+                            .padding(.top, searchInBottom ? 10 : 40)
+                    case .newChat: newChatView()
+                    }
+
+                    VStack {
+                        topToolbar()
+                            .background(BlurView(style: .systemMaterial).ignoresSafeArea())
+                            .frame(height: 40)
+                        Spacer()
+                    }
 
                     VStack {
                         Spacer()
@@ -108,18 +119,20 @@ struct HomeView: View {
         }
     }
 
+    @ViewBuilder private func topToolbar() -> some View {
+        if !searchInBottom, homeTab == .chats {
+            chatsSearch()
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+        }
+    }
+
     private func bottomToolbar() -> some View {
         VStack {
-            if homeTab == .chats {
-                ChatsSearchBar(
-                    searchMode: $searchMode,
-                    searchFocussed: $searchFocussed,
-                    searchText: $searchText,
-                    searchShowingSimplexLink: $searchShowingSimplexLink,
-                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                )
-                .padding(.horizontal)
-                .padding(.top, 8)
+            if searchInBottom, homeTab == .chats {
+                chatsSearch()
+                    .padding(.horizontal)
+                    .padding(.top, 8)
             }
 
             Spacer()
@@ -140,6 +153,16 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+    }
+
+    private func chatsSearch() -> some View {
+        ChatsSearchBar(
+            searchMode: $searchMode,
+            searchFocussed: $searchFocussed,
+            searchText: $searchText,
+            searchShowingSimplexLink: $searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+        )
     }
 
     @ViewBuilder private func settingsButton() -> some View {
