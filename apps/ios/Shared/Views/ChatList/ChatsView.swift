@@ -86,7 +86,7 @@ struct ChatsView: View {
                     if !searchInBottom {
                         Color.clear
                             .listRowSeparator(.hidden)
-                            .frame(height: 35) // account for topToolbar height
+                            .frame(height: 40) // account for topToolbar height
                     }
 
                     ForEach(cs, id: \.viewId) { chat in
