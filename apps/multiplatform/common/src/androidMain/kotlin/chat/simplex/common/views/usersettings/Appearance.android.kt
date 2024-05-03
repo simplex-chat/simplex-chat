@@ -134,6 +134,13 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
     }
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ProfileImageSection()
+
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
@@ -158,12 +165,6 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
     }
-
-    SectionDividerSpaced(maxTopPadding = true)
-    ProfileImageSection()
-
-    SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
 
     SectionBottomSpacer()
   }
