@@ -23,6 +23,7 @@ struct ChatsView: View {
 
     @State private var newChatMenuOption: NewChatMenuOption? = nil // TODO remove?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
+    @AppStorage(DEFAULT_CHAT_LIST_REVERSED) private var chatListReversed = false
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -65,7 +66,7 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private var chatList: some View {
-        let cs = filteredChats()
+        let cs = chatListReversed ? filteredChats().reversed() : filteredChats()
         ZStack {
             VStack {
                 List {

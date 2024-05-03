@@ -26,6 +26,7 @@ struct AppearanceSettings: View {
     @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
     @AppStorage(DEFAULT_SEARCH_IN_BOTTOM) private var searchInBottom = false
+    @AppStorage(DEFAULT_CHAT_LIST_REVERSED) private var chatListReversed = false
 
     var body: some View {
         VStack{
@@ -43,6 +44,9 @@ struct AppearanceSettings: View {
                 Section("Interface") {
                     settingsRow("magnifyingglass") {
                         Toggle("Search in bottom", isOn: $searchInBottom)
+                    }
+                    settingsRow("message") {
+                        Toggle("Reverse chat list", isOn: $chatListReversed)
                     }
                 }
 
