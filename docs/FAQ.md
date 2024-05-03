@@ -40,15 +40,15 @@ revision: 23.04.2024
 
 ### I have nobody to chat with! Where can I find any groups?
 
-Please check our [Groups Directory](./DIRECTORY.md) in the first place. You might find some interesting groups and meet even more interesting people.
+Please check our [Groups Directory](/docs/DIRECTORY.md) in the first place. You might find some interesting groups and meet even more interesting people.
 
 ### What is database? What can I do with it?
 
-Database is essential for SimpleX Chat to function properly. In comparison to centralized messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](./guide/managing-data.md).
+Database is essential for SimpleX Chat to function properly. In comparison to centralized messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](/docs/guide/managing-data.md).
 
 ### Can I send files over SimpleX? 
 
-Of course! While doing so, you are using a _state-of-the-art_ protocol that greatly reduces metadata leaks. Please read more about it: [XFTP Protocol](../blog/20230301-simplex-file-transfer-protocol.md).
+Of course! While doing so, you are using a _state-of-the-art_ protocol that greatly reduces metadata leaks. Please read more about it: [XFTP Protocol](/blog/20230301-simplex-file-transfer-protocol.md).
 
 ### What’s incognito profile?
 
@@ -61,11 +61,11 @@ When "Incognito Mode” is turned on, your currently chosen profile name and ima
 It is quite a complex process, but fortunately all of this happens in the background, so it's simply to use.
 
 Whenever somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.
-If interested, please read more: [Addresses and invitations](./guide/making-connections.md).
+If interested, please read more: [Addresses and invitations](/docs/guide/making-connections.md).
 
 ### How to configure and delete groups?
 
-Please check: [Users guide](./guide/secret-groups.md).
+Please check: [Users guide](/docs/guide/secret-groups.md).
 
 ### Are there any reactions to messages? Can I answer specific messages directly?
 
@@ -82,7 +82,7 @@ Also see [ ](#i-do-not-see-the-second-tick-on-the-messages-i-sent)
 
 ### Can I use the same profile on desktop? Do messages sync cross-platform?
 
-You can use your profile from mobile device on desktop. However, to do so you need to be on the same network, both on your mobile and desktop. More about it: [Release info](../blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol).
+You can use your profile from mobile device on desktop. However, to do so you need to be on the same network, both on your mobile and desktop. More about it: [Release info](/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol).
 
 ## Troubleshooting
 
@@ -149,7 +149,7 @@ Please report such issues if you use v5.7 or newer.
 
 ### Audio or video calls do not connect
 
-App uses WebRTC for calls. Please check that you can connect to the servers configured in the app: stun.simplex.im and turn.simplex.im - see [troubleshooting WebRTC](./WEBRTC.md#troubleshoot).
+App uses WebRTC for calls. Please check that you can connect to the servers configured in the app: stun.simplex.im and turn.simplex.im - see [troubleshooting WebRTC](/docs/WEBRTC.md#troubleshoot).
 
 If you can connect to the server, please report this issue to us privately, including the following information:
 
@@ -173,13 +173,13 @@ Once the connection is established you don't need to be online at the same time 
 
 ### Does SimpleX support post quantum cryptography?
 
-Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](../blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
+Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
 
 ### What user data can be provided on request?
 
 Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.
 
-Please see our [Privacy Policy](../PRIVACY.md) and [Transparency Reports](./TRANSPARENCY.md).
+Please see our [Privacy Policy](/privacy) and [Transparency Reports](/transparency).
 
 ### Does SimpleX protect my IP address?
 
@@ -189,20 +189,20 @@ We are currently working on the next version of message routing protocol that wi
 
 ### Can I host my own relays?
 
-Of course! Please check these tutorials: [SMP server](./SERVER.md) and [XFTP server](./XFTP-SERVER.md).
+Of course! Please check these tutorials: [SMP server](/docs/SERVER.md) and [XFTP server](/docs/XFTP-SERVER.md).
 
 ## Funding and business model
 
 ### How are you funded?
 
-SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. Read [more details](../blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md#how-is-it-funded-and-what-is-the-business-model).
+SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. Read [more details](/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md#how-is-it-funded-and-what-is-the-business-model).
 
 ### Why VCs?
 
 Here are some reflections on VC funding being a necessity for a project at this scale, as well as sustainability and profitability for longtime operations: https://www.poberezkin.com/posts/2023-10-31-why-privacy-impossible-without-venture-funding.html
 
 And another perspective from a team member on the delicate balance of venture-backed and nonprofit structures, and the plans for the SimpleX network protocols to evolve under the stewardship of nonprofit entities in various jurisdictions, so that its continued evolution aligns more closely with the vision of community-driven, independent and transparent governance:
-[https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html](../blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.md).
+[https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html](/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.md).
 
 ### What will be the business model?
 
