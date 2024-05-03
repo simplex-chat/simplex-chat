@@ -308,6 +308,9 @@ struct ChatsSearchBar: View {
                 Color.clear
                     .frame(width: 30, height: 30)
                 Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
                     .foregroundColor(.accentColor)
             }
         }
