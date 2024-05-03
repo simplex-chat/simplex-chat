@@ -58,6 +58,7 @@ enum class AppIcon(val image: ImageResource) {
 @Composable
 actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
+  val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
 
   fun setAppIcon(newIcon: AppIcon) {
     if (appIcon.value == newIcon) return
@@ -76,6 +77,9 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     appIcon.value = newIcon
   }
 
+  val theme = CurrentColors.collectAsState().value.base
+  val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+  val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
   AppearanceScope.AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
@@ -84,7 +88,7 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
       ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, close)
+        ColorEditor(name, initialColor, theme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(name, color, darkTheme) }, close = close)
       }
     },
   )

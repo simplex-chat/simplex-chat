@@ -29,11 +29,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
@@ -336,6 +338,16 @@ fun ChatInfoLayout(
         SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncContactConnection)
+        }
+        // Should come from API
+        val type = remember { BackgroundImageType.default }
+        val theme = remember { ThemeOverrides(CurrentColors.value.base, ThemeColors()) }
+        WallpaperButton {
+          ModalManager.end.showModal {
+            WallpaperEditor(type, theme) { type, theme ->
+              // apply to chat
+            }
+          }
         }
         //      } else if (developerTools) {
         //        SynchronizeConnectionButtonForce(syncContactConnectionForce)
@@ -643,6 +655,15 @@ private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, on
 }
 
 @Composable
+fun WallpaperButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_image),
+    stringResource(MR.strings.settings_section_title_wallpaper),
+    click = onClick
+  )
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_settings_backup_restore),
@@ -672,6 +693,88 @@ fun ShareAddressButton(onClick: () -> Unit) {
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+fun ModalData.WallpaperEditor(type: BackgroundImageType, theme: ThemeOverrides, save: (BackgroundImageType?, ThemeOverrides) -> Unit) {
+  ColumnWithScrollBar(
+    Modifier
+      .fillMaxSize()
+  ) {
+    val systemDark = chat.simplex.common.ui.theme.isSystemInDarkTheme()
+    val backgroundImageType: MutableState<BackgroundImageType?> = remember { stateGetOrPut("backgroundImageType") { type } }
+    val background = backgroundImageType.value
+    val themeOverrides = remember { stateGetOrPut("themeOverrides") { theme } }
+    val pref = remember {
+      SharedPreference<Map<String, ThemeOverrides>>(
+        get = {
+          mapOf(CurrentColors.value.base.name to themeOverrides.value)
+        },
+        set = { value ->
+          themeOverrides.value = value[CurrentColors.value.base.name]!!
+        }
+      )
+    }
+
+    AppBarTitle(stringResource(MR.strings.settings_section_title_wallpaper))
+    val backgroundImage = remember(background?.filename) { background?.image }
+    val backgroundColor = remember { mutableStateOf(pref.get()[CurrentColors.value.base.name]!!.wallpaper.background?.colorFromReadableHex()) }
+    val tintColor = remember { mutableStateOf(pref.get()[CurrentColors.value.base.name]!!.wallpaper.tint?.colorFromReadableHex()) }
+
+    AppearanceScope.ChatThemePreview(theme.base, backgroundImage, background, backgroundColor.value, tintColor.value)
+    SectionSpacer()
+
+    WallpaperSetupView(
+      background,
+      theme.base,
+      backgroundColor.value,
+      tintColor.value,
+      showPresetSelection = true,
+      editColor = { name, initialColor ->
+        ModalManager.end.showModalCloseable { close ->
+          AppearanceScope.ColorEditor(
+            name,
+            initialColor,
+            theme.base,
+            backgroundImageType.value,
+            backgroundImage,
+            backgroundColor.value,
+            tintColor.value,
+            onColorChange = { color ->
+              ThemeManager.saveAndApplyThemeColor(name, color, systemDark, pref)
+              if (name == ThemeColor.WALLPAPER_BACKGROUND) backgroundColor.value = color
+              else if (name == ThemeColor.WALLPAPER_TINT) tintColor.value = color
+            },
+            close
+          )
+        }
+      },
+      onColorChange = { name, color ->
+        ThemeManager.saveAndApplyThemeColor(name, color, systemDark, pref)
+        if (name == ThemeColor.WALLPAPER_BACKGROUND) backgroundColor.value = color
+        else if (name == ThemeColor.WALLPAPER_TINT) tintColor.value = color
+      },
+      onTypeChange = { type ->
+        ThemeManager.saveAndApplyBackgroundImage(type, systemDark, pref)
+        backgroundImageType.value = type
+      }
+    )
+
+    SectionSpacer()
+
+    ApplyButton {
+      save(backgroundImageType.value, themeOverrides.value)
+    }
+  }
+}
+
+@Composable
+private fun ApplyButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_check),
+    stringResource(MR.strings.background_image_apply),
+    click = onClick
   )
 }
 

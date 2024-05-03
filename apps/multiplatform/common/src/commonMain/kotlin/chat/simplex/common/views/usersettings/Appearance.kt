@@ -1,19 +1,18 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
@@ -28,6 +27,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
+import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
@@ -35,8 +35,7 @@ import kotlinx.serialization.encodeToString
 import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.ceil
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 @Composable
 expect fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit))
@@ -74,14 +73,21 @@ object AppearanceScope {
   }
 
   @Composable
-  fun ChatThemePreview(backgroundImage: ImageBitmap?, backgroundImageType: BackgroundImageType?, withMessages: Boolean = true) {
+  fun ChatThemePreview(
+    theme: DefaultTheme,
+    backgroundImage: ImageBitmap?,
+    backgroundImageType: BackgroundImageType?,
+    backgroundColor: Color? = CurrentColors.value.wallpaper.background,
+    tintColor: Color? = CurrentColors.value.wallpaper.tint,
+    withMessages: Boolean = true
+  ) {
     val themeBackgroundColor = MaterialTheme.colors.background
-    val defaultBackgroundColor = backgroundImageType?.defaultBackgroundColor
-    val defaultTintColor = backgroundImageType?.defaultTintColor
+    val backgroundColor =  backgroundColor ?: backgroundImageType?.defaultBackgroundColor(theme)
+    val tintColor = tintColor ?: backgroundImageType?.defaultTintColor(theme)
     Column(Modifier
       .drawBehind {
-        if (backgroundImage != null && backgroundImageType != null && defaultBackgroundColor != null && defaultTintColor != null) {
-          chatViewBackground(backgroundImage, backgroundImageType, defaultBackgroundColor, defaultTintColor)
+        if (backgroundImage != null && backgroundImageType != null && backgroundColor != null && tintColor != null) {
+          chatViewBackground(backgroundImage, backgroundImageType, backgroundColor, tintColor)
         } else {
           drawRect(themeBackgroundColor)
         }
@@ -98,157 +104,6 @@ object AppearanceScope {
   }
 
   @Composable
-  fun CustomizeBackgroundImageView() {
-    ColumnWithScrollBar(
-      Modifier.fillMaxWidth(),
-    ) {
-      AppBarTitle(stringResource(MR.strings.choose_background_image_title))
-
-      val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
-      val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
-      if (backgroundImage != null && backgroundImageType != null) {
-        ChatThemePreview(backgroundImage, backgroundImageType)
-
-        SectionSpacer()
-        val isInDarkTheme = isInDarkTheme()
-        val resetColors = {
-          ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_BACKGROUND, null, isInDarkTheme)
-          ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_TINT, null, isInDarkTheme)
-        }
-        val imageTypeState = remember {
-          mutableStateOf(if (backgroundImageType is BackgroundImageType.Static) "" else backgroundImageType.filename)
-        }
-        val imageTypeValues = remember {
-          PredefinedBackgroundImage.entries.map { it.filename to generalGetString(it.text) } + ("" to generalGetString(MR.strings.background_choose_own_image))
-        }
-        val systemDark = isSystemInDarkTheme()
-        val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
-          if (to != null) {
-            val filename = saveBackgroundImage(to)
-            if (filename != null) {
-              imageTypeState.value = ""
-              ThemeManager.saveAndApplyBackgroundImage(BackgroundImageType.Static(filename, 1f, BackgroundImageScaleType.FILL), systemDark)
-              removeBackgroundImages(filename)
-              resetColors()
-            }
-          }
-        }
-        ExposedDropDownSettingRow(
-          stringResource(MR.strings.settings_section_title_background_image),
-          imageTypeValues,
-          imageTypeState,
-          onSelected = { filename ->
-            if (filename.isEmpty()) {
-              withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
-            } else {
-              imageTypeState.value = filename
-              ThemeManager.saveAndApplyBackgroundImage(PredefinedBackgroundImage.from(filename)!!.toType(), systemDark)
-              removeBackgroundImages()
-            }
-          }
-        )
-        if (backgroundImageType is BackgroundImageType.Repeated) {
-          val state = remember(backgroundImageType.scale) { mutableStateOf(backgroundImageType.scale) }
-          Row {
-            Text("${state.value}", Modifier.width(50.dp))
-            Slider(
-              state.value,
-              valueRange = 0.2f..2f,
-              onValueChange = {
-                ThemeManager.saveAndApplyBackgroundImage(backgroundImageType.copy(scale = it), systemDark)
-              }
-            )
-          }
-        } else if (backgroundImageType is BackgroundImageType.Static) {
-          val state = remember(backgroundImageType.scaleType) { mutableStateOf(backgroundImageType.scaleType) }
-          val values = remember {
-            BackgroundImageScaleType.entries.map { it to generalGetString(it.text) }
-          }
-          ExposedDropDownSettingRow(
-            stringResource(MR.strings.background_image_scale),
-            values,
-            state,
-            onSelected = { scaleType ->
-              ThemeManager.saveAndApplyBackgroundImage(backgroundImageType.copy(scaleType = scaleType), systemDark)
-            }
-          )
-
-          if (backgroundImageType.scaleType == BackgroundImageScaleType.REPEAT) {
-            val state = remember(backgroundImageType.scale) { mutableStateOf(backgroundImageType.scale) }
-            Row {
-              Text("${state.value}", Modifier.width(50.dp))
-              Slider(
-                state.value,
-                valueRange = 0.2f..2f,
-                onValueChange = {
-                  ThemeManager.saveAndApplyBackgroundImage(backgroundImageType.copy(scale = it), systemDark)
-                }
-              )
-            }
-          }
-        }
-
-        SectionSpacer()
-        var selectedTab by rememberSaveable { mutableStateOf(0) }
-        val availableTabs = listOf(
-          stringResource(MR.strings.background_image_background_color),
-          stringResource(MR.strings.background_image_tint_color),
-        )
-        TabRow(
-          selectedTabIndex = selectedTab,
-          backgroundColor = Color.Transparent,
-          contentColor = MaterialTheme.colors.primary,
-        ) {
-          availableTabs.forEachIndexed { index, title ->
-            Tab(
-              selected = selectedTab == index,
-              onClick = {
-                selectedTab = index
-              },
-              text = { Text(title, fontSize = 13.sp) },
-              selectedContentColor = MaterialTheme.colors.primary,
-              unselectedContentColor = MaterialTheme.colors.secondary,
-            )
-          }
-        }
-        val defaultBackgroundColor = backgroundImageType.defaultBackgroundColor
-        val defaultTintColor = backgroundImageType.defaultTintColor
-        if (selectedTab == 0) {
-          var currentColor by remember(backgroundImageType.background) { mutableStateOf(backgroundImageType.background ?: defaultBackgroundColor) }
-          ColorPicker(backgroundImageType.background ?: defaultBackgroundColor) {
-            currentColor = it
-            ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_BACKGROUND, it, isInDarkTheme)
-          }
-          val clipboard = LocalClipboardManager.current
-          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
-            Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
-          }
-        } else {
-          var currentColor by remember(backgroundImageType.tint) { mutableStateOf(backgroundImageType.tint ?: defaultTintColor) }
-          ColorPicker(backgroundImageType.tint ?: defaultTintColor) {
-            currentColor = it
-            ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_TINT, it, isInDarkTheme)
-          }
-          val clipboard = LocalClipboardManager.current
-          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
-            Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
-          }
-        }
-
-        if (backgroundImageType.background != null || backgroundImageType.tint != null) {
-          SectionSpacer()
-          SectionItemView(resetColors) {
-            Text(generalGetString(MR.strings.reset_color), color = colors.primary)
-          }
-        }
-        SectionBottomSpacer()
-      }
-    }
-  }
-
-  @Composable
   fun ThemesSection(
     systemDarkTheme: SharedPreference<String?>,
     showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -260,7 +115,7 @@ object AppearanceScope {
       val selectedBackground = CurrentColors.collectAsState().value.wallpaper.type
       val cornerRadius = remember { appPreferences.profileImageCornerRadius.state }
       fun setBackground(type: BackgroundImageType?) {
-        if (type is BackgroundImageType.Static) {
+        if (type is BackgroundImageType.Static || CurrentColors.value.wallpaper.type is BackgroundImageType.Static) {
           ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_BACKGROUND, null, systemDark)
           ThemeManager.saveAndApplyThemeColor(ThemeColor.WALLPAPER_TINT, null, systemDark)
         }
@@ -282,18 +137,21 @@ object AppearanceScope {
       fun LazyGridScope.gridContent(width: Dp, height: Dp) {
         @Composable
         fun BackgroundItem(background: PredefinedBackgroundImage?) {
+          val checked = (background == null && selectedBackground == null) || (selectedBackground?.filename == background?.filename)
           Box(
             Modifier
             .size(width, height)
-            .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
+            .background(MaterialTheme.colors.background)
+            .clip(RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
+            .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
             .clickable { setBackground(background?.toType()) },
             contentAlignment = Alignment.Center
           ) {
             if (background != null) {
               val backgroundImage = remember(background.filename) { PredefinedBackgroundImage.from(background.filename)?.res?.toComposeImageBitmap() }
-              ChatThemePreview(backgroundImage, background.toType(), withMessages = false)
+              ChatThemePreview(CurrentColors.value.base, backgroundImage, background.toType(), withMessages = false)
             }
-            if ((background == null && selectedBackground == null) || (selectedBackground?.filename == background?.filename)) {
+            if (checked) {
               Checked()
             }
           }
@@ -301,6 +159,8 @@ object AppearanceScope {
 
         @Composable
         fun OwnBackgroundItem(type: BackgroundImageType?) {
+          val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+          val checked = type is BackgroundImageType.Static && backgroundImage != null
           val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
             if (to != null) {
               val filename = saveBackgroundImage(to)
@@ -313,14 +173,14 @@ object AppearanceScope {
             Modifier
               .size(width, height)
               .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
+              .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius.value.roundToInt()))
               .clickable {
                 withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
               },
             contentAlignment = Alignment.Center
           ) {
-            val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
-            if (type is BackgroundImageType.Static && backgroundImage != null) {
-              ChatThemePreview(backgroundImage, type, withMessages = false)
+            if (checked) {
+              ChatThemePreview(CurrentColors.value.base, backgroundImage, type, withMessages = false)
               Checked()
             } else {
               Plus()
@@ -362,9 +222,6 @@ object AppearanceScope {
         }
       }
 
-      SectionItemView(showSettingsModal{ _ -> CustomizeBackgroundImageView() }) { Text(stringResource(MR.strings.choose_background_image_title)) }
-
-
       val darkTheme = isSystemInDarkTheme()
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
@@ -390,25 +247,27 @@ object AppearanceScope {
 
       val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
       val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
-      ChatThemePreview(backgroundImage, backgroundImageType)
+      ChatThemePreview(CurrentColors.value.base, backgroundImage, backgroundImageType)
       SectionSpacer()
 
       if (backgroundImageType != null) {
-        SectionView(stringResource(MR.strings.settings_section_title_background_image).uppercase()) {
-          val wallpaperBackgroundColor = currentTheme.wallpaper.background ?: backgroundImageType.defaultBackgroundColor
-            SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND, wallpaperBackgroundColor) }) {
-              val title = generalGetString(MR.strings.color_wallpaper_background)
-              Text(title)
-              Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
-            }
-          val wallpaperTintColor = currentTheme.wallpaper.tint ?: backgroundImageType.defaultTintColor
-          SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT, wallpaperTintColor) }) {
-            val title = generalGetString(MR.strings.color_wallpaper_tint)
-            Text(title)
-            Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+        val systemDark = isSystemInDarkTheme()
+        WallpaperSetupView(
+          backgroundImageType,
+          CurrentColors.value.base,
+          CurrentColors.value.wallpaper.background,
+          CurrentColors.value.wallpaper.tint,
+          showPresetSelection = false,
+          editColor,
+          onColorChange = { name, color ->
+            ThemeManager.saveAndApplyThemeColor(name, color, systemDark)
+          },
+          onTypeChange = { type ->
+            ThemeManager.saveAndApplyBackgroundImage(type, systemDark)
+            removeBackgroundImages(type?.filename)
           }
-        }
-        SectionSpacer()
+        )
+        SectionDividerSpaced(maxTopPadding = true)
       }
 
       SectionView(stringResource(MR.strings.theme_colors_section_title)) {
@@ -503,6 +362,12 @@ object AppearanceScope {
   fun ColorEditor(
     name: ThemeColor,
     initialColor: Color,
+    theme: DefaultTheme,
+    backgroundImageType: BackgroundImageType?,
+    backgroundImage: ImageBitmap?,
+    previewBackgroundColor: Color? = CurrentColors.value.wallpaper.background,
+    previewTintColor: Color? = CurrentColors.value.wallpaper.tint,
+    onColorChange: (Color) -> Unit,
     close: () -> Unit,
   ) {
     Column(
@@ -513,9 +378,7 @@ object AppearanceScope {
 
       val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
       if (supportedLiveChange) {
-        val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
-        val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
-        ChatThemePreview(backgroundImage, backgroundImageType)
+        ChatThemePreview(theme, backgroundImage, backgroundImageType, previewBackgroundColor, previewTintColor)
         SectionSpacer()
       }
 
@@ -524,28 +387,41 @@ object AppearanceScope {
       ColorPicker(initialColor) {
         currentColor = it
         if (supportedLiveChange) {
-          ThemeManager.saveAndApplyThemeColor(name, currentColor, isInDarkTheme)
+          onColorChange(currentColor)
         }
+      }
+      val clipboard = LocalClipboardManager.current
+      Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+        Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
+        Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
       }
       val savedColor = remember { mutableStateOf(initialColor) }
       DisposableEffect(Unit) {
         onDispose {
           if (currentColor != savedColor.value) {
             // Rollback changes since they weren't saved
-            ThemeManager.saveAndApplyThemeColor(name, savedColor.value, isInDarkTheme)
+            onColorChange(savedColor.value)
           }
         }
       }
 
       SectionSpacer()
+      Row(Modifier.align(Alignment.CenterHorizontally)) {
+        Box(Modifier.size(80.dp, 40.dp).background(savedColor.value).clickable {
+          onColorChange(savedColor.value)
+          currentColor = savedColor.value
+        })
+        Box(Modifier.size(80.dp, 40.dp).background(currentColor))
+      }
+      SectionSpacer()
       TextButton(
         onClick = {
-          ThemeManager.saveAndApplyThemeColor(name, currentColor, isInDarkTheme)
+          onColorChange(currentColor)
           savedColor.value = currentColor
           close()
         },
         Modifier.align(Alignment.CenterHorizontally),
-        colors = ButtonDefaults.textButtonColors(contentColor = currentColor)
+        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colors.primary)
       ) {
         Text(generalGetString(MR.strings.save_color))
       }
@@ -594,7 +470,7 @@ object AppearanceScope {
 
   @Composable
   private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
-    val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
+    val darkTheme = isSystemInDarkTheme()
     val values by remember(ChatController.appPrefs.appLanguage.state.value) {
       mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third })
     }
@@ -628,6 +504,108 @@ object AppearanceScope {
   //private fun openSystemLangPicker(activity: Activity) {
   //  activity.startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + SimplexApp.context.packageName)))
   //}
+}
+
+@Composable
+fun WallpaperSetupView(
+  backgroundImageType: BackgroundImageType?,
+  theme: DefaultTheme,
+  initialBackgroundColor: Color?,
+  initialTintColor: Color?,
+  showPresetSelection: Boolean,
+  editColor: (ThemeColor, Color) -> Unit,
+  onColorChange: (ThemeColor, Color?) -> Unit,
+  onTypeChange: (BackgroundImageType?) -> Unit
+) {
+  SectionView(stringResource(MR.strings.settings_section_title_wallpaper).uppercase()) {
+    if (showPresetSelection) {
+      val resetColors = {
+        onColorChange(ThemeColor.WALLPAPER_BACKGROUND, null)
+        onColorChange(ThemeColor.WALLPAPER_TINT, null)
+      }
+      val imageTypeState: MutableState<String?> = remember {
+        mutableStateOf(if (backgroundImageType is BackgroundImageType.Static) "" else backgroundImageType?.filename)
+      }
+      val imageTypeValues = remember {
+        listOf(null as String? to generalGetString(MR.strings.background_choose_none)) + PredefinedBackgroundImage.entries.map { it.filename to generalGetString(it.text) } + ("" to generalGetString(MR.strings.background_choose_own_image))
+      }
+      val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+        if (to != null) {
+          val filename = saveBackgroundImage(to)
+          if (filename != null) {
+            imageTypeState.value = ""
+            onTypeChange(BackgroundImageType.Static(filename, 1f, BackgroundImageScaleType.FILL))
+            resetColors()
+          }
+        }
+      }
+      ExposedDropDownSettingRow(
+        stringResource(MR.strings.settings_section_title_image),
+        imageTypeValues,
+        imageTypeState,
+        onSelected = { filename ->
+          if (filename == null) {
+            imageTypeState.value = null
+            onTypeChange(null)
+          }
+          else if (filename.isEmpty()) {
+            withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
+          } else {
+            imageTypeState.value = filename
+            onTypeChange(PredefinedBackgroundImage.from(filename)!!.toType())
+          }
+        }
+      )
+    }
+
+    if (backgroundImageType is BackgroundImageType.Static) {
+      val state = remember(backgroundImageType.scaleType) { mutableStateOf(backgroundImageType.scaleType) }
+      val values = remember {
+        BackgroundImageScaleType.entries.map { it to generalGetString(it.text) }
+      }
+      ExposedDropDownSettingRow(
+        stringResource(MR.strings.background_image_scale),
+        values,
+        state,
+        onSelected = { scaleType ->
+          onTypeChange(backgroundImageType.copy(scaleType = scaleType))
+        }
+      )
+    }
+
+    if (backgroundImageType is BackgroundImageType.Repeated || backgroundImageType is BackgroundImageType.Static && backgroundImageType.scaleType == BackgroundImageScaleType.REPEAT) {
+      val state = remember(backgroundImageType.scale) { mutableStateOf(backgroundImageType.scale) }
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
+        Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
+        Slider(
+          state.value,
+          valueRange = 0.2f..2f,
+          onValueChange = {
+            if (backgroundImageType is BackgroundImageType.Repeated) {
+              onTypeChange(backgroundImageType.copy(scale = it))
+            } else if (backgroundImageType is BackgroundImageType.Static) {
+              onTypeChange(backgroundImageType.copy(scale = it))
+            }
+          }
+        )
+      }
+    }
+
+    if (backgroundImageType != null) {
+      val wallpaperBackgroundColor = initialBackgroundColor ?: backgroundImageType.defaultBackgroundColor(theme)
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND, wallpaperBackgroundColor) }) {
+        val title = generalGetString(MR.strings.color_wallpaper_background)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
+      }
+      val wallpaperTintColor = initialTintColor ?: backgroundImageType.defaultTintColor(theme)
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT, wallpaperTintColor) }) {
+        val title = generalGetString(MR.strings.color_wallpaper_tint)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+      }
+    }
+  }
 }
 
 @Composable

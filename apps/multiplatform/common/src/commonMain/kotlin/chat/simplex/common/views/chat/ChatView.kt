@@ -599,13 +599,13 @@ fun ChatLayout(
         ) { contentPadding ->
           val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
           val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
-          val defaultBackgroundColor = backgroundImageType?.defaultBackgroundColor
-          val defaultTintColor = backgroundImageType?.defaultTintColor
+          val backgroundColor = CurrentColors.value.wallpaper.background ?: backgroundImageType?.defaultBackgroundColor(CurrentColors.value.base)
+          val tintColor = CurrentColors.value.wallpaper.tint ?: backgroundImageType?.defaultTintColor(CurrentColors.value.base)
           BoxWithConstraints(Modifier
             .fillMaxHeight()
             .background(MaterialTheme.colors.background)
-            .then(if (backgroundImage != null && backgroundImageType != null && defaultBackgroundColor != null && defaultTintColor != null)
-              Modifier.drawBehind { chatViewBackground(backgroundImage, backgroundImageType, defaultBackgroundColor, defaultTintColor) }
+            .then(if (backgroundImage != null && backgroundImageType != null && backgroundColor != null && tintColor != null)
+              Modifier.drawBehind { chatViewBackground(backgroundImage, backgroundImageType, backgroundColor, tintColor) }
             else
               Modifier)
             .padding(contentPadding)

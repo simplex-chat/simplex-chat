@@ -14,13 +14,10 @@ import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
 import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
-import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.decodeFromStream
 import java.io.*
 import java.net.URI
-import java.nio.file.CopyOption
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
@@ -292,6 +289,7 @@ fun saveBackgroundImage(uri: URI): String? {
     Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
   } catch (e: Exception) {
     Log.e(TAG, "Error saving background image: ${e.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
     return null
   }
   return destFile.name

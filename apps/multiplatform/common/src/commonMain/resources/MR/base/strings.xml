@@ -712,7 +712,6 @@
   <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
-  <string name="choose_background_image_title">Choose background</string>
   <string name="theme_colors_section_title">THEME COLORS</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
@@ -1035,7 +1034,8 @@
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
-  <string name="settings_section_title_background_image">Background image</string>
+  <string name="settings_section_title_wallpaper">Wallpaper</string>
+  <string name="settings_section_title_image">Image</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_network_connection">Network connection</string>
@@ -1534,10 +1534,11 @@
   <string name="color_title">Title</string>
   <string name="color_sent_message">Sent message</string>
   <string name="color_received_message">Received message</string>
-  <string name="color_wallpaper_background">Wallpaper background</string>
-  <string name="color_wallpaper_tint">Wallpaper tint</string>
+  <string name="color_wallpaper_background">Background</string>
+  <string name="color_wallpaper_tint">Tint</string>
 
   <!-- Backgrounds -->
+  <string name="background_choose_none">None</string>
   <string name="background_choose_own_image">Choose…</string>
   <string name="background_cat">Cat</string>
   <string name="background_hearts">Hearts</string>
@@ -1548,12 +1549,11 @@
   <string name="background_rabbit">Rabbit</string>
   <string name="background_image_preview_hello_alice">Hello, Alice</string>
   <string name="background_image_preview_hello_bob">Hello, Bob</string>
-  <string name="background_image_background_color">Background</string>
-  <string name="background_image_tint_color">Tint</string>
   <string name="background_image_scale">Scale</string>
   <string name="background_image_scale_repeat">Repeat</string>
   <string name="background_image_scale_fill">Fill</string>
   <string name="background_image_scale_fit">Fit</string>
+  <string name="background_image_apply">Apply</string>
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>

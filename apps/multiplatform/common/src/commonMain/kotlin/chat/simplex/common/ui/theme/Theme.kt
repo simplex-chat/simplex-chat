@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import chat.simplex.res.MR
-import java.io.File
 
 enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
@@ -197,7 +196,7 @@ data class ThemeWallpaper (
     )
   }
 
- fun import(): ThemeWallpaper =
+ fun importFromString(): ThemeWallpaper =
    if (preset == null && image != null) {
      // Need to save image from string and to save its path
      try {

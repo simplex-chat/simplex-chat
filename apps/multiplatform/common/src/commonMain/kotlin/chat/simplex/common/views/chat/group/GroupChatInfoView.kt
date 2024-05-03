@@ -233,6 +233,16 @@ fun GroupChatInfoLayout(
         } else {
           SendReceiptsOptionDisabled()
         }
+        // Should come from API
+        val type = remember { BackgroundImageType.default }
+        val theme = remember { ThemeOverrides(CurrentColors.value.base, ThemeColors()) }
+        WallpaperButton {
+          ModalManager.end.showModal {
+            WallpaperEditor(type, theme) { type, theme ->
+              // apply to chat
+            }
+          }
+        }
       }
       SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
       SectionDividerSpaced(maxTopPadding = true)

@@ -194,6 +194,13 @@ fun FramedItemView(
     .background(
       when {
         transparentBackground -> Color.Transparent
+        sent -> MaterialTheme.colors.background
+        else -> MaterialTheme.colors.background
+      }
+    )
+    .background(
+      when {
+        transparentBackground -> Color.Transparent
         sent -> sentColor
         else -> receivedColor
       }

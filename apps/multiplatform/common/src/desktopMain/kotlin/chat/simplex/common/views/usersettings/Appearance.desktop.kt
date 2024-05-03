@@ -4,8 +4,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,8 +13,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.defaultLocale
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.ThemeColor
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
@@ -27,13 +25,17 @@ import java.util.Locale
 
 @Composable
 actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  val darkTheme = isSystemInDarkTheme()
+  val theme = CurrentColors.collectAsState().value.base
+  val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
+  val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
   AppearanceScope.AppearanceLayout(
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
       ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, close)
+        ColorEditor(name, initialColor, theme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(name, color, darkTheme) }, close = close)
       }
     },
   )
