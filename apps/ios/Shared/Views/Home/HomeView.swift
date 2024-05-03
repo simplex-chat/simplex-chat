@@ -57,14 +57,14 @@ struct HomeView: View {
 
                     VStack {
                         topToolbar()
-                            .background(BlurView(style: .systemMaterial).ignoresSafeArea())
+                            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
                         Spacer()
                     }
 
                     VStack {
                         Spacer()
                         bottomToolbar()
-                            .background(BlurView(style: .systemMaterial).ignoresSafeArea())
+                            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
                     }
 
 //                    .toolbar {
