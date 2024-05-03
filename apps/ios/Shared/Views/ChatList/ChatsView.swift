@@ -23,6 +23,7 @@ struct ChatsView: View {
 
     @State private var newChatMenuOption: NewChatMenuOption? = nil // TODO remove?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
+    @AppStorage(DEFAULT_SEARCH_IN_BOTTOM) private var searchInBottom = false
     @AppStorage(DEFAULT_CHAT_LIST_REVERSED) private var chatListReversed = false
 
     var body: some View {
@@ -81,12 +82,23 @@ struct ChatsView: View {
 //                        .listRowSeparator(.hidden)
 //                        .frame(maxWidth: .infinity)
 //                    }
+
+                    if !searchInBottom {
+                        Color.clear
+                            .listRowSeparator(.hidden)
+                            .frame(height: 35) // account for topToolbar height
+                    }
+
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
                     .offset(x: -8)
+
+                    Color.clear
+                        .listRowSeparator(.hidden)
+                        .frame(height: searchInBottom ? 80 : 40) // account for bottomToolbar height
                 }
             }
             .onChange(of: chatModel.chatId) { _ in

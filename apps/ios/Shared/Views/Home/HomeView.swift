@@ -271,19 +271,11 @@ struct HomeView: View {
     private func chatsView() -> some View {
         // TODO onboarding buttons (remove?)
         // TODO for reversed chat list start at bottom
-        VStack {
-            Spacer()
-                .frame(height: searchInBottom ? 0 : 45) // account for topToolbar height
-
-            ChatsView(
-                searchText: $searchText,
-                searchShowingSimplexLink: $searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-            )
-
-            Spacer()
-                .frame(height: searchInBottom ? 90 : 50) // account for bottomToolbar height
-        }
+        ChatsView(
+            searchText: $searchText,
+            searchShowingSimplexLink: $searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+        )
         .padding(.top, 5)
     }
 
