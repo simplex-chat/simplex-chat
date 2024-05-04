@@ -400,6 +400,9 @@ module.exports = function (ty) {
       if (parsed.path.startsWith("./TRANSPARENCY.md")) {
         parsed.path = parsed.path.replace("./TRANSPARENCY.md", "/transparency")
       }
+      if (parsed.path.startsWith("/docs/TRANSPARENCY.md")) {
+        parsed.path = parsed.path.replace("/docs/TRANSPARENCY.md", "/transparency")
+      }
       parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
     }
