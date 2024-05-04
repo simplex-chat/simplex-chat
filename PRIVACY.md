@@ -107,7 +107,7 @@ The cases when SimpleX Chat Ltd may share the data temporarily stored on the ser
 
 At the time of updating this document, we have never provided or have been requested the access to the preset relay servers or any information from the servers by any third parties. If we are ever requested to provide such access or information, we will follow the due legal process to limit any information shared with the third parties to the minimally required by law.
 
-We will publish information we are legally allowed to share about such requests in the [Transparency reports](./docs/TRANSPARENCY.md).
+We will publish information we are legally allowed to share about such requests in the [Transparency reports](/docs/TRANSPARENCY.md).
 
 ### Updates
 
