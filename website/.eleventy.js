@@ -397,9 +397,6 @@ module.exports = function (ty) {
       if (parsed.path.startsWith("../PRIVACY.md")) {
         parsed.path = parsed.path.replace("../PRIVACY.md", "/privacy")
       }
-      if (parsed.path.startsWith("./TRANSPARENCY.md")) {
-        parsed.path = parsed.path.replace("./TRANSPARENCY.md", "/transparency")
-      }
       if (parsed.path.startsWith("/docs/TRANSPARENCY.md")) {
         parsed.path = parsed.path.replace("/docs/TRANSPARENCY.md", "/transparency")
       }
