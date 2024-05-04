@@ -179,7 +179,7 @@ Yes! Please read more about quantum resistant encryption is added to SimpleX Cha
 
 Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.
 
-Please see our [Privacy Policy](../PRIVACY.md) and [Transparency Reports](./TRANSPARENCY.md).
+Please see our [Privacy Policy](../PRIVACY.md) and [Transparency Reports](/docs/TRANSPARENCY.md).
 
 ### Does SimpleX protect my IP address?
 
