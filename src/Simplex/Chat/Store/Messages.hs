@@ -146,7 +146,6 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
-import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
