@@ -130,4 +130,18 @@
     <string name="la_authenticate">Xác thực</string>
     <string name="auth_unavailable">Quá trình xác thực không có sẵn</string>
     <string name="la_auth_failed">Quá trình xác thực đã thất bại</string>
+    <string name="color_background">Phông nền</string>
+    <string name="alert_title_msg_bad_hash">Hàm băm tin nhắn xấu</string>
+    <string name="integrity_msg_bad_id">ID tin nhắn xấu</string>
+    <string name="alert_title_msg_bad_id">ID tin nhắn xấu</string>
+    <string name="notifications_mode_service_desc">Dịch vụ nền luôn luôn chạy - thông báo sẽ được hiển thị ngay khi nhận được tin nhắn.</string>
+    <string name="v4_2_auto_accept_contact_requests">Tự động chấp nhận yêu cầu liên hệ</string>
+    <string name="bad_desktop_address">Địa chỉ máy tính xấu</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Thêm liên hệ</b>: để tạo liên kết mời mới, hoặc kết nối qua liên kết bạn nhận được.</string>
+    <string name="integrity_msg_bad_hash">hàm băm tin nhắn xấu</string>
+    <string name="available_in_v51">"
+\nCó sẵn ở v5.1"</string>
+    <string name="auto_accept_contact">Tự động chấp nhận</string>
+    <string name="back">Quay về</string>
+    <string name="auto_accept_images">Tự động chấp nhận hình ảnh</string>
 </resources>
