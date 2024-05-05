@@ -137,7 +137,7 @@
     <string name="notifications_mode_service_desc">Dịch vụ nền luôn luôn chạy - thông báo sẽ được hiển thị ngay khi nhận được tin nhắn.</string>
     <string name="v4_2_auto_accept_contact_requests">Tự động chấp nhận yêu cầu liên hệ</string>
     <string name="bad_desktop_address">Địa chỉ máy tính xấu</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Thêm liên hệ</b>: để tạo liên kết mời mới, hoặc kết nối qua liên kết bạn nhận được.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Thêm liên hệ</b>: để tạo liên kết mời mới, hoặc kết nối qua liên kết bạn nhận được.]]></string>
     <string name="integrity_msg_bad_hash">hàm băm tin nhắn xấu</string>
     <string name="available_in_v51">"
 \nCó sẵn ở v5.1"</string>

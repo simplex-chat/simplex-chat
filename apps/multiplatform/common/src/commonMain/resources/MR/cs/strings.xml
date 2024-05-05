@@ -1734,7 +1734,7 @@
     <string name="forwarded_description">přeposláno</string>
     <string name="e2ee_info_no_pq_short">Tento chat je chráněn koncovým šifrováním.</string>
     <string name="e2ee_info_pq_short">Tento chat je chráněn kvantům odolným koncovým šifrováním.</string>
-    <string name="e2ee_info_pq">Zprávy, soubory a hovory jsou chráněny <b>kvantům odolným koncovým šifrováním</b> s dokonalým dopředným utajením, odpíráním a obnovou po vloupání.</string>
+    <string name="e2ee_info_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>kvantům odolným koncovým šifrováním</b> s dokonalým dopředným utajením, odpíráním a obnovou po vloupání.]]></string>
     <string name="network_type_cellular">Mobilní</string>
     <string name="network_type_no_network_connection">Žádné připojení k síti</string>
     <string name="network_type_other">Ostatní</string>
@@ -1769,5 +1769,5 @@
     <string name="permissions_camera">Kamera</string>
     <string name="permissions_camera_and_record_audio">Kamera a mikrofon</string>
     <string name="simplex_links_are_prohibited_in_group">SimpleX odkazy jsou v této skupině zakázány.</string>
-    <string name="e2ee_info_no_pq">Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.]]></string>
 </resources>

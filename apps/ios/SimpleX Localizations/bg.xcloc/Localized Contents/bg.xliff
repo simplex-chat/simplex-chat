@@ -2803,9 +2803,9 @@ This cannot be undone!</source>
         <target>Препрати</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Forward and save messages" xml:space="preserve" approved="no">
+      <trans-unit id="Forward and save messages" xml:space="preserve">
         <source>Forward and save messages</source>
-        <target state="translated">Препращане и запазване на съобщения</target>
+        <target>Препращане и запазване на съобщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3173,9 +3173,9 @@ This cannot be undone!</source>
         <target>В отговор на</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In-call sounds" xml:space="preserve" approved="no">
+      <trans-unit id="In-call sounds" xml:space="preserve">
         <source>In-call sounds</source>
-        <target state="translated">Звуци по време на разговор</target>
+        <target>Звуци по време на разговор</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3653,9 +3653,9 @@ This is your link for group %@!</source>
         <target>Реакциите на съобщения са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message source remains private." xml:space="preserve" approved="no">
+      <trans-unit id="Message source remains private." xml:space="preserve">
         <source>Message source remains private.</source>
-        <target state="translated">Източникът на съобщението остава скрит.</target>
+        <target>Източникът на съобщението остава скрит.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -3773,9 +3773,9 @@ This is your link for group %@!</source>
         <target>Очаквайте скоро още подобрения!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="More reliable network connection." xml:space="preserve" approved="no">
+      <trans-unit id="More reliable network connection." xml:space="preserve">
         <source>More reliable network connection.</source>
-        <target state="translated">По-надеждна мрежова връзка.</target>
+        <target>По-надеждна мрежова връзка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
@@ -3818,9 +3818,9 @@ This is your link for group %@!</source>
         <target>Мрежова връзка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network management" xml:space="preserve" approved="no">
+      <trans-unit id="Network management" xml:space="preserve">
         <source>Network management</source>
-        <target state="translated">Управление на мрежата</target>
+        <target>Управление на мрежата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -4374,9 +4374,9 @@ Error: %@</source>
         <target>Профилно изображение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile images" xml:space="preserve" approved="no">
+      <trans-unit id="Profile images" xml:space="preserve">
         <source>Profile images</source>
-        <target state="translated">Профилни изображения</target>
+        <target>Профилни изображения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -5199,9 +5199,9 @@ Error: %@</source>
         <target>Настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Shape profile images" xml:space="preserve" approved="no">
+      <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
-        <target state="translated">Променете формата на профилните изображения</target>
+        <target>Променете формата на профилните изображения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5369,9 +5369,9 @@ Error: %@</source>
         <target>Някой</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Square, circle, or anything in between." xml:space="preserve" approved="no">
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
-        <target state="translated">Квадрат, кръг или нещо между тях.</target>
+        <target>Квадрат, кръг или нещо между тях.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
@@ -6250,9 +6250,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Когато са налични</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When connecting audio and video calls." xml:space="preserve" approved="no">
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
         <source>When connecting audio and video calls.</source>
-        <target state="translated">При свързване на аудио и видео разговори.</target>
+        <target>При свързване на аудио и видео разговори.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
@@ -6270,9 +6270,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>WiFi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve" approved="no">
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
         <source>Will be enabled in direct chats!</source>
-        <target state="translated">Ще бъде активирано в личните чатове!</target>
+        <target>Ще бъде активирано в личните чатове!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wired ethernet" xml:space="preserve">

@@ -4374,9 +4374,9 @@ Hata: %@</target>
         <target>Profil fotoğrafı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile images" xml:space="preserve" approved="no">
+      <trans-unit id="Profile images" xml:space="preserve">
         <source>Profile images</source>
-        <target state="translated">Profil resimleri</target>
+        <target>Profil resimleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -4524,9 +4524,9 @@ Hata: %@</target>
         <target>[GitHub deposu]nda daha fazlasını okuyun(https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Receipts are disabled" xml:space="preserve" approved="no">
+      <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
-        <target state="translated">Gönderildi bilgisi devre dışı bırakıldı</target>
+        <target>Gönderildi bilgisi devre dışı bırakıldı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
@@ -5064,9 +5064,9 @@ Hata: %@</target>
         <target>Görüldü bilgisi, tüm görünür sohbet profillerindeki tüm kişiler için etkinleştirilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target state="translated">Gönderildi bilgisi tüm kişiler için etkinleştirilecektir.</target>
+        <target>Gönderildi bilgisi tüm kişiler için etkinleştirilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -5199,9 +5199,9 @@ Hata: %@</target>
         <target>Ayarlar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Shape profile images" xml:space="preserve" approved="no">
+      <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
-        <target state="translated">Profil resimlerini şekillendir</target>
+        <target>Profil resimlerini şekillendir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5369,9 +5369,9 @@ Hata: %@</target>
         <target>Biri</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Square, circle, or anything in between." xml:space="preserve" approved="no">
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
-        <target state="translated">Kare,daire, veya aralarında herhangi birşey.</target>
+        <target>Kare,daire, veya aralarında herhangi birşey.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
