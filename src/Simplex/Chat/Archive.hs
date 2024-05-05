@@ -44,6 +44,9 @@ archiveChatDbFile = "simplex_v1_chat.db"
 archiveFilesFolder :: String
 archiveFilesFolder = "simplex_v1_files"
 
+assetsFilesFolder :: String
+assetsFilesFolder = "simplex_v1_assets"
+
 exportArchive :: ArchiveConfig -> CM' ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
@@ -177,9 +180,9 @@ testSQL k =
   T.unlines $
     keySQL k
       <> [ "PRAGMA foreign_keys = ON;",
-            "PRAGMA secure_delete = ON;",
-            "SELECT count(*) FROM sqlite_master;"
-          ]
+           "PRAGMA secure_delete = ON;",
+           "SELECT count(*) FROM sqlite_master;"
+         ]
 
 keySQL :: BA.ScrubbedBytes -> [Text]
 keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]

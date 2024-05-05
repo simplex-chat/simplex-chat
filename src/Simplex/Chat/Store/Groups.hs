@@ -163,8 +163,8 @@ toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName,
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
-      wallpaper = Nothing -- TODO
-   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, wallpaper, customData}
+      uiTheme = Nothing -- TODO
+   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiTheme, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
@@ -349,7 +349,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           updatedAt = currentTs,
           chatTs = Just currentTs,
           userMemberProfileSentAt = Just currentTs,
-          wallpaper = Nothing,
+          uiTheme = Nothing,
           customData = Nothing
         }
 
@@ -416,7 +416,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   updatedAt = currentTs,
                   chatTs = Just currentTs,
                   userMemberProfileSentAt = Just currentTs,
-                  wallpaper = Nothing,
+                  uiTheme = Nothing,
                   customData = Nothing
                 },
               groupMemberId
@@ -1959,7 +1959,7 @@ createMemberContact
               authErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, wallpaper = Nothing, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, uiTheme = Nothing, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -1996,7 +1996,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, wallpaper = Nothing, customData = Nothing}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, uiTheme = Nothing, customData = Nothing}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where

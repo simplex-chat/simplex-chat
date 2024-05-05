@@ -249,6 +249,7 @@ newChatController
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
     tempDirectory <- newTVarIO optTempDirectory
+    assetsDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
     pure
       ChatController
@@ -285,6 +286,7 @@ newChatController
           showLiveItems,
           encryptLocalFiles,
           tempDirectory,
+          assetsDirectory,
           logFilePath = logFile,
           contactMergeEnabled
         }
@@ -630,6 +632,17 @@ processChatCommand' vr = \case
     createDirectoryIfMissing True rf
     chatWriteVar remoteHostsFolder $ Just rf
     ok_
+  -- has to be called before StartChat
+  APISetAppFilePaths cfg -> do
+    setFolder filesFolder $ appFilesFolder cfg
+    setFolder tempDirectory $ appTempFolder cfg
+    setFolder assetsDirectory $ appAssetsFolder cfg
+    mapM_ (setFolder remoteHostsFolder) $ appRemoteHostsFolder cfg
+    ok_
+    where
+      setFolder sel f = do
+        createDirectoryIfMissing True f
+        chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
   APIExportArchive cfg -> checkChatStopped $ lift (exportArchive cfg) >> ok_
@@ -1226,9 +1239,8 @@ processChatCommand' vr = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
-  APISetUserWallpaper _userId _wp -> ok_
-  APISetContactWallpaper _ctId _wp -> ok_
-  APISetGroupWallpaper _gId _wp -> ok_
+  APISetContactUITheme _ctId _wp -> ok_
+  APISetGroupUITheme _gId _wp -> ok_
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
@@ -7023,6 +7035,7 @@ chatCommandP =
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
+      "/_file_paths " *> (APISetAppFilePaths <$> jsonP),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
@@ -7078,9 +7091,8 @@ chatCommandP =
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
-      "/_set wallpaper user " *> (APISetUserWallpaper <$> A.decimal <*> jsonP),
-      "/_set wallpaper @" *> (APISetContactWallpaper <$> A.decimal <*> jsonP),
-      "/_set wallpaper #" *> (APISetGroupWallpaper <$> A.decimal <*> jsonP),
+      "/_set theme @" *> (APISetContactUITheme <$> A.decimal <*> jsonP),
+      "/_set theme #" *> (APISetGroupUITheme <$> A.decimal <*> jsonP),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

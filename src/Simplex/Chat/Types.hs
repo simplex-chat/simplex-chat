@@ -37,7 +37,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
-import Data.Word (Word16, Word8)
+import Data.Word (Word16)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
 import Database.SQLite.Simple.FromField (FromField (..), returnError)
 import Database.SQLite.Simple.Internal (Field (..))
@@ -45,6 +45,7 @@ import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
@@ -117,8 +118,7 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    userMemberProfileUpdatedAt :: Maybe UTCTime,
-    wallpaper :: Maybe ChatWallpaper
+    userMemberProfileUpdatedAt :: Maybe UTCTime
   }
   deriving (Show)
 
@@ -176,7 +176,7 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
-    wallpaper :: Maybe ChatWallpaper,
+    uiTheme :: Maybe UITheme,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -374,7 +374,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
-    wallpaper :: Maybe ChatWallpaper,
+    uiTheme :: Maybe UITheme,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -543,27 +543,6 @@ toLocalProfile profileId Profile {displayName, fullName, image, contactLink, pre
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, preferences} =
   Profile {displayName, fullName, image, contactLink, preferences}
-
-data ChatWallpaper
-  = CWPreset {preset :: ChatPresetWallpaper, primaryColor :: Maybe ChatUIColor, secondaryColor :: Maybe ChatUIColor, backgroundColor :: Maybe ChatUIColor}
-  | CWFile {fileName :: FilePath}
-  deriving (Eq, Show)
-
-data ChatPresetWallpaper
-  = CPWKids
-  | CPWCats
-  | CPWPets
-  | CPWFlowers
-  | CPWHearts
-  | CPWSocial
-  | CPWTravel
-  | CPWInternet
-  | CPWSpace
-  | CPWSchool
-  deriving (Eq, Show)
-
-data ChatUIColor = ChatUIColor {cRed :: Word8, cGreen :: Word8, cBlue :: Word8, cAlpha :: Word8}
-  deriving (Eq, Show)
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -1707,12 +1686,6 @@ $(JQ.deriveJSON defaultJSON ''GroupMember)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
-
-$(JQ.deriveJSON defaultJSON ''ChatUIColor)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "CPW") ''ChatPresetWallpaper)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CW") ''ChatWallpaper)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 

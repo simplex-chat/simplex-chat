@@ -240,7 +240,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         customData = Nothing,
-        wallpaper = Nothing
+        uiTheme = Nothing
       }
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
@@ -761,7 +761,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
         chatTs = Just createdAt,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
-        wallpaper = Nothing,
+        uiTheme = Nothing,
         customData = Nothing
       }
 

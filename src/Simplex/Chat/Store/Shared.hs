@@ -389,8 +389,8 @@ toContact vr user (((contactId, profileId, localDisplayName, viaGroup, displayNa
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
-      wallpaper = Nothing -- TODO
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, wallpaper, customData}
+      uiTheme = Nothing -- TODO
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, uiTheme, customData}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =
@@ -427,8 +427,7 @@ userQuery =
 
 toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) :. (Bool, Bool, Bool, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime) -> User
 toUser ((userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, contactLink, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt)) =
-  let wallpaper = Nothing -- TODO
-   in User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash, userMemberProfileUpdatedAt, wallpaper}
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash, userMemberProfileUpdatedAt}
   where
     profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences = userPreferences, localAlias = ""}
     fullPreferences = mergePreferences Nothing userPreferences
