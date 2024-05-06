@@ -202,7 +202,6 @@ struct ChatsSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
@@ -222,26 +221,6 @@ struct ChatsSearchBar: View {
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else if !searchFocussed {
-                        HStack(spacing: 24) {
-                            if m.pasteboardHasStrings {
-                                Image(systemName: "doc")
-                                    .onTapGesture {
-                                        if let str = UIPasteboard.general.string {
-                                            searchText = str
-                                        }
-                                    }
-                            }
-
-                            Image(systemName: "qrcode")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 20, height: 20)
-                                .onTapGesture {
-                                    showScanCodeSheet = true
-                                }
-                        }
-                        .padding(.trailing, 2)
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -260,10 +239,6 @@ struct ChatsSearchBar: View {
                     toggleFilterButton()
                 }
             }
-        }
-        .sheet(isPresented: $showScanCodeSheet) {
-            NewChatView(selection: .connect, showQRCodeScanner: true)
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatsView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -299,18 +274,17 @@ struct ChatsSearchBar: View {
     }
 
     private func toggleFilterButton() -> some View {
-        Button {
-            showUnreadAndFavorites = !showUnreadAndFavorites
-        } label: {
-            ZStack {
-                Color.clear
-                    .frame(width: 30, height: 30)
-                Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-                    .foregroundColor(.accentColor)
-            }
+        ZStack {
+            Color.clear
+                .frame(width: 20, height: 20)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? .accentColor : .secondary)
+                .frame(width: showUnreadAndFavorites ? 20 : 16, height: showUnreadAndFavorites ? 20 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
         }
     }
 

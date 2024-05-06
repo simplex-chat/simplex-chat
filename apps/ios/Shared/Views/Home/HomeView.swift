@@ -203,6 +203,7 @@ struct HomeView: View {
             case .newGroup: AddGroupView()
             }
         }
+//        NewChatView(selection: .connect, showQRCodeScanner: true)
     }
 
     private func iconLabel(_ image: String, _ title: LocalizedStringKey) -> some View {
