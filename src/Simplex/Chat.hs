@@ -1239,8 +1239,21 @@ processChatCommand' vr = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
-  APISetContactUITheme _ctId _wp -> ok_
-  APISetGroupUITheme _gId _wp -> ok_
+  APISetUserUITheme uId uiTheme -> do
+    withStore $ \db -> do
+      user <- getUser db uId
+      liftIO $ setUserUITheme db user uiTheme
+    ok_
+  APISetContactUITheme ctId uiTheme -> withUser $ \user -> do
+    withStore $ \db -> do
+      ct <- getContact db vr user ctId
+      liftIO $ setContactUITheme db user ct uiTheme
+    ok_
+  APISetGroupUITheme gId uiTheme -> withUser $ \user -> do
+    withStore $ \db -> do
+      g <- getGroupInfo db vr user gId
+      liftIO $ setGroupUITheme db user g uiTheme
+    ok_
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
@@ -7104,8 +7117,9 @@ chatCommandP =
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
-      "/_set theme @" *> (APISetContactUITheme <$> A.decimal <*> jsonP),
-      "/_set theme #" *> (APISetGroupUITheme <$> A.decimal <*> jsonP),
+      "/_set theme user " *> (APISetUserUITheme <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set theme @" *> (APISetContactUITheme <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set theme #" *> (APISetGroupUITheme <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

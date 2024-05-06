@@ -118,7 +118,8 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    userMemberProfileUpdatedAt :: Maybe UTCTime
+    userMemberProfileUpdatedAt :: Maybe UTCTime,
+    uiTheme :: Maybe UITheme
   }
   deriving (Show)
 

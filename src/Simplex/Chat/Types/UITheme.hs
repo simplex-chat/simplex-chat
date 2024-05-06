@@ -48,11 +48,12 @@ instance ToJSON ColorScheme where
   toEncoding = strToJEncoding
 
 data ChatWallpaper = ChatWallpaper
-  { scale :: Maybe ChatWallpaperScale,
-    preset :: Maybe ChatWallpaperPreset,
+  { preset :: Maybe ChatWallpaperPreset,
     imageFile :: Maybe FilePath,
     background :: Maybe UIColor,
-    tint :: Maybe UIColor
+    tint :: Maybe UIColor,
+    scale :: Maybe ChatWallpaperScale,
+    scaleFactor :: Maybe Double
   }
   deriving (Eq, Show)
 

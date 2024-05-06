@@ -8,6 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20240430_ui_theme :: Query
 m20240430_ui_theme =
   [sql|
+ALTER TABLE users ADD COLUMN ui_theme TEXT;  
 ALTER TABLE contacts ADD COLUMN ui_theme TEXT;
 ALTER TABLE groups ADD COLUMN ui_theme TEXT;
 |]
@@ -15,6 +16,7 @@ ALTER TABLE groups ADD COLUMN ui_theme TEXT;
 down_m20240430_ui_theme :: Query
 down_m20240430_ui_theme =
   [sql|
+ALTER TABLE users DROP COLUMN ui_theme;
 ALTER TABLE contacts DROP COLUMN ui_theme;
 ALTER TABLE groups DROP COLUMN ui_theme;
 |]

@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -44,17 +45,22 @@ archiveChatDbFile = "simplex_v1_chat.db"
 archiveFilesFolder :: String
 archiveFilesFolder = "simplex_v1_files"
 
-assetsFilesFolder :: String
-assetsFilesFolder = "simplex_v1_assets"
+archiveAssetsFolder :: String
+archiveAssetsFolder = "simplex_v1_assets"
+
+wallpapersFolder :: String
+wallpapersFolder = "wallpapers"
 
 exportArchive :: ArchiveConfig -> CM' ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
-    StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
+    StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
+    forM_ assetsPath $ \fp ->
+      copyDirectoryFiles (fp </> wallpapersFolder) $ dir </> archiveAssetsFolder </> wallpapersFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
 
@@ -62,24 +68,24 @@ importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
-    fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
+    fs@StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     liftIO $ closeSQLiteStore `withStores` fs
     backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
-    copyFiles dir filesPath
-      `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
+    errs <- copyFiles (dir </> archiveFilesFolder) filesPath
+    errs' <- copyFiles (dir </> archiveAssetsFolder </> wallpapersFolder) ((</> wallpapersFolder) <$> assetsPath)
+    pure $ errs <> errs'
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
-    copyFiles dir filesPath = do
-      let filesDir = dir </> archiveFilesFolder
-      case filesPath of
-        Just fp ->
-          ifM
-            (doesDirectoryExist filesDir)
-            (copyDirectoryFiles filesDir fp)
-            (pure [])
-        _ -> pure []
+    copyFiles fromDir = \case
+      Just fp ->
+        ifM
+          (doesDirectoryExist fromDir)
+          (copyDirectoryFiles fromDir fp)
+          (pure [])
+          `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
+      _ -> pure []
 
 withTempDir :: ArchiveConfig -> (String -> (FilePath -> CM' a) -> CM' a)
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
@@ -88,7 +94,7 @@ withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
 
 copyDirectoryFiles :: FilePath -> FilePath -> CM' [ArchiveError]
 copyDirectoryFiles fromDir toDir = do
-  createDirectoryIfMissing False toDir
+  createDirectoryIfMissing True toDir
   fs <- listDirectory fromDir
   foldM copyFileCatchError [] fs
   where
@@ -106,6 +112,7 @@ deleteStorage = do
   liftIO $ closeSQLiteStore `withStores` fs
   remove `withDBs` fs
   mapM_ removeDir $ filesPath fs
+  mapM_ removeDir $ assetsPath fs
   mapM_ removeDir =<< chatReadVar tempDirectory
   where
     remove f = whenM (doesFileExist f) $ removeFile f
@@ -114,15 +121,17 @@ deleteStorage = do
 data StorageFiles = StorageFiles
   { chatStore :: SQLiteStore,
     agentStore :: SQLiteStore,
-    filesPath :: Maybe FilePath
+    filesPath :: Maybe FilePath,
+    assetsPath :: Maybe FilePath
   }
 
 storageFiles :: CM' StorageFiles
 storageFiles = do
-  ChatController {chatStore, filesFolder, smpAgent} <- ask
+  ChatController {chatStore, filesFolder, assetsDirectory, smpAgent} <- ask
   let agentStore = agentClientStore smpAgent
   filesPath <- readTVarIO filesFolder
-  pure StorageFiles {chatStore, agentStore, filesPath}
+  assetsPath <- readTVarIO assetsDirectory
+  pure StorageFiles {chatStore, agentStore, filesPath, assetsPath}
 
 sqlCipherExport :: DBEncryptionConfig -> CM ()
 sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key', keepKey} =
