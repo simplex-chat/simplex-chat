@@ -3619,13 +3619,12 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
-  withEntityLock_ cRef_ $
-    withFileLock "processAgentMsgSndFile" fileId $
-      withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-        Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
-        _ -> do
-          lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
-          throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+  withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
+    withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+      Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
+      _ -> do
+        lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+        throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
     withEntityLock_ cRef_ = case cRef_ of
@@ -3747,13 +3746,12 @@ splitFileDescr rfdText = do
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
-  withEntityLock_ cRef_ $
-    withFileLock "processAgentMsgRcvFile" fileId $
-      withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-        Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
-        _ -> do
-          lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
-          throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
+  withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
+    withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
+      Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
+      _ -> do
+        lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
+        throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
   where
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
     withEntityLock_ cRef_ = case cRef_ of
