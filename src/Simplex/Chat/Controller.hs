@@ -66,7 +66,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SubscriptionsDiff, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -514,6 +514,7 @@ data ChatCommand
   | ResetAgentStats
   | GetAgentSubs
   | GetAgentSubsDetails
+  | GetAgentSubsDiff
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | -- The parser will return this command for strings that start from "//".
@@ -763,6 +764,7 @@ data ChatResponse
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentSubsDiff {agentSubsDiff :: SubscriptionsDiff}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}

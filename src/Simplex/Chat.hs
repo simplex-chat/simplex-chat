@@ -2244,6 +2244,7 @@ processChatCommand' vr = \case
             SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
             _ -> m
   GetAgentSubsDetails -> lift $ CRAgentSubsDetails <$> withAgent' getAgentSubscriptions
+  GetAgentSubsDiff -> lift $ CRAgentSubsDiff <$> withAgent' AC.diffSubscriptions
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
   CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
@@ -7408,6 +7409,7 @@ chatCommandP =
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
       "/get subs details" $> GetAgentSubsDetails,
+      "/get subs diff" $> GetAgentSubsDiff,
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
       "//" *> (CustomChatCommand <$> A.takeByteString)

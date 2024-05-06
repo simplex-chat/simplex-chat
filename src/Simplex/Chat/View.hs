@@ -372,6 +372,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
       <> ("removed subscriptions: " : map sShow removedSubscriptions)
   CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> plain (LB.unpack $ J.encode agentWorkersSummary)]
+  CRAgentSubsDiff asd ->
+    [ "agent subs diff:",
+      plain . LB.unpack $ J.encode asd
+    ]
   CRAgentWorkersDetails {agentWorkersDetails} ->
     [ "agent workers details:",
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
