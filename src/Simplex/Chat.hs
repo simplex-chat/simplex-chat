@@ -90,7 +90,7 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescr
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -2171,20 +2171,7 @@ processChatCommand' vr = \case
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> lift (withAgent' resetAgentStats) >> ok_
-  GetAgentSubs -> lift $ summary <$> withAgent' getAgentSubscriptions
-    where
-      summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
-        CRAgentSubs
-          { activeSubs = foldl' countSubs M.empty activeSubscriptions,
-            pendingSubs = foldl' countSubs M.empty pendingSubscriptions,
-            removedSubs = foldl' accSubErrors M.empty removedSubscriptions
-          }
-        where
-          countSubs m SubInfo {server} = M.alter (Just . maybe 1 (+ 1)) server m
-          accSubErrors m = \case
-            SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
-            _ -> m
-  GetAgentSubsDetails -> lift $ CRAgentSubsDetails <$> withAgent' getAgentSubscriptions
+  GetAgentSubs -> lift $ CRAgentSubs <$> withAgent' getAgentSubscriptions
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
   CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
@@ -7300,7 +7287,6 @@ chatCommandP =
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
-      "/get subs details" $> GetAgentSubsDetails,
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
       "//" *> (CustomChatCommand <$> A.takeByteString)

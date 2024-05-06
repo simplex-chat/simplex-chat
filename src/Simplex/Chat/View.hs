@@ -22,7 +22,6 @@ import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
@@ -51,7 +50,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import qualified Simplex.FileTransfer.Transport as XFTPTransport
-import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
+import Simplex.Messaging.Agent.Client (ActivePendingSubs (..), ProtocolTestFailure (..), ProtocolTestStep (..), SubInfo (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
@@ -357,18 +356,14 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
-  CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
-    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
-      <> ("active subscriptions:" : listSubs activeSubs)
-      <> ("pending subscriptions:" : listSubs pendingSubs)
-      <> ("removed subscriptions:" : listSubs removedSubs)
+  CRAgentSubs SubscriptionsInfo {summary, servers} -> "Subscriptions:" : activePending summary <> concatMap (uncurry byServer) (M.assocs servers)
     where
-      listSubs :: Show a => Map Text a -> [StyledString]
-      listSubs = map (\(srv, info) -> plain $ srv <> ": " <> tshow info) . M.assocs
-  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} ->
-    ("active subscriptions:" : map sShow activeSubscriptions)
-      <> ("pending subscriptions: " : map sShow pendingSubscriptions)
-      <> ("removed subscriptions: " : map sShow removedSubscriptions)
+      byServer srv aps = plain srv : activePending aps
+      activePending ActivePendingSubs {active_, pending_} =
+        [ "  active: " <> subInfo active_,
+          "  pending: " <> subInfo pending_
+        ]
+      subInfo SubInfo {count, clientsMissing, clientsExtra} = sShow count <> " (clients: -" <> sShow clientsMissing <> " +" <> sShow clientsExtra <> ")"
   CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> plain (LB.unpack $ J.encode agentWorkersSummary)]
   CRAgentWorkersDetails {agentWorkersDetails} ->
     [ "agent workers details:",

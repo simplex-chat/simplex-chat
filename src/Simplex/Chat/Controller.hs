@@ -493,7 +493,6 @@ data ChatCommand
   | GetAgentStats
   | ResetAgentStats
   | GetAgentSubs
-  | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | -- The parser will return this command for strings that start from "//".
@@ -739,8 +738,7 @@ data ChatResponse
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
-  | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
-  | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentSubs {agentSubs :: SubscriptionsInfo}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
