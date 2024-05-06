@@ -1769,5 +1769,5 @@
     <string name="network_type_ethernet">Kablolu ethernet</string>
     <string name="settings_section_title_profile_images">Profil resimleri</string>
     <string name="v5_7_shape_profile_images">Profil resimlerini şekillendir</string>
-    <string name="v5_7_shape_profile_images_descr">Kare,daire, veya aralarında herhangi birşey.</string>
+    <string name="v5_7_shape_profile_images_descr">Kare,daire, veya aralarında herhangi bir şey.</string>
 </resources>
