@@ -1180,8 +1180,8 @@ viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [St
 viewServerTestResult (AProtoServerWithAuth p _) = \case
   Just ProtocolTestFailure {testStep, testError} ->
     result
-      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTPTransport.AUTH]
+      <> [pName <> " server requires authorization to create queues, check password" | SMP _ SMP.AUTH <- [testError], testStep == TSCreateQueue]
+      <> [pName <> " server requires authorization to upload files, check password" | XFTP _ XFTPTransport.AUTH <- [testError], testStep == TSCreateFile]
       <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
@@ -2021,7 +2021,7 @@ viewChatError logLevel testView = \case
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
     CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
-    SMP SMP.AUTH ->
+    SMP _ SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
