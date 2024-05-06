@@ -54,6 +54,7 @@ struct ContactsView: View {
                         ContactListNavLink(contact: contact)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .padding(.trailing, -16)
+                            .frame(height: 38)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(contact.id))
                     }
                     .offset(x: -8)

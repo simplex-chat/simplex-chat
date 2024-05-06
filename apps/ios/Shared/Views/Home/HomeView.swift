@@ -248,8 +248,13 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func contactsView() -> some View {
-        ContactsView()
-            .padding(.top, 5)
+        if oneHandUI {
+            ContactsView()
+                .padding(.vertical, 5)
+        } else {
+            ContactsView()
+                .padding(.top, 5)
+        }
     }
 
     @ViewBuilder private func chatsView() -> some View {

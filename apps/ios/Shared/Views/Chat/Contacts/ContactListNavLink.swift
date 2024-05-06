@@ -14,7 +14,7 @@ struct ContactListNavLink: View {
     
     var body: some View {
         HStack{
-            ProfileImage(imageStr: contact.image, size: 30)
+            ProfileImage(imageStr: contact.image, size: 38)
                 .padding(.trailing, 2)
             Text(contact.chatViewName)
                 .lineLimit(1)
