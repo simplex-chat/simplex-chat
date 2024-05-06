@@ -9,9 +9,15 @@
 import SwiftUI
 import SimpleXChat
 
+enum HomeTab {
+    case contacts
+    case chats
+}
+
 struct HomeView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var homeTab: HomeTab
+    @Binding var showSettings: Bool
+    @State private var homeTab: HomeTab = .chats
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
     @State private var newChatMenuOption: NewChatMenuOption? = nil
@@ -44,10 +50,8 @@ struct HomeView: View {
 //                ZStack {
                 VStack {
                     switch homeTab {
-                    case .settings: settingsView()
                     case .contacts: contactsView()
                     case .chats: chatsView()
-                    case .newChat: newChatView()
                     }
                 }
                 .toolbar {
@@ -95,7 +99,7 @@ struct HomeView: View {
                 }
             }
             UserPicker(
-                homeTab: $homeTab,
+                showSettings: $showSettings,
                 showConnectDesktop: $showConnectDesktop,
                 userPickerVisible: $userPickerVisible
             )
@@ -129,7 +133,7 @@ struct HomeView: View {
                     userPickerVisible.toggle()
                 }
             } else {
-                homeTab = .settings
+                showSettings = true
             }
         } label: {
             if user.image != nil {
@@ -150,7 +154,7 @@ struct HomeView: View {
                 )
             }
         }
-        .foregroundColor(homeTab == .settings ? .accentColor : .secondary)
+        .foregroundColor(.secondary)
     }
 
     private func userUnreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
@@ -177,30 +181,27 @@ struct HomeView: View {
         .foregroundColor(homeTab == .chats ? .accentColor : .secondary)
     }
 
-    @ViewBuilder private func newChatButton() -> some View {
-        if homeTab != .newChat {
-            Menu {
-                Button {
-                    newChatMenuOption = .newContact
-                    homeTab = .newChat
-                } label: {
-                    Text("Add contact")
-                }
-                Button {
-                    newChatMenuOption = .newGroup
-                    homeTab = .newChat
-                } label: {
-                    Text("Create group")
-                }
+    private func newChatButton() -> some View {
+        Menu {
+            Button {
+                newChatMenuOption = .newContact
             } label: {
-                iconLabel("square.and.pencil", "New chat")
+                Text("Add contact")
             }
-            .foregroundColor(.secondary)
-        } else {
-            Button {} label: {
-                iconLabel("square.and.pencil", "New chat")
+            Button {
+                newChatMenuOption = .newGroup
+            } label: {
+                Text("Create group")
             }
-            .foregroundColor(.accentColor)
+        } label: {
+            iconLabel("square.and.pencil", "New chat")
+        }
+        .foregroundColor(.secondary)
+        .sheet(item: $newChatMenuOption) { opt in
+            switch opt {
+            case .newContact: NewChatView(selection: .invite)
+            case .newGroup: AddGroupView()
+            }
         }
     }
 
@@ -216,7 +217,7 @@ struct HomeView: View {
     }
 
     private func settingsView() -> some View {
-        SettingsView(homeTab: $homeTab)
+        SettingsView(showSettings: $showSettings)
     }
 
     private func contactsView() -> some View {
@@ -275,5 +276,5 @@ struct BlurView: UIViewRepresentable {
 }
 
 #Preview {
-    HomeView(homeTab: Binding.constant(.chats))
+    HomeView(showSettings: Binding.constant(false))
 }

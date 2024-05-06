@@ -10,7 +10,7 @@ import SwiftUI
 
 struct ChatHelp: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var homeTab: HomeTab
+    @Binding var showSettings: Bool
     @State private var newChatMenuOption: NewChatMenuOption? = nil
 
     var body: some View {
@@ -24,7 +24,7 @@ struct ChatHelp: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("To ask any questions and to receive updates:")
                 Button("connect to SimpleX Chat developers.") {
-                    homeTab = .chats
+                    showSettings = false
                     DispatchQueue.main.async {
                         UIApplication.shared.open(simplexTeamURL)
                     }
@@ -63,6 +63,6 @@ struct ChatHelp: View {
 
 struct ChatHelp_Previews: PreviewProvider {
     static var previews: some View {
-        return ChatHelp(homeTab: Binding.constant(.chats))
+        return ChatHelp(showSettings: Binding.constant(false))
     }
 }

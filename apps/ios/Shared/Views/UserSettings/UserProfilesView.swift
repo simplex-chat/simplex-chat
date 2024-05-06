@@ -8,7 +8,7 @@ import SimpleXChat
 
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
-    @Binding var homeTab: HomeTab
+    @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
@@ -280,7 +280,7 @@ struct UserProfilesView: View {
                     await MainActor.run {
                         onboardingStageDefault.set(.step1_SimpleXInfo)
                         m.onboardingStage = .step1_SimpleXInfo
-                        homeTab = .chats
+                        showSettings = false
                     }
                 }
             } else {
@@ -403,6 +403,6 @@ public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        UserProfilesView(homeTab: Binding.constant(.settings))
+        UserProfilesView(showSettings: Binding.constant(false))
     }
 }

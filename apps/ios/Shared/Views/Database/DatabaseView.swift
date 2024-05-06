@@ -41,7 +41,7 @@ enum DatabaseAlert: Identifiable {
 
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
-    @Binding var homeTab: HomeTab
+    @Binding var showSettings: Bool
     @State private var runChat = false
     @State private var alert: DatabaseAlert? = nil
     @State private var showFileImporter = false
@@ -409,7 +409,7 @@ struct DatabaseView: View {
 
     private func startChat() {
         if m.chatDbChanged {
-            homeTab = .chats
+            showSettings = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 resetChatCtrl()
                 do {
@@ -493,6 +493,6 @@ func deleteChatAsync() async throws {
 
 struct DatabaseView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseView(homeTab: Binding.constant(.chats), chatItemTTL: .none)
+        DatabaseView(showSettings: Binding.constant(false), chatItemTTL: .none)
     }
 }
