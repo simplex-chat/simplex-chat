@@ -23,6 +23,7 @@ revision: 23.04.2024
 - [I see image preview but cannot open the image](#i-see-image-preview-but-cannot-open-the-image)
 - [I cannot play a voice message](#i-cannot-play-a-voice-message)
 - [Audio or video calls do not connect](#audio-or-video-calls-do-not-connect)
+- [Audio or video calls without e2e encryption](#audio-or-video-calls-without-e2e-encryption)
 - [I clicked the link to connect, but could not connect](#i-clicked-the-link-to-connect-but-could-not-connect)
 
 [Privacy and security](#privacy-and-security)
@@ -160,6 +161,21 @@ If you can connect to the server, please report this issue to us privately, incl
 - if the issue is on desktop app, which browser is used for calls. In this case also please check browser console during the call and send us the log, ideally from both sides of the unsuccessful calls.
 
 Thank you for helping us debug and improve calls.
+
+### Audio or video calls without e2e encryption
+
+During the call, the app indicates whether or not the call has end-to-end encryption.
+
+If one of the call parties uses Android (or desktop) app, the call would use Android system webview (or browser). Some older systems do not support media stream encryption, in which case the call will connect without it.
+
+To determine whether it is the limitation of your, your contact's or both devices:
+- if some of your calls have e2e encryption but some don't, then it's certainly the old webview version or browser of your contacts - please ask them to upgrade.
+- if you are not sure, you can check at what point "no e2e encryption" appears:
+  - if it is shown when the call rings on your device, then your contact's device does not support call encryption.
+  - if it is shown on your screen as soon as you start the call, then your device does not support call encryption.
+  - if in the beginning of the call your device shows "e2e encryption" but when your contact accepts the call it changes to "no e2e encryption", then it is only your contact's device that does not support it.
+
+You need to upgrade webview (some Android systems allow it), Android system or the device to have support for e2e encryption in the calls - all modern webviews (and browsers) support it.
 
 ### I clicked the link to connect, but could not connect
 

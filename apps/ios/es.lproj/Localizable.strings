@@ -2961,6 +2961,9 @@
 "Profile image" = "Imagen del perfil";
 
 /* No comment provided by engineer. */
+"Profile images" = "Imágenes del perfil";
+
+/* No comment provided by engineer. */
 "Profile name" = "Nombre del perfil";
 
 /* No comment provided by engineer. */
@@ -3503,6 +3506,9 @@
 /* No comment provided by engineer. */
 "Settings" = "Configuración";
 
+/* No comment provided by engineer. */
+"Shape profile images" = "Dar forma a las imágenes de perfil";
+
 /* chat item action */
 "Share" = "Compartir";
 
@@ -3604,6 +3610,9 @@
 
 /* notification title */
 "Somebody" = "Alguien";
+
+/* No comment provided by engineer. */
+"Square, circle, or anything in between." = "Cuadrada, circular o cualquier forma intermedia.";
 
 /* chat item text */
 "standard end-to-end encryption" = "cifrado estándar de extremo a extremo";
