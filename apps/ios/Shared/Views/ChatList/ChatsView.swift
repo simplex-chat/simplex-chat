@@ -32,18 +32,9 @@ struct ChatsView: View {
 
     private var viewBody: some View {
         VStack {
-            if chatModel.chats.isEmpty {
-                onboardingButtons()
-            }
-            chatsView
-                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-        }
-    }
-
-    private var chatsView: some View {
-        VStack {
             chatList
         }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -107,43 +98,6 @@ struct ChatsView: View {
         Circle()
             .frame(width: size, height: size)
             .foregroundColor(.accentColor)
-    }
-
-    // TODO remove?
-    private func onboardingButtons() -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Path { p in
-                p.move(to: CGPoint(x: 8, y: 0))
-                p.addLine(to: CGPoint(x: 16, y: 10))
-                p.addLine(to: CGPoint(x: 0, y: 10))
-                p.addLine(to: CGPoint(x: 8, y: 0))
-            }
-            .fill(Color.accentColor)
-            .frame(width: 20, height: 10)
-            .padding(.trailing, 12)
-
-            connectButton("Tap to start a new chat") {
-                newChatMenuOption = .newContact
-            }
-
-            Spacer()
-            Text("You have no chats")
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity)
-        }
-        .padding(.trailing, 6)
-        .frame(maxHeight: .infinity)
-    }
-
-    private func connectButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 20)
-        }
-        .background(Color.accentColor)
-        .foregroundColor(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private func filteredChats() -> [Chat] {
