@@ -1069,6 +1069,7 @@ testMaintenanceMode tmp = do
       bob <# "alice> hi again"
       bob #> "@alice hello"
       alice <# "bob> hello"
+      threadDelay 100000
       -- export / delete / import
       alice ##> "/_stop"
       alice <## "chat stopped"
@@ -1149,6 +1150,7 @@ testDatabaseEncryption tmp = do
       alice <## "error: chat not stopped"
       alice ##> "/db decrypt mykey"
       alice <## "error: chat not stopped"
+      threadDelay 100000
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db decrypt mykey"

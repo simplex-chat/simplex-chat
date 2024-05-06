@@ -66,7 +66,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SubscriptionsDiff, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -207,6 +207,7 @@ data ChatController = ChatController
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
+    agentDeliveryStatuses :: TMap AgentConnId (TVar AgentDeliveryStatus),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -232,6 +233,23 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
   }
+
+data AgentDeliveryStatus = AgentDeliveryStatus
+  { lastCmd :: UTCTime,
+    tracking :: Text,
+    isMSG :: Bool, -- False for RCVD
+    connId :: Maybe Int64, -- chat connection ID
+    msgBodyPfx :: Text,
+    eventTag :: Maybe Text, -- tshow of ACMEventTag (for JSON instances)
+    ackSent :: Maybe (UTCTime, Text), -- strEncode of random CorrId
+    pendingAcks :: Map Text Bool
+  }
+  deriving (Show) -- for ChatResponse
+
+agentDeliveryOk :: AgentDeliveryStatus -> Bool
+agentDeliveryOk AgentDeliveryStatus {ackSent, pendingAcks} = case ackSent of
+  Nothing -> False
+  Just (_, corrId) -> M.lookup corrId pendingAcks == Just True && and pendingAcks
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)
@@ -488,12 +506,15 @@ data ChatCommand
   | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
+  | DebugDelivery Bool
+  | DebugConnection (Either Int64 AgentConnId)
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats
   | ResetAgentStats
   | GetAgentSubs
   | GetAgentSubsDetails
+  | GetAgentSubsDiff
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | -- The parser will return this command for strings that start from "//".
@@ -735,12 +756,15 @@ data ChatResponse
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
+  | CRDebugDelivery {debugDelivery :: Map Text AgentDeliveryStatus}
+  | CRDebugConnection {debugConnection :: DebugConnectionStatus}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentSubsDiff {agentSubsDiff :: SubscriptionsDiff}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
@@ -753,6 +777,21 @@ data ChatResponse
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
+  deriving (Show)
+
+data DebugConnectionStatus = DebugConnectionStatus
+  { deliveryStatus :: Maybe AgentDeliveryStatus,
+    networkStatus :: Maybe NetworkStatus,
+    -- from agent's TRecvQ via rcvId
+    inActive :: Bool, -- should the delivery work right now?
+    inPending :: Bool, -- is there a temporary error?
+    -- from receive queue
+    queueStatus :: Text,
+    server :: (Text, String), -- what's the server for this connection? -- XXX: reveals private servers and association
+    smpClientStatus :: Text, -- is there an active client for it?
+    subWorkerStatus :: Text, -- a session was recently restarted and tries to resubscribe
+    connection :: Connection
+  }
   deriving (Show)
 
 -- some of these can only be used as command responses
@@ -1455,6 +1494,10 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
+
+$(JQ.deriveJSON J.defaultOptions ''AgentDeliveryStatus)
+
+$(JQ.deriveJSON J.defaultOptions ''DebugConnectionStatus)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

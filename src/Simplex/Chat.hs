@@ -91,14 +91,18 @@ import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
+import qualified Simplex.Messaging.Agent.Client as AC
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
+import qualified Simplex.Messaging.Agent.Store as AS
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import qualified Simplex.Messaging.Agent.Store.SQLite as ADB
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
+import qualified Simplex.Messaging.Agent.TRcvQueues as RQ
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -227,6 +231,7 @@ newChatController
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
     connNetworkStatuses <- atomically TM.empty
+    agentDeliveryStatuses <- atomically TM.empty
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- atomically TM.empty
@@ -263,6 +268,7 @@ newChatController
           inputQ,
           outputQ,
           connNetworkStatuses,
+          agentDeliveryStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -2149,6 +2155,59 @@ processChatCommand' vr = \case
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
+  DebugDelivery showAll -> do
+    ads <- mapM readTVarIO =<< readTVarIO =<< asks agentDeliveryStatuses
+    let collect (acId, ds) = if not showAll && agentDeliveryOk ds then Nothing else Just (decodeLatin1 $ strEncode acId, ds)
+    pure $ CRDebugDelivery . M.fromList . mapMaybe collect $ M.toList ads
+  DebugConnection (Left connId) -> withUser $ \user -> do
+    Connection {agentConnId} <- withStore $ \db -> getConnectionById db vr user connId
+    processChatCommand $ DebugConnection (Right agentConnId)
+  DebugConnection (Right acId@(AgentConnId acId')) -> do
+    user@User {userId} <- withStore' (`getUserByAConnId` acId) >>= maybe (throwError . ChatErrorStore $ SEUserNotFoundByAConnId acId) pure
+    AS.RcvQueue {server, rcvId = rcvId', status = rqStatus} <- withAgent $ \ac ->
+      -- dive into agent internals
+      liftIOEither . (`runReaderT` agentEnv ac) . runExceptT $ AC.withStore ac $ \adb ->
+        ADB.getPrimaryRcvQueue adb acId'
+    let tSess = (userId, server, Just acId')
+        SMP.ProtocolServer {host, port} = server
+    AgentClient {activeSubs, pendingSubs, smpClients, smpSubWorkers} <- withAgent pure
+    inActive <- any (\AS.RcvQueue {rcvId} -> rcvId == rcvId') <$> atomically (RQ.getSessQueues tSess activeSubs)
+    inPending <- any (\AS.RcvQueue {rcvId} -> rcvId == rcvId') <$> atomically (RQ.getSessQueues tSess pendingSubs)
+    smpClient <- atomically (TM.lookup (tSess $> Nothing) smpClients) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    smpClientIsolated <- atomically (TM.lookup tSess smpClients) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    let smpClientStatus = case smpClient <|> smpClientIsolated of
+          Nothing -> "missing"
+          Just Nothing -> "connecting"
+          Just (Just (Left err)) -> tshow err
+          Just (Just (Right _client)) -> "connected"
+    subWorker <- atomically (TM.lookup (tSess $> Nothing) smpSubWorkers) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    subWorkerIsolated <- atomically (TM.lookup tSess smpSubWorkers) >>= mapM (\AC.SessionVar {sessionVar} -> atomically (tryReadTMVar sessionVar))
+    let subWorkerStatus = case subWorker <|> subWorkerIsolated of
+          Nothing -> "idle"
+          Just Nothing -> "waiting"
+          Just (Just _async) -> "working"
+    connection <-
+      withStore (\db -> getConnectionEntity db vr user acId) >>= \case
+        RcvDirectMsgConnection {entityConnection} -> pure entityConnection
+        RcvGroupMsgConnection {entityConnection} -> pure entityConnection
+        SndFileConnection {entityConnection} -> pure entityConnection
+        RcvFileConnection {entityConnection} -> pure entityConnection
+        UserContactConnection {entityConnection} -> pure entityConnection
+    deliveryStatus <- mapM readTVarIO . M.lookup acId =<< readTVarIO =<< asks agentDeliveryStatuses
+    networkStatus <- M.lookup acId <$> chatReadVar connNetworkStatuses
+    pure $
+      CRDebugConnection
+        DebugConnectionStatus
+          { deliveryStatus,
+            networkStatus,
+            inActive,
+            inPending,
+            server = (decodeLatin1 $ strEncode host, port),
+            smpClientStatus,
+            subWorkerStatus,
+            queueStatus = tshow rqStatus,
+            connection
+          }
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
@@ -2185,6 +2244,7 @@ processChatCommand' vr = \case
             SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
             _ -> m
   GetAgentSubsDetails -> lift $ CRAgentSubsDetails <$> withAgent' getAgentSubscriptions
+  GetAgentSubsDiff -> lift $ CRAgentSubsDiff <$> withAgent' AC.diffSubscriptions
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
   CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
@@ -2484,8 +2544,6 @@ processChatCommand' vr = \case
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci)
-    drgRandomBytes :: Int -> CM ByteString
-    drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryChatError (withStore (`getUser` userId)) >>= \case
@@ -3004,7 +3062,7 @@ receiveFile' user ft rcvInline_ filePath_ = do
   where
     processError = \case
       -- TODO AChatItem in Cancelled events
-      ChatErrorAgent (SMP SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
+      ChatErrorAgent (SMP _ SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
       ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
       e -> throwError e
 
@@ -3341,7 +3399,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
             errorNetworkStatus :: ChatError -> String
             errorNetworkStatus = \case
               ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
-              ChatErrorAgent (SMP SMP.AUTH) _ -> "contact deleted"
+              ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
     -- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> CM ()
@@ -3546,13 +3604,29 @@ processAgentMessage _ connId DEL_CONN =
 processAgentMessage _ "" (ERR e) =
   toView $ CRChatError Nothing $ ChatErrorAgent e Nothing
 processAgentMessage corrId connId msg = do
-  lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
+  let acId = AgentConnId connId
+      acTag = aCommandTag msg
+  when (acTag == MSG_ || acTag == RCVD_) . lift $ trackNewDelivery acId msg
+  lockEntity <- critical (withStore (`getChatLockEntity` acId))
   withEntityLock "processAgentMessage" lockEntity $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
-    critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
+    critical (withStore' (`getUserByAConnId` acId)) >>= \case
       Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
-      _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+      _ -> throwChatError $ CENoConnectionUser acId
+
+-- TODO: clean up deliveries
+trackNewDelivery :: AgentConnId -> ACommand 'Agent 'AEConn -> CM' ()
+trackNewDelivery acId msg = do
+  now <- liftIO getCurrentTime
+  asks agentDeliveryStatuses >>= atomically . TM.alterF (updateConn now) acId
+  where
+    (isMSG, msgBodyPfx) = case msg of
+      MSG _ _ msgBody -> (True, T.take 1000 $ safeDecodeUtf8 msgBody)
+      _ -> (False, "")
+    updateConn lastCmd = \case
+      Nothing -> Just <$> newTVar AgentDeliveryStatus {lastCmd, tracking = "create", isMSG, connId = Nothing, msgBodyPfx, eventTag = Nothing, ackSent = Nothing, pendingAcks = M.empty}
+      Just v -> Just v <$ modifyTVar' v (\AgentDeliveryStatus {pendingAcks} -> AgentDeliveryStatus {lastCmd, tracking = "create", isMSG, connId = Nothing, msgBodyPfx, eventTag = Nothing, ackSent = Nothing, pendingAcks = M.filter not pendingAcks})
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -3777,15 +3851,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       _ -> toView $ CRSubscriptionEnd user entity
     MSGNTF smpMsgInfo -> toView $ CRNtfMessage user entity $ ntfMsgInfo smpMsgInfo
     _ -> case entity of
-      RcvDirectMsgConnection conn contact_ ->
+      RcvDirectMsgConnection conn contact_ -> do
+        storeDeliveryConn conn
         processDirectMessage agentMessage entity conn contact_
-      RcvGroupMsgConnection conn gInfo m ->
+      RcvGroupMsgConnection conn gInfo m -> do
+        storeDeliveryConn conn
         processGroupMessage agentMessage entity conn gInfo m
-      RcvFileConnection conn ft ->
+      RcvFileConnection conn ft -> do
+        storeDeliveryConn conn
         processRcvFileConn agentMessage entity conn ft
-      SndFileConnection conn ft ->
+      SndFileConnection conn ft -> do
+        storeDeliveryConn conn
         processSndFileConn agentMessage entity conn ft
-      UserContactConnection conn uc ->
+      UserContactConnection conn uc -> do
+        storeDeliveryConn conn
         processUserContactRequest agentMessage entity conn uc
   where
     updateConnStatus :: ConnectionEntity -> CM ConnectionEntity
@@ -3795,7 +3874,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withStore' $ \db -> updateConnectionStatus db conn connStatus
         pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
-
+    storeDeliveryConn :: Connection -> CM ()
+    storeDeliveryConn Connection {connId} = lift $ agentDeliveryStatus (AgentConnId agentConnId) "storeDeliveryConn" $ \ad -> ad {connId = Just connId}
     agentMsgConnStatus :: ACommand 'Agent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
@@ -3874,6 +3954,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
             (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody
+            lift $ agentDeliveryStatus (AgentConnId agentConnId) "eventTag" $ \ad -> ad {eventTag = Just $! tshow (toCMEventTag event)}
             let ct'' = ct' {activeConn = Just conn''} :: Contact
             assertDirectAllowed user MDRcv ct'' $ toCMEventTag event
             case event of
@@ -4277,11 +4358,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         withAckMessage agentConnId msgMeta True $ do
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) "group MSG" id
           checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) "after checkIntegrityCreateItem" id
           forM_ aChatMsgs $ \case
-            Right (ACMsg _ chatMsg) ->
+            Right (ACMsg _ chatMsg) -> do
+              lift $ agentDeliveryStatus (AgentConnId agentConnId) "has event" id
               processEvent chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
-            Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
+            Left e -> do
+              lift $ agentDeliveryStatus (AgentConnId agentConnId) "has error" id
+              toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) "after forM_" id
           forwardMsg_ `catchChatError` \_ -> pure ()
           checkSendRcpt $ rights aChatMsgs
         where
@@ -4289,7 +4376,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           brokerTs = metaBrokerTs msgMeta
           processEvent :: MsgEncodingI e => ChatMessage e -> CM ()
           processEvent chatMsg = do
+            lift $ agentDeliveryStatus (AgentConnId agentConnId) "processEvent" id
             (m', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta msgBody chatMsg
+            lift $ agentDeliveryStatus (AgentConnId agentConnId) "eventTag in processEvent" $ \ad -> ad {eventTag = Just $! tshow (toCMEventTag event)}
             case event of
               XMsgNew mc -> memberCanSend m' $ newGroupContentMessage gInfo m' mc msg brokerTs False
               XMsgFileDescr sharedMsgId fileDescr -> memberCanSend m' $ groupMessageFileDescription gInfo m' sharedMsgId fileDescr
@@ -4467,7 +4556,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         MERR _ err -> do
           cancelSndFileTransfer user ft True >>= mapM_ (deleteAgentConnectionAsync user)
           case err of
-            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
+            SMP _ SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
               ci <- withStore $ \db -> do
                 liftIO (lookupChatRefByFileId db user fileId) >>= \case
                   Just (ChatRef CTDirect _) -> liftIO $ updateFileCancelled db user fileId CIFSSndCancelled
@@ -4622,7 +4711,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     incAuthErrCounter connEntity conn err = do
       case err of
-        SMP SMP.AUTH -> do
+        SMP _ SMP.AUTH -> do
           authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ do
             toView $ CRConnectionDisabled connEntity
@@ -4633,16 +4722,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> CM ()) -> CM ()
     withCompletedCommand Connection {connId} agentMsg action = do
       let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
-      cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
-      case cmdData_ of
-        Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
-          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
-              withStore' $ \db -> deleteCommand db user cmdId
-              action cmdData
-          | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
-        Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
-        Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
+      pending_ <- mapM readTVarIO =<< atomically . TM.lookup acId =<< asks agentDeliveryStatuses
+      if agentMsgTag == APCT SAEConn OK_ && corrId /= "" && maybe False (M.member ackKey . pendingAcks) pending_
+        then lift $ agentDeliveryStatus acId "withCompletedCommand" $ \ad@AgentDeliveryStatus {pendingAcks} -> ad {pendingAcks = M.adjust (const True) ackKey pendingAcks}
+        else do
+          cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
+          case cmdData_ of
+            Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
+              | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
+                  withStore' $ \db -> deleteCommand db user cmdId
+                  action cmdData
+              | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
+            Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
+            Nothing -> logWarn $ "command not found, corrId = " <> ackKey
       where
+        acId = AgentConnId agentConnId
+        ackKey = decodeLatin1 $ strEncode corrId
         err cmdId msg = do
           withStore' $ \db -> updateCommandStatus db user cmdId CSError
           throwChatError . CEAgentCommandError $ msg
@@ -4663,18 +4758,27 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         Right withRcpt -> ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
-        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> do
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) "SEDBBusyError" id
+          throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> ackMsg msgMeta Nothing >> throwError e
       where
         ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
-        ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
+        ackMsg MsgMeta {recipient = (msgId, _)} rcpt = do
+          ackCorrId <- drgRandomBytes 24
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) "ackMsg" id
+          withAgent $ \a -> ackMessageAsync a ackCorrId cId msgId rcpt
+          now <- liftIO getCurrentTime
+          let ackKey = decodeLatin1 $ strEncode ackCorrId
+          lift . agentDeliveryStatus (AgentConnId agentConnId) "after ackMessageAsync" $ \ad@AgentDeliveryStatus {pendingAcks} ->
+            ad {ackSent = Just (now, ackKey), pendingAcks = M.insert ackKey False pendingAcks}
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> CM ()
     sentMsgDeliveryEvent Connection {connId} msgId =
       withStore' $ \db -> updateSndMsgDeliveryStatus db connId msgId MDSSndSent
 
     agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
-    agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
+    agentErrToItemStatus (SMP _ AUTH) = CISSndErrorAuth
     agentErrToItemStatus err = CISSndError . T.unpack . safeDecodeUtf8 $ strEncode err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
@@ -5966,6 +6070,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         processForwardedMsg author chatMsg = do
           let body = LB.toStrict $ J.encode msg
           rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
+          lift $ agentDeliveryStatus (AgentConnId agentConnId) "eventTag in processForwardedMsg" $ \ad -> ad {eventTag = Just $! tshow (toCMEventTag event)}
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs True
             XMsgFileDescr sharedMsgId fileDescr -> memberCanSend author $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
@@ -6590,9 +6695,10 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
 
 -- TODO [batch send] refactor direct message processing same as groups (e.g. checkIntegrity before processing)
 saveDirectRcvMSG :: Connection -> MsgMeta -> MsgBody -> CM (Connection, RcvMessage)
-saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody =
+saveDirectRcvMSG conn@Connection {connId, agentConnId} agentMsgMeta msgBody =
   case parseChatMessages msgBody of
     [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
+      lift $ agentDeliveryStatus agentConnId "eventTag in saveDirectRcvMSG" $ \ad -> ad {eventTag = Just $! tshow (toCMEventTag chatMsgEvent)}
       conn' <- updatePeerChatVRange conn chatVRange
       let agentMsgId = fst $ recipient agentMsgMeta
           newMsg = NewRcvMessage {chatMsgEvent, msgBody}
@@ -7295,12 +7401,15 @@ chatCommandP =
       "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
+      "/debug delivery" *> (DebugDelivery <$> (" all" $> True <|> pure False)),
+      "/debug conn " *> (DebugConnection <$> ((Left <$> A.decimal) <|> (Right . AgentConnId <$> base64P))),
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
       "/get subs details" $> GetAgentSubsDetails,
+      "/get subs diff" $> GetAgentSubsDiff,
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
       "//" *> (CustomChatCommand <$> A.takeByteString)
@@ -7456,6 +7565,9 @@ timeItToView s action = do
   toView' $ CRTimedAction s diff
   pure a
 
+drgRandomBytes :: Int -> CM ByteString
+drgRandomBytes n = asks random >>= atomically . C.randomBytes n
+
 mkValidName :: String -> String
 mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
@@ -7500,3 +7612,8 @@ xftpSndFileRedirect user ftId vfd = do
 
 dummyFileDescr :: FileDescr
 dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+
+agentDeliveryStatus :: AgentConnId -> Text -> (AgentDeliveryStatus -> AgentDeliveryStatus) -> CM' ()
+agentDeliveryStatus acId tracking f = do
+  ads <- asks agentDeliveryStatuses
+  atomically $ TM.lookup acId ads >>= mapM_ (`modifyTVar'` \ds -> (f ds) {tracking})

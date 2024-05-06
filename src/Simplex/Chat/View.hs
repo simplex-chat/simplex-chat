@@ -351,6 +351,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
+  CRDebugDelivery ads -> [plain $ LB.unpack (J.encode ads)]
+  CRDebugConnection cs -> [plain $ LB.unpack (J.encode cs)]
   CRDebugLocks {chatLockName, chatEntityLocks, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "chat entity locks: " <> LB.unpack (J.encode chatEntityLocks),
@@ -370,6 +372,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
       <> ("removed subscriptions: " : map sShow removedSubscriptions)
   CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> plain (LB.unpack $ J.encode agentWorkersSummary)]
+  CRAgentSubsDiff asd ->
+    [ "agent subs diff:",
+      plain . LB.unpack $ J.encode asd
+    ]
   CRAgentWorkersDetails {agentWorkersDetails} ->
     [ "agent workers details:",
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
@@ -1178,8 +1184,8 @@ viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [St
 viewServerTestResult (AProtoServerWithAuth p _) = \case
   Just ProtocolTestFailure {testStep, testError} ->
     result
-      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTPTransport.AUTH]
+      <> [pName <> " server requires authorization to create queues, check password" | SMP _ SMP.AUTH <- [testError], testStep == TSCreateQueue]
+      <> [pName <> " server requires authorization to upload files, check password" | XFTP _ XFTPTransport.AUTH <- [testError], testStep == TSCreateFile]
       <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
@@ -2019,7 +2025,7 @@ viewChatError logLevel testView = \case
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
     CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
-    SMP SMP.AUTH ->
+    SMP _ SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
