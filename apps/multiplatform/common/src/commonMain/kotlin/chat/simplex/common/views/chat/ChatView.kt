@@ -1003,7 +1003,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Text(
                       memberNames(member, prevMember, memCount),
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
+                      maxLines = 2
                     )
                   }
                   Row(

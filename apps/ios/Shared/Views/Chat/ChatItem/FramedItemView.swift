@@ -248,7 +248,10 @@ struct FramedItemView: View {
         Group {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(sender).font(.caption).foregroundColor(.secondary)
+                    Text(sender)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
             } else {

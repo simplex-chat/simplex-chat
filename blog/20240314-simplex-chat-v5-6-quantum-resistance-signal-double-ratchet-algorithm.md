@@ -17,12 +17,12 @@ This post also covers various aspects of end-to-end encryption, compares differe
 - [Why do we need end-to-end encryption?](#why-do-we-need-end-to-end-encryption)
 - [Why is encryption even allowed?](#why-is-encryption-even-allowed)
 - [End-to-end encryption security: attacks and defense.](#end-to-end-encryption-security-attacks-and-defense)
-  - Compromised message size - mitigated by padding messages to a fixed block size.
-  - Compromised confidentiality - mitigated by repudiation (deniability).
-  - Compromised message keys - mitigated by forward secrecy.
-  - Compromised long-term or session - mitigated by break-in recovery.
-  - Man-in-the-middle attack - mitigated by two-factor key exchange.
-  - "Record now, decrypt later" attacks - mitigated by post-quantum cryptography.
+  1. Compromised message size - mitigated by padding messages to a fixed block size.
+  2. Compromised confidentiality - mitigated by repudiation (deniability).
+  3. Compromised message keys - mitigated by forward secrecy.
+  4. Compromised long-term or session - mitigated by break-in recovery.
+  5. Man-in-the-middle attack - mitigated by two-factor key exchange.
+  6. "Record now, decrypt later" attacks - mitigated by post-quantum cryptography.
 - [How secure is encryption in different messengers?](#how-secure-is-end-to-end-encryption-in-different-messengers)
 - [Adding quantum resistance to Signal double ratchet algorithm.](#adding-quantum-resistance-to-signal-double-ratchet-algorithm)
 - [When can you start using quantum resistant chats?](#when-can-you-start-using-quantum-resistant-chats)

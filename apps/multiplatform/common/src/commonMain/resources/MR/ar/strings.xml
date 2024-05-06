@@ -1755,4 +1755,16 @@
     <string name="saved_chat_item_info_tab">حُفظت</string>
     <string name="download_file">نزّل</string>
     <string name="forward_chat_item">حوّل</string>
+    <string name="audio_device_bluetooth">بلوتوث</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">سيتم تفعيله في المحادثات المباشرة!</string>
+    <string name="v5_7_forward">حوّل واحفظ الرسائل</string>
+    <string name="v5_7_call_sounds">أصوات أثناء المكالمة</string>
+    <string name="v5_7_forward_descr">يظل مصدر الرسالة خاصًا.</string>
+    <string name="v5_7_call_sounds_descr">عند اتصال بمكالمات الصوت والفيديو.</string>
+    <string name="v5_7_network">إدارة الشبكة</string>
+    <string name="v5_7_network_descr">اتصال شبكة أكثر موثوقية.</string>
+    <string name="settings_section_title_profile_images">صور الملف الشخصي</string>
+    <string name="v5_7_shape_profile_images">شكل الصور الشخصية</string>
+    <string name="v5_7_new_interface_languages">واجهة المستخدم الليتوانية</string>
+    <string name="v5_7_shape_profile_images_descr">مربع أو دائرة أو أي شيء بينهما.</string>
 </resources>

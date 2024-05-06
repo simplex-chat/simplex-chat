@@ -1753,4 +1753,20 @@
     <string name="saved_chat_item_info_tab">Zapisane</string>
     <string name="saved_description">zapisane</string>
     <string name="saved_from_description">zapisane od %s</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="v5_7_forward">Przesyłaj dalej i zapisuj wiadomości</string>
+    <string name="audio_device_earpiece">Słuchawki douszne</string>
+    <string name="audio_device_wired_headphones">Słuchawki</string>
+    <string name="audio_device_speaker">Głośnik</string>
+    <string name="v5_7_call_sounds_descr">Podczas łączenia połączeń audio i wideo.</string>
+    <string name="v5_7_call_sounds">Dźwięki w rozmowie</string>
+    <string name="settings_section_title_profile_images">Zdjęcia profilowe</string>
+    <string name="network_option_rcv_concurrency">Konkurencyjne odbieranie</string>
+    <string name="v5_7_new_interface_languages">Litewski interfejs użytkownika</string>
+    <string name="v5_7_network_descr">Bardziej niezawodne połączenia sieciowe.</string>
+    <string name="v5_7_network">Zarządzenie sieciowe</string>
+    <string name="v5_7_shape_profile_images">Kształtuj obrazy profilowe</string>
+    <string name="v5_7_shape_profile_images_descr">Kwadrat, okrąg lub cokolwiek pomiędzy.</string>
+    <string name="v5_7_forward_descr">Źródło wiadomości pozostaje prywatne.</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">Zostanie włączone w czatach bezpośrednich!</string>
 </resources>

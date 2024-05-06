@@ -1894,6 +1894,9 @@
 "Forward" = "Препрати";
 
 /* No comment provided by engineer. */
+"Forward and save messages" = "Препращане и запазване на съобщения";
+
+/* No comment provided by engineer. */
 "forwarded" = "препратено";
 
 /* No comment provided by engineer. */
@@ -2123,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "В отговор на";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Звуци по време на разговор";
 
 /* No comment provided by engineer. */
 "Incognito" = "Инкогнито";
@@ -2470,6 +2476,9 @@
 "message received" = "получено съобщение";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "Източникът на съобщението остава скрит.";
+
+/* No comment provided by engineer. */
 "Message text" = "Текст на съобщението";
 
 /* No comment provided by engineer. */
@@ -2553,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Очаквайте скоро още подобрения!";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "По-надеждна мрежова връзка.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Най-вероятно тази връзка е изтрита.";
 
@@ -2576,6 +2588,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Мрежова връзка";
+
+/* No comment provided by engineer. */
+"Network management" = "Управление на мрежата";
 
 /* No comment provided by engineer. */
 "Network settings" = "Мрежови настройки";
@@ -2944,6 +2959,9 @@
 
 /* No comment provided by engineer. */
 "Profile image" = "Профилно изображение";
+
+/* No comment provided by engineer. */
+"Profile images" = "Профилни изображения";
 
 /* No comment provided by engineer. */
 "Profile name" = "Име на профила";
@@ -3488,6 +3506,9 @@
 /* No comment provided by engineer. */
 "Settings" = "Настройки";
 
+/* No comment provided by engineer. */
+"Shape profile images" = "Променете формата на профилните изображения";
+
 /* chat item action */
 "Share" = "Сподели";
 
@@ -3589,6 +3610,9 @@
 
 /* notification title */
 "Somebody" = "Някой";
+
+/* No comment provided by engineer. */
+"Square, circle, or anything in between." = "Квадрат, кръг или нещо между тях.";
 
 /* chat item text */
 "standard end-to-end encryption" = "стандартно криптиране от край до край";
@@ -4173,6 +4197,9 @@
 "When available" = "Когато са налични";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "При свързване на аудио и видео разговори.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Когато хората искат да се свържат с вас, можете да ги приемете или отхвърлите.";
 
 /* No comment provided by engineer. */
@@ -4180,6 +4207,9 @@
 
 /* No comment provided by engineer. */
 "WiFi" = "WiFi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Ще бъде активирано в личните чатове!";
 
 /* No comment provided by engineer. */
 "Wired ethernet" = "Кабелен Ethernet";
