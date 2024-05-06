@@ -30,60 +30,64 @@ struct ContactsView: View {
         VStack {
             contactList
         }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .listStyle(.plain)
     }
 
     @ViewBuilder private var contactList: some View {
-        let cs = filteredContacts()
+        let contacts = chatModel.chats.compactMap{ $0.chatInfo.contact }
+        let filteredContacts = oneHandUI ? filteredContacts(contacts).reversed() : filteredContacts(contacts)
         ZStack {
             VStack {
                 List {
-                    if !chatModel.chats.isEmpty {
+                    if !contacts.isEmpty {
                         ContactsSearchBar(
                             searchMode: $searchMode,
                             searchFocussed: $searchFocussed,
                             searchText: $searchText
                         )
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .frame(maxWidth: .infinity)
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
+                    ForEach(filteredContacts, id: \.id) { contact in
+                        ContactListNavLink(contact: contact)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(contact.id))
                     }
                     .offset(x: -8)
                 }
             }
-            if cs.isEmpty && !chatModel.chats.isEmpty {
+            if filteredContacts.isEmpty && !contacts.isEmpty {
                 Text("No filtered contacts")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .foregroundColor(.secondary)
+            } else if contacts.isEmpty {
+                Text("No contacts")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
         }
     }
 
-    private func filteredContacts() -> [Chat] {
+    private func filteredContacts(_ contacts: [Contact]) -> [Contact] {
         let s = searchString()
-        return chatModel.chats.filter { chat in
-            let cInfo = chat.chatInfo
-            switch cInfo {
-            case let .direct(contact):
-                return s == ""
-                ? true
-                : (viewNameContains(cInfo, s) ||
-                   contact.profile.displayName.localizedLowercase.contains(s) ||
-                   contact.fullName.localizedLowercase.contains(s))
-            default:
-                return false
-            }
+        return contacts.filter { contact in
+            return s == ""
+            ? true
+            : (viewNameContains(contact, s) ||
+               contact.profile.displayName.localizedLowercase.contains(s) ||
+               contact.fullName.localizedLowercase.contains(s))
         }
+        .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 
         func searchString() -> String {
             searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
         }
 
-        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
-            cInfo.chatViewName.localizedLowercase.contains(s)
+        func viewNameContains(_ contact: Contact, _ s: String) -> Bool {
+            contact.chatViewName.localizedLowercase.contains(s)
         }
     }
 }

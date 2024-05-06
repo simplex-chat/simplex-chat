@@ -247,8 +247,9 @@ struct HomeView: View {
         }
     }
 
-    private func contactsView() -> some View {
+    @ViewBuilder private func contactsView() -> some View {
         ContactsView()
+            .padding(.top, 5)
     }
 
     @ViewBuilder private func chatsView() -> some View {
