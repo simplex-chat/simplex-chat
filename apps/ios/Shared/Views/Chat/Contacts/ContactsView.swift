@@ -55,13 +55,11 @@ struct ContactsView: View {
                         case let .direct(contact):
                             ContactListNavLink(chat: chat, contact: contact)
                                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                                .padding(.trailing, -16)
                                 .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(contact.id))
                         default:
                             EmptyView()
                         }
                     }
-                    .offset(x: -8)
                 }
             }
             if filteredContactChats.isEmpty && !contactChats.isEmpty {
