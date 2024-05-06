@@ -48,6 +48,7 @@ struct HomeView: View {
                 destination: chatView
             ) {
 //                ZStack {
+
                 VStack {
                     switch homeTab {
                     case .contacts: contactsView()
@@ -109,20 +110,20 @@ struct HomeView: View {
         }
     }
 
-    private func bottomToolbar() -> some View {
-        HStack {
-            settingsButton()
-            Spacer()
-            contactsButton()
-            Spacer()
-            chatsButton()
-            Spacer()
-            newChatButton()
-        }
-        .padding(.horizontal, 12)
-        .padding(.horizontal)
-        .frame(maxWidth: .infinity)
-    }
+//    private func bottomToolbar() -> some View {
+//        HStack {
+//            settingsButton()
+//            Spacer()
+//            contactsButton()
+//            Spacer()
+//            chatsButton()
+//            Spacer()
+//            newChatButton()
+//        }
+//        .padding(.horizontal, 12)
+//        .padding(.horizontal)
+//        .frame(maxWidth: .infinity)
+//    }
 
     @ViewBuilder private func settingsButton() -> some View {
         let user = chatModel.currentUser ?? User.sampleData
@@ -184,14 +185,19 @@ struct HomeView: View {
     private func newChatButton() -> some View {
         Menu {
             Button {
-                newChatMenuOption = .newContact
-            } label: {
-                Text("Add contact")
-            }
-            Button {
                 newChatMenuOption = .newGroup
             } label: {
                 Text("Create group")
+            }
+            Button {
+                newChatMenuOption = .scanPaste
+            } label: {
+                Text("Scan / Paste link")
+            }
+            Button {
+                newChatMenuOption = .newContact
+            } label: {
+                Text("Add contact")
             }
         } label: {
             iconLabel("square.and.pencil", "New chat")
@@ -200,10 +206,10 @@ struct HomeView: View {
         .sheet(item: $newChatMenuOption) { opt in
             switch opt {
             case .newContact: NewChatView(selection: .invite)
+            case .scanPaste: NewChatView(selection: .connect, showQRCodeScanner: true)
             case .newGroup: AddGroupView()
             }
         }
-//        NewChatView(selection: .connect, showQRCodeScanner: true)
     }
 
     private func iconLabel(_ image: String, _ title: LocalizedStringKey) -> some View {
@@ -217,10 +223,6 @@ struct HomeView: View {
         }
     }
 
-    private func settingsView() -> some View {
-        SettingsView(showSettings: $showSettings)
-    }
-
     private func contactsView() -> some View {
         // TODO
         VStack {
@@ -229,30 +231,13 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func chatsView() -> some View {
-        // TODO onboarding buttons (remove?)
-        // TODO for reversed chat list start at bottom
+        // TODO reverse scale effect for swipe actions
         if oneHandUI {
             ChatsView()
                 .padding(.vertical, 5)
         } else {
             ChatsView()
                 .padding(.top, 5)
-        }
-    }
-
-    @ViewBuilder private func newChatView() -> some View {
-        // TODO doesn't fit
-        // TODO alerts don't work
-        // TODO dismiss on connect
-        // TODO dismiss when creating group
-        // TODO chat stopped (see chatsStoppedIcon in ChatsView)
-        switch newChatMenuOption {
-        case .newContact:
-            NewChatView(selection: .invite)
-        case .newGroup:
-            AddGroupView()
-        case nil:
-            EmptyView()
         }
     }
 

@@ -18,7 +18,6 @@ struct ChatsView: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
 
-    @State private var newChatMenuOption: NewChatMenuOption? = nil // TODO remove?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
