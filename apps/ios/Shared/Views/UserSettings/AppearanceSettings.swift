@@ -41,7 +41,7 @@ struct AppearanceSettings: View {
                 }
 
                 Section("Interface") {
-                    settingsRow("hand.tap") {
+                    settingsRow("hand.wave") {
                         Toggle("One-hand UI", isOn: $oneHandUI)
                     }
                 }

@@ -96,7 +96,9 @@ struct ChatsView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(.secondary)
+                Text("No filtered chats")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .foregroundColor(.secondary)
             }
         }
     }
