@@ -35,12 +35,12 @@ struct ContactsView: View {
     }
 
     @ViewBuilder private var contactList: some View {
-        let contacts = chatModel.chats.compactMap{ $0.chatInfo.contact }
-        let filteredContacts = oneHandUI ? filteredContacts(contacts).reversed() : filteredContacts(contacts)
+        let contactChats = contactChats()
+        let filteredContactChats = oneHandUI ? filteredContactChats(contactChats).reversed() : filteredContactChats(contactChats)
         ZStack {
             VStack {
                 List {
-                    if !contacts.isEmpty {
+                    if !contactChats.isEmpty {
                         ContactsSearchBar(
                             searchMode: $searchMode,
                             searchFocussed: $searchFocussed,
@@ -50,20 +50,25 @@ struct ContactsView: View {
                         .listRowSeparator(.hidden)
                         .frame(maxWidth: .infinity)
                     }
-                    ForEach(filteredContacts, id: \.id) { contact in
-                        ContactListNavLink(contact: contact)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(contact.id))
+                    ForEach(filteredContactChats, id: \.id) { chat in
+                        switch chat.chatInfo {
+                        case let .direct(contact):
+                            ContactListNavLink(chat: chat, contact: contact)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(contact.id))
+                        default:
+                            EmptyView()
+                        }
                     }
                     .offset(x: -8)
                 }
             }
-            if filteredContacts.isEmpty && !contacts.isEmpty {
+            if filteredContactChats.isEmpty && !contactChats.isEmpty {
                 Text("No filtered contacts")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
-            } else if contacts.isEmpty {
+            } else if contactChats.isEmpty {
                 Text("No contacts")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
@@ -71,16 +76,29 @@ struct ContactsView: View {
         }
     }
 
-    private func filteredContacts(_ contacts: [Contact]) -> [Contact] {
-        let s = searchString()
-        return contacts.filter { contact in
-            return s == ""
-            ? true
-            : (viewNameContains(contact, s) ||
-               contact.profile.displayName.localizedLowercase.contains(s) ||
-               contact.fullName.localizedLowercase.contains(s))
+    private func contactChats() -> [Chat] {
+        return chatModel.chats.filter { chat in
+            switch chat.chatInfo {
+            case .direct: true
+            default: false
+            }
         }
-        .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
+    }
+
+    private func filteredContactChats(_ contactChats: [Chat]) -> [Chat] {
+        let s = searchString()
+        return contactChats.filter { chat in
+            switch chat.chatInfo {
+            case let .direct(contact):
+                return s == ""
+                ? true
+                : (viewNameContains(contact, s) ||
+                   contact.profile.displayName.localizedLowercase.contains(s) ||
+                   contact.fullName.localizedLowercase.contains(s))
+            default: return false
+            }
+        }
+        .sorted{ $0.chatInfo.displayName.lowercased() < $1.chatInfo.displayName.lowercased() }
 
         func searchString() -> String {
             searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
