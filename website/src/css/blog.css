@@ -85,7 +85,8 @@ section.container>div>p:nth-child(2) {
   }
 }
 
-.dark #article h3, .dark #article h4 {
+.dark #article h3,
+.dark #article h4 {
   color: white;
 }
 
@@ -112,7 +113,8 @@ section.container>div>p:nth-child(2) {
 #article ol li {
   margin-right: 0;
   margin-left: 0;
-  -webkit-margin-start: 1.1rem;;
+  -webkit-margin-start: 1.1rem;
+  ;
   color: #000;
 }
 
@@ -193,7 +195,7 @@ h2,
 h3,
 h4,
 h5,
-h6{
+h6 {
   clear: both;
 }
 
@@ -206,21 +208,28 @@ h6{
 }
 
 @media (min-width: 1024px) {
-  #article .float-to-left{
+  #article .float-to-left {
     float: left;
     margin-right: 3rem;
   }
 
-  #article .float-to-right{
+  #article .float-to-right {
     float: right;
     margin-left: 3rem;
   }
 }
 
-#article ol > li{
+@media (max-width:768px) {
+  img {
+    width: 100%;
+  }
+}
+
+#article ol>li {
   list-style-position: inside !important;
   margin-left: -0px !important;
 }
-#article ol > li::marker {
+
+#article ol>li::marker {
   font-weight: 500;
 }
