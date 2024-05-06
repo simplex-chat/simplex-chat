@@ -254,18 +254,6 @@ struct ChatsSearchBar: View {
     }
 }
 
-// TODO remove
-func chatsStoppedIcon() -> some View {
-    Button {
-        AlertManager.shared.showAlertMsg(
-            title: "Chat is stopped",
-            message: "You can start chat via app Settings / Database or by restarting the app"
-        )
-    } label: {
-        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
-    }
-}
-
 struct ChatsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()

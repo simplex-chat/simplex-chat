@@ -182,32 +182,56 @@ struct HomeView: View {
         .foregroundColor(homeTab == .chats ? .accentColor : .secondary)
     }
 
-    private func newChatButton() -> some View {
-        Menu {
-            Button {
-                newChatMenuOption = .newGroup
+    @ViewBuilder private func newChatButton() -> some View {
+        if case .some(false) = chatModel.chatRunning {
+            chatsStoppedButton()
+        } else {
+            Menu {
+                Button {
+                    newChatMenuOption = .newGroup
+                } label: {
+                    Text("Create group")
+                }
+                Button {
+                    newChatMenuOption = .scanPaste
+                } label: {
+                    Text("Scan / Paste link")
+                }
+                Button {
+                    newChatMenuOption = .newContact
+                } label: {
+                    Text("Add contact")
+                }
             } label: {
-                Text("Create group")
+                iconLabel("square.and.pencil", "New chat")
             }
-            Button {
-                newChatMenuOption = .scanPaste
-            } label: {
-                Text("Scan / Paste link")
+            .foregroundColor(.secondary)
+            .sheet(item: $newChatMenuOption) { opt in
+                switch opt {
+                case .newContact: NewChatView(selection: .invite)
+                case .scanPaste: NewChatView(selection: .connect, showQRCodeScanner: true)
+                case .newGroup: AddGroupView()
+                }
             }
-            Button {
-                newChatMenuOption = .newContact
-            } label: {
-                Text("Add contact")
-            }
-        } label: {
-            iconLabel("square.and.pencil", "New chat")
         }
-        .foregroundColor(.secondary)
-        .sheet(item: $newChatMenuOption) { opt in
-            switch opt {
-            case .newContact: NewChatView(selection: .invite)
-            case .scanPaste: NewChatView(selection: .connect, showQRCodeScanner: true)
-            case .newGroup: AddGroupView()
+    }
+
+    func chatsStoppedButton() -> some View {
+        Button {
+            AlertManager.shared.showAlertMsg(
+                title: "Chat is stopped",
+                message: "You can start chat via app Settings / Database or by restarting the app"
+            )
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: "exclamationmark.octagon.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.red)
+                    .frame(width: 24, height: 24)
+                Text("Stopped")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -224,10 +248,7 @@ struct HomeView: View {
     }
 
     private func contactsView() -> some View {
-        // TODO
-        VStack {
-            Text("Contacts")
-        }
+        ContactsView()
     }
 
     @ViewBuilder private func chatsView() -> some View {
