@@ -932,7 +932,7 @@ instance StrEncoding DBEncryptionKey where
   strP = DBEncryptionKey . BA.convert <$> A.takeWhile (\c -> c /= ' ' && ord c >= 0x21 && ord c <= 0x7E)
 
 instance FromJSON DBEncryptionKey where
-  parseJSON = strParseJSON "DBEncryptionsAppKey"
+  parseJSON = strParseJSON "DBEncryptionKey"
 
 data AppFilePathsConfig = AppFilePathsConfig
   { appFilesFolder :: FilePath,
