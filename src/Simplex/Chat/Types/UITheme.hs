@@ -8,6 +8,7 @@ module Simplex.Chat.Types.UITheme where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -15,6 +16,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
+import Simplex.Messaging.Util ((<$?>))
 
 data UITheme = UITheme
   { base :: ColorScheme,
@@ -39,6 +41,7 @@ instance StrEncoding ColorScheme where
     "DARK" -> Right CSDark
     "SIMPLEX" -> Right CSSimplex
     _ -> Left "bad ColorScheme"
+  strP = strDecode <$?> A.takeTill (== ' ')
 
 instance FromJSON ColorScheme where
   parseJSON = strParseJSON "ColorScheme"
@@ -52,8 +55,8 @@ data ChatWallpaper = ChatWallpaper
     imageFile :: Maybe FilePath,
     background :: Maybe UIColor,
     tint :: Maybe UIColor,
-    scale :: Maybe ChatWallpaperScale,
-    scaleFactor :: Maybe Double
+    scaleType :: Maybe ChatWallpaperScale,
+    scale :: Maybe Double
   }
   deriving (Eq, Show)
 

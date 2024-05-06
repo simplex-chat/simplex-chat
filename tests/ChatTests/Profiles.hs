@@ -15,6 +15,8 @@ import qualified Data.Text as T
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Types.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -73,6 +75,7 @@ chatProfileTests = do
       it "direct messages" testGroupPrefsDirectForRole
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
+    it "set user, contact and group UI theme" testSetUITheme
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
@@ -1935,8 +1938,8 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
           dan <## "#team: you joined the group"
           dan
             <### [ "#team: member alice (Alice) is connected",
-                    "#team: member bob (Bob) is connected"
-                  ],
+                   "#team: member bob (Bob) is connected"
+                 ],
         do
           alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
           alice <## "#team: new member dan is connected",
@@ -1947,7 +1950,7 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
     -- dan cannot send direct messages to alice (owner)
     dan ##> "@alice hello alice"
     dan <## "bad chat command: direct messages not allowed"
-    (alice </)    
+    (alice </)
     -- but alice can
     alice `send` "@dan hello dan"
     alice <## "member #team dan does not have direct connection, creating"
@@ -2029,3 +2032,54 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
       cc <## "alice updated group #team:"
       cc <## "updated group preferences:"
       cc <## "SimpleX links: on for owners"
+
+testSetUITheme :: HasCallStack => FilePath -> IO ()
+testSetUITheme =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice #$> ("/_set theme user 1 " <> theme CSDark, id, "ok")
+    alice #$> ("/_set theme @2 " <> theme CSSimplex, id, "ok")
+    alice #$> ("/_set theme #1 " <> theme CSSimplex, id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI theme: " <> theme CSDark)
+    alice ##> "/create user alice2"
+    userInfo alice "alice2"
+    alice ##> "/u alice"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI theme: " <> theme CSDark)
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice <## ("UI theme: " <> theme CSSimplex)
+    alice ##> "/i #team"
+    groupInfo alice
+    alice <## ("UI theme: " <> theme CSSimplex)
+    alice #$> ("/_set theme user 1", id, "ok")
+    alice #$> ("/_set theme @2", id, "ok")
+    alice #$> ("/_set theme #1", id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice ##> "/i #team"
+    groupInfo alice
+  where
+    theme cs = T.unpack . encodeJSON $ UITheme cs Nothing defaultUIColors
+    userInfo a name = do
+      a <## ("user profile: " <> name)
+      a <## "use /p <display name> to change it"
+      a <## "(the updated profile will be sent to all your contacts)"
+    contactInfo a = do
+      a <## "contact ID: 2"
+      a <## "receiving messages via: localhost"
+      a <## "sending messages via: localhost"
+      a <## "you've shared main profile with this contact"
+      a <## "connection not verified, use /code command to see security code"
+      a <## "quantum resistant end-to-end encryption"
+      a <## "peer chat protocol version range: (Version 1, Version 8)"
+    groupInfo a = do
+      a <## "group ID: 1"
+      a <## "current members: 1"

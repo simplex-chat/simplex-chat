@@ -625,4 +625,4 @@ getCommandDataByCorrId db User {userId} corrId =
 setUserUITheme :: DB.Connection -> User -> Maybe UITheme -> IO ()
 setUserUITheme db User {userId} uiTheme = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE users SET uiTheme = ?, updated_at = ? WHERE user_id = ?" (uiTheme, updatedAt, userId)
+  DB.execute db "UPDATE users SET ui_theme = ?, updated_at = ? WHERE user_id = ?" (uiTheme, updatedAt, userId)

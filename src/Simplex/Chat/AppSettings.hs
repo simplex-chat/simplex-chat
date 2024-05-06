@@ -45,7 +45,8 @@ data AppSettings = AppSettings
     androidCallOnLockScreen :: Maybe LockScreenCalls,
     iosCallKitEnabled :: Maybe Bool,
     iosCallKitCallsInRecents :: Maybe Bool,
-    uiTheme :: Maybe UITheme
+    uiColorScheme :: Maybe ColorScheme,
+    uiThemes :: Maybe [UITheme]
   }
   deriving (Show)
 
@@ -72,7 +73,8 @@ defaultAppSettings =
       androidCallOnLockScreen = Just LSCShow,
       iosCallKitEnabled = Just True,
       iosCallKitCallsInRecents = Just False,
-      uiTheme = Nothing
+      uiColorScheme = Just CSLight,
+      uiThemes = Nothing
     }
 
 defaultParseAppSettings :: AppSettings
@@ -98,7 +100,8 @@ defaultParseAppSettings =
       androidCallOnLockScreen = Nothing,
       iosCallKitEnabled = Nothing,
       iosCallKitCallsInRecents = Nothing,
-      uiTheme = Nothing
+      uiColorScheme = Nothing,
+      uiThemes = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -124,7 +127,8 @@ combineAppSettings platformDefaults storedSettings =
       iosCallKitEnabled = p iosCallKitEnabled,
       iosCallKitCallsInRecents = p iosCallKitCallsInRecents,
       androidCallOnLockScreen = p androidCallOnLockScreen,
-      uiTheme = p uiTheme
+      uiColorScheme = p uiColorScheme,
+      uiThemes = p uiThemes
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -162,7 +166,8 @@ instance FromJSON AppSettings where
     iosCallKitEnabled <- p "iosCallKitEnabled"
     iosCallKitCallsInRecents <- p "iosCallKitCallsInRecents"
     androidCallOnLockScreen <- p "androidCallOnLockScreen"
-    uiTheme <- p "uiTheme"
+    uiColorScheme <- p "uiColorScheme"
+    uiThemes <- p "uiThemes"
     pure
       AppSettings
         { appPlatform,
@@ -185,7 +190,8 @@ instance FromJSON AppSettings where
           iosCallKitEnabled,
           iosCallKitCallsInRecents,
           androidCallOnLockScreen,
-          uiTheme
+          uiColorScheme,
+          uiThemes
         }
     where
       p key = v .:? key <|> pure Nothing

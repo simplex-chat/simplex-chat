@@ -933,4 +933,4 @@ setContactCustomData db User {userId} Contact {contactId} customData = do
 setContactUITheme :: DB.Connection -> User -> Contact -> Maybe UITheme -> IO ()
 setContactUITheme db User {userId} Contact {contactId} uiTheme = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET uiTheme = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiTheme, updatedAt, userId, contactId)
+  DB.execute db "UPDATE contacts SET ui_theme = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiTheme, updatedAt, userId, contactId)
