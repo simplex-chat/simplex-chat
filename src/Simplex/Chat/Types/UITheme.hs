@@ -15,7 +15,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, singleFieldJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
 import Simplex.Messaging.Util ((<$?>))
 
 data UITheme = UITheme
@@ -32,7 +32,7 @@ data ThemeColorScheme = TCSLight | TCSDark | TCSSimplex
   deriving (Eq, Show)
 
 data UIColorScheme
-  = UCSSystem DarkColorScheme
+  = UCSSystem
   | UCSLight
   | UCSDark
   | UCSSimplex
@@ -119,7 +119,7 @@ instance ToJSON UIColor where
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "DCS") ''DarkColorScheme)
 
-$(JQ.deriveJSON (singleFieldJSON $ dropPrefix "UCS") ''UIColorScheme)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "UCS") ''UIColorScheme)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CWS") ''ChatWallpaperScale)
 

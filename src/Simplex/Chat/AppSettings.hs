@@ -45,7 +45,9 @@ data AppSettings = AppSettings
     androidCallOnLockScreen :: Maybe LockScreenCalls,
     iosCallKitEnabled :: Maybe Bool,
     iosCallKitCallsInRecents :: Maybe Bool,
+    uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
+    uiDarkColorScheme :: Maybe DarkColorScheme,
     uiThemes :: Maybe [UITheme]
   }
   deriving (Show)
@@ -73,7 +75,9 @@ defaultAppSettings =
       androidCallOnLockScreen = Just LSCShow,
       iosCallKitEnabled = Just True,
       iosCallKitCallsInRecents = Just False,
-      uiColorScheme = Just (UCSSystem DCSSimplex),
+      uiProfileImageCornerRadius = Just 22.5,
+      uiColorScheme = Just UCSSystem,
+      uiDarkColorScheme = Just DCSSimplex,
       uiThemes = Nothing
     }
 
@@ -100,7 +104,9 @@ defaultParseAppSettings =
       androidCallOnLockScreen = Nothing,
       iosCallKitEnabled = Nothing,
       iosCallKitCallsInRecents = Nothing,
+      uiProfileImageCornerRadius = Nothing,
       uiColorScheme = Nothing,
+      uiDarkColorScheme = Nothing,
       uiThemes = Nothing
     }
 
@@ -127,7 +133,9 @@ combineAppSettings platformDefaults storedSettings =
       iosCallKitEnabled = p iosCallKitEnabled,
       iosCallKitCallsInRecents = p iosCallKitCallsInRecents,
       androidCallOnLockScreen = p androidCallOnLockScreen,
+      uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
       uiColorScheme = p uiColorScheme,
+      uiDarkColorScheme = p uiDarkColorScheme,
       uiThemes = p uiThemes
     }
   where
@@ -166,7 +174,9 @@ instance FromJSON AppSettings where
     iosCallKitEnabled <- p "iosCallKitEnabled"
     iosCallKitCallsInRecents <- p "iosCallKitCallsInRecents"
     androidCallOnLockScreen <- p "androidCallOnLockScreen"
+    uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
     uiColorScheme <- p "uiColorScheme"
+    uiDarkColorScheme <- p "uiDarkColorScheme"
     uiThemes <- p "uiThemes"
     pure
       AppSettings
@@ -190,7 +200,9 @@ instance FromJSON AppSettings where
           iosCallKitEnabled,
           iosCallKitCallsInRecents,
           androidCallOnLockScreen,
+          uiProfileImageCornerRadius,
           uiColorScheme,
+          uiDarkColorScheme,
           uiThemes
         }
     where
