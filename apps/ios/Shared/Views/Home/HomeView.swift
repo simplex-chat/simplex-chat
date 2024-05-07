@@ -52,7 +52,7 @@ struct HomeView: View {
                 VStack {
                     switch homeTab {
                     case .contacts: contactsView()
-                    case .chats: chatsView()
+                    case .chats: chatListView()
                     }
                 }
                 .toolbar {
@@ -77,7 +77,7 @@ struct HomeView: View {
 //                    if homeTab == .chats {
 //                        VStack {
 //                            Spacer()
-//                            ChatsSearchBar(
+//                            ChatListSearchBar(
 //                                searchMode: $searchMode,
 //                                searchFocussed: $searchFocussed,
 //                                searchText: $searchText,
@@ -257,13 +257,13 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder private func chatsView() -> some View {
+    @ViewBuilder private func chatListView() -> some View {
         // TODO reverse scale effect for swipe actions
         if oneHandUI {
-            ChatsView()
+            ChatListView()
                 .padding(.vertical, 5)
         } else {
-            ChatsView()
+            ChatListView()
                 .padding(.top, 5)
         }
     }

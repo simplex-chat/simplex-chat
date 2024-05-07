@@ -11,16 +11,15 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var showSettings: Bool
+
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var newChatMenuOption: NewChatMenuOption? = nil
-    @State private var userPickerVisible = false
-    @State private var showConnectDesktop = false
+
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -31,44 +30,10 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: .topLeading) {
-            NavStackCompat(
-                isActive: Binding(
-                    get: { chatModel.chatId != nil },
-                    set: { _ in }
-                ),
-                destination: chatView
-            ) {
-                VStack {
-                    if chatModel.chats.isEmpty {
-                        onboardingButtons()
-                    }
-                    chatListView
-                }
-            }
-            if userPickerVisible {
-                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
-                    withAnimation {
-                        userPickerVisible.toggle()
-                    }
-                }
-            }
-            UserPicker(
-                showSettings: $showSettings,
-                showConnectDesktop: $showConnectDesktop,
-                userPickerVisible: $userPickerVisible
-            )
-        }
-        .sheet(isPresented: $showConnectDesktop) {
-            ConnectDesktopView()
-        }
-    }
-
-    private var chatListView: some View {
         VStack {
             chatList
         }
-        .onDisappear() { withAnimation { userPickerVisible = false } }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -86,58 +51,6 @@ struct ChatListView: View {
             ))
         }
         .listStyle(.plain)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(searchMode)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                let user = chatModel.currentUser ?? User.sampleData
-                ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.trailing, 4)
-                    let allRead = chatModel.users
-                        .filter { u in !u.user.activeUser && !u.user.hidden }
-                        .allSatisfy { u in u.unreadCount == 0 }
-                    if !allRead {
-                        unreadBadge(size: 12)
-                    }
-                }
-                .onTapGesture {
-                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    } else {
-                        showSettings = true
-                    }
-                }
-            }
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 4) {
-                    Text("Chats")
-                        .font(.headline)
-                    if chatModel.chats.count > 0 {
-                        toggleFilterButton()
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                switch chatModel.chatRunning {
-                case .some(true): NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
-                case .some(false): chatStoppedIcon()
-                case .none: EmptyView()
-                }
-            }
-        }
-    }
-
-    private func toggleFilterButton() -> some View {
-        Button {
-            showUnreadAndFavorites = !showUnreadAndFavorites
-        } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .foregroundColor(.accentColor)
-        }
     }
 
     @ViewBuilder private var chatList: some View {
@@ -153,11 +66,13 @@ struct ChatListView: View {
                             searchShowingSimplexLink: $searchShowingSimplexLink,
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
@@ -171,7 +86,9 @@ struct ChatListView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(.secondary)
+                Text("No filtered chats")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -182,66 +99,24 @@ struct ChatListView: View {
             .foregroundColor(.accentColor)
     }
 
-    private func onboardingButtons() -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Path { p in
-                p.move(to: CGPoint(x: 8, y: 0))
-                p.addLine(to: CGPoint(x: 16, y: 10))
-                p.addLine(to: CGPoint(x: 0, y: 10))
-                p.addLine(to: CGPoint(x: 8, y: 0))
-            }
-            .fill(Color.accentColor)
-            .frame(width: 20, height: 10)
-            .padding(.trailing, 12)
-
-            connectButton("Tap to start a new chat") {
-                newChatMenuOption = .newContact
-            }
-
-            Spacer()
-            Text("You have no chats")
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity)
-        }
-        .padding(.trailing, 6)
-        .frame(maxHeight: .infinity)
-    }
-
-    private func connectButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 20)
-        }
-        .background(Color.accentColor)
-        .foregroundColor(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    @ViewBuilder private func chatView() -> some View {
-        if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat).onAppear {
-                loadChat(chat: chat)
-            }
-        }
-    }
-
     private func filteredChats() -> [Chat] {
         if let linkChatId = searchChatFilteredBySimplexLink {
             return chatModel.chats.filter { $0.id == linkChatId }
         } else {
             let s = searchString()
             return s == "" && !showUnreadAndFavorites
-            ? chatModel.chats
+            ? chatModel.chats.filter { chat in !chat.chatInfo.chatDeleted }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
-                    return s == ""
-                    ? filtered(chat)
-                    : (viewNameContains(cInfo, s) ||
-                       contact.profile.displayName.localizedLowercase.contains(s) ||
-                       contact.fullName.localizedLowercase.contains(s))
+                    return !contact.chatDeleted && (
+                        s == ""
+                        ? filtered(chat)
+                        : (viewNameContains(cInfo, s) ||
+                           contact.profile.displayName.localizedLowercase.contains(s) ||
+                           contact.fullName.localizedLowercase.contains(s))
+                    )
                 case let .group(gInfo):
                     return s == ""
                     ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
@@ -282,9 +157,9 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -301,26 +176,6 @@ struct ChatListSearchBar: View {
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else if !searchFocussed {
-                        HStack(spacing: 24) {
-                            if m.pasteboardHasStrings {
-                                Image(systemName: "doc")
-                                    .onTapGesture {
-                                        if let str = UIPasteboard.general.string {
-                                            searchText = str
-                                        }
-                                    }
-                            }
-
-                            Image(systemName: "qrcode")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 20, height: 20)
-                                .onTapGesture {
-                                    showScanCodeSheet = true
-                                }
-                        }
-                        .padding(.trailing, 2)
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -335,13 +190,10 @@ struct ChatListSearchBar: View {
                             searchText = ""
                             searchFocussed = false
                         }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
                 }
             }
-            Divider()
-        }
-        .sheet(isPresented: $showScanCodeSheet) {
-            NewChatView(selection: .connect, showQRCodeScanner: true)
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -376,6 +228,21 @@ struct ChatListSearchBar: View {
         }
     }
 
+    private func toggleFilterButton() -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 20, height: 20)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? .accentColor : .secondary)
+                .frame(width: showUnreadAndFavorites ? 20 : 16, height: showUnreadAndFavorites ? 20 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
+        }
+    }
+
     private func connect(_ link: String) {
         planAndConnect(
             link,
@@ -386,17 +253,6 @@ struct ChatListSearchBar: View {
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
             filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
-    }
-}
-
-func chatStoppedIcon() -> some View {
-    Button {
-        AlertManager.shared.showAlertMsg(
-            title: "Chat is stopped",
-            message: "You can start chat via app Settings / Database or by restarting the app"
-        )
-    } label: {
-        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
     }
 }
 
@@ -419,9 +275,9 @@ struct ChatListView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatListView(showSettings: Binding.constant(false))
+            ChatListView()
                 .environmentObject(chatModel)
-            ChatListView(showSettings: Binding.constant(false))
+            ChatListView()
                 .environmentObject(ChatModel())
         }
     }
