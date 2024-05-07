@@ -128,8 +128,7 @@ struct ChatView: View {
                             chat: chat,
                             contact: contact,
                             localAlias: chat.chatInfo.localAlias,
-                            makeCall: $makeCall,
-                            chatViewKeyboardVisible: $keyboardVisible
+                            makeCall: $makeCall
                         )
                     }
                 } else if case let .group(groupInfo) = cInfo {
@@ -259,12 +258,8 @@ struct ChatView: View {
             }
         }
         switch chatModel.openChatAction {
-        case .some(.message):
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                keyboardVisible = true
-            }
-        case let .some(.call(media)):
-            makeCall = media
+        case .some(.message): ()
+        case let .some(.call(media)): makeCall = media
         case .none: ()
         }
         chatModel.openChatAction = nil
