@@ -248,6 +248,7 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func contactsView() -> some View {
+        // TODO changing alias / verification doesn't update list
         if oneHandUI {
             ContactsView()
                 .padding(.vertical, 5)
@@ -269,7 +270,6 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func chatView() -> some View {
-        // TODO changing alias / verification doesn't update list
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat).onAppear {
                 loadChat(chat: chat)
