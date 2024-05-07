@@ -401,6 +401,7 @@ struct ChatInfoView: View {
         }
     }
 
+    // TODO show keyboard
     private func messageButton() -> some View {
         actionButton("message.fill", "message")
             .foregroundColor(.accentColor)
