@@ -314,8 +314,8 @@ data ChatCommand
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
-  | APISetUserUITheme UserId (Maybe UITheme)
-  | APISetChatUITheme ChatRef (Maybe UITheme)
+  | APISetUserUIThemes UserId (Maybe UIThemes)
+  | APISetChatUIThemes ChatRef (Maybe UIThemes)
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode

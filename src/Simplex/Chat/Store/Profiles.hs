@@ -57,7 +57,7 @@ module Simplex.Chat.Store.Profiles
     deleteCommand,
     updateCommandStatus,
     getCommandDataByCorrId,
-    setUserUITheme,
+    setUserUIThemes,
   )
 where
 
@@ -276,8 +276,8 @@ updateUserProfile db user p'
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
-        DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
-        pure $ Just currentTs
+          DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
+          pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
     userMemberProfileChanged = newName /= displayName || newFullName /= fullName || newImage /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
@@ -622,7 +622,7 @@ getCommandDataByCorrId db User {userId} corrId =
     toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
     toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
 
-setUserUITheme :: DB.Connection -> User -> Maybe UITheme -> IO ()
-setUserUITheme db User {userId} uiTheme = do
+setUserUIThemes :: DB.Connection -> User -> Maybe UIThemes -> IO ()
+setUserUIThemes db User {userId} uiThemes = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE users SET ui_theme = ?, updated_at = ? WHERE user_id = ?" (uiTheme, updatedAt, userId)
+  DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)

@@ -35,7 +35,7 @@ CREATE TABLE users(
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
-  ui_theme TEXT, -- 1 for active user
+  ui_themes TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -75,7 +75,7 @@ CREATE TABLE contacts(
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
   custom_data BLOB,
-  ui_theme TEXT,
+  ui_themes TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -125,7 +125,7 @@ CREATE TABLE groups(
   via_group_link_uri_hash BLOB,
   user_member_profile_sent_at TEXT,
   custom_data BLOB,
-  ui_theme TEXT, -- received
+  ui_themes TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

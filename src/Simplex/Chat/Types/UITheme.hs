@@ -18,6 +18,13 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
 import Simplex.Messaging.Util ((<$?>))
 
+data UIThemes = UIThemes
+  { light :: Maybe UITheme,
+    dark :: Maybe UITheme,
+    simplex :: Maybe UITheme
+  }
+  deriving (Eq, Show)
+
 data UITheme = UITheme
   { base :: ThemeColorScheme,
     wallpaper :: Maybe ChatWallpaper,
@@ -25,8 +32,8 @@ data UITheme = UITheme
   }
   deriving (Eq, Show)
 
-defaultUITheme :: UITheme
-defaultUITheme = UITheme TCSLight Nothing defaultUIColors
+defaultUIThemes :: UIThemes
+defaultUIThemes = UIThemes Nothing Nothing Nothing
 
 data ThemeColorScheme = TCSLight | TCSDark | TCSSimplex
   deriving (Eq, Show)
@@ -131,8 +138,10 @@ $(JQ.deriveJSON defaultJSON ''UIColors)
 
 $(JQ.deriveJSON defaultJSON ''UITheme)
 
-instance ToField UITheme where
+$(JQ.deriveJSON defaultJSON ''UIThemes)
+
+instance ToField UIThemes where
   toField = toField . encodeJSON
 
-instance FromField UITheme where
-  fromField = fromTextField_ $ Just . fromMaybe defaultUITheme . decodeJSON
+instance FromField UIThemes where
+  fromField = fromTextField_ $ Just . fromMaybe defaultUIThemes . decodeJSON

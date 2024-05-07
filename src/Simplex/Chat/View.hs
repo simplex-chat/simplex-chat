@@ -84,7 +84,7 @@ serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . response
 
 responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
-  CRActiveUser User {profile, uiTheme} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiTheme
+  CRActiveUser User {profile, uiThemes} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -1210,7 +1210,7 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiTheme, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
@@ -1222,19 +1222,19 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> [viewConnectionVerified (contactSecurityCode ct)]
     <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
-    <> viewUITheme uiTheme
+    <> viewUITheme uiThemes
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
-viewGroupInfo GroupInfo {groupId, uiTheme, customData} s =
+viewGroupInfo GroupInfo {groupId, uiThemes, customData} s =
   [ "group ID: " <> sShow groupId,
     "current members: " <> sShow (currentMembers s)
   ]
-    <> viewUITheme uiTheme
+    <> viewUITheme uiThemes
     <> viewCustomData customData
 
-viewUITheme :: Maybe UITheme -> [StyledString]
-viewUITheme = maybe [] (\uiTheme -> ["UI theme: " <> plain (LB.toStrict $ J.encode uiTheme)])
+viewUITheme :: Maybe UIThemes -> [StyledString]
+viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> plain (LB.toStrict $ J.encode uiThemes)])
 
 viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> plain (LB.toStrict . J.encode $ J.Object v)])

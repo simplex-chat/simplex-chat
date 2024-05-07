@@ -1239,23 +1239,23 @@ processChatCommand' vr = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
-  APISetUserUITheme uId uiTheme -> withUser $ \user@User {userId} -> do
+  APISetUserUIThemes uId uiThemes -> withUser $ \user@User {userId} -> do
     user'@User {userId = uId'} <- withStore $ \db -> do
       user' <- getUser db uId
-      liftIO $ setUserUITheme db user uiTheme
+      liftIO $ setUserUIThemes db user uiThemes
       pure user'
-    when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {uiTheme}
+    when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {uiThemes}
     ok user'
-  APISetChatUITheme (ChatRef cType chatId) uiTheme -> withUser $ \user -> case cType of
+  APISetChatUIThemes (ChatRef cType chatId) uiThemes -> withUser $ \user -> case cType of
     CTDirect -> do
       withStore $ \db -> do
         ct <- getContact db vr user chatId
-        liftIO $ setContactUITheme db user ct uiTheme
+        liftIO $ setContactUIThemes db user ct uiThemes
       ok user
     CTGroup -> do
       withStore $ \db -> do
         g <- getGroupInfo db vr user chatId
-        liftIO $ setGroupUITheme db user g uiTheme
+        liftIO $ setGroupUIThemes db user g uiThemes
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
@@ -7122,8 +7122,8 @@ chatCommandP =
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
-      "/_set theme user " *> (APISetUserUITheme <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_set theme " *> (APISetChatUITheme <$> chatRefP <*> optional (A.space *> jsonP)),
+      "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

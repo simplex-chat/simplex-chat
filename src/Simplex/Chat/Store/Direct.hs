@@ -69,7 +69,7 @@ module Simplex.Chat.Store.Direct
     setConnConnReqInv,
     resetContactConnInitiated,
     setContactCustomData,
-    setContactUITheme,
+    setContactUIThemes,
   )
 where
 
@@ -178,7 +178,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_theme, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
@@ -242,7 +242,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         customData = Nothing,
-        uiTheme = Nothing
+        uiThemes = Nothing
       }
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
@@ -600,7 +600,7 @@ createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (V
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_theme, ct.custom_data,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
@@ -763,7 +763,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
         chatTs = Just createdAt,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
-        uiTheme = Nothing,
+        uiThemes = Nothing,
         customData = Nothing
       }
 
@@ -784,7 +784,7 @@ getContact_ db vr user@User {userId} contactId deleted =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_theme, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
@@ -930,7 +930,7 @@ setContactCustomData db User {userId} Contact {contactId} customData = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET custom_data = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (customData, updatedAt, userId, contactId)
 
-setContactUITheme :: DB.Connection -> User -> Contact -> Maybe UITheme -> IO ()
-setContactUITheme db User {userId} Contact {contactId} uiTheme = do
+setContactUIThemes :: DB.Connection -> User -> Contact -> Maybe UIThemes -> IO ()
+setContactUIThemes db User {userId} Contact {contactId} uiThemes = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET ui_theme = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiTheme, updatedAt, userId, contactId)
+  DB.execute db "UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiThemes, updatedAt, userId, contactId)

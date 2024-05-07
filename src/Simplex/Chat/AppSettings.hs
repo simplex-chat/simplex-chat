@@ -48,7 +48,7 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemes :: Maybe [UITheme]
+    uiThemes :: Maybe UIThemes
   }
   deriving (Show)
 

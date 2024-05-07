@@ -2045,18 +2045,18 @@ testSetUITheme =
     alice #$> ("/_set theme #1 " <> theme TCSSimplex, id, "ok")
     alice ##> "/u"
     userInfo alice "alice (Alice)"
-    alice <## ("UI theme: " <> theme TCSDark)
+    alice <## ("UI themes: " <> theme TCSDark)
     alice ##> "/create user alice2"
     userInfo alice "alice2"
     alice ##> "/u alice"
     userInfo alice "alice (Alice)"
-    alice <## ("UI theme: " <> theme TCSDark)
+    alice <## ("UI themes: " <> theme TCSDark)
     alice ##> "/i @bob"
     contactInfo alice
-    alice <## ("UI theme: " <> theme TCSSimplex)
+    alice <## ("UI themes: " <> theme TCSSimplex)
     alice ##> "/i #team"
     groupInfo alice
-    alice <## ("UI theme: " <> theme TCSSimplex)
+    alice <## ("UI themes: " <> theme TCSSimplex)
     alice #$> ("/_set theme user 1", id, "ok")
     alice #$> ("/_set theme @2", id, "ok")
     alice #$> ("/_set theme #1", id, "ok")
@@ -2067,7 +2067,7 @@ testSetUITheme =
     alice ##> "/i #team"
     groupInfo alice
   where
-    theme cs = T.unpack . encodeJSON $ UITheme cs Nothing defaultUIColors
+    theme cs = T.unpack $ encodeJSON UIThemes {light = Nothing, dark = Just (UITheme cs Nothing defaultUIColors), simplex = Nothing}
     userInfo a name = do
       a <## ("user profile: " <> name)
       a <## "use /p <display name> to change it"
