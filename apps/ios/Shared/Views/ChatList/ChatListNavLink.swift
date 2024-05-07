@@ -130,6 +130,7 @@ struct ChatListNavLink: View {
                 return ActionSheet(
                     title: Text("Delete conversation?"),
                     buttons: [
+                        // TODO chat doesn't disappear until view is re-opened
                         .destructive(Text("Delete conversation")) { Task { await deleteChatContact(chat, chatDeleteMode: .messages) } },
                         .destructive(Text("Delete conversation and contact")) { contactNavLinkSheet = .notifyDeleteContactActionSheet },
                         .cancel()
