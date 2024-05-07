@@ -14,6 +14,7 @@ struct ContactListNavLink: View {
     var contact: Contact
     
     var body: some View {
+        // TODO keep bottom bar?
         NavigationLink {
             ChatInfoView(
                 chat: chat,
@@ -36,22 +37,6 @@ struct ContactListNavLink: View {
                 }
             }
         }
-
-//        HStack{
-//            ProfileImage(imageStr: contact.image, size: 38)
-//                .padding(.trailing, 2)
-//            Text(contact.chatViewName)
-//                .lineLimit(1)
-//            if contact.contactConnIncognito {
-//                Spacer()
-//                Image(systemName: "theatermasks")
-//                    .resizable()
-//                    .scaledToFit()
-//                    .frame(width: 22, height: 22)
-//                    .foregroundColor(.secondary)
-//            }
-//        }
-
     }
 }
 
