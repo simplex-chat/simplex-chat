@@ -420,9 +420,9 @@ struct ChatInfoView: View {
                 dismiss()
                 makeCall = .audio
             } else {
+                chatModel.openChatAction = .call(media: .audio)
                 chatModel.chatId = chat.id
             }
-            // CallController.shared.startCall(contact, .audio)
         } label: {
             actionButton("phone.fill", "call")
         }
@@ -435,9 +435,9 @@ struct ChatInfoView: View {
                 dismiss()
                 makeCall = .video
             } else {
+                chatModel.openChatAction = .call(media: .video)
                 chatModel.chatId = chat.id
             }
-            // CallController.shared.startCall(contact, .video)
         } label: {
             actionButton("video.fill", "video")
         }

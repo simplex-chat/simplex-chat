@@ -257,6 +257,12 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
+        switch chatModel.openChatAction {
+        case .some(.message): ()
+        case let .some(.call(media)): makeCall = media
+        case .none: ()
+        }
+        chatModel.openChatAction = nil
     }
 
     private func searchToolbar() -> some View {

@@ -43,6 +43,11 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
+enum OpenChatAction {
+    case message
+    case call(media: CallMediaType)
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -64,6 +69,7 @@ final class ChatModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
+    @Published var openChatAction: OpenChatAction?
     @Published var chatId: String?
     @Published var reversedChatItems: [ChatItem] = []
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
