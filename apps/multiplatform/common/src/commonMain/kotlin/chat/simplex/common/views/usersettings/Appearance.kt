@@ -118,9 +118,6 @@ object AppearanceScope {
 
     val cornerRadius = 22
     fun setBackground(type: BackgroundImageType?) {
-      if (type is BackgroundImageType.Static || CurrentColors.value.wallpaper.type is BackgroundImageType.Static) {
-        resetColors()
-      }
       onTypeChange(type)
     }
 

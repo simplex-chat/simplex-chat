@@ -138,9 +138,11 @@ object ThemeManager {
   fun saveAndApplyBackgroundImage(baseTheme: DefaultTheme, type: BackgroundImageType?, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
     val nonSystemThemeName = baseTheme.name
     val overrides = pref.get().toMutableMap()
-    //    val prevValue = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
+    var prevValue = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
     // Overriding the whole theme on type change
-    val prevValue = ThemeOverrides()
+    if (prevValue.wallpaper.imageFile != type?.filename && prevValue.wallpaper.preset != type?.filename) {
+      prevValue = ThemeOverrides()
+    }
     overrides[nonSystemThemeName] = prevValue.copy(wallpaper = if (type != null) ThemeWallpaper.from(type, prevValue.wallpaper.background, prevValue.wallpaper.tint) else ThemeWallpaper())
     pref.set(overrides)
     CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides.get())
