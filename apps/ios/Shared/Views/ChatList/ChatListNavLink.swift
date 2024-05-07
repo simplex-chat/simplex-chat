@@ -32,10 +32,22 @@ struct ChatListNavLink: View {
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
     @State private var showInvalidJSON = false
-    @State private var showDeleteContactActionSheet = false
+    @State private var contactNavLinkSheet: ContactNavLinkActionSheet? = nil
     @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    enum ContactNavLinkActionSheet: Identifiable {
+        case deleteConversationActionSheet
+        case notifyDeleteContactActionSheet
+
+        var id: String {
+            switch self {
+            case .deleteConversationActionSheet: return "deleteConversationActionSheet"
+            case .notifyDeleteContactActionSheet: return "notifyDeleteContactActionSheet"
+            }
+        }
+    }
 
     var body: some View {
         Group {
@@ -72,7 +84,7 @@ struct ChatListNavLink: View {
                     .frame(height: rowHeights[dynamicTypeSize])
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
-                            showDeleteContactActionSheet = true
+                            contactNavLinkSheet = .deleteConversationActionSheet
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }
@@ -100,7 +112,7 @@ struct ChatListNavLink: View {
                     }
                     Button {
                         if contact.ready || !contact.active {
-                            showDeleteContactActionSheet = true
+                            contactNavLinkSheet = .deleteConversationActionSheet
                         } else {
                             AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
                         }
@@ -112,24 +124,36 @@ struct ChatListNavLink: View {
                 .frame(height: rowHeights[dynamicTypeSize])
             }
         }
-        .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            if contact.ready && contact.active {
+        .actionSheet(item: $contactNavLinkSheet) { sheet in
+            switch(sheet) {
+            case .deleteConversationActionSheet:
                 return ActionSheet(
-                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    title: Text("Delete conversation?"),
                     buttons: [
-                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, chatDeleteMode: .full(notify: true)) } },
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat, chatDeleteMode: .full(notify: false)) } },
+                        .destructive(Text("Delete conversation")) { Task { await deleteChatContact(chat, chatDeleteMode: .messages) } },
+                        .destructive(Text("Delete conversation and contact")) { contactNavLinkSheet = .notifyDeleteContactActionSheet },
                         .cancel()
                     ]
                 )
-            } else {
-                return ActionSheet(
-                    title: Text("Delete contact?\nThis cannot be undone!"),
-                    buttons: [
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat) } },
-                        .cancel()
-                    ]
-                )
+            case .notifyDeleteContactActionSheet:
+                if contact.ready && contact.active {
+                    return ActionSheet(
+                        title: Text("Notify contact?\nThis cannot be undone!"),
+                        buttons: [
+                            .destructive(Text("Delete and notify contact")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: true)) } },
+                            .destructive(Text("Delete without notification")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: false)) } },
+                            .cancel()
+                        ]
+                    )
+                } else {
+                    return ActionSheet(
+                        title: Text("Confirm contact deletion.\nThis cannot be undone!"),
+                        buttons: [
+                            .destructive(Text("Delete")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: false)) } },
+                            .cancel()
+                        ]
+                    )
+                }
             }
         }
     }

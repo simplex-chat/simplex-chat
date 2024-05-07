@@ -773,6 +773,26 @@ func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: tru
     }
 }
 
+func deleteChatContact(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async {
+    do {
+        let cInfo = chat.chatInfo
+        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        DispatchQueue.main.async {
+            if case .full = chatDeleteMode {
+                ChatModel.shared.removeChat(cInfo.id)
+            } else {
+                ChatModel.shared.updateContact(ct)
+            }
+        }
+    } catch let error {
+        logger.error("deleteChatContact apiDeleteContact error: \(responseError(error))")
+        AlertManager.shared.showAlertMsg(
+            title: "Error deleting chat!",
+            message: "Error: \(responseError(error))"
+        )
+    }
+}
+
 func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
     let r = await chatSendCmd(.apiClearChat(type: type, id: id), bgTask: false)
     if case let .chatCleared(_, updatedChatInfo) = r { return updatedChatInfo }
