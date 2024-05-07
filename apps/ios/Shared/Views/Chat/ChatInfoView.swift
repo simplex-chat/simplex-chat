@@ -410,6 +410,7 @@ struct ChatInfoView: View {
         } label: {
             actionButton("message.fill", "message")
         }
+        .disabled(!contact.sendMsgEnabled)
     }
 
     private func callButton() -> some View {
@@ -418,6 +419,7 @@ struct ChatInfoView: View {
         } label: {
             actionButton("phone.fill", "call")
         }
+        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
 
     private func videoButton() -> some View {
@@ -426,6 +428,7 @@ struct ChatInfoView: View {
         } label: {
             actionButton("video.fill", "video")
         }
+        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
 
     private func actionButton(_ image: String, _ title: LocalizedStringKey) -> some View {
