@@ -15,38 +15,48 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, singleFieldJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data UITheme = UITheme
-  { base :: ColorScheme,
+  { base :: ThemeColorScheme,
     wallpaper :: Maybe ChatWallpaper,
     colors :: UIColors
   }
   deriving (Eq, Show)
 
 defaultUITheme :: UITheme
-defaultUITheme = UITheme CSLight Nothing defaultUIColors
+defaultUITheme = UITheme TCSLight Nothing defaultUIColors
 
-data ColorScheme = CSLight | CSDark | CSSimplex
+data ThemeColorScheme = TCSLight | TCSDark | TCSSimplex
   deriving (Eq, Show)
 
-instance StrEncoding ColorScheme where
+data UIColorScheme
+  = UCSSystem DarkColorScheme
+  | UCSLight
+  | UCSDark
+  | UCSSimplex
+  deriving (Show)
+
+data DarkColorScheme = DCSDark | DCSSimplex
+  deriving (Show)
+
+instance StrEncoding ThemeColorScheme where
   strEncode = \case
-    CSLight -> "LIGHT"
-    CSDark -> "DARK"
-    CSSimplex -> "SIMPLEX"
+    TCSLight -> "LIGHT"
+    TCSDark -> "DARK"
+    TCSSimplex -> "SIMPLEX"
   strDecode = \case
-    "LIGHT" -> Right CSLight
-    "DARK" -> Right CSDark
-    "SIMPLEX" -> Right CSSimplex
+    "LIGHT" -> Right TCSLight
+    "DARK" -> Right TCSDark
+    "SIMPLEX" -> Right TCSSimplex
     _ -> Left "bad ColorScheme"
   strP = strDecode <$?> A.takeTill (== ' ')
 
-instance FromJSON ColorScheme where
-  parseJSON = strParseJSON "ColorScheme"
+instance FromJSON ThemeColorScheme where
+  parseJSON = strParseJSON "ThemeColorScheme"
 
-instance ToJSON ColorScheme where
+instance ToJSON ThemeColorScheme where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -106,6 +116,10 @@ instance FromJSON UIColor where
 instance ToJSON UIColor where
   toJSON (UIColor t) = J.toJSON t
   toEncoding (UIColor t) = J.toEncoding t
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "DCS") ''DarkColorScheme)
+
+$(JQ.deriveJSON (singleFieldJSON $ dropPrefix "UCS") ''UIColorScheme)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CWS") ''ChatWallpaperScale)
 

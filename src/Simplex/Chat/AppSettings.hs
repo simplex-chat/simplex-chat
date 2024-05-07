@@ -45,7 +45,7 @@ data AppSettings = AppSettings
     androidCallOnLockScreen :: Maybe LockScreenCalls,
     iosCallKitEnabled :: Maybe Bool,
     iosCallKitCallsInRecents :: Maybe Bool,
-    uiColorScheme :: Maybe ColorScheme,
+    uiColorScheme :: Maybe UIColorScheme,
     uiThemes :: Maybe [UITheme]
   }
   deriving (Show)
@@ -73,7 +73,7 @@ defaultAppSettings =
       androidCallOnLockScreen = Just LSCShow,
       iosCallKitEnabled = Just True,
       iosCallKitCallsInRecents = Just False,
-      uiColorScheme = Just CSLight,
+      uiColorScheme = Just (UCSSystem DCSSimplex),
       uiThemes = Nothing
     }
 

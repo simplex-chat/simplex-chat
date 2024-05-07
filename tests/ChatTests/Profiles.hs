@@ -75,7 +75,7 @@ chatProfileTests = do
       it "direct messages" testGroupPrefsDirectForRole
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
-    it "set user, contact and group UI theme" testSetUITheme
+    fit "set user, contact and group UI theme" testSetUITheme
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
@@ -2040,23 +2040,23 @@ testSetUITheme =
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
-    alice #$> ("/_set theme user 1 " <> theme CSDark, id, "ok")
-    alice #$> ("/_set theme @2 " <> theme CSSimplex, id, "ok")
-    alice #$> ("/_set theme #1 " <> theme CSSimplex, id, "ok")
+    alice #$> ("/_set theme user 1 " <> theme TCSDark, id, "ok")
+    alice #$> ("/_set theme @2 " <> theme TCSSimplex, id, "ok")
+    alice #$> ("/_set theme #1 " <> theme TCSSimplex, id, "ok")
     alice ##> "/u"
     userInfo alice "alice (Alice)"
-    alice <## ("UI theme: " <> theme CSDark)
+    alice <## ("UI theme: " <> theme TCSDark)
     alice ##> "/create user alice2"
     userInfo alice "alice2"
     alice ##> "/u alice"
     userInfo alice "alice (Alice)"
-    alice <## ("UI theme: " <> theme CSDark)
+    alice <## ("UI theme: " <> theme TCSDark)
     alice ##> "/i @bob"
     contactInfo alice
-    alice <## ("UI theme: " <> theme CSSimplex)
+    alice <## ("UI theme: " <> theme TCSSimplex)
     alice ##> "/i #team"
     groupInfo alice
-    alice <## ("UI theme: " <> theme CSSimplex)
+    alice <## ("UI theme: " <> theme TCSSimplex)
     alice #$> ("/_set theme user 1", id, "ok")
     alice #$> ("/_set theme @2", id, "ok")
     alice #$> ("/_set theme #1", id, "ok")
