@@ -409,6 +409,11 @@ struct ChatInfoView: View {
                 if openedFromChatView {
                     dismiss()
                 } else {
+                    if contact.chatDeleted {
+                        var updatedContact = contact
+                        updatedContact.chatDeleted = false
+                        chatModel.updateContact(updatedContact)
+                    }
                     chatModel.chatId = chat.id
                 }
             }
