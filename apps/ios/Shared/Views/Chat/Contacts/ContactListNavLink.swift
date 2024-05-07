@@ -25,8 +25,7 @@ struct ContactListNavLink: View {
             HStack{
                 ProfileImage(imageStr: contact.image, size: 38)
                     .padding(.trailing, 2)
-                Text(contact.chatViewName)
-                    .lineLimit(1)
+                previewTitle()
                 if contact.contactConnIncognito {
                     Spacer()
                     Image(systemName: "theatermasks")
@@ -37,6 +36,23 @@ struct ContactListNavLink: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder private func previewTitle() -> some View {
+        let t = Text(chat.chatInfo.chatViewName)
+        (
+            contact.verified == true
+            ? verifiedIcon + t
+            : t
+        )
+        .lineLimit(1)
+    }
+
+    private var verifiedIcon: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .foregroundColor(.secondary)
+            .baselineOffset(1)
+            .kerning(-2)
     }
 }
 
