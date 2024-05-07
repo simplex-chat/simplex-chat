@@ -18,11 +18,7 @@ struct ContactListNavLink: View {
             ChatInfoView(
                 chat: chat,
                 contact: contact,
-                // TODO
-                connectionStats: Binding.constant(nil),
-                customUserProfile: Binding.constant(nil),
-                localAlias: "",
-                connectionCode: Binding.constant(nil)
+                localAlias: chat.chatInfo.localAlias
             )
         } label: {
             HStack{

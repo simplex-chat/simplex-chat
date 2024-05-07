@@ -93,10 +93,10 @@ struct ChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @State var contact: Contact
-    @Binding var connectionStats: ConnectionStats?
-    @Binding var customUserProfile: Profile?
     @State var localAlias: String
-    @Binding var connectionCode: String?
+    @State private var connectionStats: ConnectionStats? = nil
+    @State private var customUserProfile: Profile? = nil
+    @State private var connectionCode: String? = nil
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
     @State private var showDeleteContactActionSheet = false
@@ -235,6 +235,23 @@ struct ChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsContacts
             }
             sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
+
+            Task {
+                do {
+                    let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
+                    let (ct, code) = try await apiGetContactCode(chat.chatInfo.apiId)
+                    await MainActor.run {
+                        connectionStats = stats
+                        customUserProfile = profile
+                        connectionCode = code
+                        if contact.activeConn?.connectionCode != ct.activeConn?.connectionCode {
+                            chat.chatInfo = .direct(contact: ct)
+                        }
+                    }
+                } catch let error {
+                    logger.error("apiContactInfo or apiGetContactCode error: \(responseError(error))")
+                }
+            }
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
@@ -582,10 +599,7 @@ struct ChatInfoView_Previews: PreviewProvider {
         ChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
-            connectionStats: Binding.constant(nil),
-            customUserProfile: Binding.constant(nil),
-            localAlias: "",
-            connectionCode: Binding.constant(nil)
+            localAlias: ""
         )
     }
 }
