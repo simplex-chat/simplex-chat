@@ -108,6 +108,7 @@ struct ChatInfoView: View {
     @State var contact: Contact
     @State var localAlias: String
     @Binding var makeCall: CallMediaType?
+    @Binding var chatViewKeyboardVisible: Bool
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
     @State private var connectionCode: String? = nil
@@ -407,7 +408,11 @@ struct ChatInfoView: View {
             .onTapGesture {
                 if openedFromChatView {
                     dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        chatViewKeyboardVisible = true
+                    }
                 } else {
+                    chatModel.openChatAction = .message
                     chatModel.chatId = chat.id
                 }
             }
@@ -713,7 +718,8 @@ struct ChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             localAlias: "",
-            makeCall: Binding.constant(nil)
+            makeCall: Binding.constant(nil),
+            chatViewKeyboardVisible: Binding.constant(false)
         )
     }
 }
