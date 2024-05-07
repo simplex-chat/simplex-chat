@@ -164,6 +164,17 @@ struct ChatInfoView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
+                HStack {
+                    messageButton()
+                    Spacer()
+                    callButton()
+                    Spacer()
+                    videoButton()
+                }
+                .padding(.horizontal)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
                 if let customUserProfile = customUserProfile {
                     Section("Incognito") {
                         HStack {
@@ -386,6 +397,46 @@ struct ChatInfoView: View {
                 logger.error("setContactAlias error: \(responseError(error))")
             }
         }
+    }
+
+    private func messageButton() -> some View {
+        Button {
+            dismiss()
+            chatModel.chatId = chat.id
+        } label: {
+            actionButton("message.fill", "message")
+        }
+    }
+
+    private func callButton() -> some View {
+        Button {
+
+        } label: {
+            actionButton("phone.fill", "call")
+        }
+    }
+
+    private func videoButton() -> some View {
+        Button {
+
+        } label: {
+            actionButton("video.fill", "video")
+        }
+    }
+
+    private func actionButton(_ image: String, _ title: LocalizedStringKey) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+            Text(title)
+                .font(.caption)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(12.0)
+        .frame(width: 90, height: 60)
     }
 
     private func verifyCodeButton(_ code: String) -> some View {
