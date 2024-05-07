@@ -196,9 +196,9 @@ struct ChatInfoView: View {
                        connStats.ratchetSyncAllowed {
                         synchronizeConnectionButton()
                     }
-//                    } else if developerTools {
-//                        synchronizeConnectionButtonForce()
-//                    }
+                    //                    } else if developerTools {
+                    //                        synchronizeConnectionButtonForce()
+                    //                    }
                 }
                 .disabled(!contact.ready || !contact.active)
 
@@ -402,46 +402,46 @@ struct ChatInfoView: View {
     }
 
     private func messageButton() -> some View {
-        Button {
-            if openedFromChatView {
-                dismiss()
-            } else {
-                chatModel.chatId = chat.id
+        actionButton("message.fill", "message")
+            .foregroundColor(.accentColor)
+            .onTapGesture {
+                if openedFromChatView {
+                    dismiss()
+                } else {
+                    chatModel.chatId = chat.id
+                }
             }
-        } label: {
-            actionButton("message.fill", "message")
-        }
-        .disabled(!contact.sendMsgEnabled)
+            .disabled(!contact.sendMsgEnabled)
     }
 
     private func callButton() -> some View {
-        Button {
-            if openedFromChatView {
-                dismiss()
-                makeCall = .audio
-            } else {
-                chatModel.openChatAction = .call(media: .audio)
-                chatModel.chatId = chat.id
+        actionButton("phone.fill", "call")
+            .foregroundColor(.accentColor)
+            .onTapGesture {
+                if openedFromChatView {
+                    dismiss()
+                    makeCall = .audio
+                } else {
+                    chatModel.openChatAction = .call(media: .audio)
+                    chatModel.chatId = chat.id
+                }
             }
-        } label: {
-            actionButton("phone.fill", "call")
-        }
-        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
+            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
 
     private func videoButton() -> some View {
-        Button {
-            if openedFromChatView {
-                dismiss()
-                makeCall = .video
-            } else {
-                chatModel.openChatAction = .call(media: .video)
-                chatModel.chatId = chat.id
+        actionButton("video.fill", "video")
+            .foregroundColor(.accentColor)
+            .onTapGesture {
+                if openedFromChatView {
+                    dismiss()
+                    makeCall = .video
+                } else {
+                    chatModel.openChatAction = .call(media: .video)
+                    chatModel.chatId = chat.id
+                }
             }
-        } label: {
-            actionButton("video.fill", "video")
-        }
-        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
+            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
 
     private func actionButton(_ image: String, _ title: LocalizedStringKey) -> some View {
