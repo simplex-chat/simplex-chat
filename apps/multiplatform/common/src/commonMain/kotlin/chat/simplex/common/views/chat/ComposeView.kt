@@ -775,7 +775,7 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val color = MaterialTheme.appColors.receivedMessage
     Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))

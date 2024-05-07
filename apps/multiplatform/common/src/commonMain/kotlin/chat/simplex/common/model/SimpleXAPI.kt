@@ -1,10 +1,8 @@
 package chat.simplex.common.model
 
-import androidx.compose.material.MaterialTheme
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
@@ -13,7 +11,6 @@ import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
@@ -438,8 +435,13 @@ object ChatController {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
     apiSetNetworkConfig(netCfg, ctrl)
-    apiSetTempFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
-    apiSetFilesFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
+    apiSetAppFilePaths(
+      getMigrationTempFilesDirectory().absolutePath,
+      getMigrationTempFilesDirectory().absolutePath,
+      wallpapersDir.parentFile.absolutePath,
+      remoteHostsDir.absolutePath,
+      ctrl
+    )
     apiStartChat(ctrl)
     return migrationActiveUser
   }
@@ -658,22 +660,10 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetTempFolder(tempFolder: String, ctrl: ChatCtrl? = null) {
-    val r = sendCmd(null, CC.SetTempFolder(tempFolder), ctrl)
+  suspend fun apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, remoteHostsFolder: String, ctrl: ChatCtrl? = null) {
+    val r = sendCmd(null, CC.ApiSetAppFilePaths(filesFolder, tempFolder, assetsFolder, remoteHostsFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Exception("failed to set temp folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetFilesFolder(filesFolder: String, ctrl: ChatCtrl? = null) {
-    val r = sendCmd(null, CC.SetFilesFolder(filesFolder), ctrl)
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set files folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
-    val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set remote hosts folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set app file paths: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
@@ -1157,6 +1147,20 @@ object ChatController {
     if (r is CR.ConnectionAliasUpdated) return r.toConnection
     Log.e(TAG, "apiSetConnectionAlias bad response: ${r.responseType} ${r.details}")
     return null
+  }
+
+  suspend fun apiSetUserUITheme(rh: Long?, userId: Long, theme: ThemeOverrides): Boolean {
+    val r = sendCmd(rh, CC.ApiSetUserUITheme(userId, theme))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiSetUserUITheme bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun apiSetChatUITheme(rh: Long?, chatId: ChatId, theme: ThemeOverrides): Boolean {
+    val r = sendCmd(rh, CC.ApiSetChatUITheme(chatId, theme))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiSetChatUITheme bad response: ${r.responseType} ${r.details}")
+    return false
   }
 
   suspend fun apiCreateUserAddress(rh: Long?): String? {
@@ -2390,9 +2394,8 @@ sealed class CC {
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val mainApp: Boolean): CC()
   class ApiStopChat: CC()
-  class SetTempFolder(val tempFolder: String): CC()
-  class SetFilesFolder(val filesFolder: String): CC()
-  class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
+  @Serializable
+  class ApiSetAppFilePaths(val appFilesFolder: String, val appTempFolder: String, val appAssetsFolder: String, val appRemoteHostsFolder: String): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
@@ -2460,6 +2463,8 @@ sealed class CC {
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
+  class ApiSetUserUITheme(val userId: Long, val theme: ThemeOverrides): CC()
+  class ApiSetChatUITheme(val chatId: String, val theme: ThemeOverrides): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
@@ -2527,9 +2532,7 @@ sealed class CC {
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start main=${onOff(mainApp)}"
     is ApiStopChat -> "/_stop"
-    is SetTempFolder -> "/_temp_folder $tempFolder"
-    is SetFilesFolder -> "/_files_folder $filesFolder"
-    is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
+    is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
@@ -2606,6 +2609,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
+    is ApiSetUserUITheme -> "/_set theme user $userId ${json.encodeToString(theme)}"
+    is ApiSetChatUITheme -> "/_set theme $chatId ${json.encodeToString(theme)}"
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
@@ -2669,9 +2674,7 @@ sealed class CC {
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
-    is SetTempFolder -> "setTempFolder"
-    is SetFilesFolder -> "setFilesFolder"
-    is SetRemoteHostsFolder -> "setRemoteHostsFolder"
+    is ApiSetAppFilePaths -> "apiSetAppFilePaths"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
@@ -2739,6 +2742,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
+    is ApiSetUserUITheme -> "apiSetUserUITheme"
+    is ApiSetChatUITheme -> "apiSetChatUITheme"
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
@@ -5428,6 +5433,8 @@ data class AppSettings(
   var androidCallOnLockScreen: AppSettingsLockScreenCalls? = null,
   var iosCallKitEnabled: Boolean? = null,
   var iosCallKitCallsInRecents: Boolean? = null,
+  var uiColorScheme: String? = null,
+  var uiThemes: List<ThemeOverrides>? = null,
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -5451,6 +5458,8 @@ data class AppSettings(
     if (androidCallOnLockScreen != def.androidCallOnLockScreen) { empty.androidCallOnLockScreen = androidCallOnLockScreen }
     if (iosCallKitEnabled != def.iosCallKitEnabled) { empty.iosCallKitEnabled = iosCallKitEnabled }
     if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+    if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
+    if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     return empty
   }
 
@@ -5482,6 +5491,8 @@ data class AppSettings(
     androidCallOnLockScreen?.let { def.callOnLockScreen.set(it.toCallOnLockScreen()) }
     iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
+    uiColorScheme?.let { def.currentTheme.set(it) }
+    uiThemes?.let { def.themeOverrides.set(it.map { theme -> theme.base.name to theme }.toMap()) }
   }
 
   companion object {
@@ -5505,7 +5516,9 @@ data class AppSettings(
         confirmDBUpgrades = false,
         androidCallOnLockScreen = AppSettingsLockScreenCalls.SHOW,
         iosCallKitEnabled = true,
-        iosCallKitCallsInRecents = false
+        iosCallKitCallsInRecents = false,
+        uiColorScheme = DefaultTheme.SYSTEM.name,
+        uiThemes = null,
       )
 
     val current: AppSettings
@@ -5531,6 +5544,8 @@ data class AppSettings(
           androidCallOnLockScreen = AppSettingsLockScreenCalls.from(def.callOnLockScreen.get()),
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
+          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM.name,
+          uiThemes = def.themeOverrides.get().values.toList(),
         )
     }
   }

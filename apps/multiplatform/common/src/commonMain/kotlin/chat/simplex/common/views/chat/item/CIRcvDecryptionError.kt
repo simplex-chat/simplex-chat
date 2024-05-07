@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -137,7 +138,7 @@ fun DecryptionErrorItemFixButton(
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
@@ -184,7 +185,7 @@ fun DecryptionErrorItem(
   ci: ChatItem,
   onClick: () -> Unit
 ) {
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),

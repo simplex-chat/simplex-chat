@@ -1035,7 +1035,6 @@
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
   <string name="settings_section_title_wallpaper">Wallpaper</string>
-  <string name="settings_section_title_image">Image</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_network_connection">Network connection</string>
@@ -1538,8 +1537,6 @@
   <string name="color_wallpaper_tint">Tint</string>
 
   <!-- Backgrounds -->
-  <string name="background_choose_none">None</string>
-  <string name="background_choose_own_image">Choose…</string>
   <string name="background_cat">Cat</string>
   <string name="background_hearts">Hearts</string>
   <string name="background_school">School</string>

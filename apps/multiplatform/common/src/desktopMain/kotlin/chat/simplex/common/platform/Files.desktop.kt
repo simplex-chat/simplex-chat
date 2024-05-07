@@ -13,7 +13,7 @@ actual val dataDir: File = File(desktopPlatform.dataPath)
 actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex").also { it.deleteOnExit() }
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
 actual val appFilesDir: File = filesDir
-actual val appearanceDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_assets" + File.separator + "wallpapers")
+actual val wallpapersDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_assets" + File.separator + "wallpapers")
 actual val coreTmpDir: File = File(dataDir.absolutePath + File.separator + "tmp")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "simplex_v1"
 

@@ -29,7 +29,7 @@ enum class PredefinedBackgroundImage(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cat") CAT(MR.images.background_cat, "simplex_cat", MR.strings.background_cat, 0.5f,
+  @SerialName("cats") CAT(MR.images.background_cat, "cats", MR.strings.background_cat, 0.5f,
     mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
     mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -44,7 +44,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("hearts") HEARTS(MR.images.background_hearts, "simplex_hearts", MR.strings.background_hearts, 0.5f,
+  @SerialName("hearts") HEARTS(MR.images.background_hearts, "hearts", MR.strings.background_hearts, 0.5f,
     mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
     mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -56,7 +56,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("school") SCHOOL(MR.images.background_school, "simplex_school",  MR.strings.background_school, 0.5f,
+  @SerialName("school") SCHOOL(MR.images.background_school, "school",  MR.strings.background_school, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -68,7 +68,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("internet") INTERNET(MR.images.background_internet, "simplex_internet", MR.strings.background_internet, 0.5f,
+  @SerialName("internet") INTERNET(MR.images.background_internet, "internet", MR.strings.background_internet, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -80,7 +80,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("space") SPACE(MR.images.background_space, "simplex_space", MR.strings.background_space, 0.5f,
+  @SerialName("space") SPACE(MR.images.background_space, "space", MR.strings.background_space, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -92,7 +92,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("pets") PETS(MR.images.background_pets, "simplex_pets", MR.strings.background_pets, 0.5f,
+  @SerialName("pets") PETS(MR.images.background_pets, "pets", MR.strings.background_pets, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -104,7 +104,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("rabbit") RABBIT(MR.images.background_rabbit, "simplex_rabbit", MR.strings.background_rabbit, 0.5f,
+  @SerialName("rabbit") RABBIT(MR.images.background_rabbit, "rabbit", MR.strings.background_rabbit, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -146,9 +146,14 @@ sealed class BackgroundImageType {
       val res = if (this is Repeated) {
         PredefinedBackgroundImage.from(filename)!!.res.toComposeImageBitmap()!!
       } else {
-        File(getBackgroundImageFilePath(filename)).inputStream().use { loadImageBitmap(it) }
+        try {
+          // In case of unintentional image deletion don't crash the app
+          File(getBackgroundImageFilePath(filename)).inputStream().use { loadImageBitmap(it) }
+        } catch (e: Exception) {
+          null
+        }
       }
-      cachedImage = filename to res
+      cachedImage = if (res != null) filename to res else null
       res
     }
   }
@@ -177,9 +182,9 @@ sealed class BackgroundImageType {
     if (this is Repeated) {
       PredefinedBackgroundImage.from(filename)!!.tint[theme]!!
     } else if (this is Static && scaleType == BackgroundImageScaleType.REPEAT) {
-      MaterialTheme.colors.primary
+      Color.Transparent
     } else {
-      MaterialTheme.colors.background.copy(0.9f)
+      Color.Transparent
     }
 
   companion object {
@@ -187,6 +192,14 @@ sealed class BackgroundImageType {
       get() = PredefinedBackgroundImage.CAT.toType()
 
     private var cachedImage: Pair<String, ImageBitmap>? = null
+
+    fun from(wallpaper: ThemeWallpaper): BackgroundImageType? {
+      return if (wallpaper.preset != null) {
+        Repeated(wallpaper.preset, wallpaper.scale)
+      } else {
+        Static(wallpaper.imageFile ?: return null, wallpaper.scale, wallpaper.scaleType ?: BackgroundImageScaleType.FILL)
+      }
+    }
   }
 }
 

@@ -83,8 +83,8 @@ fun CIGroupInvitationView(
     }
   }
 
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
       inProgress.value = true

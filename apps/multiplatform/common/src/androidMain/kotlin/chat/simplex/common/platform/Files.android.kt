@@ -15,7 +15,7 @@ actual val dataDir: File = androidAppContext.dataDir
 actual val tmpDir: File = androidAppContext.getDir("temp", Application.MODE_PRIVATE)
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "files")
 actual val appFilesDir: File = File(filesDir.absolutePath + File.separator + "app_files")
-actual val appearanceDir: File = File(filesDir.absolutePath + File.separator + "appearance")
+actual val wallpapersDir: File = File(filesDir.absolutePath + File.separator + "assets" + File.separator + "wallpapers")
 actual val coreTmpDir: File = File(filesDir.absolutePath + File.separator + "temp_files")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "files"
 

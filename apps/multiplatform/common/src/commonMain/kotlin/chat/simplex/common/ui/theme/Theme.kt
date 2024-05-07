@@ -46,17 +46,73 @@ enum class DefaultTheme {
   }
 }
 
-data class AppColors(
-  val title: Color,
-  val sentMessage: Color,
-  val receivedMessage: Color,
-)
+@Stable
+class AppColors(
+  title: Color,
+  sentMessage: Color,
+  receivedMessage: Color
+) {
+  var title by mutableStateOf(title, structuralEqualityPolicy())
+    internal set
+  var sentMessage by mutableStateOf(sentMessage, structuralEqualityPolicy())
+    internal set
+  var receivedMessage by mutableStateOf(receivedMessage, structuralEqualityPolicy())
+    internal set
 
-data class AppWallpaper(
-  val background: Color? = null,
-  val tint: Color? = null,
-  val type: BackgroundImageType? = null
-)
+  fun copy(
+    title: Color = this.title,
+    sentMessage: Color = this.sentMessage,
+    receivedMessage: Color = this.receivedMessage,
+  ): AppColors = AppColors(
+    title,
+    sentMessage,
+    receivedMessage,
+  )
+
+  override fun toString(): String {
+    return buildString {
+      append("AppColors(")
+      append("title=$title, ")
+      append("sentMessage=$sentMessage, ")
+      append("receivedMessage=$receivedMessage")
+      append(")")
+    }
+  }
+}
+
+@Stable
+class AppWallpaper(
+  background: Color? = null,
+  tint: Color? = null,
+  type: BackgroundImageType? = null,
+) {
+  var background by mutableStateOf(background, structuralEqualityPolicy())
+    internal set
+  var tint by mutableStateOf(tint, structuralEqualityPolicy())
+    internal set
+  var type by mutableStateOf(type, structuralEqualityPolicy())
+    internal set
+
+  fun copy(
+    background: Color? = this.background,
+    tint: Color? = this.tint,
+    type: BackgroundImageType? = this.type,
+  ): AppWallpaper = AppWallpaper(
+    background,
+    tint,
+    type,
+  )
+
+  override fun toString(): String {
+    return buildString {
+      append("AppWallpaper(")
+      append("background=$background, ")
+      append("tint=$tint, ")
+      append("type=$type")
+      append(")")
+    }
+  }
+}
 
 enum class ThemeColor {
   PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, RECEIVED_MESSAGE, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
@@ -166,6 +222,7 @@ data class ThemeWallpaper (
   val background: String? = null,
   val tint: String? = null,
   val image: String? = null,
+  val imageFile: String? = null,
 ) {
   fun toAppWallpaper(): AppWallpaper {
     return AppWallpaper(
@@ -173,9 +230,9 @@ data class ThemeWallpaper (
       tint = tint?.colorFromReadableHex(),
       type = if (preset != null) {
         BackgroundImageType.Repeated(filename = preset, scale)
-      } else if (image != null) {
+      } else if (imageFile != null) {
         BackgroundImageType.Static(
-          filename = image,
+          filename = imageFile,
           scale,
           scaleType ?: BackgroundImageScaleType.FILL
         )
@@ -184,13 +241,29 @@ data class ThemeWallpaper (
     )
   }
 
-  fun withFilledWallpaper(): ThemeWallpaper {
+  fun withFilledWallpaperBase64(): ThemeWallpaper {
     val aw = toAppWallpaper()
+    val type = aw.type
     return ThemeWallpaper(
-      image = if (aw.type is BackgroundImageType.Static) resizeImageToStrSize(aw.type.image, 5_000_000) else null,
-      preset = if (aw.type is BackgroundImageType.Repeated) aw.type.filename else null,
-      scale = if (aw.type is BackgroundImageType.Repeated) aw.type.scale else (aw.type as BackgroundImageType.Static).scale,
-      scaleType = if (aw.type is BackgroundImageType.Static) aw.type.scaleType else null,
+      image = if (type is BackgroundImageType.Static && type.image != null) resizeImageToStrSize(type.image!!, 5_000_000) else null,
+      imageFile = null,
+      preset = if (type is BackgroundImageType.Repeated) type.filename else null,
+      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type != null) (type as BackgroundImageType.Static).scale else 1f,
+      scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
+      background = aw.background?.toReadableHex(),
+      tint = aw.tint?.toReadableHex(),
+    )
+  }
+
+  fun withFilledWallpaperPath(): ThemeWallpaper {
+    val aw = toAppWallpaper()
+    val type = aw.type
+    return ThemeWallpaper(
+      image = null,
+      imageFile = if (type is BackgroundImageType.Static) type.filename else null,
+      preset = if (type is BackgroundImageType.Repeated) type.filename else null,
+      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type != null) (type as BackgroundImageType.Static).scale else 1f,
+      scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
       background = aw.background?.toReadableHex(),
       tint = aw.tint?.toReadableHex(),
     )
@@ -211,7 +284,8 @@ data class ThemeWallpaper (
   companion object {
     fun from(type: BackgroundImageType, background: String?, tint: String?): ThemeWallpaper {
       return ThemeWallpaper(
-        image = if (type is BackgroundImageType.Static) type.filename else null,
+        image = null,
+        imageFile = if (type is BackgroundImageType.Static) type.filename else null,
         preset = if (type is BackgroundImageType.Repeated) type.filename else null,
         scale = if (type is BackgroundImageType.Repeated) type.scale else (type as BackgroundImageType.Static).scale,
         scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
@@ -224,8 +298,8 @@ data class ThemeWallpaper (
 
 @Serializable
 data class ThemeOverrides (
-  val base: DefaultTheme,
-  val colors: ThemeColors,
+  val base: DefaultTheme = CurrentColors.value.base,
+  val colors: ThemeColors = ThemeColors(),
   val wallpaper: ThemeWallpaper = ThemeWallpaper(),
 ) {
   fun withUpdatedColor(name: ThemeColor, color: String?): ThemeOverrides {
@@ -343,6 +417,25 @@ fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLi
 @Composable
 expect fun isSystemInDarkTheme(): Boolean
 
+internal val LocalAppColors = staticCompositionLocalOf { LightColorPaletteApp }
+internal val LocalAppWallpaper = staticCompositionLocalOf { AppWallpaper() }
+
+val MaterialTheme.appColors: AppColors
+  @Composable
+  @ReadOnlyComposable
+  get() = LocalAppColors.current
+
+fun AppColors.updateColorsFrom(other: AppColors) {
+  title = other.title
+  sentMessage = other.sentMessage
+  receivedMessage = other.receivedMessage
+}
+
+val MaterialTheme.wallpaper: AppWallpaper
+  @Composable
+  @ReadOnlyComposable
+  get() = LocalAppWallpaper.current
+
 fun reactOnDarkThemeChanges(isDark: Boolean) {
   if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM.name && CurrentColors.value.colors.isLight == isDark) {
     // Change active colors from light to dark and back based on system theme
@@ -367,7 +460,32 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     typography = Typography,
     shapes = Shapes,
     content = {
-      CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.onBackground, content = content)
+      CompositionLocalProvider(
+        LocalContentColor provides MaterialTheme.colors.onBackground,
+        LocalAppColors provides theme.appColors,
+        LocalAppWallpaper provides theme.wallpaper,
+        content = content)
+    }
+  )
+}
+
+@Composable
+fun SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable () -> Unit) {
+  MaterialTheme(
+    colors = theme.colors,
+    typography = Typography,
+    shapes = Shapes,
+    content = {
+      val rememberedAppColors = remember {
+        // Explicitly creating a new object here so we don't mutate the initial [appColors]
+        // provided, and overwrite the values set in it.
+        theme.appColors.copy()
+      }.apply { updateColorsFrom(theme.appColors) }
+      CompositionLocalProvider(
+        LocalContentColor provides MaterialTheme.colors.onBackground,
+        LocalAppColors provides rememberedAppColors,
+        LocalAppWallpaper provides theme.wallpaper,
+        content = content)
     }
   )
 }

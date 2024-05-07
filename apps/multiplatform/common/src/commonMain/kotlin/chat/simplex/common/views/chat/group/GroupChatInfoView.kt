@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -233,13 +234,15 @@ fun GroupChatInfoLayout(
         } else {
           SendReceiptsOptionDisabled()
         }
-        // Should come from API
-        val type = remember { BackgroundImageType.default }
-        val theme = remember { ThemeOverrides(CurrentColors.value.base, ThemeColors()) }
+
+        val theme = remember { (chat.chatInfo as ChatInfo.Group).groupInfo.uiTheme ?: ThemeOverrides() }
         WallpaperButton {
           ModalManager.end.showModal {
-            WallpaperEditor(type, theme) { type, theme ->
-              // apply to chat
+            WallpaperEditor(theme) { type, theme ->
+              withBGApi {
+                controller.apiSetChatUITheme(chat.remoteHostId, chat.id, theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))
+                chatModel.updateChatInfo(chat.remoteHostId, (chat.chatInfo as ChatInfo.Group).copy(groupInfo = chat.chatInfo.groupInfo.copy(uiTheme = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))))
+              }
             }
           }
         }

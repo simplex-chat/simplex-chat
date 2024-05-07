@@ -88,11 +88,13 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       return
     }
     platform.androidRestartNetworkObserver()
-    controller.apiSetTempFolder(coreTmpDir.absolutePath)
-    controller.apiSetFilesFolder(appFilesDir.absolutePath)
-    if (appPlatform.isDesktop) {
-      controller.apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
-    }
+    controller.apiSetAppFilePaths(
+      appFilesDir.absolutePath,
+      coreTmpDir.absolutePath,
+      wallpapersDir.parentFile.absolutePath,
+      remoteHostsDir.absolutePath,
+      ctrl
+    )
     controller.apiSetEncryptLocalFiles(controller.appPrefs.privacyEncryptLocalFiles.get())
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)

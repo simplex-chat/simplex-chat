@@ -13,6 +13,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,9 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import chat.simplex.common.R
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -38,13 +36,9 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
-import com.godaddy.android.colorpicker.ClassicColorPicker
-import com.godaddy.android.colorpicker.HsvColor
 import com.smarttoolfactory.colorpicker.model.ColorModel
-import com.smarttoolfactory.colorpicker.picker.*
 import com.smarttoolfactory.colorpicker.selector.SelectorRectHueSaturationHSV
 import com.smarttoolfactory.colorpicker.slider.SliderCircleColorDisplayValueHSV
-import com.smarttoolfactory.colorpicker.widget.ColorDisplayExposedSelectionMenu
 import com.smarttoolfactory.extendedcolors.util.ColorUtil
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -77,9 +71,9 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     appIcon.value = newIcon
   }
 
-  val theme = CurrentColors.collectAsState().value.base
-  val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
-  val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
+  val baseTheme = CurrentColors.collectAsState().value.base
+  val backgroundImage = MaterialTheme.wallpaper.type?.image
+  val backgroundImageType = MaterialTheme.wallpaper.type
   AppearanceScope.AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
@@ -88,7 +82,7 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
       ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, theme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(name, color, darkTheme) }, close = close)
+        ColorEditor(name, initialColor, baseTheme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(baseTheme, name, color) }, close = close)
       }
     },
   )

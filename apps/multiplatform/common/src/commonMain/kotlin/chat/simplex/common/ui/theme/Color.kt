@@ -34,7 +34,7 @@ val FileDark = Color(101, 101, 106, 255)
 val SentMessageColor = Color(0x1E45B8FF)
 
 val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black
-val NoteFolderIconColor: Color @Composable get() = with(CurrentColors.collectAsState().value.appColors.sentMessage) {
+val NoteFolderIconColor: Color @Composable get() = with(MaterialTheme.appColors.sentMessage) {
   // Default color looks too light and better to have it here a little bit brighter
   if (alpha == SentMessageColor.alpha) {
     copy(min(SentMessageColor.alpha + 0.1f, 1f))

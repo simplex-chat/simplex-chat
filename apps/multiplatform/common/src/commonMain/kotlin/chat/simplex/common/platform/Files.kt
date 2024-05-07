@@ -14,7 +14,7 @@ expect val dataDir: File
 expect val tmpDir: File
 expect val filesDir: File
 expect val appFilesDir: File
-expect val appearanceDir: File
+expect val wallpapersDir: File
 expect val coreTmpDir: File
 expect val dbAbsolutePrefixPath: String
 
@@ -83,7 +83,7 @@ fun getBackgroundImageFilePath(fileName: String): String {
   val rh = chatModel.currentRemoteHost.value
   val s = File.separator
   val path = if (rh == null) {
-    appearanceDir.absolutePath + s + fileName
+    wallpapersDir.absolutePath + s + fileName
   } else {
     remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_assets" + s + "wallpapers" + s + fileName
   }

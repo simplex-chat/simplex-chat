@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -339,13 +338,18 @@ fun ChatInfoLayout(
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncContactConnection)
         }
-        // Should come from API
-        val type = remember { BackgroundImageType.default }
-        val theme = remember { ThemeOverrides(CurrentColors.value.base, ThemeColors()) }
+
+        val theme = remember { (chat.chatInfo as ChatInfo.Direct).contact.uiTheme ?: ThemeOverrides() }
         WallpaperButton {
           ModalManager.end.showModal {
-            WallpaperEditor(type, theme) { type, theme ->
-              // apply to chat
+            WallpaperEditor(theme) { type, theme ->
+              withBGApi {
+                if (controller.apiSetChatUITheme(chat.remoteHostId, chat.id, theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))) {
+                  // Remove previous image only after saving
+                  removeBackgroundImage(theme.wallpaper.imageFile)
+                  chatModel.updateChatInfo(chat.remoteHostId, (chat.chatInfo as ChatInfo.Direct).copy(contact = chat.chatInfo.contact.copy(uiTheme = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))))
+                }
+              }
             }
           }
         }
@@ -697,36 +701,32 @@ fun ShareAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ModalData.WallpaperEditor(type: BackgroundImageType, theme: ThemeOverrides, save: (BackgroundImageType?, ThemeOverrides) -> Unit) {
+fun ModalData.WallpaperEditor(theme: ThemeOverrides, save: (BackgroundImageType?, ThemeOverrides) -> Unit) {
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
   ) {
-    val systemDark = chat.simplex.common.ui.theme.isSystemInDarkTheme()
-    val backgroundImageType: MutableState<BackgroundImageType?> = remember { stateGetOrPut("backgroundImageType") { type } }
-    val background = backgroundImageType.value
+    val baseTheme = CurrentColors.value.base
     val themeOverrides = remember { stateGetOrPut("themeOverrides") { theme } }
+    val backgroundImageType: State<BackgroundImageType?> = remember { derivedStateOf { BackgroundImageType.from(themeOverrides.value.wallpaper) } }
     val pref = remember {
       SharedPreference<Map<String, ThemeOverrides>>(
         get = {
-          mapOf(CurrentColors.value.base.name to themeOverrides.value)
+          mapOf(baseTheme.name to themeOverrides.value)
         },
         set = { value ->
-          themeOverrides.value = value[CurrentColors.value.base.name]!!
+          themeOverrides.value = value[baseTheme.name]!!
         }
       )
     }
 
     AppBarTitle(stringResource(MR.strings.settings_section_title_wallpaper))
-    val backgroundImage = remember(background?.filename) { background?.image }
-    val backgroundColor = remember { mutableStateOf(pref.get()[CurrentColors.value.base.name]!!.wallpaper.background?.colorFromReadableHex()) }
-    val tintColor = remember { mutableStateOf(pref.get()[CurrentColors.value.base.name]!!.wallpaper.tint?.colorFromReadableHex()) }
-
-    AppearanceScope.ChatThemePreview(theme.base, backgroundImage, background, backgroundColor.value, tintColor.value)
-    SectionSpacer()
+    val backgroundImage = remember { derivedStateOf { backgroundImageType.value?.image } }
+    val backgroundColor = remember { derivedStateOf { themeOverrides.value.wallpaper.background?.colorFromReadableHex() } }
+    val tintColor = remember { derivedStateOf { themeOverrides.value.wallpaper.tint?.colorFromReadableHex() } }
 
     WallpaperSetupView(
-      background,
+      backgroundImageType.value,
       theme.base,
       backgroundColor.value,
       tintColor.value,
@@ -738,26 +738,21 @@ fun ModalData.WallpaperEditor(type: BackgroundImageType, theme: ThemeOverrides, 
             initialColor,
             theme.base,
             backgroundImageType.value,
-            backgroundImage,
+            backgroundImage.value,
             backgroundColor.value,
             tintColor.value,
             onColorChange = { color ->
-              ThemeManager.saveAndApplyThemeColor(name, color, systemDark, pref)
-              if (name == ThemeColor.WALLPAPER_BACKGROUND) backgroundColor.value = color
-              else if (name == ThemeColor.WALLPAPER_TINT) tintColor.value = color
+              ThemeManager.saveAndApplyThemeColor(baseTheme, name, color, pref)
             },
             close
           )
         }
       },
       onColorChange = { name, color ->
-        ThemeManager.saveAndApplyThemeColor(name, color, systemDark, pref)
-        if (name == ThemeColor.WALLPAPER_BACKGROUND) backgroundColor.value = color
-        else if (name == ThemeColor.WALLPAPER_TINT) tintColor.value = color
+        ThemeManager.saveAndApplyThemeColor(baseTheme, name, color, pref)
       },
       onTypeChange = { type ->
-        ThemeManager.saveAndApplyBackgroundImage(type, systemDark, pref)
-        backgroundImageType.value = type
+        ThemeManager.saveAndApplyBackgroundImage(baseTheme, type, pref)
       }
     )
 

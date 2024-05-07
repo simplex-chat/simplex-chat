@@ -306,10 +306,9 @@ fun saveBackgroundImage(image: ImageBitmap): String {
   return destFile.name
 }
 
-// TODO: removes all background for all themes. Should remove only unused
-fun removeBackgroundImages(except: String? = null) {
+fun removeBackgroundImage(fileName: String? = null) {
   File(getBackgroundImageFilePath("_")).parentFile.listFiles()?.forEach {
-    if (it.name != except) it.delete()
+    if (it.name == fileName) it.delete()
   }
 }
 

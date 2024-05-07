@@ -18,8 +18,8 @@ import chat.simplex.common.ui.theme.*
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
   val sent = ci.chatDir.sent
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,

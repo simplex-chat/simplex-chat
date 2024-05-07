@@ -88,8 +88,8 @@ fun FramedItemView(
 
   @Composable
   fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false) {
-    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val sentColor = MaterialTheme.appColors.sentMessage
+    val receivedColor = MaterialTheme.appColors.receivedMessage
     Row(
       Modifier
         .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
@@ -121,8 +121,8 @@ fun FramedItemView(
 
   @Composable
   fun ciQuoteView(qi: CIQuote) {
-    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val sentColor = MaterialTheme.appColors.sentMessage
+    val receivedColor = MaterialTheme.appColors.receivedMessage
     Row(
       Modifier
         .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
@@ -187,8 +187,8 @@ fun FramedItemView(
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
       !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
 
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(

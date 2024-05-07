@@ -25,10 +25,8 @@ object ThemeManager {
     else -> SimplexColorPalette to DefaultTheme.SIMPLEX
   }
 
-  fun currentColors(darkForSystemTheme: Boolean, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides): ActiveTheme {
+  fun currentColors(darkForSystemTheme: Boolean, themeOverrides: Map<String, ThemeOverrides> = appPrefs.themeOverrides.get()): ActiveTheme {
     val themeName = appPrefs.currentTheme.get()!!
-    val themeOverrides = pref.get()
-
     val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
       themeName
     } else {
@@ -48,6 +46,17 @@ object ThemeManager {
     return ActiveTheme(themeName, baseTheme.first, theme.colors.toColors(theme.base, backgroundTheme), theme.colors.toAppColors(theme.base, backgroundTheme), theme.wallpaper.toAppWallpaper())
   }
 
+  fun overriddenColors(theme: ThemeOverrides): ActiveTheme {
+    val baseTheme = when (theme.base.name) {
+      DefaultTheme.LIGHT.name -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
+      DefaultTheme.DARK.name -> Triple(DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
+      DefaultTheme.SIMPLEX.name -> Triple(DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
+      else -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
+    }
+    val backgroundTheme = if (theme.wallpaper.preset != null) PredefinedBackgroundImage.from(theme.wallpaper.preset)?.colors?.get(theme.base) else null
+    return ActiveTheme(theme.base.name, baseTheme.first, theme.colors.toColors(theme.base, backgroundTheme), theme.colors.toAppColors(theme.base, backgroundTheme), theme.wallpaper.toAppWallpaper())
+  }
+
   fun currentThemeOverridesForExport(darkForSystemTheme: Boolean): ThemeOverrides {
     val themeName = appPrefs.currentTheme.get()!!
     val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
@@ -56,9 +65,9 @@ object ThemeManager {
       if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
     }
     val overrides = appPrefs.themeOverrides.get().toMutableMap()
-    val nonFilledTheme = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(), wallpaper = ThemeWallpaper())
+    val nonFilledTheme = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
     val backgroundTheme = if (nonFilledTheme.wallpaper.preset != null) PredefinedBackgroundImage.from(nonFilledTheme.wallpaper.preset)?.colors?.get(nonFilledTheme.base) else null
-    return nonFilledTheme.copy(colors = nonFilledTheme.colors.withFilledColors(CurrentColors.value.base, backgroundTheme), wallpaper = nonFilledTheme.wallpaper.withFilledWallpaper())
+    return nonFilledTheme.copy(colors = nonFilledTheme.colors.withFilledColors(CurrentColors.value.base, backgroundTheme), wallpaper = nonFilledTheme.wallpaper.withFilledWallpaperBase64())
   }
 
   // colors, default theme enum, localized name of theme
@@ -97,22 +106,17 @@ object ThemeManager {
 
   fun applyTheme(theme: String, darkForSystemTheme: Boolean) {
     appPrefs.currentTheme.set(theme)
-    CurrentColors.value = currentColors(darkForSystemTheme, appPrefs.themeOverrides)
+    CurrentColors.value = currentColors(darkForSystemTheme, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
   }
 
   fun changeDarkTheme(theme: String, darkForSystemTheme: Boolean) {
     appPrefs.systemDarkTheme.set(theme)
-    CurrentColors.value = currentColors(darkForSystemTheme, appPrefs.themeOverrides)
+    CurrentColors.value = currentColors(darkForSystemTheme, appPrefs.themeOverrides.get())
   }
 
-  fun saveAndApplyThemeColor(name: ThemeColor, color: Color? = null, darkForSystemTheme: Boolean, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
-    val themeName = appPrefs.currentTheme.get()!!
-    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
-      themeName
-    } else {
-      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
-    }
+  fun saveAndApplyThemeColor(baseTheme: DefaultTheme, name: ThemeColor, color: Color? = null, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
+    val nonSystemThemeName = baseTheme.name
     var colorToSet = color
     if (colorToSet == null) {
       // Setting default color from a base theme
@@ -125,33 +129,30 @@ object ThemeManager {
       }
     }
     val overrides = pref.get().toMutableMap()
-    val prevValue = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(), wallpaper = ThemeWallpaper())
+    val prevValue = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
     overrides[nonSystemThemeName] = prevValue.withUpdatedColor(name, colorToSet?.toReadableHex())
     pref.set(overrides)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides.get())
   }
 
-  fun saveAndApplyBackgroundImage(type: BackgroundImageType?, darkForSystemTheme: Boolean, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
-    val themeName = appPrefs.currentTheme.get()!!
-    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
-      themeName
-    } else {
-      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
-    }
+  fun saveAndApplyBackgroundImage(baseTheme: DefaultTheme, type: BackgroundImageType?, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
+    val nonSystemThemeName = baseTheme.name
     val overrides = pref.get().toMutableMap()
-    val prevValue = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(), wallpaper = ThemeWallpaper())
+    //    val prevValue = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
+    // Overriding the whole theme on type change
+    val prevValue = ThemeOverrides()
     overrides[nonSystemThemeName] = prevValue.copy(wallpaper = if (type != null) ThemeWallpaper.from(type, prevValue.wallpaper.background, prevValue.wallpaper.tint) else ThemeWallpaper())
     pref.set(overrides)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides.get())
   }
 
-  fun saveAndApplyThemeOverrides(theme: ThemeOverrides, darkForSystemTheme: Boolean, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
+  fun saveAndApplyThemeOverrides(theme: ThemeOverrides, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
     val overrides = pref.get().toMutableMap()
-    val prevValue = overrides[theme.base.name] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(), wallpaper = ThemeWallpaper())
+    val prevValue = overrides.getOrDefault(theme.base.name, ThemeOverrides())
     overrides[theme.base.name] = prevValue.copy(colors = theme.colors, wallpaper = theme.wallpaper.importFromString())
     pref.set(overrides)
     appPrefs.currentTheme.set(theme.base.name)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides.get())
   }
 
   fun resetAllThemeColors(darkForSystemTheme: Boolean, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
@@ -165,11 +166,11 @@ object ThemeManager {
     val prevValue = overrides[nonSystemThemeName] ?: return
     overrides[nonSystemThemeName] = prevValue.copy(colors = ThemeColors(), wallpaper = prevValue.wallpaper.copy(background = null, tint = null))
     pref.set(overrides)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides.get())
   }
 
   fun String.colorFromReadableHex(): Color =
     Color(this.replace("#", "").toLongOrNull(16) ?: Color.White.toArgb().toLong())
 
-  fun Color.toReadableHex(): String = "#" + Integer.toHexString(toArgb())
+  fun Color.toReadableHex(): String = "#" + if (this == Color.Transparent) "00ffffff" else Integer.toHexString(toArgb())
 }

@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionView
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -26,16 +27,16 @@ import java.util.Locale
 @Composable
 actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
   val darkTheme = isSystemInDarkTheme()
-  val theme = CurrentColors.collectAsState().value.base
-  val backgroundImage = CurrentColors.collectAsState().value.wallpaper.type?.image
-  val backgroundImageType = CurrentColors.collectAsState().value.wallpaper.type
+  val baseTheme = CurrentColors.collectAsState().value.base
+  val backgroundImage = MaterialTheme.wallpaper.type?.image
+  val backgroundImageType = MaterialTheme.wallpaper.type
   AppearanceScope.AppearanceLayout(
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
       ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, theme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(name, color, darkTheme) }, close = close)
+        ColorEditor(name, initialColor, baseTheme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(baseTheme, name, color) }, close = close)
       }
     },
   )

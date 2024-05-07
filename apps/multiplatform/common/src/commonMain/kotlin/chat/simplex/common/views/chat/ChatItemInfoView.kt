@@ -42,7 +42,7 @@ sealed class CIInfoTab {
 @Composable
 fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
-  val appColors = CurrentColors.collectAsState().value.appColors
+  val appColors = MaterialTheme.appColors
   val uriHandler = LocalUriHandler.current
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
