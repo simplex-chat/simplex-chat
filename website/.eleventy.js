@@ -394,8 +394,31 @@ module.exports = function (ty) {
       if (parsed.path.startsWith("../../blog")) {
         parsed.path = parsed.path.replace("../../blog", "/blog")
       }
-      if (parsed.path.startsWith("../PRIVACY.md")) {
-        parsed.path = parsed.path.replace("../PRIVACY.md", "/privacy")
+      if (parsed.path.startsWith("../blog")) {
+        parsed.path = parsed.path.replace("../blog", "/blog")
+      }
+      if (parsed.path.includes("PRIVACY.md")) { parsed.path = "/privacy" }
+      if (parsed.path.includes("TRANSPARENCY.md")) { parsed.path = "/transparency" }
+      if (parsed.path.startsWith("./DIRECTORY.md")) {
+        parsed.path = parsed.path.replace("./DIRECTORY.md", "/docs/DIRECTORY.md")
+      }
+      if (parsed.path.startsWith("./guide/managing-data.md")) {
+        parsed.path = parsed.path.replace("./guide/managing-data.md", "/docs/guide/managing-data.md")
+      }
+      if (parsed.path.startsWith("./guide/making-connections.md")) {
+        parsed.path = parsed.path.replace("./guide/making-connections.md", "/docs/guide/making-connections.md")
+      }
+      if (parsed.path.startsWith("./guide/secret-groups.md")) {
+        parsed.path = parsed.path.replace("./guide/secret-groups.md", "/docs/guide/secret-groups.md")
+      }
+      if (parsed.path.startsWith("./WEBRTC.md")) {
+        parsed.path = parsed.path.replace("./WEBRTC.md", "/docs/WEBRTC.md")
+      }
+      if (parsed.path.startsWith("./SERVER.md")) {
+        parsed.path = parsed.path.replace("./SERVER.md", "/docs/SERVER.md")
+      }
+      if (parsed.path.startsWith("./XFTP-SERVER.md")) {
+        parsed.path = parsed.path.replace("./XFTP-SERVER.md", "/docs/XFTP-SERVER.md")
       }
       parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
