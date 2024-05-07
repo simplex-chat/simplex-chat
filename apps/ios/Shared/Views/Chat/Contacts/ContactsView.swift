@@ -50,10 +50,10 @@ struct ContactsView: View {
                         .listRowSeparator(.hidden)
                         .frame(maxWidth: .infinity)
                     }
-                    ForEach(filteredContactChats, id: \.id) { chat in
+                    ForEach(filteredContactChats, id: \.viewId) { chat in
                         switch chat.chatInfo {
                         case let .direct(contact):
-                            ContactListNavLink(chat: chat, contact: contact)
+                            ContactListNavLink(chat: chat)
                                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                                 .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(contact.id))
                         default:

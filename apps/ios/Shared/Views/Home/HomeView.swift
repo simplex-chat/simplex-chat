@@ -248,7 +248,6 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func contactsView() -> some View {
-        // TODO changing alias / verification doesn't update list
         if oneHandUI {
             ContactsView()
                 .padding(.vertical, 5)

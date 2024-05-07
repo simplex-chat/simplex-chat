@@ -11,34 +11,38 @@ import SimpleXChat
 
 struct ContactListNavLink: View {
     @ObservedObject var chat: Chat
-    var contact: Contact
     
     var body: some View {
         // TODO keep bottom bar?
-        NavigationLink {
-            ChatInfoView(
-                chat: chat,
-                contact: contact,
-                localAlias: chat.chatInfo.localAlias
-            )
-        } label: {
-            HStack{
-                ProfileImage(imageStr: contact.image, size: 38)
-                    .padding(.trailing, 2)
-                previewTitle()
-                if contact.contactConnIncognito {
-                    Spacer()
-                    Image(systemName: "theatermasks")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 22, height: 22)
-                        .foregroundColor(.secondary)
+        switch chat.chatInfo {
+        case let .direct(contact):
+            NavigationLink {
+                ChatInfoView(
+                    chat: chat,
+                    contact: contact,
+                    localAlias: chat.chatInfo.localAlias
+                )
+            } label: {
+                HStack{
+                    ProfileImage(imageStr: contact.image, size: 38)
+                        .padding(.trailing, 2)
+                    previewTitle(contact)
+                    if contact.contactConnIncognito {
+                        Spacer()
+                        Image(systemName: "theatermasks")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
+        default:
+            EmptyView()
         }
     }
 
-    @ViewBuilder private func previewTitle() -> some View {
+    @ViewBuilder private func previewTitle(_ contact: Contact) -> some View {
         let t = Text(chat.chatInfo.chatViewName)
         (
             contact.verified == true
@@ -57,5 +61,5 @@ struct ContactListNavLink: View {
 }
 
 #Preview {
-    ContactListNavLink(chat: Chat.sampleData, contact: Contact.sampleData)
+    ContactListNavLink(chat: Chat.sampleData)
 }
