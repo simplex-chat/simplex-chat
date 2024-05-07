@@ -23,6 +23,7 @@ struct ChatView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
     @State private var keyboardVisible = false
+    @State private var makeCall: CallMediaType? = nil
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -90,6 +91,15 @@ struct ChatView: View {
                 dismiss()
             }
         }
+        .onChange(of: makeCall) { callMedia in
+            if let callMedia = callMedia {
+                switch cInfo {
+                case let .direct(contact): CallController.shared.startCall(contact, callMedia)
+                default: ()
+                }
+            }
+            makeCall = nil
+        }
         .onDisappear {
             VideoPlayerView.players.removeAll()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
@@ -113,7 +123,13 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                     }
                     .sheet(isPresented: $showChatInfoSheet) {
-                        ChatInfoView(openedFromChatView: true, chat: chat, contact: contact, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(
+                            openedFromChatView: true,
+                            chat: chat,
+                            contact: contact,
+                            localAlias: chat.chatInfo.localAlias,
+                            makeCall: $makeCall
+                        )
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {

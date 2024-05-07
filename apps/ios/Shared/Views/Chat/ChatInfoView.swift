@@ -107,6 +107,7 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
+    @Binding var makeCall: CallMediaType?
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
     @State private var connectionCode: String? = nil
@@ -415,7 +416,13 @@ struct ChatInfoView: View {
 
     private func callButton() -> some View {
         Button {
-
+            if openedFromChatView {
+                dismiss()
+                makeCall = .audio
+            } else {
+                chatModel.chatId = chat.id
+            }
+            // CallController.shared.startCall(contact, .audio)
         } label: {
             actionButton("phone.fill", "call")
         }
@@ -424,7 +431,13 @@ struct ChatInfoView: View {
 
     private func videoButton() -> some View {
         Button {
-
+            if openedFromChatView {
+                dismiss()
+                makeCall = .video
+            } else {
+                chatModel.chatId = chat.id
+            }
+            // CallController.shared.startCall(contact, .video)
         } label: {
             actionButton("video.fill", "video")
         }
@@ -699,7 +712,8 @@ struct ChatInfoView_Previews: PreviewProvider {
             openedFromChatView: true,
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
-            localAlias: ""
+            localAlias: "",
+            makeCall: Binding.constant(nil)
         )
     }
 }
