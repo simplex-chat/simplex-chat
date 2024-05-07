@@ -75,7 +75,7 @@ chatProfileTests = do
       it "direct messages" testGroupPrefsDirectForRole
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
-    fit "set user, contact and group UI theme" testSetUITheme
+    it "set user, contact and group UI theme" testSetUITheme
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
