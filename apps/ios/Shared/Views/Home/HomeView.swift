@@ -269,6 +269,7 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func chatView() -> some View {
+        // TODO changing alias doesn't update list
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat).onAppear {
                 loadChat(chat: chat)
