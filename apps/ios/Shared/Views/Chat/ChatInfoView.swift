@@ -103,6 +103,7 @@ enum ContactDeleteMode {
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    var openedFromChatView: Bool
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
@@ -401,8 +402,11 @@ struct ChatInfoView: View {
 
     private func messageButton() -> some View {
         Button {
-            dismiss()
-            chatModel.chatId = chat.id
+            if openedFromChatView {
+                dismiss()
+            } else {
+                chatModel.chatId = chat.id
+            }
         } label: {
             actionButton("message.fill", "message")
         }
@@ -689,6 +693,7 @@ func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Al
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoView(
+            openedFromChatView: true,
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             localAlias: ""

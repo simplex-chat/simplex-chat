@@ -31,6 +31,7 @@ struct ContactListNavLink: View {
         case let .direct(contact):
             NavigationLink {
                 ChatInfoView(
+                    openedFromChatView: false,
                     chat: chat,
                     contact: contact,
                     localAlias: chat.chatInfo.localAlias

@@ -113,7 +113,7 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                     }
                     .sheet(isPresented: $showChatInfoSheet) {
-                        ChatInfoView(chat: chat, contact: contact, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(openedFromChatView: true, chat: chat, contact: contact, localAlias: chat.chatInfo.localAlias)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
