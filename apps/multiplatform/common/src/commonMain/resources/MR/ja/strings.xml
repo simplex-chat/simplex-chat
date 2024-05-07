@@ -1766,4 +1766,7 @@
     <string name="network_option_rcv_concurrency">並列受信</string>
     <string name="recipients_can_not_see_who_message_from">受信者は発信者を特定できません。</string>
     <string name="saved_chat_item_info_tab">保存済</string>
+    <string name="settings_section_title_profile_images">プロフィール画像</string>
+    <string name="v5_7_shape_profile_images_descr">正方形、円形またはその中間</string>
+    <string name="v5_7_shape_profile_images">プロフィール画像をシェイプ</string>
 </resources>

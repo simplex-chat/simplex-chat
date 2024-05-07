@@ -1847,4 +1847,7 @@
     <string name="v5_7_new_interface_languages">Litauische Bedienoberfläche</string>
     <string name="v5_7_network_descr">Zuverlässigere Netzwerkverbindung.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Wird in direkten Chats automatisch aktiviert!</string>
+    <string name="settings_section_title_profile_images">Profil-Bilder</string>
+    <string name="v5_7_shape_profile_images">Form der Profil-Bilder</string>
+    <string name="v5_7_shape_profile_images_descr">Quadratisch, kreisförmig oder irgendetwas dazwischen.</string>
 </resources>

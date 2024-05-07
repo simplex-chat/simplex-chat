@@ -1763,4 +1763,7 @@
     <string name="v5_7_call_sounds_descr">При свързване на аудио и видео разговори.</string>
     <string name="v5_7_network_descr">По-надеждна мрежова връзка.</string>
     <string name="v5_7_new_interface_languages">Литовски потребителски интерфейс</string>
+    <string name="settings_section_title_profile_images">Профилни изображения</string>
+    <string name="v5_7_shape_profile_images">Променете формата на профилните изображения</string>
+    <string name="v5_7_shape_profile_images_descr">Квадрат, кръг или нещо между тях.</string>
 </resources>

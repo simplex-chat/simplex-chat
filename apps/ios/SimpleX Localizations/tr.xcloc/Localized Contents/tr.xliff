@@ -4376,6 +4376,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Profile images" xml:space="preserve">
         <source>Profile images</source>
+        <target>Profil resimleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -4525,7 +4526,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
-        <target>Makbuzlar devre dışı bırakıldı</target>
+        <target>Gönderildi bilgisi devre dışı bırakıldı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
@@ -5065,7 +5066,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target>Teslimat makbuzlarının gönderilmesi tüm kişiler için etkinleştirilecektir.</target>
+        <target>Gönderildi bilgisi tüm kişiler için etkinleştirilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -5200,6 +5201,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
+        <target>Profil resimlerini şekillendir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5369,6 +5371,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
+        <target>Kare,daire, veya aralarında herhangi birşey.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
