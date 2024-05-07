@@ -11,7 +11,20 @@ import SimpleXChat
 
 struct ContactListNavLink: View {
     @ObservedObject var chat: Chat
-    
+    @State private var contactNavLinkSheet: ContactNavLinkActionSheet? = nil
+
+    enum ContactNavLinkActionSheet: Identifiable {
+        case deleteContactActionSheet
+        case notifyDeleteContactActionSheet(contactDeleteMode: ContactDeleteMode)
+
+        var id: String {
+            switch self {
+            case .deleteContactActionSheet: return "deleteContactActionSheet"
+            case .notifyDeleteContactActionSheet: return "notifyDeleteContactActionSheet"
+            }
+        }
+    }
+
     var body: some View {
         // TODO keep bottom bar?
         switch chat.chatInfo {
@@ -34,6 +47,46 @@ struct ContactListNavLink: View {
                             .scaledToFit()
                             .frame(width: 22, height: 22)
                             .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button {
+                    contactNavLinkSheet = .deleteContactActionSheet
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .tint(.red)
+            }
+            .actionSheet(item: $contactNavLinkSheet) { sheet in
+                switch(sheet) {
+                case .deleteContactActionSheet:
+                    return ActionSheet(
+                        title: Text("Delete contact?"),
+                        buttons: [
+                            .destructive(Text("Delete contact, keep conversation")) { contactNavLinkSheet = .notifyDeleteContactActionSheet(contactDeleteMode: .entity) },
+                            .destructive(Text("Delete contact and conversation")) { contactNavLinkSheet = .notifyDeleteContactActionSheet(contactDeleteMode: .full) },
+                            .cancel()
+                        ]
+                    )
+                case let .notifyDeleteContactActionSheet(contactDeleteMode):
+                    if contact.ready && contact.active {
+                        return ActionSheet(
+                            title: Text("Notify contact?\nThis cannot be undone!"),
+                            buttons: [
+                                .destructive(Text("Delete and notify contact")) { Task { await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true)) } },
+                                .destructive(Text("Delete without notification")) { Task { await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false)) } },
+                                .cancel()
+                            ]
+                        )
+                    } else {
+                        return ActionSheet(
+                            title: Text("Confirm contact deletion.\nThis cannot be undone!"),
+                            buttons: [
+                                .destructive(Text("Delete")) { Task { await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false)) } },
+                                .cancel()
+                            ]
+                        )
                     }
                 }
             }
