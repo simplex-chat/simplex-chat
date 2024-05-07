@@ -99,7 +99,7 @@ instance FromJSON UIColor where
   parseJSON v = toColor =<< J.parseJSON v
     where
       toColor s@('#' : cs)
-        | length s == 8 && all hexDigit cs = pure $ UIColor s
+        | length cs == 8 && all hexDigit cs = pure $ UIColor s
       toColor _ = fail "bad UIColor"
       hexDigit c = (c >= '0' && c <= '9') || (let c' = toLower c in c' >= 'a' && c' <= 'f')
 
