@@ -37,9 +37,15 @@ struct ContactListNavLink: View {
                 )
             } label: {
                 HStack{
-                    ProfileImage(imageStr: contact.image, size: 38)
-                        .padding(.trailing, 2)
+                    ZStack(alignment: .bottomTrailing) {
+                        ProfileImage(imageStr: contact.image, size: 38)
+                        chatPreviewImageOverlayIcon(contact)
+                            .padding([.bottom, .trailing], 1)
+                    }
+                    .padding(.trailing, 2)
+
                     previewTitle(contact)
+
                     if contact.contactConnIncognito {
                         Spacer()
                         Image(systemName: "theatermasks")
@@ -110,6 +116,21 @@ struct ContactListNavLink: View {
             .foregroundColor(.secondary)
             .baselineOffset(1)
             .kerning(-2)
+    }
+
+    @ViewBuilder private func chatPreviewImageOverlayIcon(_ contact: Contact) -> some View {
+        if !contact.active {
+            inactiveIcon()
+        } else {
+            EmptyView()
+        }
+    }
+
+    // TODO smaller
+    private func inactiveIcon() -> some View {
+        Image(systemName: "multiply.circle.fill")
+            .foregroundColor(.secondary.opacity(0.65))
+            .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
     }
 }
 
