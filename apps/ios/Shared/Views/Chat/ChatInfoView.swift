@@ -570,7 +570,7 @@ struct ChatInfoView: View {
         Button(role: .destructive) {
             actionSheet = .deleteContactActionSheet
         } label: {
-            Label("Delete", systemImage: "trash")
+            Label("Delete contact", systemImage: "person.badge.minus")
                 .foregroundColor(Color.red)
         }
     }

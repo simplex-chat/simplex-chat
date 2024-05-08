@@ -62,7 +62,7 @@ struct ContactListNavLink: View {
                 Button {
                     contactNavLinkSheet = .deleteContactActionSheet
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Label("Delete", systemImage: "person.badge.minus")
                 }
                 .tint(.red)
             }
