@@ -113,6 +113,7 @@ struct ChatInfoView: View {
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
     @State private var actionSheet: ChatInfoViewActionSheet? = nil
+    @State private var showConnectContactViaAddressDialog = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -166,7 +167,11 @@ struct ChatInfoView: View {
                 .listRowSeparator(.hidden)
 
                 HStack {
-                    messageButton()
+                    if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+                        connectButton()
+                    } else {
+                        messageButton()
+                    }
                     Spacer()
                     callButton()
                     Spacer()
@@ -396,6 +401,39 @@ struct ChatInfoView: View {
                 }
             } catch {
                 logger.error("setContactAlias error: \(responseError(error))")
+            }
+        }
+    }
+
+    // when contact is a "contact card"
+    private func connectButton() -> some View {
+        actionButton("message.fill", "connect")
+            .foregroundColor(.accentColor)
+            .onTapGesture {
+                showConnectContactViaAddressDialog = true
+            }
+            .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
+                Button("Use current profile") { connectContactViaAddress_(contact, false) }
+                Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+            }
+    }
+
+    private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
+        Task {
+            let ok = await connectContactViaAddress(contact.contactId, incognito)
+            if ok {
+                await MainActor.run {
+                    if openedFromChatView {
+                        dismiss()
+                    } else {
+                        if contact.chatDeleted {
+                            var updatedContact = contact
+                            updatedContact.chatDeleted = false
+                            chatModel.updateContact(updatedContact)
+                        }
+                        chatModel.chatId = chat.id
+                    }
+                }
             }
         }
     }
