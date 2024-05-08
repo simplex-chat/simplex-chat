@@ -824,6 +824,10 @@ video {
   margin-bottom: 80px;
 }
 
+.mb-auto {
+  margin-bottom: auto;
+}
+
 .ml-\[-15px\] {
   margin-left: -15px;
 }
@@ -1014,6 +1018,10 @@ video {
 
 .h-\[calc\(100\%-81\.42px\)\] {
   height: calc(100% - 81.42px);
+}
+
+.h-\[calc\(100vh-66px\)\] {
+  height: calc(100vh - 66px);
 }
 
 .h-\[inherit\] {
@@ -2653,6 +2661,10 @@ video {
 
   .lg\:h-\[642px\] {
     height: 642px;
+  }
+
+  .lg\:h-\[66px\] {
+    height: 66px;
   }
 
   .lg\:h-\[855px\] {
