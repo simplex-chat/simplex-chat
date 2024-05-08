@@ -107,7 +107,6 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
-    @Binding var makeCall: CallMediaType?
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
     @State private var connectionCode: String? = nil
@@ -424,13 +423,7 @@ struct ChatInfoView: View {
         actionButton("phone.fill", "call")
             .foregroundColor(.accentColor)
             .onTapGesture {
-                if openedFromChatView {
-                    dismiss()
-                    makeCall = .audio
-                } else {
-                    chatModel.openChatAction = .call(media: .audio)
-                    chatModel.chatId = chat.id
-                }
+                CallController.shared.startCall(contact, .audio)
             }
             .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
@@ -439,13 +432,7 @@ struct ChatInfoView: View {
         actionButton("video.fill", "video")
             .foregroundColor(.accentColor)
             .onTapGesture {
-                if openedFromChatView {
-                    dismiss()
-                    makeCall = .video
-                } else {
-                    chatModel.openChatAction = .call(media: .video)
-                    chatModel.chatId = chat.id
-                }
+                CallController.shared.startCall(contact, .video)
             }
             .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
@@ -718,8 +705,7 @@ struct ChatInfoView_Previews: PreviewProvider {
             openedFromChatView: true,
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
-            localAlias: "",
-            makeCall: Binding.constant(nil)
+            localAlias: ""
         )
     }
 }

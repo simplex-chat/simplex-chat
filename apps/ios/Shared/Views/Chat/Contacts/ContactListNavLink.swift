@@ -34,8 +34,7 @@ struct ContactListNavLink: View {
                     openedFromChatView: false,
                     chat: chat,
                     contact: contact,
-                    localAlias: chat.chatInfo.localAlias,
-                    makeCall: Binding.constant(nil)
+                    localAlias: chat.chatInfo.localAlias
                 )
             } label: {
                 HStack{
