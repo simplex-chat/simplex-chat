@@ -622,7 +622,7 @@ getCommandDataByCorrId db User {userId} corrId =
     toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
     toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
 
-setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeOverrides -> IO ()
+setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeEntityOverrides -> IO ()
 setUserUIThemes db User {userId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)

@@ -1233,7 +1233,7 @@ viewGroupInfo GroupInfo {groupId, uiThemes, customData} s =
     <> viewUITheme uiThemes
     <> viewCustomData customData
 
-viewUITheme :: Maybe UIThemeOverrides -> [StyledString]
+viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
 viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> plain (LB.toStrict $ J.encode uiThemes)])
 
 viewCustomData :: Maybe CustomData -> [StyledString]

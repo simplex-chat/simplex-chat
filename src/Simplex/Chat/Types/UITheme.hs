@@ -35,13 +35,13 @@ data UITheme = UITheme
 data UIColorMode = UCMLight | UCMDark
   deriving (Eq, Show)
 
-data UIThemeOverrides = UIThemeOverrides
-  { light :: Maybe UIThemeOverride,
-    dark :: Maybe UIThemeOverride
+data UIThemeEntityOverrides = UIThemeEntityOverrides
+  { light :: Maybe UIThemeEntityOverride,
+    dark :: Maybe UIThemeEntityOverride
   }
   deriving (Eq, Show)
 
-data UIThemeOverride = UIThemeOverride
+data UIThemeEntityOverride = UIThemeEntityOverride
   { mode :: UIColorMode,
     wallpaper :: Maybe ChatWallpaper,
     colors :: UIColors
@@ -151,16 +151,16 @@ $(JQ.deriveJSON defaultJSON ''ChatWallpaper)
 
 $(JQ.deriveJSON defaultJSON ''UIColors)
 
-$(JQ.deriveJSON defaultJSON ''UIThemeOverride)
+$(JQ.deriveJSON defaultJSON ''UIThemeEntityOverride)
 
-$(JQ.deriveJSON defaultJSON ''UIThemeOverrides)
+$(JQ.deriveJSON defaultJSON ''UIThemeEntityOverrides)
 
 $(JQ.deriveJSON defaultJSON ''UITheme)
 
 $(JQ.deriveJSON defaultJSON ''UIThemes)
 
-instance ToField UIThemeOverrides where
+instance ToField UIThemeEntityOverrides where
   toField = toField . encodeJSON
 
-instance FromField UIThemeOverrides where
-  fromField = fromTextField_ $ Just . fromMaybe (UIThemeOverrides Nothing Nothing) . decodeJSON
+instance FromField UIThemeEntityOverrides where
+  fromField = fromTextField_ $ Just . fromMaybe (UIThemeEntityOverrides Nothing Nothing) . decodeJSON

@@ -2068,7 +2068,7 @@ testSetUITheme =
     alice ##> "/i #team"
     groupInfo alice
   where
-    theme cm = T.unpack $ encodeJSON UIThemeOverrides {light = Nothing, dark = Just $ UIThemeOverride cm Nothing defaultUIColors}
+    theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors}
     userInfo a name = do
       a <## ("user profile: " <> name)
       a <## "use /p <display name> to change it"

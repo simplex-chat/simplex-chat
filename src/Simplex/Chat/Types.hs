@@ -119,7 +119,7 @@ data User = User
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeOverrides
+    uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
@@ -177,7 +177,7 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
-    uiThemes :: Maybe UIThemeOverrides,
+    uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -375,7 +375,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeOverrides,
+    uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)

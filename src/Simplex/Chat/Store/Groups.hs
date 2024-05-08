@@ -153,7 +153,7 @@ import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UIThemeOverrides, Maybe CustomData) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
 
 type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
@@ -2203,7 +2203,7 @@ setGroupCustomData db User {userId} GroupInfo {groupId} customData = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET custom_data = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (customData, updatedAt, userId, groupId)
 
-setGroupUIThemes :: DB.Connection -> User -> GroupInfo -> Maybe UIThemeOverrides -> IO ()
+setGroupUIThemes :: DB.Connection -> User -> GroupInfo -> Maybe UIThemeEntityOverrides -> IO ()
 setGroupUIThemes db User {userId} GroupInfo {groupId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (uiThemes, updatedAt, userId, groupId)
