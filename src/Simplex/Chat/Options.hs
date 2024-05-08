@@ -62,7 +62,8 @@ data CoreChatOpts = CoreChatOpts
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
-    highlyAvailable :: Bool
+    highlyAvailable :: Bool,
+    yesToUpMigrations :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -188,6 +189,12 @@ coreChatOptsP appDir defaultDbFileName = do
       ( long "ha"
           <> help "Run as a highly available client (this may increase traffic in groups)"
       )
+  yesToUpMigrations <-
+    switch
+      ( long "--yes-migrate"
+          <> short 'y'
+          <> help "Automatically confirm \"up\" database migrations"
+      )
   pure
     CoreChatOpts
       { dbFilePrefix,
@@ -201,7 +208,8 @@ coreChatOptsP appDir defaultDbFileName = do
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
-        highlyAvailable
+        highlyAvailable,
+        yesToUpMigrations
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
