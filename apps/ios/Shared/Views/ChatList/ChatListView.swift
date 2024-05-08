@@ -231,12 +231,12 @@ struct ChatListSearchBar: View {
     private func toggleFilterButton() -> some View {
         ZStack {
             Color.clear
-                .frame(width: 20, height: 20)
+                .frame(width: 22, height: 22)
             Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
                 .resizable()
                 .scaledToFit()
                 .foregroundColor(showUnreadAndFavorites ? .accentColor : .secondary)
-                .frame(width: showUnreadAndFavorites ? 20 : 16, height: showUnreadAndFavorites ? 20 : 16)
+                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
                 .onTapGesture {
                     showUnreadAndFavorites = !showUnreadAndFavorites
                 }
