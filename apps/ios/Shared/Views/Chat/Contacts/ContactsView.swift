@@ -36,7 +36,7 @@ struct ContactsView: View {
 
     @ViewBuilder private var contactList: some View {
         let contactChats = contactChats()
-        let filteredContactChats = oneHandUI ? filteredContactChats(contactChats).reversed() : filteredContactChats(contactChats)
+        let filteredContactChats = filteredContactChats(contactChats)
         ZStack {
             VStack {
                 List {
