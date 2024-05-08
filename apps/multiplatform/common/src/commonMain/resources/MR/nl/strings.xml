@@ -1764,4 +1764,7 @@
     <string name="v5_7_call_sounds">Geluiden tijdens het bellen</string>
     <string name="v5_7_new_interface_languages">Litouwse gebruikersinterface</string>
     <string name="v5_7_network_descr">Betrouwbaardere netwerkverbinding.</string>
+    <string name="v5_7_shape_profile_images">Vorm profiel afbeeldingen</string>
+    <string name="settings_section_title_profile_images">Profiel afbeeldingen</string>
+    <string name="v5_7_shape_profile_images_descr">Vierkant, cirkel of iets daartussenin.</string>
 </resources>

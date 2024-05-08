@@ -68,10 +68,10 @@
 "**Create group**: to create a new group." = "**グループ作成**: 新しいグループを作成する。";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** audio call" = "**e2e 暗号化**音声通話";
+"**e2e encrypted** audio call" = "**エンドツーエンド暗号化済み**の音声通話";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** video call" = "**e2e暗号化**ビデオ通話";
+"**e2e encrypted** video call" = "**エンドツーエンド暗号化済み**の テレビ電話 通話";
 
 /* No comment provided by engineer. */
 "**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**よりプライベート**: 20 分ごとに新しいメッセージを確認します。 デバイス トークンは SimpleX Chat サーバーと共有されますが、連絡先やメッセージの数は共有されません。";
@@ -265,6 +265,9 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~取り消し線~";
 
+/* time to disappear */
+"0 sec" = "0 秒";
+
 /* No comment provided by engineer. */
 "0s" = "0秒";
 
@@ -411,6 +414,9 @@
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "すべての連絡先は維持されます。連絡先に更新されたプロフィールを送信します。";
 
 /* No comment provided by engineer. */
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "すべての連絡先、会話、ファイルは安全に暗号化され、設定されたXFTPリレーに分割でアップロードされます。";
+
+/* No comment provided by engineer. */
 "Allow" = "許可";
 
 /* No comment provided by engineer. */
@@ -441,6 +447,9 @@
 "Allow to send files and media." = "ファイルやメディアの送信を許可する。";
 
 /* No comment provided by engineer. */
+"Allow to send SimpleX links." = "SimpleXリンクの送信を許可。";
+
+/* No comment provided by engineer. */
 "Allow to send voice messages." = "音声メッセージの送信を許可する。";
 
 /* No comment provided by engineer. */
@@ -467,6 +476,12 @@
 /* No comment provided by engineer. */
 "Already connected?" = "すでに接続済みですか？";
 
+/* No comment provided by engineer. */
+"Already connecting!" = "既に接続中です！";
+
+/* No comment provided by engineer. */
+"Already joining the group!" = "すでにグループに参加しています！";
+
 /* pref value */
 "always" = "常に";
 
@@ -481,6 +496,9 @@
 
 /* No comment provided by engineer. */
 "App build: %@" = "アプリのビルド: %@";
+
+/* No comment provided by engineer. */
+"App data migration" = "アプリデータの移行";
 
 /* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "アプリは新しいローカルファイル（ビデオを除く）を暗号化します。";

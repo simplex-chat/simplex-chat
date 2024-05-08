@@ -2961,6 +2961,9 @@
 "Profile image" = "profielfoto";
 
 /* No comment provided by engineer. */
+"Profile images" = "Profiel afbeeldingen";
+
+/* No comment provided by engineer. */
 "Profile name" = "Profielnaam";
 
 /* No comment provided by engineer. */
@@ -3503,6 +3506,9 @@
 /* No comment provided by engineer. */
 "Settings" = "Instellingen";
 
+/* No comment provided by engineer. */
+"Shape profile images" = "Vorm profiel afbeeldingen";
+
 /* chat item action */
 "Share" = "Deel";
 
@@ -3604,6 +3610,9 @@
 
 /* notification title */
 "Somebody" = "Iemand";
+
+/* No comment provided by engineer. */
+"Square, circle, or anything in between." = "Vierkant, cirkel of iets daartussenin.";
 
 /* chat item text */
 "standard end-to-end encryption" = "standaard end-to-end encryptie";

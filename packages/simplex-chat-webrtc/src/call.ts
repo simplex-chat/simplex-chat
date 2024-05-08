@@ -657,7 +657,11 @@ const processCommand = (function () {
     // For opus (where encodedFrame.type is not set) this is the TOC byte from
     //   https://tools.ietf.org/html/rfc6716#section-3.1
 
-    const capabilities = RTCRtpSender.getCapabilities("video")
+    // Using RTCRtpReceiver instead of RTCRtpSender, see these lines:
+    // -    if (!is_recv_codec && !is_send_codec) {
+    // +    if (!is_recv_codec) {
+    // https://webrtc.googlesource.com/src.git/+/db2f52ba88cf9f98211df2dabb3f8aca9251c4a2%5E%21/
+    const capabilities = RTCRtpReceiver.getCapabilities("video")
     if (capabilities) {
       const {codecs} = capabilities
       const selectedCodecIndex = codecs.findIndex((c) => c.mimeType === "video/VP8")
@@ -668,7 +672,12 @@ const processCommand = (function () {
         // Firefox doesn't have this function implemented:
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1396922
         if (t.sender.track?.kind === "video" && t.setCodecPreferences) {
-          t.setCodecPreferences(codecs)
+          try {
+            t.setCodecPreferences(codecs)
+          } catch (error) {
+            // Shouldn't be here but in case something goes wrong, it will allow to make a call with auto-selected codecs
+            console.log("Failed to set codec preferences, trying without any preferences: " + error)
+          }
         }
       }
     }
