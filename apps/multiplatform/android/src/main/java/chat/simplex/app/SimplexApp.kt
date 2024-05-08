@@ -64,6 +64,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
     context = this
+    runMigrations()
     initHaskell()
     initMultiplatform()
     tmpDir.deleteRecursively()
@@ -254,7 +255,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
 
-        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.name) {
+        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.themeName) {
           null
         } else {
           CurrentColors.value.colors.isLight

@@ -20,6 +20,9 @@ import chat.simplex.res.MR
 enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
 
+  val themeName: String
+    get() = name.lowercase()
+
   // Call it only with base theme, not SYSTEM
   fun hasChangedAnyColor(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Boolean {
     val palette = when (this) {
@@ -324,6 +327,21 @@ data class ThemeOverrides (
   }
 }
 
+fun Map<String, ThemeOverrides>.preferredTheme(baseTheme: DefaultTheme = CurrentColors.value.base): ThemeOverrides? {
+  val idealTheme = get(baseTheme.themeName)
+  if (idealTheme != null) return idealTheme
+
+  val light = get(DefaultTheme.LIGHT.themeName)
+  val dark = get(DefaultTheme.DARK.themeName)
+  val simplex = get(DefaultTheme.SIMPLEX.themeName)
+  return when (baseTheme.themeName) {
+    DefaultTheme.LIGHT.themeName -> dark ?: simplex
+    DefaultTheme.DARK.themeName -> simplex ?: light
+    DefaultTheme.SIMPLEX.themeName -> dark ?: light
+    else -> null
+  }
+}
+
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
   return if (baseTheme == DefaultTheme.SIMPLEX) {
     this.background(brush = Brush.linearGradient(
@@ -437,9 +455,9 @@ val MaterialTheme.wallpaper: AppWallpaper
   get() = LocalAppWallpaper.current
 
 fun reactOnDarkThemeChanges(isDark: Boolean) {
-  if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM.name && CurrentColors.value.colors.isLight == isDark) {
+  if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM.themeName && CurrentColors.value.colors.isLight == isDark) {
     // Change active colors from light to dark and back based on system theme
-    ThemeManager.applyTheme(DefaultTheme.SYSTEM.name, isDark)
+    ThemeManager.applyTheme(DefaultTheme.SYSTEM.themeName, isDark)
   }
 }
 

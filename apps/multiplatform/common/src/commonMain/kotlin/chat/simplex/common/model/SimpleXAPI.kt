@@ -164,8 +164,8 @@ class AppPreferences {
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
 
-  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
+  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.themeName)
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
   val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, decode = {
@@ -1149,17 +1149,17 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSetUserUITheme(rh: Long?, userId: Long, theme: ThemeOverrides): Boolean {
-    val r = sendCmd(rh, CC.ApiSetUserUITheme(userId, theme))
+  suspend fun apiSetUserUIThemes(rh: Long?, userId: Long, themes: Map<String, ThemeOverrides>?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetUserUIThemes(userId, themes))
     if (r is CR.CmdOk) return true
-    Log.e(TAG, "apiSetUserUITheme bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiSetUserUIThemes bad response: ${r.responseType} ${r.details}")
     return false
   }
 
-  suspend fun apiSetChatUITheme(rh: Long?, chatId: ChatId, theme: ThemeOverrides): Boolean {
-    val r = sendCmd(rh, CC.ApiSetChatUITheme(chatId, theme))
+  suspend fun apiSetChatUIThemes(rh: Long?, chatId: ChatId, themes: Map<String, ThemeOverrides>?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetChatUIThemes(chatId, themes))
     if (r is CR.CmdOk) return true
-    Log.e(TAG, "apiSetChatUITheme bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiSetChatUIThemes bad response: ${r.responseType} ${r.details}")
     return false
   }
 
@@ -2463,8 +2463,8 @@ sealed class CC {
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
-  class ApiSetUserUITheme(val userId: Long, val theme: ThemeOverrides): CC()
-  class ApiSetChatUITheme(val chatId: String, val theme: ThemeOverrides): CC()
+  class ApiSetUserUIThemes(val userId: Long, val themes: Map<String, ThemeOverrides>?): CC()
+  class ApiSetChatUIThemes(val chatId: String, val themes: Map<String, ThemeOverrides>?): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
@@ -2609,8 +2609,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
-    is ApiSetUserUITheme -> "/_set theme user $userId ${json.encodeToString(theme)}"
-    is ApiSetChatUITheme -> "/_set theme $chatId ${json.encodeToString(theme)}"
+    is ApiSetUserUIThemes -> "/_set theme user $userId ${json.encodeToString(themes)}"
+    is ApiSetChatUIThemes -> "/_set theme $chatId ${json.encodeToString(themes)}"
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
@@ -2742,8 +2742,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
-    is ApiSetUserUITheme -> "apiSetUserUITheme"
-    is ApiSetChatUITheme -> "apiSetChatUITheme"
+    is ApiSetUserUIThemes -> "apiSetUserUIThemes"
+    is ApiSetChatUIThemes -> "apiSetChatUIThemes"
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
@@ -5434,7 +5434,7 @@ data class AppSettings(
   var iosCallKitEnabled: Boolean? = null,
   var iosCallKitCallsInRecents: Boolean? = null,
   var uiColorScheme: String? = null,
-  var uiThemes: List<ThemeOverrides>? = null,
+  var uiThemes: Map<String, ThemeOverrides>? = null,
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -5492,7 +5492,7 @@ data class AppSettings(
     iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
     uiColorScheme?.let { def.currentTheme.set(it) }
-    uiThemes?.let { def.themeOverrides.set(it.map { theme -> theme.base.name to theme }.toMap()) }
+    uiThemes?.let { def.themeOverrides.set(it) }
   }
 
   companion object {
@@ -5517,7 +5517,7 @@ data class AppSettings(
         androidCallOnLockScreen = AppSettingsLockScreenCalls.SHOW,
         iosCallKitEnabled = true,
         iosCallKitCallsInRecents = false,
-        uiColorScheme = DefaultTheme.SYSTEM.name,
+        uiColorScheme = DefaultTheme.SYSTEM.themeName,
         uiThemes = null,
       )
 
@@ -5544,8 +5544,8 @@ data class AppSettings(
           androidCallOnLockScreen = AppSettingsLockScreenCalls.from(def.callOnLockScreen.get()),
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
-          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM.name,
-          uiThemes = def.themeOverrides.get().values.toList(),
+          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM.themeName,
+          uiThemes = def.themeOverrides.get(),
         )
     }
   }

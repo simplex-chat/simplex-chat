@@ -1042,7 +1042,7 @@ data class Contact(
   val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
-  val uiTheme: ThemeOverrides? = null,
+  val uiThemes: Map<String, ThemeOverrides>? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -1111,7 +1111,7 @@ data class Contact(
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       contactGrpInvSent = false,
-      uiTheme = null,
+      uiThemes = null,
     )
   }
 }
@@ -1248,7 +1248,7 @@ data class GroupInfo (
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
-  val uiTheme: ThemeOverrides? = null,
+  val uiThemes: Map<String, ThemeOverrides>? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1291,7 +1291,7 @@ data class GroupInfo (
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
-      uiTheme = null,
+      uiThemes = null,
     )
   }
 }

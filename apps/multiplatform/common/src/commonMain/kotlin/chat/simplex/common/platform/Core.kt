@@ -50,7 +50,6 @@ fun initChatControllerAndRunMigrations() {
     } else {
       initChatController()
     }
-    runMigrations()
   }
 }
 

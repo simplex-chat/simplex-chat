@@ -42,6 +42,12 @@ fun runMigrations() {
           ChatController.appPrefs.currentTheme.set(DefaultTheme.SIMPLEX.name)
         }
         lastMigration.set(117)
+      } else if (lastMigration.get() < 201) {
+        // Making theme keys lowercase as API expects
+        ChatController.appPrefs.themeOverrides.set(ChatController.appPrefs.themeOverrides.get().map { it.key.lowercase() to it.value }.toMap())
+        ChatController.appPrefs.currentTheme.set(ChatController.appPrefs.currentTheme.get()?.lowercase())
+        ChatController.appPrefs.systemDarkTheme.set(ChatController.appPrefs.systemDarkTheme.get()?.lowercase())
+        lastMigration.set(201)
       } else {
         lastMigration.set(BuildConfigCommon.ANDROID_VERSION_CODE)
         break

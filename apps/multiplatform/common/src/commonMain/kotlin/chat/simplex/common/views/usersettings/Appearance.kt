@@ -244,7 +244,7 @@ object AppearanceScope {
       ThemeSelector(state) {
         ThemeManager.applyTheme(it, darkTheme)
       }
-      if (state.value == DefaultTheme.SYSTEM.name) {
+      if (state.value == DefaultTheme.SYSTEM.themeName) {
         DarkThemeSelector(remember { systemDarkTheme.state }) {
           ThemeManager.changeDarkTheme(it, darkTheme)
         }
@@ -505,8 +505,8 @@ object AppearanceScope {
   private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Unit) {
     val values by remember {
       val darkThemes = ArrayList<Pair<String, String>>()
-      darkThemes.add(DefaultTheme.DARK.name to generalGetString(MR.strings.theme_dark))
-      darkThemes.add(DefaultTheme.SIMPLEX.name to generalGetString(MR.strings.theme_simplex))
+      darkThemes.add(DefaultTheme.DARK.themeName to generalGetString(MR.strings.theme_dark))
+      darkThemes.add(DefaultTheme.SIMPLEX.themeName to generalGetString(MR.strings.theme_simplex))
       mutableStateOf(darkThemes.toList())
     }
     ExposedDropDownSettingRow(

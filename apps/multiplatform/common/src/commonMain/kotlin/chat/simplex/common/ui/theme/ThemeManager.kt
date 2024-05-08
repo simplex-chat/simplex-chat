@@ -20,23 +20,23 @@ object ThemeManager {
   data class ActiveTheme(val name: String, val base: DefaultTheme, val colors: Colors, val appColors: AppColors, val wallpaper: AppWallpaper)
 
   private fun systemDarkThemeColors(): Pair<Colors, DefaultTheme> = when (appPrefs.systemDarkTheme.get()) {
-    DefaultTheme.DARK.name -> DarkColorPalette to DefaultTheme.DARK
-    DefaultTheme.SIMPLEX.name -> SimplexColorPalette to DefaultTheme.SIMPLEX
+    DefaultTheme.DARK.themeName -> DarkColorPalette to DefaultTheme.DARK
+    DefaultTheme.SIMPLEX.themeName -> SimplexColorPalette to DefaultTheme.SIMPLEX
     else -> SimplexColorPalette to DefaultTheme.SIMPLEX
   }
 
   fun currentColors(darkForSystemTheme: Boolean, themeOverrides: Map<String, ThemeOverrides> = appPrefs.themeOverrides.get()): ActiveTheme {
     val themeName = appPrefs.currentTheme.get()!!
-    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.themeName) {
       themeName
     } else {
-      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName
     }
     val theme = themeOverrides[nonSystemThemeName]
     val baseTheme = when (nonSystemThemeName) {
-      DefaultTheme.LIGHT.name -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
-      DefaultTheme.DARK.name -> Triple(DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
-      DefaultTheme.SIMPLEX.name -> Triple(DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
+      DefaultTheme.LIGHT.themeName -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
+      DefaultTheme.DARK.themeName -> Triple(DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
+      DefaultTheme.SIMPLEX.themeName -> Triple(DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
       else -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
     }
     if (theme == null) {
@@ -47,22 +47,22 @@ object ThemeManager {
   }
 
   fun overriddenColors(theme: ThemeOverrides): ActiveTheme {
-    val baseTheme = when (theme.base.name) {
-      DefaultTheme.LIGHT.name -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
-      DefaultTheme.DARK.name -> Triple(DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
-      DefaultTheme.SIMPLEX.name -> Triple(DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
+    val baseTheme = when (theme.base.themeName) {
+      DefaultTheme.LIGHT.themeName -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
+      DefaultTheme.DARK.themeName -> Triple(DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
+      DefaultTheme.SIMPLEX.themeName -> Triple(DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
       else -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
     }
     val backgroundTheme = if (theme.wallpaper.preset != null) PredefinedBackgroundImage.from(theme.wallpaper.preset)?.colors?.get(theme.base) else null
-    return ActiveTheme(theme.base.name, baseTheme.first, theme.colors.toColors(theme.base, backgroundTheme), theme.colors.toAppColors(theme.base, backgroundTheme), theme.wallpaper.toAppWallpaper())
+    return ActiveTheme(theme.base.themeName, baseTheme.first, theme.colors.toColors(theme.base, backgroundTheme), theme.colors.toAppColors(theme.base, backgroundTheme), theme.wallpaper.toAppWallpaper())
   }
 
   fun currentThemeOverridesForExport(darkForSystemTheme: Boolean): ThemeOverrides {
     val themeName = appPrefs.currentTheme.get()!!
-    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.themeName) {
       themeName
     } else {
-      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName
     }
     val overrides = appPrefs.themeOverrides.get().toMutableMap()
     val nonFilledTheme = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
@@ -116,14 +116,14 @@ object ThemeManager {
   }
 
   fun saveAndApplyThemeColor(baseTheme: DefaultTheme, name: ThemeColor, color: Color? = null, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
-    val nonSystemThemeName = baseTheme.name
+    val nonSystemThemeName = baseTheme.themeName
     var colorToSet = color
     if (colorToSet == null) {
       // Setting default color from a base theme
       colorToSet = when(nonSystemThemeName) {
-        DefaultTheme.LIGHT.name -> name.fromColors(LightColorPalette, LightColorPaletteApp, AppWallpaper())
-        DefaultTheme.DARK.name -> name.fromColors(DarkColorPalette, DarkColorPaletteApp, AppWallpaper())
-        DefaultTheme.SIMPLEX.name -> name.fromColors(SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper())
+        DefaultTheme.LIGHT.themeName -> name.fromColors(LightColorPalette, LightColorPaletteApp, AppWallpaper())
+        DefaultTheme.DARK.themeName -> name.fromColors(DarkColorPalette, DarkColorPaletteApp, AppWallpaper())
+        DefaultTheme.SIMPLEX.themeName -> name.fromColors(SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper())
         // Will not be here
         else -> return
       }
@@ -136,7 +136,7 @@ object ThemeManager {
   }
 
   fun saveAndApplyBackgroundImage(baseTheme: DefaultTheme, type: BackgroundImageType?, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
-    val nonSystemThemeName = baseTheme.name
+    val nonSystemThemeName = baseTheme.themeName
     val overrides = pref.get().toMutableMap()
     var prevValue = overrides.getOrDefault(nonSystemThemeName, ThemeOverrides())
     // Overriding the whole theme on type change
@@ -150,19 +150,19 @@ object ThemeManager {
 
   fun saveAndApplyThemeOverrides(theme: ThemeOverrides, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
     val overrides = pref.get().toMutableMap()
-    val prevValue = overrides.getOrDefault(theme.base.name, ThemeOverrides())
-    overrides[theme.base.name] = prevValue.copy(colors = theme.colors, wallpaper = theme.wallpaper.importFromString())
+    val prevValue = overrides.getOrDefault(theme.base.themeName, ThemeOverrides())
+    overrides[theme.base.themeName] = prevValue.copy(colors = theme.colors, wallpaper = theme.wallpaper.importFromString())
     pref.set(overrides)
-    appPrefs.currentTheme.set(theme.base.name)
+    appPrefs.currentTheme.set(theme.base.themeName)
     CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, appPrefs.themeOverrides.get())
   }
 
   fun resetAllThemeColors(darkForSystemTheme: Boolean, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {
     val themeName = appPrefs.currentTheme.get()!!
-    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.themeName) {
       themeName
     } else {
-      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName
     }
     val overrides = pref.get().toMutableMap()
     val prevValue = overrides[nonSystemThemeName] ?: return

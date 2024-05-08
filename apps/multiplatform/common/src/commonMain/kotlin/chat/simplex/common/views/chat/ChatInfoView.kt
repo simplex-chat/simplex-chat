@@ -339,15 +339,21 @@ fun ChatInfoLayout(
           SynchronizeConnectionButton(syncContactConnection)
         }
 
-        val theme = remember { (chat.chatInfo as ChatInfo.Direct).contact.uiTheme ?: ThemeOverrides() }
+        val theme = remember {
+          // Using existing theme overrides as an overrides for a new theme if the same BASE theme is not found in already configured map
+          (chat.chatInfo as ChatInfo.Direct).contact.uiThemes?.preferredTheme()?.copy(base = CurrentColors.value.base) ?: ThemeOverrides()
+        }
+
         WallpaperButton {
           ModalManager.end.showModal {
             WallpaperEditor(theme) { type, theme ->
               withBGApi {
-                if (controller.apiSetChatUITheme(chat.remoteHostId, chat.id, theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))) {
+                val changedThemes = ((chat.chatInfo as ChatInfo.Direct).contact.uiThemes ?: mapOf()).toMutableMap()
+                changedThemes[theme.base.themeName] = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath())
+                if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
                   // Remove previous image only after saving
                   removeBackgroundImage(theme.wallpaper.imageFile)
-                  chatModel.updateChatInfo(chat.remoteHostId, (chat.chatInfo as ChatInfo.Direct).copy(contact = chat.chatInfo.contact.copy(uiTheme = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))))
+                  chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
                 }
               }
             }
@@ -712,10 +718,10 @@ fun ModalData.WallpaperEditor(theme: ThemeOverrides, save: (BackgroundImageType?
     val pref = remember {
       SharedPreference<Map<String, ThemeOverrides>>(
         get = {
-          mapOf(baseTheme.name to themeOverrides.value)
+          mapOf(baseTheme.themeName to themeOverrides.value)
         },
         set = { value ->
-          themeOverrides.value = value[baseTheme.name]!!
+          themeOverrides.value = value[baseTheme.themeName]!!
         }
       )
     }

@@ -235,13 +235,22 @@ fun GroupChatInfoLayout(
           SendReceiptsOptionDisabled()
         }
 
-        val theme = remember { (chat.chatInfo as ChatInfo.Group).groupInfo.uiTheme ?: ThemeOverrides() }
+        val theme = remember {
+          // Using existing theme overrides as an overrides for a new theme if the same BASE theme is not found in already configured map
+          (chat.chatInfo as ChatInfo.Group).groupInfo.uiThemes?.preferredTheme()?.copy(base = CurrentColors.value.base) ?: ThemeOverrides()
+        }
         WallpaperButton {
           ModalManager.end.showModal {
             WallpaperEditor(theme) { type, theme ->
               withBGApi {
-                controller.apiSetChatUITheme(chat.remoteHostId, chat.id, theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))
-                chatModel.updateChatInfo(chat.remoteHostId, (chat.chatInfo as ChatInfo.Group).copy(groupInfo = chat.chatInfo.groupInfo.copy(uiTheme = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath()))))
+                val changedThemes = ((chat.chatInfo as ChatInfo.Direct).contact.uiThemes ?: mapOf()).toMutableMap()
+                changedThemes[theme.base.themeName] = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath())
+                if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
+                  // Remove previous image only after saving
+                  removeBackgroundImage(theme.wallpaper.imageFile)
+                  chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+                }
+
               }
             }
           }
