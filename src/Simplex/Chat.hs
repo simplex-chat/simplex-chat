@@ -249,6 +249,7 @@ newChatController
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
     tempDirectory <- newTVarIO optTempDirectory
+    assetsDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
     pure
       ChatController
@@ -285,6 +286,7 @@ newChatController
           showLiveItems,
           encryptLocalFiles,
           tempDirectory,
+          assetsDirectory,
           logFilePath = logFile,
           contactMergeEnabled
         }
@@ -630,6 +632,17 @@ processChatCommand' vr = \case
     createDirectoryIfMissing True rf
     chatWriteVar remoteHostsFolder $ Just rf
     ok_
+  -- has to be called before StartChat
+  APISetAppFilePaths cfg -> do
+    setFolder filesFolder $ appFilesFolder cfg
+    setFolder tempDirectory $ appTempFolder cfg
+    setFolder assetsDirectory $ appAssetsFolder cfg
+    mapM_ (setFolder remoteHostsFolder) $ appRemoteHostsFolder cfg
+    ok_
+    where
+      setFolder sel f = do
+        createDirectoryIfMissing True f
+        chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
   APIExportArchive cfg -> checkChatStopped $ lift (exportArchive cfg) >> ok_
@@ -1226,6 +1239,25 @@ processChatCommand' vr = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
+  APISetUserUIThemes uId uiThemes -> withUser $ \user@User {userId} -> do
+    user'@User {userId = uId'} <- withStore $ \db -> do
+      user' <- getUser db uId
+      liftIO $ setUserUIThemes db user uiThemes
+      pure user'
+    when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {uiThemes}
+    ok user'
+  APISetChatUIThemes (ChatRef cType chatId) uiThemes -> withUser $ \user -> case cType of
+    CTDirect -> do
+      withStore $ \db -> do
+        ct <- getContact db vr user chatId
+        liftIO $ setContactUIThemes db user ct uiThemes
+      ok user
+    CTGroup -> do
+      withStore $ \db -> do
+        g <- getGroupInfo db vr user chatId
+        liftIO $ setGroupUIThemes db user g uiThemes
+      ok user
+    _ -> pure $ chatCmdError (Just user) "not supported"
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
@@ -3591,7 +3623,7 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
-  withEntityLock_ cRef_ $ withFileLock "processAgentMsgSndFile" fileId $
+  withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
@@ -3718,7 +3750,7 @@ splitFileDescr rfdText = do
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
-  withEntityLock_ cRef_ $ withFileLock "processAgentMsgRcvFile" fileId $
+  withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
@@ -7028,9 +7060,13 @@ chatCommandP =
       "/_app activate" $> APIActivateChat True,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
+      -- deprecated, use /set file paths
       "/_temp_folder " *> (SetTempFolder <$> filePath),
+      -- /_files_folder deprecated, use /set file paths
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
+      -- deprecated, use /set file paths
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
+      "/set file paths " *> (APISetAppFilePaths <$> jsonP),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
@@ -7086,6 +7122,8 @@ chatCommandP =
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
+      "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
