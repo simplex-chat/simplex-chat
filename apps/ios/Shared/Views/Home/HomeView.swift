@@ -51,8 +51,14 @@ struct HomeView: View {
 
                 VStack {
                     switch homeTab {
-                    case .contacts: contactsView()
-                    case .chats: chatListView()
+                    case .contacts:
+                        contactsView()
+                            .navigationBarTitleDisplayMode(.inline)
+                            .navigationTitle("Contacts")
+                    case .chats:
+                        chatListView()
+                            .navigationBarTitleDisplayMode(.inline)
+                            .navigationTitle("Chats")
                     }
                 }
                 .toolbar {
@@ -248,24 +254,14 @@ struct HomeView: View {
     }
 
     @ViewBuilder private func contactsView() -> some View {
-        if oneHandUI {
-            ContactsView()
-                .padding(.vertical, 5)
-        } else {
-            ContactsView()
-                .padding(.top, 5)
-        }
+        ContactsView()
+            .padding(.vertical, oneHandUI ? 1 : 0)
     }
 
     @ViewBuilder private func chatListView() -> some View {
         // TODO reverse scale effect for swipe actions
-        if oneHandUI {
-            ChatListView()
-                .padding(.vertical, 5)
-        } else {
-            ChatListView()
-                .padding(.top, 5)
-        }
+        ChatListView()
+            .padding(.vertical, oneHandUI ? 1 : 0)
     }
 
     @ViewBuilder private func chatView() -> some View {
