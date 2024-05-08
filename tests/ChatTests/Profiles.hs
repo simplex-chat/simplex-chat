@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -2040,23 +2041,23 @@ testSetUITheme =
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
-    alice #$> ("/_set theme user 1 " <> theme TCSDark, id, "ok")
-    alice #$> ("/_set theme @2 " <> theme TCSSimplex, id, "ok")
-    alice #$> ("/_set theme #1 " <> theme TCSSimplex, id, "ok")
+    alice #$> ("/_set theme user 1 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme @2 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme #1 " <> theme UCMDark, id, "ok")
     alice ##> "/u"
     userInfo alice "alice (Alice)"
-    alice <## ("UI themes: " <> theme TCSDark)
+    alice <## ("UI themes: " <> theme UCMDark)
     alice ##> "/create user alice2"
     userInfo alice "alice2"
     alice ##> "/u alice"
     userInfo alice "alice (Alice)"
-    alice <## ("UI themes: " <> theme TCSDark)
+    alice <## ("UI themes: " <> theme UCMDark)
     alice ##> "/i @bob"
     contactInfo alice
-    alice <## ("UI themes: " <> theme TCSSimplex)
+    alice <## ("UI themes: " <> theme UCMDark)
     alice ##> "/i #team"
     groupInfo alice
-    alice <## ("UI themes: " <> theme TCSSimplex)
+    alice <## ("UI themes: " <> theme UCMDark)
     alice #$> ("/_set theme user 1", id, "ok")
     alice #$> ("/_set theme @2", id, "ok")
     alice #$> ("/_set theme #1", id, "ok")
@@ -2067,7 +2068,7 @@ testSetUITheme =
     alice ##> "/i #team"
     groupInfo alice
   where
-    theme cs = T.unpack $ encodeJSON UIThemes {light = Nothing, dark = Just (UITheme cs Nothing defaultUIColors), simplex = Nothing}
+    theme cm = T.unpack $ encodeJSON UIThemeOverrides {light = Nothing, dark = Just $ UIThemeOverride cm Nothing defaultUIColors}
     userInfo a name = do
       a <## ("user profile: " <> name)
       a <## "use /p <display name> to change it"

@@ -32,8 +32,21 @@ data UITheme = UITheme
   }
   deriving (Eq, Show)
 
-defaultUIThemes :: UIThemes
-defaultUIThemes = UIThemes Nothing Nothing Nothing
+data UIColorMode = UCMLight | UCMDark
+  deriving (Eq, Show)
+
+data UIThemeOverrides = UIThemeOverrides
+  { light :: Maybe UIThemeOverride,
+    dark :: Maybe UIThemeOverride
+  }
+  deriving (Eq, Show)
+
+data UIThemeOverride = UIThemeOverride
+  { mode :: UIColorMode,
+    wallpaper :: Maybe ChatWallpaper,
+    colors :: UIColors
+  }
+  deriving (Eq, Show)
 
 data ThemeColorScheme = TCSLight | TCSDark | TCSSimplex
   deriving (Eq, Show)
@@ -126,6 +139,8 @@ instance ToJSON UIColor where
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "DCS") ''DarkColorScheme)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "UCM") ''UIColorMode)
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "UCS") ''UIColorScheme)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CWS") ''ChatWallpaperScale)
@@ -136,12 +151,16 @@ $(JQ.deriveJSON defaultJSON ''ChatWallpaper)
 
 $(JQ.deriveJSON defaultJSON ''UIColors)
 
+$(JQ.deriveJSON defaultJSON ''UIThemeOverride)
+
+$(JQ.deriveJSON defaultJSON ''UIThemeOverrides)
+
 $(JQ.deriveJSON defaultJSON ''UITheme)
 
 $(JQ.deriveJSON defaultJSON ''UIThemes)
 
-instance ToField UIThemes where
+instance ToField UIThemeOverrides where
   toField = toField . encodeJSON
 
-instance FromField UIThemes where
-  fromField = fromTextField_ $ Just . fromMaybe defaultUIThemes . decodeJSON
+instance FromField UIThemeOverrides where
+  fromField = fromTextField_ $ Just . fromMaybe (UIThemeOverrides Nothing Nothing) . decodeJSON

@@ -930,7 +930,7 @@ setContactCustomData db User {userId} Contact {contactId} customData = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET custom_data = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (customData, updatedAt, userId, contactId)
 
-setContactUIThemes :: DB.Connection -> User -> Contact -> Maybe UIThemes -> IO ()
+setContactUIThemes :: DB.Connection -> User -> Contact -> Maybe UIThemeOverrides -> IO ()
 setContactUIThemes db User {userId} Contact {contactId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiThemes, updatedAt, userId, contactId)
