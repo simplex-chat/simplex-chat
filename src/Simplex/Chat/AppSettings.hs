@@ -48,7 +48,8 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemes :: Maybe UIThemes
+    uiThemes :: Maybe UIThemes,
+    oneHandUI :: Maybe Bool
   }
   deriving (Show)
 
@@ -78,7 +79,8 @@ defaultAppSettings =
       uiProfileImageCornerRadius = Just 22.5,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
-      uiThemes = Nothing
+      uiThemes = Nothing,
+      oneHandUI = Just True
     }
 
 defaultParseAppSettings :: AppSettings
@@ -107,7 +109,8 @@ defaultParseAppSettings =
       uiProfileImageCornerRadius = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
-      uiThemes = Nothing
+      uiThemes = Nothing,
+      oneHandUI = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -136,7 +139,8 @@ combineAppSettings platformDefaults storedSettings =
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
-      uiThemes = p uiThemes
+      uiThemes = p uiThemes,
+      oneHandUI = p oneHandUI
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -178,6 +182,7 @@ instance FromJSON AppSettings where
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
     uiThemes <- p "uiThemes"
+    oneHandUI <- p "oneHandUI"
     pure
       AppSettings
         { appPlatform,
@@ -203,7 +208,8 @@ instance FromJSON AppSettings where
           uiProfileImageCornerRadius,
           uiColorScheme,
           uiDarkColorScheme,
-          uiThemes
+          uiThemes,
+          oneHandUI
         }
     where
       p key = v .:? key <|> pure Nothing
