@@ -181,7 +181,8 @@ fun CIFileView(
   }
 
   Row(
-    Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+    //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
