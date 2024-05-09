@@ -45,6 +45,7 @@ import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
@@ -117,7 +118,8 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    userMemberProfileUpdatedAt :: Maybe UTCTime
+    userMemberProfileUpdatedAt :: Maybe UTCTime,
+    uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
@@ -175,6 +177,7 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
+    uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -372,6 +375,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
