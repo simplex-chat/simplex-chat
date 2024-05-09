@@ -6,6 +6,7 @@ const uri = require('fast-uri')
 const i18n = require('eleventy-plugin-i18n')
 const fs = require("fs")
 const path = require("path")
+const matter = require('gray-matter')
 const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
 
@@ -388,28 +389,14 @@ module.exports = function (ty) {
     linkify: true,
     replaceLink: function (link, _env) {
       let parsed = uri.parse(link)
-      if (parsed.scheme || parsed.host || !parsed.path.endsWith(".md")) {
+
+      if (parsed.scheme || parsed.host) {
         return link
-      }
-      if (parsed.path.startsWith("../../blog")) {
-        parsed.path = parsed.path.replace("../../blog", "/blog")
-      }
-      if (parsed.path.startsWith("../blog")) {
-        parsed.path = parsed.path.replace("../blog", "/blog")
-      }
-      if (parsed.path.toLowerCase().includes("downloads.md")) { parsed.path = "/downloads" }
-      if (parsed.path.toLowerCase().includes("faq.md")) { parsed.path = "/faq" }
-      if (parsed.path.toLowerCase().includes("join_team.md")) { parsed.path = "/jobs" }
-      if (parsed.path.toLowerCase().includes("privacy.md")) { parsed.path = "/privacy" }
-      if (parsed.path.toLowerCase().includes("transparency.md")) { parsed.path = "/transparency" }
-      if (
-        parsed.reference == "relative" &&
-        parsed.path.startsWith("./")
-      ) {
-        const pagePath = _env.page.filePathStem.split('/').slice(0, -1).join('/')
-        if (!_env.page.url.includes(pagePath)) {
-          parsed.path = parsed.path.replace("./", `${pagePath}/`)
-        }
+      } else {
+        const hostFile = path.resolve(_env.page.inputPath)
+        const linkFile = path.resolve(hostFile, '..', parsed.path)
+        const frontMatterData = getFrontMatter(linkFile)
+        parsed.path = frontMatterData?.permalink || parsed.path
       }
       parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
@@ -435,5 +422,20 @@ module.exports = function (ty) {
     markdownTemplateEngine: 'njk',
     htmlTemplateEngine: 'njk',
     dataTemplateEngine: 'njk',
+  }
+}
+
+function getFrontMatter(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const fileContent = fs.readFileSync(filePath, 'utf8')
+      const frontMatter = matter(fileContent)
+      return frontMatter.data
+    } else {
+      console.error('Broken Link', filePath)
+      return null
+    }
+  } catch (error) {
+    return null
   }
 }
