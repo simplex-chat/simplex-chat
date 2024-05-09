@@ -23,6 +23,8 @@ enum class DefaultTheme {
   val themeName: String
     get() = name.lowercase()
 
+  val mode: DefaultThemeMode get() = if (this == LIGHT) DefaultThemeMode.LIGHT else DefaultThemeMode.DARK
+
   // Call it only with base theme, not SYSTEM
   fun hasChangedAnyColor(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Boolean {
     val palette = when (this) {
@@ -47,6 +49,12 @@ enum class DefaultTheme {
         appWallpaper.background != null ||
         appWallpaper.tint != null
   }
+}
+
+@Serializable
+enum class DefaultThemeMode {
+  @SerialName("light") LIGHT,
+  @SerialName("dark") DARK
 }
 
 @Stable
@@ -166,61 +174,12 @@ data class ThemeColors(
   val title: String? = null,
   val sentMessage: String? = null,
   val receivedMessage: String? = null,
-) {
-  fun toColors(base: DefaultTheme, backgroundTheme: ThemeColors?): Colors {
-    val baseColors = when (base) {
-      DefaultTheme.LIGHT -> LightColorPalette
-      DefaultTheme.DARK -> DarkColorPalette
-      DefaultTheme.SIMPLEX -> SimplexColorPalette
-      // shouldn't be here
-      DefaultTheme.SYSTEM -> LightColorPalette
-    }
-    return baseColors.copy(
-      primary = primary?.colorFromReadableHex() ?: backgroundTheme?.primary?.colorFromReadableHex() ?: baseColors.primary,
-      primaryVariant = primaryVariant?.colorFromReadableHex() ?: backgroundTheme?.primaryVariant?.colorFromReadableHex() ?: baseColors.primaryVariant,
-      secondary = secondary?.colorFromReadableHex() ?: backgroundTheme?.secondary?.colorFromReadableHex() ?: baseColors.secondary,
-      secondaryVariant = secondaryVariant?.colorFromReadableHex() ?: backgroundTheme?.secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
-      background = background?.colorFromReadableHex() ?: backgroundTheme?.background?.colorFromReadableHex() ?: baseColors.background,
-      surface = surface?.colorFromReadableHex() ?: backgroundTheme?.surface?.colorFromReadableHex() ?: baseColors.surface,
-    )
-  }
-
-  fun toAppColors(base: DefaultTheme, backgroundTheme: ThemeColors?): AppColors {
-    val baseColors = when (base) {
-      DefaultTheme.LIGHT -> LightColorPaletteApp
-      DefaultTheme.DARK -> DarkColorPaletteApp
-      DefaultTheme.SIMPLEX -> SimplexColorPaletteApp
-      // shouldn't be here
-      DefaultTheme.SYSTEM -> LightColorPaletteApp
-    }
-    return baseColors.copy(
-      title = title?.colorFromReadableHex() ?: backgroundTheme?.title?.colorFromReadableHex() ?: baseColors.title,
-      sentMessage = sentMessage?.colorFromReadableHex() ?: backgroundTheme?.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
-      receivedMessage = receivedMessage?.colorFromReadableHex() ?: backgroundTheme?.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
-    )
-  }
-
-  fun withFilledColors(base: DefaultTheme, backgroundTheme: ThemeColors?): ThemeColors {
-    val c = toColors(base, backgroundTheme)
-    val ac = toAppColors(base, backgroundTheme)
-    return ThemeColors(
-      primary = c.primary.toReadableHex(),
-      primaryVariant = c.primaryVariant.toReadableHex(),
-      secondary = c.secondary.toReadableHex(),
-      secondaryVariant = c.secondaryVariant.toReadableHex(),
-      background = c.background.toReadableHex(),
-      surface = c.surface.toReadableHex(),
-      title = ac.title.toReadableHex(),
-      sentMessage = ac.sentMessage.toReadableHex(),
-      receivedMessage = ac.receivedMessage.toReadableHex(),
-    )
-  }
-}
+)
 
 @Serializable
 data class ThemeWallpaper (
   val preset: String? = null,
-  val scale: Float = 1f,
+  val scale: Float? = null,
   val scaleType: BackgroundImageScaleType? = null,
   val background: String? = null,
   val tint: String? = null,
@@ -232,11 +191,11 @@ data class ThemeWallpaper (
       background = background?.colorFromReadableHex(),
       tint = tint?.colorFromReadableHex(),
       type = if (preset != null) {
-        BackgroundImageType.Repeated(filename = preset, scale)
+        BackgroundImageType.Repeated(filename = preset, scale ?: 1f)
       } else if (imageFile != null) {
         BackgroundImageType.Static(
           filename = imageFile,
-          scale,
+          scale ?: 1f,
           scaleType ?: BackgroundImageScaleType.FILL
         )
       } else
@@ -244,7 +203,8 @@ data class ThemeWallpaper (
     )
   }
 
-  fun withFilledWallpaperBase64(): ThemeWallpaper {
+  // LALAL
+  fun withFilledWallpaperBase64(perUserTheme: ThemeModeOverride?): ThemeWallpaper {
     val aw = toAppWallpaper()
     val type = aw.type
     return ThemeWallpaper(
@@ -306,6 +266,98 @@ data class ThemeOverrides (
   val wallpaper: ThemeWallpaper = ThemeWallpaper(),
 ) {
   fun withUpdatedColor(name: ThemeColor, color: String?): ThemeOverrides {
+    return copy(
+      colors = when (name) {
+        ThemeColor.PRIMARY -> colors.copy(primary = color)
+        ThemeColor.PRIMARY_VARIANT -> colors.copy(primaryVariant = color)
+        ThemeColor.SECONDARY -> colors.copy(secondary = color)
+        ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
+        ThemeColor.BACKGROUND -> colors.copy(background = color)
+        ThemeColor.SURFACE -> colors.copy(surface = color)
+        ThemeColor.TITLE -> colors.copy(title = color)
+        ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
+        ThemeColor.RECEIVED_MESSAGE -> colors.copy(receivedMessage = color)
+        ThemeColor.WALLPAPER_BACKGROUND -> colors.copy()
+        ThemeColor.WALLPAPER_TINT -> colors.copy()
+      }, wallpaper = when (name) {
+        ThemeColor.WALLPAPER_BACKGROUND -> wallpaper.copy(background = color)
+        ThemeColor.WALLPAPER_TINT -> wallpaper.copy(tint = color)
+        else -> wallpaper.copy()
+      }
+    )
+  }
+
+  fun toColors(base: DefaultTheme, perChatTheme: ThemeColors?, presetWallpaperTheme: ThemeColors?, perUserTheme: ThemeColors?): Colors {
+    val baseColors = when (base) {
+      DefaultTheme.LIGHT -> LightColorPalette
+      DefaultTheme.DARK -> DarkColorPalette
+      DefaultTheme.SIMPLEX -> SimplexColorPalette
+      // shouldn't be here
+      DefaultTheme.SYSTEM -> LightColorPalette
+    }
+    return baseColors.copy(
+      primary = perChatTheme?.primary?.colorFromReadableHex() ?: presetWallpaperTheme?.primary?.colorFromReadableHex() ?: perUserTheme?.primary?.colorFromReadableHex() ?: colors.primary?.colorFromReadableHex() ?: baseColors.primary,
+      primaryVariant = perChatTheme?.primaryVariant?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant?.colorFromReadableHex() ?: perUserTheme?.primaryVariant?.colorFromReadableHex() ?: colors.primaryVariant?.colorFromReadableHex() ?: baseColors.primaryVariant,
+      secondary = perChatTheme?.secondary?.colorFromReadableHex() ?: presetWallpaperTheme?.secondary?.colorFromReadableHex() ?: perUserTheme?.secondary?.colorFromReadableHex() ?: colors.secondary?.colorFromReadableHex() ?: baseColors.secondary,
+      secondaryVariant = perChatTheme?.secondaryVariant?.colorFromReadableHex() ?: presetWallpaperTheme?.secondaryVariant?.colorFromReadableHex() ?: perUserTheme?.secondaryVariant?.colorFromReadableHex() ?: colors.secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
+      background = perChatTheme?.background?.colorFromReadableHex() ?: presetWallpaperTheme?.background?.colorFromReadableHex() ?: perUserTheme?.background?.colorFromReadableHex() ?: colors.background?.colorFromReadableHex() ?: baseColors.background,
+      surface = perChatTheme?.surface?.colorFromReadableHex() ?: presetWallpaperTheme?.surface?.colorFromReadableHex() ?: perUserTheme?.surface?.colorFromReadableHex() ?: colors.surface?.colorFromReadableHex() ?: baseColors.surface,
+    )
+  }
+
+  fun toAppColors(base: DefaultTheme, perChatTheme: ThemeColors?, presetWallpaperTheme: ThemeColors?, perUserTheme: ThemeColors?): AppColors {
+    val baseColors = when (base) {
+      DefaultTheme.LIGHT -> LightColorPaletteApp
+      DefaultTheme.DARK -> DarkColorPaletteApp
+      DefaultTheme.SIMPLEX -> SimplexColorPaletteApp
+      // shouldn't be here
+      DefaultTheme.SYSTEM -> LightColorPaletteApp
+    }
+    return baseColors.copy(
+      title = perChatTheme?.title?.colorFromReadableHex() ?: presetWallpaperTheme?.title?.colorFromReadableHex() ?: perUserTheme?.title?.colorFromReadableHex() ?: colors.title?.colorFromReadableHex() ?: baseColors.title,
+      sentMessage = perChatTheme?.sentMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.sentMessage?.colorFromReadableHex() ?: perUserTheme?.sentMessage?.colorFromReadableHex() ?: colors.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
+      receivedMessage = perChatTheme?.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?: perUserTheme?.receivedMessage?.colorFromReadableHex() ?: colors.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
+    )
+  }
+
+  fun withFilledColors(base: DefaultTheme, perChatTheme: ThemeColors?, perUserTheme: ThemeColors?, appSettingsTheme: ThemeColors?): ThemeColors {
+    val c = toColors(base, perChatTheme, perUserTheme, appSettingsTheme)
+    val ac = toAppColors(base, perChatTheme, perUserTheme, appSettingsTheme)
+    return ThemeColors(
+      primary = c.primary.toReadableHex(),
+      primaryVariant = c.primaryVariant.toReadableHex(),
+      secondary = c.secondary.toReadableHex(),
+      secondaryVariant = c.secondaryVariant.toReadableHex(),
+      background = c.background.toReadableHex(),
+      surface = c.surface.toReadableHex(),
+      title = ac.title.toReadableHex(),
+      sentMessage = ac.sentMessage.toReadableHex(),
+      receivedMessage = ac.receivedMessage.toReadableHex(),
+    )
+  }
+}
+
+@Serializable
+data class ThemeModeOverrides (
+  val light: ThemeModeOverride? = null,
+  val dark: ThemeModeOverride? = null
+) {
+  fun preferredTheme(baseTheme: DefaultTheme = CurrentColors.value.base): ThemeModeOverride? {
+    return when (baseTheme) {
+      DefaultTheme.LIGHT -> light
+      else -> dark
+    }
+  }
+}
+
+@Serializable
+data class ThemeModeOverride (
+  val mode: DefaultThemeMode = CurrentColors.value.base.mode,
+  val colors: ThemeColors = ThemeColors(),
+  val wallpaper: ThemeWallpaper? = null,
+) {
+  fun withUpdatedColor(name: ThemeColor, color: String?): ThemeModeOverride {
+    val wallpaper = wallpaper ?: ThemeWallpaper()
     return copy(colors = when (name) {
       ThemeColor.PRIMARY -> colors.copy(primary = color)
       ThemeColor.PRIMARY_VARIANT -> colors.copy(primaryVariant = color)
@@ -325,20 +377,13 @@ data class ThemeOverrides (
     }
     )
   }
-}
-
-fun Map<String, ThemeOverrides>.preferredTheme(baseTheme: DefaultTheme = CurrentColors.value.base): ThemeOverrides? {
-  val idealTheme = get(baseTheme.themeName)
-  if (idealTheme != null) return idealTheme
-
-  val light = get(DefaultTheme.LIGHT.themeName)
-  val dark = get(DefaultTheme.DARK.themeName)
-  val simplex = get(DefaultTheme.SIMPLEX.themeName)
-  return when (baseTheme.themeName) {
-    DefaultTheme.LIGHT.themeName -> dark ?: simplex
-    DefaultTheme.DARK.themeName -> simplex ?: light
-    DefaultTheme.SIMPLEX.themeName -> dark ?: light
-    else -> null
+  companion object {
+    fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride =
+      ThemeModeOverride(
+        mode = mode,
+        colors = ThemeOverrides().withFilledColors(base, null, null, null),
+        wallpaper = ThemeWallpaper()
+      )
   }
 }
 
@@ -427,7 +472,7 @@ val SimplexColorPaletteApp = AppColors(
   receivedMessage = Color(0x20B1B0B5),
 )
 
-val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode()))
+val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode(), null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get()))
 
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLight
@@ -466,7 +511,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
   LaunchedEffect(darkTheme) {
     // For preview
     if (darkTheme != null)
-      CurrentColors.value = ThemeManager.currentColors(darkTheme)
+      CurrentColors.value = ThemeManager.currentColors(darkTheme, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
   }
   val systemDark = isSystemInDarkTheme()
   LaunchedEffect(systemDark) {

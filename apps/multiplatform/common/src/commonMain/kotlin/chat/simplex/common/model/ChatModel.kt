@@ -682,7 +682,8 @@ data class User(
   override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
-  val viewPwdHash: UserPwdHash?
+  val viewPwdHash: UserPwdHash?,
+  val uiThemes: ThemeModeOverrides? = null,
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
@@ -709,6 +710,7 @@ data class User(
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
       viewPwdHash = null,
+      uiThemes = null,
     )
   }
 }
@@ -1042,7 +1044,7 @@ data class Contact(
   val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
-  val uiThemes: Map<String, ThemeOverrides>? = null,
+  val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -1248,7 +1250,7 @@ data class GroupInfo (
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
-  val uiThemes: Map<String, ThemeOverrides>? = null,
+  val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"

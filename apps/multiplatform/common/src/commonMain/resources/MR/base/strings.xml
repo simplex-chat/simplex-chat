@@ -1550,7 +1550,14 @@
   <string name="background_image_scale_repeat">Repeat</string>
   <string name="background_image_scale_fill">Fill</string>
   <string name="background_image_scale_fit">Fit</string>
-  <string name="background_image_apply">Apply</string>
+  <string name="background_image_advanced_settings">Advanced settings</string>
+  <string name="chat_theme_reset_to_global_theme">Reset to global theme</string>
+  <string name="chat_theme_set_default_theme">Set default theme</string>
+  <string name="chat_theme_apply_to_mode">Apply to</string>
+  <string name="chat_theme_apply_to_all_modes">all themes</string>
+  <string name="chat_theme_apply_to_light_mode">light theme</string>
+  <string name="chat_theme_apply_to_dark_mode">dark theme</string>
+
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>

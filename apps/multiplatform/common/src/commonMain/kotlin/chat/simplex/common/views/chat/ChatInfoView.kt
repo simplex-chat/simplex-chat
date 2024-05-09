@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -42,6 +44,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import java.util.*
 
 @Composable
 fun ChatInfoView(
@@ -339,24 +342,9 @@ fun ChatInfoLayout(
           SynchronizeConnectionButton(syncContactConnection)
         }
 
-        val theme = remember {
-          // Using existing theme overrides as an overrides for a new theme if the same BASE theme is not found in already configured map
-          (chat.chatInfo as ChatInfo.Direct).contact.uiThemes?.preferredTheme()?.copy(base = CurrentColors.value.base) ?: ThemeOverrides()
-        }
-
         WallpaperButton {
           ModalManager.end.showModal {
-            WallpaperEditor(theme) { type, theme ->
-              withBGApi {
-                val changedThemes = ((chat.chatInfo as ChatInfo.Direct).contact.uiThemes ?: mapOf()).toMutableMap()
-                changedThemes[theme.base.themeName] = theme.copy(wallpaper = theme.wallpaper.withFilledWallpaperPath())
-                if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
-                  // Remove previous image only after saving
-                  removeBackgroundImage(theme.wallpaper.imageFile)
-                  chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
-                }
-              }
-            }
+            WallpaperEditorModal(chat)
           }
         }
         //      } else if (developerTools) {
@@ -707,74 +695,199 @@ fun ShareAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ModalData.WallpaperEditor(theme: ThemeOverrides, save: (BackgroundImageType?, ThemeOverrides) -> Unit) {
+fun ModalData.WallpaperEditorModal(chat: Chat) {
+  val initialTheme = remember(CurrentColors.value.base) {
+    (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes?.preferredTheme()?.copy(mode = CurrentColors.value.base.mode)
+      ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes?.preferredTheme()?.copy(mode = CurrentColors.value.base.mode)
+      ?: ThemeModeOverride()
+  }
+  WallpaperEditor(
+    initialTheme,
+    save = { applyToMode, newTheme ->
+    withBGApi {
+      var changedThemes: ThemeModeOverrides? = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
+      val changed = newTheme?.copy(mode = initialTheme.mode, wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
+      changedThemes = if (applyToMode == null) {
+        changedThemes?.copy(light = changed?.copy(mode = DefaultThemeMode.LIGHT), dark = changed?.copy(mode = DefaultThemeMode.DARK))
+      } else if (changed?.mode == DefaultThemeMode.LIGHT) {
+        changedThemes?.copy(light = changed)
+      } else {
+        changedThemes?.copy(dark = changed)
+      }
+      changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
+      if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
+        // Remove previous image only after saving
+        removeBackgroundImage(initialTheme.wallpaper?.imageFile)
+        if (chat.chatInfo is ChatInfo.Direct) {
+          chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+        } else if (chat.chatInfo is ChatInfo.Group) {
+          chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+        }
+      }
+    }
+  },
+    setDefaultsToAll = {
+      val lightBase = DefaultTheme.LIGHT
+      val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
+      val modeLight = ThemeModeOverride.withFilledAppDefaults(DefaultThemeMode.LIGHT, lightBase)
+      val modeDark = ThemeModeOverride.withFilledAppDefaults(DefaultThemeMode.DARK, darkBase)
+      val changedThemes = ThemeModeOverrides(light = modeLight, dark = modeDark)
+      if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
+        // Remove previous image only after saving
+        removeBackgroundImage(initialTheme.wallpaper?.imageFile)
+        if (chat.chatInfo is ChatInfo.Direct) {
+          chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+        } else if (chat.chatInfo is ChatInfo.Group) {
+          chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+        }
+      }
+      (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes?.preferredTheme()?.copy(mode = CurrentColors.value.base.mode)
+        ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes?.preferredTheme()?.copy(mode = CurrentColors.value.base.mode)
+        ?: ThemeModeOverride()
+    }
+  )
+}
+
+@Composable
+fun ModalData.WallpaperEditor(theme: ThemeModeOverride, save: (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit, setDefaultsToAll: suspend () -> ThemeModeOverride) {
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
   ) {
-    val baseTheme = CurrentColors.value.base
-    val themeOverrides = remember { stateGetOrPut("themeOverrides") { theme } }
-    val backgroundImageType: State<BackgroundImageType?> = remember { derivedStateOf { BackgroundImageType.from(themeOverrides.value.wallpaper) } }
-    val pref = remember {
-      SharedPreference<Map<String, ThemeOverrides>>(
-        get = {
-          mapOf(baseTheme.themeName to themeOverrides.value)
-        },
-        set = { value ->
-          themeOverrides.value = value[baseTheme.themeName]!!
-        }
+    val applyToMode = remember { stateGetOrPutNullable("applyToMode") { null as DefaultThemeMode? } }
+    var showMore by remember { stateGetOrPut("showMore") { false } }
+    val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
+    val backgroundImageType: State<BackgroundImageType?> = remember { derivedStateOf { BackgroundImageType.from(themeModeOverride.value.wallpaper) } }
+    val systemDark = isInDarkTheme()
+    val currentTheme by remember(themeModeOverride.value, CurrentColors.collectAsState().value) {
+      mutableStateOf(
+        ThemeManager.currentColors(systemDark, themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
       )
     }
 
     AppBarTitle(stringResource(MR.strings.settings_section_title_wallpaper))
     val backgroundImage = remember { derivedStateOf { backgroundImageType.value?.image } }
-    val backgroundColor = remember { derivedStateOf { themeOverrides.value.wallpaper.background?.colorFromReadableHex() } }
-    val tintColor = remember { derivedStateOf { themeOverrides.value.wallpaper.tint?.colorFromReadableHex() } }
+    val backgroundColor = remember { derivedStateOf { themeModeOverride.value.wallpaper?.background?.colorFromReadableHex() } }
+    val tintColor = remember { derivedStateOf { themeModeOverride.value.wallpaper?.tint?.colorFromReadableHex() } }
+
+    fun editColor(name: ThemeColor, initialColor: Color) {
+      ModalManager.end.showModalCloseable { close ->
+        AppearanceScope.ColorEditor(
+          name,
+          initialColor,
+          CurrentColors.collectAsState().value.base,
+          backgroundImageType.value,
+          backgroundImage.value,
+          backgroundColor.value,
+          tintColor.value,
+          onColorChange = { color ->
+            ThemeManager.applyThemeColor(name, color, themeModeOverride)
+            save(applyToMode.value, themeModeOverride.value)
+          },
+          close
+        )
+      }
+    }
 
     WallpaperSetupView(
       backgroundImageType.value,
-      theme.base,
+      CurrentColors.collectAsState().value.base,
       backgroundColor.value,
       tintColor.value,
       showPresetSelection = true,
       editColor = { name, initialColor ->
-        ModalManager.end.showModalCloseable { close ->
-          AppearanceScope.ColorEditor(
-            name,
-            initialColor,
-            theme.base,
-            backgroundImageType.value,
-            backgroundImage.value,
-            backgroundColor.value,
-            tintColor.value,
-            onColorChange = { color ->
-              ThemeManager.saveAndApplyThemeColor(baseTheme, name, color, pref)
-            },
-            close
-          )
-        }
+        editColor(name, initialColor)
       },
       onColorChange = { name, color ->
-        ThemeManager.saveAndApplyThemeColor(baseTheme, name, color, pref)
+        ThemeManager.applyThemeColor(name, color, themeModeOverride)
+        save(applyToMode.value, themeModeOverride.value)
       },
       onTypeChange = { type ->
-        ThemeManager.saveAndApplyBackgroundImage(baseTheme, type, pref)
+        ThemeManager.applyBackgroundImage(type, themeModeOverride)
+        save(applyToMode.value, themeModeOverride.value)
       }
     )
 
     SectionSpacer()
 
-    ApplyButton {
-      save(backgroundImageType.value, themeOverrides.value)
+    ResetToGlobalThemeButton {
+      themeModeOverride.value = ThemeModeOverride()
+      save(applyToMode.value, null)
     }
+
+    SetDefaultThemeButton {
+      if (applyToMode.value == null) {
+        withBGApi {
+          themeModeOverride.value = setDefaultsToAll()
+        }
+      } else {
+        val lightBase = DefaultTheme.LIGHT
+        val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
+        val mode = themeModeOverride.value.mode
+        themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
+        save(null, themeModeOverride.value)
+      }
+    }
+
+    SectionSpacer()
+
+    if (!showMore) {
+      AdvancedSettingsButton { showMore = true }
+    } else {
+      val values by remember { mutableStateOf(
+        listOf(
+          null to generalGetString(MR.strings.chat_theme_apply_to_all_modes),
+          DefaultThemeMode.LIGHT to generalGetString(MR.strings.chat_theme_apply_to_light_mode),
+          DefaultThemeMode.DARK to generalGetString(MR.strings.chat_theme_apply_to_dark_mode),
+        )
+      )}
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.chat_theme_apply_to_mode),
+        values,
+        applyToMode,
+        icon = null,
+        enabled = remember { mutableStateOf(true) },
+        onSelected = {
+          applyToMode.value = it
+          if (it != null && it != CurrentColors.value.base.mode) {
+            val lightBase = DefaultTheme.LIGHT
+            val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
+            ThemeManager.applyTheme(if (it == DefaultThemeMode.LIGHT) lightBase.themeName else darkBase.themeName, systemDark)
+          }
+        }
+      )
+      KeyChangeEffect(theme.mode) {
+        themeModeOverride.value = theme
+      }
+
+      SectionSpacer()
+
+      AppearanceScope.CustomizeThemeColorsSection(currentTheme) { name, color -> editColor(name, color) }
+    }
+
+    SectionBottomSpacer()
   }
 }
 
 @Composable
-private fun ApplyButton(onClick: () -> Unit) {
+private fun ResetToGlobalThemeButton(onClick: () -> Unit) {
+  SectionItemView(onClick) {
+    Text(stringResource(MR.strings.chat_theme_reset_to_global_theme), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun SetDefaultThemeButton(onClick: () -> Unit) {
+  SectionItemView(onClick) {
+    Text(stringResource(MR.strings.chat_theme_set_default_theme), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun AdvancedSettingsButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_check),
-    stringResource(MR.strings.background_image_apply),
+    painterResource(MR.images.ic_arrow_downward),
+    stringResource(MR.strings.background_image_advanced_settings),
     click = onClick
   )
 }

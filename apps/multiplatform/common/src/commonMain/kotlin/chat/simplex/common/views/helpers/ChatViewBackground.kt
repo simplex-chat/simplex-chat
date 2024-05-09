@@ -118,7 +118,7 @@ enum class PredefinedBackgroundImage(
   );
 
   fun toType(): BackgroundImageType =
-    BackgroundImageType.Repeated(filename, scale)
+    BackgroundImageType.Repeated(filename, 1f)
 
   companion object {
     fun from(filename: String): PredefinedBackgroundImage? =
@@ -161,7 +161,9 @@ sealed class BackgroundImageType {
   @Serializable @SerialName("repeated") data class Repeated(
     override val filename: String,
     override val scale: Float,
-  ): BackgroundImageType()
+  ): BackgroundImageType() {
+    val predefinedImageScale = PredefinedBackgroundImage.from(filename)?.scale ?: 1f
+  }
 
   @Serializable @SerialName("static") data class Static(
     override val filename: String,
@@ -193,11 +195,11 @@ sealed class BackgroundImageType {
 
     private var cachedImage: Pair<String, ImageBitmap>? = null
 
-    fun from(wallpaper: ThemeWallpaper): BackgroundImageType? {
-      return if (wallpaper.preset != null) {
-        Repeated(wallpaper.preset, wallpaper.scale)
+    fun from(wallpaper: ThemeWallpaper?): BackgroundImageType? {
+      return if (wallpaper?.preset != null) {
+        Repeated(wallpaper.preset, wallpaper.scale ?: 1f)
       } else {
-        Static(wallpaper.imageFile ?: return null, wallpaper.scale, wallpaper.scaleType ?: BackgroundImageScaleType.FILL)
+        Static(wallpaper?.imageFile ?: return null, wallpaper.scale ?: 1f, wallpaper.scaleType ?: BackgroundImageScaleType.FILL)
       }
     }
   }
@@ -220,7 +222,7 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: BackgroundImageT
 
   drawRect(background)
   when (imageType) {
-    is BackgroundImageType.Repeated -> repeat(imageType.scale)
+    is BackgroundImageType.Repeated -> repeat(imageType.scale * imageType.predefinedImageScale)
     is BackgroundImageType.Static -> when (imageType.scaleType) {
       BackgroundImageScaleType.REPEAT -> repeat(imageType.scale)
       BackgroundImageScaleType.FILL, BackgroundImageScaleType.FIT -> {

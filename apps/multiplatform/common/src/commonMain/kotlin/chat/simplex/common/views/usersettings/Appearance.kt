@@ -25,12 +25,15 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.common.views.usersettings.AppearanceScope.WallpaperPresetSelector
 import chat.simplex.res.MR
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.net.URI
@@ -63,6 +66,7 @@ object AppearanceScope {
           onValueChange = {
             val diff = it % 2.5f
             appPreferences.profileImageCornerRadius.set(it + (if (diff >= 1.25f) -diff + 2.5f else -diff))
+            saveThemeToDatabase()
           },
           colors = SliderDefaults.colors(
             activeTickColor = Color.Transparent,
@@ -108,6 +112,8 @@ object AppearanceScope {
   fun WallpaperPresetSelector(
     selectedBackground: BackgroundImageType?,
     baseTheme: DefaultTheme,
+    initialBackgroundColor: Color?,
+    initialTintColor: Color?,
     onColorChange: (ThemeColor, Color?) -> Unit,
     onTypeChange: (BackgroundImageType?) -> Unit
   ) {
@@ -143,7 +149,7 @@ object AppearanceScope {
         ) {
           if (background != null) {
             val backgroundImage = remember(background.filename) { PredefinedBackgroundImage.from(background.filename)?.res?.toComposeImageBitmap() }
-            ChatThemePreview(baseTheme, backgroundImage, background.toType(), withMessages = false)
+            ChatThemePreview(baseTheme, backgroundImage, background.toType(), withMessages = false, backgroundColor = initialBackgroundColor, tintColor = initialTintColor)
           }
         }
       }
@@ -171,7 +177,7 @@ object AppearanceScope {
           contentAlignment = Alignment.Center
         ) {
           if (checked) {
-            ChatThemePreview(baseTheme, backgroundImage, type, withMessages = false)
+            ChatThemePreview(baseTheme, backgroundImage, type, withMessages = false, backgroundColor = initialBackgroundColor, tintColor = initialTintColor)
           } else {
             Plus()
           }
@@ -185,11 +191,11 @@ object AppearanceScope {
         BackgroundItem(background)
       }
       item {
-        OwnBackgroundItem(MaterialTheme.wallpaper.type)
+        OwnBackgroundItem(selectedBackground)
       }
     }
     val backgroundImage = selectedBackground?.image
-    ChatThemePreview(baseTheme, backgroundImage, selectedBackground)
+    ChatThemePreview(baseTheme, backgroundImage, selectedBackground, backgroundColor = initialBackgroundColor, tintColor = initialTintColor)
 
     if (appPlatform.isDesktop) {
       val itemWidth = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
@@ -216,6 +222,15 @@ object AppearanceScope {
     }
   }
 
+  private var job: Job = Job()
+  private fun saveThemeToDatabase() {
+    job.cancel()
+    job = withBGApi {
+      delay(3000)
+      controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
+    }
+  }
+
   @Composable
   fun ThemesSection(
     systemDarkTheme: SharedPreference<String?>,
@@ -230,12 +245,16 @@ object AppearanceScope {
       WallpaperPresetSelector(
         selectedBackground = backgroundImageType,
         baseTheme = currentTheme.base,
+        initialBackgroundColor = MaterialTheme.wallpaper.background,
+        initialTintColor = MaterialTheme.wallpaper.tint,
         onColorChange = { name, color ->
           ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
+          saveThemeToDatabase()
         },
         onTypeChange = { type ->
           removeBackgroundImage(backgroundImageType?.filename)
           ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+          saveThemeToDatabase()
         }
       )
 
@@ -243,10 +262,12 @@ object AppearanceScope {
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
         ThemeManager.applyTheme(it, darkTheme)
+        saveThemeToDatabase()
       }
       if (state.value == DefaultTheme.SYSTEM.themeName) {
         DarkThemeSelector(remember { systemDarkTheme.state }) {
           ThemeManager.changeDarkTheme(it, darkTheme)
+          saveThemeToDatabase()
         }
       }
     }
@@ -278,66 +299,29 @@ object AppearanceScope {
             editColor,
             onColorChange = { name, color ->
               ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
+              saveThemeToDatabase()
             },
             onTypeChange = { type ->
               removeBackgroundImage(backgroundImageType.filename)
               ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+              saveThemeToDatabase()
             }
           )
         }
         SectionDividerSpaced(maxTopPadding = true)
       }
 
-      SectionView(stringResource(MR.strings.theme_colors_section_title)) {
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
-          val title = generalGetString(MR.strings.color_primary)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.primary)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
-          val title = generalGetString(MR.strings.color_primary_variant)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.primaryVariant)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
-          val title = generalGetString(MR.strings.color_secondary)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.secondary)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
-          val title = generalGetString(MR.strings.color_secondary_variant)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.secondaryVariant)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
-          val title = generalGetString(MR.strings.color_background)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.background)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE, currentTheme.colors.surface) }) {
-          val title = generalGetString(MR.strings.color_surface)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.surface)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE, currentTheme.appColors.title) }) {
-          val title = generalGetString(MR.strings.color_title)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
-          val title = generalGetString(MR.strings.color_sent_message)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE, currentTheme.appColors.receivedMessage) }) {
-          val title = generalGetString(MR.strings.color_received_message)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
-        }
+      CustomizeThemeColorsSection(currentTheme) { name, color ->
+        editColor(name, color)
+        saveThemeToDatabase()
       }
+
       val isInDarkTheme = isInDarkTheme()
       if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors, currentTheme.wallpaper)) {
-        SectionItemView({ ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme) }) {
+        SectionItemView({
+          ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme)
+          saveThemeToDatabase()
+        }) {
           Text(generalGetString(MR.strings.reset_color), color = colors.primary)
         }
       }
@@ -353,7 +337,7 @@ object AppearanceScope {
           }
         }
         SectionItemView({
-          val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme)
+          val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme, null, chatModel.currentUser.value?.uiThemes)
           theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
           withLongRunningApi { exportThemeLauncher.launch("simplex.theme")}
         }) {
@@ -364,6 +348,7 @@ object AppearanceScope {
             val theme = getThemeFromUri(to)
             if (theme != null) {
               ThemeManager.saveAndApplyThemeOverrides(theme)
+              saveThemeToDatabase()
             }
           }
         }
@@ -373,6 +358,57 @@ object AppearanceScope {
         }
       }
       SectionBottomSpacer()
+    }
+  }
+
+  @Composable
+  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor, Color) -> Unit) {
+    SectionView(stringResource(MR.strings.theme_colors_section_title)) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
+        val title = generalGetString(MR.strings.color_primary)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.primary)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
+        val title = generalGetString(MR.strings.color_primary_variant)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.primaryVariant)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
+        val title = generalGetString(MR.strings.color_secondary)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.secondary)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
+        val title = generalGetString(MR.strings.color_secondary_variant)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.secondaryVariant)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
+        val title = generalGetString(MR.strings.color_background)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.background)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE, currentTheme.colors.surface) }) {
+        val title = generalGetString(MR.strings.color_surface)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.surface)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE, currentTheme.appColors.title) }) {
+        val title = generalGetString(MR.strings.color_title)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
+        val title = generalGetString(MR.strings.color_sent_message)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE, currentTheme.appColors.receivedMessage) }) {
+        val title = generalGetString(MR.strings.color_received_message)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
+      }
     }
   }
 
@@ -489,7 +525,7 @@ object AppearanceScope {
   private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
     val darkTheme = isSystemInDarkTheme()
     val values by remember(ChatController.appPrefs.appLanguage.state.value) {
-      mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third })
+      mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.themeName to it.third })
     }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.theme),
@@ -538,6 +574,8 @@ fun WallpaperSetupView(
     WallpaperPresetSelector(
       selectedBackground = backgroundImageType,
       baseTheme = theme,
+      initialBackgroundColor = initialBackgroundColor,
+      initialTintColor = initialTintColor,
       onColorChange = onColorChange,
       onTypeChange = onTypeChange,
     )

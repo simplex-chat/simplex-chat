@@ -1156,7 +1156,7 @@ object ChatController {
     return false
   }
 
-  suspend fun apiSetChatUIThemes(rh: Long?, chatId: ChatId, themes: Map<String, ThemeOverrides>?): Boolean {
+  suspend fun apiSetChatUIThemes(rh: Long?, chatId: ChatId, themes: ThemeModeOverrides?): Boolean {
     val r = sendCmd(rh, CC.ApiSetChatUIThemes(chatId, themes))
     if (r is CR.CmdOk) return true
     Log.e(TAG, "apiSetChatUIThemes bad response: ${r.responseType} ${r.details}")
@@ -2464,7 +2464,7 @@ sealed class CC {
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiSetUserUIThemes(val userId: Long, val themes: Map<String, ThemeOverrides>?): CC()
-  class ApiSetChatUIThemes(val chatId: String, val themes: Map<String, ThemeOverrides>?): CC()
+  class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
@@ -2609,8 +2609,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
-    is ApiSetUserUIThemes -> "/_set theme user $userId ${json.encodeToString(themes)}"
-    is ApiSetChatUIThemes -> "/_set theme $chatId ${json.encodeToString(themes)}"
+    is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
+    is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
@@ -5433,7 +5433,9 @@ data class AppSettings(
   var androidCallOnLockScreen: AppSettingsLockScreenCalls? = null,
   var iosCallKitEnabled: Boolean? = null,
   var iosCallKitCallsInRecents: Boolean? = null,
+  var uiProfileImageCornerRadius: Float? = null,
   var uiColorScheme: String? = null,
+  var uiDarkColorScheme: String? = null,
   var uiThemes: Map<String, ThemeOverrides>? = null,
 ) {
   fun prepareForExport(): AppSettings {
@@ -5458,7 +5460,9 @@ data class AppSettings(
     if (androidCallOnLockScreen != def.androidCallOnLockScreen) { empty.androidCallOnLockScreen = androidCallOnLockScreen }
     if (iosCallKitEnabled != def.iosCallKitEnabled) { empty.iosCallKitEnabled = iosCallKitEnabled }
     if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+    if (uiProfileImageCornerRadius != def.uiProfileImageCornerRadius) { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
     if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
+    if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     return empty
   }
@@ -5491,7 +5495,9 @@ data class AppSettings(
     androidCallOnLockScreen?.let { def.callOnLockScreen.set(it.toCallOnLockScreen()) }
     iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
+    uiProfileImageCornerRadius?.let { def.profileImageCornerRadius.set(it) }
     uiColorScheme?.let { def.currentTheme.set(it) }
+    uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiThemes?.let { def.themeOverrides.set(it) }
   }
 
@@ -5517,7 +5523,9 @@ data class AppSettings(
         androidCallOnLockScreen = AppSettingsLockScreenCalls.SHOW,
         iosCallKitEnabled = true,
         iosCallKitCallsInRecents = false,
+        uiProfileImageCornerRadius = 22.5f,
         uiColorScheme = DefaultTheme.SYSTEM.themeName,
+        uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiThemes = null,
       )
 
@@ -5544,7 +5552,9 @@ data class AppSettings(
           androidCallOnLockScreen = AppSettingsLockScreenCalls.from(def.callOnLockScreen.get()),
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
+          uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
           uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM.themeName,
+          uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiThemes = def.themeOverrides.get(),
         )
     }

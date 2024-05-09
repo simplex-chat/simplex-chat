@@ -117,8 +117,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     val clipboard = LocalClipboardManager.current
     when (chat.chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
-        val themeOverrides = remember(chat.chatInfo) { if (chat.chatInfo is ChatInfo.Direct) chat.chatInfo.contact.uiThemes?.preferredTheme() else if (chat.chatInfo is ChatInfo.Group) chat.chatInfo.groupInfo.uiThemes?.preferredTheme() else null }
-        val overrides = if (themeOverrides != null) ThemeManager.overriddenColors(themeOverrides) else null
+        val perChatTheme = remember(chat.chatInfo, CurrentColors.value.base) { if (chat.chatInfo is ChatInfo.Direct) chat.chatInfo.contact.uiThemes?.preferredTheme() else if (chat.chatInfo is ChatInfo.Group) chat.chatInfo.groupInfo.uiThemes?.preferredTheme() else null }
+        val overrides = if (perChatTheme != null) ThemeManager.currentColors(isInDarkTheme(), perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.state.value) else null
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           ChatLayout(
             chat,
