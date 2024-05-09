@@ -2006,6 +2006,7 @@ public struct AppSettings: Codable, Equatable {
     public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
+    public var oneHandUI: Bool? = nil
 
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2029,6 +2030,7 @@ public struct AppSettings: Codable, Equatable {
         if androidCallOnLockScreen != def.androidCallOnLockScreen { empty.androidCallOnLockScreen = androidCallOnLockScreen }
         if iosCallKitEnabled != def.iosCallKitEnabled { empty.iosCallKitEnabled = iosCallKitEnabled }
         if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+        if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
         return empty
     }
 
@@ -2052,7 +2054,8 @@ public struct AppSettings: Codable, Equatable {
             confirmDBUpgrades: false,
             androidCallOnLockScreen: AppSettingsLockScreenCalls.show,
             iosCallKitEnabled: true,
-            iosCallKitCallsInRecents: false
+            iosCallKitCallsInRecents: false,
+            oneHandUI: true
         )
     }
 }
