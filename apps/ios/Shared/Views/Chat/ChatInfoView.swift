@@ -616,10 +616,14 @@ struct ChatInfoView: View {
                 await MainActor.run {
                     dismiss()
                     chatModel.chatId = nil
-                    if case .full = chatDeleteMode {
+                    switch chatDeleteMode {
+                    case .full:
                         chatModel.removeChat(chat.chatInfo.id)
-                    } else {
+                    case .entity:
                         chatModel.updateContact(ct)
+                    case .messages:
+                        chatModel.updateContact(ct)
+                        chatModel.clearChat(chat.chatInfo)
                     }
                 }
             } catch let error {

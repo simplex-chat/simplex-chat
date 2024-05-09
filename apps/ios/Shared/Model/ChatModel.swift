@@ -511,6 +511,21 @@ final class ChatModel: ObservableObject {
         }
     }
 
+//    func deleteChatConversation(_ cInfo: ChatInfo) {
+//        // clear preview
+//        if let chat = getChat(cInfo.id) {
+//            self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
+//            chat.chatItems = []
+//            chat.chatStats = ChatStats()
+//            chat.chatInfo = cInfo
+//        }
+//        // clear current chat
+//        if chatId == cInfo.id {
+//            chatItemStatuses = [:]
+//            reversedChatItems = []
+//        }
+//    }
+
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update preview
         decreaseUnreadCounter(cInfo)

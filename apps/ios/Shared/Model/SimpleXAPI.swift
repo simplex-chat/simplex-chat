@@ -778,10 +778,14 @@ func deleteChatContact(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
         let cInfo = chat.chatInfo
         let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
         DispatchQueue.main.async {
-            if case .full = chatDeleteMode {
+            switch chatDeleteMode {
+            case .full:
                 ChatModel.shared.removeChat(cInfo.id)
-            } else {
+            case .entity:
                 ChatModel.shared.updateContact(ct)
+            case .messages:
+                ChatModel.shared.updateContact(ct)
+                ChatModel.shared.clearChat(cInfo)
             }
         }
     } catch let error {
