@@ -117,7 +117,7 @@ fun CIImageView(
     // IllegalStateException: Recording currently in progress - missing #endRecording() call?
     // but can display 5000px image. Using even lower value here just to feel safer.
     // It happens to WebP because it's not compressed while sending since it can be animated.
-    if (painter.intrinsicSize.width <= 3000 && painter.intrinsicSize.height <= 3000) {
+    if (painter.intrinsicSize.width <= 4320 && painter.intrinsicSize.height <= 4320) {
       Image(
         painter,
         contentDescription = stringResource(MR.strings.image_descr),
