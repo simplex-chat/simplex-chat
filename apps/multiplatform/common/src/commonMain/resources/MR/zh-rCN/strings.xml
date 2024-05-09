@@ -1766,4 +1766,7 @@
     <string name="v5_7_new_interface_languages">立陶宛语用户界面</string>
     <string name="v5_7_call_sounds_descr">连接音频和视频通话时。</string>
     <string name="v5_7_quantum_resistant_encryption_descr">将在私聊中启用！</string>
+    <string name="settings_section_title_profile_images">个人资料图</string>
+    <string name="v5_7_shape_profile_images">改变个人资料图形状</string>
+    <string name="v5_7_shape_profile_images_descr">方形、圆形、或两者之间的任意形状</string>
 </resources>

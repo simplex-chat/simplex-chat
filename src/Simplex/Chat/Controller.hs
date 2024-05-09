@@ -63,6 +63,7 @@ import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserCont
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
@@ -229,6 +230,7 @@ data ChatController = ChatController
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
     tempDirectory :: TVar (Maybe FilePath),
+    assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
   }
@@ -265,6 +267,7 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetRemoteHostsFolder FilePath
+  | APISetAppFilePaths AppFilePathsConfig
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
@@ -311,6 +314,8 @@ data ChatCommand
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
+  | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
+  | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -934,6 +939,14 @@ instance StrEncoding DBEncryptionKey where
 instance FromJSON DBEncryptionKey where
   parseJSON = strParseJSON "DBEncryptionKey"
 
+data AppFilePathsConfig = AppFilePathsConfig
+  { appFilesFolder :: FilePath,
+    appTempFolder :: FilePath,
+    appAssetsFolder :: FilePath,
+    appRemoteHostsFolder :: Maybe FilePath
+  }
+  deriving (Show)
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -1406,6 +1419,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
 $(JQ.deriveJSON defaultJSON ''ContactSubStatus)
 

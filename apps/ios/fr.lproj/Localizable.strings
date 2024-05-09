@@ -389,6 +389,9 @@
 /* member role */
 "admin" = "admin";
 
+/* feature role */
+"admins" = "admins";
+
 /* No comment provided by engineer. */
 "Admins can block a member for all." = "Les admins peuvent bloquer un membre pour tous.";
 
@@ -415,6 +418,9 @@
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tous les membres du groupe resteront connectés.";
+
+/* feature role */
+"all members" = "tous les membres";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Tous les messages seront supprimés - il n'est pas possible de revenir en arrière !";
@@ -463,6 +469,9 @@
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Permet l'envoi de fichiers et de médias.";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "Autorise l'envoi de liens SimpleX.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Autoriser l'envoi de messages vocaux.";
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Cannot receive file" = "Impossible de recevoir le fichier";
+
+/* No comment provided by engineer. */
+"Cellular" = "Cellulaire";
 
 /* No comment provided by engineer. */
 "Change" = "Changer";
@@ -1401,6 +1413,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Rétrograder et ouvrir le chat";
 
+/* chat item action */
+"Download" = "Télécharger";
+
 /* No comment provided by engineer. */
 "Download failed" = "Échec du téléchargement";
 
@@ -1475,6 +1490,9 @@
 
 /* enabled status */
 "enabled" = "activé";
+
+/* No comment provided by engineer. */
+"Enabled for" = "Activé pour";
 
 /* enabled status */
 "enabled for contact" = "activé pour le contact";
@@ -1831,6 +1849,9 @@
 "Files and media are prohibited in this group." = "Les fichiers et les médias sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
+"Files and media not allowed" = "Fichiers et médias non autorisés";
+
+/* No comment provided by engineer. */
 "Files and media prohibited!" = "Fichiers et médias interdits !";
 
 /* No comment provided by engineer. */
@@ -1868,6 +1889,21 @@
 
 /* No comment provided by engineer. */
 "For console" = "Pour la console";
+
+/* chat item action */
+"Forward" = "Transférer";
+
+/* No comment provided by engineer. */
+"Forward and save messages" = "Transférer et sauvegarder des messages";
+
+/* No comment provided by engineer. */
+"forwarded" = "transféré";
+
+/* No comment provided by engineer. */
+"Forwarded" = "Transféré";
+
+/* No comment provided by engineer. */
+"Forwarded from" = "Transféré depuis";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Bureau trouvé";
@@ -1946,6 +1982,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send files and media." = "Les membres du groupe peuvent envoyer des fichiers et des médias.";
+
+/* No comment provided by engineer. */
+"Group members can send SimpleX links." = "Les membres du groupe peuvent envoyer des liens SimpleX.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Les membres du groupe peuvent envoyer des messages vocaux.";
@@ -2087,6 +2126,9 @@
 
 /* No comment provided by engineer. */
 "In reply to" = "En réponse à";
+
+/* No comment provided by engineer. */
+"In-call sounds" = "Sons d'appel";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incognito";
@@ -2434,6 +2476,9 @@
 "message received" = "message reçu";
 
 /* No comment provided by engineer. */
+"Message source remains private." = "La source du message reste privée.";
+
+/* No comment provided by engineer. */
 "Message text" = "Texte du message";
 
 /* No comment provided by engineer. */
@@ -2517,6 +2562,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Plus d'améliorations à venir !";
 
+/* No comment provided by engineer. */
+"More reliable network connection." = "Connexion réseau plus fiable.";
+
 /* item status description */
 "Most likely this connection is deleted." = "Connexion probablement supprimée.";
 
@@ -2537,6 +2585,12 @@
 
 /* No comment provided by engineer. */
 "Network & servers" = "Réseau et serveurs";
+
+/* No comment provided by engineer. */
+"Network connection" = "Connexion au réseau";
+
+/* No comment provided by engineer. */
+"Network management" = "Gestion du réseau";
 
 /* No comment provided by engineer. */
 "Network settings" = "Paramètres réseau";
@@ -2615,6 +2669,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Aucun historique";
+
+/* No comment provided by engineer. */
+"No network connection" = "Pas de connexion au réseau";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Pas l'autorisation d'enregistrer un message vocal";
@@ -2762,8 +2819,14 @@
 /* No comment provided by engineer. */
 "Or show this code" = "Ou présenter ce code";
 
+/* No comment provided by engineer. */
+"Other" = "Autres";
+
 /* member role */
 "owner" = "propriétaire";
+
+/* feature role */
+"owners" = "propriétaires";
 
 /* No comment provided by engineer. */
 "Passcode" = "Code d'accès";
@@ -2898,6 +2961,9 @@
 "Profile image" = "Image de profil";
 
 /* No comment provided by engineer. */
+"Profile images" = "Images de profil";
+
+/* No comment provided by engineer. */
 "Profile name" = "Nom du profil";
 
 /* No comment provided by engineer. */
@@ -2929,6 +2995,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending files and media." = "Interdire l'envoi de fichiers et de médias.";
+
+/* No comment provided by engineer. */
+"Prohibit sending SimpleX links." = "Interdire l'envoi de liens SimpleX.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Interdire l'envoi de messages vocaux.";
@@ -3009,6 +3078,9 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "L'adresse de réception sera changée pour un autre serveur. Le changement d'adresse sera terminé lorsque l'expéditeur sera en ligne.";
 
 /* No comment provided by engineer. */
+"Receiving concurrency" = "Réception simultanée";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "La réception du fichier sera interrompue.";
 
 /* No comment provided by engineer. */
@@ -3016,6 +3088,9 @@
 
 /* No comment provided by engineer. */
 "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Historique récent et amélioration du [bot annuaire](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+
+/* No comment provided by engineer. */
+"Recipient(s) can't see who this message is from." = "Le(s) destinataire(s) ne peut(vent) pas voir de qui provient ce message.";
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Les destinataires voient les mises à jour au fur et à mesure que vous leur écrivez.";
@@ -3211,6 +3286,18 @@
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Enregistrer le message d'accueil ?";
+
+/* No comment provided by engineer. */
+"saved" = "enregistré";
+
+/* No comment provided by engineer. */
+"Saved" = "Enregistré";
+
+/* No comment provided by engineer. */
+"Saved from" = "Enregistré depuis";
+
+/* No comment provided by engineer. */
+"saved from %@" = "enregistré à partir de %@";
 
 /* message info title */
 "Saved message" = "Message enregistré";
@@ -3419,6 +3506,9 @@
 /* No comment provided by engineer. */
 "Settings" = "Paramètres";
 
+/* No comment provided by engineer. */
+"Shape profile images" = "Images de profil modelable";
+
 /* chat item action */
 "Share" = "Partager";
 
@@ -3480,6 +3570,12 @@
 "SimpleX links" = "Liens SimpleX";
 
 /* No comment provided by engineer. */
+"SimpleX links are prohibited in this group." = "Les liens SimpleX sont interdits dans ce groupe.";
+
+/* No comment provided by engineer. */
+"SimpleX links not allowed" = "Les liens SimpleX ne sont pas autorisés";
+
+/* No comment provided by engineer. */
 "SimpleX Lock" = "SimpleX Lock";
 
 /* No comment provided by engineer. */
@@ -3514,6 +3610,9 @@
 
 /* notification title */
 "Somebody" = "Quelqu'un";
+
+/* No comment provided by engineer. */
+"Square, circle, or anything in between." = "Carré, circulaire, ou toute autre forme intermédiaire.";
 
 /* chat item text */
 "standard end-to-end encryption" = "chiffrement de bout en bout standard";
@@ -4044,6 +4143,9 @@
 "Voice messages are prohibited in this group." = "Les messages vocaux sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
+"Voice messages not allowed" = "Les messages vocaux ne sont pas autorisés";
+
+/* No comment provided by engineer. */
 "Voice messages prohibited!" = "Messages vocaux interdits !";
 
 /* No comment provided by engineer. */
@@ -4095,10 +4197,22 @@
 "When available" = "Quand disponible";
 
 /* No comment provided by engineer. */
+"When connecting audio and video calls." = "Lors des appels audio et vidéo.";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Vous pouvez accepter ou refuser les demandes de contacts.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Lorsque vous partagez un profil incognito avec quelqu'un, ce profil sera utilisé pour les groupes auxquels il vous invite.";
+
+/* No comment provided by engineer. */
+"WiFi" = "WiFi";
+
+/* No comment provided by engineer. */
+"Will be enabled in direct chats!" = "Activé dans les discussions directes !";
+
+/* No comment provided by engineer. */
+"Wired ethernet" = "Ethernet câblé";
 
 /* No comment provided by engineer. */
 "With encrypted files and media." = "Avec les fichiers et les médias chiffrés.";
@@ -4120,6 +4234,9 @@
 
 /* pref value */
 "yes" = "oui";
+
+/* No comment provided by engineer. */
+"you" = "vous";
 
 /* No comment provided by engineer. */
 "You" = "Vous";
