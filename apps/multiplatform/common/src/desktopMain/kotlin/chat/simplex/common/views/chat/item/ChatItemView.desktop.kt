@@ -59,20 +59,7 @@ actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = w
   }
 
   if (fileSource != null) {
-    val filePath: String = if (fileSource.cryptoArgs != null) {
-      val tmpFile = File(tmpDir, fileSource.filePath)
-      tmpFile.deleteOnExit()
-      try {
-        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs ?: return@withLongRunningApi, tmpFile.absolutePath)
-      } catch (e: Exception) {
-        Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
-        AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
-        return@withLongRunningApi
-      }
-      tmpFile.absolutePath
-    } else {
-      getAppFilePath(fileSource.filePath)
-    }
+    val filePath = filePathForShare(fileSource) ?: return@withLongRunningApi
     when {
       desktopPlatform.isWindows() -> clipboard.setText(AnnotatedString("\"${File(filePath).absolutePath}\""))
       else -> clipboard.setText(AnnotatedString(filePath))
