@@ -143,23 +143,21 @@ struct HomeView: View {
                 showSettings = true
             }
         } label: {
-            if user.image != nil {
+            VStack(spacing: 2) {
                 ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+                    ProfileImage(imageStr: user.image, size: 27, color: Color(uiColor: .quaternaryLabel))
+                        .padding(.top, 3)
                         .padding(.trailing, 4)
                     let allRead = chatModel.users
                         .filter { u in !u.user.activeUser && !u.user.hidden }
                         .allSatisfy { u in u.unreadCount == 0 }
                     if !allRead {
-                        userUnreadBadge(size: 12)
+                        userUnreadBadge(size: 10)
                     }
                 }
-            } else {
-                iconLabel(
-                    multiUser ? "person.2.fill" : "gearshape.fill",
-                    multiUser ? "Users" : "Settings"
-                )
+                Text("Settings").font(.caption2)
             }
+            .padding(.top, 5)
         }
         .foregroundColor(.secondary)
     }
@@ -174,7 +172,7 @@ struct HomeView: View {
         Button {
             homeTab = .contacts
         } label: {
-            iconLabel("person.crop.circle.fill", "Contacts")
+            iconLabel("book", "Contacts")
         }
         .foregroundColor(homeTab == .contacts ? .accentColor : .secondary)
     }
@@ -211,7 +209,6 @@ struct HomeView: View {
             } label: {
                 iconLabel("square.and.pencil", "New chat")
             }
-            .foregroundColor(.secondary)
             .sheet(item: $newChatMenuOption) { opt in
                 switch opt {
                 case .newContact: NewChatView(selection: .invite)
@@ -243,14 +240,15 @@ struct HomeView: View {
     }
 
     private func iconLabel(_ image: String, _ title: LocalizedStringKey) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Image(systemName: image)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
             Text(title)
-                .font(.caption)
+                .font(.caption2)
         }
+        .padding(.top, 8)
     }
 
     @ViewBuilder private func contactsView() -> some View {
