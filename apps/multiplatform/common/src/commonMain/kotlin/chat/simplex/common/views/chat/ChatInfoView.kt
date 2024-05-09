@@ -700,13 +700,17 @@ fun ShareAddressButton(onClick: () -> Unit) {
 
 @Composable
 fun ModalData.WallpaperEditorModal(chat: Chat) {
+  val themes = remember(CurrentColors.value.base) {
+    (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes
+      ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes
+      ?: ThemeModeOverrides()
+  }
   val initialTheme = remember(CurrentColors.value.base) {
-    (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes?.preferredTheme()?.copy(mode = CurrentColors.value.base.mode)
-      ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes?.preferredTheme()?.copy(mode = CurrentColors.value.base.mode)
-      ?: ThemeModeOverride()
+    (themes.preferredTheme() ?: ThemeModeOverride()).copy(mode = CurrentColors.value.base.mode)
   }
   WallpaperEditor(
     initialTheme,
+    applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
     save = { applyToMode, newTheme ->
     withBGApi {
       var changedThemes: ThemeModeOverrides? = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
@@ -753,12 +757,12 @@ fun ModalData.WallpaperEditorModal(chat: Chat) {
 }
 
 @Composable
-fun ModalData.WallpaperEditor(theme: ThemeModeOverride, save: (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit, setDefaultsToAll: suspend () -> ThemeModeOverride) {
+fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThemeMode?, save: (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit, setDefaultsToAll: suspend () -> ThemeModeOverride) {
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
   ) {
-    val applyToMode = remember { stateGetOrPutNullable("applyToMode") { null as DefaultThemeMode? } }
+    val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
     val backgroundImageType: State<BackgroundImageType?> = remember { derivedStateOf { BackgroundImageType.from(themeModeOverride.value.wallpaper) } }

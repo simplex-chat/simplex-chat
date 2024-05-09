@@ -342,11 +342,9 @@ data class ThemeModeOverrides (
   val light: ThemeModeOverride? = null,
   val dark: ThemeModeOverride? = null
 ) {
-  fun preferredTheme(baseTheme: DefaultTheme = CurrentColors.value.base): ThemeModeOverride? {
-    return when (baseTheme) {
-      DefaultTheme.LIGHT -> light
-      else -> dark
-    }
+  fun preferredTheme(baseTheme: DefaultTheme = CurrentColors.value.base): ThemeModeOverride? = when (baseTheme) {
+    DefaultTheme.LIGHT -> light
+    else -> dark
   }
 }
 
