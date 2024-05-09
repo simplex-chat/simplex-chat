@@ -88,4 +88,15 @@
     <string name="permissions_camera_and_record_audio">Camera și microfon</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Atenție</b>: arhiva va fi ștearsă.]]></string>
     <string name="icon_descr_cancel_file_preview">Anulează previzualizarea fișierului</string>
+    <string name="empty_chat_profile_is_created">Un profil de conversație gol cu numele furnizat este creat, și aplicația se deschide ca de obicei.</string>
+    <string name="connect_plan_already_connecting">Se conectează deja!</string>
+    <string name="notifications_mode_off_desc">Aplicația poate primi notificări doar când rulează, niciun serviciu în fundal nu va fi lansat.</string>
+    <string name="connect_plan_already_joining_the_group">Se alătură deja grupului!</string>
+    <string name="notifications_mode_service">Mereu pornit</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Un nou profil aleatoriu va fi distribuit.</string>
+    <string name="keychain_is_storing_securely">Android Keystore este folosit pentru a stoca în siguranță fraza de acces - permite serviciului de notificare să funcționeze.</string>
+    <string name="rcv_group_and_other_events">și %d alte evenimente</string>
+    <string name="answer_call">Răspunde la apel</string>
+    <string name="keychain_allows_to_receive_ntfs">Android Keystore va fi folosit pentru a stoca în siguranță fraza de acces după ce repornești aplicația sau schimbi fraza de acces - va permite primirea notificărilor.</string>
+    <string name="settings_section_title_app">APLICAȚIE</string>
 </resources>
