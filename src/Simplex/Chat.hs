@@ -249,6 +249,7 @@ newChatController
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
     tempDirectory <- newTVarIO optTempDirectory
+    assetsDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
     pure
       ChatController
@@ -285,6 +286,7 @@ newChatController
           showLiveItems,
           encryptLocalFiles,
           tempDirectory,
+          assetsDirectory,
           logFilePath = logFile,
           contactMergeEnabled
         }
@@ -630,6 +632,17 @@ processChatCommand' vr = \case
     createDirectoryIfMissing True rf
     chatWriteVar remoteHostsFolder $ Just rf
     ok_
+  -- has to be called before StartChat
+  APISetAppFilePaths cfg -> do
+    setFolder filesFolder $ appFilesFolder cfg
+    setFolder tempDirectory $ appTempFolder cfg
+    setFolder assetsDirectory $ appAssetsFolder cfg
+    mapM_ (setFolder remoteHostsFolder) $ appRemoteHostsFolder cfg
+    ok_
+    where
+      setFolder sel f = do
+        createDirectoryIfMissing True f
+        chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
   APIExportArchive cfg -> checkChatStopped $ lift (exportArchive cfg) >> ok_
@@ -1226,6 +1239,25 @@ processChatCommand' vr = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
+  APISetUserUIThemes uId uiThemes -> withUser $ \user@User {userId} -> do
+    user'@User {userId = uId'} <- withStore $ \db -> do
+      user' <- getUser db uId
+      liftIO $ setUserUIThemes db user uiThemes
+      pure user'
+    when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {uiThemes}
+    ok user'
+  APISetChatUIThemes (ChatRef cType chatId) uiThemes -> withUser $ \user -> case cType of
+    CTDirect -> do
+      withStore $ \db -> do
+        ct <- getContact db vr user chatId
+        liftIO $ setContactUIThemes db user ct uiThemes
+      ok user
+    CTGroup -> do
+      withStore $ \db -> do
+        g <- getGroupInfo db vr user chatId
+        liftIO $ setGroupUIThemes db user g uiThemes
+      ok user
+    _ -> pure $ chatCmdError (Just user) "not supported"
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
@@ -1494,8 +1526,9 @@ processChatCommand' vr = \case
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-        connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup' subMode
+        connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
         conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
+        void . withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq dm pqSup' subMode
         pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
@@ -1748,12 +1781,13 @@ processChatCommand' vr = \case
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-          agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm PQSupportOff subMode
+          agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
           let chatV = vr `peerConnChatVersion` peerChatVRange
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
+          void . withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` \_ -> pure ()
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
@@ -2005,9 +2039,9 @@ processChatCommand' vr = \case
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
   ReceiveFile fileId encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withFileLock "receiveFile" fileId . procCmd $ do
-      (user, ft) <- withStore (`getRcvFileTransferById` fileId)
+      (user, ft@RcvFileTransfer {fileStatus}) <- withStore (`getRcvFileTransferById` fileId)
       encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
-      ft' <- (if encrypt then setFileToEncrypt else pure) ft
+      ft' <- (if encrypt && fileStatus == RFSNew then setFileToEncrypt else pure) ft
       receiveFile' user ft' rcvInline_ filePath_
   SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withFileLock "setFileToReceive" fileId . procCmd $ do
@@ -2278,23 +2312,28 @@ processChatCommand' vr = \case
       where
         connect' groupLinkId cReqHash xContactId inGroup = do
           let pqSup = if inGroup then PQSupportOff else PQSupportOn
-          (connId, incognitoProfile, subMode, chatV) <- requestContact user incognito cReq xContactId inGroup pqSup
+          (connId, chatV) <- prepareContact user cReq pqSup
+          -- [incognito] generate profile to send
+          incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+          subMode <- chatReadVar subscriptionMode
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          joinContact user connId cReq incognitoProfile xContactId inGroup pqSup chatV
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> CM ChatResponse
     connectContactViaAddress user incognito ct cReq =
       withInvitationLock "connectContactViaAddress" (strEncode cReq) $ do
         newXContactId <- XContactId <$> drgRandomBytes 16
         let pqSup = PQSupportOn
-        (connId, incognitoProfile, subMode, chatV) <- requestContact user incognito cReq newXContactId False pqSup
+        (connId, chatV) <- prepareContact user cReq pqSup
         let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+        -- [incognito] generate profile to send
+        incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+        subMode <- chatReadVar subscriptionMode
         ct' <- withStore $ \db -> createAddressContactConnection db vr user ct connId cReqHash newXContactId incognitoProfile subMode chatV pqSup
+        joinContact user connId cReq incognitoProfile newXContactId False pqSup chatV
         pure $ CRSentInvitationToContact user ct' incognitoProfile
-    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> PQSupport -> CM (ConnId, Maybe Profile, SubscriptionMode, VersionChat)
-    requestContact user incognito cReq xContactId inGroup pqSup = do
-      -- [incognito] generate profile to send
-      incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-      let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
+    prepareContact :: User -> ConnectionRequestUri 'CMContact -> PQSupport -> CM (ConnId, VersionChat)
+    prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff
       -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
@@ -2302,10 +2341,14 @@ processChatCommand' vr = \case
         Nothing -> throwChatError CEInvalidConnReq
         Just (agentV, _) -> do
           let chatV = agentToChatVersion agentV
-          dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend $ Just xContactId)
-          subMode <- chatReadVar subscriptionMode
-          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm pqSup subMode
-          pure (connId, incognitoProfile, subMode, chatV)
+          connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
+          pure (connId, chatV)
+    joinContact :: User -> ConnId -> ConnectionRequestUri 'CMContact -> Maybe Profile -> XContactId -> Bool -> PQSupport -> VersionChat -> CM ()
+    joinContact user connId cReq incognitoProfile xContactId inGroup pqSup chatV = do
+      let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
+      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend $ Just xContactId)
+      subMode <- chatReadVar subscriptionMode
+      void . withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq dm pqSup subMode
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -3532,6 +3575,8 @@ processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
   toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
 processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
+processAgentMessage _ "" (ERR e) =
+  toView $ CRChatError Nothing $ ChatErrorAgent e Nothing
 processAgentMessage corrId connId msg = do
   lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
@@ -3578,7 +3623,7 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
-  withEntityLock_ cRef_ $ withFileLock "processAgentMsgSndFile" fileId $
+  withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
@@ -3705,7 +3750,7 @@ splitFileDescr rfdText = do
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
-  withEntityLock_ cRef_ $ withFileLock "processAgentMsgRcvFile" fileId $
+  withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
@@ -7015,9 +7060,13 @@ chatCommandP =
       "/_app activate" $> APIActivateChat True,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
+      -- deprecated, use /set file paths
       "/_temp_folder " *> (SetTempFolder <$> filePath),
+      -- /_files_folder deprecated, use /set file paths
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
+      -- deprecated, use /set file paths
       "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
+      "/set file paths " *> (APISetAppFilePaths <$> jsonP),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
@@ -7073,6 +7122,8 @@ chatCommandP =
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
+      "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

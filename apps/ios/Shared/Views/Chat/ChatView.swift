@@ -575,6 +575,7 @@ struct ChatView: View {
                             Text(memberNames(member, prevMember, memCount))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14)
                                 .padding(.top, 7)
                         }

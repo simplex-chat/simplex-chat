@@ -76,7 +76,8 @@ fun FramedItemView(
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
+            maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2)
         }

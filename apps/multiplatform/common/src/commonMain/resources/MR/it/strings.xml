@@ -1758,4 +1758,15 @@
     <string name="audio_device_wired_headphones">Cuffie</string>
     <string name="audio_device_speaker">Altoparlante</string>
     <string name="network_option_rcv_concurrency">Ricezione concomitanza</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">Viene attivata nelle chat dirette!</string>
+    <string name="v5_7_forward">Inoltra e salva i messaggi</string>
+    <string name="v5_7_call_sounds_descr">Quando si connettono le chiamate audio e video.</string>
+    <string name="v5_7_new_interface_languages">Interfaccia in lituano</string>
+    <string name="v5_7_network_descr">Connessione di rete più affidabile.</string>
+    <string name="v5_7_network">Gestione della rete</string>
+    <string name="settings_section_title_profile_images">Immagini del profilo</string>
+    <string name="v5_7_call_sounds">Suoni nelle chiamate</string>
+    <string name="v5_7_forward_descr">La fonte del messaggio resta privata.</string>
+    <string name="v5_7_shape_profile_images">Forma delle immagini del profilo</string>
+    <string name="v5_7_shape_profile_images_descr">Quadrata, circolare o qualsiasi forma tra le due</string>
 </resources>
