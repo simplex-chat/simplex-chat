@@ -42,7 +42,8 @@ object ThemeManager {
       DefaultTheme.SIMPLEX.themeName -> ActiveTheme(DefaultTheme.SIMPLEX.themeName, DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
       else -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
     }
-    if (theme == null && perUserTheme == null) {
+
+    if (theme == null && perUserTheme == null && perChatTheme == null) {
       return ActiveTheme(themeName, baseTheme.base, baseTheme.colors, baseTheme.appColors, baseTheme.wallpaper)
     }
     val wallpaperTheme = when {

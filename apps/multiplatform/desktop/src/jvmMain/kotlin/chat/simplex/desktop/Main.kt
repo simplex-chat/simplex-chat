@@ -17,8 +17,8 @@ import kotlinx.coroutines.*
 import java.io.File
 
 fun main() {
-  runMigrations()
   initHaskell()
+  runMigrations()
   initApp()
   tmpDir.deleteRecursively()
   tmpDir.mkdir()
