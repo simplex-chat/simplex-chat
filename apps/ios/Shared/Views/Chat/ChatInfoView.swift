@@ -407,8 +407,7 @@ struct ChatInfoView: View {
 
     // when contact is a "contact card"
     private func connectButton() -> some View {
-        actionButton("message.fill", "connect")
-            .foregroundColor(.accentColor)
+        InfoViewActionButtonLayout(image: "message.fill", title: "connect")
             .onTapGesture {
                 showConnectContactViaAddressDialog = true
             }
@@ -440,8 +439,7 @@ struct ChatInfoView: View {
 
     // TODO show keyboard
     private func messageButton() -> some View {
-        actionButton("message.fill", "message")
-            .foregroundColor(.accentColor)
+        InfoViewActionButtonLayout(image: "message.fill", title: "message")
             .onTapGesture {
                 if openedFromChatView {
                     dismiss()
@@ -458,8 +456,7 @@ struct ChatInfoView: View {
     }
 
     private func callButton() -> some View {
-        actionButton("phone.fill", "call")
-            .foregroundColor(.accentColor)
+        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
             .onTapGesture {
                 CallController.shared.startCall(contact, .audio)
             }
@@ -467,27 +464,11 @@ struct ChatInfoView: View {
     }
 
     private func videoButton() -> some View {
-        actionButton("video.fill", "video")
-            .foregroundColor(.accentColor)
+        InfoViewActionButtonLayout(image: "video.fill", title: "video")
             .onTapGesture {
                 CallController.shared.startCall(contact, .video)
             }
             .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
-    }
-
-    private func actionButton(_ image: String, _ title: LocalizedStringKey) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
-            Text(title)
-                .font(.caption)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12.0)
-        .frame(width: 90, height: 60)
     }
 
     private func verifyCodeButton(_ code: String) -> some View {
@@ -714,6 +695,27 @@ struct ChatInfoView: View {
                 }
             }
         }
+    }
+}
+
+struct InfoViewActionButtonLayout: View {
+    var image: String
+    var title: LocalizedStringKey
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+            Text(title)
+                .font(.caption)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .foregroundColor(.accentColor)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(12.0)
+        .frame(width: 90, height: 60)
     }
 }
 
