@@ -147,8 +147,7 @@ object ThemeManager {
   }
 
   fun applyThemeColor(name: ThemeColor, color: Color? = null, pref: MutableState<ThemeModeOverride>) {
-    val prevValue = pref.value
-    pref.value = prevValue.withUpdatedColor(name, color?.toReadableHex())
+    pref.value = pref.value.withUpdatedColor(name, color?.toReadableHex())
   }
 
   fun saveAndApplyBackgroundImage(baseTheme: DefaultTheme, type: BackgroundImageType?, pref: SharedPreference<Map<String, ThemeOverrides>> = appPrefs.themeOverrides) {

@@ -237,7 +237,11 @@ fun GroupChatInfoLayout(
 
         WallpaperButton {
           ModalManager.end.showModal {
-            WallpaperEditorModal(chat)
+            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val c = chat.value
+            if (c != null) {
+              WallpaperEditorModal(c)
+            }
           }
         }
       }

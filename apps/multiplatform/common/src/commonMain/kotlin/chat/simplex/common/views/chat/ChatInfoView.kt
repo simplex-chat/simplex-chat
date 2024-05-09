@@ -344,7 +344,11 @@ fun ChatInfoLayout(
 
         WallpaperButton {
           ModalManager.end.showModal {
-            WallpaperEditorModal(chat)
+            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val c = chat.value
+            if (c != null) {
+              WallpaperEditorModal(c)
+            }
           }
         }
         //      } else if (developerTools) {
@@ -706,13 +710,13 @@ fun ModalData.WallpaperEditorModal(chat: Chat) {
     save = { applyToMode, newTheme ->
     withBGApi {
       var changedThemes: ThemeModeOverrides? = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
-      val changed = newTheme?.copy(mode = initialTheme.mode, wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
+      val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
       changedThemes = if (applyToMode == null) {
         changedThemes?.copy(light = changed?.copy(mode = DefaultThemeMode.LIGHT), dark = changed?.copy(mode = DefaultThemeMode.DARK))
-      } else if (changed?.mode == DefaultThemeMode.LIGHT) {
-        changedThemes?.copy(light = changed)
+      } else if (applyToMode == DefaultThemeMode.LIGHT) {
+        changedThemes?.copy(light = changed?.copy(mode = applyToMode))
       } else {
-        changedThemes?.copy(dark = changed)
+        changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
       }
       changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
       if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
@@ -829,6 +833,10 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, save: (applyToMode: Defa
       }
     }
 
+    KeyChangeEffect(theme.mode) {
+      themeModeOverride.value = theme
+    }
+
     SectionSpacer()
 
     if (!showMore) {
@@ -856,9 +864,6 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, save: (applyToMode: Defa
           }
         }
       )
-      KeyChangeEffect(theme.mode) {
-        themeModeOverride.value = theme
-      }
 
       SectionSpacer()
 
