@@ -622,8 +622,11 @@ struct ChatInfoView: View {
                     case .entity:
                         chatModel.updateContact(ct)
                     case .messages:
-                        chatModel.updateContact(ct)
-                        chatModel.clearChat(chat.chatInfo)
+                        chatModel.removeChat(chat.chatInfo.id)
+                        chatModel.addChat(Chat(
+                            chatInfo: .direct(contact: ct),
+                            chatItems: []
+                        ))
                     }
                 }
             } catch let error {

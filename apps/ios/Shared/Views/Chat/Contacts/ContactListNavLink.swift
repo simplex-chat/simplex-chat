@@ -127,7 +127,6 @@ struct ContactListNavLink: View {
         }
     }
 
-    // TODO smaller
     private func inactiveIcon() -> some View {
         Image(systemName: "multiply.circle.fill")
             .foregroundColor(.secondary.opacity(0.65))

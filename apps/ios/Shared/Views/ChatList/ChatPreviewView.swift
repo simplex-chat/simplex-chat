@@ -127,14 +127,6 @@ struct ChatPreviewView: View {
                 t
             }
             let s = chat.chatStats
-//             if chat.chatInfo.chatDeleted {
-//                Image(systemName: "trash")
-//                    .resizable()
-//                    .scaledToFit()
-//                    .frame(width: 16, height: 16)
-//                    .padding(.trailing, 1)
-//                    .foregroundColor(.secondary.opacity(0.65))
-//            } else if s.unreadCount > 0 || s.unreadChat {
             if s.unreadCount > 0 || s.unreadChat {
                 unreadCountText(s.unreadCount)
                     .font(.caption)
