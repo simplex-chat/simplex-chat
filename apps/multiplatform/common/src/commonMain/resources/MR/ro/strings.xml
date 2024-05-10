@@ -124,7 +124,7 @@
     <string name="creating_link">Se creează link…</string>
     <string name="audio_call_no_encryption">apel audio (necriptat e2e)</string>
     <string name="smp_server_test_create_file">Creează fișier</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Adaugă contact</b>: pentru a crea un nou link de invitare, sau a te conecta printr-un link pe care l-ai primit.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Adaugă contact</b>: pentru a crea un nou link de invitare, sau a te conecta printr-un link pe care l-ai primit.]]></string>
     <string name="authentication_cancelled">Autentificare anulată</string>
     <string name="app_passcode_replaced_with_self_destruct">Cod de acces aplicație este înlocuit cu cod de acces de autodistrugere.</string>
     <string name="audio_video_calls">Apeluri audio/video</string>

@@ -208,7 +208,7 @@
     <string name="icon_descr_context">نماد زمینه</string>
     <string name="icon_descr_cancel_image_preview">لغو پیش‌نمایش تصویر</string>
     <string name="icon_descr_cancel_file_preview">لغو پیش‌نمایش پرونده</string>
-    <string name="system_restricted_background_warn">برای فعال کردن اعلان‌ها، لطفا <b>مصرف باتری برنامه</b> / <b>نامحدود</b> را در تنظیمات برنامه انتخاب کنید.</string>
+    <string name="system_restricted_background_warn"><![CDATA[برای فعال کردن اعلان‌ها، لطفا <b>مصرف باتری برنامه</b> / <b>نامحدود</b> را در تنظیمات برنامه انتخاب کنید.]]></string>
     <string name="system_restricted_background_in_call_desc">برنامه ممکن است بعد از ۱ دقیقه در پس‌زمینه بسته شود.</string>
     <string name="database_initialization_error_title">مقداردهی اولیه پایگاه داده ممکن نیست</string>
     <string name="enter_passphrase_notification_title">عبارت عبور الزامی است</string>
@@ -251,9 +251,9 @@
     <string name="image_descr">تصویر</string>
     <string name="file_not_found">پرونده پیدا نشد</string>
     <string name="chat_help_tap_button">لمس دکمه</string>
-    <string name="create_group_button_to_create_new_group"><b>ایجاد گروه</b>: برای ایجاد یک گروه جدید.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>ایجاد گروه</b>: برای ایجاد یک گروه جدید.]]></string>
     <string name="system_restricted_background_in_call_title">بدون تماس‌های پس‌زمینه</string>
-    <string name="system_restricted_background_in_call_warn">برای برقراری تماس‌ها در پس‌زمینه، لطفا <b>مصرف باتری برنامه</b> / <b>نامحدود</b> را در تنظیمات برنامه انتخاب کنید.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[برای برقراری تماس‌ها در پس‌زمینه، لطفا <b>مصرف باتری برنامه</b> / <b>نامحدود</b> را در تنظیمات برنامه انتخاب کنید.]]></string>
     <string name="la_authenticate">تصدیق</string>
     <string name="edit_verb">ویرایش</string>
     <string name="no_info_on_delivery">بدون اطلاعات تحویل</string>
@@ -323,7 +323,7 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">مخاطب و تمام پیام‌ها حذف خواهند شد - این عمل قابل برگشت نیست!</string>
     <string name="allow_voice_messages_question">پیام‌های صوتی مجازند؟</string>
     <string name="voice_messages_prohibited">پیام‌های صوتی ممنوع هستند!</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 دسکتاپ: از برنامه رمز QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن رمز QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 دسکتاپ: از برنامه رمز QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن رمز QR</b>.]]></string>
     <string name="share_file">اشتراک‌گذاری پرونده…</string>
     <string name="images_limit_title">تعداد تصویر بیش از اندازه!</string>
     <string name="tap_to_scan">برای اسکن لمس کنید</string>
@@ -391,7 +391,7 @@
     <string name="toast_permission_denied">اجازه داده نشد!</string>
     <string name="use_camera_button">دوربین</string>
     <string name="thank_you_for_installing_simplex">سپاس برای نصب SimpleX Chat!</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 موبایل: <b>گشودن در موبایل</b> را لمس کنید، سپس <b>اتصال</b> را در برنامه لمس کنید.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 موبایل: <b>گشودن در موبایل</b> را لمس کنید، سپس <b>اتصال</b> را در برنامه لمس کنید.]]></string>
     <string name="accept_connection_request__question">درخواست اتصال پذیرفته شود؟</string>
     <string name="voice_messages_not_allowed">پیام‌های صوتی مجاز نیستند</string>
     <string name="simplex_links_not_allowed">لینک‌های SimpleX مجاز نیستند</string>
@@ -408,8 +408,8 @@
     <string name="camera_not_available">دوربین موجود نیست</string>
     <string name="gallery_image_button">تصویر</string>
     <string name="share_one_time_link">ایجاد لینک دعوت یک‌بارمصرف</string>
-    <string name="you_can_connect_to_simplex_chat_founder">می‌توانید &lt;font color=#0088ff&gt;برای پرسش هر سوال و دریافت اطلاعات به توسعه‌دهندگان SimpleX Chat متصل شوید&lt;/font&gt;.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>افزودن مخاطب</b>: برای ایجاد لینک دعوت جدید، یا اتصال از طریق لینکی که دریافت کردید.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[می‌توانید <font color="#0088ff">برای پرسش هر سوال و دریافت اطلاعات به توسعه‌دهندگان SimpleX Chat متصل شوید</font>.]]></string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>افزودن مخاطب</b>: برای ایجاد لینک دعوت جدید، یا اتصال از طریق لینکی که دریافت کردید.]]></string>
     <string name="to_connect_via_link_title">اتصال از طریق لینک</string>
     <string name="image_will_be_received_when_contact_is_online">تصویر وقتی دریافت خواهد شد که مخاطبتان آنلاین شود، لطفا صبر کنید یا بعدا بررسی کنید!</string>
     <string name="la_lock_mode">نوع قفل SimpleX</string>
@@ -532,7 +532,7 @@
     <string name="configure_ICE_servers">تنظیم سرورهای ICE</string>
     <string name="contact_wants_to_connect_with_you">می‌خواهد به شما متصل شود!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">وقتی دستگاه مخاطبتان آنلاین شد، متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>رمز QR را در تماس تصویری اسکن کنید</b>، یا مخاطبتان می‌تواند یک لینک دعوت به اشتراک بگذارد.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>رمز QR را در تماس تصویری اسکن کنید</b>، یا مخاطبتان می‌تواند یک لینک دعوت به اشتراک بگذارد.]]></string>
     <string name="keep_unused_invitation_question">دعوت استعمال نشده نگه داشته شود؟</string>
     <string name="your_simplex_contact_address">نشانی‌ SimpleX شما</string>
     <string name="markdown_in_messages">مارکداون در پیام‌ها</string>
@@ -552,7 +552,7 @@
     <string name="your_ICE_servers">سرورهای ICE شما</string>
     <string name="connect_button">اتصال</string>
     <string name="paste_button">الصاق</string>
-    <string name="you_can_also_connect_by_clicking_the_link">شما همچنین می‌توانید با کلیک روی لینک متصل شوید. اگر در مرورگر باز شد، روی دکمه <b>گشودن در برنامه موبایل</b> کلیک کنید.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[شما همچنین می‌توانید با کلیک روی لینک متصل شوید. اگر در مرورگر باز شد، روی دکمه <b>گشودن در برنامه موبایل</b> کلیک کنید.]]></string>
     <string name="add_contact_tab">افزودن مخاطب</string>
     <string name="simplex_address">نشانی‌ SimpleX</string>
     <string name="clear_verification">پاک‌سازی تایید</string>
@@ -568,7 +568,7 @@
 \nمی‌توانید این اتصال را لغو و مخاطب را حذف کنید (و بعدا با یک لینک جدید امتحان کنید).</string>
     <string name="icon_descr_address">نشانی‌ SimpleX</string>
     <string name="this_QR_code_is_not_a_link">این رمز QR یک لینک نیست!</string>
-    <string name="read_more_in_user_guide_with_link">مطالعه بیشتر در &lt;font color=#0088ff&gt;راهنمای کاربر&lt;/font&gt;.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">راهنمای کاربر</font>.]]></string>
     <string name="this_string_is_not_a_connection_link">این رشته متن، یک لینک اتصال نیست!</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">رمزی که اسکن کردید یک رمز QR لینک SimpleX نیست.</string>
     <string name="scan_code">اسکن رمز</string>
@@ -577,7 +577,7 @@
     <string name="show_QR_code">نمایش رمز QR</string>
     <string name="invalid_QR_code">رمز QR نامعتبر</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">وقتی درخواست اتصال شما پذیرفته شد، متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>رمز QR را در تماس تصویری نمایش دهید</b>، یا لینک را به اشتراک بگذارید.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>رمز QR را در تماس تصویری نمایش دهید</b>، یا لینک را به اشتراک بگذارید.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">نمایه گپ شما ارسال خواهد شد
 \nبه مخاطبتان</string>
     <string name="learn_more">اطلاعات بیشتر</string>
@@ -605,12 +605,12 @@
     <string name="your_contacts_will_remain_connected">مخاطبانتان متصل باقی خواهند ماند.</string>
     <string name="share_link">اشتراک‌گذاری لینک</string>
     <string name="network_enable_socks_info">دسترسی به سرورها از طریق پروکسی SOCKS روی پورت %d؟ پروکسی باید قبل از فعال کردن این گزینه، راه اندازی شده باشد.</string>
-    <string name="network_session_mode_user_description">یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر نمایه گپی که در برنامه دارید</b> استفاده خواهد شد.</string>
+    <string name="network_session_mode_user_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر نمایه گپی که در برنامه دارید</b> استفاده خواهد شد.]]></string>
     <string name="show_internal_errors">نمایش خطاهای داخلی</string>
     <string name="show_slow_api_calls">نمایش تماس‌های کند API</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">از میزبان‌های Onion استفاده نخواهد شد.</string>
     <string name="network_use_onion_hosts_no">خیر</string>
-    <string name="disable_onion_hosts_when_not_supported"><i>استفاده از میزبان‌های onion.</i> را روی «خیر» تنظیم کنید اگر پروکسی SOCKS از آنها پشتیبانی نمی‌کند.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i>استفاده از میزبان‌های onion.</i> را روی «خیر» تنظیم کنید اگر پروکسی SOCKS از آنها پشتیبانی نمی‌کند.]]></string>
     <string name="customize_theme_title">سفارشی کردن تم</string>
     <string name="app_version_title">نسخه برنامه</string>
     <string name="theme_colors_section_title">رنگ‌های تم</string>
@@ -632,7 +632,7 @@
     <string name="network_settings_title">تنظیمات شبکه</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">میزبان‌های Onion برای اتصال الزامی خواهد بود.</string>
     <string name="show_dev_options">نمایش:</string>
-    <string name="socks_proxy_setting_limitations"><b>لطفا توجه داشته باشید</b>: واسطه‌های پیام و پرونده از طریق پروکسی SOCKS متصل می‌شوند. تماس‌ها و ارسال پیش‌نمایش‌های لینک از اتصال مستقیم استفاده می‌کنند.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>لطفا توجه داشته باشید</b>: واسطه‌های پیام و پرونده از طریق پروکسی SOCKS متصل می‌شوند. تماس‌ها و ارسال پیش‌نمایش‌های لینک از اتصال مستقیم استفاده می‌کنند.]]></string>
     <string name="developer_options_section">گزینه‌های توسعه‌دهنده</string>
     <string name="hide_dev_options">پنهان کردن:</string>
     <string name="shutdown_alert_question">بسته شود؟</string>

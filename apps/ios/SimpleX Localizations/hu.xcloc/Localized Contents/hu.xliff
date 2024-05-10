@@ -7233,9 +7233,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>%1$@ megváltoztatta a nevét erre: %2$@</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="member connected" xml:space="preserve" approved="no">
+      <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
-        <target state="translated">kapcsolódott</target>
+        <target>kapcsolódott</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
