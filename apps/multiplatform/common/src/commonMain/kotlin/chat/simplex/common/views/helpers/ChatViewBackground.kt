@@ -144,7 +144,7 @@ sealed class BackgroundImageType {
       cache.second
     } else {
       val res = if (this is Repeated) {
-        PredefinedBackgroundImage.from(filename)!!.res.toComposeImageBitmap()!!
+        (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CAT).res.toComposeImageBitmap()!!
       } else {
         try {
           // In case of unintentional image deletion don't crash the app
@@ -174,7 +174,7 @@ sealed class BackgroundImageType {
   @Composable
   fun defaultBackgroundColor(theme: DefaultTheme): Color =
     if (this is Repeated) {
-      PredefinedBackgroundImage.from(filename)!!.background[theme]!!
+      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CAT).background[theme]!!
     } else {
       MaterialTheme.colors.background
     }
