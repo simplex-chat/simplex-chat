@@ -25,8 +25,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.builtins.*
 import kotlinx.serialization.json.*
 import java.util.Date
 
@@ -166,10 +165,21 @@ class AppPreferences {
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.themeName)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
-  val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
+  val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
+    json.encodeToString(MapSerializer(String.serializer(), String.serializer()), it)
+  }, decode = {
+    json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), it)
+  })
+  // Deprecated. Remove key from preferences in 2025
+  val themeOverridesOld = mkMapPreference(SHARED_PREFS_THEMES_OLD, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, decode = {
-    json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+    jsonCoerceInputValues.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, settingsThemes)
+  val themeOverrides = mkListPreference(SHARED_PREFS_THEME_OVERRIDES, listOf(), encode = {
+    json.encodeToString(ListSerializer(ThemeOverrides.serializer()), it)
+  }, decode = {
+    jsonCoerceInputValues.decodeFromString(ListSerializer(ThemeOverrides.serializer()), it)
   }, settingsThemes)
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
 
@@ -263,6 +273,12 @@ class AppPreferences {
       set = fun(value) = prefs.putString(prefName, encode(value))
     )
 
+  private fun <T> mkListPreference(prefName: String, default: List<T>, encode: (List<T>) -> String, decode: (String) -> List<T>, prefs: Settings = settings): SharedPreference<List<T>> =
+    SharedPreference(
+      get = fun() = decode(prefs.getString(prefName, encode(default))),
+      set = fun(value) = prefs.putString(prefName, encode(value))
+    )
+
   companion object {
     const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     internal const val SHARED_PREFS_THEMES_ID = "chat.simplex.app.THEMES"
@@ -336,8 +352,10 @@ class AppPreferences {
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
+    private const val SHARED_PREFS_CURRENT_THEME_IDs = "CurrentThemeIds"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
-    private const val SHARED_PREFS_THEMES = "Themes"
+    private const val SHARED_PREFS_THEMES_OLD = "Themes"
+    private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
@@ -3979,6 +3997,15 @@ val json = Json {
   explicitNulls = false
 }
 
+// Can decode unknown enum to default value specified for this field
+val jsonCoerceInputValues = Json {
+  prettyPrint = true
+  ignoreUnknownKeys = true
+  encodeDefaults = true
+  explicitNulls = false
+  coerceInputValues = true
+}
+
 val jsonShort = Json {
   prettyPrint = false
   ignoreUnknownKeys = true
@@ -5436,7 +5463,8 @@ data class AppSettings(
   var uiProfileImageCornerRadius: Float? = null,
   var uiColorScheme: String? = null,
   var uiDarkColorScheme: String? = null,
-  var uiThemes: Map<String, ThemeOverrides>? = null,
+  var uiCurrentThemeIds: Map<String, String>? = null,
+  var uiThemes: List<ThemeOverrides>? = null,
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -5463,6 +5491,7 @@ data class AppSettings(
     if (uiProfileImageCornerRadius != def.uiProfileImageCornerRadius) { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
     if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
     if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
+    if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     return empty
   }
@@ -5498,6 +5527,7 @@ data class AppSettings(
     uiProfileImageCornerRadius?.let { def.profileImageCornerRadius.set(it) }
     uiColorScheme?.let { def.currentTheme.set(it) }
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
+    uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it) }
   }
 
@@ -5526,6 +5556,7 @@ data class AppSettings(
         uiProfileImageCornerRadius = 22.5f,
         uiColorScheme = DefaultTheme.SYSTEM.themeName,
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
+        uiCurrentThemeIds = null,
         uiThemes = null,
       )
 
@@ -5555,6 +5586,7 @@ data class AppSettings(
           uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
           uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM.themeName,
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
+          uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
         )
     }

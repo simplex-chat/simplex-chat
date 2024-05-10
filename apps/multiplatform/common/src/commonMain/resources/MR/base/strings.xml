@@ -1536,13 +1536,16 @@
   <string name="color_wallpaper_tint">Tint</string>
 
   <!-- Backgrounds -->
-  <string name="background_cat">Cat</string>
+  <string name="background_cats">Cat</string>
+  <string name="background_flowers">Flowers</string>
   <string name="background_hearts">Hearts</string>
-  <string name="background_school">School</string>
   <string name="background_internet">Internet</string>
-  <string name="background_space">Space</string>
+  <string name="background_kids">Kids</string>
   <string name="background_pets">Pets</string>
-  <string name="background_rabbit">Rabbit</string>
+  <string name="background_rabbits">Rabbits</string>
+  <string name="background_school">School</string>
+  <string name="background_social">Social</string>
+  <string name="background_unknown">Unknown</string>
   <string name="background_image_preview_hello_alice">Hello, Alice</string>
   <string name="background_image_preview_hello_bob">Hello, Bob</string>
   <string name="background_image_scale">Scale</string>

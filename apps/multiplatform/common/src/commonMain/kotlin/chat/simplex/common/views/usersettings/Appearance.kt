@@ -338,7 +338,9 @@ object AppearanceScope {
         }
         SectionItemView({
           val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme, null, chatModel.currentUser.value?.uiThemes)
-          theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
+          val lines = yaml.encodeToString<ThemeOverrides>(overrides).lines()
+          // Removing theme id without using custom serializer or data class
+          theme.value = lines.subList(1, lines.size).joinToString("\n")
           withLongRunningApi { exportThemeLauncher.launch("simplex.theme")}
         }) {
           Text(generalGetString(MR.strings.export_theme), color = colors.primary)
@@ -347,7 +349,7 @@ object AppearanceScope {
           if (to != null) {
             val theme = getThemeFromUri(to)
             if (theme != null) {
-              ThemeManager.saveAndApplyThemeOverrides(theme)
+              ThemeManager.saveAndApplyThemeOverrides(isInDarkTheme, theme)
               saveThemeToDatabase()
             }
           }
@@ -580,7 +582,7 @@ fun WallpaperSetupView(
       Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
       Slider(
         state.value,
-        valueRange = 0.2f..2f,
+        valueRange = 0.2f..4f,
         onValueChange = {
           if (backgroundImageType is BackgroundImageType.Repeated) {
             onTypeChange(backgroundImageType.copy(scale = it))

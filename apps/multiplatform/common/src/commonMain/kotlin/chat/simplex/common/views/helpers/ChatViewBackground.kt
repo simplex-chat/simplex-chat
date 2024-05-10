@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
@@ -29,18 +30,18 @@ enum class PredefinedBackgroundImage(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cats") CAT(MR.images.background_cat, "cats", MR.strings.background_cat, 0.5f,
+  @SerialName("cats") CAT(MR.images.background_cats, "cats", MR.strings.background_cats, 0.5f,
     mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
     mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
-       primary = "#ff000000"
+//       primary = "#ff000000"
       ),
       DefaultTheme.DARK to ThemeColors(
-        primary = "#ff000000"
+//        primary = "#ff000000"
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-        primary = "#ff000000"
+//        primary = "#ff000000"
       )
     )
   ),
@@ -80,7 +81,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("space") SPACE(MR.images.background_space, "space", MR.strings.background_space, 0.5f,
+  @SerialName("unknown") UNKNOWN(MR.images.background_unknown, "unknown", MR.strings.background_unknown, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -104,9 +105,45 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("rabbit") RABBIT(MR.images.background_rabbit, "rabbit", MR.strings.background_rabbit, 0.5f,
+  @SerialName("rabbits") RABBIT(MR.images.background_rabbits, "rabbits", MR.strings.background_rabbits, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
+  ),
+  @SerialName("flowers") FLOWERS(MR.images.background_flowers, "flowers", MR.strings.background_flowers, 0.5f,
+    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
+    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
+  ),
+  @SerialName("kids") KIDS(MR.images.background_kids, "kids", MR.strings.background_kids, 0.5f,
+    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
+    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+    mapOf(
+      DefaultTheme.LIGHT to ThemeColors(
+      ),
+      DefaultTheme.DARK to ThemeColors(
+      ),
+      DefaultTheme.SIMPLEX to ThemeColors(
+      )
+    )
+  ),
+  @SerialName("social") SOCIAL(MR.images.background_social, "social", MR.strings.background_social, 0.5f,
+    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
+    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
       ),
@@ -118,7 +155,10 @@ enum class PredefinedBackgroundImage(
   );
 
   fun toType(): BackgroundImageType =
-    BackgroundImageType.Repeated(filename, 1f)
+    BackgroundImageType.Repeated(
+      filename,
+      appPrefs.themeOverrides.get().firstOrNull { it.wallpaper.preset == filename && it.base == CurrentColors.value.base }?.wallpaper?.scale ?: 1f
+    )
 
   companion object {
     fun from(filename: String): PredefinedBackgroundImage? =

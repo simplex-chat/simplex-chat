@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import chat.simplex.res.MR
+import java.util.UUID
 
 enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
@@ -261,6 +262,7 @@ data class ThemeWallpaper (
 
 @Serializable
 data class ThemeOverrides (
+  val themeId: String = UUID.randomUUID().toString(),
   val base: DefaultTheme = CurrentColors.value.base,
   val colors: ThemeColors = ThemeColors(),
   val wallpaper: ThemeWallpaper = ThemeWallpaper(),
@@ -334,6 +336,20 @@ data class ThemeOverrides (
       sentMessage = ac.sentMessage.toReadableHex(),
       receivedMessage = ac.receivedMessage.toReadableHex(),
     )
+  }
+}
+
+fun List<ThemeOverrides>.getTheme(themeId: String?): ThemeOverrides? =
+  firstOrNull { it.themeId == themeId }
+
+fun List<ThemeOverrides>.replace(theme: ThemeOverrides): List<ThemeOverrides> {
+  val index = indexOfFirst { it.themeId == theme.themeId }
+  return if (index != -1) {
+    val a = ArrayList(this)
+    a[index] = theme
+    a
+  } else {
+    this + theme
   }
 }
 
