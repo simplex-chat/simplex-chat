@@ -99,7 +99,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (defaultNetworkConfig)
+import Simplex.Messaging.Client (ProxyClientError (..), defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -112,6 +112,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
@@ -701,7 +702,7 @@ processChatCommand' vr = \case
       (SCTGroup, SMDSnd) -> do
         withStore' (`getGroupSndStatuses` itemId) >>= \case
           [] -> pure Nothing
-          memStatuses -> pure $ Just $ map (\(x,y,z) -> MemberDeliveryStatus x y z) memStatuses
+          memStatuses -> pure $ Just $ map (\(x, y, z) -> MemberDeliveryStatus x y z) memStatuses
       _ -> pure Nothing
     forwardedFromChatItem <- getForwardedFromItem user ci
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}
@@ -4046,10 +4047,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MWARN msgId err -> do
-          -- updateDirectItemStatus (agentWarnToItemStatus)
-          -- toView
-          pure ()
+        MWARN msgId err ->
+          updateDirectItemStatus ct conn msgId $ agentWarnToItemStatus err
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId $ agentErrToItemStatus err
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4433,9 +4432,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      MWARN msgId err -> do
-        -- updateGroupItemErrorStatus (agentWarnToItemStatus)
-        pure ()
+      MWARN msgId err ->
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentWarnToItemStatus err
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentErrToItemStatus err
         -- group errors are silenced to reduce load on UI event log
@@ -4716,8 +4714,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> updateSndMsgDeliveryStatus db connId msgId MDSSndSent
 
     agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
-    agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
-    agentErrToItemStatus err = CISSndError . T.unpack . safeDecodeUtf8 $ strEncode err
+    agentErrToItemStatus (SMP AUTH) = CISSndDeliveryError SDEAuth
+    agentErrToItemStatus (SMP QUOTA) = CISSndDeliveryError SDEQuota
+    agentErrToItemStatus err = CISSndDeliveryError . SDEOther . T.unpack . safeDecodeUtf8 $ strEncode err
+
+    -- see MWARN, serverHostError in agent
+    agentWarnToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
+    agentWarnToItemStatus (BROKER _ HOST) = CISSndDeliveryWarning SDWBrokerHost
+    agentWarnToItemStatus (BROKER _ (SMP.TRANSPORT TEVersion)) = CISSndDeliveryWarning SDWBrokerTransportVersion
+    agentWarnToItemStatus (SMP (SMP.PROXY (SMP.BROKER HOST))) = CISSndDeliveryWarning SDWProxyHost
+    agentWarnToItemStatus (SMP (SMP.PROXY (SMP.BROKER (SMP.TRANSPORT TEVersion)))) = CISSndDeliveryWarning SDWProxyTransportVersion
+    agentWarnToItemStatus (AP.PROXY _ _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER HOST)))) = CISSndDeliveryWarning SDWProxyBrokerHost
+    agentWarnToItemStatus (AP.PROXY _ _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER (SMP.TRANSPORT TEVersion))))) = CISSndDeliveryWarning SDWProxyBrokerTransportVersion
+    agentWarnToItemStatus err = CISSndDeliveryWarning . SDWOther . T.unpack . safeDecodeUtf8 $ strEncode err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
