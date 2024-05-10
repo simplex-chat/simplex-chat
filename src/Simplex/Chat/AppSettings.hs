@@ -9,7 +9,6 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
@@ -49,7 +48,7 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemes :: Maybe (Map Text UITheme)
+    uiThemes :: Maybe [UITheme]
   }
   deriving (Show)
 
