@@ -643,4 +643,42 @@
     <string name="network_session_mode_entity_description">یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد.
 \n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.</string>
     <string name="update_network_session_mode_question">حالت انزوای ترابری به روز شود؟</string>
+    <string name="edit_image">ویرایش تصویر</string>
+    <string name="create_simplex_address">ایجاد نشانی‌ SimpleX</string>
+    <string name="share_with_contacts">اشتراک‌گذاری با مخاطبان</string>
+    <string name="profile_update_will_be_sent_to_contacts">به‌روزرسانی نمایه به مخاطبانتان ارسال خواهد شد.</string>
+    <string name="auto_accept_contact">پذیرفتن خودکار</string>
+    <string name="enter_welcome_message_optional">ورود پیام خوشامدگویی…(اختیاری)</string>
+    <string name="save_settings_question">تنظیمات ذخیره شوند؟</string>
+    <string name="save_auto_accept_settings">ذخیره تنظیمات پذیرفتن خودکار</string>
+    <string name="delete_address">حذف نشانی</string>
+    <string name="email_invite_body">سلام!
+\nبه وسیله SimpleX Chat به من متصل شوید: %s</string>
+    <string name="dont_create_address">نشانی ایجاد نشود</string>
+    <string name="continue_to_next_step">ادامه</string>
+    <string name="your_current_profile">نمایه فعلی شما</string>
+    <string name="full_name__field">نام کامل:</string>
+    <string name="save_and_notify_contacts">ذخیره و مخاطبان مطلع شوند</string>
+    <string name="email_invite_subject">بیایید در SimpleX Chat گفتگو کنیم</string>
+    <string name="save_preferences_question">تنظیمات ذخیره شوند؟</string>
+    <string name="hide_profile">پنهان کردن نمایه</string>
+    <string name="password_to_show">کلمه عبور برای نمایش</string>
+    <string name="save_profile_password">ذخیره کلمه عبور نمایه</string>
+    <string name="stop_sharing_address">اشتراک‌گذاری نشانی متوقف شود؟</string>
+    <string name="stop_sharing">توقف اشتراک‌گذاری</string>
+    <string name="you_can_create_it_later">می‌توانید بعدا آن را ایجاد کنید</string>
+    <string name="you_can_make_address_visible_via_settings">می‌توانید آن را از طریق تنظیمات برای مخاطبان SimpleX خود قابل رویت کنید.</string>
+    <string name="display_name__field">نام نمایه:</string>
+    <string name="delete_image">حذف تصویر</string>
+    <string name="save_and_notify_group_members">ذخیره و اعضای گروه مطلع شوند</string>
+    <string name="save_and_notify_contact">ذخیره و مخاطب مطلع شود</string>
+    <string name="exit_without_saving">خروج بدون ذخیره کردن</string>
+    <string name="to_reveal_profile_enter_password">برای آشکار کردن نمایه پنهان خود، یک کلمه عبور کامل در فیلد جستجو در صفحه نمایه‌های گپتان وارد کنید.</string>
+    <string name="invite_friends">دعوت از دوستان</string>
+    <string name="confirm_password">تایید کلمه عبور</string>
+    <string name="hidden_profile_password">کلمه عبور نمایه پنهان</string>
+    <string name="add_address_to_your_profile">به نمایه خود نشانی اضافه کنید، تا مخاطبانتان بتوانند آن را با اشخاص دیگر به اشتراک بگذارند. به‌روزرسانی نمایه به مخاطبانتان ارسال خواهد شد.</string>
+    <string name="share_address_with_contacts_question">نشانی با مخاطبان به اشتراک گذاشته شود؟</string>
+    <string name="create_address_and_let_people_connect">یک نشانی ایجاد کنید تا اشخاص بتوانند به شما متصل شوند.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">نمایه شما روی دستگاهتان ذخیره شده و فقط با مخاطبانتان به اشتراک گذاشته می‌شود. سرورهای SimpleX قادر به دیدن نمایه شما نیستند.</string>
 </resources>
