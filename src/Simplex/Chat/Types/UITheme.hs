@@ -8,25 +8,16 @@ module Simplex.Chat.Types.UITheme where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
-import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
-import Simplex.Messaging.Util ((<$?>))
-
-data UIThemes = UIThemes
-  { light :: Maybe UITheme,
-    dark :: Maybe UITheme,
-    simplex :: Maybe UITheme
-  }
-  deriving (Eq, Show)
 
 data UITheme = UITheme
-  { base :: ThemeColorScheme,
+  { base :: Text,
     wallpaper :: Maybe ChatWallpaper,
     colors :: UIColors
   }
@@ -48,9 +39,6 @@ data UIThemeEntityOverride = UIThemeEntityOverride
   }
   deriving (Eq, Show)
 
-data ThemeColorScheme = TCSLight | TCSDark | TCSSimplex
-  deriving (Eq, Show)
-
 data UIColorScheme
   = UCSSystem
   | UCSLight
@@ -60,25 +48,6 @@ data UIColorScheme
 
 data DarkColorScheme = DCSDark | DCSSimplex
   deriving (Show)
-
-instance StrEncoding ThemeColorScheme where
-  strEncode = \case
-    TCSLight -> "LIGHT"
-    TCSDark -> "DARK"
-    TCSSimplex -> "SIMPLEX"
-  strDecode = \case
-    "LIGHT" -> Right TCSLight
-    "DARK" -> Right TCSDark
-    "SIMPLEX" -> Right TCSSimplex
-    _ -> Left "bad ColorScheme"
-  strP = strDecode <$?> A.takeTill (== ' ')
-
-instance FromJSON ThemeColorScheme where
-  parseJSON = strParseJSON "ThemeColorScheme"
-
-instance ToJSON ThemeColorScheme where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data ChatWallpaper = ChatWallpaper
   { preset :: Maybe ChatWallpaperPreset,
@@ -156,8 +125,6 @@ $(JQ.deriveJSON defaultJSON ''UIThemeEntityOverride)
 $(JQ.deriveJSON defaultJSON ''UIThemeEntityOverrides)
 
 $(JQ.deriveJSON defaultJSON ''UITheme)
-
-$(JQ.deriveJSON defaultJSON ''UIThemes)
 
 instance ToField UIThemeEntityOverrides where
   toField = toField . encodeJSON
