@@ -3872,7 +3872,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withAckMessage' agentConnId meta $
             void $
               saveDirectRcvMSG conn meta msgBody
-        SENT msgId _deliveryPath ->
+        SENT msgId _proxy ->
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
@@ -4005,7 +4005,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 notifyMemberConnected gInfo m $ Just ct
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
-        SENT msgId deliveryPath -> do
+        SENT msgId proxy -> do
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           updateDirectItemStatus ct conn msgId $ CISSndSent SSPComplete
@@ -4391,7 +4391,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
-      SENT msgId deliveryPath -> do
+      SENT msgId proxy -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemStatus gInfo m conn msgId $ CISSndSent SSPComplete
@@ -4500,7 +4500,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             updateDirectCIFileStatus db vr user fileId $ CIFSSndTransfer 0 1
           toView $ CRSndFileStart user ci ft
           sendFileChunk user ft
-        SENT msgId _deliveryPath -> do
+        SENT msgId _proxy -> do
           withStore' $ \db -> updateSndFileChunkSent db ft msgId
           unless (fileStatus == FSCancelled) $ sendFileChunk user ft
         MERR _ err -> do
