@@ -44,10 +44,11 @@ data UIColorScheme
   = UCSSystem
   | UCSLight
   | UCSDark
+  | UCSBlack
   | UCSSimplex
   deriving (Show)
 
-data DarkColorScheme = DCSDark | DCSSimplex
+data DarkColorScheme = DCSDark | DCSBlack | DCSSimplex
   deriving (Show)
 
 data ChatWallpaper = ChatWallpaper

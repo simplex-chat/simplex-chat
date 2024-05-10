@@ -48,7 +48,7 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemeId :: Maybe Text,
+    uiCurrentThemeIds :: Maybe (Map UIColorScheme Text),
     uiThemes :: Maybe [UITheme]
   }
   deriving (Show)
@@ -79,7 +79,7 @@ defaultAppSettings =
       uiProfileImageCornerRadius = Just 22.5,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
-      uiThemeId = Nothing,
+      uiCurrentThemeIds = Nothing,
       uiThemes = Nothing
     }
 
@@ -109,7 +109,7 @@ defaultParseAppSettings =
       uiProfileImageCornerRadius = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
-      uiThemeId = Nothing,
+      uiCurrentThemeIds = Nothing,
       uiThemes = Nothing
     }
 
@@ -139,7 +139,7 @@ combineAppSettings platformDefaults storedSettings =
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
-      uiThemeId = p uiThemeId,
+      uiCurrentThemeIds = p uiCurrentThemeIds,
       uiThemes = p uiThemes
     }
   where
@@ -181,7 +181,7 @@ instance FromJSON AppSettings where
     uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
-    uiThemeId <- p "uiThemeId"
+    uiCurrentThemeIds <- p "uiCurrentThemeIds"
     uiThemes <- p "uiThemes"
     pure
       AppSettings
@@ -208,7 +208,9 @@ instance FromJSON AppSettings where
           uiProfileImageCornerRadius,
           uiColorScheme,
           uiDarkColorScheme,
-          uiThemeId,
+          uiLightThemeId,
+          uiDarkThemeId,
+          uiSimplexThemeId,
           uiThemes
         }
     where
