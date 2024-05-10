@@ -21,7 +21,7 @@ enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
 
   val themeName: String
-    get() = name.lowercase()
+    get() = name
 
   val mode: DefaultThemeMode get() = if (this == LIGHT) DefaultThemeMode.LIGHT else DefaultThemeMode.DARK
 
