@@ -257,12 +257,12 @@ instance TextEncoding ContactStatus where
   textDecode = \case
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
-    "deleted_by_user" -> Just CSDeletedByUser
+    "deletedByUser" -> Just CSDeletedByUser
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
-    CSDeletedByUser -> "deleted_by_user"
+    CSDeletedByUser -> "deletedByUser"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
