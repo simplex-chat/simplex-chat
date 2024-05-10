@@ -10,10 +10,9 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.TH as JQ
-import Data.Char (toLower, toUpper)
+import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
@@ -22,7 +21,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 
 data UITheme = UITheme
   { themeId :: Text,
-    base :: Text,
+    base :: ThemeColorScheme,
     wallpaper :: Maybe ChatWallpaper,
     colors :: UIColors
   }
@@ -44,45 +43,14 @@ data UIThemeEntityOverride = UIThemeEntityOverride
   }
   deriving (Eq, Show)
 
-data UIColorScheme
-  = UCSSystem
-  | UCSLight
-  | UCSDark
-  | UCSBlack
-  | UCSSimplex
+data DarkColorScheme = DCSDark | DCSBlack | DCSSimplex
   deriving (Eq, Ord, Show)
 
-instance TextEncoding UIColorScheme where
-  textEncode = \case
-    UCSSystem -> "SYSTEM"
-    UCSLight -> "LIGHT"
-    UCSDark -> "DARK"
-    UCSBlack -> "BLACK"
-    UCSSimplex -> "SIMPLEX"
-  textDecode s =
-    Just $ case T.map toUpper s of
-      "SYSTEM" -> UCSSystem
-      "LIGHT" -> UCSLight
-      "DARK" -> UCSDark
-      "BLACK" -> UCSBlack
-      "SIMPLEX" -> UCSSimplex
-      _ -> UCSLight
+data ThemeColorScheme = TCSLight | TCSDark DarkColorScheme
+  deriving (Eq, Ord, Show)
 
-instance FromJSON UIColorScheme where
-  parseJSON = J.withText "UIColorScheme" $ maybe (fail "bad UIColorScheme") pure . textDecode
-
-instance ToJSON UIColorScheme where
-  toJSON = J.String . textEncode
-  toEncoding = JE.text . textEncode
-
-instance J.FromJSONKey UIColorScheme where
-  fromJSONKey = J.FromJSONKeyText $ fromMaybe UCSLight . textDecode
-
-instance J.ToJSONKey UIColorScheme where
-  toJSONKey = J.ToJSONKeyText (JK.fromText . textEncode) (JE.text . textEncode)
-
-data DarkColorScheme = DCSDark | DCSBlack | DCSSimplex
-  deriving (Show)
+data UIColorScheme = UCSSystem | UCSFixed ThemeColorScheme
+  deriving (Eq, Ord, Show)
 
 instance TextEncoding DarkColorScheme where
   textEncode = \case
@@ -90,18 +58,54 @@ instance TextEncoding DarkColorScheme where
     DCSBlack -> "BLACK"
     DCSSimplex -> "SIMPLEX"
   textDecode s =
-    Just $ case T.map toUpper s of
+    Just $ case s of
       "DARK" -> DCSDark
       "BLACK" -> DCSBlack
       "SIMPLEX" -> DCSSimplex
       _ -> DCSDark
 
+instance TextEncoding ThemeColorScheme where
+  textEncode = \case
+    TCSLight -> "LIGHT"
+    TCSDark s -> textEncode s
+  textDecode = \case
+    "LIGHT" -> Just TCSLight
+    s -> TCSDark <$> textDecode s
+
+instance TextEncoding UIColorScheme where
+  textEncode = \case
+    UCSSystem -> "SYSTEM"
+    UCSFixed s -> textEncode s
+  textDecode = \case
+    "SYSTEM" -> Just UCSSystem
+    s -> UCSFixed <$> textDecode s
+
 instance FromJSON DarkColorScheme where
-  parseJSON = J.withText "DarkColorScheme" $ maybe (fail "bad DarkColorScheme") pure . textDecode
+  parseJSON = textParseJSON "DarkColorScheme"
 
 instance ToJSON DarkColorScheme where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
+
+instance FromJSON ThemeColorScheme where
+  parseJSON = textParseJSON "ThemeColorScheme"
+
+instance ToJSON ThemeColorScheme where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance FromJSON UIColorScheme where
+  parseJSON = textParseJSON "UIColorScheme"
+
+instance ToJSON UIColorScheme where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance J.FromJSONKey ThemeColorScheme where
+  fromJSONKey = J.FromJSONKeyText $ fromMaybe TCSLight . textDecode
+
+instance J.ToJSONKey ThemeColorScheme where
+  toJSONKey = J.ToJSONKeyText (JK.fromText . textEncode) (JE.text . textEncode)
 
 data ChatWallpaper = ChatWallpaper
   { preset :: Maybe Text,
