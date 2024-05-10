@@ -34,6 +34,11 @@ class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
 
 // LALAL VERSION CODE
 fun runMigrations() {
+  // Making theme keys uppercase as API expects
+  ChatController.appPrefs.themeOverrides.set(ChatController.appPrefs.themeOverrides.get().map { it.key.uppercase() to it.value }.toMap())
+  ChatController.appPrefs.currentTheme.set(ChatController.appPrefs.currentTheme.get()?.uppercase())
+  ChatController.appPrefs.systemDarkTheme.set(ChatController.appPrefs.systemDarkTheme.get()?.uppercase())
+
   val lastMigration = ChatController.appPrefs.lastMigratedVersionCode
   if (lastMigration.get() < BuildConfigCommon.ANDROID_VERSION_CODE) {
     while (true) {
