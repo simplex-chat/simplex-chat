@@ -102,7 +102,6 @@ struct HomeView: View {
                 }
                 Text("Settings").font(.caption2)
             }
-            .padding(.top, 5)
         }
         .foregroundColor(.secondary)
     }
@@ -117,7 +116,7 @@ struct HomeView: View {
         Button {
             homeTab = .contacts
         } label: {
-            iconLabel("book", "Contacts")
+            iconLabel("book.fill", "Contacts")
         }
         .foregroundColor(homeTab == .contacts ? .accentColor : .secondary)
     }
@@ -193,7 +192,7 @@ struct HomeView: View {
             Text(title)
                 .font(.caption2)
         }
-        .padding(.top, 8)
+        .padding(.top, 3)
     }
 
     @ViewBuilder private func contactsView() -> some View {
