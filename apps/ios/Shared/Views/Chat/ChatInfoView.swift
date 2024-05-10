@@ -169,6 +169,8 @@ struct ChatInfoView: View {
                 HStack {
                     if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                         connectButton()
+                    } else if !contact.active && !contact.chatDeleted {
+                        openButton()
                     } else {
                         messageButton()
                     }
@@ -435,6 +437,17 @@ struct ChatInfoView: View {
                 }
             }
         }
+    }
+
+    private func openButton() -> some View {
+        InfoViewActionButtonLayout(image: "message.fill", title: "open")
+            .onTapGesture {
+                if openedFromChatView {
+                    dismiss()
+                } else {
+                    chatModel.chatId = chat.id
+                }
+            }
     }
 
     // TODO show keyboard
