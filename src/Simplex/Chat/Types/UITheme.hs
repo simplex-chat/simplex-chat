@@ -17,7 +17,8 @@ import Simplex.Chat.Types.Util
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
 
 data UITheme = UITheme
-  { base :: Text,
+  { themeId :: Text,
+    base :: Text,
     wallpaper :: Maybe ChatWallpaper,
     colors :: UIColors
   }
