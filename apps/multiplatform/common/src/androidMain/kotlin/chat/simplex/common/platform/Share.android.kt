@@ -37,7 +37,7 @@ actual fun ClipboardManager.shareText(text: String) {
   }
 }
 
-actual fun shareFile(text: String, fileSource: CryptoFile) {
+fun openOrShareFile(text: String, fileSource: CryptoFile, justOpen: Boolean) {
   val uri = if (fileSource.cryptoArgs != null) {
     val tmpFile = File(tmpDir, fileSource.filePath)
     tmpFile.deleteOnExit()
@@ -55,18 +55,29 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
   }
   val ext = fileSource.filePath.substringAfterLast(".")
   val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: return
-  val sendIntent: Intent = Intent().apply {
-    action = Intent.ACTION_SEND
+  val sendIntent: Intent = Intent(if (justOpen) Intent.ACTION_VIEW else Intent.ACTION_SEND).apply {
     /*if (text.isNotEmpty()) {
       putExtra(Intent.EXTRA_TEXT, text)
     }*/
-    putExtra(Intent.EXTRA_STREAM, uri.toUri())
-    type = mimeType
-    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    if (justOpen) {
+      flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+      setDataAndType(uri.toUri(), mimeType)
+    } else {
+      putExtra(Intent.EXTRA_STREAM, uri.toUri())
+      type = mimeType
+    }
   }
   val shareIntent = Intent.createChooser(sendIntent, null)
   shareIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
   androidAppContext.startActivity(shareIntent)
+}
+
+actual fun shareFile(text: String, fileSource: CryptoFile) {
+  openOrShareFile(text, fileSource, justOpen = false)
+}
+
+actual fun openFile(fileSource: CryptoFile) {
+  openOrShareFile("", fileSource, justOpen = true)
 }
 
 actual fun UriHandler.sendEmail(subject: String, body: CharSequence) {

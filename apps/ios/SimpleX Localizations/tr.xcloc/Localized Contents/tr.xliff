@@ -5371,7 +5371,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
-        <target>Kare,daire, veya aralarında herhangi birşey.</target>
+        <target>Kare,daire, veya aralarında herhangi bir şey.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
