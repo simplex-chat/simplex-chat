@@ -82,7 +82,7 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
       ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, baseTheme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(baseTheme, name, color) }, close = close)
+        ColorEditor(name, initialColor, baseTheme, backgroundImageType, backgroundImage, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(baseTheme, name, color) })
       }
     },
   )
