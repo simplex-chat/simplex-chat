@@ -90,7 +90,7 @@ struct HomeView: View {
         } label: {
             VStack(spacing: 2) {
                 ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 40, color: Color(uiColor: .quaternaryLabel))
+                    ProfileImage(imageStr: user.image, size: 38, color: Color(uiColor: .quaternaryLabel))
                         .padding(.top, 2)
                         .padding(.trailing, 3)
                     let allRead = chatModel.users
