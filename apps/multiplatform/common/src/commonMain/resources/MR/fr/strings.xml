@@ -783,7 +783,6 @@
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
     <string name="theme">Thème</string>
-    <string name="save_color">Enregistrer la couleur</string>
     <string name="reset_color">Réinitialisation des couleurs</string>
     <string name="color_primary">Principale</string>
     <string name="chat_preferences_you_allow">Vous autorisez</string>

@@ -847,7 +847,6 @@
     <string name="auth_open_chat_profiles">افتح ملفات تعريف الدردشة</string>
     <string name="revoke_file__confirm">اسحب الوصول</string>
     <string name="save_archive">حفظ الأرشيف</string>
-    <string name="save_color">حفظ اللون</string>
     <string name="reveal_verb">كشف</string>
     <string name="stop_rcv_file__message">سيتم إيقاف استلام الملف.</string>
     <string name="reject_contact_button">رفض</string>

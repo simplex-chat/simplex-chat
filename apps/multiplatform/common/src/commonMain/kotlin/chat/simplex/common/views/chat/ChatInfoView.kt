@@ -779,7 +779,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
     val tintColor = remember { derivedStateOf { themeModeOverride.value.wallpaper?.tint?.colorFromReadableHex() } }
 
     fun editColor(name: ThemeColor, initialColor: Color) {
-      ModalManager.end.showModalCloseable { close ->
+      ModalManager.end.showModal {
         AppearanceScope.ColorEditor(
           name,
           initialColor,
@@ -791,8 +791,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
           onColorChange = { color ->
             ThemeManager.applyThemeColor(name, color, themeModeOverride)
             save(applyToMode.value, themeModeOverride.value)
-          },
-          close
+          }
         )
       }
     }

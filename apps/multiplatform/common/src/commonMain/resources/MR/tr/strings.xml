@@ -122,7 +122,6 @@
     <string name="theme_simplex">SimpleX</string>
     <string name="dark_theme">Koyu tema</string>
     <string name="theme">Tema</string>
-    <string name="save_color">Rengi kaydet</string>
     <string name="import_theme">Temayı içe aktar</string>
     <string name="import_theme_error">Temayı içe aktarırken hata oluştu</string>
     <string name="import_theme_error_desc">Dosyanın doğru YAML sözdizimine sahip olduğundan emin olun. Tema dosyası yapısının bir örneğine sahip olmak için temayı dışa aktarın.</string>

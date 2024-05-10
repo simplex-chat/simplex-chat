@@ -847,7 +847,6 @@
     <string name="prohibit_sending_voice_messages">Proibisci l\'invio di messaggi vocali.</string>
     <string name="feature_received_prohibited">ricevuto, vietato</string>
     <string name="reset_color">Ripristina i colori</string>
-    <string name="save_color">Salva colore</string>
     <string name="accept_feature_set_1_day">Imposta 1 giorno</string>
     <string name="set_group_preferences">Imposta le preferenze del gruppo</string>
     <string name="theme">Tema</string>

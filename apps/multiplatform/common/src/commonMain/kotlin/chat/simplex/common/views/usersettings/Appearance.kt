@@ -422,7 +422,6 @@ object AppearanceScope {
     previewBackgroundColor: Color? = MaterialTheme.wallpaper.background,
     previewTintColor: Color? = MaterialTheme.wallpaper.tint,
     onColorChange: (Color) -> Unit,
-    close: () -> Unit,
   ) {
     ColumnWithScrollBar(
       Modifier
@@ -439,45 +438,24 @@ object AppearanceScope {
       var currentColor by remember { mutableStateOf(initialColor) }
       ColorPicker(initialColor) {
         currentColor = it
-        if (supportedLiveChange) {
-          onColorChange(currentColor)
-        }
+        onColorChange(currentColor)
       }
       val clipboard = LocalClipboardManager.current
       Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
         Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
         Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
       }
-      val savedColor = remember { mutableStateOf(initialColor) }
-      DisposableEffect(Unit) {
-        onDispose {
-          if (currentColor != savedColor.value) {
-            // Rollback changes since they weren't saved
-            onColorChange(savedColor.value)
-          }
-        }
-      }
+      val savedColor by remember { mutableStateOf(initialColor) }
 
       SectionSpacer()
       Row(Modifier.align(Alignment.CenterHorizontally)) {
-        Box(Modifier.size(80.dp, 40.dp).background(savedColor.value).clickable {
-          onColorChange(savedColor.value)
-          currentColor = savedColor.value
+        Box(Modifier.size(80.dp, 40.dp).background(savedColor).clickable {
+          currentColor = savedColor
+          onColorChange(currentColor)
         })
         Box(Modifier.size(80.dp, 40.dp).background(currentColor))
       }
       SectionSpacer()
-      TextButton(
-        onClick = {
-          onColorChange(currentColor)
-          savedColor.value = currentColor
-          close()
-        },
-        Modifier.align(Alignment.CenterHorizontally),
-        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colors.primary)
-      ) {
-        Text(generalGetString(MR.strings.save_color))
-      }
     }
   }
 

@@ -792,7 +792,6 @@
     <string name="network_options_save">保存</string>
     <string name="update_network_settings_question">ネットワーク設定を更新しますか？</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">設定を更新すると、全サーバにクライントの再接続が行われます。</string>
-    <string name="save_color">色を保存</string>
     <string name="chat_preferences_you_allow">あなたが次を許可しています：</string>
     <string name="chat_preferences_yes">オン</string>
     <string name="set_group_preferences">グループ設定を行う</string>

@@ -855,7 +855,6 @@
     <string name="network_options_revert">เปลี่ยนกลับ</string>
     <string name="network_options_save">บันทึก</string>
     <string name="reset_color">รีเซ็ตสี</string>
-    <string name="save_color">บันทึกสี</string>
     <string name="feature_received_prohibited">ได้รับ, ห้าม</string>
     <string name="v4_4_live_messages_desc">ผู้รับจะเห็นการอัปเดตเมื่อคุณพิมพ์</string>
     <string name="v4_5_reduced_battery_usage">ลดการใช้แบตเตอรี่</string>
