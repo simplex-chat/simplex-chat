@@ -1044,7 +1044,7 @@ processChatCommand' vr = \case
             sendDelDeleteConns ct notify
             ct' <- withStore $ \db -> do
               liftIO $ deleteContactConnections db user ct
-              liftIO $ void $ updateContactStatus db user ct CSDeleted
+              liftIO $ void $ updateContactStatus db user ct CSDeletedByUser
               getContact db vr user chatId
             pure $ CRContactDeleted user ct'
           CDMMessages -> do

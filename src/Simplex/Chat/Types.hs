@@ -228,7 +228,7 @@ contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
 contactDeleted :: Contact -> Bool
-contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
@@ -239,6 +239,7 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 data ContactStatus
   = CSActive
   | CSDeleted
+  | CSDeletedByUser
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
@@ -256,10 +257,12 @@ instance TextEncoding ContactStatus where
   textDecode = \case
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
+    "deleted_by_user" -> Just CSDeletedByUser
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
+    CSDeletedByUser -> "deleted_by_user"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
