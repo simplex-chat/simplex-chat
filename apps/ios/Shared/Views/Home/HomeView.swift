@@ -24,20 +24,6 @@ struct HomeView: View {
 
     @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
-    //    init(homeTab: Binding<HomeTab>) {
-    //        // Make the background color of the bottom toolbar fully transparent
-    //        let appearance = UIToolbarAppearance()
-    //        appearance.configureWithOpaqueBackground()
-    //        appearance.shadowColor = .clear
-    //        appearance.backgroundColor = .clear
-    //        appearance.backgroundImage = UIImage()
-    //        UIToolbar.appearance().standardAppearance = appearance
-    //        UIToolbar.appearance().compactAppearance = appearance
-    //        UIToolbar.appearance().scrollEdgeAppearance = appearance
-    //
-    //        self._homeTab = homeTab
-    //    }
-
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             NavStackCompat(
@@ -47,8 +33,6 @@ struct HomeView: View {
                 ),
                 destination: chatView
             ) {
-//                ZStack {
-
                 VStack {
                     switch homeTab {
                     case .contacts:
@@ -72,30 +56,6 @@ struct HomeView: View {
                         newChatButton()
                     }
                 }
-
-//                    VStack {
-//                        Spacer()
-//                        bottomToolbar()
-//                            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
-//                    }
-//                }
-
-//                    if homeTab == .chats {
-//                        VStack {
-//                            Spacer()
-//                            ChatListSearchBar(
-//                                searchMode: $searchMode,
-//                                searchFocussed: $searchFocussed,
-//                                searchText: $searchText,
-//                                searchShowingSimplexLink: $searchShowingSimplexLink,
-//                                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-//                            )
-//                            .padding(.horizontal)
-//                            .padding(.top, 8)
-//                            .background(BlurView(style: .systemMaterial))
-//                        }
-//                    }
-
             }
 
             if userPickerVisible {
@@ -115,21 +75,6 @@ struct HomeView: View {
             ConnectDesktopView()
         }
     }
-
-//    private func bottomToolbar() -> some View {
-//        HStack {
-//            settingsButton()
-//            Spacer()
-//            contactsButton()
-//            Spacer()
-//            chatsButton()
-//            Spacer()
-//            newChatButton()
-//        }
-//        .padding(.horizontal, 12)
-//        .padding(.horizontal)
-//        .frame(maxWidth: .infinity)
-//    }
 
     @ViewBuilder private func settingsButton() -> some View {
         let user = chatModel.currentUser ?? User.sampleData
@@ -269,17 +214,6 @@ struct HomeView: View {
             }
         }
     }
-}
-
-struct BlurView: UIViewRepresentable {
-    let style: UIBlurEffect.Style
-
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: UIBlurEffect(style: style))
-        return view
-    }
-
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 
 #Preview {

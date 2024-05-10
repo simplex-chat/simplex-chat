@@ -729,6 +729,6 @@ private class MigrationChatReceiver {
 
 struct MigrateFromDevice_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateFromDevice(showSettings: Binding.constant(false), showProgressOnSettings: Binding.constant(false))
+        MigrateFromDevice(showSettings: Binding.constant(true), showProgressOnSettings: Binding.constant(false))
     }
 }
