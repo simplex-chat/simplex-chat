@@ -90,17 +90,16 @@ struct HomeView: View {
         } label: {
             VStack(spacing: 2) {
                 ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 27, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.top, 3)
-                        .padding(.trailing, 4)
+                    ProfileImage(imageStr: user.image, size: 40, color: Color(uiColor: .quaternaryLabel))
+                        .padding(.top, 2)
+                        .padding(.trailing, 3)
                     let allRead = chatModel.users
                         .filter { u in !u.user.activeUser && !u.user.hidden }
                         .allSatisfy { u in u.unreadCount == 0 }
                     if !allRead {
-                        userUnreadBadge(size: 10)
+                        userUnreadBadge(size: 12)
                     }
                 }
-                Text("Settings").font(.caption2)
             }
         }
         .foregroundColor(.secondary)
