@@ -182,7 +182,7 @@ sealed class BackgroundImageType {
   @Composable
   fun defaultTintColor(theme: DefaultTheme): Color =
     if (this is Repeated) {
-      PredefinedBackgroundImage.from(filename)!!.tint[theme]!!
+      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CAT).tint[theme]!!
     } else if (this is Static && scaleType == BackgroundImageScaleType.REPEAT) {
       Color.Transparent
     } else {
