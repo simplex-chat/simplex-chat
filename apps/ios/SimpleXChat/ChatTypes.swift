@@ -1583,6 +1583,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 public enum ContactStatus: String, Decodable {
     case active = "active"
     case deleted = "deleted"
+    case deletedByUser = "deletedByUser"
 }
 
 public struct ContactRef: Decodable, Equatable {

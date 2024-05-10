@@ -83,6 +83,7 @@ struct ContactsView: View {
         }
     }
 
+    // TODO filter out deletedByUser
     private func filteredContactChats(_ contactChats: [Chat]) -> [Chat] {
         let s = searchString()
         return contactChats.filter { chat in
