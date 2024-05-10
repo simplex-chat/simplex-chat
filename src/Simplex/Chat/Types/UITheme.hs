@@ -50,7 +50,7 @@ data DarkColorScheme = DCSDark | DCSSimplex
   deriving (Show)
 
 data ChatWallpaper = ChatWallpaper
-  { preset :: Maybe ChatWallpaperPreset,
+  { preset :: Maybe Text,
     imageFile :: Maybe FilePath,
     background :: Maybe UIColor,
     tint :: Maybe UIColor,
@@ -78,19 +78,6 @@ data UIColors = UIColors
 defaultUIColors :: UIColors
 defaultUIColors = UIColors Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
-data ChatWallpaperPreset
-  = CWPKids
-  | CWPCats
-  | CWPPets
-  | CWPFlowers
-  | CWPHearts
-  | CWPSocial
-  | CWPTravel
-  | CWPInternet
-  | CWPSpace
-  | CWPSchool
-  deriving (Eq, Show)
-
 newtype UIColor = UIColor String
   deriving (Eq, Show)
 
@@ -113,8 +100,6 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "UCM") ''UIColorMode)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "UCS") ''UIColorScheme)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CWS") ''ChatWallpaperScale)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "CWP") ''ChatWallpaperPreset)
 
 $(JQ.deriveJSON defaultJSON ''ChatWallpaper)
 
