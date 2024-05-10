@@ -681,4 +681,5 @@
     <string name="share_address_with_contacts_question">نشانی با مخاطبان به اشتراک گذاشته شود؟</string>
     <string name="create_address_and_let_people_connect">یک نشانی ایجاد کنید تا اشخاص بتوانند به شما متصل شوند.</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">نمایه شما روی دستگاهتان ذخیره شده و فقط با مخاطبانتان به اشتراک گذاشته می‌شود. سرورهای SimpleX قادر به دیدن نمایه شما نیستند.</string>
+    <string name="error_saving_user_password">خطا در ذخیره کردن کلمه عبور کاربر</string>
 </resources>
