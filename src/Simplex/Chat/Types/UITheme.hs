@@ -102,7 +102,7 @@ instance ToJSON UIColorScheme where
   toEncoding = JE.text . textEncode
 
 instance J.FromJSONKey ThemeColorScheme where
-  fromJSONKey = J.FromJSONKeyText $ fromMaybe TCSDark . textDecode
+  fromJSONKey = J.FromJSONKeyText $ fromMaybe (TCSDark DCSDark) . textDecode
 
 instance J.ToJSONKey ThemeColorScheme where
   toJSONKey = J.ToJSONKeyText (JK.fromText . textEncode) (JE.text . textEncode)
