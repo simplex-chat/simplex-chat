@@ -9,6 +9,7 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
@@ -208,9 +209,7 @@ instance FromJSON AppSettings where
           uiProfileImageCornerRadius,
           uiColorScheme,
           uiDarkColorScheme,
-          uiLightThemeId,
-          uiDarkThemeId,
-          uiSimplexThemeId,
+          uiCurrentThemeIds,
           uiThemes
         }
     where

@@ -7,13 +7,17 @@ module Simplex.Chat.Types.UITheme where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.TH as JQ
-import Data.Char (toLower)
+import Data.Char (toLower, toUpper)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
 
 data UITheme = UITheme
@@ -46,10 +50,58 @@ data UIColorScheme
   | UCSDark
   | UCSBlack
   | UCSSimplex
-  deriving (Show)
+  deriving (Eq, Ord, Show)
+
+instance TextEncoding UIColorScheme where
+  textEncode = \case
+    UCSSystem -> "SYSTEM"
+    UCSLight -> "LIGHT"
+    UCSDark -> "DARK"
+    UCSBlack -> "BLACK"
+    UCSSimplex -> "SIMPLEX"
+  textDecode s =
+    Just $ case T.map toUpper s of
+      "SYSTEM" -> UCSSystem
+      "LIGHT" -> UCSLight
+      "DARK" -> UCSDark
+      "BLACK" -> UCSBlack
+      "SIMPLEX" -> UCSSimplex
+      _ -> UCSLight
+
+instance FromJSON UIColorScheme where
+  parseJSON = J.withText "UIColorScheme" $ maybe (fail "bad UIColorScheme") pure . textDecode
+
+instance ToJSON UIColorScheme where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance J.FromJSONKey UIColorScheme where
+  fromJSONKey = J.FromJSONKeyText $ fromMaybe UCSLight . textDecode
+
+instance J.ToJSONKey UIColorScheme where
+  toJSONKey = J.ToJSONKeyText (JK.fromText . textEncode) (JE.text . textEncode)
 
 data DarkColorScheme = DCSDark | DCSBlack | DCSSimplex
   deriving (Show)
+
+instance TextEncoding DarkColorScheme where
+  textEncode = \case
+    DCSDark -> "DARK"
+    DCSBlack -> "BLACK"
+    DCSSimplex -> "SIMPLEX"
+  textDecode s =
+    Just $ case T.map toUpper s of
+      "DARK" -> DCSDark
+      "BLACK" -> DCSBlack
+      "SIMPLEX" -> DCSSimplex
+      _ -> DCSDark
+
+instance FromJSON DarkColorScheme where
+  parseJSON = J.withText "DarkColorScheme" $ maybe (fail "bad DarkColorScheme") pure . textDecode
+
+instance ToJSON DarkColorScheme where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 data ChatWallpaper = ChatWallpaper
   { preset :: Maybe Text,
@@ -95,11 +147,7 @@ instance ToJSON UIColor where
   toJSON (UIColor t) = J.toJSON t
   toEncoding (UIColor t) = J.toEncoding t
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "DCS") ''DarkColorScheme)
-
 $(JQ.deriveJSON (enumJSON $ dropPrefix "UCM") ''UIColorMode)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "UCS") ''UIColorScheme)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CWS") ''ChatWallpaperScale)
 
