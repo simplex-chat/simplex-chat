@@ -115,18 +115,18 @@ struct HomeView: View {
         Button {
             homeTab = .contacts
         } label: {
-            iconLabel("book.fill", "Contacts")
+            iconLabel(homeTab == .contacts ? "book.fill" : "book", "Contacts")
         }
-        .foregroundColor(homeTab == .contacts ? .accentColor : .secondary)
+        .foregroundColor(.secondary)
     }
 
     private func chatsButton() -> some View {
         Button {
             homeTab = .chats
         } label: {
-            iconLabel("message.fill", "Chats")
+            iconLabel(homeTab == .chats ? "message.fill" : "message", "Chats")
         }
-        .foregroundColor(homeTab == .chats ? .accentColor : .secondary)
+        .foregroundColor(.secondary)
     }
 
     @ViewBuilder private func newChatButton() -> some View {
