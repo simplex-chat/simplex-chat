@@ -338,6 +338,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    sentViaProxy :: Maybe Bool,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemForwarded :: Maybe CIForwardedFrom,
     itemDeleted :: Maybe (CIDeleted c),
@@ -352,8 +353,8 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
   let deletable = case itemContent of
         CISndMsgContent _ ->
           case chatTypeI @c of
@@ -361,7 +362,7 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded it
             _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
       editable = deletable && isNothing itemForwarded
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -370,6 +371,7 @@ dummyMeta itemId ts itemText =
       itemTs = ts,
       itemText,
       itemStatus = CISSndNew,
+      sentViaProxy = Nothing,
       itemSharedMsgId = Nothing,
       itemForwarded = Nothing,
       itemDeleted = Nothing,
@@ -1063,7 +1065,8 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    memberDeliveryStatus :: CIStatus 'MDSnd
+    memberDeliveryStatus :: CIStatus 'MDSnd,
+    sentViaProxy :: Maybe Bool
   }
   deriving (Eq, Show)
 
