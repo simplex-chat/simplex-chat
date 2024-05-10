@@ -3872,7 +3872,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withAckMessage' agentConnId meta $
             void $
               saveDirectRcvMSG conn meta msgBody
-        SENT msgId ->
+        SENT msgId _deliveryPath ->
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
@@ -4005,7 +4005,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 notifyMemberConnected gInfo m $ Just ct
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
-        SENT msgId -> do
+        SENT msgId deliveryPath -> do
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           updateDirectItemStatus ct conn msgId $ CISSndSent SSPComplete
@@ -4043,6 +4043,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        MWARN msgId err -> do
+          -- updateDirectItemStatus (agentWarnToItemStatus)
+          -- toView
+          pure ()
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId $ agentErrToItemStatus err
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4387,7 +4391,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
-      SENT msgId -> do
+      SENT msgId deliveryPath -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemStatus gInfo m conn msgId $ CISSndSent SSPComplete
@@ -4426,6 +4430,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+      MWARN msgId err -> do
+        -- updateGroupItemErrorStatus (agentWarnToItemStatus)
+        pure ()
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentErrToItemStatus err
         -- group errors are silenced to reduce load on UI event log
@@ -4493,7 +4500,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             updateDirectCIFileStatus db vr user fileId $ CIFSSndTransfer 0 1
           toView $ CRSndFileStart user ci ft
           sendFileChunk user ft
-        SENT msgId -> do
+        SENT msgId _deliveryPath -> do
           withStore' $ \db -> updateSndFileChunkSent db ft msgId
           unless (fileStatus == FSCancelled) $ sendFileChunk user ft
         MERR _ err -> do
