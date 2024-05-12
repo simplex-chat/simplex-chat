@@ -3588,9 +3588,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Megjelölés olvasottként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mark verified" xml:space="preserve">
+      <trans-unit id="Mark verified" xml:space="preserve" approved="no">
         <source>Mark verified</source>
-        <target>Ellenőrzöttként jelölve</target>
+        <target state="translated">Hitelesítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -4909,9 +4909,9 @@ Hiba: %@</target>
         <target>QR-kód beolvasása számítógépről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan code" xml:space="preserve">
+      <trans-unit id="Scan code" xml:space="preserve" approved="no">
         <source>Scan code</source>
-        <target>Kód beolvasása</target>
+        <target state="translated">Beolvasás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
@@ -7505,9 +7505,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>videóhívás (nem e2e titkosított)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="waiting for answer…" xml:space="preserve">
+      <trans-unit id="waiting for answer…" xml:space="preserve" approved="no">
         <source>waiting for answer…</source>
-        <target>várakozás válaszra…</target>
+        <target state="translated">várakozás a válaszra…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for confirmation…" xml:space="preserve">
