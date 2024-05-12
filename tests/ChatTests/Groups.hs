@@ -2659,6 +2659,7 @@ testPlanGroupLinkLeaveRejoin =
           alice <## "#team: bob left the group"
         ]
 
+      threadDelay 500000
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
 
