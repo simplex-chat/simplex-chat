@@ -2621,7 +2621,9 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
+    \a b -> do
+      let alice = a {printOutput = True}
+          bob = b {printOutput = True}
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
