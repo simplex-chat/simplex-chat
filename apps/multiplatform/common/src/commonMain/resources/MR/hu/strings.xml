@@ -847,7 +847,7 @@
     <string name="email_invite_subject">Beszélgessünk a SimpleX Chat-ben</string>
     <string name="info_row_moderated_at">Moderálva lett ekkor:</string>
     <string name="v4_4_live_messages">Élő üzenetek</string>
-    <string name="mark_code_verified">Ellenőrzöttként jelölve</string>
+    <string name="mark_code_verified">Hitelesítés</string>
     <string name="v5_2_message_delivery_receipts">Üzenetkézbesítési bizonylatok!</string>
     <string name="image_descr_link_preview">hivatkozás előnézeti képe</string>
     <string name="leave_group_question">Csoport elhagyása?</string>
@@ -1026,7 +1026,7 @@
     <string name="simplex_link_group">SimpleX csoport hivatkozás</string>
     <string name="icon_descr_waiting_for_image">Képre várakozás</string>
     <string name="self_destruct">Önmegsemmisítés</string>
-    <string name="callstate_waiting_for_answer">várakozás válaszra…</string>
+    <string name="callstate_waiting_for_answer">várakozás a válaszra…</string>
     <string name="text_field_set_contact_placeholder">Ismerős nevének beállítása…</string>
     <string name="unblock_member_button">Tag feloldása</string>
     <string name="scan_QR_code">QR-kód beolvasása</string>
@@ -1193,7 +1193,7 @@
     <string name="network_options_save">Mentés</string>
     <string name="switch_verb">Váltás</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Kapott hivatkozás beillesztése az ismerősökhöz történő kapcsolódáshoz…</string>
-    <string name="scan_code">Kód beolvasása</string>
+    <string name="scan_code">Beolvasás</string>
     <string name="open_port_in_firewall_title">Port megnyitása a tűzfalon</string>
     <string name="callstate_starting">indítás…</string>
     <string name="settings_shutdown">Leállítás</string>
