@@ -2,8 +2,7 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Icon
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -113,21 +112,49 @@ fun CIImageView(
   }
 
   @Composable
-  fun ImageView(painter: Painter, onClick: () -> Unit) {
-    Image(
-      painter,
-      contentDescription = stringResource(MR.strings.image_descr),
-      // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
-      // if text is short and take all available width if text is long
-      modifier = Modifier
+  fun ImageView(painter: Painter, image: String, fileSource: CryptoFile?, onClick: () -> Unit) {
+    // On my Android device Compose fails to display 6000x6000 px WebP image with exception:
+    // IllegalStateException: Recording currently in progress - missing #endRecording() call?
+    // but can display 5000px image. Using even lower value here just to feel safer.
+    // It happens to WebP because it's not compressed while sending since it can be animated.
+    if (painter.intrinsicSize.width <= 4320 && painter.intrinsicSize.height <= 4320) {
+      Image(
+        painter,
+        contentDescription = stringResource(MR.strings.image_descr),
+        // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
+        // if text is short and take all available width if text is long
+        modifier = Modifier
+          .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+          .combinedClickable(
+            onLongClick = { showMenu.value = true },
+            onClick = onClick
+          )
+          .onRightClick { showMenu.value = true },
+        contentScale = ContentScale.FillWidth,
+      )
+    } else {
+      Box(Modifier
         .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
-          onClick = onClick
+          onClick = {}
         )
         .onRightClick { showMenu.value = true },
-      contentScale = ContentScale.FillWidth,
-    )
+        contentAlignment = Alignment.Center
+      ) {
+        imageView(base64ToBitmap(image), onClick = {
+          if (fileSource != null) {
+            openFile(fileSource)
+          }
+        })
+        Icon(
+          painterResource(MR.images.ic_open_in_new),
+          contentDescription = stringResource(MR.strings.image_descr),
+          modifier = Modifier.size(30.dp),
+          tint = MaterialTheme.colors.primary,
+        )
+      }
+    }
   }
 
   fun fileSizeValid(): Boolean {
@@ -172,9 +199,9 @@ fun CIImageView(
       }
     }
     val loaded = res.value
-    if (loaded != null) {
+    if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
     } else {
       imageView(base64ToBitmap(image), onClick = {
         if (file != null) {
