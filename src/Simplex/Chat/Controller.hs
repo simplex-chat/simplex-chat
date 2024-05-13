@@ -395,7 +395,7 @@ data ChatCommand
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
-  | DeleteContact ContactName
+  | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
@@ -827,9 +827,9 @@ clqNoFilters :: ChatListQuery
 clqNoFilters = CLQFilters {favorite = False, unread = False}
 
 data ChatDeleteMode
-  = CDMFull {notify :: Bool}   -- delete both contact and conversation
+  = CDMFull {notify :: Bool} -- delete both contact and conversation
   | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
-  | CDMMessages                -- delete conversation, keep contact - can be re-opened from Contacts view
+  | CDMMessages -- delete conversation, keep contact - can be re-opened from Contacts view
   deriving (Show)
 
 data ConnectionPlan
@@ -1399,8 +1399,6 @@ withAgent' action = asks smpAgent >>= liftIO . action
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CDM") ''ChatDeleteMode)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
