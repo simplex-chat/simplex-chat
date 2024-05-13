@@ -30,7 +30,8 @@ module Simplex.Chat.Store.Direct
     getConnReqContactXContactId,
     getContactByConnReqHash,
     createDirectContact,
-    deleteContactConnectionsAndFiles,
+    deleteContactConnections,
+    deleteContactFiles,
     deleteContact,
     deleteContactWithoutGroups,
     setContactDeleted,
@@ -70,6 +71,7 @@ module Simplex.Chat.Store.Direct
     resetContactConnInitiated,
     setContactCustomData,
     setContactUIThemes,
+    setContactChatDeleted,
   )
 where
 
@@ -178,7 +180,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
@@ -241,12 +243,13 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         chatTs = Just currentTs,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
-        customData = Nothing,
-        uiThemes = Nothing
+        uiThemes = Nothing,
+        chatDeleted = False,
+        customData = Nothing
       }
 
-deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
-deleteContactConnectionsAndFiles db userId Contact {contactId} = do
+deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
+deleteContactConnections db User {userId} Contact {contactId} = do
   DB.execute
     db
     [sql|
@@ -258,6 +261,9 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
       )
     |]
     (userId, contactId)
+
+deleteContactFiles :: DB.Connection -> User -> Contact -> IO ()
+deleteContactFiles db User {userId} Contact {contactId} = do
   DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
 deleteContact :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
@@ -600,7 +606,7 @@ createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (V
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
@@ -764,6 +770,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         uiThemes = Nothing,
+        chatDeleted = False,
         customData = Nothing
       }
 
@@ -784,7 +791,7 @@ getContact_ db vr user@User {userId} contactId deleted =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
@@ -934,3 +941,8 @@ setContactUIThemes :: DB.Connection -> User -> Contact -> Maybe UIThemeEntityOve
 setContactUIThemes db User {userId} Contact {contactId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiThemes, updatedAt, userId, contactId)
+
+setContactChatDeleted :: DB.Connection -> User -> Contact -> Bool -> IO ()
+setContactChatDeleted db User {userId} Contact {contactId} chatDeleted = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (chatDeleted, updatedAt, userId, contactId)
