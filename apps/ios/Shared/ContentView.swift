@@ -230,7 +230,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
+            HomeView(showSettings: $showSettings).privacySensitive(protectScreen)
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete

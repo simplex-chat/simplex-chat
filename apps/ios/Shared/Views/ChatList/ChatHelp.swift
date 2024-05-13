@@ -63,7 +63,6 @@ struct ChatHelp: View {
 
 struct ChatHelp_Previews: PreviewProvider {
     static var previews: some View {
-        @State var showSettings = false
-        return ChatHelp(showSettings: $showSettings)
+        return ChatHelp(showSettings: Binding.constant(false))
     }
 }

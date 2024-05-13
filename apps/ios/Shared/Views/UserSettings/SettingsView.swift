@@ -46,6 +46,7 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
+let DEFAULT_ONE_HAND_UI = "oneHandUI"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -60,6 +61,8 @@ let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+let DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
+let DEFAULT_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
@@ -89,6 +92,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
+    DEFAULT_ONE_HAND_UI: true,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -99,7 +103,9 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
-    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue
+    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
+    DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE: true,
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true
 ]
 
 // not used anymore
@@ -446,9 +452,8 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        @State var showSettings = false
 
-        return SettingsView(showSettings: $showSettings)
+        return SettingsView(showSettings: Binding.constant(false))
             .environmentObject(chatModel)
     }
 }
