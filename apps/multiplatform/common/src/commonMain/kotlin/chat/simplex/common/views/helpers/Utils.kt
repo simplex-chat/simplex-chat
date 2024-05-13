@@ -284,8 +284,8 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
 fun saveBackgroundImage(uri: URI): String? {
   val destFileName = generateNewFileName("background", "jpg", File(getBackgroundImageFilePath("")))
   val destFile = File(getBackgroundImageFilePath(destFileName))
-  val inputStream = uri.inputStream()
   try {
+    val inputStream = uri.inputStream()
     Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
   } catch (e: Exception) {
     Log.e(TAG, "Error saving background image: ${e.stackTraceToString()}")

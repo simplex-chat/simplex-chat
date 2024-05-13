@@ -30,7 +30,7 @@ enum class PredefinedBackgroundImage(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cats") CAT(MR.images.background_cats, "cats", MR.strings.background_cats, 0.5f,
+  @SerialName("cats") CATS(MR.images.background_cats, "cats", MR.strings.background_cats, 0.5f,
     mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
     mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -81,7 +81,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("unknown") UNKNOWN(MR.images.background_unknown, "unknown", MR.strings.background_unknown, 0.5f,
+  @SerialName("travel") TRAVEL(MR.images.background_travel, "travel", MR.strings.background_travel, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -105,7 +105,7 @@ enum class PredefinedBackgroundImage(
       )
     )
   ),
-  @SerialName("rabbits") RABBIT(MR.images.background_rabbits, "rabbits", MR.strings.background_rabbits, 0.5f,
+  @SerialName("space") SPACE(MR.images.background_space, "space", MR.strings.background_space, 0.5f,
   mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
   mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
     mapOf(
@@ -154,10 +154,10 @@ enum class PredefinedBackgroundImage(
     )
   );
 
-  fun toType(): BackgroundImageType =
+  fun toType(scale: Float? = null): BackgroundImageType =
     BackgroundImageType.Repeated(
       filename,
-      appPrefs.themeOverrides.get().firstOrNull { it.wallpaper.preset == filename && it.base == CurrentColors.value.base }?.wallpaper?.scale ?: 1f
+      scale ?: appPrefs.themeOverrides.get().firstOrNull { it.wallpaper.preset == filename && it.base == CurrentColors.value.base }?.wallpaper?.scale ?: 1f
     )
 
   companion object {
@@ -184,12 +184,13 @@ sealed class BackgroundImageType {
       cache.second
     } else {
       val res = if (this is Repeated) {
-        (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CAT).res.toComposeImageBitmap()!!
+        (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).res.toComposeImageBitmap()!!
       } else {
         try {
           // In case of unintentional image deletion don't crash the app
           File(getBackgroundImageFilePath(filename)).inputStream().use { loadImageBitmap(it) }
         } catch (e: Exception) {
+          Log.e(TAG, "Error while loading background image: ${e.stackTraceToString()}")
           null
         }
       }
@@ -214,7 +215,7 @@ sealed class BackgroundImageType {
   @Composable
   fun defaultBackgroundColor(theme: DefaultTheme): Color =
     if (this is Repeated) {
-      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CAT).background[theme]!!
+      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).background[theme]!!
     } else {
       MaterialTheme.colors.background
     }
@@ -222,7 +223,7 @@ sealed class BackgroundImageType {
   @Composable
   fun defaultTintColor(theme: DefaultTheme): Color =
     if (this is Repeated) {
-      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CAT).tint[theme]!!
+      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).tint[theme]!!
     } else if (this is Static && scaleType == BackgroundImageScaleType.REPEAT) {
       Color.Transparent
     } else {
@@ -231,7 +232,7 @@ sealed class BackgroundImageType {
 
   companion object {
     val default: BackgroundImageType
-      get() = PredefinedBackgroundImage.CAT.toType()
+      get() = PredefinedBackgroundImage.CATS.toType()
 
     private var cachedImage: Pair<String, ImageBitmap>? = null
 
