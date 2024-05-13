@@ -9,6 +9,7 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
@@ -48,7 +49,9 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemes :: Maybe UIThemes
+    uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
+    uiThemes :: Maybe [UITheme],
+    oneHandUI :: Maybe Bool
   }
   deriving (Show)
 
@@ -78,7 +81,9 @@ defaultAppSettings =
       uiProfileImageCornerRadius = Just 22.5,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
-      uiThemes = Nothing
+      uiCurrentThemeIds = Nothing,
+      uiThemes = Nothing,
+      oneHandUI = Just True
     }
 
 defaultParseAppSettings :: AppSettings
@@ -107,7 +112,9 @@ defaultParseAppSettings =
       uiProfileImageCornerRadius = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
-      uiThemes = Nothing
+      uiCurrentThemeIds = Nothing,
+      uiThemes = Nothing,
+      oneHandUI = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -136,7 +143,9 @@ combineAppSettings platformDefaults storedSettings =
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
-      uiThemes = p uiThemes
+      uiCurrentThemeIds = p uiCurrentThemeIds,
+      uiThemes = p uiThemes,
+      oneHandUI = p oneHandUI
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -177,7 +186,9 @@ instance FromJSON AppSettings where
     uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
+    uiCurrentThemeIds <- p "uiCurrentThemeIds"
     uiThemes <- p "uiThemes"
+    oneHandUI <- p "oneHandUI"
     pure
       AppSettings
         { appPlatform,
@@ -203,7 +214,9 @@ instance FromJSON AppSettings where
           uiProfileImageCornerRadius,
           uiColorScheme,
           uiDarkColorScheme,
-          uiThemes
+          uiCurrentThemeIds,
+          uiThemes,
+          oneHandUI
         }
     where
       p key = v .:? key <|> pure Nothing
