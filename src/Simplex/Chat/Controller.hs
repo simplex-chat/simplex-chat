@@ -296,7 +296,7 @@ data ChatCommand
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
+  | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -825,6 +825,12 @@ data ChatListQuery
 
 clqNoFilters :: ChatListQuery
 clqNoFilters = CLQFilters {favorite = False, unread = False}
+
+data ChatDeleteMode
+  = CDMFull {notify :: Bool}   -- delete both contact and conversation
+  | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
+  | CDMMessages                -- delete conversation, keep contact - can be re-opened from Contacts view
+  deriving (Show)
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
@@ -1393,6 +1399,8 @@ withAgent' action = asks smpAgent >>= liftIO . action
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CDM") ''ChatDeleteMode)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
