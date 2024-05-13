@@ -8,7 +8,8 @@ title: App settings
 To open app settings:
 
 - Open the app.
-- Tap on your user profile image in the upper left-hand of the screen.
+- Tap on your user profile image in the upper left-hand of the screen.  
+Another option is to open the app settings by swiping to the right.
 - If you have more than one profile, tap the current profile again or choose Settings.
 
 ## Your profile settings
