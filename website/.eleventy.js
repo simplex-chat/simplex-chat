@@ -389,15 +389,24 @@ module.exports = function (ty) {
     linkify: true,
     replaceLink: function (link, _env) {
       let parsed = uri.parse(link)
+      if (parsed.scheme || parsed.host) return link
 
-      if (parsed.scheme || parsed.host) {
-        return link
-      } else {
-        const hostFile = path.resolve(_env.page.inputPath)
-        const linkFile = path.resolve(hostFile, '..', parsed.path)
+      let hostFile = path.resolve(_env.page.inputPath)
+      let linkFile = path.resolve(hostFile, '..', parsed.path)
+      if (parsed.path.startsWith('/')) {
+        let srcIndex = hostFile.indexOf("/src")
+        if (srcIndex !== -1) {
+          let basePath = hostFile.slice(0, srcIndex + 4)
+          linkFile = basePath + parsed.path
+        }
+      }
+      try {
         const frontMatterData = getFrontMatter(linkFile)
         parsed.path = frontMatterData?.permalink || parsed.path
+      } catch (error) {
+        console.log(`Broken link: ${parsed.path} in ${hostFile}`)
       }
+
       parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
     }
@@ -432,10 +441,12 @@ function getFrontMatter(filePath) {
       const frontMatter = matter(fileContent)
       return frontMatter.data
     } else {
-      console.error('Broken Link', filePath)
-      return null
+      throw new Error('broken-link')
     }
   } catch (error) {
+    if (error.message === 'broken-link') {
+      throw error
+    }
     return null
   }
 }
