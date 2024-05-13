@@ -37,6 +37,8 @@ chatDirectTests = do
     describe "add contact and send/receive messages" testAddContact
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
+    it "delete contact keeping conversation" testDeleteContactKeepConversation
+    it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
@@ -185,9 +187,10 @@ testAddContact = versionTestMatrix2 runTestAddContact
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
           alice #$> ("/_read user 1", id, "ok")
-        features = if pqExpected
-          then chatFeatures
-          else (0, e2eeInfoNoPQStr) : tail chatFeatures
+        features =
+          if pqExpected
+            then chatFeatures
+            else (0, e2eeInfoNoPQStr) : tail chatFeatures
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -343,7 +346,7 @@ testDeleteContactDeletesProfile =
       connectUsers alice bob
       alice <##> bob
       -- alice deletes contact, profile is deleted
-      alice ##> "/d bob"
+      alice ##> "/_delete @2 {\"type\": \"full\", \"notify\": true}"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
@@ -355,6 +358,43 @@ testDeleteContactDeletesProfile =
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
+
+testDeleteContactKeepConversation :: HasCallStack => FilePath -> IO ()
+testDeleteContactKeepConversation =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/_delete @2 {\"type\": \"entity\", \"notify\": true}"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice @@@ [("@bob", "hey")]
+      alice ##> "@bob hi"
+      alice <## "bob: not ready"
+      bob @@@ [("@alice", "contact deleted")]
+      bob ##> "@alice hey"
+      bob <## "alice: not ready"
+
+testDeleteConversationKeepContact :: HasCallStack => FilePath -> IO ()
+testDeleteConversationKeepContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice @@@ [("@bob", "hey")]
+
+      alice ##> "/_delete @2 {\"type\": \"messages\", \"notify\": true}"
+      alice <## "bob: contact is deleted"
+
+      alice @@@ [("@bob", "")] -- UI would filter
+      bob @@@ [("@alice", "hey")]
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      alice @@@ [("@bob", "hi")]
+      alice <##> bob
 
 testDeleteUnusedContactSilent :: HasCallStack => FilePath -> IO ()
 testDeleteUnusedContactSilent =
