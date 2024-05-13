@@ -48,15 +48,29 @@ struct ContactListNavLink: View {
 
                     previewTitle(contact)
 
-                    if contact.contactConnIncognito {
-                        Spacer()
-                        Image(systemName: "theatermasks")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 22, height: 22)
-                            .foregroundColor(.secondary)
+                    Spacer()
+
+                    HStack {
+                        if chat.chatInfo.chatSettings?.favorite ?? false {
+                            Image(systemName: "star.fill")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 18, height: 18)
+                                .padding(.trailing, 1)
+                                .foregroundColor(.secondary.opacity(0.65))
+                        }
+                        if contact.contactConnIncognito {
+                            Image(systemName: "theatermasks")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 22, height: 22)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
+            }
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                toggleFavoriteButton()
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button {
@@ -170,6 +184,24 @@ struct ContactListNavLink: View {
             },
             secondaryButton: .default(Text("Ok"))
         )
+    }
+
+    @ViewBuilder private func toggleFavoriteButton() -> some View {
+        if chat.chatInfo.chatSettings?.favorite == true {
+            Button {
+                toggleChatFavorite(chat, favorite: false)
+            } label: {
+                Label("Unfav.", systemImage: "star.slash")
+            }
+            .tint(.green)
+        } else {
+            Button {
+                toggleChatFavorite(chat, favorite: true)
+            } label: {
+                Label("Favorite", systemImage: "star.fill")
+            }
+            .tint(.green)
+        }
     }
 }
 

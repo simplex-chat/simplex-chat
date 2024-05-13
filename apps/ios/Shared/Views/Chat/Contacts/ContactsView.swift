@@ -16,6 +16,7 @@ struct ContactsView: View {
     @FocusState private var searchFocussed
     @State private var searchText = ""
 
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
     var body: some View {
@@ -85,19 +86,28 @@ struct ContactsView: View {
 
     private func filteredContactChats(_ contactChats: [Chat]) -> [Chat] {
         let s = searchString()
-        return contactChats.filter { chat in
-            switch chat.chatInfo {
-            case let .direct(contact):
-                return contact.contactStatus != .deletedByUser && (
-                    s == ""
-                    ? true
-                    : (viewNameContains(contact, s) ||
-                       contact.profile.displayName.localizedLowercase.contains(s) ||
-                       contact.fullName.localizedLowercase.contains(s))
-                )
-            default: return false
+        return (
+            s == "" && !showUnreadAndFavorites
+            ? contactChats.filter { chat in
+                switch chat.chatInfo {
+                case let .direct(contact): return contact.contactStatus != .deletedByUser
+                default: return false
+                }
             }
-        }
+            : contactChats.filter { chat in
+                switch chat.chatInfo {
+                case let .direct(contact):
+                    return contact.contactStatus != .deletedByUser && (
+                        s == ""
+                        ? (chat.chatInfo.chatSettings?.favorite ?? false)
+                        : (viewNameContains(contact, s) ||
+                           contact.profile.displayName.localizedLowercase.contains(s) ||
+                           contact.fullName.localizedLowercase.contains(s))
+                    )
+                default: return false
+                }
+            }
+        )
         .sorted{ $0.chatInfo.displayName.lowercased() < $1.chatInfo.displayName.lowercased() }
 
         func searchString() -> String {
@@ -115,6 +125,7 @@ struct ContactsSearchBar: View {
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -143,11 +154,28 @@ struct ContactsSearchBar: View {
                             searchText = ""
                             searchFocussed = false
                         }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
                 }
             }
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
+        }
+    }
+
+    private func toggleFilterButton() -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 22, height: 22)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? .accentColor : .secondary)
+                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
         }
     }
 }
