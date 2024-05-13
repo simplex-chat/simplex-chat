@@ -1849,21 +1849,29 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case .chatSuspended:
         chatSuspended()
-    case let .contactSwitch(_, contact, switchProgress):
-        await MainActor.run {
-            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+    case let .contactSwitch(user, contact, switchProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+            }
         }
-    case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
-        await MainActor.run {
-            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+    case let .groupMemberSwitch(user, groupInfo, member, switchProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+            }
         }
-    case let .contactRatchetSync(_, contact, ratchetSyncProgress):
-        await MainActor.run {
-            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+    case let .contactRatchetSync(user, contact, ratchetSyncProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+            }
         }
-    case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
-        await MainActor.run {
-            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+    case let .groupMemberRatchetSync(user, groupInfo, member, ratchetSyncProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+            }
         }
     case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
         await MainActor.run {
