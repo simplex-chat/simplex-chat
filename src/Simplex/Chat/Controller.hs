@@ -501,6 +501,7 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
+  | GetAgentMsgCounts
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -746,6 +747,7 @@ data ChatResponse
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
