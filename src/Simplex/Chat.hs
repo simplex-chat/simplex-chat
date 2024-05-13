@@ -90,7 +90,7 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescr
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), MsgCounts (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -2204,9 +2204,9 @@ processChatCommand' vr = \case
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> lift (withAgent' resetAgentStats) >> ok_
   GetAgentMsgCounts -> lift $ do
-    connectionMessages <- map (first decodeLatin1) <$> withAgent' getMsgCounts
-    let allMessages = foldl' (\(MsgCounts s1 s2) (_, MsgCounts n1 n2) -> MsgCounts (s1 + n1) (s2 + n2)) (MsgCounts 0 0) connectionMessages
-    pure CRAgentMsgCounts {allMessages, connectionMessages}
+    counts <- map (first decodeLatin1) <$> withAgent' getMsgCounts
+    let allMsgs = foldl' (\(s1, s2) (_, (n1, n2)) -> (s1 + n1, s2 + n2)) (0, 0) counts
+    pure CRAgentMsgCounts {msgCounts = ("all", allMsgs) : counts}
   GetAgentSubs -> lift $ summary <$> withAgent' getAgentSubscriptions
     where
       summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
