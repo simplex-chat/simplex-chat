@@ -375,7 +375,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
-  CRAgentMsgDuplicates {msgDuplicates} -> ["duplicate received messages:", plain . LB.unpack $ J.encode msgDuplicates]
+  CRAgentMsgCounts {allMessages, connectionMessages} ->
+    [ "all received messages:" <> plain (LB.unpack $ J.encode allMessages),
+      "received messages by connection:",
+      plain . LB.unpack $ J.encode connectionMessages
+    ]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
