@@ -730,7 +730,7 @@ instance StrEncoding ACIStatus where
           "snd_error" ->
             ACIStatus SMDSnd . CISSndError
               <$> ( (A.space *> strP)
-                      <|> (SndErrOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)) -- deprecated
+                      <|> (SndErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)) -- deprecated
                   )
           "snd_warning" -> ACIStatus SMDSnd . CISSndWarning <$> (A.space *> strP)
           "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
@@ -745,13 +745,13 @@ data SndError
   | SndErrRelay SrvError -- BROKER errors (other than TIMEOUT/NETWORK)
   | SndErrProxy String SrvError -- SMP PROXY errors, String is proxy server
   | SndErrProxyRelay String SrvError -- PROXY BROKER errors, String is proxy server
-  | SndErrOther String -- other errors, String is error
+  | SndErrOther Text -- other errors
   deriving (Eq, Show)
 
 data SrvError
   = SrvErrHost
   | SrvErrVersion
-  | SrvErrOther String
+  | SrvErrOther Text
   deriving (Eq, Show)
 
 instance StrEncoding SndError where
@@ -762,7 +762,7 @@ instance StrEncoding SndError where
     SndErrRelay srvErr -> "relay " <> strEncode srvErr
     SndErrProxy proxy srvErr -> "proxy " <> encodeUtf8 (T.pack proxy) <> " " <> strEncode srvErr
     SndErrProxyRelay proxy srvErr -> "proxy_relay " <> encodeUtf8 (T.pack proxy) <> " " <> strEncode srvErr
-    SndErrOther e -> "other " <> encodeUtf8 (T.pack e)
+    SndErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "auth" -> pure SndErrAuth
@@ -771,19 +771,19 @@ instance StrEncoding SndError where
       "relay" -> SndErrRelay <$> (A.space *> strP)
       "proxy" -> SndErrProxy . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
       "proxy_relay" -> SndErrProxyRelay . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
-      "other" -> SndErrOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      "other" -> SndErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       _ -> fail "bad SndError"
 
 instance StrEncoding SrvError where
   strEncode = \case
     SrvErrHost -> "host"
     SrvErrVersion -> "version"
-    SrvErrOther e -> "other " <> encodeUtf8 (T.pack e)
+    SrvErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "host" -> pure SrvErrHost
       "version" -> pure SrvErrVersion
-      "other" -> SrvErrOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      "other" -> SrvErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       _ -> fail "bad SrvError"
 
 data JSONCIStatus

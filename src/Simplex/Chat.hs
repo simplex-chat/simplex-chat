@@ -4738,7 +4738,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     agentErrToSndErr (BROKER _ e) = brokerError e SndErrRelay
     agentErrToSndErr (SMP proxySrv (SMP.PROXY (SMP.BROKER e))) = brokerError e $ SndErrProxy proxySrv
     agentErrToSndErr (AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e)))) = brokerError e $ SndErrProxyRelay proxySrv
-    agentErrToSndErr err = SndErrOther . T.unpack . safeDecodeUtf8 $ strEncode err
+    agentErrToSndErr err = SndErrOther . safeDecodeUtf8 $ strEncode err
 
     brokerError :: BrokerErrorType -> (SrvError -> SndError) -> SndError
     brokerError e wrapErr = case e of
@@ -4750,7 +4750,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         brokerHostError = case e of
           HOST -> SrvErrHost
           SMP.TRANSPORT TEVersion -> SrvErrVersion
-          _ -> SrvErrOther . T.unpack . safeDecodeUtf8 $ strEncode e
+          _ -> SrvErrOther . safeDecodeUtf8 $ strEncode e
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
