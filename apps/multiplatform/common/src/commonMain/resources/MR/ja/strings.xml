@@ -46,7 +46,7 @@
     <string name="bold_text">太文字</string>
     <string name="icon_descr_audio_call">音声通話</string>
     <string name="settings_audio_video_calls">音声とビデオ通話</string>
-    <string name="impossible_to_recover_passphrase"><![CDATA[<b>※注意※</b>：喪失したら、パスフレーズの回復・変更ができません。]]></string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>※注意※</b>：紛失するとパスフレーズの回復・変更ができません。]]></string>
     <string name="all_group_members_will_remain_connected">グループ全員の接続が継続します。</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">送信相手が消えるメッセージを送るのを許可する。</string>
     <string name="allow_your_contacts_irreversibly_delete">送信相手が永久メッセージ削除するのを許可する。（24時間）</string>
@@ -179,7 +179,7 @@
     <string name="chat_is_stopped_indication">チャットが停止してます。</string>
     <string name="network_disable_socks_info">承諾すると、メッセージのサーバがIPアドレス、ISP、接続サーバを特定できます。</string>
     <string name="chat_preferences">チャット設定</string>
-    <string name="clear_chat_button">消す</string>
+    <string name="clear_chat_button">チャットを削除</string>
     <string name="icon_descr_close_button">閉じるボタン</string>
     <string name="clear_verification">未検証の状態に戻す</string>
     <string name="image_saved">画像をギャラリーに保存しました。</string>
@@ -867,7 +867,7 @@
     <string name="smp_servers_scan_qr">サーバのQRコードを読み込む</string>
     <string name="smp_servers_test_some_failed">テストに失敗したサーバがあります：</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chatサーバを使いますか？</string>
-    <string name="using_simplex_chat_servers">SimpleX Chatを使っています。</string>
+    <string name="using_simplex_chat_servers">SimpleX Chatサーバを使用中。</string>
     <string name="share_link">リンクを送る</string>
     <string name="core_simplexmq_version">simplexmq: バージョン%s (%2s)</string>
     <string name="callstate_waiting_for_answer">応答を待機中…</string>

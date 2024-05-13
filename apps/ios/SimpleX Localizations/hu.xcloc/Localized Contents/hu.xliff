@@ -7235,7 +7235,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
-        <target>kapcsolódva</target>
+        <target>kapcsolódott</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">

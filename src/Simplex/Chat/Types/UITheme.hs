@@ -7,26 +7,21 @@ module Simplex.Chat.Types.UITheme where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
-import Simplex.Messaging.Util ((<$?>))
-
-data UIThemes = UIThemes
-  { light :: Maybe UITheme,
-    dark :: Maybe UITheme,
-    simplex :: Maybe UITheme
-  }
-  deriving (Eq, Show)
 
 data UITheme = UITheme
-  { base :: ThemeColorScheme,
+  { themeId :: Text,
+    base :: ThemeColorScheme,
     wallpaper :: Maybe ChatWallpaper,
     colors :: UIColors
   }
@@ -48,40 +43,72 @@ data UIThemeEntityOverride = UIThemeEntityOverride
   }
   deriving (Eq, Show)
 
-data ThemeColorScheme = TCSLight | TCSDark | TCSSimplex
-  deriving (Eq, Show)
+data DarkColorScheme = DCSDark | DCSBlack | DCSSimplex
+  deriving (Eq, Ord, Show)
 
-data UIColorScheme
-  = UCSSystem
-  | UCSLight
-  | UCSDark
-  | UCSSimplex
-  deriving (Show)
+data ThemeColorScheme = TCSLight | TCSDark DarkColorScheme
+  deriving (Eq, Ord, Show)
 
-data DarkColorScheme = DCSDark | DCSSimplex
-  deriving (Show)
+data UIColorScheme = UCSSystem | UCSFixed ThemeColorScheme
+  deriving (Eq, Ord, Show)
 
-instance StrEncoding ThemeColorScheme where
-  strEncode = \case
+instance TextEncoding DarkColorScheme where
+  textEncode = \case
+    DCSDark -> "DARK"
+    DCSBlack -> "BLACK"
+    DCSSimplex -> "SIMPLEX"
+  textDecode s =
+    Just $ case s of
+      "DARK" -> DCSDark
+      "BLACK" -> DCSBlack
+      "SIMPLEX" -> DCSSimplex
+      _ -> DCSDark
+
+instance TextEncoding ThemeColorScheme where
+  textEncode = \case
     TCSLight -> "LIGHT"
-    TCSDark -> "DARK"
-    TCSSimplex -> "SIMPLEX"
-  strDecode = \case
-    "LIGHT" -> Right TCSLight
-    "DARK" -> Right TCSDark
-    "SIMPLEX" -> Right TCSSimplex
-    _ -> Left "bad ColorScheme"
-  strP = strDecode <$?> A.takeTill (== ' ')
+    TCSDark s -> textEncode s
+  textDecode = \case
+    "LIGHT" -> Just TCSLight
+    s -> TCSDark <$> textDecode s
+
+instance TextEncoding UIColorScheme where
+  textEncode = \case
+    UCSSystem -> "SYSTEM"
+    UCSFixed s -> textEncode s
+  textDecode = \case
+    "SYSTEM" -> Just UCSSystem
+    s -> UCSFixed <$> textDecode s
+
+instance FromJSON DarkColorScheme where
+  parseJSON = textParseJSON "DarkColorScheme"
+
+instance ToJSON DarkColorScheme where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance FromJSON ThemeColorScheme where
-  parseJSON = strParseJSON "ThemeColorScheme"
+  parseJSON = textParseJSON "ThemeColorScheme"
 
 instance ToJSON ThemeColorScheme where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance FromJSON UIColorScheme where
+  parseJSON = textParseJSON "UIColorScheme"
+
+instance ToJSON UIColorScheme where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance J.FromJSONKey ThemeColorScheme where
+  fromJSONKey = J.FromJSONKeyText $ fromMaybe (TCSDark DCSDark) . textDecode
+
+instance J.ToJSONKey ThemeColorScheme where
+  toJSONKey = J.ToJSONKeyText (JK.fromText . textEncode) (JE.text . textEncode)
 
 data ChatWallpaper = ChatWallpaper
-  { preset :: Maybe ChatWallpaperPreset,
+  { preset :: Maybe Text,
     imageFile :: Maybe FilePath,
     background :: Maybe UIColor,
     tint :: Maybe UIColor,
@@ -109,19 +136,6 @@ data UIColors = UIColors
 defaultUIColors :: UIColors
 defaultUIColors = UIColors Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
-data ChatWallpaperPreset
-  = CWPKids
-  | CWPCats
-  | CWPPets
-  | CWPFlowers
-  | CWPHearts
-  | CWPSocial
-  | CWPTravel
-  | CWPInternet
-  | CWPSpace
-  | CWPSchool
-  deriving (Eq, Show)
-
 newtype UIColor = UIColor String
   deriving (Eq, Show)
 
@@ -137,15 +151,9 @@ instance ToJSON UIColor where
   toJSON (UIColor t) = J.toJSON t
   toEncoding (UIColor t) = J.toEncoding t
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "DCS") ''DarkColorScheme)
-
 $(JQ.deriveJSON (enumJSON $ dropPrefix "UCM") ''UIColorMode)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "UCS") ''UIColorScheme)
-
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CWS") ''ChatWallpaperScale)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "CWP") ''ChatWallpaperPreset)
 
 $(JQ.deriveJSON defaultJSON ''ChatWallpaper)
 
@@ -156,8 +164,6 @@ $(JQ.deriveJSON defaultJSON ''UIThemeEntityOverride)
 $(JQ.deriveJSON defaultJSON ''UIThemeEntityOverrides)
 
 $(JQ.deriveJSON defaultJSON ''UITheme)
-
-$(JQ.deriveJSON defaultJSON ''UIThemes)
 
 instance ToField UIThemeEntityOverrides where
   toField = toField . encodeJSON
