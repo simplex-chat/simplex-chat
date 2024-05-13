@@ -117,6 +117,7 @@ struct ChatInfoView: View {
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(DEFAULT_SHOW_DELETE_CONTACT_NOTICE) private var showDeleteContactNotice = true
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
@@ -124,6 +125,7 @@ struct ChatInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
+        case deleteContactNotice
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -133,6 +135,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
+            case .deleteContactNotice: return "deleteContactNotice"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -140,12 +143,12 @@ struct ChatInfoView: View {
 
     enum ChatInfoViewActionSheet: Identifiable {
         case deleteContactActionSheet
-        case notifyDeleteContactActionSheet(contactDeleteMode: ContactDeleteMode)
+        case confirmDeleteContactActionSheet(contactDeleteMode: ContactDeleteMode)
 
         var id: String {
             switch self {
             case .deleteContactActionSheet: return "deleteContactActionSheet"
-            case .notifyDeleteContactActionSheet: return "notifyDeleteContactActionSheet"
+            case .confirmDeleteContactActionSheet: return "confirmDeleteContactActionSheet"
             }
         }
     }
@@ -303,22 +306,28 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
+            case .deleteContactNotice: return deleteContactNotice(contact)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
         .actionSheet(item: $actionSheet) { sheet in
             switch(sheet) {
             case .deleteContactActionSheet:
-                return ActionSheet(
-                    title: Text("Delete contact or conversation?"),
-                    buttons: [
-                        .destructive(Text("Only delete conversation")) { deleteContact(chatDeleteMode: .messages) },
-                        .destructive(Text("Delete contact, keep conversation")) { actionSheet = .notifyDeleteContactActionSheet(contactDeleteMode: .entity) },
-                        .destructive(Text("Delete contact and conversation")) { actionSheet = .notifyDeleteContactActionSheet(contactDeleteMode: .full) },
-                        .cancel()
-                    ]
+                var sheetButtons: [ActionSheet.Button] = []
+                sheetButtons.append(
+                    .destructive(Text("Delete contact")) { actionSheet = .confirmDeleteContactActionSheet(contactDeleteMode: .full) }
                 )
-            case let .notifyDeleteContactActionSheet(contactDeleteMode):
+                if !contact.chatDeleted {
+                    sheetButtons.append(
+                        .destructive(Text("Delete contact, keep conversation")) { actionSheet = .confirmDeleteContactActionSheet(contactDeleteMode: .entity) }
+                    )
+                }
+                sheetButtons.append(.cancel())
+                return ActionSheet(
+                    title: Text("Delete contact?"),
+                    buttons: sheetButtons
+                )
+            case let .confirmDeleteContactActionSheet(contactDeleteMode):
                 if contact.ready && contact.active {
                     return ActionSheet(
                         title: Text("Notify contact?\nThis cannot be undone!"),
@@ -615,7 +624,13 @@ struct ChatInfoView: View {
                         chatModel.removeChat(chat.chatInfo.id)
                     case .entity:
                         chatModel.updateContact(ct)
+                        // dismissing sheet when opened from ChatView closes deleteContactNotice alert,
+                        // also it makes less sense to show this alert as user is already in Chats tab
+                        if showDeleteContactNotice && !openedFromChatView {
+                            alert = .deleteContactNotice
+                        }
                     case .messages:
+                        logger.warning("ChatInfoView deleteContact case .messages should be unreachable")
                         chatModel.removeChat(chat.chatInfo.id)
                         chatModel.addChat(Chat(
                             chatInfo: .direct(contact: ct),
@@ -624,7 +639,7 @@ struct ChatInfoView: View {
                     }
                 }
             } catch let error {
-                logger.error("deleteContactAlert apiDeleteChat error: \(responseError(error))")
+                logger.error("ChatInfoView deleteContact apiDeleteContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error deleting contact")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
@@ -708,6 +723,17 @@ struct ChatInfoView: View {
                 }
             }
         }
+    }
+
+    private func deleteContactNotice(_ contact: Contact) -> Alert {
+        return Alert(
+            title: Text("Contact deleted!"),
+            message: Text("You can still view conversation with \(contact.displayName) in the Chats tab."),
+            primaryButton: .default(Text("Don't show again")) {
+                showDeleteContactNotice = false
+            },
+            secondaryButton: .default(Text("Ok"))
+        )
     }
 }
 

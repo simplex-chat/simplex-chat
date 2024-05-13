@@ -782,9 +782,14 @@ func deleteChatContact(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
             case .full:
                 ChatModel.shared.removeChat(cInfo.id)
             case .entity:
-                ChatModel.shared.updateContact(ct)
+                // removeChat forces list update (for ContactsView)
+                ChatModel.shared.removeChat(cInfo.id)
+                ChatModel.shared.addChat(Chat(
+                    chatInfo: .direct(contact: ct),
+                    chatItems: chat.chatItems
+                ))
             case .messages:
-                // removeChat forces list update
+                // removeChat forces list update (for ChatListView)
                 ChatModel.shared.removeChat(cInfo.id)
                 ChatModel.shared.addChat(Chat(
                     chatInfo: .direct(contact: ct),

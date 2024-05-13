@@ -83,17 +83,18 @@ struct ContactsView: View {
         }
     }
 
-    // TODO filter out deletedByUser
     private func filteredContactChats(_ contactChats: [Chat]) -> [Chat] {
         let s = searchString()
         return contactChats.filter { chat in
             switch chat.chatInfo {
             case let .direct(contact):
-                return s == ""
-                ? true
-                : (viewNameContains(contact, s) ||
-                   contact.profile.displayName.localizedLowercase.contains(s) ||
-                   contact.fullName.localizedLowercase.contains(s))
+                return contact.contactStatus != .deletedByUser && (
+                    s == ""
+                    ? true
+                    : (viewNameContains(contact, s) ||
+                       contact.profile.displayName.localizedLowercase.contains(s) ||
+                       contact.fullName.localizedLowercase.contains(s))
+                )
             default: return false
             }
         }

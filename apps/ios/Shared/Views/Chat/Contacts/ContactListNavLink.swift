@@ -13,20 +13,21 @@ struct ContactListNavLink: View {
     @ObservedObject var chat: Chat
     @State private var contactNavLinkSheet: ContactNavLinkActionSheet? = nil
 
+    @AppStorage(DEFAULT_SHOW_DELETE_CONTACT_NOTICE) private var showDeleteContactNotice = true
+
     enum ContactNavLinkActionSheet: Identifiable {
         case deleteContactActionSheet
-        case notifyDeleteContactActionSheet(contactDeleteMode: ContactDeleteMode)
+        case confirmDeleteContactActionSheet(contactDeleteMode: ContactDeleteMode)
 
         var id: String {
             switch self {
             case .deleteContactActionSheet: return "deleteContactActionSheet"
-            case .notifyDeleteContactActionSheet: return "notifyDeleteContactActionSheet"
+            case .confirmDeleteContactActionSheet: return "confirmDeleteContactActionSheet"
             }
         }
     }
 
     var body: some View {
-        // TODO keep bottom bar?
         switch chat.chatInfo {
         case let .direct(contact):
             NavigationLink {
@@ -68,21 +69,41 @@ struct ContactListNavLink: View {
             .actionSheet(item: $contactNavLinkSheet) { sheet in
                 switch(sheet) {
                 case .deleteContactActionSheet:
+                    var sheetButtons: [ActionSheet.Button] = []
+                    sheetButtons.append(
+                        .destructive(Text("Delete contact")) { contactNavLinkSheet = .confirmDeleteContactActionSheet(contactDeleteMode: .full) }
+                    )
+                    if !contact.chatDeleted {
+                        sheetButtons.append(
+                            .destructive(Text("Delete contact, keep conversation")) { contactNavLinkSheet = .confirmDeleteContactActionSheet(contactDeleteMode: .entity) }
+                        )
+                    }
+                    sheetButtons.append(.cancel())
                     return ActionSheet(
                         title: Text("Delete contact?"),
-                        buttons: [
-                            .destructive(Text("Delete contact, keep conversation")) { contactNavLinkSheet = .notifyDeleteContactActionSheet(contactDeleteMode: .entity) },
-                            .destructive(Text("Delete contact and conversation")) { contactNavLinkSheet = .notifyDeleteContactActionSheet(contactDeleteMode: .full) },
-                            .cancel()
-                        ]
+                        buttons: sheetButtons
                     )
-                case let .notifyDeleteContactActionSheet(contactDeleteMode):
+                case let .confirmDeleteContactActionSheet(contactDeleteMode):
                     if contact.ready && contact.active {
                         return ActionSheet(
                             title: Text("Notify contact?\nThis cannot be undone!"),
                             buttons: [
-                                .destructive(Text("Delete and notify contact")) { Task { await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true)) } },
-                                .destructive(Text("Delete without notification")) { Task { await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false)) } },
+                                .destructive(Text("Delete and notify contact")) {
+                                    Task {
+                                        await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true))
+                                        if contactDeleteMode == .entity && showDeleteContactNotice {
+                                            AlertManager.shared.showAlert(deleteContactNotice(contact))
+                                        }
+                                    }
+                                },
+                                .destructive(Text("Delete without notification")) {
+                                    Task {
+                                        await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false))
+                                        if contactDeleteMode == .entity && showDeleteContactNotice {
+                                            AlertManager.shared.showAlert(deleteContactNotice(contact))
+                                        }
+                                    }
+                                },
                                 .cancel()
                             ]
                         )
@@ -90,7 +111,14 @@ struct ContactListNavLink: View {
                         return ActionSheet(
                             title: Text("Confirm contact deletion.\nThis cannot be undone!"),
                             buttons: [
-                                .destructive(Text("Delete")) { Task { await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false)) } },
+                                .destructive(Text("Delete")) {
+                                    Task {
+                                        await deleteChatContact(chat, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false))
+                                        if contactDeleteMode == .entity && showDeleteContactNotice {
+                                            AlertManager.shared.showAlert(deleteContactNotice(contact))
+                                        }
+                                    }
+                                },
                                 .cancel()
                             ]
                         )
@@ -131,6 +159,17 @@ struct ContactListNavLink: View {
         Image(systemName: "multiply.circle.fill")
             .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
+    }
+
+    private func deleteContactNotice(_ contact: Contact) -> Alert {
+        return Alert(
+            title: Text("Contact deleted!"),
+            message: Text("You can still view conversation with \(contact.displayName) in the Chats tab."),
+            primaryButton: .default(Text("Don't show again")) {
+                showDeleteContactNotice = false
+            },
+            secondaryButton: .default(Text("Ok"))
+        )
     }
 }
 
