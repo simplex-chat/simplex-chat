@@ -2203,6 +2203,7 @@ processChatCommand' vr = \case
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> lift (withAgent' resetAgentStats) >> ok_
+  GetAgentMsgDuplicates -> lift $ CRAgentMsgDuplicates . map (first decodeLatin1) <$> withAgent' getDuplicateMsgCounts
   GetAgentSubs -> lift $ summary <$> withAgent' getAgentSubscriptions
     where
       summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
@@ -7341,6 +7342,7 @@ chatCommandP =
       "/get subs details" $> GetAgentSubsDetails,
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
+      "/get dups" $> GetAgentMsgDuplicates,
       "//" *> (CustomChatCommand <$> A.takeByteString)
     ]
   where
