@@ -727,11 +727,7 @@ instance StrEncoding ACIStatus where
           "snd_sent" -> ACIStatus SMDSnd . CISSndSent <$> ((A.space *> strP) <|> pure SSPComplete)
           "snd_rcvd" -> ACIStatus SMDSnd <$> (CISSndRcvd <$> (A.space *> strP) <*> ((A.space *> strP) <|> pure SSPComplete))
           "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-          "snd_error" ->
-            ACIStatus SMDSnd . CISSndError
-              <$> ( (A.space *> strP)
-                      <|> (SndErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)) -- deprecated
-                  )
+          "snd_error" -> ACIStatus SMDSnd . CISSndError <$> (A.space *> strP)
           "snd_warning" -> ACIStatus SMDSnd . CISSndWarning <$> (A.space *> strP)
           "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
           "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
@@ -772,7 +768,7 @@ instance StrEncoding SndError where
       "proxy" -> SndErrProxy . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
       "proxy_relay" -> SndErrProxyRelay . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
       "other" -> SndErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      _ -> fail "bad SndError"
+      s -> SndErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString -- for deprecated CISSndError
 
 instance StrEncoding SrvError where
   strEncode = \case
