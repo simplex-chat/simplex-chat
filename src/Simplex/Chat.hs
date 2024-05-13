@@ -4735,18 +4735,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     agentErrToSndErr :: AgentErrorType -> SndError
     agentErrToSndErr (SMP _ AUTH) = SndErrAuth
     agentErrToSndErr (SMP _ QUOTA) = SndErrQuota
-    agentErrToSndErr (BROKER _ NETWORK) = SndErrExpired
-    agentErrToSndErr (BROKER _ TIMEOUT) = SndErrExpired
-    agentErrToSndErr (BROKER _ e) = SndErrRelay $ brokerHostError e
-    agentErrToSndErr (SMP proxySrv (SMP.PROXY (SMP.BROKER e))) = SndErrProxy proxySrv $ brokerHostError e
-    agentErrToSndErr (AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e)))) = SndErrProxyRelay proxySrv $ brokerHostError e
+    agentErrToSndErr (BROKER _ e) = brokerError e SndErrRelay
+    agentErrToSndErr (SMP proxySrv (SMP.PROXY (SMP.BROKER e))) = brokerError e $ SndErrProxy proxySrv
+    agentErrToSndErr (AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e)))) = brokerError e $ SndErrProxyRelay proxySrv
     agentErrToSndErr err = SndErrOther . T.unpack . safeDecodeUtf8 $ strEncode err
 
-    brokerHostError :: BrokerErrorType -> SrvError
-    brokerHostError e = case e of
-      HOST -> SrvErrHost
-      SMP.TRANSPORT TEVersion -> SrvErrVersion
-      _ -> SrvErrOther . T.unpack . safeDecodeUtf8 $ strEncode e
+    brokerError :: BrokerErrorType -> (SrvError -> SndError) -> SndError
+    brokerError e wrapErr = case e of
+      NETWORK -> SndErrExpired
+      TIMEOUT -> SndErrExpired
+      _ -> wrapErr brokerHostError
+      where
+        brokerHostError :: SrvError
+        brokerHostError = case e of
+          HOST -> SrvErrHost
+          SMP.TRANSPORT TEVersion -> SrvErrVersion
+          _ -> SrvErrOther . T.unpack . safeDecodeUtf8 $ strEncode e
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
