@@ -1022,12 +1022,12 @@ processChatCommand' vr = \case
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat cRef@(ChatRef cType chatId) chatDeleteMode -> withUser $ \user@User {userId} -> case cType of
+  APIDeleteChat cRef@(ChatRef cType chatId) cdm -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db vr user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       withContactLock "deleteChat direct" chatId . procCmd $
-        case chatDeleteMode of
+        case cdm of
           CDMFull notify -> do
             cancelFilesInProgress user filesInfo
             deleteFilesLocally filesInfo
@@ -1573,7 +1573,7 @@ processChatCommand' vr = \case
       CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
         processChatCommand $ APIConnectContactViaAddress userId incognito contactId
       _ -> processChatCommand $ APIConnect userId incognito (Just cReqUri)
-  DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) (CDMFull True)
+  DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) cdm
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
     CRContactsList user <$> withStore' (\db -> getUserContacts db vr user)
@@ -7123,8 +7123,7 @@ chatCommandP =
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
-      "/_delete " *> (APIDeleteChat <$> chatRefP <* A.space <*> jsonP),
-      "/_delete " *> (APIDeleteChat <$> chatRefP <*> (CDMFull <$> (A.space *> "notify=" *> onOffP <|> pure True))),
+      "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal),
@@ -7230,7 +7229,7 @@ chatCommandP =
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
-      ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
+      ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName <*> chatDeleteMode),
       "/clear *" $> ClearNoteFolder,
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
@@ -7381,6 +7380,15 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
+    chatDeleteMode =
+      A.choice
+        [ " full" *> (CDMFull <$> notifyP),
+          " entity" *> (CDMEntity <$> notifyP),
+          " messages" $> CDMMessages,
+          CDMFull <$> notifyP -- backwards compatible
+        ]
+      where
+        notifyP = " notify=" *> onOffP <|> pure True
     displayName = safeDecodeUtf8 <$> (quoted "'" <|> takeNameTill isSpace)
       where
         takeNameTill p =
