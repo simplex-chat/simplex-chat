@@ -4067,14 +4067,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MWARN msgId err ->
-          updateDirectItemStatus ct conn msgId $ agentWarnToItemStatus err
+          updateDirectItemStatus ct conn msgId (CISSndWarning $ agentErrToSndErr err)
         MERR msgId err -> do
-          updateDirectItemStatus ct conn msgId $ agentErrToItemStatus err
+          updateDirectItemStatus ct conn msgId (CISSndError $ agentErrToSndErr err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           incAuthErrCounter connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
-          updateDirectItemsStatus ct conn (L.toList msgIds) $ agentErrToItemStatus err
+          updateDirectItemsStatus ct conn (L.toList msgIds) (CISSndError $ agentErrToSndErr err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4452,14 +4452,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       MWARN msgId err ->
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentWarnToItemStatus err
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentErrToSndErr err)
       MERR msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentErrToItemStatus err
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndError $ agentErrToSndErr err)
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
       MERRS msgIds err -> do
-        let newStatus = agentErrToItemStatus err
+        let newStatus = CISSndError $ agentErrToSndErr err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
@@ -4732,20 +4732,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     sentMsgDeliveryEvent Connection {connId} msgId =
       withStore' $ \db -> updateSndMsgDeliveryStatus db connId msgId MDSSndSent
 
-    agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
-    agentErrToItemStatus (SMP _ AUTH) = CISSndDeliveryError SDEAuth
-    agentErrToItemStatus (SMP _ QUOTA) = CISSndDeliveryError SDEQuota
-    agentErrToItemStatus err = CISSndDeliveryError . SDEOther . T.unpack . safeDecodeUtf8 $ strEncode err
+    agentErrToSndErr :: AgentErrorType -> SndError
+    agentErrToSndErr (SMP _ AUTH) = SndErrAuth
+    agentErrToSndErr (SMP _ QUOTA) = SndErrQuota
+    agentErrToSndErr (BROKER _ NETWORK) = SndErrExpired
+    agentErrToSndErr (BROKER _ TIMEOUT) = SndErrExpired
+    agentErrToSndErr (BROKER _ e) = SndErrRelay $ brokerHostError e
+    agentErrToSndErr (SMP proxySrv (SMP.PROXY (SMP.BROKER e))) = SndErrProxy proxySrv $ brokerHostError e
+    agentErrToSndErr (AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e)))) = SndErrProxyRelay proxySrv $ brokerHostError e
+    agentErrToSndErr err = SndErrOther . T.unpack . safeDecodeUtf8 $ strEncode err
 
-    -- see MWARN, serverHostError in agent
-    agentWarnToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
-    agentWarnToItemStatus (BROKER _ HOST) = CISSndDeliveryWarning SDWBrokerHost
-    agentWarnToItemStatus (BROKER _ (SMP.TRANSPORT TEVersion)) = CISSndDeliveryWarning SDWBrokerTransportVersion
-    agentWarnToItemStatus (SMP _ (SMP.PROXY (SMP.BROKER HOST))) = CISSndDeliveryWarning SDWProxyHost
-    agentWarnToItemStatus (SMP _ (SMP.PROXY (SMP.BROKER (SMP.TRANSPORT TEVersion)))) = CISSndDeliveryWarning SDWProxyTransportVersion
-    agentWarnToItemStatus (AP.PROXY _ _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER HOST)))) = CISSndDeliveryWarning SDWProxyBrokerHost
-    agentWarnToItemStatus (AP.PROXY _ _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER (SMP.TRANSPORT TEVersion))))) = CISSndDeliveryWarning SDWProxyBrokerTransportVersion
-    agentWarnToItemStatus err = CISSndDeliveryWarning . SDWOther . T.unpack . safeDecodeUtf8 $ strEncode err
+    brokerHostError :: BrokerErrorType -> SrvError
+    brokerHostError e = case e of
+      HOST -> SrvErrHost
+      SMP.TRANSPORT TEVersion -> SrvErrVersion
+      _ -> SrvErrOther . T.unpack . safeDecodeUtf8 $ strEncode e
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =

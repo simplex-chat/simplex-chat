@@ -686,9 +686,9 @@ data CIStatus (d :: MsgDirection) where
   CISSndSent :: SndCIStatusProgress -> CIStatus 'MDSnd
   CISSndRcvd :: MsgReceiptStatus -> SndCIStatusProgress -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd -- deprecated
-  CISSndError :: String -> CIStatus 'MDSnd -- deprecated
-  CISSndDeliveryError :: SndDeliveryError -> CIStatus 'MDSnd
-  CISSndDeliveryWarning :: SndDeliveryWarning -> CIStatus 'MDSnd
+  -- CISSndError :: String -> CIStatus 'MDSnd -- deprecated
+  CISSndError :: SndError -> CIStatus 'MDSnd
+  CISSndWarning :: SndError -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
   CISInvalid :: Text -> CIStatus 'MDSnd
@@ -707,9 +707,9 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndSent sndProgress -> "snd_sent " <> strEncode sndProgress
     CISSndRcvd msgRcptStatus sndProgress -> "snd_rcvd " <> strEncode msgRcptStatus <> " " <> strEncode sndProgress
     CISSndErrorAuth -> "snd_error_auth"
-    CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
-    CISSndDeliveryError sde -> "snd_delivery_error " <> strEncode sde
-    CISSndDeliveryWarning sdw -> "snd_delivery_warning " <> strEncode sdw
+    -- CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e) -- deprecated
+    CISSndError sndErr -> "snd_error " <> strEncode sndErr
+    CISSndWarning sndErr -> "snd_warning " <> strEncode sndErr
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
     CISInvalid {} -> "invalid"
@@ -727,70 +727,72 @@ instance StrEncoding ACIStatus where
           "snd_sent" -> ACIStatus SMDSnd . CISSndSent <$> ((A.space *> strP) <|> pure SSPComplete)
           "snd_rcvd" -> ACIStatus SMDSnd <$> (CISSndRcvd <$> (A.space *> strP) <*> ((A.space *> strP) <|> pure SSPComplete))
           "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-          "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-          "snd_delivery_error" -> ACIStatus SMDSnd . CISSndDeliveryError <$> (A.space *> strP)
-          "snd_delivery_warning" -> ACIStatus SMDSnd . CISSndDeliveryWarning <$> (A.space *> strP)
+          "snd_error" ->
+            ACIStatus SMDSnd . CISSndError
+              <$> ( (A.space *> strP)
+                      <|> (SndErrOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)) -- deprecated
+                  )
+          "snd_warning" -> ACIStatus SMDSnd . CISSndWarning <$> (A.space *> strP)
           "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
           "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
           _ -> fail "bad status"
 
-data SndDeliveryError
-  = SDEAuth
-  | SDEQuota
-  | SDEOther String
+-- see serverHostError in agent
+data SndError
+  = SndErrAuth
+  | SndErrQuota
+  | SndErrExpired -- TIMEOUT/NETWORK errors
+  | SndErrRelay SrvError -- BROKER errors (other than TIMEOUT/NETWORK)
+  | SndErrProxy String SrvError -- SMP PROXY errors, String is proxy server
+  | SndErrProxyRelay String SrvError -- PROXY BROKER errors, String is proxy server
+  | SndErrOther String -- other errors, String is error
   deriving (Eq, Show)
 
-instance StrEncoding SndDeliveryError where
-  strEncode = \case
-    SDEAuth -> "sde_auth"
-    SDEQuota -> "sde_quota"
-    SDEOther e -> "sde_other " <> encodeUtf8 (T.pack e)
-  strP =
-    A.takeWhile1 (/= ' ') >>= \case
-      "sde_auth" -> pure SDEAuth
-      "sde_quota" -> pure SDEQuota
-      "snd_other" -> SDEOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      _ -> fail "bad SndDeliveryError"
-
--- see MWARN, serverHostError in agent
-data SndDeliveryWarning
-  = SDWBrokerHost
-  | SDWBrokerTransportVersion
-  | SDWProxyHost
-  | SDWProxyTransportVersion
-  | SDWProxyBrokerHost
-  | SDWProxyBrokerTransportVersion
-  | SDWOther String
+data SrvError
+  = SrvErrHost
+  | SrvErrVersion
+  | SrvErrOther String
   deriving (Eq, Show)
 
-instance StrEncoding SndDeliveryWarning where
+instance StrEncoding SndError where
   strEncode = \case
-    SDWBrokerHost -> "sdw_broker_host"
-    SDWBrokerTransportVersion -> "sdw_broker_transport_version"
-    SDWProxyHost -> "sdw_proxy_host"
-    SDWProxyTransportVersion -> "sdw_proxy_transport_version"
-    SDWProxyBrokerHost -> "sdw_proxy_broker_host"
-    SDWProxyBrokerTransportVersion -> "sdw_proxy_broker_transport_version"
-    SDWOther e -> "sdw_other " <> encodeUtf8 (T.pack e)
+    SndErrAuth -> "auth"
+    SndErrQuota -> "quota"
+    SndErrExpired -> "expired"
+    SndErrRelay srvErr -> "relay " <> strEncode srvErr
+    SndErrProxy proxy srvErr -> "proxy " <> encodeUtf8 (T.pack proxy) <> " " <> strEncode srvErr
+    SndErrProxyRelay proxy srvErr -> "proxy_relay " <> encodeUtf8 (T.pack proxy) <> " " <> strEncode srvErr
+    SndErrOther e -> "other " <> encodeUtf8 (T.pack e)
   strP =
     A.takeWhile1 (/= ' ') >>= \case
-      "sdw_broker_host" -> pure SDWBrokerHost
-      "sdw_broker_transport_version" -> pure SDWBrokerTransportVersion
-      "sdw_proxy_host" -> pure SDWProxyHost
-      "sdw_proxy_transport_version" -> pure SDWProxyTransportVersion
-      "sdw_proxy_broker_host" -> pure SDWProxyBrokerHost
-      "sdw_proxy_broker_transport_version" -> pure SDWProxyBrokerTransportVersion
-      "sdw_other" -> SDWOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      _ -> fail "bad SndDeliveryWarning"
+      "auth" -> pure SndErrAuth
+      "quota" -> pure SndErrQuota
+      "expired" -> pure SndErrExpired
+      "relay" -> SndErrRelay <$> (A.space *> strP)
+      "proxy" -> SndErrProxy . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
+      "proxy_relay" -> SndErrProxyRelay . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
+      "other" -> SndErrOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      _ -> fail "bad SndError"
+
+instance StrEncoding SrvError where
+  strEncode = \case
+    SrvErrHost -> "host"
+    SrvErrVersion -> "version"
+    SrvErrOther e -> "other " <> encodeUtf8 (T.pack e)
+  strP =
+    A.takeWhile1 (/= ' ') >>= \case
+      "host" -> pure SrvErrHost
+      "version" -> pure SrvErrVersion
+      "other" -> SrvErrOther . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      _ -> fail "bad SrvError"
 
 data JSONCIStatus
   = JCISSndNew
   | JCISSndSent {sndProgress :: SndCIStatusProgress}
   | JCISSndRcvd {msgRcptStatus :: MsgReceiptStatus, sndProgress :: SndCIStatusProgress}
   | JCISSndErrorAuth -- deprecated
-  | JCISSndError {agentError :: String} -- deprecated
-  | JCISSndDeliveryError {sndDeliveryError :: SndDeliveryError}
-  | JCISSndDeliveryWarning {sndDeliveryWarning :: SndDeliveryWarning}
+  | JCISSndError {agentError :: SndError}
+  | JCISSndWarning {agentError :: SndError}
   | JCISRcvNew
   | JCISRcvRead
   | JCISInvalid {text :: Text}
@@ -802,9 +804,8 @@ jsonCIStatus = \case
   CISSndSent sndProgress -> JCISSndSent sndProgress
   CISSndRcvd msgRcptStatus sndProgress -> JCISSndRcvd msgRcptStatus sndProgress
   CISSndErrorAuth -> JCISSndErrorAuth
-  CISSndError e -> JCISSndError e
-  CISSndDeliveryError sde -> JCISSndDeliveryError sde
-  CISSndDeliveryWarning sdw -> JCISSndDeliveryWarning sdw
+  CISSndError sndErr -> JCISSndError sndErr
+  CISSndWarning sndErr -> JCISSndWarning sndErr
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
   CISInvalid text -> JCISInvalid text
@@ -815,9 +816,8 @@ jsonACIStatus = \case
   JCISSndSent sndProgress -> ACIStatus SMDSnd $ CISSndSent sndProgress
   JCISSndRcvd msgRcptStatus sndProgress -> ACIStatus SMDSnd $ CISSndRcvd msgRcptStatus sndProgress
   JCISSndErrorAuth -> ACIStatus SMDSnd CISSndErrorAuth
-  JCISSndError e -> ACIStatus SMDSnd $ CISSndError e
-  JCISSndDeliveryError sde -> ACIStatus SMDSnd $ CISSndDeliveryError sde
-  JCISSndDeliveryWarning sdw -> ACIStatus SMDSnd $ CISSndDeliveryWarning sdw
+  JCISSndError sndErr -> ACIStatus SMDSnd $ CISSndError sndErr
+  JCISSndWarning sndErr -> ACIStatus SMDSnd $ CISSndWarning sndErr
   JCISRcvNew -> ACIStatus SMDRcv CISRcvNew
   JCISRcvRead -> ACIStatus SMDRcv CISRcvRead
   JCISInvalid text -> ACIStatus SMDSnd $ CISInvalid text
@@ -1172,9 +1172,9 @@ $(JQ.deriveJSON defaultJSON ''CITimed)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "SSP") ''SndCIStatusProgress)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SndDeliveryError)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SrvErr") ''SrvError)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDW") ''SndDeliveryWarning)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SndErr") ''SndError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCIS") ''JSONCIStatus)
 
