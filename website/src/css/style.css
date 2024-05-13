@@ -292,10 +292,11 @@ header nav {
     max-height: 0;
     transform: translateY(-10px);
     transition: all .7s ease !important;
+    overflow: hidden;
   }
 
   .active .sub-menu {
-    max-height: 600px;
+    max-height: 1000px;
     transform: translateY(0px);
     opacity: 1;
     visibility: visible;
@@ -306,6 +307,7 @@ header nav {
     visibility: hidden;
     opacity: 0;
     transform: translateX(100%);
+    overflow-y: auto;
   }
 
   header nav.open {
@@ -956,4 +958,8 @@ p a{
     margin-bottom: 4rem;
     top: calc(66px + 2rem);
   }
+}
+
+.d-none-if-js-disabled{
+  display: none !important;
 }

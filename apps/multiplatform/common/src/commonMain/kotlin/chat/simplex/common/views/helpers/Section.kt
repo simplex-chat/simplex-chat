@@ -61,9 +61,8 @@ fun <T> SectionViewSelectable(
   onSelected: (T) -> Unit,
 ) {
   SectionView(title) {
-    LazyColumn {
-      items(values.size) { index ->
-        val item = values[index]
+    Column {
+      values.forEach { item ->
         SectionItemViewSpaceBetween({ onSelected(item.value) }) {
           Text(item.title)
           if (currentValue.value == item.value) {
@@ -198,16 +197,16 @@ fun <T> SectionItemWithValue(
 }
 
 @Composable
-fun SectionTextFooter(text: String) {
-  SectionTextFooter(AnnotatedString(text))
+fun SectionTextFooter(text: String, color: Color = MaterialTheme.colors.secondary) {
+  SectionTextFooter(AnnotatedString(text), color = color)
 }
 
 @Composable
-fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start) {
+fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start, color: Color = MaterialTheme.colors.secondary) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
-    color = MaterialTheme.colors.secondary,
+    color = color,
     lineHeight = 18.sp,
     fontSize = 14.sp,
     textAlign = textAlign
@@ -255,12 +254,12 @@ fun TextIconSpaced(extraPadding: Boolean = false) {
 }
 
 @Composable
-fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null) {
+fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground) {
   SectionItemViewSpaceBetween {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
       if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: MaterialTheme.colors.secondary)
-      Text(title)
+      Text(title, color = textColor)
     }
     Text(value, color = MaterialTheme.colors.secondary)
   }

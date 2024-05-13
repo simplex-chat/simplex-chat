@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
@@ -21,6 +22,7 @@ struct ChatItemInfoView: View {
     enum CIInfoTab {
         case history
         case quote
+        case forwarded
         case delivery
     }
 
@@ -53,7 +55,9 @@ struct ChatItemInfoView: View {
     }
 
     private var title: String {
-        ci.chatDir.sent
+        ci.localNote
+        ? NSLocalizedString("Saved message", comment: "message info title")
+        : ci.chatDir.sent
         ? NSLocalizedString("Sent message", comment: "message info title")
         : NSLocalizedString("Received message", comment: "message info title")
     }
@@ -66,7 +70,18 @@ struct ChatItemInfoView: View {
         if ci.quotedItem != nil {
             numTabs += 1
         }
+        if chatItemInfo?.forwardedFromChatItem != nil {
+            numTabs += 1
+        }
         return numTabs
+    }
+
+    private var local: Bool {
+        switch ci.chatDir {
+        case .localSnd: true
+        case .localRcv: true
+        default: false
+        }
     }
 
     @ViewBuilder private func itemInfoView() -> some View {
@@ -91,6 +106,13 @@ struct ChatItemInfoView: View {
                         }
                         .tag(CIInfoTab.quote)
                 }
+                if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
+                    forwardedFromTab(forwardedFromItem)
+                        .tabItem {
+                            Label(local ? "Saved" : "Forwarded", systemImage: "arrowshape.turn.up.forward")
+                        }
+                        .tag(CIInfoTab.forwarded)
+                }
             }
             .onAppear {
                 if chatItemInfo?.memberDeliveryStatuses != nil {
@@ -110,7 +132,11 @@ struct ChatItemInfoView: View {
                 .bold()
                 .padding(.bottom)
 
-            infoRow("Sent at", localTimestamp(meta.itemTs))
+            if ci.localNote {
+                infoRow("Created at", localTimestamp(meta.itemTs))
+            } else {
+                infoRow("Sent at", localTimestamp(meta.itemTs))
+            }
             if !ci.chatDir.sent {
                 infoRow("Received at", localTimestamp(meta.createdAt))
             }
@@ -168,7 +194,6 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
-                .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(chatItemFrameColor(ci, colorScheme))
@@ -198,11 +223,22 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
         if text != "" {
-            messageText(text, formattedText, sender)
+            TextBubble(text: text, formattedText: formattedText, sender: sender)
         } else {
             Text("no text")
                 .italic()
                 .foregroundColor(.secondary)
+        }
+    }
+
+    private struct TextBubble: View {
+        var text: String
+        var formattedText: [FormattedText]?
+        var sender: String? = nil
+        @State private var showSecrets = false
+
+        var body: some View {
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
         }
     }
 
@@ -227,7 +263,6 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
-                .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(quotedMsgFrameColor(qi, colorScheme))
@@ -258,6 +293,74 @@ struct ChatItemInfoView: View {
         (qi.chatDir?.sent ?? false)
         ? (colorScheme == .light ? sentColorLight : sentColorDark)
         : Color(uiColor: .tertiarySystemGroupedBackground)
+    }
+
+    @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                Text(local ? "Saved from" : "Forwarded from")
+                    .font(.title2)
+                    .padding(.bottom, 4)
+                forwardedFromView(forwardedFromItem)
+            }
+            .padding()
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func forwardedFromView(_ forwardedFromItem: AChatItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                Task {
+                    await MainActor.run {
+                        chatModel.chatId = forwardedFromItem.chatInfo.id
+                        dismiss()
+                    }
+                }
+            } label: {
+                forwardedFromSender(forwardedFromItem)
+            }
+
+            if !local {
+                Divider().padding(.top, 32)
+                Text("Recipient(s) can't see who this message is from.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder private func forwardedFromSender(_ forwardedFromItem: AChatItem) -> some View {
+        HStack {
+            ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo), size: 48)
+                .padding(.trailing, 6)
+
+            if forwardedFromItem.chatItem.chatDir.sent {
+                VStack(alignment: .leading) {
+                    Text("you")
+                        .italic()
+                        .foregroundColor(.primary)
+                    Text(forwardedFromItem.chatInfo.chatViewName)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            } else if case let .groupRcv(groupMember) = forwardedFromItem.chatItem.chatDir {
+                VStack(alignment: .leading) {
+                    Text(groupMember.chatViewName)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(forwardedFromItem.chatInfo.chatViewName)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            } else {
+                Text(forwardedFromItem.chatInfo.chatViewName)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+        }
     }
 
     @ViewBuilder private func deliveryTab(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
@@ -301,8 +404,7 @@ struct ChatItemInfoView: View {
 
     private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
         HStack{
-            ProfileImage(imageStr: member.image)
-                .frame(width: 30, height: 30)
+            ProfileImage(imageStr: member.image, size: 30)
                 .padding(.trailing, 2)
             Text(member.chatViewName)
                 .lineLimit(1)
@@ -341,7 +443,12 @@ struct ChatItemInfoView: View {
     private func itemInfoShareText() -> String {
         let meta = ci.meta
         var shareText: [String] = [String.localizedStringWithFormat(NSLocalizedString("# %@", comment: "copied message info title, # <title>"), title), ""]
-        shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
+        shareText += [String.localizedStringWithFormat(
+            ci.localNote
+                ? NSLocalizedString("Created at: %@", comment: "copied message info")
+                : NSLocalizedString("Sent at: %@", comment: "copied message info"),
+            localTimestamp(meta.itemTs))
+        ]
         if !ci.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
         }

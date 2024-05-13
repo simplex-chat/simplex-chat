@@ -9,6 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
+let notesChatColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.21)
+let notesChatColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.19)
 let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
 let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
 private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.11)
@@ -28,7 +30,9 @@ struct FramedItemView: View {
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
-    
+    @State private var showSecrets = false
+    @State private var showQuoteSecrets = false
+
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
@@ -42,7 +46,9 @@ struct FramedItemView: View {
                         framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
                     case .blocked:
                         framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
-                    default:
+                    case .blockedByAdmin:
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
+                    case .deleted:
                         framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
                     }
                 } else if chatItem.meta.isLive {
@@ -59,6 +65,8 @@ struct FramedItemView: View {
                                 }
                             }
                         }
+                } else if let itemForwarded = chatItem.meta.itemForwarded {
+                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
 
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: framedMsgContentView)
@@ -157,7 +165,7 @@ struct FramedItemView: View {
         )
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
         let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
@@ -172,7 +180,7 @@ struct FramedItemView: View {
         .foregroundColor(.secondary)
         .padding(.horizontal, 12)
         .padding(.top, 6)
-        .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
+        .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, colorScheme))
@@ -240,22 +248,28 @@ struct FramedItemView: View {
         Group {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(sender).font(.caption).foregroundColor(.secondary)
+                    Text(sender)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
             } else {
                 ciQuotedMsgTextView(qi, lines: 3)
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
         .padding(.horizontal, 12)
     }
     
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
-        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText)
-            .lineLimit(lines)
-            .font(.subheadline)
-            .padding(.bottom, 6)
+        toggleSecrets(qi.formattedText, $showQuoteSecrets,
+            MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, showSecrets: showQuoteSecrets)
+                .lineLimit(lines)
+                .font(.subheadline)
+                .padding(.bottom, 6)
+        )
     }
 
     private func ciQuoteIconView(_ image: String) -> some View {
@@ -278,13 +292,15 @@ struct FramedItemView: View {
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
-        let v = MsgContentView(
+        let ft = text == "" ? [] : ci.formattedText
+        let v = toggleSecrets(ft, $showSecrets, MsgContentView(
             chat: chat,
             text: text,
-            formattedText: text == "" ? [] : ci.formattedText,
+            formattedText: ft,
             meta: ci.meta,
-            rightToLeft: rtl
-        )
+            rightToLeft: rtl,
+            showSecrets: showSecrets
+        ))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -298,7 +314,7 @@ struct FramedItemView: View {
             v
         }
     }
-    
+
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
             .overlay(DetermineWidth())
@@ -318,6 +334,14 @@ struct FramedItemView: View {
     }
 }
 
+@ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {
+    if let ft = ft, ft.contains(where: { $0.isSecret }) {
+        v.onTapGesture { showSecrets.wrappedValue.toggle() }
+    } else {
+        v
+    }
+}
+
 func isRightToLeft(_ s: String) -> Bool {
     if let lang = CFStringTokenizerCopyBestStringLanguage(s as CFString, CFRange(location: 0, length: min(s.count, 80))) {
         return NSLocale.characterDirection(forLanguage: lang as String) == .rightToLeft
@@ -334,9 +358,9 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 
 func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
-        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
     } else if case let .video(text, _, _) = ci.content.msgContent {
-        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
     }
     return false
 }

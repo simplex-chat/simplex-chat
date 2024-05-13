@@ -37,12 +37,12 @@ for ((i = 0 ; i < ${#arches[@]}; i++)); do
 
     mkdir -p "$output_dir" 2> /dev/null
 
-    curl --tlsv1.2 --location -o libsupport.zip $job_repo/$arch-android:lib:support.x86_64-linux/latest/download/1 && \
+    curl --tlsv1.2 --location -o libsupport.zip $job_repo/x86_64-linux."$arch"-android:lib:support/latest/download/1 && \
     unzip -o libsupport.zip && \
     mv libsupport.so "$output_dir" && \
     rm libsupport.zip
 
-    curl --tlsv1.2 --location -o libsimplex.zip "$job_repo"/"$arch"-android:lib:simplex-chat.x86_64-linux/latest/download/1 && \
+    curl --tlsv1.2 --location -o libsimplex.zip "$job_repo"/x86_64-linux."$arch"-android:lib:simplex-chat/latest/download/1 && \
     unzip -o libsimplex.zip && \
     mv libsimplex.so "$output_dir" && \
     rm libsimplex.zip

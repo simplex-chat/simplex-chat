@@ -7,14 +7,17 @@ module Simplex.Chat.Messages.CIContent.Events where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as J
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Parsers (dropPrefix, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | RGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAll
   | RGEUserRole {role :: GroupMemberRole}
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
@@ -25,10 +28,12 @@ data RcvGroupEvent
   -- and be created as unread without adding / working around new status for sent items
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
+  | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
   deriving (Show)
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | SGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAllUser
   | SGEUserRole {role :: GroupMemberRole}
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
@@ -39,16 +44,18 @@ data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
   | RCERatchetSync {syncStatus :: RatchetSyncState}
   | RCEVerificationCodeReset
+  | RCEPqEnabled {enabled :: PQEncryption}
   deriving (Show)
 
 data SndConnEvent
   = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
   | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
+  | SCEPqEnabled {enabled :: PQEncryption}
   deriving (Show)
 
 data RcvDirectEvent
-  = -- RDEProfileChanged {...}
-    RDEContactDeleted
+  = RDEContactDeleted
+  | RDEProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRContactUpdated
   deriving (Show)
 
 -- platform-specific JSON encoding (used in API)

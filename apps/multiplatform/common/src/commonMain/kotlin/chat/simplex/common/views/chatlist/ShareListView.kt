@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,12 +13,9 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.SettingsViewState
-import chat.simplex.common.ui.theme.*
+import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.Chat
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.BackHandler
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -30,6 +26,8 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   Scaffold(
     Modifier.padding(end = endPadding),
+    contentColor = LocalContentColor.current,
+    drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
     topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
@@ -75,7 +73,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      users.size > 1 || chatModel.remoteHosts.isNotEmpty() -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -83,7 +81,14 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
           userPickerState.value = AnimatedViewState.VISIBLE
         }
       }
-      else -> NavigationButtonBack { chatModel.sharedContent.value = null }
+      else -> NavigationButtonBack(onButtonClicked = {
+        val sharedContent = chatModel.sharedContent.value
+        // Drop shared content
+        chatModel.sharedContent.value = null
+        if (sharedContent is SharedContent.Forward) {
+          chatModel.chatId.value = sharedContent.fromChatInfo.id
+        }
+      })
     }
   }
   if (chatModel.chats.size >= 8) {
@@ -119,7 +124,8 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
             is SharedContent.Text -> stringResource(MR.strings.share_message)
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
-            else -> stringResource(MR.strings.share_message)
+            is SharedContent.Forward -> stringResource(MR.strings.forward_message)
+            null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
@@ -136,15 +142,17 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
 
 @Composable
 private fun ShareList(chatModel: ChatModel, search: String) {
-  val filter: (Chat) -> Boolean = { chat: Chat ->
-    chat.chatInfo.chatViewName.lowercase().contains(search.lowercase())
-  }
   val chats by remember(search) {
     derivedStateOf {
-      if (search.isEmpty()) chatModel.chats.filter { it.chatInfo.ready } else chatModel.chats.filter { it.chatInfo.ready }.filter(filter)
+      val sorted = chatModel.chats.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
+      if (search.isEmpty()) {
+        sorted.filter { it.chatInfo.ready }
+      } else {
+        sorted.filter { it.chatInfo.ready && it.chatInfo.chatViewName.lowercase().contains(search.lowercase()) }
+      }
     }
   }
-  LazyColumn(
+  LazyColumnWithScrollBar(
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chats) { chat ->

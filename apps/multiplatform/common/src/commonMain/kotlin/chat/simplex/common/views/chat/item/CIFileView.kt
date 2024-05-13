@@ -28,7 +28,7 @@ import java.net.URI
 fun CIFileView(
   file: CIFile?,
   edited: Boolean,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
 
@@ -59,20 +59,12 @@ fun CIFileView(
     }
   }
 
-  fun fileSizeValid(): Boolean {
-    if (file != null) {
-      return file.fileSize <= getMaxFileSize(file.fileProtocol)
-    }
-    return false
-  }
-
   fun fileAction() {
     if (file != null) {
-      when (file.fileStatus) {
-        is CIFileStatus.RcvInvitation -> {
-          if (fileSizeValid()) {
-            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
-            receiveFile(file.fileId, encrypted)
+      when {
+        file.fileStatus is CIFileStatus.RcvInvitation -> {
+          if (fileSizeValid(file)) {
+            receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
@@ -80,7 +72,7 @@ fun CIFileView(
             )
           }
         }
-        is CIFileStatus.RcvAccepted ->
+        file.fileStatus is CIFileStatus.RcvAccepted ->
           when (file.fileProtocol) {
             FileProtocol.XFTP ->
               AlertManager.shared.showAlertMsg(
@@ -92,16 +84,17 @@ fun CIFileView(
                 generalGetString(MR.strings.waiting_for_file),
                 generalGetString(MR.strings.file_will_be_received_when_contact_is_online)
               )
+            FileProtocol.LOCAL -> {}
           }
-        is CIFileStatus.RcvComplete -> {
-          withBGApi {
+        file.fileStatus is CIFileStatus.RcvComplete || (file.fileStatus is CIFileStatus.SndStored && file.fileProtocol == FileProtocol.LOCAL) -> {
+          withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
             if (chatModel.connectedToRemote() && filePath == null) {
               file.loadRemoteFile(true)
               filePath = getLoadedFilePath(file)
             }
             if (filePath != null) {
-              withApi {
+              withLongRunningApi {
                 saveFileLauncher.launch(file.fileName)
               }
             } else {
@@ -131,7 +124,8 @@ fun CIFileView(
     Surface(
       Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
       color = Color.Transparent,
-      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+      contentColor = LocalContentColor.current
     ) {
       Box(Modifier.size(32.dp))
     }
@@ -152,17 +146,19 @@ fun CIFileView(
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> fileIcon()
+              FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
+              FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvInvitation ->
-            if (fileSizeValid())
+            if (fileSizeValid(file))
               fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
             else
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
@@ -185,7 +181,8 @@ fun CIFileView(
   }
 
   Row(
-    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+    Modifier.clickable(onClick = { fileAction() }).padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+    //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
@@ -213,6 +210,8 @@ fun CIFileView(
   }
 }
 
+fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
+
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
   rememberFileChooserLauncher(false, ciFile) { to: URI? ->
@@ -224,6 +223,7 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
             decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
           } catch (e: Exception) {
             Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+            AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
             tmpFile.delete()
             return@createTmpFileAndDelete
           }

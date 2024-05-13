@@ -18,6 +18,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -36,7 +37,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       Icon(
         painterResource(MR.images.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { uriHandler.openUriCatching(link) }
+          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }
       )
     }
 
@@ -105,11 +106,10 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   val v = versionDescriptions[currentVersion.value]
 
   ModalView(close = close) {
-    Column(
+    ColumnWithScrollBar(
       Modifier
         .fillMaxSize()
-        .padding(horizontal = DEFAULT_PADDING)
-        .verticalScroll(rememberScrollState()),
+        .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING.times(0.75f))
     ) {
       AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)
@@ -459,6 +459,102 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_redeem,
         titleId = MR.strings.v5_2_more_things,
         descrId = MR.strings.v5_4_more_things_descr
+      )
+    )
+  ),
+  VersionDescription(
+    version = "v5.5",
+    post = "https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_folder_pen,
+        titleId = MR.strings.v5_5_private_notes,
+        descrId = MR.strings.v5_5_private_notes_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_link,
+        titleId = MR.strings.v5_5_simpler_connect_ui,
+        descrId = MR.strings.v5_5_simpler_connect_ui_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_forum,
+        titleId = MR.strings.v5_5_join_group_conversation,
+        descrId = MR.strings.v5_5_join_group_conversation_descr,
+        link = "simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_battery_3_bar,
+        titleId = MR.strings.v5_5_message_delivery,
+        descrId = MR.strings.v5_5_message_delivery_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_5_new_interface_languages,
+        descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
+  VersionDescription(
+    version = "v5.6",
+    post = "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_vpn_key_filled,
+        titleId = MR.strings.v5_6_quantum_resistant_encryption,
+        descrId = MR.strings.v5_6_quantum_resistant_encryption_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_ios_share,
+        titleId = MR.strings.v5_6_app_data_migration,
+        descrId = MR.strings.v5_6_app_data_migration_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_call,
+        titleId = MR.strings.v5_6_picture_in_picture_calls,
+        descrId = MR.strings.v5_6_picture_in_picture_calls_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_back_hand,
+        titleId = MR.strings.v5_6_safer_groups,
+        descrId = MR.strings.v5_6_safer_groups_descr
+      )
+    )
+  ),
+  VersionDescription(
+    version = "v5.7",
+    post = "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_vpn_key_filled,
+        titleId = MR.strings.v5_6_quantum_resistant_encryption,
+        descrId = MR.strings.v5_7_quantum_resistant_encryption_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_forward,
+        titleId = MR.strings.v5_7_forward,
+        descrId = MR.strings.v5_7_forward_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_music_note,
+        titleId = MR.strings.v5_7_call_sounds,
+        descrId = MR.strings.v5_7_call_sounds_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_account_box,
+        titleId = MR.strings.v5_7_shape_profile_images,
+        descrId = MR.strings.v5_7_shape_profile_images_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_wifi_tethering,
+        titleId = MR.strings.v5_7_network,
+        descrId = MR.strings.v5_7_network_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_7_new_interface_languages,
+        descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),

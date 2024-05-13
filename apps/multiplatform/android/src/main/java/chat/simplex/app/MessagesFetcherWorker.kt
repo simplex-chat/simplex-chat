@@ -3,11 +3,12 @@ package chat.simplex.app
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import chat.simplex.app.*
 import chat.simplex.app.SimplexService.Companion.showPassphraseNotification
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.views.helpers.DBMigrationResult
-import chat.simplex.app.BuildConfig
+import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.initChatControllerAndRunMigrations
+import chat.simplex.common.views.helpers.DatabaseUtils
 import kotlinx.coroutines.*
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -57,6 +58,10 @@ class MessagesFetcherWork(
     val durationSeconds = inputData.getInt(INPUT_DATA_DURATION, 60)
     var shouldReschedule = true
     try {
+      // In case of self-destruct is enabled the initialization process will not start in SimplexApp, Let's start it here
+      if (DatabaseUtils.ksSelfDestructPassword.get() != null && chatModel.chatDbStatus.value == null) {
+        initChatControllerAndRunMigrations()
+      }
       withTimeout(durationSeconds * 1000L) {
         val chatController = ChatController
         SimplexService.waitDbMigrationEnds(chatController)

@@ -56,6 +56,7 @@ fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, onClick: () -> Unit) {
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
     color = receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),

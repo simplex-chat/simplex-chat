@@ -116,7 +116,7 @@ struct DatabaseView: View {
                 let color: Color = unencrypted ? .orange : .secondary
                 settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
-                        DatabaseEncryptionView(useKeychain: $useKeychain)
+                        DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
                             .navigationTitle("Database passphrase")
                     } label: {
                         Text("Database passphrase")
@@ -484,6 +484,11 @@ func deleteChatAsync() async throws {
     try await apiDeleteStorage()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
+    deleteAppDatabaseAndFiles()
+    // Clean state so when creating new user the app will start chat automatically (see CreateProfile:createProfile())
+    DispatchQueue.main.async {
+        ChatModel.shared.users = []
+    }
 }
 
 struct DatabaseView_Previews: PreviewProvider {

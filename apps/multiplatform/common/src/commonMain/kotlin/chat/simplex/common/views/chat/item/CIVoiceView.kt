@@ -36,7 +36,7 @@ fun CIVoiceView(
   ci: ChatItem,
   timedMessagesTTL: Int?,
   longClick: () -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   Row(
     Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = if (hasText) 6.dp else 0.dp, end = if (hasText) 6.dp else 0.dp),
@@ -105,7 +105,7 @@ private fun VoiceLayout(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   onProgressChanged: (Int) -> Unit,
 ) {
   @Composable
@@ -225,7 +225,8 @@ private fun PlayPauseButton(
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,
-    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier
@@ -259,7 +260,7 @@ private fun VoiceMsgIndicator(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
@@ -279,7 +280,7 @@ private fun VoiceMsgIndicator(
     }
   } else {
     if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId, chatController.appPrefs.privacyEncryptLocalFiles.get()) }, {}, longClick = longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
     } else if (file?.fileStatus is CIFileStatus.RcvTransfer
       || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {

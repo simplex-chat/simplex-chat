@@ -19,6 +19,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
 @Composable
@@ -31,11 +32,11 @@ fun ContactPreferencesView(
 ) {
   val contact = remember { derivedStateOf { (m.getContactChat(contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
   val ct = contact.value ?: return
-  var featuresAllowed by rememberSaveable(ct, stateSaver = serializableSaver()) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
-  var currentFeaturesAllowed by rememberSaveable(ct, stateSaver = serializableSaver()) { mutableStateOf(featuresAllowed) }
+  var featuresAllowed by rememberSaveable(ct, user, stateSaver = serializableSaver()) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
+  var currentFeaturesAllowed by rememberSaveable(ct, user, stateSaver = serializableSaver()) { mutableStateOf(featuresAllowed) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
       val toContact = m.controller.apiSetContactPrefs(rhId, ct.contactId, prefs)
       if (toContact != null) {
@@ -77,10 +78,9 @@ private fun ContactPreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.contact_preferences))
     val timedMessages: MutableState<Boolean> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.timedMessagesAllowed) }

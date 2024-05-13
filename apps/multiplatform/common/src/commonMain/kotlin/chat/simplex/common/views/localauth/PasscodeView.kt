@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.views.chat.group.ProgressIndicator
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -23,6 +24,7 @@ fun PasscodeView(
   reason: String? = null,
   submitLabel: String,
   submitEnabled: ((String) -> Boolean)? = null,
+  buttonsEnabled: State<Boolean> = remember { mutableStateOf(true) },
   submit: () -> Unit,
   cancel: () -> Unit,
 ) {
@@ -74,9 +76,9 @@ fun PasscodeView(
       }
       PasscodeEntry(passcode, true)
       Row(Modifier.heightIn(min = 70.dp), verticalAlignment = Alignment.CenterVertically) {
-        SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), click = cancel)
+        SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), disabled = !buttonsEnabled.value, click = cancel)
         Spacer(Modifier.size(20.dp))
-        SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+        SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4 || !buttonsEnabled.value, click = submit)
       }
     }
   }
@@ -117,8 +119,8 @@ fun PasscodeView(
             Modifier.padding(start = 30.dp).height(s * 3),
             verticalArrangement = Arrangement.SpaceEvenly
           ) {
-            SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), click = cancel)
-            SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+            SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), disabled = !buttonsEnabled.value, click = cancel)
+            SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4 || !buttonsEnabled.value, click = submit)
           }
         }
       }
@@ -130,7 +132,12 @@ fun PasscodeView(
   } else {
     HorizontalLayout()
   }
+  if (!buttonsEnabled.value) {
+    ProgressIndicator()
+  }
+  val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
+    hideKeyboard(view, true)
     focusRequester.requestFocus()
     // Disallow to steal a focus by clicking on buttons or using Tab
     focusRequester.captureFocus()

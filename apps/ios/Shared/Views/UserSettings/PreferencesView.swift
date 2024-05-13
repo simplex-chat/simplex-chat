@@ -63,7 +63,6 @@ struct PreferencesView: View {
 
     private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
         Text(feature.allowDescription(allowFeature.wrappedValue))
-            .frame(height: 36, alignment: .topLeading)
     }
 
     private func savePreferences() {

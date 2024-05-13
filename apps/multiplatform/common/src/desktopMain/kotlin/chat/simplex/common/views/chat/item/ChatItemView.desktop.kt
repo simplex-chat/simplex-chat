@@ -35,14 +35,14 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   ItemAction(stringResource(MR.strings.save_verb), painterResource(if (cItem.file?.fileSource?.cryptoArgs == null) MR.images.ic_download else MR.images.ic_lock_open_right), onClick = {
     val saveIfExists = {
       when (cItem.content.msgContent) {
-        is MsgContent.MCImage, is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
+        is MsgContent.MCImage, is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withLongRunningApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
         else -> {}
       }
       showMenu.value = false
     }
     var fileSource = getLoadedFileSource(cItem.file)
     if (chatModel.connectedToRemote() && fileSource == null) {
-      withBGApi {
+      withLongRunningApi(slow = 600_000) {
         cItem.file?.loadRemoteFile(true)
         fileSource = getLoadedFileSource(cItem.file)
         saveIfExists()
@@ -51,7 +51,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   })
 }
 
-actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withBGApi {
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withLongRunningApi(slow = 600_000) {
   var fileSource = getLoadedFileSource(cItem.file)
   if (chatModel.connectedToRemote() && fileSource == null) {
     cItem.file?.loadRemoteFile(true)
@@ -59,19 +59,7 @@ actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = w
   }
 
   if (fileSource != null) {
-    val filePath: String = if (fileSource.cryptoArgs != null) {
-      val tmpFile = File(tmpDir, fileSource.filePath)
-      tmpFile.deleteOnExit()
-      try {
-        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs ?: return@withBGApi, tmpFile.absolutePath)
-      } catch (e: Exception) {
-        Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
-        return@withBGApi
-      }
-      tmpFile.absolutePath
-    } else {
-      getAppFilePath(fileSource.filePath)
-    }
+    val filePath = filePathForShare(fileSource) ?: return@withLongRunningApi
     when {
       desktopPlatform.isWindows() -> clipboard.setText(AnnotatedString("\"${File(filePath).absolutePath}\""))
       else -> clipboard.setText(AnnotatedString(filePath))

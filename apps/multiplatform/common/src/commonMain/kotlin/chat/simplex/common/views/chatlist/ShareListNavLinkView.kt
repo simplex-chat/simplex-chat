@@ -9,9 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.ui.theme.Indigo
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.*
+import chat.simplex.res.MR
 
 @Composable
 fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
@@ -27,6 +28,12 @@ fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat) },
         click = { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) },
+        stopped
+      )
+    is ChatInfo.Local ->
+      ShareListNavLinkLayout(
+        chatLinkPreview = { SharePreviewView(chat) },
+        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
         stopped
       )
     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}
@@ -56,7 +63,11 @@ private fun SharePreviewView(chat: Chat) {
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      ProfileImage(size = 46.dp, chat.chatInfo.image)
+      if (chat.chatInfo is ChatInfo.Local) {
+        ProfileImage(size = 46.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
+      } else {
+        ProfileImage(size = 46.dp, chat.chatInfo.image)
+      }
       Text(
         chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (chat.chatInfo.incognito) Indigo else Color.Unspecified

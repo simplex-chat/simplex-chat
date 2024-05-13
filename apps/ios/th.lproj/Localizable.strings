@@ -56,9 +56,6 @@
 "**Add new contact**: to create your one-time QR Code for your contact." = "**เพิ่มผู้ติดต่อใหม่**: เพื่อสร้างคิวอาร์โค้ดแบบใช้ครั้งเดียวหรือลิงก์สำหรับผู้ติดต่อของคุณ";
 
 /* No comment provided by engineer. */
-"**Create link / QR code** for your contact to use." = "**สร้างลิงค์ / คิวอาร์โค้ด** เพื่อให้ผู้ติดต่อของคุณใช้";
-
-/* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "การโทรเสียงแบบ **encrypted จากต้นจนจบ**";
 
 /* No comment provided by engineer. */
@@ -71,16 +68,10 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**ส่วนตัวที่สุด**: ไม่ใช้เซิร์ฟเวอร์การแจ้งเตือนของ SimpleX Chat ตรวจสอบข้อความเป็นระยะในพื้นหลัง (ขึ้นอยู่กับความถี่ที่คุณใช้แอป)";
 
 /* No comment provided by engineer. */
-"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**แปะลิงก์ที่ได้รับ** หรือเปิดในเบราว์เซอร์แล้วแตะ **เปิดในแอปมือถือ**";
-
-/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**โปรดทราบ**: คุณจะไม่สามารถกู้คืนหรือเปลี่ยนรหัสผ่านได้หากคุณทำรหัสผ่านหาย";
 
 /* No comment provided by engineer. */
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**แนะนำ**: โทเค็นอุปกรณ์และการแจ้งเตือนจะถูกส่งไปยังเซิร์ฟเวอร์การแจ้งเตือนของ SimpleX Chat แต่ไม่ใช่เนื้อหาข้อความ ขนาด หรือผู้ที่ส่ง";
-
-/* No comment provided by engineer. */
-"**Scan QR code**: to connect to your contact in person or via video call." = "**สแกนคิวอาร์โค้ด**: เพื่อเชื่อมต่อกับผู้ติดต่อของคุณด้วยตนเองหรือผ่านการสนทนาทางวิดีโอ";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**คำเตือน**: การแจ้งเตือนแบบพุชทันทีจำเป็นต้องบันทึกรหัสผ่านไว้ใน Keychain";
@@ -227,9 +218,6 @@
 "1 week" = "1 สัปดาห์";
 
 /* No comment provided by engineer. */
-"1-time link" = "ลิงก์สำหรับใช้ 1 ครั้ง";
-
-/* No comment provided by engineer. */
 "5 minutes" = "5 นาที";
 
 /* No comment provided by engineer. */
@@ -360,7 +348,7 @@
 "Allow disappearing messages only if your contact allows it to you." = "อนุญาตให้ข้อความที่หายไปเฉพาะในกรณีที่ผู้ติดต่อของคุณอนุญาตเท่านั้น.";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you." = "อนุญาตให้ลบข้อความแบบถาวรเฉพาะในกรณีที่ผู้ติดต่อของคุณอนุญาตให้คุณเท่านั้น";
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "อนุญาตให้ลบข้อความแบบถาวรเฉพาะในกรณีที่ผู้ติดต่อของคุณอนุญาตให้คุณเท่านั้น";
 
 /* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "อนุญาตการแสดงปฏิกิริยาต่อข้อความเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น";
@@ -375,7 +363,7 @@
 "Allow sending disappearing messages." = "อนุญาตให้ส่งข้อความที่จะหายไปหลังปิดแชท (disappearing message)";
 
 /* No comment provided by engineer. */
-"Allow to irreversibly delete sent messages." = "อนุญาตให้ลบข้อความที่ส่งไปแล้วอย่างถาวร";
+"Allow to irreversibly delete sent messages. (24 hours)" = "อนุญาตให้ลบข้อความที่ส่งไปแล้วอย่างถาวร";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "อนุญาตให้ส่งไฟล์และสื่อ";
@@ -396,7 +384,7 @@
 "Allow your contacts to call you." = "อนุญาตให้ผู้ติดต่อของคุณโทรหาคุณ";
 
 /* No comment provided by engineer. */
-"Allow your contacts to irreversibly delete sent messages." = "อนุญาตให้ผู้ติดต่อของคุณลบข้อความที่ส่งแล้วอย่างถาวร";
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "อนุญาตให้ผู้ติดต่อของคุณลบข้อความที่ส่งแล้วอย่างถาวร";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "อนุญาตให้ผู้ติดต่อของคุณส่งข้อความที่จะหายไปหลังปิดแชท (disappearing messages)";
@@ -504,7 +492,7 @@
 "Both you and your contact can add message reactions." = "ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาของข้อความได้";
 
 /* No comment provided by engineer. */
-"Both you and your contact can irreversibly delete sent messages." = "ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้";
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "ทั้งคุณและผู้ติดต่อของคุณสามารถโทรออกได้";
@@ -532,9 +520,6 @@
 
 /* No comment provided by engineer. */
 "Calls" = "โทร";
-
-/* No comment provided by engineer. */
-"Can't delete user profile!" = "ไม่สามารถลบโปรไฟล์ผู้ใช้ได้!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
@@ -694,9 +679,6 @@
 "Connect via link" = "เชื่อมต่อผ่านลิงก์";
 
 /* No comment provided by engineer. */
-"Connect via link / QR code" = "เชื่อมต่อผ่านลิงค์ / คิวอาร์โค้ด";
-
-/* No comment provided by engineer. */
 "connected" = "เชื่อมต่อสำเร็จ";
 
 /* No comment provided by engineer. */
@@ -803,9 +785,6 @@
 
 /* No comment provided by engineer. */
 "Create link" = "สร้างลิงค์";
-
-/* No comment provided by engineer. */
-"Create one-time invitation link" = "สร้างลิงก์เชิญแบบใช้ครั้งเดียว";
 
 /* server test step */
 "Create queue" = "สร้างคิว";
@@ -1552,7 +1531,7 @@
 "Group members can add message reactions." = "สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages." = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
+"Group members can irreversibly delete sent messages. (24 hours)" = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
 
 /* No comment provided by engineer. */
 "Group members can send direct messages." = "สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้";
@@ -1643,9 +1622,6 @@
 
 /* No comment provided by engineer. */
 "If you can't meet in person, show QR code in a video call, or share the link." = "หากคุณไม่สามารถพบกันในชีวิตจริงได้ ให้แสดงคิวอาร์โค้ดในวิดีโอคอล หรือแชร์ลิงก์";
-
-/* No comment provided by engineer. */
-"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "หากคุณไม่สามารถพบปะด้วยตนเอง คุณสามารถ **สแกนคิวอาร์โค้ดผ่านการสนทนาทางวิดีโอ** หรือผู้ติดต่อของคุณสามารถแชร์ลิงก์เชิญได้";
 
 /* No comment provided by engineer. */
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "หากคุณใส่รหัสผ่านนี้เมื่อเปิดแอป ข้อมูลแอปทั้งหมดจะถูกลบอย่างถาวร!";
@@ -1882,6 +1858,9 @@
 "Live messages" = "ข้อความสด";
 
 /* No comment provided by engineer. */
+"Local" = "ในเครื่อง";
+
+/* No comment provided by engineer. */
 "Local name" = "ชื่อภายในเครื่องเท่านั้น";
 
 /* No comment provided by engineer. */
@@ -2010,7 +1989,7 @@
 /* copied message info */
 "Moderated at: %@" = "กลั่นกรองที่: %@";
 
-/* No comment provided by engineer. */
+/* marked deleted chat item preview text */
 "moderated by %@" = "กลั่นกรองโดย %@";
 
 /* time unit */
@@ -2135,9 +2114,6 @@
 /* No comment provided by engineer. */
 "Off" = "ปิด";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "ปิด (ในเครื่อง)";
-
 /* feature offered item */
 "offered %@" = "เสนอแล้ว %@";
 
@@ -2184,7 +2160,7 @@
 "Only you can add message reactions." = "มีเพียงคุณเท่านั้นที่สามารถแสดงปฏิกิริยาต่อข้อความได้";
 
 /* No comment provided by engineer. */
-"Only you can irreversibly delete messages (your contact can mark them for deletion)." = "มีเพียงคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (ผู้ติดต่อของคุณสามารถทำเครื่องหมายเพื่อลบได้)";
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "มีเพียงคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (ผู้ติดต่อของคุณสามารถทำเครื่องหมายเพื่อลบได้)";
 
 /* No comment provided by engineer. */
 "Only you can make calls." = "มีเพียงคุณเท่านั้นที่โทรออกได้";
@@ -2199,7 +2175,7 @@
 "Only your contact can add message reactions." = "เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถเพิ่มการโต้ตอบข้อความได้";
 
 /* No comment provided by engineer. */
-"Only your contact can irreversibly delete messages (you can mark them for deletion)." = "เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (คุณสามารถทำเครื่องหมายเพื่อลบได้)";
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (คุณสามารถทำเครื่องหมายเพื่อลบได้)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "ผู้ติดต่อของคุณเท่านั้นที่สามารถโทรออกได้";
@@ -2225,9 +2201,6 @@
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
 
-/* No comment provided by engineer. */
-"Opening database…" = "กำลังเปิดฐานข้อมูล…";
-
 /* member role */
 "owner" = "เจ้าของ";
 
@@ -2250,13 +2223,7 @@
 "Password to show" = "รหัสผ่านที่จะแสดง";
 
 /* No comment provided by engineer. */
-"Paste" = "แปะ";
-
-/* No comment provided by engineer. */
 "Paste image" = "แปะภาพ";
-
-/* No comment provided by engineer. */
-"Paste received link" = "แปะลิงก์ที่ได้รับ";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "เพื่อนต่อเพื่อน";
@@ -2790,9 +2757,6 @@
 "Share link" = "แชร์ลิงก์";
 
 /* No comment provided by engineer. */
-"Share one-time invitation link" = "แชร์ลิงก์เชิญแบบใช้ครั้งเดียว";
-
-/* No comment provided by engineer. */
 "Share with contacts" = "แชร์กับผู้ติดต่อ";
 
 /* No comment provided by engineer. */
@@ -2825,7 +2789,7 @@
 /* simplex link type */
 "SimpleX group link" = "ลิงค์กลุ่ม SimpleX";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "SimpleX links" = "ลิงก์ SimpleX";
 
 /* No comment provided by engineer. */
@@ -2857,9 +2821,6 @@
 
 /* notification title */
 "Somebody" = "ใครบางคน";
-
-/* No comment provided by engineer. */
-"Start a new chat" = "เริ่มแชทใหม่";
 
 /* No comment provided by engineer. */
 "Start chat" = "เริ่มแชท";
@@ -3021,12 +2982,6 @@
 "Theme" = "ธีม";
 
 /* No comment provided by engineer. */
-"There should be at least one user profile." = "ควรมีโปรไฟล์ผู้ใช้อย่างน้อยหนึ่งโปรไฟล์";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "ควรมีอย่างน้อยหนึ่งโปรไฟล์ผู้ใช้ที่มองเห็นได้";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";
 
 /* No comment provided by engineer. */
@@ -3088,9 +3043,6 @@
 
 /* No comment provided by engineer. */
 "Turn off" = "ปิด";
-
-/* No comment provided by engineer. */
-"Turn off notifications?" = "ปิดการแจ้งเตือนไหม?";
 
 /* No comment provided by engineer. */
 "Turn on" = "เปิด";
@@ -3354,9 +3306,6 @@
 "You can accept calls from lock screen, without device and app authentication." = "คุณสามารถรับสายจากหน้าจอล็อกโดยไม่ต้องมีการตรวจสอบสิทธิ์อุปกรณ์และแอป";
 
 /* No comment provided by engineer. */
-"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "คุณสามารถเชื่อมต่อได้โดยคลิกที่ลิงค์ หากเปิดในเบราว์เซอร์ ให้คลิกปุ่ม **เปิดในแอปมือถือ**";
-
-/* No comment provided by engineer. */
 "You can create it later" = "คุณสามารถสร้างได้ในภายหลัง";
 
 /* No comment provided by engineer. */
@@ -3502,9 +3451,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "ผู้ติดต่อของคุณสามารถอนุญาตให้ลบข้อความทั้งหมดได้";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "ผู้ติดต่อของคุณใน SimpleX จะเห็น\nคุณสามารถเปลี่ยนได้ในการตั้งค่า";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "ผู้ติดต่อของคุณจะยังคงเชื่อมต่ออยู่";

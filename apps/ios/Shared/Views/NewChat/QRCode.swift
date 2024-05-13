@@ -24,9 +24,10 @@ struct SimpleXLinkQRCode: View {
     let uri: String
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
+    var onShare: (() -> Void)? = nil
 
     var body: some View {
-        QRCode(uri: simplexChatLink(uri), withLogo: withLogo, tintColor: tintColor)
+        QRCode(uri: simplexChatLink(uri), withLogo: withLogo, tintColor: tintColor, onShare: onShare)
     }
 }
 
@@ -40,6 +41,7 @@ struct QRCode: View {
     let uri: String
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
+    var onShare: (() -> Void)? = nil
     @State private var image: UIImage? = nil
     @State private var makeScreenshotFunc: () -> Void = {}
 
@@ -65,6 +67,7 @@ struct QRCode: View {
                     makeScreenshotFunc = {
                         let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
                         showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])
+                        onShare?()
                     }
                 }
                 .frame(width: geo.size.width, height: geo.size.height)

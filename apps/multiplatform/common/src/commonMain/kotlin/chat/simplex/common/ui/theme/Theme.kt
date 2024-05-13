@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.platform.isInNightMode
@@ -211,7 +212,7 @@ val DarkColorPalette = darkColors(
 )
 val DarkColorPaletteApp = AppColors(
   title = SimplexBlue,
-  sentMessage = Color(0x1E45B8FF),
+  sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5)
 )
 
@@ -230,7 +231,7 @@ val LightColorPalette = lightColors(
 )
 val LightColorPaletteApp = AppColors(
   title = SimplexBlue,
-  sentMessage = Color(0x1E45B8FF),
+  sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5)
 )
 
@@ -250,7 +251,7 @@ val SimplexColorPalette = darkColors(
 )
 val SimplexColorPaletteApp = AppColors(
   title = Color(0xFF267BE5),
-  sentMessage = Color(0x1E45B8FF),
+  sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5)
 )
 
@@ -259,6 +260,7 @@ val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLight
 
+@Composable
 expect fun isSystemInDarkTheme(): Boolean
 
 fun reactOnDarkThemeChanges(isDark: Boolean) {
@@ -284,6 +286,8 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     colors = theme.colors,
     typography = Typography,
     shapes = Shapes,
-    content = content
+    content = {
+      CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.onBackground, content = content)
+    }
   )
 }

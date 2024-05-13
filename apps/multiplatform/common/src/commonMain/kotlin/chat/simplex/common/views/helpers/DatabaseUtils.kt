@@ -64,7 +64,7 @@ object DatabaseUtils {
     return dbKey
   }
 
-  private fun randomDatabasePassword(): String {
+  fun randomDatabasePassword(): String {
     val s = ByteArray(32)
     SecureRandom().nextBytes(s)
     return s.toBase64StringForPassphrase().replace("\n", "")
@@ -75,13 +75,12 @@ object DatabaseUtils {
 sealed class DBMigrationResult {
   @Serializable @SerialName("ok") object OK: DBMigrationResult()
   @Serializable @SerialName("invalidConfirmation") object InvalidConfirmation: DBMigrationResult()
-  @Serializable @SerialName("errorNotADatabase") class ErrorNotADatabase(val dbFile: String): DBMigrationResult()
-  @Serializable @SerialName("errorMigration") class ErrorMigration(val dbFile: String, val migrationError: MigrationError): DBMigrationResult()
-  @Serializable @SerialName("errorSQL") class ErrorSQL(val dbFile: String, val migrationSQLError: String): DBMigrationResult()
+  @Serializable @SerialName("errorNotADatabase") data class ErrorNotADatabase(val dbFile: String): DBMigrationResult()
+  @Serializable @SerialName("errorMigration") data class ErrorMigration(val dbFile: String, val migrationError: MigrationError): DBMigrationResult()
+  @Serializable @SerialName("errorSQL") data class ErrorSQL(val dbFile: String, val migrationSQLError: String): DBMigrationResult()
   @Serializable @SerialName("errorKeychain") object ErrorKeychain: DBMigrationResult()
-  @Serializable @SerialName("unknown") class Unknown(val json: String): DBMigrationResult()
+  @Serializable @SerialName("unknown") data class Unknown(val json: String): DBMigrationResult()
 }
-
 
 enum class MigrationConfirmation(val value: String) {
   YesUp("yesUp"),
@@ -90,7 +89,7 @@ enum class MigrationConfirmation(val value: String) {
 }
 
 fun defaultMigrationConfirmation(appPrefs: AppPreferences): MigrationConfirmation =
-  if (appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+  if (appPrefs.developerTools.get() && appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
 
 @Serializable
 sealed class MigrationError {

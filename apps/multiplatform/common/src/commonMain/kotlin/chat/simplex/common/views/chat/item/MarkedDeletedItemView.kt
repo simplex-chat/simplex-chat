@@ -26,6 +26,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (ci.chatDir.sent) sentColor else receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -47,6 +48,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<B
     val reversedChatItems = ChatModel.chatItems.asReversed()
     var moderated = 0
     var blocked = 0
+    var blockedByAdmin = 0
     var deleted = 0
     val moderatedBy: MutableSet<String> = mutableSetOf()
     while (i < reversedChatItems.size) {
@@ -58,16 +60,19 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<B
           moderatedBy.add(itemDeleted.byGroupMember.displayName)
         }
         is CIDeleted.Blocked -> blocked += 1
+        is CIDeleted.BlockedByAdmin -> blockedByAdmin +=1
         is CIDeleted.Deleted -> deleted += 1
       }
       i++
     }
-    val total = moderated + blocked + deleted
+    val total = moderated + blocked + blockedByAdmin + deleted
     if (total <= 1)
       markedDeletedText(chatItem.meta)
     else if (total == moderated)
       stringResource(MR.strings.moderated_items_description).format(total, moderatedBy.joinToString(", "))
-    else if (total == blocked)
+    else if (total == blockedByAdmin)
+      stringResource(MR.strings.blocked_by_admin_items_description).format(total)
+    else if (total == blocked + blockedByAdmin)
       stringResource(MR.strings.blocked_items_description).format(total)
     else
       stringResource(MR.strings.marked_deleted_items_description).format(total)
@@ -86,13 +91,15 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<B
   )
 }
 
-private fun markedDeletedText(meta: CIMeta): String =
+fun markedDeletedText(meta: CIMeta): String =
   when (meta.itemDeleted) {
     is CIDeleted.Moderated ->
       String.format(generalGetString(MR.strings.moderated_item_description), meta.itemDeleted.byGroupMember.displayName)
     is CIDeleted.Blocked ->
       generalGetString(MR.strings.blocked_item_description)
-    else ->
+    is CIDeleted.BlockedByAdmin ->
+      generalGetString(MR.strings.blocked_by_admin_item_description)
+    is CIDeleted.Deleted, null ->
       generalGetString(MR.strings.marked_deleted_description)
   }
 

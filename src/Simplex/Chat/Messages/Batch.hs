@@ -16,7 +16,6 @@ import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
-  deriving (Show)
 
 -- | Batches [SndMessage] into batches of ByteStrings in form of JSON arrays.
 -- Does not check if the resulting batch is a valid JSON.

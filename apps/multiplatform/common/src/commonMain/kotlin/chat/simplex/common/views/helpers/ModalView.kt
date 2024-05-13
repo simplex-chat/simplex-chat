@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 
@@ -18,17 +19,18 @@ import kotlin.math.min
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
+  enableClose: Boolean = true,
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
   if (showClose) {
-    BackHandler(onBack = close)
+    BackHandler(enabled = enableClose, onBack = close)
   }
-  Surface(Modifier.fillMaxSize()) {
+  Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      CloseSheetBar(close, showClose, endButtons)
+      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
       Box(modifier) { content() }
     }
   }
@@ -38,27 +40,38 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
+class ModalData {
+  private val state = mutableMapOf<String, MutableState<Any>>()
+  fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
+    state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
+}
+
 class ModalManager(private val placement: ModalPlacement? = null) {
-  private val modalViews = arrayListOf<Pair<Boolean, (@Composable (close: () -> Unit) -> Unit)>>()
+  private val modalViews = arrayListOf<Triple<Boolean, ModalData, (@Composable ModalData.(close: () -> Unit) -> Unit)>>()
   private val modalCount = mutableStateOf(0)
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
-  private var passcodeView: MutableState<(@Composable (close: () -> Unit) -> Unit)?> = mutableStateOf(null)
+  // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
+  // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
+  private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+    val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = content)
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, content: @Composable (close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+    val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, content = { content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
     }
   }
 
-  fun showCustomModal(animated: Boolean = true, modal: @Composable (close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
+    val data = ModalData()
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {
@@ -67,7 +80,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // Make animated appearance only on Android (everytime) and on Desktop (when it's on the start part of the screen or modals > 0)
     // to prevent unneeded animation on different situations
     val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
-    modalViews.add(anim to modal)
+    modalViews.add(Triple(anim, data, modal))
     modalCount.value = modalViews.size - toRemove.size
 
     if (placement == ModalPlacement.CENTER) {
@@ -109,7 +122,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   fun showInView() {
     // Without animation
     if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
-      modalViews.lastOrNull()?.second?.invoke(::closeModal)
+      modalViews.lastOrNull()?.let { it.third(it.second, ::closeModal) }
       return
     }
     AnimatedContent(targetState = modalCount.value,
@@ -121,7 +134,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
         }.using(SizeTransform(clip = false))
       }
     ) {
-      modalViews.getOrNull(it - 1)?.second?.invoke(::closeModal)
+      modalViews.getOrNull(it - 1)?.let { it.third(it.second, ::closeModal) }
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
@@ -131,7 +144,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   @Composable
   fun showPasscodeInView() {
-    remember { passcodeView }.value?.invoke { passcodeView.value = null }
+    passcodeView.collectAsState().value?.invoke { passcodeView.value = null }
   }
 
   /**

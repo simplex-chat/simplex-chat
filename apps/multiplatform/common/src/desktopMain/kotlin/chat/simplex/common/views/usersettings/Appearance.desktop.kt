@@ -4,8 +4,6 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -13,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.defaultLocale
 import chat.simplex.common.ui.theme.ThemeColor
 import chat.simplex.common.views.helpers.*
@@ -43,8 +42,8 @@ fun AppearanceScope.AppearanceLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   editColor: (ThemeColor, Color) -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
     SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
@@ -63,6 +62,9 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
     }
+    SectionDividerSpaced(maxTopPadding = true)
+    ProfileImageSection()
+
     SectionDividerSpaced(maxTopPadding = true)
     ThemesSection(systemDarkTheme, showSettingsModal, editColor)
     SectionBottomSpacer()

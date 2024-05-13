@@ -44,7 +44,7 @@ fun DatabaseErrorView(
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
     val useKey = if (useKeychain) null else dbKey.value
-    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator, appPreferences)
+    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator)
   }
 
   fun saveAndRunChatOnClick() {
@@ -76,8 +76,8 @@ fun DatabaseErrorView(
     Text(String.format(generalGetString(MR.strings.database_migrations), ms.joinToString(", ")))
   }
 
-  Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize(),
     verticalArrangement = Arrangement.Center,
   ) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
@@ -190,13 +190,14 @@ private fun runChat(
   confirmMigrations: MigrationConfirmation? = null,
   chatDbStatus: State<DBMigrationResult?>,
   progressIndicator: MutableState<Boolean>,
-  prefs: AppPreferences
 ) = CoroutineScope(Dispatchers.Default).launch {
   // Don't do things concurrently. Shouldn't be here concurrently, just in case
   if (progressIndicator.value) return@launch
   progressIndicator.value = true
   try {
-    initChatController(dbKey, confirmMigrations)
+    initChatController(dbKey, confirmMigrations,
+      startChat = if (appPreferences.chatStopped.get()) ::showStartChatAfterRestartAlert else { { CompletableDeferred(true) } }
+    )
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
@@ -205,6 +206,14 @@ private fun runChat(
     is DBMigrationResult.OK -> {
       platform.androidChatStartedAfterBeingOff()
     }
+    null -> {}
+    else -> showErrorOnMigrationIfNeeded(status)
+  }
+}
+
+fun showErrorOnMigrationIfNeeded(status: DBMigrationResult) =
+  when (status) {
+    is DBMigrationResult.OK -> {}
     is DBMigrationResult.ErrorNotADatabase ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.wrong_passphrase_title), generalGetString(MR.strings.enter_correct_passphrase))
     is DBMigrationResult.ErrorSQL ->
@@ -216,9 +225,7 @@ private fun runChat(
     is DBMigrationResult.InvalidConfirmation ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.invalid_migration_confirmation))
     is DBMigrationResult.ErrorMigration -> {}
-    null -> {}
   }
-}
 
 private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
@@ -245,7 +252,7 @@ private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPref
   }
 }
 
-private fun mtrErrorDescription(err: MTRError): String =
+fun mtrErrorDescription(err: MTRError): String =
   when (err) {
     is MTRError.NoDown ->
       String.format(generalGetString(MR.strings.mtr_error_no_down_migration), err.dbMigrations.joinToString(", "))

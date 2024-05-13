@@ -64,7 +64,7 @@ struct DatabaseErrorView: View {
                 case let .migrationError(mtrError):
                     titleText("Incompatible database version")
                     fileNameText(dbFile)
-                    Text("Error: ") + Text(mtrErrorDescription(mtrError))
+                    Text("Error: ") + Text(DatabaseErrorView.mtrErrorDescription(mtrError))
                 }
             case let .errorSQL(dbFile, migrationSQLError):
                 titleText("Database error")
@@ -105,7 +105,7 @@ struct DatabaseErrorView: View {
         Text("Migrations: \(ms.joined(separator: ", "))")
     }
 
-    private func mtrErrorDescription(_ err: MTRError) -> LocalizedStringKey {
+    static func mtrErrorDescription(_ err: MTRError) -> LocalizedStringKey {
         switch err {
         case let .noDown(dbMigrations):
             return "database version is newer than the app, but no down migration for: \(dbMigrations.joined(separator: ", "))"
@@ -149,7 +149,7 @@ struct DatabaseErrorView: View {
     private func runChatSync(confirmMigrations: MigrationConfirmation? = nil) {
         do {
             resetChatCtrl()
-            try initializeChat(start: m.v3DBMigration.startChat, dbKey: useKeychain ? nil : dbKey, confirmMigrations: confirmMigrations)
+            try initializeChat(start: m.v3DBMigration.startChat, confirmStart: m.v3DBMigration.startChat && AppChatState.shared.value == .stopped, dbKey: useKeychain ? nil : dbKey, confirmMigrations: confirmMigrations)
             if let s = m.chatDbStatus {
                 status = s
                 let am = AlertManager.shared

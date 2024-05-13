@@ -103,11 +103,14 @@
       </intent-filter>
     </activity-alias>
 
-
-    <activity android:name=".views.call.IncomingCallActivity"
+    <activity android:name=".views.call.CallActivity"
         android:showOnLockScreen="true"
         android:exported="false"
-        android:launchMode="singleTask"/>
+        android:launchMode="singleInstance"
+        android:supportsPictureInPicture="true"
+        android:autoRemoveFromRecents="true"
+        android:screenOrientation="portrait"
+        android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"/>
 
     <provider
         android:name="androidx.core.content.FileProvider"
@@ -133,6 +136,18 @@
         android:stopWithTask="false"></service>
 
     <!-- SimplexService restart on reboot -->
+
+    <service
+        android:name=".CallService"
+        android:enabled="true"
+        android:exported="false"
+        android:stopWithTask="false"/>
+
+    <receiver
+        android:name=".CallService$CallActionReceiver"
+        android:enabled="true"
+        android:exported="false" />
+
     <receiver
         android:name=".SimplexService$StartReceiver"
         android:enabled="true"

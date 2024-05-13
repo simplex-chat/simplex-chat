@@ -1,5 +1,7 @@
 package chat.simplex.common.views.call
 
+import SectionSpacer
+import SectionView
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -24,91 +26,89 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.*
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.common.helpers.showAllowPermissionInSettingsAlert
 import chat.simplex.common.model.*
-import chat.simplex.common.ui.theme.*
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.Contact
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.datetime.Clock
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+
+// Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
+@SuppressLint("StaticFieldLeak")
+private var staticWebView: WebView? = null
+
+// WebView methods must be called on Main thread
+fun activeCallDestroyWebView() = withApi {
+  // Stop it when call ended
+  platform.androidCallServiceSafeStop()
+  staticWebView?.destroy()
+  staticWebView = null
+  Log.d(TAG, "CallView: webview was destroyed")
+}
 
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
-  val chatModel = ChatModel
-  BackHandler(onBack = {
-    val call = chatModel.activeCall.value
-    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
-  })
-  val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
-  val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE }
-  LaunchedEffect(Unit) {
-    // Start service when call happening since it's not already started.
-    // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
-    if (!ntfModeService) platform.androidServiceStart()
-  }
-  DisposableEffect(Unit) {
-    val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    var btDeviceCount = 0
-    val audioCallback = object: AudioDeviceCallback() {
-      override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
-        Log.d(TAG, "Added audio devices: ${addedDevices.map { it.type }}")
-        super.onAudioDevicesAdded(addedDevices)
-        val addedCount = addedDevices.count { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
-        btDeviceCount += addedCount
-        audioViaBluetooth.value = btDeviceCount > 0
-        if (addedCount > 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
-          // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-          setCallSound(chatModel.activeCall.value?.soundSpeaker ?: return, audioViaBluetooth)
-        }
-      }
-      override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
-        Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
-        super.onAudioDevicesRemoved(removedDevices)
-        val removedCount = removedDevices.count { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
-        btDeviceCount -= removedCount
-        audioViaBluetooth.value = btDeviceCount > 0
-        if (btDeviceCount == 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
-          // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
-          setCallSound(chatModel.activeCall.value?.soundSpeaker ?: return, audioViaBluetooth)
-        }
-      }
-    }
-    am.registerAudioDeviceCallback(audioCallback, null)
+  val call = remember { chatModel.activeCall }.value
+  val scope = rememberCoroutineScope()
+  val proximityLock = remember {
     val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
-    val proximityLock = if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
+    if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
       pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, androidAppContext.packageName + ":proximityLock")
     } else {
       null
     }
-    proximityLock?.acquire()
-    onDispose {
-      // Stop it when call ended
-      if (!ntfModeService) platform.androidServiceSafeStop()
-      dropAudioManagerOverrides()
-      am.unregisterAudioDeviceCallback(audioCallback)
-      proximityLock?.release()
+  }
+  val wasConnected = rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(call) {
+    if (call?.callState == CallState.Connected && !wasConnected.value) {
+      CallSoundsPlayer.vibrate(2)
+      wasConnected.value = true
     }
   }
-  val scope = rememberCoroutineScope()
+  val callAudioDeviceManager = remember { CallAudioDeviceManagerInterface.new() }
+  DisposableEffect(Unit) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      callAudioDeviceManager.start()
+    }
+    onDispose {
+      CallSoundsPlayer.stop()
+      if (wasConnected.value) {
+        CallSoundsPlayer.vibrate()
+      }
+      callAudioDeviceManager.stop()
+      dropAudioManagerOverrides()
+      if (proximityLock?.isHeld == true) {
+        proximityLock.release()
+      }
+    }
+  }
+  LaunchedEffect(chatModel.activeCallViewIsCollapsed.value) {
+    if (chatModel.activeCallViewIsCollapsed.value) {
+      if (proximityLock?.isHeld == true) proximityLock.release()
+    } else {
+      delay(1000)
+      if (proximityLock?.isHeld == false) proximityLock.acquire()
+    }
+  }
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
@@ -120,15 +120,30 @@ actual fun ActiveCallView() {
           is WCallResponse.Capabilities -> withBGApi {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
-            chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
+            updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+              // Starting is delayed to make Android <= 11 working good with Bluetooth
+              callAudioDeviceManager.start()
+            } else {
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.supportsVideo(), true)
+            }
+            CallSoundsPlayer.startConnectingCallSound(scope)
+            activeCallWaitDeliveryReceipt(scope)
           }
           is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
-            chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
+            updateActiveCall(call) { it.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities) }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+              // Starting is delayed to make Android <= 11 working good with Bluetooth
+              callAudioDeviceManager.start()
+            } else {
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.supportsVideo(), true)
+            }
           }
           is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
-            chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+            updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
+            CallSoundsPlayer.stop()
           }
           is WCallResponse.Ice -> withBGApi {
             chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
@@ -137,44 +152,42 @@ actual fun ActiveCallView() {
             try {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
-                chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
-                setCallSound(call.soundSpeaker, audioViaBluetooth)
+                updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = Clock.System.now()) }
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
-            } catch (e: Error) {
+            } catch (e: Throwable) {
               Log.d(TAG,"call status ${r.state.connectionState} not used")
             }
           is WCallResponse.Connected -> {
-            chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
-            scope.launch {
-              setCallSound(call.soundSpeaker, audioViaBluetooth)
-            }
+            updateActiveCall(call) { it.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo) }
           }
           is WCallResponse.End -> {
             withBGApi { chatModel.callManager.endCall(call) }
           }
           is WCallResponse.Ended -> {
-            chatModel.activeCall.value = call.copy(callState = CallState.Ended)
+            updateActiveCall(call) { it.copy(callState = CallState.Ended) }
             withBGApi { chatModel.callManager.endCall(call) }
-            chatModel.showCallView.value = false
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
             is WCallCommand.Answer ->
-              chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+              updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
             is WCallCommand.Media -> {
-              when (cmd.media) {
-                CallMediaType.Video -> chatModel.activeCall.value = call.copy(videoEnabled = cmd.enable)
-                CallMediaType.Audio -> chatModel.activeCall.value = call.copy(audioEnabled = cmd.enable)
+              updateActiveCall(call) {
+                when (cmd.media) {
+                  CallMediaType.Video -> it.copy(videoEnabled = cmd.enable)
+                  CallMediaType.Audio -> it.copy(audioEnabled = cmd.enable)
+                }
               }
             }
             is WCallCommand.Camera -> {
-              chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
+              updateActiveCall(call) { it.copy(localCamera = cmd.camera) }
               if (!call.audioEnabled) {
                 chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
               }
             }
-            is WCallCommand.End ->
-              chatModel.showCallView.value = false
+            is WCallCommand.End -> {
+              withBGApi { chatModel.callManager.endCall(call) }
+            }
             else -> {}
           }
           is WCallResponse.Error -> {
@@ -183,10 +196,17 @@ actual fun ActiveCallView() {
         }
       }
     }
-    val call = chatModel.activeCall.value
-    if (call != null)  ActiveCallOverlay(call, chatModel, audioViaBluetooth)
+    val showOverlay = when {
+      call == null -> false
+      !platform.androidPictureInPictureAllowed() -> true
+      !call.supportsVideo() -> true
+      !chatModel.activeCallViewIsCollapsed.value -> true
+      else -> false
+    }
+    if (call != null && showOverlay) {
+      ActiveCallOverlay(call, chatModel, callAudioDeviceManager)
+    }
   }
-
   val context = LocalContext.current
   DisposableEffect(Unit) {
     val activity = context as? Activity ?: return@DisposableEffect onDispose {}
@@ -210,49 +230,40 @@ actual fun ActiveCallView() {
 }
 
 @Composable
-private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, audioViaBluetooth: MutableState<Boolean>) {
+private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceManager: CallAudioDeviceManagerInterface) {
   ActiveCallOverlayLayout(
     call = call,
-    speakerCanBeEnabled = !audioViaBluetooth.value,
+    devices = remember { callAudioDeviceManager.devices }.value,
+    currentDevice = remember { callAudioDeviceManager.currentDevice },
     dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled)) },
+    selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
     toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled)) },
     toggleSound = {
-      var call = chatModel.activeCall.value
-      if (call != null) {
-        call = call.copy(soundSpeaker = !call.soundSpeaker)
-        chatModel.activeCall.value = call
-        setCallSound(call.soundSpeaker, audioViaBluetooth)
+      val enableSpeaker = callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+      val preferredInternalDevice = callAudioDeviceManager.devices.value.firstOrNull { it.type == if (enableSpeaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+      if (preferredInternalDevice != null) {
+        callAudioDeviceManager.selectDevice(preferredInternalDevice.id)
       }
     },
     flipCamera = { chatModel.callCommand.add(WCallCommand.Camera(call.localCamera.flipped)) }
   )
 }
 
-private fun setCallSound(speaker: Boolean, audioViaBluetooth: MutableState<Boolean>) {
-  val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-  Log.d(TAG, "setCallSound: set audio mode, speaker enabled: $speaker")
-  am.mode = AudioManager.MODE_IN_COMMUNICATION
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    val btDevice = am.availableCommunicationDevices.lastOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
-    val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-    if (btDevice != null) {
-      am.setCommunicationDevice(btDevice)
-    } else if (am.communicationDevice?.type != preferredSecondaryDevice) {
-      am.availableCommunicationDevices.firstOrNull { it.type == preferredSecondaryDevice }?.let {
-        am.setCommunicationDevice(it)
-      }
-    }
-  } else {
-    if (audioViaBluetooth.value) {
-      am.isSpeakerphoneOn = false
-      am.startBluetoothSco()
-    } else {
-      am.stopBluetoothSco()
-      am.isSpeakerphoneOn = speaker
-    }
-    am.isBluetoothScoOn = am.isBluetoothScoAvailableOffCall && audioViaBluetooth.value
-  }
+@Composable
+fun ActiveCallOverlayDisabled(call: Call) {
+  ActiveCallOverlayLayout(
+    call = call,
+    devices = emptyList(),
+    currentDevice = remember { mutableStateOf(null) },
+    enabled = false,
+    dismiss = {},
+    toggleAudio = {},
+    selectDevice = {},
+    toggleVideo = {},
+    toggleSound = {},
+    flipCamera = {}
+  )
 }
 
 private fun dropAudioManagerOverrides() {
@@ -270,60 +281,99 @@ private fun dropAudioManagerOverrides() {
 @Composable
 private fun ActiveCallOverlayLayout(
   call: Call,
-  speakerCanBeEnabled: Boolean,
+  devices: List<AudioDeviceInfo>,
+  currentDevice: State<AudioDeviceInfo?>,
+  enabled: Boolean = true,
   dismiss: () -> Unit,
   toggleAudio: () -> Unit,
+  selectDevice: (AudioDeviceInfo) -> Unit,
   toggleVideo: () -> Unit,
   toggleSound: () -> Unit,
   flipCamera: () -> Unit
 ) {
-  Column(Modifier.padding(DEFAULT_PADDING)) {
-    when (call.peerMedia ?: call.localMedia) {
-      CallMediaType.Video -> {
-        CallInfoView(call, alignment = Alignment.Start)
-        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-          DisabledBackgroundCallsButton()
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-          ToggleAudioButton(call, toggleAudio)
-          Spacer(Modifier.size(40.dp))
-          IconButton(onClick = dismiss) {
-            Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
-          }
-          if (call.videoEnabled) {
-            ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
-            ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
-          } else {
-            Spacer(Modifier.size(48.dp))
-            ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
-          }
+  Column {
+    val media = call.peerMedia ?: call.localMedia
+    CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
+      if (media == CallMediaType.Video) {
+        Text(call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
+      }
+    }
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      @Composable
+      fun SelectSoundDevice() {
+        if (devices.size == 2 &&
+          devices.all { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE || it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER } ||
+          currentDevice.value == null ||
+          devices.none { it.id == currentDevice.value?.id }
+        ) {
+          val isSpeaker = currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+          ToggleSoundButton(call, enabled, isSpeaker, toggleSound)
+        } else {
+          ExposedDropDownSettingWithIcon(
+            devices.map { Triple(it, it.icon, if (it.name != null) generalGetString(it.name!!) else it.productName.toString()) },
+            currentDevice,
+            fontSize = 18.sp,
+            iconSize = 40.dp,
+            listIconSize = 30.dp,
+            iconColor = Color(0xFFFFFFD8),
+            minWidth = 300.dp,
+            onSelected = {
+              if (it != null) {
+                selectDevice(it)
+              }
+            }
+          )
         }
       }
-      CallMediaType.Audio -> {
-        Spacer(Modifier.fillMaxHeight().weight(1f))
-        Column(
-          Modifier.fillMaxWidth(),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.Center
-        ) {
-          ProfileImage(size = 192.dp, image = call.contact.profile.image)
-          CallInfoView(call, alignment = Alignment.CenterHorizontally)
-        }
-        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-          DisabledBackgroundCallsButton()
-        }
-        Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            IconButton(onClick = dismiss) {
-              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+
+      when (media) {
+        CallMediaType.Video -> {
+          VideoCallInfoView(call)
+          Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+            DisabledBackgroundCallsButton()
+          }
+          Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            ToggleAudioButton(call, enabled, toggleAudio)
+            SelectSoundDevice()
+            IconButton(onClick = dismiss, enabled = enabled) {
+              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
+            }
+            if (call.videoEnabled) {
+              ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera)
+              ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo)
+            } else {
+              Spacer(Modifier.size(48.dp))
+              ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo)
             }
           }
-          Box(Modifier.padding(start = 32.dp)) {
-            ToggleAudioButton(call, toggleAudio)
+        }
+
+        CallMediaType.Audio -> {
+          Spacer(Modifier.fillMaxHeight().weight(1f))
+          Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+          ) {
+            ProfileImage(size = 192.dp, image = call.contact.profile.image)
+            AudioCallInfoView(call)
           }
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            Box(Modifier.padding(end = 32.dp)) {
-              ToggleSoundButton(call, speakerCanBeEnabled, toggleSound)
+          Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+            DisabledBackgroundCallsButton()
+          }
+          Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+              IconButton(onClick = dismiss, enabled = enabled) {
+                Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
+              }
+            }
+            Box(Modifier.padding(start = 32.dp)) {
+              ToggleAudioButton(call, enabled, toggleAudio)
+            }
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+              Box(Modifier.padding(end = 32.dp)) {
+                SelectSoundDevice()
+              }
             }
           }
         }
@@ -333,7 +383,7 @@ private fun ActiveCallOverlayLayout(
 }
 
 @Composable
-private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, action: () -> Unit, enabled: Boolean = true) {
+private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, enabled: Boolean = true, action: () -> Unit) {
   if (call.hasMedia) {
     IconButton(onClick = action, enabled = enabled) {
       Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else MaterialTheme.colors.secondary, modifier = Modifier.size(40.dp))
@@ -344,28 +394,26 @@ private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, a
 }
 
 @Composable
-private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
+private fun ToggleAudioButton(call: Call, enabled: Boolean = true, toggleAudio: () -> Unit) {
   if (call.audioEnabled) {
-    ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, toggleAudio)
+    ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, enabled, toggleAudio)
   } else {
-    ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, toggleAudio)
+    ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, enabled, toggleAudio)
   }
 }
 
 @Composable
-private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> Unit) {
-  if (call.soundSpeaker) {
-    ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, toggleSound, enabled)
+private fun ToggleSoundButton(call: Call, enabled: Boolean, speaker: Boolean, toggleSound: () -> Unit) {
+  if (speaker) {
+    ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, enabled, toggleSound)
   } else {
-    ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, toggleSound, enabled)
+    ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, enabled, toggleSound)
   }
 }
 
 @Composable
-fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
-  @Composable fun InfoText(text: String, style: TextStyle = MaterialTheme.typography.body2) =
-    Text(text, color = Color(0xFFFFFFD8), style = style)
-  Column(horizontalAlignment = alignment) {
+fun AudioCallInfoView(call: Call) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
     InfoText(call.contact.chatViewName, style = MaterialTheme.typography.h2)
     InfoText(call.callState.text)
 
@@ -376,6 +424,21 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 }
 
 @Composable
+fun VideoCallInfoView(call: Call) {
+  Column(horizontalAlignment = Alignment.Start) {
+    InfoText(call.callState.text)
+
+    val connInfo = call.connectionInfo
+    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
+    InfoText(call.encryptionStatus + connInfoText)
+  }
+}
+
+@Composable
+fun InfoText(text: String, modifier: Modifier = Modifier, style: TextStyle = MaterialTheme.typography.body2) =
+  Text(text, modifier, color = Color(0xFFFFFFD8), style = style)
+
+@Composable
 private fun DisabledBackgroundCallsButton() {
   var show by remember { mutableStateOf(!platform.androidIsBackgroundCallAllowed()) }
   if (show) {
@@ -383,7 +446,7 @@ private fun DisabledBackgroundCallsButton() {
       Modifier
         .padding(bottom = 24.dp)
         .clickable {
-          withBGApi {
+          withLongRunningApi {
             show = !platform.androidAskToAllowBackgroundCalls()
           }
         }
@@ -451,34 +514,137 @@ private fun DisabledBackgroundCallsButton() {
 //}
 
 @Composable
-fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
-  val scope = rememberCoroutineScope()
-  val webView = remember { mutableStateOf<WebView?>(null) }
+fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Unit) {
+  val audioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
+  val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
   val permissionsState = rememberMultiplePermissionsState(
-    permissions = listOf(
-      Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO,
-      Manifest.permission.MODIFY_AUDIO_SETTINGS,
-      Manifest.permission.INTERNET
-    )
+    permissions = if (hasVideo) {
+      listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+    } else {
+      listOf(Manifest.permission.RECORD_AUDIO)
+    }
   )
+  val context = LocalContext.current
+  val buttonEnabled = remember { mutableStateOf(true) }
+  LaunchedEffect(Unit) {
+    if (!pipActive) {
+      permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
+    }
+  }
+
+  if (pipActive) {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+      if (audioPermission.status is PermissionStatus.Denied) {
+        Icon(
+          painterResource(MR.images.ic_call_500),
+          stringResource(MR.strings.permissions_record_audio),
+          Modifier.size(24.dp),
+          tint = Color(0xFFFFFFD8)
+        )
+      }
+      if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+        Icon(
+          painterResource(MR.images.ic_videocam),
+          stringResource(MR.strings.permissions_camera),
+          Modifier.size(24.dp),
+          tint = Color(0xFFFFFFD8)
+        )
+      }
+    }
+  } else {
+    ColumnWithScrollBar(Modifier.fillMaxSize()) {
+      Spacer(Modifier.height(AppBarHeight))
+
+      AppBarTitle(stringResource(MR.strings.permissions_required))
+      Spacer(Modifier.weight(1f))
+
+      val onClick = {
+        if (permissionsState.shouldShowRationale) {
+          context.showAllowPermissionInSettingsAlert()
+        } else {
+          permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
+        }
+      }
+      Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color(0xFFFFFFD8))
+      SectionSpacer()
+      SectionView {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          val text = if (hasVideo && audioPermission.status is PermissionStatus.Denied && cameraPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_camera_and_record_audio)
+          } else if (audioPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_record_audio)
+          } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+            stringResource(MR.strings.permissions_camera)
+          } else ""
+          GrantPermissionButton(text, buttonEnabled.value, onClick)
+        }
+      }
+
+      Spacer(Modifier.weight(1f))
+      Box(Modifier.fillMaxWidth().padding(bottom = if (hasVideo) 0.dp else DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.Center) {
+        SimpleButtonFrame(cancel, Modifier.height(64.dp)) {
+          Text(stringResource(MR.strings.call_service_notification_end_call), fontSize = 20.sp, color = Color(0xFFFFFFD8))
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun GrantPermissionButton(text: String, enabled: Boolean, onClick: () -> Unit) {
+  Row(
+    Modifier
+      .clickable(enabled = enabled, onClick = onClick)
+      .heightIn(min = 30.dp)
+      .background(WarningOrange.copy(0.3f), RoundedCornerShape(50)),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(text, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), fontSize = 20.sp, color = WarningOrange)
+  }
+}
+
+/**
+ * The idea of this function is to ask system to show permission dialog and to see if it's really doing it.
+ * Otherwise, show alert with a button that opens settings for manual permission granting
+ * */
+private fun MultiplePermissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled: MutableState<Boolean>, fallback: () -> Unit) {
+  buttonEnabled.value = false
+  val lifecycleOwner = ProcessLifecycleOwner.get().lifecycle
+  var useFallback = true
+  val observer = LifecycleEventObserver { _, event ->
+    if (event == Lifecycle.Event.ON_PAUSE) {
+      useFallback = false
+      buttonEnabled.value = true
+    }
+  }
+  lifecycleOwner.addObserver(observer)
+  withBGApi {
+    delay(2000)
+    if (useFallback && chatModel.activeCall.value != null) {
+      fallback()
+    }
+    buttonEnabled.value = true
+  }.invokeOnCompletion {
+    // Main thread only
+    withApi {
+      lifecycleOwner.removeObserver(observer)
+    }
+  }
+  launchMultiplePermissionRequest()
+}
+
+@Composable
+fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
+  val webView = remember { mutableStateOf<WebView?>(null) }
   fun processCommand(wv: WebView, cmd: WCallCommand) {
     val apiCall = WVAPICall(command = cmd)
     wv.evaluateJavascript("processCommand(${json.encodeToString(apiCall)})", null)
   }
-  val lifecycleOwner = LocalLifecycleOwner.current
-  DisposableEffect(lifecycleOwner) {
-    val observer = LifecycleEventObserver { _, event ->
-      if (event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_START) {
-        permissionsState.launchMultiplePermissionRequest()
-      }
-    }
-    lifecycleOwner.lifecycle.addObserver(observer)
+  DisposableEffect(Unit) {
     onDispose {
-      val wv = webView.value
-      if (wv != null) processCommand(wv, WCallCommand.End)
-      lifecycleOwner.lifecycle.removeObserver(observer)
-      webView.value?.destroy()
+      //      val wv = webView.value
+      //      if (wv != null) processCommand(wv, WCallCommand.End)
+      //      webView.value?.destroy()
       webView.value = null
     }
   }
@@ -501,40 +667,43 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(LocalContext.current))
     .build()
 
-  if (permissionsState.allPermissionsGranted) {
-    Box(Modifier.fillMaxSize()) {
-      AndroidView(
-        factory = { AndroidViewContext ->
-          WebView(AndroidViewContext).apply {
-            layoutParams = ViewGroup.LayoutParams(
-              ViewGroup.LayoutParams.MATCH_PARENT,
-              ViewGroup.LayoutParams.MATCH_PARENT,
-            )
-            this.webChromeClient = object: WebChromeClient() {
-              override fun onPermissionRequest(request: PermissionRequest) {
-                if (request.origin.toString().startsWith("file:/")) {
-                  request.grant(request.resources)
-                } else {
-                  Log.d(TAG, "Permission request from webview denied.")
-                  request.deny()
-                }
+  Box(Modifier.fillMaxSize()) {
+    AndroidView(
+      factory = { AndroidViewContext ->
+        (staticWebView ?: WebView(androidAppContext)).apply {
+          layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+          )
+          this.webChromeClient = object: WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest) {
+              if (request.origin.toString().startsWith("file:/")) {
+                request.grant(request.resources)
+              } else {
+                Log.d(TAG, "Permission request from webview denied.")
+                request.deny()
               }
             }
-            this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
-            this.clearHistory()
-            this.clearCache(true)
-            this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
-            val webViewSettings = this.settings
-            webViewSettings.allowFileAccess = true
-            webViewSettings.allowContentAccess = true
-            webViewSettings.javaScriptEnabled = true
-            webViewSettings.mediaPlaybackRequiresUserGesture = false
-            webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+          }
+          this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
+          this.clearHistory()
+          this.clearCache(true)
+          this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
+          this.setBackgroundColor(android.graphics.Color.BLACK)
+          val webViewSettings = this.settings
+          webViewSettings.allowFileAccess = true
+          webViewSettings.allowContentAccess = true
+          webViewSettings.javaScriptEnabled = true
+          webViewSettings.mediaPlaybackRequiresUserGesture = false
+          webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+          if (staticWebView == null) {
             this.loadUrl("file:android_asset/www/android/call.html")
+          } else {
+            webView.value = this
           }
         }
-      ) { /* WebView */ }
-    }
+      }
+    ) { /* WebView */ }
   }
 }
 
@@ -554,6 +723,15 @@ class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
   }
 }
 
+private fun updateActiveCall(initial: Call, transform: (Call) -> Call) {
+  val activeCall = chatModel.activeCall.value
+  if (activeCall != null && activeCall.contact.apiId == initial.contact.apiId) {
+    chatModel.activeCall.value = transform(activeCall)
+  } else {
+    Log.d(TAG, "withActiveCall: ignoring, not in call with the contact ${activeCall?.contact?.id}")
+  }
+}
+
 private class LocalContentWebViewClient(val webView: MutableState<WebView?>, private val assetLoader: WebViewAssetLoader) : WebViewClientCompat() {
   override fun shouldInterceptRequest(
     view: WebView,
@@ -566,6 +744,7 @@ private class LocalContentWebViewClient(val webView: MutableState<WebView?>, pri
     super.onPageFinished(view, url)
     view.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
     webView.value = view
+    staticWebView = view
     Log.d(TAG, "WebRTCView: webview ready")
     // for debugging
     // view.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
@@ -579,6 +758,7 @@ fun PreviewActiveCallOverlayVideo() {
     ActiveCallOverlayLayout(
       call = Call(
         remoteHostId = null,
+        userProfile = Profile.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
@@ -588,9 +768,11 @@ fun PreviewActiveCallOverlayVideo() {
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
         )
       ),
-      speakerCanBeEnabled = true,
+      devices = emptyList(),
+      currentDevice = remember { mutableStateOf(null) },
       dismiss = {},
       toggleAudio = {},
+      selectDevice = {},
       toggleVideo = {},
       toggleSound = {},
       flipCamera = {}
@@ -605,6 +787,7 @@ fun PreviewActiveCallOverlayAudio() {
     ActiveCallOverlayLayout(
       call = Call(
         remoteHostId = null,
+        userProfile = Profile.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
@@ -614,9 +797,11 @@ fun PreviewActiveCallOverlayAudio() {
           RTCIceCandidate(RTCIceCandidateType.Host, "udp")
         )
       ),
-      speakerCanBeEnabled = true,
+      devices = emptyList(),
+      currentDevice = remember { mutableStateOf(null) },
       dismiss = {},
       toggleAudio = {},
+      selectDevice = {},
       toggleVideo = {},
       toggleSound = {},
       flipCamera = {}

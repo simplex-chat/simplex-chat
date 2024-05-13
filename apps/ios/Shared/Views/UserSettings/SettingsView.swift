@@ -27,7 +27,7 @@ let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
-let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
@@ -45,18 +45,23 @@ let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
+let DEFAULT_MIGRATION_TO_STAGE = "migrationToStage"
+let DEFAULT_MIGRATION_FROM_STAGE = "migrationFromStage"
 let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
 let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
 let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+
+let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -83,6 +88,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
+    DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -93,7 +99,14 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
+    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue
 ]
+
+// not used anymore
+enum ConnectViaLinkTab: String {
+    case scan
+    case paste
+}
 
 enum SimpleXLinkMode: String, Identifiable {
     case description
@@ -142,10 +155,14 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
+    @State private var showProgress: Bool = false
 
     var body: some View {
         ZStack {
             settingsView()
+            if showProgress {
+                progressView()
+            }
             if let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
             }
@@ -153,37 +170,42 @@ struct SettingsView: View {
     }
 
     @ViewBuilder func settingsView() -> some View {
-        let user: User = chatModel.currentUser!
+        let user = chatModel.currentUser
         NavigationView {
             List {
                 Section("You") {
-                    NavigationLink {
-                        UserProfile()
-                            .navigationTitle("Your current profile")
-                    } label: {
-                        ProfilePreview(profileOf: user)
-                        .padding(.leading, -8)
+                    if let user = user {
+                        NavigationLink {
+                            UserProfile()
+                                .navigationTitle("Your current profile")
+                        } label: {
+                            ProfilePreview(profileOf: user)
+                                .padding(.leading, -8)
+                        }
                     }
 
                     NavigationLink {
-                        UserProfilesView()
+                        UserProfilesView(showSettings: $showSettings)
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
 
-                    NavigationLink {
-                        UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
-                            .navigationTitle("SimpleX address")
-                            .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX address") }
-                    }
 
-                    NavigationLink {
-                        PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                            .navigationTitle("Your preferences")
-                    } label: {
-                        settingsRow("switch.2") { Text("Chat preferences") }
+                    if let user = user {
+                        NavigationLink {
+                            UserAddressView(shareViaProfile: user.addressShared)
+                                .navigationTitle("SimpleX address")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("qrcode") { Text("Your SimpleX address") }
+                        }
+
+                        NavigationLink {
+                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                                .navigationTitle("Your preferences")
+                        } label: {
+                            settingsRow("switch.2") { Text("Chat preferences") }
+                        }
                     }
 
                     NavigationLink {
@@ -191,9 +213,17 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("desktopcomputer") { Text("Use from desktop") }
                     }
+
+                    NavigationLink {
+                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
+                            .navigationTitle("Migrate device")
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
+                    }
                 }
                 .disabled(chatModel.chatRunning != true)
-                
+
                 Section("Settings") {
                     NavigationLink {
                         NotificationsView()
@@ -244,12 +274,14 @@ struct SettingsView: View {
                 }
 
                 Section("Help") {
-                    NavigationLink {
-                        ChatHelp(showSettings: $showSettings)
-                            .navigationTitle("Welcome \(user.displayName)!")
-                            .frame(maxHeight: .infinity, alignment: .top)
-                    } label: {
-                        settingsRow("questionmark") { Text("How to use it") }
+                    if let user = user {
+                        NavigationLink {
+                            ChatHelp(showSettings: $showSettings)
+                                .navigationTitle("Welcome \(user.displayName)!")
+                                .frame(maxHeight: .infinity, alignment: .top)
+                        } label: {
+                            settingsRow("questionmark") { Text("How to use it") }
+                        }
                     }
                     NavigationLink {
                         WhatsNewView(viaSettings: true)
@@ -336,6 +368,13 @@ struct SettingsView: View {
         }
     }
 
+    private func progressView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
+    }
+
     private enum NotificationAlert {
         case enable
         case error(LocalizedStringKey, String)
@@ -388,8 +427,7 @@ struct ProfilePreview: View {
 
     var body: some View {
         HStack {
-            ProfileImage(imageStr: profileOf.image, color: color)
-                .frame(width: 44, height: 44)
+            ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
                 .padding(.vertical, 6)
             VStack(alignment: .leading) {

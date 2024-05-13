@@ -24,7 +24,7 @@
     "copyright-label": "© 2020-2023 SimpleX | Projet Open-Source",
     "simplex-chat-protocol": "Protocole SimpleX Chat",
     "terminal-cli": "Terminal CLI",
-    "terms-and-privacy-policy": "Conditions et politique de confidentialité",
+    "terms-and-privacy-policy": "Politique de confidentialité",
     "hero-header": "La vie privée redéfinie",
     "hero-subheader": "La première messagerie<br>sans identifiant d'utilisateur",
     "hero-p-1": "Les autres applications ont des IDs d'utilisateur : Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br> SimpleX n'en a pas, <strong>pas même des nombres aléatoires</strong>.<br > Ce qui améliore radicalement votre vie privée.",
@@ -105,7 +105,7 @@
     "simplex-network-overlay-card-1-li-3": "Le P2P ne résout pas <a href='https://fr.wikipedia.org/wiki/Attaque_de_l%27homme_du_milieu'>l'attaque MITM</a> et la plupart des implémentations existantes n'utilisent pas de messages hors bande pour l'échange de clé initial. SimpleX utilise des messages hors bande ou, dans certains cas, des connexions sécurisées et approuvées préexistantes pour l'échange de clé initial .",
     "simplex-network-overlay-card-1-li-4": "Les réseaux P2P peuvent être bloquées par certains fournisseurs Internet (comme <a href='https://fr.wikipedia.org/wiki/BitTorrent'>BitTorrent</a>). SimpleX est indépendant du transport - il peut fonctionner sur des protocoles Web standard, par exemple WebSockets.",
     "simplex-network-overlay-card-1-li-5": "Tous les réseaux P2P connus sont susceptibles d'être vulnérables à une <a href='https://fr.wikipedia.org/wiki/Attaque_Sybil'>attaque Sybil</a>, car chaque nœud peut être découvert et le réseau fonctionne comme un tout. Les mesures connues pour réduire la probabilité d'une attaque Sybil nécessitent soit un composant centralisé, soit des <a href='https://fr.wikipedia.org/wiki/Preuve_de_travail'>preuves de travail</a> coûteuses. Le réseau SimpleX ne permet pas de découvrir les serveurs, il est fragmenté et fonctionne comme de multiples sous-réseaux isolées, ce qui rend impossible les attaques à l'échelle du réseau.",
-    "simplex-network-overlay-card-1-li-6": "Les réseaux P2P sont susceptibles d'être vulnérables aux <a href='https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p- file-sharing-hell-exploiting-bittorrent'>attaques DRDoS</a>, lorsque les clients peuvent rediffuser et amplifier le trafic, entraînant un déni de service à l'échelle du réseau. Les clients SimpleX relaient uniquement le trafic à partir d'une connexion connue et ne peuvent pas être utilisés par un attaquant pour amplifier le trafic sur l'ensemble du réseau.",
+    "simplex-network-overlay-card-1-li-6": "Les réseaux P2P sont susceptibles d'être vulnérables aux <a href='https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent'>attaques DRDoS</a>, lorsque les clients peuvent rediffuser et amplifier le trafic, entraînant un déni de service à l'échelle du réseau. Les clients SimpleX relaient uniquement le trafic à partir d'une connexion connue et ne peuvent pas être utilisés par un attaquant pour amplifier le trafic sur l'ensemble du réseau.",
     "privacy-matters-overlay-card-1-p-1": "De nombreuses grandes entreprises utilisent les informations sur les personnes avec lesquelles vous êtes connecté pour estimer vos revenus, vous vendre des produits dont vous n'avez pas vraiment besoin et déterminer les prix.",
     "privacy-matters-overlay-card-1-p-2": "Les vendeurs en ligne savent que les personnes à faible revenu sont plus susceptibles d'effectuer des achats urgents. Ils peuvent donc pratiquer des prix plus élevés ou supprimer des remises.",
     "privacy-matters-overlay-card-1-p-3": "Certaines sociétés financières et d'assurance utilisent des graphiques sociaux pour déterminer les taux d'intérêt et les primes. Cela fait souvent payer plus les personnes à faible revenu - c'est connu sous le nom de <a href ='https://fairbydesign.com/povertypremium/' target='_blank'>'prime à la pauvreté'</a>.",
@@ -251,5 +251,10 @@
     "jobs": "Rejoignez notre équipe",
     "hero-overlay-3-textlink": "Évaluation de sécurité",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> est un cabinet leader dans le secteur de la sécurité et des technologies qui compte parmi ses clients des grandes entreprises de la tech, des agences gouvernementales et d'importants projets de blockchain.",
-    "docs-dropdown-9": "Téléchargements"
+    "docs-dropdown-9": "Téléchargements",
+    "please-enable-javascript": "Veuillez activer JavaScript pour voir le code QR.",
+    "please-use-link-in-mobile-app": "Veuillez utiliser le lien dans l'application mobile",
+    "docs-dropdown-10": "Transparence",
+    "docs-dropdown-12": "Sécurité",
+    "docs-dropdown-11": "FAQ"
 }

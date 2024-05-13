@@ -35,7 +35,7 @@ struct ContactPreferencesView: View {
                 .disabled(currentFeaturesAllowed == featuresAllowed)
             }
         }
-        .modifier(BackButton {
+        .modifier(BackButton(disabled: Binding.constant(false)) {
             if currentFeaturesAllowed == featuresAllowed {
                 dismiss()
             } else {
@@ -116,7 +116,6 @@ struct ContactPreferencesView: View {
 
     private func featureFooter(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {
         Text(feature.enabledDescription(enabled))
-        .frame(height: 36, alignment: .topLeading)
     }
 
     private func savePreferences() {

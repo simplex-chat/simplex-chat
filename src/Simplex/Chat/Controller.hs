@@ -46,9 +46,12 @@ import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
+import Database.SQLite.Simple (SQLError)
+import qualified Database.SQLite.Simple as SQL
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
@@ -56,11 +59,15 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
-import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Util (liftIOEither)
+import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -70,6 +77,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
@@ -77,8 +85,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
-import Simplex.Messaging.Version
+import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -120,7 +127,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    chatVRange :: VersionRange,
+    chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
@@ -128,8 +135,6 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
-    xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
-    tempDir :: Maybe FilePath,
     showReactions :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
@@ -142,8 +147,27 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     coreApi :: Bool,
     highlyAvailable :: Bool,
-    deviceNameForRemote :: Text
+    deviceNameForRemote :: Text,
+    chatHooks :: ChatHooks
   }
+
+-- The hooks can be used to extend or customize chat core in mobile or CLI clients.
+data ChatHooks = ChatHooks
+  { -- preCmdHook can be used to process or modify the commands before they are processed.
+    -- This hook should be used to process CustomChatCommand.
+    -- if this hook returns ChatResponse, the command processing will be skipped.
+    preCmdHook :: ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand),
+    -- eventHook can be used to additionally process or modify events,
+    -- it is called before the event is sent to the user (or to the UI).
+    eventHook :: ChatController -> ChatResponse -> IO ChatResponse
+  }
+
+defaultChatHooks :: ChatHooks
+defaultChatHooks =
+  ChatHooks
+    { preCmdHook = \_ -> pure . Right,
+      eventHook = \_ -> pure
+    }
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
@@ -186,6 +210,7 @@ data ChatController = ChatController
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
+    entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
@@ -204,8 +229,8 @@ data ChatController = ChatController
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
-    userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
+    assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
   }
@@ -242,14 +267,17 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetRemoteHostsFolder FilePath
-  | APISetXFTPConfig (Maybe XFTPFileConfig)
+  | APISetAppFilePaths AppFilePathsConfig
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
+  | APISaveAppSettings AppSettings
+  | APIGetAppSettings (Maybe AppSettings)
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
+  | TestStorageEncryption DBEncryptionKey
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
@@ -258,10 +286,12 @@ data ChatCommand
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
+  | APICreateChatItem {noteFolderId :: NoteFolderId, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
@@ -284,6 +314,8 @@ data ChatCommand
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
+  | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
+  | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -293,6 +325,7 @@ data ChatCommand
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
+  | APIBlockMemberForAll GroupId GroupMemberId Bool
   | APIRemoveMember GroupId GroupMemberId
   | APILeaveGroup GroupId
   | APIListMembers GroupId
@@ -315,6 +348,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | APISetNetworkInfo UserNetworkInfo
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
@@ -377,6 +411,9 @@ data ChatCommand
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
+  | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
+  | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
+  | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
   | SendMessage ChatName Text
   | SendMemberContactMessage GroupName ContactName Text
   | SendLiveMessage ChatName Text
@@ -392,6 +429,7 @@ data ChatCommand
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
   | MemberRole GroupName ContactName GroupMemberRole
+  | BlockForAll GroupName ContactName Bool
   | RemoveMember GroupName ContactName
   | LeaveGroup GroupName
   | DeleteGroup GroupName
@@ -408,6 +446,7 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
+  | ClearNoteFolder
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
@@ -429,7 +468,8 @@ data ChatCommand
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
-  | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
+  | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
+  | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
@@ -448,13 +488,22 @@ data ChatCommand
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
+  | APIUploadStandaloneFile UserId CryptoFile
+  | APIDownloadStandaloneFile UserId FileDescriptionURI CryptoFile
+  | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
   | DebugLocks
+  | DebugEvent ChatResponse
   | GetAgentStats
   | ResetAgentStats
   | GetAgentSubs
   | GetAgentSubsDetails
+  | GetAgentWorkers
+  | GetAgentWorkersDetails
+  | -- The parser will return this command for strings that start from "//".
+    -- This command should be processed in preCmdHook
+    CustomChatCommand ByteString
   deriving (Show)
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
@@ -467,7 +516,6 @@ allowRemoteCommand = \case
   SetTempFolder _ -> False
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
-  APISetXFTPConfig _ -> False
   APISetEncryptLocalFiles _ -> False
   APIExportArchive _ -> False
   APIImportArchive _ -> False
@@ -582,25 +630,30 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
-  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem}
+  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
-  | CRRcvFileStart {user :: User, chatItem :: AChatItem}
-  | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedSize :: Int64, totalSize :: Int64}
+  | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
+  | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
+  | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
+  | CRRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
-  | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvStandaloneFileComplete {user :: User, targetPath :: FilePath, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileError {user :: User, chatItem :: AChatItem, agentError :: AgentErrorType}
+  | CRRcvFileError {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
-  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CRSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndStandaloneFileCreated {user :: User, fileTransferMeta :: FileTransferMeta} -- returned by _upload
+  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta} -- not used
+  | CRSndFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CRSndFileRedirectStartXFTP {user :: User, fileTransferMeta :: FileTransferMeta, redirectMeta :: FileTransferMeta}
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileError {user :: User, chatItem :: AChatItem}
+  | CRSndStandaloneFileComplete {user :: User, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
+  | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
@@ -626,10 +679,15 @@ data ChatResponse
   | CRJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMemberRoleUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
+  | CRMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
+  | CRMemberBlockedForAllUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, blocked :: Bool}
   | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
+  | CRUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
+  | CRUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
   | CRGroupEmpty {user :: User, groupInfo :: GroupInfo}
   | CRGroupRemoved {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -661,7 +719,7 @@ data ChatResponse
   | CRUserContactLinkSubscribed -- TODO delete
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
-  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
+  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
@@ -679,10 +737,13 @@ data ChatResponse
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
+  | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
-  | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
+  | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
+  | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
+  | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
@@ -694,7 +755,9 @@ data ChatResponse
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
+  | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
+  | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
 -- some of these can only be used as command responses
@@ -870,6 +933,14 @@ instance StrEncoding DBEncryptionKey where
 instance FromJSON DBEncryptionKey where
   parseJSON = strParseJSON "DBEncryptionKey"
 
+data AppFilePathsConfig = AppFilePathsConfig
+  { appFilesFolder :: FilePath,
+    appTempFolder :: FilePath,
+    appAssetsFolder :: FilePath,
+    appRemoteHostsFolder :: Maybe FilePath
+  }
+  deriving (Show)
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -895,8 +966,7 @@ data PendingSubStatus = PendingSubStatus
   deriving (Show)
 
 data UserProfileUpdateSummary = UserProfileUpdateSummary
-  { notChanged :: Int,
-    updateSuccesses :: Int,
+  { updateSuccesses :: Int,
     updateFailures :: Int,
     changedContacts :: [Contact]
   }
@@ -922,22 +992,14 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
-data XFTPFileConfig = XFTPFileConfig
-  { minFileSize :: Integer
-  }
-  deriving (Show)
-
-defaultXFTPFileConfig :: XFTPFileConfig
-defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
-
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
 ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
 ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
 
-crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
-crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
+crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode, NtfServer) -> ChatResponse
+crNtfToken (token, status, ntfMode, ntfServer) = CRNtfToken {token, status, ntfMode, ntfServer}
 
 data SwitchProgress = SwitchProgress
   { queueDirection :: QueueDirection,
@@ -987,11 +1049,6 @@ data CoreVersionInfo = CoreVersionInfo
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
-  deriving (Show)
-
-data SendFileMode
-  = SendFileSMP (Maybe InlineFileMode)
-  | SendFileXFTP
   deriving (Show)
 
 data SlowSQLQuery = SlowSQLQuery
@@ -1046,6 +1103,7 @@ data ChatErrorType
   | CEGroupDuplicateMemberId
   | CEGroupNotJoined {groupInfo :: GroupInfo}
   | CEGroupMemberNotActive
+  | CECantBlockMemberForSelf {groupInfo :: GroupInfo, member :: GroupMember, setShowMessages :: Bool}
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound
   | CEGroupMemberIntroNotFound {contactName :: ContactName}
@@ -1070,6 +1128,8 @@ data ChatErrorType
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
+  | CEInvalidForward
+  | CEForwardNoFile
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall
@@ -1100,7 +1160,7 @@ data DatabaseError
 data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
   deriving (Show, Exception)
 
-throwDBError :: ChatMonad m => DatabaseError -> m ()
+throwDBError :: DatabaseError -> CM ()
 throwDBError = throwError . ChatErrorDatabase
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
@@ -1204,39 +1264,59 @@ data RemoteCtrlInfo = RemoteCtrlInfo
   }
   deriving (Show)
 
-type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
+type CM' a = ReaderT ChatController IO a
 
-type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+type CM a = ExceptT ChatError (ReaderT ChatController IO) a
 
-chatReadVar :: ChatMonad' m => (ChatController -> TVar a) -> m a
-chatReadVar f = asks f >>= readTVarIO
+chatReadVar :: (ChatController -> TVar a) -> CM a
+chatReadVar = lift . chatReadVar'
 {-# INLINE chatReadVar #-}
 
-chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
-chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
+chatReadVar' :: (ChatController -> TVar a) -> CM' a
+chatReadVar' f = asks f >>= readTVarIO
+{-# INLINE chatReadVar' #-}
+
+chatWriteVar :: (ChatController -> TVar a) -> a -> CM ()
+chatWriteVar f = lift . chatWriteVar' f
 {-# INLINE chatWriteVar #-}
 
-chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
-chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
+chatWriteVar' :: (ChatController -> TVar a) -> a -> CM' ()
+chatWriteVar' f value = asks f >>= atomically . (`writeTVar` value)
+{-# INLINE chatWriteVar' #-}
+
+chatModifyVar :: (ChatController -> TVar a) -> (a -> a) -> CM ()
+chatModifyVar f = lift . chatModifyVar' f
 {-# INLINE chatModifyVar #-}
 
-setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
-setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
-setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar connNetworkStatuses $ M.insert agentConnId status
+chatModifyVar' :: (ChatController -> TVar a) -> (a -> a) -> CM' ()
+chatModifyVar' f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
+{-# INLINE chatModifyVar' #-}
 
-tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
+setContactNetworkStatus :: Contact -> NetworkStatus -> CM' ()
+setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
+setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar' connNetworkStatuses $ M.insert agentConnId status
+
+tryChatError :: CM a -> CM (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
 
-catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
+tryChatError' :: CM a -> CM' (Either ChatError a)
+tryChatError' = tryAllErrors' mkChatError
+{-# INLINE tryChatError' #-}
+
+catchChatError :: CM a -> (ChatError -> CM a) -> CM a
 catchChatError = catchAllErrors mkChatError
 {-# INLINE catchChatError #-}
 
-chatFinally :: ChatMonad m => m a -> m b -> m a
+catchChatError' :: CM a -> (ChatError -> CM' a) -> CM' a
+catchChatError' = catchAllErrors' mkChatError
+{-# INLINE catchChatError' #-}
+
+chatFinally :: CM a -> CM b -> CM a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
-onChatError :: ChatMonad m => m a -> m b -> m a
+onChatError :: CM a -> CM b -> CM a
 a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
 {-# INLINE onChatError #-}
 
@@ -1244,17 +1324,29 @@ mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show
 {-# INLINE mkChatError #-}
 
+catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError IO a) -> ExceptT StoreError IO a
+catchStoreError = catchAllErrors mkStoreError
+{-# INLINE catchStoreError #-}
+
+mkStoreError :: SomeException -> StoreError
+mkStoreError = SEInternalError . show
+{-# INLINE mkStoreError #-}
+
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
 
-throwChatError :: ChatMonad m => ChatErrorType -> m a
+throwChatError :: ChatErrorType -> CM a
 throwChatError = throwError . ChatError
 
 -- | Emit local events.
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  localQ <- asks outputQ
-  session <- asks remoteCtrlSession
+toView :: ChatResponse -> CM ()
+toView = lift . toView'
+{-# INLINE toView #-}
+
+toView' :: ChatResponse -> CM' ()
+toView' ev = do
+  cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
+  event <- liftIO $ eventHook chatHooks cc ev
   atomically $
     readTVar session >>= \case
       Just (_, RCSessionConnected {remoteOutputQ})
@@ -1262,52 +1354,39 @@ toView event = do
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, Nothing, event)
 
-withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
+withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
 
-withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStore = withStoreCtx Nothing
-
-withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
-withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
-
-withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStoreCtx ctx_ action = do
+withStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withStore action = do
   ChatController {chatStore} <- ask
-  liftEitherError ChatErrorStore $ case ctx_ of
-    Nothing -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
-    -- uncomment to debug store performance
-    -- Just ctx -> do
-    --   t1 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
-    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
-    --   t2 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
-    --   pure r
-    Just _ -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
-  where
-    handleInternal :: String -> SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+  liftIOEither $ withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
 
-withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
+withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
-  where
-    handleInternal :: E.SomeException -> IO (Either ChatError a)
-    handleInternal = pure . Left . ChatError . CEInternalError . show
+  liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
 
-withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
+handleDBErrors :: [E.Handler IO (Either ChatError a)]
+handleDBErrors =
+  [ E.Handler $ \(e :: SQLError) ->
+      let se = SQL.sqlError e
+          busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
+       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
+    E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
+  ]
+
+withStoreBatch' :: Traversable t => (DB.Connection -> t (IO a)) -> CM' (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
 
-withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
+withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
-    >>= runExceptT . action
+    >>= liftIO . runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
 
-withAgent' :: ChatMonad' m => (AgentClient -> m a) -> m a
-withAgent' action = asks smpAgent >>= action
+withAgent' :: (AgentClient -> IO a) -> CM' a
+withAgent' action = asks smpAgent >>= liftIO . action
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
@@ -1332,6 +1411,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
 $(JQ.deriveJSON defaultJSON ''ContactSubStatus)
 
@@ -1395,7 +1476,5 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
-
-$(JQ.deriveJSON defaultJSON ''XFTPFileConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)

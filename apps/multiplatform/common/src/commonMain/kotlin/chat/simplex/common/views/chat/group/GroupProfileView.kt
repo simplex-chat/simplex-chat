@@ -35,7 +35,7 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     close = close,
     groupProfile = groupInfo.groupProfile,
     saveProfile = { p ->
-      withApi {
+      withBGApi {
         val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
           chatModel.updateGroup(rhId, gInfo)
@@ -95,9 +95,8 @@ fun GroupProfileLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = closeWithAlert) {
-        Column(
+        ColumnWithScrollBar(
           Modifier
-            .verticalScroll(scrollState)
         ) {
           Column(
             Modifier.fillMaxWidth()

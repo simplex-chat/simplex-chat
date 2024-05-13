@@ -3,7 +3,6 @@ package chat.simplex.common.views.chatlist
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
@@ -13,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
@@ -22,10 +22,9 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
-actual fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>) {
-  val call = remember { chatModel.activeCall}.value
-  //  if (call?.callState == CallState.Connected && !newChatSheetState.collectAsState().value.isVisible()) {
-  if (call != null && !newChatSheetState.collectAsState().value.isVisible()) {
+actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>) {
+  //  if (call.callState == CallState.Connected && !newChatSheetState.collectAsState().value.isVisible()) {
+  if (!newChatSheetState.collectAsState().value.isVisible()) {
       val showMenu = remember { mutableStateOf(false) }
       val media = call.peerMedia ?: call.localMedia
       CompositionLocalProvider(
@@ -43,7 +42,7 @@ actual fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<An
               .combinedClickable(onClick = {
                 val chat = chatModel.getChat(call.contact.id)
                 if (chat != null) {
-                  withApi {
+                  withBGApi {
                     openChat(chat.remoteHostId, chat.chatInfo, chatModel)
                   }
                 }

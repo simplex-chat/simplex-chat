@@ -14,7 +14,7 @@ where
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
@@ -77,8 +77,10 @@ mkChatOpts DirectoryOpts {coreOptions} =
       deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
+      chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      optTempDirectory = Nothing,
       showReactions = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,

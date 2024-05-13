@@ -9,6 +9,12 @@
 import SwiftUI
 import SimpleXChat
 
+private let featureRoles: [(role: GroupMemberRole?, text: LocalizedStringKey)] = [
+    (nil, "all members"),
+    (.admin, "admins"),
+    (.owner, "owners")
+]
+
 struct GroupPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
@@ -24,10 +30,13 @@ struct GroupPreferencesView: View {
             List {
                 featureSection(.timedMessages, $preferences.timedMessages.enable)
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
-                featureSection(.directMessages, $preferences.directMessages.enable)
+                featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
                 featureSection(.reactions, $preferences.reactions.enable)
-                featureSection(.voice, $preferences.voice.enable)
-                featureSection(.files, $preferences.files.enable)
+                featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
+                featureSection(.files, $preferences.files.enable, $preferences.files.role)
+                // TODO enable simplexLinks preference in 5.8
+                // featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
+                featureSection(.history, $preferences.history.enable)
 
                 if groupInfo.canEdit {
                     Section {
@@ -47,7 +56,7 @@ struct GroupPreferencesView: View {
                 preferences.timedMessages.ttl = currentPreferences.timedMessages.ttl
             }
         }
-        .modifier(BackButton {
+        .modifier(BackButton(disabled: Binding.constant(false)) {
             if currentPreferences == preferences {
                 dismiss()
             } else {
@@ -63,7 +72,7 @@ struct GroupPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>) -> some View {
+    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil) -> some View {
         Section {
             let color: Color = enableFeature.wrappedValue == .on ? .green : .secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
@@ -86,6 +95,16 @@ struct GroupPreferencesView: View {
                     )
                     .frame(height: 36)
                 }
+                if enableFeature.wrappedValue == .on, let enableForRole {
+                    Picker("Enabled for", selection: enableForRole) {
+                        ForEach(featureRoles, id: \.role) { fr in
+                            Text(fr.text)
+                        }
+                    }
+                    .frame(height: 36)
+                    // remove in v5.8
+                    .disabled(true)
+                }
             } else {
                 settingsRow(icon, color: color) {
                     infoRow(Text(feature.text), enableFeature.wrappedValue.text)
@@ -93,10 +112,25 @@ struct GroupPreferencesView: View {
                 if timedOn {
                     infoRow("Delete after", timeText(preferences.timedMessages.ttl))
                 }
+                if enableFeature.wrappedValue == .on, let enableForRole {
+                    HStack {
+                        Text("Enabled for").foregroundColor(.secondary)
+                        Spacer()
+                        Text(
+                            featureRoles.first(where: { fr in fr.role == enableForRole.wrappedValue })?.text
+                            ?? "all members"
+                        )
+                        .foregroundColor(.secondary)
+                    }
+                }
             }
         } footer: {
             Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEdit))
-                .frame(height: 36, alignment: .topLeading)
+        }
+        .onChange(of: enableFeature.wrappedValue) { enabled in
+            if case .off = enabled {
+                enableForRole?.wrappedValue = nil
+            }
         }
     }
 

@@ -13,9 +13,9 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.FileChooserLauncher
 import chat.simplex.common.platform.saveImage
-import chat.simplex.common.views.helpers.SharedContent
-import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -31,13 +31,13 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   ItemAction(stringResource(MR.strings.save_verb), painterResource(if (cItem.file?.fileSource?.cryptoArgs == null) MR.images.ic_download else MR.images.ic_lock_open_right), onClick = {
     when (cItem.content.msgContent) {
       is MsgContent.MCImage -> {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.status == PermissionStatus.Granted) {
           saveImage(cItem.file)
         } else {
           writePermissionState.launchPermissionRequest()
         }
       }
-      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
+      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withLongRunningApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
       else -> {}
     }
     showMenu.value = false

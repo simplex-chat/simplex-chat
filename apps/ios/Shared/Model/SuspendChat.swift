@@ -107,26 +107,16 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
     let m = ChatModel.shared
     if (!m.chatInitialized) {
         m.v3DBMigration = v3DBMigrationDefault.get()
-        if AppChatState.shared.value == .stopped {
-            AlertManager.shared.showAlert(Alert(
-                title: Text("Start chat?"),
-                message: Text("Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat."),
-                primaryButton: .default(Text("Ok")) {
-                    AppChatState.shared.set(.active)
-                    initialize(start: true)
-                },
-                secondaryButton: .cancel {
-                    initialize(start: false)
-                }
-            ))
+        if AppChatState.shared.value == .stopped && storeDBPassphraseGroupDefault.get() && kcDatabasePassword.get() != nil {
+            initialize(start: true, confirmStart: true)
         } else {
             initialize(start: true)
         }
     }
 
-    func initialize(start: Bool) {
+    func initialize(start: Bool, confirmStart: Bool = false) {
         do {
-            try initializeChat(start: m.v3DBMigration.startChat && start, refreshInvitations: refreshInvitations)
+            try initializeChat(start: m.v3DBMigration.startChat && start, confirmStart: m.v3DBMigration.startChat && confirmStart, refreshInvitations: refreshInvitations)
         } catch let error {
             AlertManager.shared.showAlertMsg(
                 title: start ? "Error starting chat" : "Error opening chat",

@@ -31,7 +31,10 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
+    @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
+
+    private let callTopPadding: CGFloat = 50
 
     private enum ChatListActionSheet: Identifiable {
         case planAndConnectSheet(sheet: PlanAndConnectActionSheet)
@@ -49,18 +52,34 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            let showCallArea = chatModel.activeCall != nil && chatModel.activeCall?.callState != .waitCapabilities && chatModel.activeCall?.callState != .invitationAccepted
             // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
             // i.e. with separate branches like this settings are closed: `if prefPerformLA { ... contentView() ... } else { contentView() }
             if !prefPerformLA || accessAuthenticated {
                 contentView()
+                    .padding(.top, showCallArea ? callTopPadding : 0)
             } else {
                 lockButton()
+                    .padding(.top, showCallArea ? callTopPadding : 0)
             }
+
+            if showCallArea, let call = chatModel.activeCall {
+                VStack {
+                    activeCallInteractiveArea(call)
+                    Spacer()
+                }
+            }
+
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
             }
+
             if !showSettings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
+                    .onDisappear {
+                        // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
+                        waitingForOrPassedAuth = accessAuthenticated
+                    }
             } else if showSetPasscode {
                 SetAppPasscodeView {
                     chatModel.contentViewAccessAuthenticated = true
@@ -73,8 +92,7 @@ struct ContentView: View {
                     showSetPasscode = false
                     alertManager.showAlert(laPasscodeNotSetAlert())
                 }
-            }
-            if chatModel.chatDbStatus == nil {
+            } else if chatModel.chatDbStatus == nil && AppChatState.shared.value != .stopped && waitingForOrPassedAuth {
                 initializationView()
             }
         }
@@ -131,11 +149,11 @@ struct ContentView: View {
             if case .onboardingComplete = step,
                chatModel.currentUser != nil {
                 mainView()
-                .actionSheet(item: $chatListActionSheet) { sheet in
-                    switch sheet {
-                    case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: false)
+                    .actionSheet(item: $chatListActionSheet) { sheet in
+                        switch sheet {
+                        case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: false)
+                        }
                     }
-                }
             } else {
                 OnboardingView(onboarding: step)
             }
@@ -155,6 +173,40 @@ struct ContentView: View {
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 lockButton()
+            }
+        }
+    }
+
+    @ViewBuilder private func activeCallInteractiveArea(_ call: Call) -> some View {
+        HStack {
+            Text(call.contact.displayName).font(.body).foregroundColor(.white)
+            Spacer()
+            CallDuration(call: call)
+        }
+        .padding(.horizontal)
+        .frame(height: callTopPadding - 10)
+        .background(Color(uiColor: UIColor(red: 47/255, green: 208/255, blue: 88/255, alpha: 1)))
+        .onTapGesture {
+            chatModel.activeCallViewIsCollapsed = false
+        }
+    }
+
+    struct CallDuration: View {
+        let call: Call
+        @State var text: String = ""
+        @State var timer: Timer? = nil
+
+        var body: some View {
+            Text(text).frame(minWidth: text.count <= 5 ? 52 : 77, alignment: .leading).offset(x: 4).font(.body).foregroundColor(.white)
+            .onAppear {
+                timer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
+                    if let connectedAt = call.connectedAt {
+                        text = durationText(Int(Date.now.timeIntervalSince1970 - connectedAt.timeIntervalSince1970))
+                    }
+                }
+            }
+            .onDisappear {
+                _ = timer?.invalidate()
             }
         }
     }
@@ -182,7 +234,7 @@ struct ContentView: View {
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete
-                if (!prefLANoticeShown && prefShowLANotice && !chatModel.chats.isEmpty) {
+                if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
                     prefLANoticeShown = true
                     alertManager.showAlert(laNoticeAlert())
                 } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {

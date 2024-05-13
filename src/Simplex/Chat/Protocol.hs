@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -30,6 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
@@ -43,42 +45,69 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
+import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
+import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
+
+-- Chat version history:
+-- 1 - support chat versions in connections (9/1/2023)
+-- 2 - create contacts for group members only via x.grp.direct.inv (9/16/2023)
+-- 3 - faster joining via group links without creating contact (10/30/2023)
+-- 4 - group message forwarding (11/18/2023)
+-- 5 - batch sending messages (12/23/2023)
+-- 6 - send group welcome message after history (12/29/2023)
+-- 7 - update member profiles (1/15/2024)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
-currentChatVersion :: Version
-currentChatVersion = 5
+currentChatVersion :: VersionChat
+currentChatVersion = VersionChat 8
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
-supportedChatVRange :: VersionRange
-supportedChatVRange = mkVersionRange 1 currentChatVersion
+supportedChatVRange :: VersionRangeChat
+supportedChatVRange = mkVersionRange initialChatVersion currentChatVersion
+{-# INLINE supportedChatVRange #-}
 
--- version range that supports skipping establishing direct connections in a group
-groupNoDirectVRange :: VersionRange
-groupNoDirectVRange = mkVersionRange 2 currentChatVersion
-
--- version range that supports establishing direct connection via x.grp.direct.inv with a group member
-xGrpDirectInvVRange :: VersionRange
-xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
+-- version range that supports skipping establishing direct connections in a group and establishing direct connection via x.grp.direct.inv
+groupDirectInvVersion :: VersionChat
+groupDirectInvVersion = VersionChat 2
 
 -- version range that supports joining group via group link without creating direct contact
-groupLinkNoContactVRange :: VersionRange
-groupLinkNoContactVRange = mkVersionRange 3 currentChatVersion
+groupFastLinkJoinVersion :: VersionChat
+groupFastLinkJoinVersion = VersionChat 3
 
 -- version range that supports group forwarding
-groupForwardVRange :: VersionRange
-groupForwardVRange = mkVersionRange 4 currentChatVersion
+groupForwardVersion :: VersionChat
+groupForwardVersion = VersionChat 4
 
 -- version range that supports batch sending in groups
-batchSendVRange :: VersionRange
-batchSendVRange = mkVersionRange 5 currentChatVersion
+batchSendVersion :: VersionChat
+batchSendVersion = VersionChat 5
+
+-- version range that supports sending group welcome message in group history
+groupHistoryIncludeWelcomeVersion :: VersionChat
+groupHistoryIncludeWelcomeVersion = VersionChat 6
+
+-- version range that supports sending member profile updates to groups
+memberProfileUpdateVersion :: VersionChat
+memberProfileUpdateVersion = VersionChat 7
+
+-- version range that supports compressing messages and PQ e2e encryption
+pqEncryptionCompressionVersion :: VersionChat
+pqEncryptionCompressionVersion = VersionChat 8
+
+agentToChatVersion :: VersionSMPA -> VersionChat
+agentToChatVersion v
+  | v < pqdrSMPAgentVersion = initialChatVersion
+  | otherwise = pqEncryptionCompressionVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -209,7 +238,7 @@ instance ToJSON LinkContent where
 $(JQ.deriveJSON defaultJSON ''LinkPreview)
 
 data ChatMessage e = ChatMessage
-  { chatVRange :: VersionRange,
+  { chatVRange :: VersionRangeChat,
     msgId :: Maybe SharedMsgId,
     chatMsgEvent :: ChatMsgEvent e
   }
@@ -236,11 +265,12 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
-  XGrpMemIntro :: MemberInfo -> ChatMsgEvent 'Json
+  XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
   XGrpMemRole :: MemberId -> GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
   XGrpMemDel :: MemberId -> ChatMsgEvent 'Json
@@ -282,6 +312,7 @@ isForwardedGroupMsg ev = case ev of
   XInfo _ -> True
   XGrpMemNew _ -> True
   XGrpMemRole {} -> True
+  XGrpMemRestrict {} -> True
   XGrpMemDel _ -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
   XGrpLeave -> True
   XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
@@ -292,6 +323,14 @@ forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMes
 forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
   _ -> Nothing
+
+-- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat
+forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> ChatMessage e -> [GroupMember]
+forwardedToGroupMembers ms ChatMessage {chatMsgEvent} = case encoding @e of
+  SJson -> case chatMsgEvent of
+    XGrpMemRestrict mId _ -> filter (\GroupMember {memberId} -> memberId /= mId) ms
+    _ -> ms
+  _ -> []
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -489,17 +528,29 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxChatMsgSize :: Int
-maxChatMsgSize = 15610
+maxEncodedMsgLength :: Int
+maxEncodedMsgLength = 15610
+
+-- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
+maxCompressedMsgLength :: Int
+maxCompressedMsgLength = 13388
+
+-- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
+-- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
+maxEncodedInfoLength :: Int
+maxEncodedInfoLength = 14702
+
+maxCompressedInfoLength :: Int
+maxCompressedInfoLength = 10976 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
-encodeChatMessage :: MsgEncodingI e => ChatMessage e -> EncodedChatMessage
-encodeChatMessage msg = do
+encodeChatMessage :: MsgEncodingI e => Int -> ChatMessage e -> EncodedChatMessage
+encodeChatMessage maxSize msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = LB.toStrict $ J.encode m
-      if B.length body > maxChatMsgSize
+      if B.length body > maxSize
         then ECMLarge
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
@@ -511,15 +562,28 @@ parseChatMessages s = case B.head s of
   '[' -> case J.eitherDecodeStrict' s of
     Right v -> map parseItem v
     Left e -> [Left e]
+  'X' -> decodeCompressed (B.drop 1 s)
   _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
   where
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
+    decodeCompressed :: ByteString -> [Either String AChatMessage]
+    decodeCompressed s' = case smpDecode s' of
+      Left e -> [Left e]
+      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseChatMessages . decompress1) compressed
+
+compressedBatchMsgBody_ :: MsgBody -> ByteString
+compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
+
+markCompressedBatch :: ByteString -> ByteString
+markCompressedBatch = B.cons 'X'
+{-# INLINE markCompressedBatch #-}
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
     mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
@@ -621,6 +685,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpMemFwd_ :: CMEventTag 'Json
   XGrpMemInfo_ :: CMEventTag 'Json
   XGrpMemRole_ :: CMEventTag 'Json
+  XGrpMemRestrict_ :: CMEventTag 'Json
   XGrpMemCon_ :: CMEventTag 'Json
   XGrpMemConAll_ :: CMEventTag 'Json
   XGrpMemDel_ :: CMEventTag 'Json
@@ -670,6 +735,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpMemFwd_ -> "x.grp.mem.fwd"
     XGrpMemInfo_ -> "x.grp.mem.info"
     XGrpMemRole_ -> "x.grp.mem.role"
+    XGrpMemRestrict_ -> "x.grp.mem.restrict"
     XGrpMemCon_ -> "x.grp.mem.con"
     XGrpMemConAll_ -> "x.grp.mem.con.all"
     XGrpMemDel_ -> "x.grp.mem.del"
@@ -720,6 +786,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.mem.fwd" -> XGrpMemFwd_
         "x.grp.mem.info" -> XGrpMemInfo_
         "x.grp.mem.role" -> XGrpMemRole_
+        "x.grp.mem.restrict" -> XGrpMemRestrict_
         "x.grp.mem.con" -> XGrpMemCon_
         "x.grp.mem.con.all" -> XGrpMemConAll_
         "x.grp.mem.del" -> XGrpMemDel_
@@ -761,11 +828,12 @@ toCMEventTag msg = case msg of
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpMemNew _ -> XGrpMemNew_
-  XGrpMemIntro _ -> XGrpMemIntro_
+  XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
   XGrpMemFwd _ _ -> XGrpMemFwd_
   XGrpMemInfo _ _ -> XGrpMemInfo_
   XGrpMemRole _ _ -> XGrpMemRole_
+  XGrpMemRestrict _ _ -> XGrpMemRestrict_
   XGrpMemCon _ -> XGrpMemCon_
   XGrpMemConAll _ -> XGrpMemConAll_
   XGrpMemDel _ -> XGrpMemDel_
@@ -860,11 +928,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
-      XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
+      XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
       XGrpMemInfo_ -> XGrpMemInfo <$> p "memberId" <*> p "profile"
       XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role"
+      XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
@@ -920,11 +989,12 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
-      XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
+      XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]
       XGrpMemInfo memId profile -> o ["memberId" .= memId, "profile" .= profile]
       XGrpMemRole memId role -> o ["memberId" .= memId, "role" .= role]
+      XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
       XGrpMemDel memId -> o ["memberId" .= memId]

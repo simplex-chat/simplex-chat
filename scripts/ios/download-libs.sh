@@ -35,7 +35,7 @@ for ((i = 0 ; i < ${#arches[@]}; i++)); do
     output_arch="${output_arches[$i]}"
     output_dir="$HOME/Downloads"
 
-    curl --tlsv1.2 --location -o "$output_dir"/pkg-ios-"$arch"-swift-json.zip "$job_repo"/"$arch"-darwin-ios:lib:simplex-chat."$arch"-darwin/latest/download/1 && \
+    curl --tlsv1.2 --location -o "$output_dir"/pkg-ios-"$arch"-swift-json.zip "$job_repo"/"$arch"-darwin."$arch"-darwin-ios:lib:simplex-chat/latest/download/1 && \
     unzip -o "$output_dir"/pkg-ios-"$output_arch"-swift-json.zip -d ~/Downloads/pkg-ios-"$output_arch"-swift-json
 done
 sh "$root_dir"/scripts/ios/prepare-x86_64.sh

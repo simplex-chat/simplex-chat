@@ -49,8 +49,8 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ColumnWithScrollBar(
+        modifier = Modifier.fillMaxSize()
       ) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
@@ -120,8 +120,8 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ColumnWithScrollBar(
+        modifier = Modifier.fillMaxSize()
       ) {
         /*CloseSheetBar(close = {
           if (chatModel.users.isEmpty()) {
@@ -175,10 +175,12 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 }
 
 fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
-  withApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withApi
+  withBGApi {
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withBGApi
+    if (!chatModel.connectedToRemote()) {
+      chatModel.localUserCreated.value = true
+    }
     controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
-    chatModel.chatRunning.value = false
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
     close()
@@ -186,11 +188,11 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
 }
 
 fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
-  withApi {
+  withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
       rhId, Profile(displayName.trim(), "", null)
-    ) ?: return@withApi
+    ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
@@ -206,12 +208,14 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 }
 
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
-  withApi {
+  withBGApi {
     chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
       null, Profile(displayName.trim(), "", null)
-    ) ?: return@withApi
+    ) ?: return@withBGApi
+    chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
-    if (chatModel.users.isEmpty()) {
+    // No users or no visible users
+    if (chatModel.users.none { u -> !u.user.hidden }) {
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
@@ -239,7 +243,7 @@ fun OnboardingButtons(displayName: MutableState<String>, close: () -> Unit) {
     val enabled = canCreateProfile(displayName.value)
     val createModifier: Modifier = Modifier.clickable(enabled) {  createProfileOnboarding(chatModel, displayName.value, close) }.padding(8.dp)
     val createColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
+    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent, contentColor = LocalContentColor.current) {
       Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
         Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
         Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)

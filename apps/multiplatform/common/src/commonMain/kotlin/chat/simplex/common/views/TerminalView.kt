@@ -50,7 +50,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
     chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
-    withApi {
+    withBGApi {
       // show "in progress"
       // TODO show active remote host in chat console?
       chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
@@ -85,6 +85,7 @@ fun TerminalLayout(
             isDirectChat = false,
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             sendMsgEnabled = true,
+            sendButtonEnabled = true,
             nextSendGrpInv = false,
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
@@ -101,13 +102,16 @@ fun TerminalLayout(
           )
         }
       },
+      contentColor = LocalContentColor.current,
+      drawerContentColor = LocalContentColor.current,
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(
         modifier = Modifier
           .padding(contentPadding)
           .fillMaxWidth(),
-        color = MaterialTheme.colors.background
+        color = MaterialTheme.colors.background,
+        contentColor = LocalContentColor.current
       ) {
         TerminalLog()
       }
@@ -127,7 +131,7 @@ fun TerminalLog() {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
-  LazyColumn(state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "

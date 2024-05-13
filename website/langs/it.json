@@ -13,7 +13,7 @@
     "copyright-label": "© 2020-2023 SimpleX | Progetto Open-Source",
     "simplex-chat-protocol": "Protocollo di SimpleX Chat",
     "terminal-cli": "Terminale CLI",
-    "terms-and-privacy-policy": "Termini e Informativa sulla privacy",
+    "terms-and-privacy-policy": "Informativa sulla privacy",
     "hero-header": "Privacy ridefinita",
     "hero-subheader": "Il primo messenger<br>senza ID utente",
     "hero-p-1": "Le altre app hanno gli ID utente: Signal, Matrix, Session, Briar, Jami, Cwtch, ecc.<br> SimpleX invece no, <strong>neanche dei numeri casuali</strong>.<br> Ciò aumenta radicalmente la tua privacy.",
@@ -54,7 +54,7 @@
     "simplex-unique-4-title": "Possiedi la rete SimpleX",
     "simplex-unique-4-overlay-1-title": "Completamente decentralizzata &mdash; gli utenti possiedono la rete SimpleX",
     "hero-overlay-card-1-p-1": "Molti utenti hanno chiesto: <em>se SimpleX non ha identificatori utente, come può sapere dove recapitare i messaggi? </em>",
-    "hero-overlay-card-1-p-3": "Sei tu a definire quale/i server usare per ricevere i messaggi, i tuoi contatti &mdash; i server che usi per inviare loro i messaggi. È probabile che ogni conversazione utilizzi due server diversi.",
+    "hero-overlay-card-1-p-3": "Sei tu a definire quale/i server usare per ricevere i messaggi, i tuoi contatti i server che usi per inviare loro i messaggi. È probabile che ogni conversazione utilizzi due server diversi.",
     "hero-overlay-card-1-p-5": "Solo i dispositivi client conservano profili utente, contatti e gruppi; i messaggi vengono inviati con crittografia end-to-end a 2 livelli.",
     "hero-overlay-card-1-p-6": "Maggiori informazioni nel <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>libro bianco di SimpleX</a>.",
     "hero-overlay-card-2-p-2": "Potrebbero quindi correlare queste informazioni con i social network pubblici esistenti e determinare alcune identità reali.",
@@ -250,5 +250,10 @@
     "jobs": "Unisciti al team",
     "hero-overlay-3-textlink": "Valutazione della sicurezza",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> è leader nella consulenza di sicurezza e tecnologia, i cui clienti includono grandi aziende, agenzie governative e importanti progetti di blockchain.",
-    "docs-dropdown-9": "Download"
+    "docs-dropdown-9": "Download",
+    "please-enable-javascript": "Attiva JavaScript per vedere il codice QR.",
+    "please-use-link-in-mobile-app": "Usa il link nell'app mobile",
+    "docs-dropdown-10": "Trasparenza",
+    "docs-dropdown-12": "Sicurezza",
+    "docs-dropdown-11": "Domande frequenti"
 }

@@ -1,8 +1,7 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.*
 import androidx.compose.ui.Modifier
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
@@ -50,7 +49,7 @@ fun authenticateWithPasscode(
       close()
       completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))
     }
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
       LocalAuthView(ChatModel, LocalAuthRequest(promptTitle, promptSubtitle, password, selfDestruct && ChatController.appPrefs.selfDestruct.get()) {
         close()
         completed(it)

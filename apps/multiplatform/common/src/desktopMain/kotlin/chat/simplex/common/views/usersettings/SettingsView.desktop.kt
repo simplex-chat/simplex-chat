@@ -3,6 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionView
 import androidx.compose.runtime.Composable
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.views.helpers.ModalData
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -10,7 +11,7 @@ import dev.icerock.moko.resources.compose.stringResource
 @Composable
 actual fun SettingsSectionApp(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {

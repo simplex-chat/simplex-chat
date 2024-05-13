@@ -54,11 +54,13 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    @Published var ctrlInitInProgress: Bool = false
     // local authentication
     @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
+    @Published var deletedChats: Set<String> = []
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
@@ -78,6 +80,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenRegistered = false
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
+    @Published var notificationServer: String?
     @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: NTFContactRequest?
@@ -87,16 +90,20 @@ final class ChatModel: ObservableObject {
     @Published var activeCall: Call?
     let callCommand: WebRTCCommandProcessor = WebRTCCommandProcessor()
     @Published var showCallView = false
+    @Published var activeCallViewIsCollapsed = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
-    // currently showing QR code
-    @Published var connReqInv: String?
+    // currently showing invitation
+    @Published var showingInvitation: ShowingInvitation?
+    @Published var migrationState: MigrationToState? = MigrationToDeviceState.makeMigrationState()
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     // tracks keyboard height via subscription in AppDelegate
     @Published var keyboardHeight: CGFloat = 0
+    @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
+    @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -136,7 +143,7 @@ final class ChatModel: ObservableObject {
     }
 
     func removeUser(_ user: User) {
-        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+        if let i = getUserIndex(user) {
             users.remove(at: i)
         }
     }
@@ -620,12 +627,14 @@ final class ChatModel: ObservableObject {
     }
 
     func dismissConnReqView(_ id: String) {
-        if let connReqInv = connReqInv,
-           let c = getChat(id),
-           case let .contactConnection(contactConnection) = c.chatInfo,
-           connReqInv == contactConnection.connReqInv {
+        if id == showingInvitation?.connId {
+            markShowingInvitationUsed()
             dismissAllSheets()
         }
+    }
+
+    func markShowingInvitationUsed() {
+        showingInvitation?.connChatUsed = true
     }
 
     func removeChat(_ id: String) {
@@ -704,6 +713,11 @@ final class ChatModel: ObservableObject {
     }
 }
 
+struct ShowingInvitation {
+    var connId: String
+    var connChatUsed: Bool
+}
+
 struct NTFContactRequest {
     var incognito: Bool
     var chatId: String
@@ -746,6 +760,8 @@ final class Chat: ObservableObject, Identifiable {
         case let .group(groupInfo):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole >= .member
+        case .local:
+            return true
         default: return false
         }
     }
@@ -762,6 +778,24 @@ final class Chat: ObservableObject, Identifiable {
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
+
+    func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
+        if case let .group(groupInfo) = self.chatInfo {
+            let p = groupInfo.fullGroupPreferences
+            return switch feature {
+            case .timedMessages: p.timedMessages.on
+            case .directMessages: p.directMessages.on(for: groupInfo.membership)
+            case .fullDelete: p.fullDelete.on
+            case .reactions: p.reactions.on
+            case .voice: p.voice.on(for: groupInfo.membership)
+            case .files: p.files.on(for: groupInfo.membership)
+            case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
+            case .history: p.history.on
+            }
+        } else {
+            return true
+        }
+    }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }

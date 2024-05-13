@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -22,24 +23,29 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class AlertManager {
-  private var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
+  // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
+  // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
+  private var alertViews = MutableStateFlow(listOf<(@Composable () -> Unit)>())
 
   fun showAlert(alert: @Composable () -> Unit) {
     Log.d(TAG, "AlertManager.showAlert")
-    alertViews.add(alert)
+    alertViews.value += alert
   }
 
   fun hideAlert() {
-    alertViews.removeLastOrNull()
+    alertViews.value = ArrayList(alertViews.value).also { it.removeLastOrNull() }
   }
 
   fun hideAllAlerts() {
-    alertViews.clear()
+    alertViews.value = listOf()
   }
 
-  fun hasAlertsShown() = alertViews.isNotEmpty()
+  fun hasAlertsShown() = alertViews.value.isNotEmpty()
 
   fun showAlertDialogButtons(
     title: String,
@@ -62,7 +68,28 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: AnnotatedString? = null,
+    text: String? = null,
+    onDismissRequest: (() -> Unit)? = null,
+    hostDevice: Pair<Long?, String>? = null,
+    buttons: @Composable () -> Unit,
+  ) {
+    showAlert {
+      AlertDialog(
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
+        title = alertTitle(title),
+        buttons = {
+          AlertContent(text, hostDevice, extraPadding = true) {
+            buttons()
+          }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
+    }
+  }
+
+  fun showAlertDialogButtonsColumn(
+    title: String,
+    text: AnnotatedString,
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     buttons: @Composable () -> Unit,
@@ -104,6 +131,8 @@ class AlertManager {
             ) {
               val focusRequester = remember { FocusRequester() }
               LaunchedEffect(Unit) {
+                // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+                delay(200)
                 focusRequester.requestFocus()
               }
               TextButton(onClick = {
@@ -161,7 +190,9 @@ class AlertManager {
   fun showAlertMsg(
     title: String, text: String? = null,
     confirmText: String = generalGetString(MR.strings.ok),
+    onConfirm: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
+    shareText: Boolean? = null
   ) {
     showAlert {
       AlertDialog(
@@ -171,14 +202,26 @@ class AlertManager {
           AlertContent(text, hostDevice, extraPadding = true) {
             val focusRequester = remember { FocusRequester() }
             LaunchedEffect(Unit) {
+              // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+              delay(200)
               focusRequester.requestFocus()
             }
+            // Can pass shareText = false to prevent showing Share button if it's needed in a specific case
+            val showShareButton = text != null && (shareText == true || (shareText == null && text.length > 500))
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-              horizontalArrangement = Arrangement.Center
+              horizontalArrangement = if (showShareButton) Arrangement.SpaceBetween else Arrangement.Center
             ) {
+              val clipboard = LocalClipboardManager.current
+              if (showShareButton && text != null) {
+                TextButton(onClick = {
+                  clipboard.shareText(text)
+                  hideAlert()
+                }) { Text(stringResource(MR.strings.share_verb)) }
+              }
               TextButton(
                 onClick = {
+                  onConfirm?.invoke()
                   hideAlert()
                 },
                 Modifier.focusRequester(focusRequester)
@@ -216,12 +259,13 @@ class AlertManager {
     title: StringResource,
     text: StringResource? = null,
     confirmText: StringResource = MR.strings.ok,
+    onConfirm: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
-  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), hostDevice)
+  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), onConfirm, hostDevice)
 
   @Composable
   fun showInView() {
-    remember { alertViews }.lastOrNull()?.invoke()
+    alertViews.collectAsState().value.lastOrNull()?.invoke()
   }
 
   companion object {

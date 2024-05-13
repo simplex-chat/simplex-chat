@@ -13,9 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -24,12 +23,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -37,10 +36,11 @@ sealed class CIInfoTab {
   class Delivery(val memberDeliveryStatuses: List<MemberDeliveryStatus>): CIInfoTab()
   object History: CIInfoTab()
   class Quote(val quotedItem: CIQuote): CIInfoTab()
+  class Forwarded(val forwardedFromChatItem: AChatItem): CIInfoTab()
 }
 
 @Composable
-fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
+fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
   val appColors = CurrentColors.collectAsState().value.appColors
   val uriHandler = LocalUriHandler.current
@@ -53,6 +53,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
         text, if (text.isEmpty()) emptyList() else formattedText,
         sender = sender,
         senderBold = true,
+        toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
         onLinkLongClick = { showMenu.value = true }
       )
@@ -151,11 +152,75 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
     }
   }
 
+  val local = when (ci.chatDir) {
+    is CIDirection.LocalSnd -> true
+    is CIDirection.LocalRcv -> true
+    else -> false
+  }
+
+  @Composable
+  fun ForwardedFromSender(forwardedFromItem: AChatItem) {
+    @Composable
+    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground) {
+      Text(
+        text,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body1,
+        fontStyle = fontStyle,
+        color = color,
+      )
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      ChatInfoImage(forwardedFromItem.chatInfo, size = 57.dp)
+      Column(
+        modifier = Modifier
+          .padding(start = 15.dp)
+          .weight(1F)
+      ) {
+        if (forwardedFromItem.chatItem.chatDir.sent) {
+          ItemText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
+          Spacer(Modifier.height(7.dp))
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+        } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
+          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
+          Spacer(Modifier.height(7.dp))
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+        } else {
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground)
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun ForwardedFromView(forwardedFromItem: AChatItem) {
+    Column {
+      SectionItemView(
+        click = {
+          withBGApi {
+            openChat(chatRh, forwardedFromItem.chatInfo, chatModel)
+            ModalManager.end.closeModals()
+          }
+        },
+        padding = PaddingValues(start = 17.dp, end = DEFAULT_PADDING)
+      ) {
+        ForwardedFromSender(forwardedFromItem)
+      }
+
+      if (!local) {
+        Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 41.dp, end = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF))
+        Text(stringResource(MR.strings.recipients_can_not_see_who_message_from), Modifier.padding(horizontal = DEFAULT_PADDING), fontSize = 12.sp, color = MaterialTheme.colors.secondary)
+      }
+    }
+  }
+
   @Composable
   fun Details() {
-    AppBarTitle(stringResource(if (sent) MR.strings.sent_message else MR.strings.received_message))
+    AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
-      InfoRow(stringResource(MR.strings.info_row_sent_at), localTimestamp(ci.meta.itemTs))
+      InfoRow(stringResource(if (!ci.localNote) MR.strings.info_row_sent_at else MR.strings.info_row_created_at), localTimestamp(ci.meta.itemTs))
       if (!sent) {
         InfoRow(stringResource(MR.strings.info_row_received_at), localTimestamp(ci.meta.createdAt))
       }
@@ -185,9 +250,10 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun HistoryTab() {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
         SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -209,12 +275,29 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
+      }
+      SectionBottomSpacer()
+    }
+  }
+
+  @Composable
+  fun ForwardedFromTab(forwardedFromItem: AChatItem) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+      Details()
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
+      SectionView {
+        Text(stringResource(if (local) MR.strings.saved_from_chat_item_info_title else MR.strings.forwarded_from_chat_item_info_title),
+          style = MaterialTheme.typography.h2,
+          modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING))
+        ForwardedFromView(forwardedFromItem)
       }
       SectionBottomSpacer()
     }
@@ -266,9 +349,10 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+    // LALAL SCROLLBAR DOESN'T WORK
+    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
         SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -294,6 +378,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       is CIInfoTab.Delivery -> stringResource(MR.strings.delivery)
       is CIInfoTab.History -> stringResource(MR.strings.edit_history)
       is CIInfoTab.Quote -> stringResource(MR.strings.in_reply_to)
+      is CIInfoTab.Forwarded -> stringResource(if (local) MR.strings.saved_chat_item_info_tab else MR.strings.forwarded_chat_item_info_tab)
     }
   }
 
@@ -302,6 +387,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       is CIInfoTab.Delivery -> MR.images.ic_double_check
       is CIInfoTab.History -> MR.images.ic_history
       is CIInfoTab.Quote -> MR.images.ic_reply
+      is CIInfoTab.Forwarded -> MR.images.ic_forward
     }
   }
 
@@ -311,6 +397,9 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       numTabs += 1
     }
     if (ci.quotedItem != null) {
+      numTabs += 1
+    }
+    if (ciInfo.forwardedFromChatItem != null) {
       numTabs += 1
     }
     return numTabs
@@ -323,11 +412,6 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
           .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
       ) {
-        LaunchedEffect(Unit) {
-          if (ciInfo.memberDeliveryStatuses != null) {
-            selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
-          }
-        }
         Column(Modifier.weight(1f)) {
           when (val sel = selection.value) {
             is CIInfoTab.Delivery -> {
@@ -341,6 +425,10 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
             is CIInfoTab.Quote -> {
               QuoteTab(sel.quotedItem)
             }
+
+            is CIInfoTab.Forwarded -> {
+              ForwardedFromTab(sel.forwardedFromChatItem)
+            }
           }
         }
         val availableTabs = mutableListOf<CIInfoTab>()
@@ -350,6 +438,19 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
         availableTabs.add(CIInfoTab.History)
         if (ci.quotedItem != null) {
           availableTabs.add(CIInfoTab.Quote(ci.quotedItem))
+        }
+        if (ciInfo.forwardedFromChatItem != null) {
+          availableTabs.add(CIInfoTab.Forwarded(ciInfo.forwardedFromChatItem))
+        }
+        if (availableTabs.none { it.javaClass == selection.value.javaClass }) {
+          selection.value = availableTabs.first()
+        }
+        LaunchedEffect(ciInfo) {
+          if (ciInfo.forwardedFromChatItem != null && selection.value is CIInfoTab.Forwarded) {
+            selection.value = CIInfoTab.Forwarded(ciInfo.forwardedFromChatItem)
+          } else if (ciInfo.memberDeliveryStatuses != null) {
+            selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
+          }
         }
         TabRow(
           selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
@@ -392,9 +493,9 @@ private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<M
 fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
   val meta = ci.meta
   val sent = ci.chatDir.sent
-  val shareText = mutableListOf<String>("# " + generalGetString(if (sent) MR.strings.sent_message else MR.strings.received_message), "")
+  val shareText = mutableListOf<String>("# " + generalGetString(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message), "")
 
-  shareText.add(String.format(generalGetString(MR.strings.share_text_sent_at), localTimestamp(meta.itemTs)))
+  shareText.add(String.format(generalGetString(if (ci.localNote) MR.strings.share_text_created_at else MR.strings.share_text_sent_at), localTimestamp(meta.itemTs)))
   if (!ci.chatDir.sent) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_received_at), localTimestamp(meta.createdAt)))
   }

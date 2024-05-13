@@ -16,6 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -38,7 +39,7 @@ fun GroupLinkView(
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   fun createLink() {
     creatingLink = true
-    withApi {
+    withBGApi {
       val link = chatModel.controller.apiCreateGroupLink(rhId, groupInfo.groupId)
       if (link != null) {
         groupLink = link.first
@@ -78,7 +79,7 @@ fun GroupLinkView(
         text = generalGetString(MR.strings.all_group_members_will_remain_connected),
         confirmText = generalGetString(MR.strings.delete_verb),
         onConfirm = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiDeleteGroupLink(rhId, groupInfo.groupId)
             if (r) {
               groupLink = null
@@ -118,9 +119,8 @@ fun GroupLinkLayout(
     )
   }
 
-  Column(
-    Modifier
-      .verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier,
   ) {
     AppBarTitle(stringResource(MR.strings.group_link))
     Text(
@@ -153,7 +153,7 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        SimpleXLinkQRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+        SimpleXLinkQRCode(groupLink)
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,

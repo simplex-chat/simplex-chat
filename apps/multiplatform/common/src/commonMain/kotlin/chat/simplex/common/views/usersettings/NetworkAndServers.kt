@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionCustomFooter
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
 import SectionView
@@ -21,11 +22,12 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
 import chat.simplex.common.views.helpers.*
@@ -33,12 +35,7 @@ import chat.simplex.common.views.helpers.annotatedStringResource
 import chat.simplex.res.MR
 
 @Composable
-fun NetworkAndServersView(
-  chatModel: ChatModel,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-) {
+fun NetworkAndServersView() {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -46,10 +43,6 @@ fun NetworkAndServersView(
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
-
-  LaunchedEffect(Unit) {
-    chatModel.userSMPServersUnsaved.value = null
-  }
 
   val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
   NetworkAndServersLayout(
@@ -59,9 +52,6 @@ fun NetworkAndServersView(
     onionHosts = onionHosts,
     sessionMode = sessionMode,
     proxyPort = proxyPort,
-    showModal = showModal,
-    showSettingsModal = showSettingsModal,
-    showCustomModal = showCustomModal,
     toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertDialog(
@@ -69,7 +59,7 @@ fun NetworkAndServersView(
           text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
@@ -84,7 +74,7 @@ fun NetworkAndServersView(
           text = generalGetString(MR.strings.network_disable_socks_info),
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               val conf = NetCfg.defaults
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
@@ -111,7 +101,7 @@ fun NetworkAndServersView(
           onionHosts.value = prevValue
         }
       ) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().withOnionHosts(it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {
@@ -136,7 +126,7 @@ fun NetworkAndServersView(
         startsWith,
         onDismiss = { sessionMode.value = prevValue }
       ) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().copy(sessionMode = it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {
@@ -158,31 +148,30 @@ fun NetworkAndServersView(
   onionHosts: MutableState<OnionHosts>,
   sessionMode: MutableState<TransportSessionMode>,
   proxyPort: State<Int>,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  val m = chatModel
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     if (!chatModel.desktopNoUserNoRemote) {
       SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) })
+        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) } })
 
-        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) })
+        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
 
         if (currentRemoteHost == null) {
-          UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
-          UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
+          val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
+          UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, false)
+          UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
           if (developerTools) {
-            SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+            SessionModePicker(sessionMode, showModal, updateSessionMode)
           }
-          SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+          SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showModal { AdvancedNetworkSettingsView(m) } })
         }
       }
     }
@@ -200,9 +189,38 @@ fun NetworkAndServersView(
     }
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
-      SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), showModal { RTCServersView(it) })
+      SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
+    }
+
+    if (appPlatform.isAndroid) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection).uppercase()) {
+        val info = remember { chatModel.networkInfo }.value
+        SettingsActionItemWithContent(icon = null, info.networkType.text) {
+          Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
+        }
+      }
     }
     SectionBottomSpacer()
+  }
+}
+
+@Composable fun OnionRelatedLayout(
+  developerTools: Boolean,
+  networkUseSocksProxy: MutableState<Boolean>,
+  onionHosts: MutableState<OnionHosts>,
+  sessionMode: MutableState<TransportSessionMode>,
+  networkProxyHostPort: SharedPreference<String?>,
+  proxyPort: State<Int>,
+  toggleSocksProxy: (Boolean) -> Unit,
+  useOnion: (OnionHosts) -> Unit,
+  updateSessionMode: (TransportSessionMode) -> Unit,
+) {
+  val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
+  UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, networkProxyHostPort, true)
+  UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
+  if (developerTools) {
+    SessionModePicker(sessionMode, showModal, updateSessionMode)
   }
 }
 
@@ -211,7 +229,9 @@ fun UseSocksProxySwitch(
   networkUseSocksProxy: MutableState<Boolean>,
   proxyPort: State<Int>,
   toggleSocksProxy: (Boolean) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
+  networkProxyHostPort: SharedPreference<String?> = chatModel.controller.appPrefs.networkProxyHostPort,
+  migration: Boolean = false,
 ) {
   Row(
     Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING),
@@ -231,8 +251,11 @@ fun UseSocksProxySwitch(
       val text = buildAnnotatedString {
         append(generalGetString(MR.strings.network_socks_toggle_use_socks_proxy) + " (")
         val style = SpanStyle(color = MaterialTheme.colors.primary)
+        val disabledStyle = SpanStyle(color = MaterialTheme.colors.onBackground)
         withAnnotation(tag = "PORT", annotation = generalGetString(MR.strings.network_proxy_port).format(proxyPort.value)) {
-          withStyle(style) { append(generalGetString(MR.strings.network_proxy_port).format(proxyPort.value)) }
+          withStyle(if (networkUseSocksProxy.value || !migration) style else disabledStyle) {
+            append(generalGetString(MR.strings.network_proxy_port).format(proxyPort.value))
+          }
         }
         append(")")
       }
@@ -242,7 +265,9 @@ fun UseSocksProxySwitch(
         onClick = { offset ->
           text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
             .firstOrNull()?.let { _ ->
-              showSettingsModal { SockProxySettings(it) }()
+              if (networkUseSocksProxy.value || !migration) {
+                showModal { SockProxySettings(chatModel, networkProxyHostPort, migration) }
+              }
             }
         },
         shouldConsumeEvent = { offset ->
@@ -258,25 +283,28 @@ fun UseSocksProxySwitch(
 }
 
 @Composable
-fun SockProxySettings(m: ChatModel) {
-  Column(
+fun SockProxySettings(
+  m: ChatModel,
+  networkProxyHostPort: SharedPreference<String?> = m.controller.appPrefs.networkProxyHostPort,
+  migration: Boolean,
+) {
+  ColumnWithScrollBar(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
   ) {
     val defaultHostPort = remember { "localhost:9050" }
     AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-    val hostPort by remember { m.controller.appPrefs.networkProxyHostPort.state }
+    val hostPortSaved by remember { networkProxyHostPort.state }
     val hostUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-      mutableStateOf(TextFieldValue(hostPort?.split(":")?.firstOrNull() ?: "localhost"))
+      mutableStateOf(TextFieldValue(hostPortSaved?.split(":")?.firstOrNull() ?: "localhost"))
     }
     val portUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-      mutableStateOf(TextFieldValue(hostPort?.split(":")?.lastOrNull() ?: "9050"))
+      mutableStateOf(TextFieldValue(hostPortSaved?.split(":")?.lastOrNull() ?: "9050"))
     }
     val save = {
       withBGApi {
-        m.controller.appPrefs.networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
-        if (m.controller.appPrefs.networkUseSocksProxy.get()) {
+        networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
+        if (m.controller.appPrefs.networkUseSocksProxy.get() && !migration) {
           m.controller.apiSetNetworkConfig(m.controller.getNetCfg())
         }
       }
@@ -285,21 +313,21 @@ fun SockProxySettings(m: ChatModel) {
       SectionItemView {
         ResetToDefaultsButton({
           val reset = {
-            m.controller.appPrefs.networkProxyHostPort.set(defaultHostPort)
+            networkProxyHostPort.set(defaultHostPort)
             val newHost = defaultHostPort.split(":").first()
             val newPort = defaultHostPort.split(":").last()
             hostUnsaved.value = hostUnsaved.value.copy(newHost, TextRange(newHost.length))
             portUnsaved.value = portUnsaved.value.copy(newPort, TextRange(newPort.length))
             save()
           }
-          if (m.controller.appPrefs.networkUseSocksProxy.get()) {
+          if (m.controller.appPrefs.networkUseSocksProxy.get() && !migration) {
             showUpdateNetworkSettingsDialog {
               reset()
             }
           } else {
             reset()
           }
-        }, disabled = hostPort == defaultHostPort)
+        }, disabled = hostPortSaved == defaultHostPort)
       }
       SectionItemView {
         DefaultConfigurableTextField(
@@ -325,14 +353,14 @@ fun SockProxySettings(m: ChatModel) {
     SectionCustomFooter {
       NetworkSectionFooter(
         revert = {
-          val prevHost = m.controller.appPrefs.networkProxyHostPort.get()?.split(":")?.firstOrNull() ?: "localhost"
-          val prevPort = m.controller.appPrefs.networkProxyHostPort.get()?.split(":")?.lastOrNull() ?: "9050"
+          val prevHost = hostPortSaved?.split(":")?.firstOrNull() ?: "localhost"
+          val prevPort = hostPortSaved?.split(":")?.lastOrNull() ?: "9050"
           hostUnsaved.value = hostUnsaved.value.copy(prevHost, TextRange(prevHost.length))
           portUnsaved.value = portUnsaved.value.copy(prevPort, TextRange(prevPort.length))
         },
-        save = { if (m.controller.appPrefs.networkUseSocksProxy.get()) showUpdateNetworkSettingsDialog { save() } else save() },
-        revertDisabled = hostPort == (hostUnsaved.value.text + ":" + portUnsaved.value.text),
-        saveDisabled = hostPort == (hostUnsaved.value.text + ":" + portUnsaved.value.text) ||
+        save = { if (m.controller.appPrefs.networkUseSocksProxy.get() && !migration) showUpdateNetworkSettingsDialog { save() } else save() },
+        revertDisabled = hostPortSaved == (hostUnsaved.value.text + ":" + portUnsaved.value.text),
+        saveDisabled = hostPortSaved == (hostUnsaved.value.text + ":" + portUnsaved.value.text) ||
             remember { derivedStateOf { !validHost(hostUnsaved.value.text) } }.value ||
             remember { derivedStateOf { !validPort(portUnsaved.value.text) } }.value
       )
@@ -345,7 +373,7 @@ fun SockProxySettings(m: ChatModel) {
 private fun UseOnionHosts(
   onionHosts: MutableState<OnionHosts>,
   enabled: State<Boolean>,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
   useOnion: (OnionHosts) -> Unit,
 ) {
   val values = remember {
@@ -357,29 +385,43 @@ private fun UseOnionHosts(
       }
     }
   }
-  val onSelected = showModal {
-    Column(
-      Modifier.fillMaxWidth(),
-    ) {
-      AppBarTitle(stringResource(MR.strings.network_use_onion_hosts))
-      SectionViewSelectable(null, onionHosts, values, useOnion)
+  val onSelected = {
+    showModal {
+      ColumnWithScrollBar(
+        Modifier.fillMaxWidth(),
+      ) {
+        AppBarTitle(stringResource(MR.strings.network_use_onion_hosts))
+        SectionViewSelectable(null, onionHosts, values, useOnion)
+      }
     }
   }
 
-  SectionItemWithValue(
-    generalGetString(MR.strings.network_use_onion_hosts),
-    onionHosts,
-    values,
-    icon = painterResource(MR.images.ic_security),
-    enabled = enabled,
-    onSelected = onSelected
-  )
+  if (enabled.value) {
+    SectionItemWithValue(
+      generalGetString(MR.strings.network_use_onion_hosts),
+      onionHosts,
+      values,
+      icon = painterResource(MR.images.ic_security),
+      enabled = enabled,
+      onSelected = onSelected
+    )
+  } else {
+    // In reality, when socks proxy is disabled, this option acts like NEVER regardless of what was chosen before
+    SectionItemWithValue(
+      generalGetString(MR.strings.network_use_onion_hosts),
+      remember { mutableStateOf(OnionHosts.NEVER) },
+      listOf(ValueTitleDesc(OnionHosts.NEVER, generalGetString(MR.strings.network_use_onion_hosts_no), AnnotatedString(generalGetString(MR.strings.network_use_onion_hosts_no_desc)))),
+      icon = painterResource(MR.images.ic_security),
+      enabled = enabled,
+      onSelected = {}
+    )
+  }
 }
 
 @Composable
 private fun SessionModePicker(
   sessionMode: MutableState<TransportSessionMode>,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   val density = LocalDensity.current
@@ -397,12 +439,14 @@ private fun SessionModePicker(
     sessionMode,
     values,
     icon = painterResource(MR.images.ic_safety_divider),
-    onSelected = showModal {
-      Column(
-        Modifier.fillMaxWidth(),
-      ) {
-        AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
-        SectionViewSelectable(null, sessionMode, values, updateSessionMode)
+    onSelected = {
+      showModal {
+        ColumnWithScrollBar(
+          Modifier.fillMaxWidth(),
+        ) {
+          AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
+          SectionViewSelectable(null, sessionMode, values, updateSessionMode)
+        }
       }
     }
   )
@@ -459,9 +503,6 @@ fun PreviewNetworkAndServersLayout() {
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
       proxyPort = remember { mutableStateOf(9050) },
-      showModal = { {} },
-      showSettingsModal = { {} },
-      showCustomModal = { {} },
       toggleSocksProxy = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },

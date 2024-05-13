@@ -142,6 +142,7 @@ fun DecryptionErrorItemFixButton(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
     color = receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -188,6 +189,7 @@ fun DecryptionErrorItem(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
     color = receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),

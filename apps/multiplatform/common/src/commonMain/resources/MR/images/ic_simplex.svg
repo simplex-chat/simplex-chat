@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="120"
+   height="120"
+   viewBox="121 0 40 40"
+   fill="none"
+   version="1.1"
+   id="svg3"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <path
+     fill-rule="evenodd"
+     clip-rule="evenodd"
+     d="m 126.52238,11.425398 5.80302,5.716401 5.88962,-5.889626 2.8582,2.858201 L 135.1836,20 l 5.7164,5.716402 -2.94482,2.8582 -5.7164,-5.629789 -5.88962,5.803014 -2.8582,-2.858201 5.88962,-5.803014 -5.803,-5.716402 z"
+     fill="#030749"
+     id="path1"
+     style="stroke-width:0.866122" />
+  <path
+     fill-rule="evenodd"
+     clip-rule="evenodd"
+     d="m 137.86858,28.661214 2.94481,-2.944812 v 0 l 5.88963,-5.803014 -5.80302,-5.62979 v 0 l -2.8582,-2.8582 -5.7164,-5.7164023 2.94481,-2.9448129 5.7164,5.7164017 5.88963,-5.8030138 2.8582,2.8582008 -5.88962,5.8030145 5.7164,5.716401 5.88962,-5.803014 2.8582,2.858201 -5.88962,5.803014 5.803,5.716402 -2.9448,2.858201 -5.7164,-5.716402 -5.88963,5.803013 5.7164,5.716402 -2.8582,2.944813 -5.80301,-5.716402 -5.80302,5.803015 -2.8582,-2.858201 z"
+     fill="url(#paint0_linear_40_164)"
+     id="path2"
+     style="fill:url(#paint0_linear_40_164);stroke-width:0.866122" />
+  <defs
+     id="defs3">
+    <linearGradient
+       x1="135.948"
+       y1="-0.81632602"
+       x2="132.09599"
+       y2="36.985699"
+       gradientUnits="userSpaceOnUse"
+       id="paint0_linear_40_164"
+       gradientTransform="matrix(0.86612147,0,0,0.86612147,18.863485,2.6775707)">
+      <stop
+         stop-color="#01f1ff"
+         id="stop2" />
+      <stop
+         offset="1"
+         stop-color="#0197ff"
+         id="stop3" />
+    </linearGradient>
+  </defs>
+</svg>

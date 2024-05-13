@@ -20,6 +20,7 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
@@ -93,6 +94,8 @@ foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSON
 foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
+
+foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 
@@ -176,6 +179,10 @@ cChatPasswordHash cPwd cSalt = do
 cChatValidName :: CString -> IO CString
 cChatValidName cName = newCString . mkValidName =<< peekCString cName
 
+-- | returns length of JSON encoded string
+cChatJsonLength :: CString -> IO CInt
+cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
+
 mobileChatOpts :: String -> ChatOpts
 mobileChatOpts dbFilePrefix =
   ChatOpts
@@ -197,8 +204,10 @@ mobileChatOpts dbFilePrefix =
       deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
+      chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      optTempDirectory = Nothing,
       showReactions = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
@@ -263,9 +272,18 @@ chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO 
 chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
-chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
+chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
   where
     json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
+    readChatResponse = do
+      out@(_, _, cr) <- atomically $ readTBQueue outputQ
+      if filterEvent cr then pure out else readChatResponse
+    filterEvent = \case
+      CRGroupSubscribed {} -> False
+      CRGroupEmpty {} -> False
+      CRMemberSubSummary {} -> False
+      CRPendingSubSummary {} -> False
+      _ -> True
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)

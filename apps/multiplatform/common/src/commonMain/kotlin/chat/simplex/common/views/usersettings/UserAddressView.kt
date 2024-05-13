@@ -7,9 +7,7 @@ import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,7 +68,7 @@ fun UserAddressView(
       shareViaProfile,
       onCloseHandler,
       createAddress = {
-        withApi {
+        withBGApi {
           progressIndicator = true
           val connReqContact = chatModel.controller.apiCreateUserAddress(user?.value?.remoteHostId)
           if (connReqContact != null) {
@@ -91,14 +89,7 @@ fun UserAddressView(
       },
       learnMore = {
         ModalManager.start.showModal {
-          Column(
-            Modifier
-              .fillMaxHeight()
-              .padding(horizontal = DEFAULT_PADDING),
-            verticalArrangement = Arrangement.SpaceBetween
-          ) {
-            UserAddressLearnMore()
-          }
+          UserAddressLearnMore()
         }
       },
       share = { userAddress: String -> clipboard.shareText(userAddress) },
@@ -116,7 +107,7 @@ fun UserAddressView(
           confirmText = generalGetString(MR.strings.delete_verb),
           onConfirm = {
             progressIndicator = true
-            withApi {
+            withBGApi {
               val u = chatModel.controller.apiDeleteUserAddress(user?.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
@@ -155,7 +146,7 @@ fun UserAddressView(
       contentAlignment = Alignment.Center
     ) {
       if (userAddress.value != null) {
-        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), shape = RoundedCornerShape(50)){}
+        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
       }
       CircularProgressIndicator(
         Modifier
@@ -182,9 +173,7 @@ private fun UserAddressLayout(
   deleteAddress: () -> Unit,
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
 ) {
-  Column(
-    Modifier.verticalScroll(rememberScrollState()),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId), withPadding = false)
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
@@ -207,7 +196,7 @@ private fun UserAddressLayout(
         val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
         val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
         SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-          SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+          SimpleXLinkQRCode(userAddress.connReqContact)
           ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
           ShareViaEmailButton { sendEmail(userAddress) }
           ShareWithContactsButton(shareViaProfile, setProfileAddress)

@@ -46,7 +46,7 @@ struct ChatItemView: View {
         let ci = chatItem
         if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
             MarkedDeletedItemView(chat: chat, chatItem: chatItem, revealed: $revealed)
-        } else if ci.quotedItem == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
+        } else if ci.quotedItem == nil && ci.meta.itemForwarded == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
@@ -102,13 +102,18 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvChatPreference(feature, allowed, param):
             CIFeaturePreferenceView(chat: chat, chatItem: chatItem, feature: feature, allowed: allowed, param: param)
         case let .sndChatPreference(feature, _, _):
-            CIChatFeatureView(chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: .secondary)
-        case let .rcvGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
-        case let .sndGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
+            CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: .secondary)
+        case let .rcvGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor)
+        case let .sndGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         case .sndModerated: deletedItemView()
         case .rcvModerated: deletedItemView()
+        case .rcvBlocked: deletedItemView()
+        case let .sndDirectE2EEInfo(e2eeInfo): CIEventView(eventText: directE2EEInfoText(e2eeInfo))
+        case let .rcvDirectE2EEInfo(e2eeInfo): CIEventView(eventText: directE2EEInfoText(e2eeInfo))
+        case .sndGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
+        case .rcvGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
         }
     }
@@ -122,7 +127,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func groupInvitationItemView(_ groupInvitation: CIGroupInvitation, _ memberRole: GroupMemberRole) -> some View {
-        CIGroupInvitationView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole, chatIncognito: chat.chatInfo.incognito)
+        CIGroupInvitationView(chat: chat, chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole, chatIncognito: chat.chatInfo.incognito)
     }
 
     private func eventItemView() -> some View {
@@ -144,7 +149,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
-        CIChatFeatureView(chatItem: chatItem, revealed: $revealed, feature: feature, iconColor: iconColor)
+        CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, iconColor: iconColor)
     }
 
     private var mergedGroupEventText: Text? {
@@ -168,6 +173,22 @@ struct ChatItemContentView<Content: View>: View {
         } else {
             Text(members)
         }
+    }
+
+    private func directE2EEInfoText(_ info: E2EEInfo) -> Text {
+        info.pqEnabled
+        ? Text("Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .fontWeight(.light)
+        : e2eeInfoNoPQText()
+    }
+
+    private func e2eeInfoNoPQText() -> Text {
+        Text("Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .fontWeight(.light)
     }
 }
 

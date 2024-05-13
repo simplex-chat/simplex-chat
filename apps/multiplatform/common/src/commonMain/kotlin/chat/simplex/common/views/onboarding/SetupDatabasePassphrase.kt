@@ -50,7 +50,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     confirmNewKey,
     progressIndicator,
     onConfirmEncrypt = {
-      withApi {
+      withLongRunningApi {
         if (m.chatRunning.value == true) {
           // Stop chat if it's started before doing anything
           stopChatAsync(m)
@@ -58,7 +58,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         prefs.storeDBPassphrase.set(false)
 
         val newKeyValue = newKey.value
-        val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator)
+        val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator, false)
         if (success) {
           startChat(newKeyValue)
           nextStep()
@@ -98,8 +98,8 @@ private fun SetupDatabasePassphraseLayout(
   onConfirmEncrypt: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     AppBarTitle(stringResource(MR.strings.setup_database_passphrase))

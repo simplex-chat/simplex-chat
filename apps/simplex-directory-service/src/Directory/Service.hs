@@ -36,6 +36,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatResponse, simplexChatContact)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
@@ -177,8 +178,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
     badRolesMsg :: GroupRolesStatus -> Maybe String
     badRolesMsg = \case
       GRSOk -> Nothing
-      GRSServiceNotAdmin -> Just "You must have a group *owner* role to register the group"
-      GRSContactNotOwner -> Just "You must grant directory service *admin* role to register the group"
+      GRSServiceNotAdmin -> Just "You must grant directory service *admin* role to register the group"
+      GRSContactNotOwner -> Just "You must have a group *owner* role to register the group"
       GRSBadRoles -> Just "You must have a group *owner* role and you must grant directory service *admin* role to register the group"
 
     getGroupRolesStatus :: GroupInfo -> GroupReg -> IO (Maybe GroupRolesStatus)
@@ -190,8 +191,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
     groupRolesStatus :: GroupMemberRole -> GroupMemberRole -> GroupRolesStatus
     groupRolesStatus contactRole serviceRole = case (contactRole, serviceRole) of
       (GROwner, GRAdmin) -> GRSOk
-      (_, GRAdmin) -> GRSServiceNotAdmin
-      (GROwner, _) -> GRSContactNotOwner
+      (_, GRAdmin) -> GRSContactNotOwner
+      (GROwner, _) -> GRSServiceNotAdmin
       _ -> GRSBadRoles
 
     getGroupMember :: GroupReg -> IO (Maybe GroupMember)

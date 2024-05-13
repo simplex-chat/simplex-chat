@@ -43,7 +43,7 @@ fun CreateSimpleXAddress(m: ChatModel, rhId: Long?) {
       )
     },
     createAddress = {
-      withApi {
+      withBGApi {
         progressIndicator = true
         val connReqContact = m.controller.apiCreateUserAddress(rhId)
         if (connReqContact != null) {
@@ -75,8 +75,8 @@ private fun CreateSimpleXAddressLayout(
   createAddress: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     AppBarTitle(stringResource(MR.strings.simplex_address))
@@ -84,7 +84,7 @@ private fun CreateSimpleXAddressLayout(
     Spacer(Modifier.weight(1f))
 
     if (userAddress != null) {
-      SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+      SimpleXLinkQRCode(userAddress.connReqContact)
       ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
       Spacer(Modifier.weight(1f))
       ShareViaEmailButton { sendEmail(userAddress) }
@@ -169,21 +169,11 @@ private fun ProgressIndicator() {
 }
 
 private fun prepareChatBeforeAddressCreation(rhId: Long?) {
-  if (chatModel.users.isNotEmpty()) return
-  withApi {
-    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withApi
+  // No visible users but may have hidden. In this case chat should be started anyway because it's stopped on this stage with hidden users
+  if (chatModel.users.any { u -> !u.user.hidden }) return
+  withBGApi {
+    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withBGApi
     chatModel.currentUser.value = user
-    if (chatModel.users.isEmpty()) {
-      if (appPlatform.isDesktop) {
-        // Make possible to use chat after going to remote device linking and returning back to local profile creation
-        chatModel.chatRunning.value = false
-      }
-      chatModel.controller.startChat(user)
-    } else {
-      val users = chatModel.controller.listUsers(rhId)
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
-      chatModel.controller.getUserChatData(rhId)
-    }
+    chatModel.controller.startChat(user)
   }
 }

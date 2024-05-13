@@ -17,6 +17,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.User
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
@@ -53,10 +54,9 @@ private fun HiddenProfileLayout(
   user: User,
   saveProfilePassword: (String) -> Unit
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.hide_profile))
     SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {

@@ -2,8 +2,7 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
@@ -39,7 +38,8 @@ actual fun DefaultDialog(
   ) {
     Surface(
       Modifier
-        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8))
+        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8)),
+      contentColor = LocalContentColor.current
     ) {
       content()
     }

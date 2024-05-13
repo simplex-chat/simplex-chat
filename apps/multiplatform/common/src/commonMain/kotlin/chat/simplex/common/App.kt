@@ -1,16 +1,19 @@
 package chat.simplex.common
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
@@ -20,8 +23,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateFirstProfile
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.common.views.SplashView
-import chat.simplex.common.views.call.ActiveCallView
-import chat.simplex.common.views.call.IncomingCallAlertView
+import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ChatView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.DatabaseErrorView
@@ -44,7 +46,7 @@ data class SettingsViewState(
 fun AppScreen() {
   SimpleXTheme {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Surface(color = MaterialTheme.colors.background) {
+      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
         MainScreen()
       }
     }
@@ -66,7 +68,7 @@ fun MainScreen() {
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
-      && chatModel.chats.count() > 1
+      && chatModel.chats.size > 2
       && chatModel.activeCallInvitation.value == null
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
@@ -85,7 +87,7 @@ fun MainScreen() {
 
   @Composable
   fun AuthView() {
-    Surface(color = MaterialTheme.colors.background) {
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
       Box(
         Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -103,13 +105,23 @@ fun MainScreen() {
   }
 
   Box {
+    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
     val onboarding by remember { chatModel.controller.appPrefs.onboardingStage.state }
     val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
-      chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
+      onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
+        // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
+        SimpleXInfo(chatModel, onboarding = true)
+        if (appPlatform.isDesktop) {
+          ModalManager.fullscreen.showInView()
+        }
+      }
+      chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
+      chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
       showChatDatabaseError -> {
-        chatModel.chatDbStatus.value?.let {
+        // Prevent showing keyboard on Android when: passcode enabled and database password not saved
+        if (!unauthorized.value && chatModel.chatDbStatus.value != null) {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
@@ -125,6 +137,7 @@ fun MainScreen() {
           }
           val scaffoldState = rememberScaffoldState()
           val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
+          SetupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
           } else {
@@ -149,7 +162,6 @@ fun MainScreen() {
       SwitchingUsersView()
     }
 
-    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
     if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
       LaunchedEffect(Unit) {
         // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
@@ -166,7 +178,17 @@ fun MainScreen() {
       }
     } else {
       if (chatModel.showCallView.value) {
-        ActiveCallView()
+        if (appPlatform.isAndroid) {
+          LaunchedEffect(Unit) {
+            // This if prevents running the activity in the following condition:
+            // - the activity already started before and was destroyed by collapsing active call (start audio call, press back button, go to a launcher)
+            if (!chatModel.activeCallViewIsCollapsed.value) {
+              platform.androidStartCallActivity(false)
+            }
+          }
+        } else {
+          ActiveCallView()
+        }
       } else {
         // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
         ModalManager.fullscreen.showPasscodeInView()
@@ -203,9 +225,13 @@ fun MainScreen() {
   }
 }
 
+val ANDROID_CALL_TOP_PADDING = 40.dp
+
 @Composable
 fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
+    val call = remember { chatModel.activeCall} .value
+    val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
     var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
@@ -213,6 +239,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         .graphicsLayer {
           translationX = -offset.value.dp.toPx()
         }
+        .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
       StartPartOfScreen(settingsState)
     }
@@ -239,10 +266,16 @@ fun AndroidScreen(settingsState: SettingsViewState) {
           }
       }
     }
-    Box(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@{
+    Box(Modifier
+      .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
+      .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
+    ) Box2@{
       currentChatId?.let {
         ChatView(it, chatModel, onComposed)
       }
+    }
+    if (call != null && showCallArea) {
+      ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
     }
   }
 }
@@ -339,22 +372,6 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       }
     }
     ModalManager.fullscreen.showInView()
-  }
-}
-
-@Composable
-fun InitializationView() {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(bottom = DEFAULT_PADDING)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
-      )
-      Text(stringResource(MR.strings.opening_database))
-    }
   }
 }
 

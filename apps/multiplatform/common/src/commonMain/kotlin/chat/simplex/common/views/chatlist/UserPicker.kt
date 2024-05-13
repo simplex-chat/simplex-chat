@@ -31,9 +31,8 @@ import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -116,14 +115,19 @@ fun UserPicker(
       }
   }
   LaunchedEffect(Unit) {
-    controller.reloadRemoteHosts()
+    // Controller.ctrl can be null when self-destructing activates
+    if (controller.ctrl != null && controller.ctrl != -1L) {
+      withBGApi {
+        controller.reloadRemoteHosts()
+      }
+    }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {
     users.forEach { u ->
       UserProfilePickerItem(u.user, u.unreadCount, openSettings = settingsClicked) {
         userPickerState.value = AnimatedViewState.HIDING
         if (!u.user.activeUser) {
-          scope.launch {
+          withBGApi {
             controller.showProgressIfNeeded {
               ModalManager.closeAllModalsEverywhere()
               chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
@@ -209,26 +213,29 @@ fun UserPicker(
           userPickerState.value = AnimatedViewState.GONE
         }
         Divider(Modifier.requiredHeight(1.dp))
-      } else if (remoteHosts.isEmpty()) {
-        LinkAMobilePickerItem {
-          ModalManager.start.showModal {
-            ConnectMobileView()
+      } else {
+        if (remoteHosts.isEmpty()) {
+          LinkAMobilePickerItem {
+            ModalManager.start.showModal {
+              ConnectMobileView()
+            }
+            userPickerState.value = AnimatedViewState.GONE
           }
-          userPickerState.value = AnimatedViewState.GONE
+          Divider(Modifier.requiredHeight(1.dp))
         }
-        Divider(Modifier.requiredHeight(1.dp))
-      } else if (chatModel.desktopNoUserNoRemote) {
-        CreateInitialProfile {
-          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-            ModalManager.center.showModalCloseable { close ->
-              LaunchedEffect(Unit) {
-                userPickerState.value = AnimatedViewState.HIDING
+        if (chatModel.desktopNoUserNoRemote) {
+          CreateInitialProfile {
+            doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+              ModalManager.center.showModalCloseable { close ->
+                LaunchedEffect(Unit) {
+                  userPickerState.value = AnimatedViewState.HIDING
+                }
+                CreateProfile(chat.simplex.common.platform.chatModel, close)
               }
-              CreateProfile(chat.simplex.common.platform.chatModel, close)
             }
           }
+          Divider(Modifier.requiredHeight(1.dp))
         }
-        Divider(Modifier.requiredHeight(1.dp))
       }
       if (showSettings) {
         SettingsPickerItem(settingsClicked)
@@ -241,23 +248,31 @@ fun UserPicker(
 }
 
 @Composable
-fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+fun UserProfilePickerItem(
+  u: User,
+  unreadCount: Int = 0,
+  enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote,
+  onLongClick: () -> Unit = {},
+  openSettings: () -> Unit = {},
+  onClick: () -> Unit
+) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
+        enabled = enabled,
         onClick = if (u.activeUser) openSettings else onClick,
         onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!u.activeUser) LocalIndication.current else null
       )
-      .onRightClick { onLongClick() }
+      .onRightClick { if (enabled) onLongClick() }
       .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    UserProfileRow(u)
+    UserProfileRow(u, enabled)
     if (u.activeUser) {
       Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
@@ -285,7 +300,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
 }
 
 @Composable
-fun UserProfileRow(u: User) {
+fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote) {
   Row(
     Modifier
       .widthIn(max = windowWidth() * 0.7f)
@@ -300,7 +315,7 @@ fun UserProfileRow(u: User) {
       u.displayName,
       modifier = Modifier
         .padding(start = 10.dp, end = 8.dp),
-      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
   }
@@ -343,7 +358,7 @@ fun RemoteHostRow(h: RemoteHostInfo) {
     Text(
       h.hostDeviceName,
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (h.activeHost) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (h.activeHost) MaterialTheme.colors.onBackground else MenuTextColor,
       fontSize = 14.sp,
     )
   }
@@ -384,7 +399,7 @@ fun LocalDeviceRow(active: Boolean) {
     Text(
       stringResource(MR.strings.this_device),
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (active) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (active) MaterialTheme.colors.onBackground else MenuTextColor,
       fontSize = 14.sp,
     )
   }
@@ -396,7 +411,7 @@ private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -406,7 +421,7 @@ private fun LinkAMobilePickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.link_a_mobile)
     Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -416,7 +431,7 @@ private fun CreateInitialProfile(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.create_chat_profile)
     Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -426,7 +441,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -436,7 +451,7 @@ private fun CancelPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.cancel_verb)
     Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 

@@ -1,5 +1,7 @@
 package chat.simplex.common.views.helpers
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
@@ -12,6 +14,7 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.view.WindowManager
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
@@ -51,6 +54,19 @@ fun keepScreenOn(on: Boolean) {
       window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     } else {
       window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+  }
+}
+
+@Composable
+actual fun SetupClipboardListener() {
+  DisposableEffect(Unit) {
+    val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val listener = { chatModel.clipboardHasText.value = service.hasPrimaryClip() }
+    chatModel.clipboardHasText.value = service.hasPrimaryClip()
+    service.addPrimaryClipChangedListener(listener)
+    onDispose {
+      service.removePrimaryClipChangedListener(listener)
     }
   }
 }
@@ -172,7 +188,12 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   return if (filePath != null && file != null) {
     try {
       val data = if (file.fileSource?.cryptoArgs != null) {
-        readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
+        try {
+          readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
+        } catch (e: Exception) {
+          Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+          return null
+        }
       } else {
         File(getAppFilePath(file.fileName)).readBytes()
       }

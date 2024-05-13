@@ -60,6 +60,7 @@ fun MarkdownText (
   sender: String? = null,
   meta: CIMeta? = null,
   chatTTL: Int? = null,
+  toggleSecrets: Boolean,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
@@ -67,7 +68,7 @@ fun MarkdownText (
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
   linkMode: SimplexLinkMode,
-  inlineContent: Map<String, InlineTextContent>? = null,
+  inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val textLayoutDirection = remember (text) {
@@ -89,6 +90,7 @@ fun MarkdownText (
   ) {
     var timer: Job? by remember { mutableStateOf(null) }
     var typingIdx by rememberSaveable { mutableStateOf(0) }
+    val showSecrets = remember { mutableStateMapOf<String, Boolean>() }
     fun stopTyping() {
       timer?.cancel()
       timer = null
@@ -117,6 +119,7 @@ fun MarkdownText (
     }
     if (formattedText == null) {
       val annotatedText = buildAnnotatedString {
+        inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
         if (text is String) append(text)
         else if (text is AnnotatedString) append(text)
@@ -125,17 +128,25 @@ fun MarkdownText (
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent ?: mapOf())
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
     } else {
-      var hasLinks = false
+      var hasAnnotations = false
       val annotatedText = buildAnnotatedString {
+        inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
-        for (ft in formattedText) {
+        for ((i, ft) in formattedText.withIndex()) {
           if (ft.format == null) append(ft.text)
-          else {
+          else if (toggleSecrets && ft.format is Format.Secret) {
+            val ftStyle = ft.format.style
+            hasAnnotations = true
+            val key = i.toString()
+            withAnnotation(tag = "SECRET", annotation = key) {
+              if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
+            }
+          } else {
             val link = ft.link(linkMode)
             if (link != null) {
-              hasLinks = true
+              hasAnnotations = true
               val ftStyle = ft.format.style
               withAnnotation(tag = if (ft.format is Format.SimplexLink) "SIMPLEX_URL" else "URL", annotation = link) {
                 withStyle(ftStyle) { append(ft.viewText(linkMode)) }
@@ -153,7 +164,7 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      if (hasLinks && uriHandler != null) {
+      if (hasAnnotations && uriHandler != null) {
         val icon = remember { mutableStateOf(PointerIcon.Default) }
         ClickableText(annotatedText, style = style, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -177,12 +188,20 @@ fun MarkdownText (
               .firstOrNull()?.let { annotation ->
                 uriHandler.openVerifiedSimplexUri(annotation.item)
               }
+            annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
+              .firstOrNull()?.let { annotation ->
+                val key = annotation.item
+                showSecrets[key] = !(showSecrets[key] ?: false)
+              }
           },
           onHover = { offset ->
             icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
               .firstOrNull()?.let {
                 PointerIcon.Hand
               } ?: annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
+              .firstOrNull()?.let {
+                PointerIcon.Hand
+              } ?: annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
               .firstOrNull()?.let {
                 PointerIcon.Hand
               } ?: PointerIcon.Default
@@ -193,7 +212,7 @@ fun MarkdownText (
           }
         )
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       }
     }
   }

@@ -8,6 +8,7 @@ import SimpleXChat
 
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
+    @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
@@ -25,7 +26,6 @@ struct UserProfilesView: View {
 
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(user: User, delSMPQueues: Bool)
-        case cantDeleteLastUser
         case hiddenProfilesNotice
         case muteProfileAlert
         case activateUserError(error: String)
@@ -34,7 +34,6 @@ struct UserProfilesView: View {
         var id: String {
             switch self {
             case let .deleteUser(user, delSMPQueues): return "deleteUser \(user.userId) \(delSMPQueues)"
-            case .cantDeleteLastUser: return "cantDeleteLastUser"
             case .hiddenProfilesNotice: return "hiddenProfilesNotice"
             case .muteProfileAlert: return "muteProfileAlert"
             case let .activateUserError(err): return "activateUserError \(err)"
@@ -78,7 +77,7 @@ struct UserProfilesView: View {
             Section {
                 let users = filteredUsers()
                 let v = ForEach(users) { u in
-                    userView(u.user, allowDelete: users.count > 1)
+                    userView(u.user)
                 }
                 if #available(iOS 16, *) {
                     v.onDelete { indexSet in
@@ -145,13 +144,6 @@ struct UserProfilesView: View {
                         Task { await removeUser(user, delSMPQueues, viewPwd: userViewPassword(user)) }
                     },
                     secondaryButton: .cancel()
-                )
-            case .cantDeleteLastUser:
-                return Alert(
-                    title: Text("Can't delete user profile!"),
-                    message: m.users.count > 1
-                            ? Text("There should be at least one visible user profile.")
-                            : Text("There should be at least one user profile.")
                 )
             case .hiddenProfilesNotice:
                 return Alert(
@@ -280,11 +272,22 @@ struct UserProfilesView: View {
                 if let newActive = m.users.first(where: { u in !u.user.activeUser && !u.user.hidden }) {
                     try await changeActiveUserAsync_(newActive.user.userId, viewPwd: nil)
                     try await deleteUser()
+                } else {
+                    // Deleting the last visible user while having hidden one(s)
+                    try await deleteUser()
+                    try await changeActiveUserAsync_(nil, viewPwd: nil)
+                    try? await stopChatAsync()
+                    await MainActor.run {
+                        onboardingStageDefault.set(.step1_SimpleXInfo)
+                        m.onboardingStage = .step1_SimpleXInfo
+                        showSettings = false
+                    }
                 }
             } else {
                 try await deleteUser()
             }
         } catch let error {
+            logger.error("Error deleting user profile: \(error)")
             let a = getErrorAlert(error, "Error deleting user profile")
             alert = .error(title: a.title, error: a.message)
         }
@@ -295,7 +298,7 @@ struct UserProfilesView: View {
         }
     }
 
-    @ViewBuilder private func userView(_ user: User, allowDelete: Bool) -> some View {
+    @ViewBuilder private func userView(_ user: User) -> some View {
         let v = Button {
             Task {
                 do {
@@ -306,8 +309,7 @@ struct UserProfilesView: View {
             }
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))
-                    .frame(width: 44, height: 44)
+                ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemFill))
                     .padding(.vertical, 4)
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
@@ -323,9 +325,7 @@ struct UserProfilesView: View {
                 }
             }
         }
-        .disabled(user.activeUser)
         .foregroundColor(.primary)
-        .deleteDisabled(!allowDelete)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
@@ -361,8 +361,6 @@ struct UserProfilesView: View {
         }
         if #available(iOS 16, *) {
             v
-        } else if !allowDelete {
-            v
         } else {
             v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button("Delete", role: .destructive) {
@@ -373,12 +371,8 @@ struct UserProfilesView: View {
     }
 
     private func confirmDeleteUser(_ user: User) {
-        if m.users.count > 1 && (user.hidden || visibleUsersCount > 1) {
-            showDeleteConfirmation = true
-            userToDelete = user
-        } else {
-            alert = .cantDeleteLastUser
-        }
+        showDeleteConfirmation = true
+        userToDelete = user
     }
 
     private func setUserPrivacy(_ user: User, successAlert: UserProfilesAlert? = nil, _ api: @escaping () async throws -> User) {
@@ -409,6 +403,6 @@ public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        UserProfilesView()
+        UserProfilesView(showSettings: Binding.constant(true))
     }
 }

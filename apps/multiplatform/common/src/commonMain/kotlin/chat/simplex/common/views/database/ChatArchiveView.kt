@@ -34,7 +34,7 @@ fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTim
   ChatArchiveLayout(
     title,
     archiveTime,
-    saveArchive = { withApi { saveArchiveLauncher.launch(archivePath.substringAfterLast(File.separator)) }},
+    saveArchive = { withLongRunningApi { saveArchiveLauncher.launch(archivePath.substringAfterLast(File.separator)) }},
     deleteArchiveAlert = { deleteArchiveAlert(m, archivePath) }
   )
 }
@@ -46,7 +46,7 @@ fun ChatArchiveLayout(
   saveArchive: () -> Unit,
   deleteArchiveAlert: () -> Unit
 ) {
-  Column(
+  ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(title)

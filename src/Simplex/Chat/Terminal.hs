@@ -1,12 +1,16 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Terminal where
 
 import Control.Exception (handle, throwIO)
 import Control.Monad
+import qualified Data.ByteArray as BA
 import qualified Data.List.NonEmpty as L
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
 import Simplex.Chat (defaultChatConfig)
@@ -19,7 +23,7 @@ import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
-import System.Exit (exitFailure)
+import System.IO (hFlush, hSetEcho, stdin, stdout)
 
 terminalChatConfig :: ChatConfig
 terminalChatConfig =
@@ -40,18 +44,29 @@ terminalChatConfig =
     }
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChatTerminal cfg opts t =
-  handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
-    ct <- newChatTerminal t opts
-    when (firstTime cc) . printToTerminal ct $ chatWelcome u
-    runChatTerminal ct cc opts
-
-checkDBKeyError :: SQLError -> IO ()
-checkDBKeyError e = case sqlError e of
-  DB.ErrorNotADatabase -> do
-    putStrLn "Database file is invalid or you passed an incorrect encryption key"
-    exitFailure
-  _ -> throwIO e
+simplexChatTerminal cfg options t = run options
+  where
+    run opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbKey}} =
+      handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
+        ct <- newChatTerminal t opts
+        when (firstTime cc) . printToTerminal ct $ chatWelcome u
+        runChatTerminal ct cc opts
+      where
+        checkDBKeyError :: SQLError -> IO ()
+        checkDBKeyError e = case sqlError e of
+          DB.ErrorNotADatabase -> do
+            putStrLn $ "Database file is invalid or " <> if BA.null dbKey then "encrypted." else "you passed an incorrect encryption key."
+            run =<< getKeyOpts
+          _ -> throwIO e
+        getKeyOpts :: IO ChatOpts
+        getKeyOpts = do
+          putStr "Enter database encryption key (Ctrl-C to exit):"
+          hFlush stdout
+          hSetEcho stdin False
+          key <- getLine
+          hSetEcho stdin True
+          putStrLn ""
+          pure opts {coreOptions = coreOptions {dbKey = BA.convert $ encodeUtf8 $ T.pack key}}
 
 runChatTerminal :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
 runChatTerminal ct cc opts = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc opts, runInputLoop ct cc]

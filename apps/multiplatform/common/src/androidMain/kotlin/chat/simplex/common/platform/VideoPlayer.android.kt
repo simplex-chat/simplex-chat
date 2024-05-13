@@ -33,9 +33,9 @@ actual class VideoPlayer actual constructor(
   override val duration: MutableState<Long> = mutableStateOf(defaultDuration)
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
-  init {
-    setPreviewAndDuration()
-  }
+
+  // Currently unused because we use low-quality preview
+  // init { setPreviewAndDuration() }
 
   val player = ExoPlayer.Builder(androidAppContext,
     DefaultRenderersFactory(androidAppContext))
@@ -69,7 +69,7 @@ actual class VideoPlayer actual constructor(
   }
 
   private fun start(seek: Long? = null, onProgressUpdate: (position: Long?, state: TrackState) -> Unit): Boolean {
-    val filepath = getAppFilePath(uri)
+    val filepath = if (uri.scheme == "file") uri.toFile().absolutePath else getAppFilePath(uri)
     if (filepath == null || !File(filepath).exists()) {
       Log.e(TAG, "No such file: $filepath")
       brokenVideo.value = true
@@ -88,7 +88,7 @@ actual class VideoPlayer actual constructor(
         player.setMediaSource(source, seek ?: 0L)
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.stackTraceToString())
         brokenVideo.value = true
         return false
       }
@@ -97,7 +97,7 @@ actual class VideoPlayer actual constructor(
       runCatching { player.prepare() }.onFailure {
         // Can happen when video file is broken
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.stackTraceToString())
         brokenVideo.value = true
         return false
       }

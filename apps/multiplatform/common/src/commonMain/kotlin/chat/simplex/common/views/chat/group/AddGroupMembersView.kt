@@ -54,7 +54,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
     },
     inviteMembers = {
       allowModifyMembers = false
-      withApi {
+      withLongRunningApi(slow = 120_000) {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
@@ -68,7 +68,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
     },
     clearSelection = { selectedContacts.clear() },
     addContact = { contactId -> if (contactId !in selectedContacts) selectedContacts.add(contactId) },
-    removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
+    removeContact = { contactId -> selectedContacts.removeAll { it == contactId } },
     close = close,
   )
   KeyChangeEffect(chatModel.chatId.value) {
@@ -86,7 +86,7 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { it.contactId !in memberContactIds && it.chatViewName.lowercase().contains(s) }
+    .filter { c -> c.ready && c.active && c.contactId !in memberContactIds && c.chatViewName.lowercase().contains(s) }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
@@ -125,10 +125,9 @@ fun AddGroupMembersLayout(
     }
   }
 
-  Column(
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.button_add_members))
     profileText()

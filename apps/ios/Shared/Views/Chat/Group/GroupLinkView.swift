@@ -18,6 +18,7 @@ struct GroupLinkView: View {
     var linkCreatedCb: (() -> Void)? = nil
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
+    @State private var shouldCreate = true
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
@@ -70,6 +71,7 @@ struct GroupLinkView: View {
                     }
                     .frame(height: 36)
                     SimpleXLinkQRCode(uri: groupLink)
+                        .id("simplex-qrcode-view-for-\(groupLink)")
                     Button {
                         showShareSheet(items: [simplexChatLink(groupLink)])
                     } label: {
@@ -125,9 +127,10 @@ struct GroupLinkView: View {
                 }
             }
             .onAppear {
-                if groupLink == nil && !creatingLink {
+                if groupLink == nil && !creatingLink && shouldCreate {
                     createGroupLink()
                 }
+                shouldCreate = false
             }
         }
     }

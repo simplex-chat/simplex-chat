@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
@@ -22,7 +23,7 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  Column(Modifier
+  ColumnWithScrollBar(Modifier
     .fillMaxWidth()
     .padding(horizontal = DEFAULT_PADDING),
   ) {
@@ -76,17 +77,6 @@ fun ReadableTextWithLink(stringResId: StringResource, link: String, textAlign: T
 @Composable
 fun ReadableText(text: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
   Text(text, modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
-}
-
-@Composable
-fun ReadableMarkdownText(text: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
-  MarkdownText(
-    text,
-    formattedText = remember(text) { parseToMarkdown(text) },
-    modifier = Modifier.padding(padding),
-    style = TextStyle(textAlign = textAlign, lineHeight = 22.sp, fontSize = 16.sp),
-    linkMode = ChatController.appPrefs.simplexLinkMode.get(),
-  )
 }
 
 @Preview/*(

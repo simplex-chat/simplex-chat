@@ -1,5 +1,81 @@
 # Blog
 
+Apr 26, 2024 [SimpleX network: legally binding transparency, v5.7 released with better calls and messages](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
+
+We published Transparency Reports, Security Policy, and Frequently Asked Questions, and updated Privacy Policy.
+
+We are committed to have full consistency between marketing promises and legally binding documents.
+
+What's new in v5.7:
+- quantum resistant end-to-end encryption with all contacts.
+- forward and save messages without revealing the source.
+- in-call sounds and switching sound sources.
+- better network connection management.
+- customizable profile images
+
+---
+
+Apr 16. 2024 [The dangers of metadata in messengers](./20240416-dangers-of-metadata-in-messengers.md)
+
+_By [Esra'a al Shafei](https://mastodon.social/@alshafei)_
+
+It's important not to be complacent with the current standards of messaging, where metadata aggregation is still normalized in apps falsely and dangerously marketed as "private". This is a post exploring the fundamental differences between privacy and security.
+
+---
+
+Apr 4. 2024 [Why I joined SimpleX Chat](./20240404-why-i-joined-simplex-chat-esraa-al-shafei.md)
+
+_By [Esra'a al Shafei](https://mastodon.social/@alshafei)_
+
+Transitioning from a lifelong career dedicated to nonprofits, including Board roles at organizations like the Wikimedia Foundation, Access Now and Tor, my decision to join SimpleX Chat may come as a surprise to some. But, as I step into this new chapter, I want to share the insights and convictions that have guided me here, shedding light on what I think sets SimpleX Chat apart and why this move feels like an essential learning opportunity.
+
+---
+
+Mar 23, 2024 [SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration](./20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
+
+SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance:
+- community and business interests are aligned.
+- the journey to the decentralized non-profit protocol governance.
+- welcome, Esra’a!
+
+What's new in v5.6:
+- quantum resistant end-to-end encryption (BETA) – enable it for the new contacts.
+- use the app during the audio and video calls.
+- migrate all app data to another device via QR code.
+
+---
+
+Mar 14, 2024 [SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm](./20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
+
+This is a major upgrade for SimpleX Chat messaging protocol stack, I am really proud to present this work of the whole team.
+
+This post also covers various aspects of end-to-end encryption, compares different messengers, and explains how and why quantum-resistant encryption is added to SimpleX Chat:
+
+- Why do we need end-to-end encryption?
+- Why encryption is even allowed?
+- End-to-end encryption security: attacks and defense.
+- How secure is encryption in different messengers?
+- Adding quantum resistance to Signal double ratchet algorithm.
+- When can you start using quantum resistant chats?
+- Next for post-quantum crypto: all direct chats, small groups and security audit.
+
+---
+
+Jan 24, 2024 [SimpleX Chat: free infrastructure from Linode, v5.5 released](./20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
+
+SimpleX Chat infrastructure on Linode:
+- Free infrastructure.
+- SimpleX servers in Linode Marketplace.
+- High capacity messaging servers.
+
+What's new in v5.5:
+- private notes.
+- group history.
+- simpler UX to connect to other users.
+- message delivery stability and other improvements.
+
+---
+
 Nov 25, 2023 [SimpleX Chat v5.4 released](./20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md)
 
 - Link mobile and desktop apps via secure quantum-resistant protocol. 🔗
@@ -131,7 +207,7 @@ November reviews:
 - [Privacy Guides](https://www.privacyguides.org/real-time-communication/#simplex-chat) recommendations.
 - [Review by Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/).
 - [The messenger matrix](https://www.messenger-matrix.de).
-- [Supernova review](https://supernova.tilde.team/detailed_reviews.html#simplex) and [messenger ratings](https://supernova.tilde.team/messengers.html).
+- [Supernova review](https://supernovas.space/detailed_reviews.html#simplex) and [messenger ratings](https://supernovas.space/messengers.html).
 
 ---
 

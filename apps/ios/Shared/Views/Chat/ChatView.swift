@@ -17,6 +17,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -82,7 +83,11 @@ struct ChatView: View {
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
-            if cId != nil {
+            showChatInfoSheet = false
+            if let cId {
+                if let c = chatModel.getChat(cId) {
+                    chat = c
+                }
                 initChatView()
             } else {
                 dismiss()
@@ -151,18 +156,25 @@ struct ChatView: View {
                             )
                         )
                     }
+                } else if case .local = cInfo {
+                    ChatInfoToolbar(chat: chat)
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch cInfo {
                 case let .direct(contact):
                     HStack {
-                        if contact.allowsFeature(.calls) {
-                            callButton(contact, .audio, imageName: "phone")
-                                .disabled(!contact.ready || !contact.active)
+                        let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                        if callsPrefEnabled {
+                            if chatModel.activeCall == nil {
+                                callButton(contact, .audio, imageName: "phone")
+                                    .disabled(!contact.ready || !contact.active)
+                            } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                                endCallButton(call)
+                            }
                         }
                         Menu {
-                            if contact.allowsFeature(.calls) {
+                            if callsPrefEnabled && chatModel.activeCall == nil {
                                 Button {
                                     CallController.shared.startCall(contact, .video)
                                 } label: {
@@ -171,7 +183,7 @@ struct ChatView: View {
                                 .disabled(!contact.ready || !contact.active)
                             }
                             searchButton()
-                            toggleNtfsButton(chat)
+                            ToggleNtfsButton(chat: chat)
                                 .disabled(!contact.ready || !contact.active)
                         } label: {
                             Image(systemName: "ellipsis")
@@ -200,11 +212,13 @@ struct ChatView: View {
                         }
                         Menu {
                             searchButton()
-                            toggleNtfsButton(chat)
+                            ToggleNtfsButton(chat: chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
                     }
+                case .local:
+                    searchButton()
                 default:
                     EmptyView()
                 }
@@ -225,7 +239,9 @@ struct ChatView: View {
 
     private func initChatView() {
         let cInfo = chat.chatInfo
-        if case let .direct(contact) = cInfo {
+        // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
+        if case .active = scenePhase,
+           case let .direct(contact) = cInfo {
             Task {
                 do {
                     let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
@@ -239,7 +255,8 @@ struct ChatView: View {
                 }
             }
         }
-        if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+           let draft = chatModel.draft {
             composeState = draft
         }
         if chat.chatStats.unreadChat {
@@ -250,8 +267,8 @@ struct ChatView: View {
     }
 
     private func searchToolbar() -> some View {
-        HStack {
-            HStack {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
                     .focused($searchFocussed)
@@ -264,9 +281,9 @@ struct ChatView: View {
                     Image(systemName: "xmark.circle.fill").opacity(searchText == "" ? 0 : 1)
                 }
             }
-            .padding(EdgeInsets(top: 8, leading: 6, bottom: 8, trailing: 6))
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
             .foregroundColor(.secondary)
-            .background(Color(.secondarySystemBackground))
+            .background(Color(.tertiarySystemFill))
             .cornerRadius(10.0)
 
             Button ("Cancel") {
@@ -284,7 +301,7 @@ struct ChatView: View {
     }
     
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
-        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
     private func chatItemsList() -> some View {
@@ -330,8 +347,8 @@ struct ChatView: View {
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
                 }
-                .onChange(of: chatModel.chatId) { _ in
-                    if let chatId = chatModel.chatId, let c = chatModel.getChat(chatId) {
+                .onChange(of: chatModel.chatId) { chatId in
+                    if let chatId, let c = chatModel.getChat(chatId) {
                         chat = c
                         showChatInfoSheet = false
                         loadChat(chat: c)
@@ -417,7 +434,19 @@ struct ChatView: View {
             Image(systemName: imageName)
         }
     }
-    
+
+    private func endCallButton(_ call: Call) -> some View {
+        Button {
+            if let uuid = call.callkitUUID {
+                CallController.shared.endCall(callUUID: uuid)
+            } else {
+                CallController.shared.endCall(call: call) {}
+            }
+        } label: {
+            Image(systemName: "phone.down.fill").tint(.red)
+        }
+    }
+
     private func searchButton() -> some View {
         Button {
             searchMode = true
@@ -490,6 +519,7 @@ struct ChatView: View {
             chat: chat,
             chatItem: ci,
             maxWidth: maxWidth,
+            itemWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
             chatView: self
@@ -502,6 +532,7 @@ struct ChatView: View {
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
+        @State var itemWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         var chatView: ChatView
@@ -513,6 +544,7 @@ struct ChatView: View {
         @State private var revealed = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
+        @State private var showForwardingSheet: Bool = false
 
         @State private var allowMenu: Bool = true
 
@@ -536,7 +568,12 @@ struct ChatView: View {
                         chatItemView(ci, nil, prev)
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
+                    if revealed {
+                        chatItemView(chatItem, range, prevItem)
+                    } else {
+                        chatItemView(chatItem, range, prevItem)
+                    }
                 }
             }
         }
@@ -556,12 +593,12 @@ struct ChatView: View {
                             Text(memberNames(member, prevMember, memCount))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14)
                                 .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image)
-                                .frame(width: memberImageSize, height: memberImageSize)
+                            ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize)
                                 .onTapGesture {
                                     if chatView.membersLoaded {
                                         selectedMember = m.getGroupMember(member.groupMemberId)
@@ -625,7 +662,7 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
-                .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
+                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu)
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)
@@ -636,7 +673,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
                     }
-                    if let di = deletingItem, di.meta.editable {
+                    if let di = deletingItem, di.meta.deletable && !di.localNote {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
@@ -661,6 +698,14 @@ struct ChatView: View {
                     chatItemInfo = nil
                 }) {
                     ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
+                }
+                .sheet(isPresented: $showForwardingSheet) {
+                    if #available(iOS 16.0, *) {
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                            .presentationDetents([.fraction(0.8)])
+                    } else {
+                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                    }
                 }
         }
 
@@ -720,7 +765,7 @@ struct ChatView: View {
                     }
                     menu.append(rm)
                 }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
                     menu.append(replyUIAction(ci))
                 }
                 let fileSource = getLoadedFileSource(ci.file)
@@ -740,17 +785,26 @@ struct ChatView: View {
                     } else {
                         menu.append(saveFileAction(fileSource))
                     }
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
+                    menu.append(downloadFileAction(file))
                 }
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction(ci))
                 }
-                menu.append(viewInfoUIAction(ci))
+                if ci.meta.itemDeleted == nil
+                    && (ci.file == nil || (fileSource != nil && fileExists))
+                    && !ci.isLiveDummy && !live {
+                    menu.append(forwardUIAction(ci))
+                }
+                if !ci.isLiveDummy {
+                    menu.append(viewInfoUIAction(ci))
+                }
                 if revealed {
                     menu.append(hideUIAction())
                 }
-                if ci.meta.itemDeleted == nil,
+                if ci.meta.itemDeleted == nil && !ci.localNote,
                    let file = ci.file,
-                   let cancelAction = file.cancelAction  {
+                   let cancelAction = file.cancelAction {
                     menu.append(cancelFileUIAction(file.fileId, cancelAction))
                 }
                 if !live || !ci.meta.isLive {
@@ -774,6 +828,9 @@ struct ChatView: View {
                 menu.append(deleteUIAction(ci))
             } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 menu.append(revealed ? shrinkUIAction() : expandUIAction())
+                menu.append(deleteUIAction(ci))
+            } else if ci.showLocalDelete {
+                menu.append(deleteUIAction(ci))
             }
             return menu
         }
@@ -790,6 +847,15 @@ struct ChatView: View {
                         composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                     }
                 }
+            }
+        }
+
+        private func forwardUIAction(_ ci: ChatItem) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Forward", comment: "chat item action"),
+                image: UIImage(systemName: "arrowshape.turn.up.forward")
+            ) { _ in
+                showForwardingSheet = true
             }
         }
 
@@ -890,7 +956,21 @@ struct ChatView: View {
                 saveCryptoFile(fileSource)
             }
         }
-        
+
+        private func downloadFileAction(_ file: CIFile) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Download", comment: "chat item action"),
+                image: UIImage(systemName: "arrow.down.doc")
+            ) { _ in
+                Task {
+                    logger.debug("ChatView downloadFileAction, in Task")
+                    if let user = m.currentUser {
+                        await receiveFile(user: user, fileId: file.fileId)
+                    }
+                }
+            }
+        }
+
         private func editAction(_ ci: ChatItem) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Edit", comment: "chat item action"),
@@ -963,7 +1043,7 @@ struct ChatView: View {
                 image: UIImage(systemName: "trash"),
                 attributes: [.destructive]
             ) { _ in
-                if !revealed && ci.meta.itemDeleted != nil,
+                if !revealed,
                    let currIndex = m.getChatItemIndex(ci),
                    let ciCategory = ci.mergeCategory {
                     let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
@@ -1139,14 +1219,18 @@ struct ChatView: View {
     }
 }
 
-@ViewBuilder func toggleNtfsButton(_ chat: Chat) -> some View {
-    Button {
-        toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
-    } label: {
-        if chat.chatInfo.ntfsEnabled {
-            Label("Mute", systemImage: "speaker.slash")
-        } else {
-            Label("Unmute", systemImage: "speaker.wave.2")
+struct ToggleNtfsButton: View {
+    @ObservedObject var chat: Chat
+
+    var body: some View {
+        Button {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        } label: {
+            if chat.chatInfo.ntfsEnabled {
+                Label("Mute", systemImage: "speaker.slash")
+            } else {
+                Label("Unmute", systemImage: "speaker.wave.2")
+            }
         }
     }
 }

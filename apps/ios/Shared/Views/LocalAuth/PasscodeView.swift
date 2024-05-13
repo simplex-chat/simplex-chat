@@ -14,6 +14,8 @@ struct PasscodeView: View {
     var reason: String? = nil
     var submitLabel: LocalizedStringKey
     var submitEnabled: ((String) -> Bool)?
+    @Binding var buttonsEnabled: Bool
+
     var submit: () -> Void
     var cancel: () -> Void
 
@@ -70,11 +72,11 @@ struct PasscodeView: View {
     @ViewBuilder private func buttonsView() -> some View {
         Button(action: cancel) {
             Label("Cancel", systemImage: "multiply")
-        }
+        }.disabled(!buttonsEnabled)
         Button(action: submit) {
             Label(submitLabel, systemImage: "checkmark")
         }
-        .disabled(submitEnabled?(passcode) == false || passcode.count < 4)
+        .disabled(submitEnabled?(passcode) == false || passcode.count < 4 || !buttonsEnabled)
     }
 }
 
@@ -85,6 +87,7 @@ struct PasscodeViewView_Previews: PreviewProvider {
             title: "Enter Passcode",
             reason: "Unlock app",
             submitLabel: "Submit",
+            buttonsEnabled: Binding.constant(true),
             submit: {},
             cancel: {}
         )

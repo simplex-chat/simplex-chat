@@ -16,7 +16,7 @@ actual fun LocalMultiplatformView(): Any? = null
 
 @Composable
 actual fun getKeyboardState(): State<KeyboardState> = remember { mutableStateOf(KeyboardState.Opened) }
-actual fun hideKeyboard(view: Any?) {}
+actual fun hideKeyboard(view: Any?, clearFocus: Boolean) {}
 
 actual fun androidIsFinishingMainActivity(): Boolean = false
 

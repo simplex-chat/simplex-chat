@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -27,8 +28,10 @@ import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOn, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
@@ -39,6 +42,8 @@ data MsgDirection = MDRcv | MDSnd
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MD") ''MsgDirection)
 
 instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
+
+instance FromField MsgDirection where fromField = fromIntField_ msgDirectionIntP
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
 
@@ -132,18 +137,27 @@ data CIContent (d :: MsgDirection) where
   CISndChatFeature :: ChatFeature -> PrefEnabled -> Maybe Int -> CIContent 'MDSnd
   CIRcvChatPreference :: ChatFeature -> FeatureAllowed -> Maybe Int -> CIContent 'MDRcv
   CISndChatPreference :: ChatFeature -> FeatureAllowed -> Maybe Int -> CIContent 'MDSnd
-  CIRcvGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> CIContent 'MDRcv
-  CISndGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> CIContent 'MDSnd
+  CIRcvGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent 'MDRcv
+  CISndGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent 'MDSnd
   CIRcvChatFeatureRejected :: ChatFeature -> CIContent 'MDRcv
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
-  CIInvalidJSON :: Text -> CIContent d
+  CIRcvBlocked :: CIContent 'MDRcv
+  CISndDirectE2EEInfo :: E2EInfo -> CIContent 'MDSnd
+  CIRcvDirectE2EEInfo :: E2EInfo -> CIContent 'MDRcv
+  CISndGroupE2EEInfo :: E2EInfo -> CIContent 'MDSnd -- when new group is created
+  CIRcvGroupE2EEInfo :: E2EInfo -> CIContent 'MDRcv -- when enabled with some member
+  CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
+
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
+
+data E2EInfo = E2EInfo {pqEnabled :: PQEncryption}
+  deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
 ciMsgContent = \case
@@ -169,12 +183,15 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
-    CIRcvDirectEvent _ -> False
+    CIRcvDirectEvent rde -> case rde of
+      RDEContactDeleted -> False
+      RDEProfileUpdated {} -> False
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
       RGEMemberLeft -> False
       RGEMemberRole {} -> False
+      RGEMemberBlocked {} -> False
       RGEUserRole _ -> True
       RGEMemberDeleted {} -> False
       RGEUserDeleted -> True
@@ -182,6 +199,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEGroupUpdated _ -> False
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
+      RGEMemberProfileUpdated {} -> False
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -189,6 +207,9 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
+    CIRcvBlocked -> False
+    CIRcvDirectE2EEInfo _ -> False
+    CIRcvGroupE2EEInfo _ -> False
     CIInvalidJSON _ -> False
 
 newtype DBMsgErrorType = DBME MsgErrorType
@@ -237,13 +258,34 @@ ciContentToText = \case
   CISndChatFeature feature enabled param -> featureStateText feature enabled param
   CIRcvChatPreference feature allowed param -> prefStateText feature allowed param
   CISndChatPreference feature allowed param -> "you " <> prefStateText feature allowed param
-  CIRcvGroupFeature feature pref param -> groupPrefStateText feature pref param
-  CISndGroupFeature feature pref param -> groupPrefStateText feature pref param
+  CIRcvGroupFeature feature pref param role -> groupPrefStateText feature pref param role
+  CISndGroupFeature feature pref param role -> groupPrefStateText feature pref param role
   CIRcvChatFeatureRejected feature -> chatFeatureNameText feature <> ": received, prohibited"
   CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
+  CIRcvBlocked -> "blocked"
+  CISndDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
+  CIRcvDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
+  CISndGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
+  CIRcvGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
   CIInvalidJSON _ -> "invalid content JSON"
+
+directE2EInfoToText :: E2EInfo -> Text
+directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
+  PQEncOn -> e2eInfoPQText
+  PQEncOff -> e2eInfoNoPQText
+
+groupE2EInfoToText :: E2EInfo -> Text
+groupE2EInfoToText _e2eeInfo = e2eInfoNoPQText
+
+e2eInfoNoPQText :: Text
+e2eInfoNoPQText =
+  "This conversation is protected by end-to-end encryption with perfect forward secrecy, repudiation and break-in recovery."
+
+e2eInfoPQText :: Text
+e2eInfoPQText =
+  "This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery."
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
@@ -252,6 +294,7 @@ ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayN
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
   RDEContactDeleted -> "contact deleted"
+  RDEProfileUpdated {} -> "updated profile"
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
@@ -259,6 +302,7 @@ rcvGroupEventToText = \case
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
   RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
   RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
@@ -266,10 +310,12 @@ rcvGroupEventToText = \case
   RGEGroupUpdated _ -> "group profile updated"
   RGEInvitedViaGroupLink -> "invited via your group link"
   RGEMemberCreatedContact -> "started direct connection with you"
+  RGEMemberProfileUpdated {} -> "updated profile"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
   SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  SGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
   SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
@@ -284,6 +330,9 @@ rcvConnEventToText = \case
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
   RCEVerificationCodeReset -> "security code changed"
+  RCEPqEnabled pqEnc -> case pqEnc of
+    PQEncOn -> "quantum resistant e2e encryption"
+    PQEncOff -> "standard end-to-end encryption"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case
@@ -301,6 +350,9 @@ sndConnEventToText = \case
     SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
   SCERatchetSync syncStatus m -> ratchetSyncStatusToText syncStatus <> forMember m
+  SCEPqEnabled pqEnc -> case pqEnc of
+    PQEncOn -> "quantum resistant e2e encryption"
+    PQEncOff -> "standard end-to-end encryption"
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
@@ -364,12 +416,17 @@ data JSONCIContent
   | JCISndChatFeature {feature :: ChatFeature, enabled :: PrefEnabled, param :: Maybe Int}
   | JCIRcvChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
   | JCISndChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
-  | JCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
-  | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
+  | JCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int, memberRole_ :: Maybe GroupMemberRole}
+  | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int, memberRole_ :: Maybe GroupMemberRole}
   | JCIRcvChatFeatureRejected {feature :: ChatFeature}
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | JCISndModerated
   | JCIRcvModerated
+  | JCIRcvBlocked
+  | JCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -393,12 +450,17 @@ jsonCIContent = \case
   CISndChatFeature feature enabled param -> JCISndChatFeature {feature, enabled, param}
   CIRcvChatPreference feature allowed param -> JCIRcvChatPreference {feature, allowed, param}
   CISndChatPreference feature allowed param -> JCISndChatPreference {feature, allowed, param}
-  CIRcvGroupFeature groupFeature preference param -> JCIRcvGroupFeature {groupFeature, preference, param}
-  CISndGroupFeature groupFeature preference param -> JCISndGroupFeature {groupFeature, preference, param}
+  CIRcvGroupFeature groupFeature preference param memberRole_ -> JCIRcvGroupFeature {groupFeature, preference, param, memberRole_}
+  CISndGroupFeature groupFeature preference param memberRole_ -> JCISndGroupFeature {groupFeature, preference, param, memberRole_}
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
+  CIRcvBlocked -> JCIRcvBlocked
+  CISndDirectE2EEInfo e2eeInfo -> JCISndDirectE2EEInfo e2eeInfo
+  CIRcvDirectE2EEInfo e2eeInfo -> JCIRcvDirectE2EEInfo e2eeInfo
+  CISndGroupE2EEInfo e2eeInfo -> JCISndGroupE2EEInfo e2eeInfo
+  CIRcvGroupE2EEInfo e2eeInfo -> JCIRcvGroupE2EEInfo e2eeInfo
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -422,12 +484,17 @@ aciContentJSON = \case
   JCISndChatFeature {feature, enabled, param} -> ACIContent SMDSnd $ CISndChatFeature feature enabled param
   JCIRcvChatPreference {feature, allowed, param} -> ACIContent SMDRcv $ CIRcvChatPreference feature allowed param
   JCISndChatPreference {feature, allowed, param} -> ACIContent SMDSnd $ CISndChatPreference feature allowed param
-  JCIRcvGroupFeature {groupFeature, preference, param} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference param
-  JCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
+  JCIRcvGroupFeature {groupFeature, preference, param, memberRole_} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference param memberRole_
+  JCISndGroupFeature {groupFeature, preference, param, memberRole_} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param memberRole_
   JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
+  JCISndDirectE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
+  JCIRcvDirectE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
+  JCISndGroupE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
+  JCIRcvGroupE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -452,12 +519,17 @@ data DBJSONCIContent
   | DBJCISndChatFeature {feature :: ChatFeature, enabled :: PrefEnabled, param :: Maybe Int}
   | DBJCIRcvChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
   | DBJCISndChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
-  | DBJCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
-  | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
+  | DBJCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int, memberRole_ :: Maybe GroupMemberRole}
+  | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int, memberRole_ :: Maybe GroupMemberRole}
   | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | DBJCISndModerated
   | DBJCIRcvModerated
+  | DBJCIRcvBlocked
+  | DBJCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -481,12 +553,17 @@ dbJsonCIContent = \case
   CISndChatFeature feature enabled param -> DBJCISndChatFeature {feature, enabled, param}
   CIRcvChatPreference feature allowed param -> DBJCIRcvChatPreference {feature, allowed, param}
   CISndChatPreference feature allowed param -> DBJCISndChatPreference {feature, allowed, param}
-  CIRcvGroupFeature groupFeature preference param -> DBJCIRcvGroupFeature {groupFeature, preference, param}
-  CISndGroupFeature groupFeature preference param -> DBJCISndGroupFeature {groupFeature, preference, param}
+  CIRcvGroupFeature groupFeature preference param memberRole_ -> DBJCIRcvGroupFeature {groupFeature, preference, param, memberRole_}
+  CISndGroupFeature groupFeature preference param memberRole_ -> DBJCISndGroupFeature {groupFeature, preference, param, memberRole_}
   CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
+  CIRcvBlocked -> DBJCIRcvBlocked
+  CISndDirectE2EEInfo e2eeInfo -> DBJCISndDirectE2EEInfo e2eeInfo
+  CIRcvDirectE2EEInfo e2eeInfo -> DBJCIRcvDirectE2EEInfo e2eeInfo
+  CISndGroupE2EEInfo e2eeInfo -> DBJCISndGroupE2EEInfo e2eeInfo
+  CIRcvGroupE2EEInfo e2eeInfo -> DBJCIRcvGroupE2EEInfo e2eeInfo
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -510,12 +587,17 @@ aciContentDBJSON = \case
   DBJCISndChatFeature {feature, enabled, param} -> ACIContent SMDSnd $ CISndChatFeature feature enabled param
   DBJCIRcvChatPreference {feature, allowed, param} -> ACIContent SMDRcv $ CIRcvChatPreference feature allowed param
   DBJCISndChatPreference {feature, allowed, param} -> ACIContent SMDSnd $ CISndChatPreference feature allowed param
-  DBJCIRcvGroupFeature {groupFeature, preference, param} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference param
-  DBJCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
+  DBJCIRcvGroupFeature {groupFeature, preference, param, memberRole_} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference param memberRole_
+  DBJCISndGroupFeature {groupFeature, preference, param, memberRole_} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param memberRole_
   DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
+  DBJCISndDirectE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
+  DBJCIRcvDirectE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
+  DBJCISndGroupE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
+  DBJCIRcvGroupE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -540,6 +622,16 @@ ciCallInfoText status duration = case status of
   CISCallProgress -> "in progress " <> durationText duration
   CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
+
+callComplete :: CICallStatus -> Bool
+callComplete = \case
+  CISCallMissed -> True
+  CISCallRejected -> True
+  CISCallEnded -> True
+  CISCallError -> True
+  _ -> False
+
+$(JQ.deriveJSON defaultJSON ''E2EInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
 
@@ -608,4 +700,9 @@ toCIContentTag ciContent = case ciContent of
   CIRcvGroupFeatureRejected _ -> "rcvGroupFeatureRejected"
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
+  CIRcvBlocked -> "rcvBlocked"
+  CISndDirectE2EEInfo _ -> "sndDirectE2EEInfo"
+  CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
+  CISndGroupE2EEInfo _ -> "sndGroupE2EEInfo"
+  CIRcvGroupE2EEInfo _ -> "rcvGroupE2EEInfo"
   CIInvalidJSON _ -> "invalidJSON"

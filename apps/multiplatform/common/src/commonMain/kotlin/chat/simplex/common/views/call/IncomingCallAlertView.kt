@@ -88,7 +88,8 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
 private fun CallButton(text: String, icon: Painter, color: Color, action: () -> Unit) {
   Surface(
     shape = RoundedCornerShape(10.dp),
-    color = Color.Transparent
+    color = Color.Transparent,
+    contentColor = LocalContentColor.current
   ) {
     Column(
       Modifier

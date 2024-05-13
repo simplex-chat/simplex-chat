@@ -1,6 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.BroadcastTests where
@@ -13,10 +12,10 @@ import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (bracket)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
+import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (Profile (..))
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 broadcastBotTests :: SpecWith FilePath
 broadcastBotTests = do
@@ -34,7 +33,7 @@ broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadc
 mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts tmp publishers =
   BroadcastBotOpts
-    { coreOptions = testOpts.coreOptions {dbFilePrefix = tmp </> botDbPrefix},
+    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> botDbPrefix},
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

@@ -20,7 +20,7 @@
     "hero-overlay-1-title": "¿Cómo funciona SimpleX?",
     "hero-overlay-2-title": "¿Por qué los ID de usuario son perjudiciales para la privacidad?",
     "feature-1-title": "Mensajes cifrados E2E con sintáxis markdown y edición",
-    "feature-3-title": "Grupos secretos descentralizados &mdash;<br>sólo los usuarios saben de su existencia",
+    "feature-3-title": "Grupos descentralizados cifrados E2E &mdash; sólo los usuarios conocen su existencia",
     "feature-6-title": "Llamadas y videollamadas con cifrado E2E",
     "simplex-network-overlay-1-title": "Comparativa con protocolos de mensajería P2P",
     "developers": "Desarrolladores",
@@ -30,7 +30,7 @@
     "simplex-explained-tab-3-p-1": "Para cada cola los servidores disponen de credenciales separadas y anónimas, por lo que desconocen a qué usuarios pertenecen.",
     "hero-p-1": "Las demás aplicaciones usan ID de usuario: Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br> SimpleX no los tiene, <strong>ni siquiera números aleatorios</strong>.<br> Esto mejora radicalmente su privacidad.",
     "hero-2-header-desc": "El video muestra cómo se conecta con sus amistades a través del código QR de un solo uso, en persona o a través de videollamada. También puede conectarse compartiendo un enlace de invitación.",
-    "feature-7-title": "Base de datos portable cifrada &mdash; transfiera su perfil a otro dispositivo",
+    "feature-7-title": "Almacenamiento portable y cifrado &mdash; podrá transferir su perfil a otro dispositivo",
     "simplex-private-card-4-point-2": "Para usar SimpleX a través de Tor, instala la aplicación <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot</a> y activa el proxy SOCKS5 (o VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">en iOS</a>).",
     "simplex-private-card-3-point-1": "Para las conexiones cliente servidor se usan exclusivamente el protocolo TLS 1.2/1.3 con algoritmos robustos.",
     "simplex-private-card-4-point-1": "Para proteger tu dirección IP puedes acceder a los servidores a través de la red Tor u otras redes de transporte superpuesto.",
@@ -48,7 +48,7 @@
     "chat-protocol": "Protocolo Chat",
     "terminal-cli": "Terminal CLI",
     "hero-subheader": "La primera aplicación de mensajería<br>sin ID de usuario",
-    "feature-2-title": "Cifrado E2E<br>de imágenes y archivos",
+    "feature-2-title": "Cifrado E2E<br>de imágenes, vídeos y archivos",
     "feature-8-title": "Modo incógnito &mdash;<br>exclusivo de SimpleX Chat",
     "simplex-private-1-title": "Doble capa de<br>cifrado de extremo a extremo",
     "simplex-private-2-title": "Capa de cifrado<br>adicional en el servidor",
@@ -250,5 +250,8 @@
     "jobs": "Únete al equipo",
     "hero-overlay-3-textlink": "Evaluación de la seguridad",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> es una consultora de seguridad y tecnología líder cuyos clientes incluyen grandes tecnológicas, agencias gubernamentales e importantes proyectos de blockchain.",
-    "docs-dropdown-9": "Descargas"
+    "docs-dropdown-9": "Descargas",
+    "please-enable-javascript": "Habilita JavaScript para ver el código QR.",
+    "please-use-link-in-mobile-app": "Usa el enlace en la apliación móvil,",
+    "docs-dropdown-10": "Transparencia"
 }

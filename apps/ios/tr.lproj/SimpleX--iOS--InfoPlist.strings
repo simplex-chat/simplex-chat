@@ -1,0 +1,18 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "SimpleX, diğer kullanıcılara bağlanmak amacıyla QR kodlarını taramak ve görüntülü aramalar için kamera erişimine ihtiyaç duyar.";
+
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "SimpleX yerel kimlik doğrulama için Face ID kullanır";
+
+/* Privacy - Local Network Usage Description */
+"NSLocalNetworkUsageDescription" = "SimpleX, aynı ağdaki masaüstü uygulaması aracılığıyla kullanıcı sohbet profilinin kullanılmasına izin vermek için yerel ağ erişimini kullanır.";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "SimpleX'in sesli ve görüntülü aramalar ve sesli mesajları kaydetmek için mikrofon erişimine ihtiyacı vardır.";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "SimpleX'in çekilen ve alınan medyayı kaydetmek için Fotoğraf Kitaplığı'na erişmesi gerekir";
+

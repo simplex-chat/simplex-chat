@@ -27,6 +27,7 @@ module Simplex.Chat.Store.Profiles
     getUserByARcvFileId,
     getUserByContactId,
     getUserByGroupId,
+    getUserByNoteFolderId,
     getUserByFileId,
     getUserFileInfo,
     deleteUserRecord,
@@ -56,6 +57,7 @@ module Simplex.Chat.Store.Profiles
     deleteCommand,
     updateCommandStatus,
     getCommandDataByCorrId,
+    setUserUIThemes,
   )
 where
 
@@ -80,10 +82,13 @@ import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
@@ -120,7 +125,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -200,6 +205,11 @@ getUserByGroupId db groupId =
   ExceptT . firstRow toUser (SEUserNotFoundByGroupId groupId) $
     DB.query db (userQuery <> " JOIN groups g ON g.user_id = u.user_id WHERE g.group_id = ?") (Only groupId)
 
+getUserByNoteFolderId :: DB.Connection -> NoteFolderId -> ExceptT StoreError IO User
+getUserByNoteFolderId db contactId =
+  ExceptT . firstRow toUser (SEUserNotFoundByContactId contactId) $
+    DB.query db (userQuery <> " JOIN note_folders nf ON nf.user_id = u.user_id WHERE nf.note_folder_id = ?") (Only contactId)
+
 getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
 getUserByFileId db fileId =
   ExceptT . firstRow toUser (SEUserNotFoundByFileId fileId) $
@@ -246,23 +256,32 @@ updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOv
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
-  | displayName == newName = do
-      liftIO $ updateContactProfile_ db userId profileId p'
-      pure user {profile, fullPreferences}
+  | displayName == newName = liftIO $ do
+      updateContactProfile_ db userId profileId p'
+      currentTs <- getCurrentTime
+      userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
+      pure user {profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
         DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
         updateContactProfile_' db userId profileId p' currentTs
-        updateContact_ db userId userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile, fullPreferences}
+        updateContactLDN_ db user userContactId localDisplayName newName currentTs
+        pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} = user
-    Profile {displayName = newName, preferences} = p'
+    updateUserMemberProfileUpdatedAt_ currentTs
+      | userMemberProfileChanged = do
+          DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
+          pure $ Just currentTs
+      | otherwise = pure userMemberProfileUpdatedAt
+    userMemberProfileChanged = newName /= displayName || newFullName /= fullName || newImage /= image
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
+    Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = mergePreferences Nothing preferences
 
@@ -308,37 +327,39 @@ createUserContactLink db User {userId} agentConnId cReq subMode =
       "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
       (userId, cReq, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
-getUserAddressConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
-getUserAddressConnections db User {userId} = do
+getUserAddressConnections :: DB.Connection -> VersionRangeChat -> User -> ExceptT StoreError IO [Connection]
+getUserAddressConnections db vr User {userId} = do
   cs <- liftIO getUserAddressConnections_
   if null cs then throwError SEUserContactLinkNotFound else pure cs
   where
     getUserAddressConnections_ :: IO [Connection]
     getUserAddressConnections_ =
-      map toConnection
+      map (toConnection vr)
         <$> DB.query
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-              c.peer_chat_min_version, c.peer_chat_max_version
+              c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+              c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+              c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
             WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
           |]
           (userId, userId)
 
-getUserContactLinks :: DB.Connection -> User -> IO [(Connection, UserContact)]
-getUserContactLinks db User {userId} =
+getUserContactLinks :: DB.Connection -> VersionRangeChat -> User -> IO [(Connection, UserContact)]
+getUserContactLinks db vr User {userId} =
   map toUserContactConnection
     <$> DB.query
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.peer_chat_min_version, c.peer_chat_max_version,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
@@ -347,7 +368,7 @@ getUserContactLinks db User {userId} =
       (userId, userId)
   where
     toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
-    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
+    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection vr connRow, UserContact {userContactLinkId, connReqContact, groupId})
 
 deleteUserAddress :: DB.Connection -> User -> IO ()
 deleteUserAddress db user@User {userId} = do
@@ -373,6 +394,7 @@ deleteUserAddress db user@User {userId} = do
           JOIN user_contact_links uc USING (user_contact_link_id)
           WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
         )
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = :user_id)
     |]
     [":user_id" := userId]
   DB.executeNamed
@@ -454,8 +476,8 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
       |]
       (userId, cReqSchema1, cReqSchema2)
 
-getContactWithoutConnViaAddress :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
-getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2) = do
+getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -468,7 +490,7 @@ getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2)
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         |]
         (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do
@@ -599,3 +621,8 @@ getCommandDataByCorrId db User {userId} corrId =
   where
     toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
     toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
+
+setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeEntityOverrides -> IO ()
+setUserUIThemes db User {userId} uiThemes = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)

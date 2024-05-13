@@ -11,12 +11,14 @@ import SimpleXChat
 
 enum UserProfileAlert: Identifiable {
     case duplicateUserError
+    case invalidDisplayNameError
     case createUserError(error: LocalizedStringKey)
     case invalidNameError(validName: String)
 
     var id: String {
         switch self {
         case .duplicateUserError: return "duplicateUserError"
+        case .invalidDisplayNameError: return "invalidDisplayNameError"
         case .createUserError: return "createUserError"
         case let .invalidNameError(validName): return "invalidNameError \(validName)"
         }
@@ -164,8 +166,10 @@ private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) 
     )
     let m = ChatModel.shared
     do {
+        AppChatState.shared.set(.active)
         m.currentUser = try apiCreateActiveUser(profile)
-        if m.users.isEmpty {
+        // .isEmpty check is redundant here, but it makes it clearer what is going on
+        if m.users.isEmpty || m.users.allSatisfy({ $0.user.hidden }) {
             try startChat()
             withAnimation {
                 onboardingStageDefault.set(.step3_CreateSimpleXAddress)
@@ -187,6 +191,12 @@ private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) 
             } else {
                 showAlert(.duplicateUserError)
             }
+        case .chatCmdError(_, .error(.invalidDisplayName)):
+            if m.currentUser == nil {
+                AlertManager.shared.showAlert(invalidDisplayNameAlert)
+            } else {
+                showAlert(.invalidDisplayNameError)
+            }
         default:
             let err: LocalizedStringKey = "Error: \(responseError(error))"
             if m.currentUser == nil {
@@ -207,6 +217,7 @@ private func canCreateProfile(_ displayName: String) -> Bool {
 func userProfileAlert(_ alert: UserProfileAlert, _ displayName: Binding<String>) -> Alert {
     switch alert {
     case .duplicateUserError: return duplicateUserAlert
+    case .invalidDisplayNameError: return invalidDisplayNameAlert
     case let .createUserError(err): return creatUserErrorAlert(err)
     case let .invalidNameError(name): return createInvalidNameAlert(name, displayName)
     }
@@ -216,6 +227,13 @@ private var duplicateUserAlert: Alert {
     Alert(
         title: Text("Duplicate display name!"),
         message: Text("You already have a chat profile with the same display name. Please choose another name.")
+    )
+}
+
+private var invalidDisplayNameAlert: Alert {
+    Alert(
+        title: Text("Invalid display name!"),
+        message: Text("This display name is invalid. Please choose another name.")
     )
 }
 

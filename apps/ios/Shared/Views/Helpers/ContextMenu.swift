@@ -11,28 +11,43 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func uiKitContextMenu(menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
-            self.overlay {
-                if allowMenu.wrappedValue {
-                    self.overlay(Color(uiColor: .systemBackground)).overlay(InteractionView(content: self, menu: menu))
+    func uiKitContextMenu(hasImageOrVideo: Bool, maxWidth: CGFloat, itemWidth: Binding<CGFloat>, menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
+        Group {
+            if allowMenu.wrappedValue {
+                if hasImageOrVideo {
+                    InteractionView(content:
+                        self.environmentObject(ChatModel.shared)
+                        .overlay(DetermineWidthImageVideoItem())
+                        .onPreferenceChange(DetermineWidthImageVideoItem.Key.self) { itemWidth.wrappedValue = $0 == 0 ? maxWidth : $0 }
+                    , maxWidth: maxWidth, itemWidth: itemWidth, menu: menu)
+                    .frame(maxWidth: itemWidth.wrappedValue)
+                } else {
+                    InteractionView(content: self.environmentObject(ChatModel.shared), maxWidth: maxWidth, itemWidth: itemWidth, menu: menu)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
+            } else {
+                self
             }
+        }
     }
 }
 
-private struct InteractionConfig<Content: View> {
-    let content: Content
-    let menu: UIMenu
+private class HostingViewHolder: UIView {
+    var contentSize: CGSize = CGSizeMake(0, 0)
+    override var intrinsicContentSize: CGSize { get { contentSize } }
 }
 
-private struct InteractionView<Content: View>: UIViewRepresentable {
+struct InteractionView<Content: View>: UIViewRepresentable {
     let content: Content
+    var maxWidth: CGFloat
+    var itemWidth: Binding<CGFloat>
     @Binding var menu: UIMenu
 
     func makeUIView(context: Context) -> UIView {
-        let view = UIView()
+        let view = HostingViewHolder()
         view.backgroundColor = .clear
         let hostView = UIHostingController(rootView: content)
+        view.contentSize = hostView.view.intrinsicContentSize
         hostView.view.translatesAutoresizingMaskIntoConstraints = false
         let constraints = [
             hostView.view.topAnchor.constraint(equalTo: view.topAnchor),
@@ -44,12 +59,20 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
         ]
         view.addSubview(hostView.view)
         view.addConstraints(constraints)
+        view.layer.cornerRadius = 18
+        hostView.view.layer.cornerRadius = 18
         let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
         view.addInteraction(menuInteraction)
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {
+        let was = (uiView as! HostingViewHolder).contentSize
+        (uiView as! HostingViewHolder).contentSize = uiView.subviews[0].sizeThatFits(CGSizeMake(itemWidth.wrappedValue, .infinity))
+        if was != (uiView as! HostingViewHolder).contentSize {
+            uiView.invalidateIntrinsicContentSize()
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)

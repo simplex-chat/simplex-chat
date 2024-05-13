@@ -5,8 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.work.WorkManager
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.helpers.AlertManager
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.jakewharton.processphoenix.ProcessPhoenix
 import dev.icerock.moko.resources.compose.painterResource
@@ -15,7 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 @Composable
 actual fun SettingsSectionApp(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {

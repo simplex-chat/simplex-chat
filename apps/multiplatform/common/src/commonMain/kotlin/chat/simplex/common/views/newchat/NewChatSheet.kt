@@ -42,12 +42,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
     addContact = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showModal { CreateLinkView(chatModel, chatModel.currentRemoteHost.value, CreateLinkTab.ONE_TIME) }
-    },
-    connectViaLink = {
-      closeNewChatSheet(false)
-      ModalManager.center.closeModals()
-      ModalManager.center.showModalCloseable { close -> ConnectViaLinkView(chatModel, chatModel.currentRemoteHost.value, close) }
+      ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
     },
     createGroup = {
       closeNewChatSheet(false)
@@ -59,18 +54,16 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
 }
 
 private val titles = listOf(
-  MR.strings.share_one_time_link,
-  if (appPlatform.isAndroid) MR.strings.connect_via_link_or_qr else MR.strings.connect_via_link,
-  MR.strings.create_group
+  MR.strings.add_contact_tab,
+  MR.strings.create_group_button
 )
-private val icons = listOf(MR.images.ic_add_link, MR.images.ic_qr_code, MR.images.ic_group)
+private val icons = listOf(MR.images.ic_add_link, MR.images.ic_group)
 
 @Composable
 private fun NewChatSheetLayout(
   newChatSheetState: StateFlow<AnimatedViewState>,
   stopped: Boolean,
   addContact: () -> Unit,
-  connectViaLink: () -> Unit,
   createGroup: () -> Unit,
   closeNewChatSheet: (animated: Boolean) -> Unit,
 ) {
@@ -109,7 +102,7 @@ private fun NewChatSheetLayout(
     verticalArrangement = Arrangement.Bottom,
     horizontalAlignment = Alignment.End
   ) {
-    val actions = remember { listOf(addContact, connectViaLink, createGroup) }
+    val actions = remember { listOf(addContact, createGroup) }
     val backgroundColor = if (isInDarkTheme())
       blendARGB(MaterialTheme.colors.primary, Color.Black, 0.7F)
     else
@@ -182,7 +175,7 @@ fun ActionButton(
   disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(shape = RoundedCornerShape(18.dp), color = Color.Transparent) {
+  Surface(shape = RoundedCornerShape(18.dp), color = Color.Transparent, contentColor = LocalContentColor.current) {
     Column(
       Modifier
         .clickable(onClick = click)
@@ -227,7 +220,7 @@ fun ActionButton(
   disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(modifier, shape = RoundedCornerShape(18.dp)) {
+  Surface(modifier, shape = RoundedCornerShape(18.dp), contentColor = LocalContentColor.current) {
     Column(
       Modifier
         .fillMaxWidth()
@@ -271,7 +264,6 @@ private fun PreviewNewChatSheet() {
       MutableStateFlow(AnimatedViewState.VISIBLE),
       stopped = false,
       addContact = {},
-      connectViaLink = {},
       createGroup = {},
       closeNewChatSheet = {},
     )

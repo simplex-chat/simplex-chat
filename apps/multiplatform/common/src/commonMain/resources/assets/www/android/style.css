@@ -5,14 +5,14 @@ body {
   background-color: black;
 }
 
-#remote-video-stream {
+#remote-video-stream.inline {
   position: absolute;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-#local-video-stream {
+#local-video-stream.inline {
   position: absolute;
   width: 30%;
   max-width: 30%;
@@ -21,6 +21,20 @@ body {
   border-radius: 16px;
   top: 0;
   right: 0;
+}
+
+#remote-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+#local-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
 }
 
 *::-webkit-media-controls {

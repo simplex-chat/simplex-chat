@@ -56,19 +56,17 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       currentUser,
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
-        withApi {
-          val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-          updateChatSettings(chat, chatSettings, chatModel)
-          sendReceipts.value = sendRcpts
-        }
+        val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+        updateChatSettings(chat, chatSettings, chatModel)
+        sendReceipts.value = sendRcpts
       },
       members = chatModel.groupMembers
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
-        .sortedBy { it.displayName.lowercase() },
+        .sortedByDescending { it.memberRole },
       developerTools,
       groupLink,
       addMembers = {
-        withApi {
+        withBGApi {
           setGroupMembers(rhId, groupInfo, chatModel)
           ModalManager.end.showModalCloseable(true) { close ->
             AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
@@ -76,7 +74,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
         }
       },
       showMemberInfo = { member ->
-        withApi {
+        withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
@@ -112,7 +110,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
         }
       },
       deleteGroup = { deleteGroupDialog(chat, groupInfo, chatModel, close) },
-      clearChat = { clearChatDialog(chat, chatModel, close) },
+      clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
@@ -131,7 +129,7 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
     text = generalGetString(alertTextKey),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chat.remoteHostId, chatInfo.id)
@@ -154,7 +152,7 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
-      withApi {
+      withLongRunningApi(60_000) {
         chatModel.controller.leaveGroup(rhId, groupInfo.groupId)
         close?.invoke()
       }
@@ -169,7 +167,7 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
     text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withApi {
+      withBGApi {
         val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
           chatModel.upsertGroupMember(rhId, groupInfo, updatedMember)
@@ -207,7 +205,8 @@ fun GroupChatInfoLayout(
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
   val filteredMembers = remember(members) { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } } }
-  LazyColumn(
+  // LALAL strange scrolling
+  LazyColumnWithScrollBar(
     Modifier
       .fillMaxWidth(),
     state = listState
@@ -370,6 +369,18 @@ private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick
 
 @Composable
 private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -> Unit)? = null) {
+  @Composable
+  fun MemberInfo() {
+    if (member.blocked) {
+      Text(stringResource(MR.strings.member_info_member_blocked), color = MaterialTheme.colors.secondary)
+    } else {
+      val role = member.memberRole
+      if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Observer)) {
+        Text(role.text, color = MaterialTheme.colors.secondary)
+      }
+    }
+  }
+
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -403,10 +414,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
         )
       }
     }
-    val role = member.memberRole
-    if (role == GroupMemberRole.Owner || role == GroupMemberRole.Admin) {
-      Text(role.text, color = MaterialTheme.colors.secondary)
-    }
+    MemberInfo()
   }
 }
 
@@ -417,23 +425,45 @@ private fun MemberVerifiedShield() {
 
 @Composable
 private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
-  DefaultDropdownMenu(showMenu) {
-    if (member.canBeRemoved(groupInfo)) {
-      ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
-        removeMemberAlert(rhId, groupInfo, member)
-        showMenu.value = false
-      })
+  if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+    val canBlockForAll = member.canBlockForAll(groupInfo)
+    val canRemove = member.canBeRemoved(groupInfo)
+    if (canBlockForAll || canRemove) {
+      DefaultDropdownMenu(showMenu) {
+        if (canBlockForAll) {
+          if (member.blockedByAdmin) {
+            ItemAction(stringResource(MR.strings.unblock_for_all), painterResource(MR.images.ic_do_not_touch), onClick = {
+              unblockForAllAlert(rhId, groupInfo, member)
+              showMenu.value = false
+            })
+          } else {
+            ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+              blockForAllAlert(rhId, groupInfo, member)
+              showMenu.value = false
+            })
+          }
+        }
+        if (canRemove) {
+          ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+            removeMemberAlert(rhId, groupInfo, member)
+            showMenu.value = false
+          })
+        }
+      }
     }
-    if (member.memberSettings.showMessages) {
-      ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
-        blockMemberAlert(rhId, groupInfo, member)
-        showMenu.value = false
-      })
-    } else {
-      ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
-        unblockMemberAlert(rhId, groupInfo, member)
-        showMenu.value = false
-      })
+  } else if (!member.blockedByAdmin) {
+    DefaultDropdownMenu(showMenu) {
+      if (member.memberSettings.showMessages) {
+        ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+          blockMemberAlert(rhId, groupInfo, member)
+          showMenu.value = false
+        })
+      } else {
+        ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
+          unblockMemberAlert(rhId, groupInfo, member)
+          showMenu.value = false
+        })
+      }
     }
   }
 }

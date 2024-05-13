@@ -4,6 +4,8 @@ import androidx.compose.foundation.contextMenuOpenDetector
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import java.io.File
 import java.net.URI
 
@@ -36,3 +38,5 @@ onExternalDrag(enabled) {
 }
 
 actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpenDetector { action() }
+
+actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)

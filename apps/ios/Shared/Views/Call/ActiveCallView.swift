@@ -9,52 +9,77 @@
 import SwiftUI
 import WebKit
 import SimpleXChat
+import AVFoundation
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme
     @ObservedObject var call: Call
     @Environment(\.scenePhase) var scenePhase
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
     @Binding var canConnectCall: Bool
+    @State var prevColorScheme: ColorScheme = .dark
+    @State var pipShown = false
+    @State var wasConnected = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
-                GeometryReader { g in
-                    let width = g.size.width * 0.3
-                    ZStack(alignment: .topTrailing) {
-                        CallViewRemote(client: client, activeCall: $activeCall)
-                        CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
-                            .cornerRadius(10)
-                            .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
-                            .padding([.top, .trailing], 17)
+        ZStack(alignment: .topLeading) {
+            ZStack(alignment: .bottom) {
+                if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
+                    GeometryReader { g in
+                        let width = g.size.width * 0.3
+                        ZStack(alignment: .topTrailing) {
+                            CallViewRemote(client: client, activeCall: $activeCall, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, pipShown: $pipShown)
+                            CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio, pipShown: $pipShown)
+                                .cornerRadius(10)
+                                .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
+                                .padding([.top, .trailing], 17)
+                            ZStack(alignment: .center) {
+                                // For some reason, when the view in GeometryReader and ZStack is visible, it steals clicks on a back button, so showing something on top like this with background color helps (.clear color doesn't work)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.primary.opacity(0.000001))
+                        }
                     }
                 }
-            }
-            if let call = m.activeCall, let client = client {
-                ActiveCallOverlay(call: call, client: client)
+                if let call = m.activeCall, let client = client, (!pipShown || !call.supportsVideo) {
+                    ActiveCallOverlay(call: call, client: client)
+                }
             }
         }
+        .allowsHitTesting(!m.activeCallViewIsCollapsed)
+        .opacity(m.activeCallViewIsCollapsed ? 0 : 1)
         .onAppear {
             logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase)), canConnectCall \(canConnectCall)")
             AppDelegate.keepScreenOn(true)
             createWebRTCClient()
             dismissAllSheets()
+            hideKeyboard()
+            prevColorScheme = colorScheme
         }
         .onChange(of: canConnectCall) { _ in
             logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall)")
             createWebRTCClient()
+        }
+        .onChange(of: m.activeCallViewIsCollapsed) { _ in
+            hideKeyboard()
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
             Task { await m.callCommand.setClient(nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
+            CallSoundsPlayer.shared.stop()
+            try? AVAudioSession.sharedInstance().setCategory(.soloAmbient)
+            if (wasConnected) {
+                CallSoundsPlayer.shared.vibrate(long: true)
+            }
         }
-        .background(.black)
-        .preferredColorScheme(.dark)
+        .background(m.activeCallViewIsCollapsed ? .clear : .black)
+        // Quite a big delay when opening/closing the view when a scheme changes (globally) this way. It's not needed when CallKit is used since status bar is green with white text on it
+        .preferredColorScheme(m.activeCallViewIsCollapsed || CallController.useCallKit() ? prevColorScheme : .dark)
     }
 
     private func createWebRTCClient() {
@@ -69,8 +94,8 @@ struct ActiveCallView: View {
     @MainActor
     private func processRtcMessage(msg: WVAPIMessage) {
         if call == m.activeCall,
-            let call = m.activeCall,
-            let client = client {
+           let call = m.activeCall,
+           let client = client {
             logger.debug("ActiveCallView: response \(msg.resp.respType)")
             switch msg.resp {
             case let .capabilities(capabilities):
@@ -85,12 +110,17 @@ struct ActiveCallView: View {
                         call.callState = .invitationSent
                         call.localCapabilities = capabilities
                     }
+                    if call.supportsVideo && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
+                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    }
+                    CallSoundsPlayer.shared.startConnectingCallSound()
+                    activeCallWaitDeliveryReceipt()
                 }
             case let .offer(offer, iceCandidates, capabilities):
                 Task {
                     do {
                         try await apiSendCallOffer(call.contact, offer, iceCandidates,
-                                               media: call.localMedia, capabilities: capabilities)
+                                                   media: call.localMedia, capabilities: capabilities)
                     } catch {
                         logger.error("apiSendCallOffer \(responseError(error))")
                     }
@@ -108,6 +138,7 @@ struct ActiveCallView: View {
                     }
                     await MainActor.run {
                         call.callState = .negotiated
+                        CallSoundsPlayer.shared.stop()
                     }
                 }
             case let .ice(iceCandidates):
@@ -122,13 +153,19 @@ struct ActiveCallView: View {
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
                     call.direction == .outgoing
-                        ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-                        : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
+                    ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+                    : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
+                    call.connectedAt = .now
+                    if !wasConnected {
+                        CallSoundsPlayer.shared.vibrate(long: false)
+                        wasConnected = true
+                    }
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
                     m.activeCall = nil
+                    m.activeCallViewIsCollapsed = false
                 }
                 Task {
                     do {
@@ -140,6 +177,11 @@ struct ActiveCallView: View {
             case let .connected(connectionInfo):
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
+                call.connectedAt = .now
+                if !wasConnected {
+                    CallSoundsPlayer.shared.vibrate(long: false)
+                    wasConnected = true
+                }
             case .ended:
                 closeCallView(client)
                 call.callState = .ended
@@ -153,6 +195,7 @@ struct ActiveCallView: View {
                 case .end:
                     closeCallView(client)
                     m.activeCall = nil
+                    m.activeCallViewIsCollapsed = false
                 default: ()
                 }
             case let .error(message):
@@ -161,6 +204,22 @@ struct ActiveCallView: View {
             case let .invalid(type):
                 logger.debug("ActiveCallView: invalid response: \(type)")
                 AlertManager.shared.showAlert(Alert(title: Text("Invalid response"), message: Text(type)))
+            }
+        }
+    }
+
+    private func activeCallWaitDeliveryReceipt() {
+        ChatReceiver.shared.messagesChannel = { msg in
+            guard let call = ChatModel.shared.activeCall, call.callState == .invitationSent else {
+                ChatReceiver.shared.messagesChannel = nil
+                return
+            }
+            if case let .chatItemStatusUpdated(_, msg) = msg,
+               msg.chatInfo.id == call.contact.id,
+               case .sndCall = msg.chatItem.content,
+               case .sndRcvd = msg.chatItem.meta.itemStatus {
+                CallSoundsPlayer.shared.startInCallSound()
+                ChatReceiver.shared.messagesChannel = nil
             }
         }
     }
@@ -176,12 +235,13 @@ struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
     var client: WebRTCClient
+    @ObservedObject private var deviceManager = CallAudioDeviceManager.shared
 
     var body: some View {
         VStack {
             switch call.localMedia {
             case .video:
-                callInfoView(call, .leading)
+                videoCallInfoView(call)
                 .foregroundColor(.white)
                 .opacity(0.8)
                 .padding()
@@ -191,7 +251,16 @@ struct ActiveCallOverlay: View {
                 HStack {
                     toggleAudioButton()
                     Spacer()
-                    Color.clear.frame(width: 40, height: 40)
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                        toggleSpeakerButton()
+                            .frame(width: 40, height: 40)
+                    } else if call.hasMedia {
+                        AudioDevicePicker()
+                            .scaleEffect(2)
+                            .frame(maxWidth: 40, maxHeight: 40)
+                    } else {
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                     Spacer()
                     endCallButton()
                     Spacer()
@@ -208,16 +277,23 @@ struct ActiveCallOverlay: View {
                 .frame(maxWidth: .infinity, alignment: .center)
 
             case .audio:
-                VStack {
-                    ProfileImage(imageStr: call.contact.profile.image)
-                        .scaledToFit()
-                        .frame(width: 192, height: 192)
-                    callInfoView(call, .center)
+                ZStack(alignment: .topLeading) {
+                    Button {
+                        chatModel.activeCallViewIsCollapsed = true
+                    } label: {
+                        Label("Back", systemImage: "chevron.left")
+                            .padding()
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    VStack {
+                        ProfileImage(imageStr: call.contact.profile.image, size: 192)
+                        audioCallInfoView(call)
+                    }
+                    .foregroundColor(.white)
+                    .opacity(0.8)
+                    .padding()
+                    .frame(maxHeight: .infinity)
                 }
-                .foregroundColor(.white)
-                .opacity(0.8)
-                .padding()
-                .frame(maxHeight: .infinity)
 
                 Spacer()
 
@@ -225,22 +301,41 @@ struct ActiveCallOverlay: View {
                     toggleAudioButton()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
-                    toggleSpeakerButton()
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    // Check if the only input is microphone. And in this case show toggle button, 
+                    // If there are more inputs, it probably means something like bluetooth headphones are available
+                    // and in this case show iOS button for choosing different output.
+                    // There is no way to get available outputs, only inputs
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                        toggleSpeakerButton()
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else if call.hasMedia {
+                        AudioDevicePicker()
+                            .scaleEffect(2)
+                            .frame(maxWidth: 50, maxHeight: 40)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else {
+                        Color.clear.frame(width: 50, height: 40)
+                    }
                 }
                 .padding(.bottom, 60)
                 .padding(.horizontal, 48)
             }
         }
         .frame(maxWidth: .infinity)
+        .onAppear {
+            deviceManager.start()
+        }
+        .onDisappear {
+            deviceManager.stop()
+        }
     }
 
-    private func callInfoView(_ call: Call, _ alignment: Alignment) -> some View {
+    private func audioCallInfoView(_ call: Call) -> some View {
         VStack {
             Text(call.contact.chatViewName)
                 .lineLimit(1)
                 .font(.title)
-                .frame(maxWidth: .infinity, alignment: alignment)
+                .frame(maxWidth: .infinity, alignment: .center)
             Group {
                 Text(call.callState.text)
                 HStack {
@@ -251,7 +346,36 @@ struct ActiveCallOverlay: View {
                 }
             }
             .font(.subheadline)
-            .frame(maxWidth: .infinity, alignment: alignment)
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    private func videoCallInfoView(_ call: Call) -> some View {
+        VStack {
+            Button {
+                chatModel.activeCallViewIsCollapsed = true
+            } label: {
+                HStack(alignment: .center, spacing: 16) {
+                    Image(systemName: "chevron.left")
+                        .resizable()
+                        .frame(width: 10, height: 18)
+                    Text(call.contact.chatViewName)
+                        .lineLimit(1)
+                        .font(.title)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            Group {
+                Text(call.callState.text)
+                HStack {
+                    Text(call.encryptionStatus)
+                    if let connInfo = call.connectionInfo {
+                        Text("(") + Text(connInfo.text) + Text(")")
+                    }
+                }
+            }
+            .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -281,11 +405,16 @@ struct ActiveCallOverlay: View {
     private func toggleSpeakerButton() -> some View {
         controlButton(call, call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
             Task {
-                client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
+                let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+                client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
                 DispatchQueue.main.async {
-                    call.speakerEnabled = !call.speakerEnabled
+                    call.speakerEnabled = !speakerEnabled
                 }
             }
+        }
+        .onAppear {
+            deviceManager.call = call
+            //call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
         }
     }
 

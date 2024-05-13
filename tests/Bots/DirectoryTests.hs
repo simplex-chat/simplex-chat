@@ -1,6 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -19,10 +18,11 @@ import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Types (GroupMemberRole (..), Profile (..))
+import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
@@ -64,7 +64,7 @@ directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", im
 mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
 mkDirectoryOpts tmp superUsers =
   DirectoryOpts
-    { coreOptions = testOpts.coreOptions {dbFilePrefix = tmp </> serviceDbPrefix},
+    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
@@ -523,7 +523,7 @@ testNotApprovedBadRoles tmp =
         let approve = "/approve 1:privacy 1"
         superUser #> ("@SimpleX-Directory " <> approve)
         superUser <# ("SimpleX-Directory> > " <> approve)
-        superUser <## "      Group is not approved: user is not an owner."
+        superUser <## "      Group is not approved: SimpleX-Directory is not an admin."
         groupNotFound cath "privacy"
         bob ##> "/mr privacy SimpleX-Directory admin"
         bob <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
@@ -809,7 +809,9 @@ testRestoreDirectory tmp = do
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
         groupFoundN 3 cath "privacy"
-        groupFound cath "security"
+        cath #> "@SimpleX-Directory security"
+        cath <## "SimpleX-Directory: quantum resistant end-to-end encryption enabled"
+        groupFoundN' 2 cath "security"
 
 listGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
 listGroups superUser bob cath = do
@@ -1055,6 +1057,10 @@ groupFound = groupFoundN 2
 groupFoundN :: Int -> TestCC -> String -> IO ()
 groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
+  groupFoundN' count u name
+
+groupFoundN' :: Int -> TestCC -> String -> IO ()
+groupFoundN' count u name = do
   u <# ("SimpleX-Directory> > " <> name)
   u <## "      Found 1 group(s)."
   u <#. ("SimpleX-Directory> " <> name)

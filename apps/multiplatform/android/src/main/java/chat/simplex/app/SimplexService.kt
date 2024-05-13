@@ -6,6 +6,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -13,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.platform.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
@@ -21,12 +21,13 @@ import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.NotificationsMode
-import chat.simplex.common.platform.androidAppContext
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlin.system.exitProcess
 
 // based on:
 // https://robertohuertas.com/2019/06/29/android_foreground_services/
@@ -34,12 +35,13 @@ import dev.icerock.moko.resources.compose.stringResource
 
 class SimplexService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
-  private var isStartingService = false
+  private var isCheckingNewMessages = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d(TAG, "onStartCommand startId: $startId")
+    isServiceStarting = false
     if (intent != null) {
       val action = intent.action
       Log.d(TAG, "intent action $action")
@@ -71,7 +73,12 @@ class SimplexService: Service() {
       stopForeground(true)
       stopSelf()
     } else {
+      isServiceStarting = false
       isServiceStarted = true
+      // In case of self-destruct is enabled the initialization process will not start in SimplexApp, Let's start it here
+      if (DatabaseUtils.ksSelfDestructPassword.get() != null && chatModel.chatDbStatus.value == null) {
+        initChatControllerAndRunMigrations()
+      }
     }
   }
 
@@ -85,6 +92,7 @@ class SimplexService: Service() {
     } catch (e: Exception) {
       Log.d(TAG, "Exception while releasing wakelock: ${e.message}")
     }
+    isServiceStarting = false
     isServiceStarted = false
     stopAfterStart = false
     saveServiceState(this, ServiceState.STOPPED)
@@ -97,10 +105,10 @@ class SimplexService: Service() {
 
   private fun startService() {
     Log.d(TAG, "SimplexService startService")
-    if (wakeLock != null || isStartingService) return
+    if (wakeLock != null || isCheckingNewMessages) return
     val self = this
-    isStartingService = true
-    withApi {
+    isCheckingNewMessages = true
+    withLongRunningApi {
       val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {
@@ -110,7 +118,7 @@ class SimplexService: Service() {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
           safeStopService()
-          return@withApi
+          return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
         wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
@@ -119,7 +127,7 @@ class SimplexService: Service() {
           }
         }
       } finally {
-        isStartingService = false
+        isCheckingNewMessages = false
       }
     }
   }
@@ -172,6 +180,11 @@ class SimplexService: Service() {
   override fun onTaskRemoved(rootIntent: Intent) {
     // Just to make sure that after restart of the app the user will need to re-authenticate
     AppLock.clearAuthState()
+
+    if (appPreferences.chatStopped.get()) {
+      stopSelf()
+      exitProcess(0)
+    }
 
     // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
@@ -253,7 +266,8 @@ class SimplexService: Service() {
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
     private const val WORK_NAME_ONCE = "ServiceStartWorkerOnce"
 
-    private var isServiceStarted = false
+    var isServiceStarting = false
+    var isServiceStarted = false
     private var stopAfterStart = false
 
     fun scheduleStart(context: Context) {
@@ -272,7 +286,7 @@ class SimplexService: Service() {
     fun safeStopService() {
       if (isServiceStarted) {
         androidAppContext.stopService(Intent(androidAppContext, SimplexService::class.java))
-      } else {
+      } else if (isServiceStarting) {
         stopAfterStart = true
       }
     }
@@ -282,6 +296,7 @@ class SimplexService: Service() {
       withContext(Dispatchers.IO) {
         Intent(androidAppContext, SimplexService::class.java).also {
           it.action = action.name
+          isServiceStarting = true
           ContextCompat.startForegroundService(androidAppContext, it)
         }
       }

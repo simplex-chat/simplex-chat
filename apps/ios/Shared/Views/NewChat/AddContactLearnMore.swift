@@ -9,8 +9,20 @@
 import SwiftUI
 
 struct AddContactLearnMore: View {
+    var showTitle: Bool
+
     var body: some View {
         List {
+            if showTitle {
+                Text("One-time invitation link")
+                    .font(.largeTitle)
+                    .bold()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            }
             VStack(alignment: .leading, spacing: 18) {
                 Text("To connect, your contact can scan QR code or use the link in the app.")
                 Text("If you can't meet in person, show QR code in a video call, or share the link.")
@@ -23,6 +35,6 @@ struct AddContactLearnMore: View {
 
 struct AddContactLearnMore_Previews: PreviewProvider {
     static var previews: some View {
-        AddContactLearnMore()
+        AddContactLearnMore(showTitle: true)
     }
 }

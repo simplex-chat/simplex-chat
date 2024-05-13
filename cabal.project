@@ -2,8 +2,6 @@ packages: .
 -- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
-with-compiler: ghc-9.6.3
-
 index-state: 2023-12-12T00:00:00Z
 
 package cryptostore
@@ -14,7 +12,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: f6ed4640d407f8879273d104a3e69069806dcb7c
+    tag: 1339a8da1105ae836b3804113498dabbdf5901ee
 
 source-repository-package
     type: git

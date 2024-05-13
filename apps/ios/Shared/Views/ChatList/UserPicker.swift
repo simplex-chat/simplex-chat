@@ -12,6 +12,7 @@ private let fillColorLight = Color(uiColor: UIColor(red: 0.99, green: 0.99, blue
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) var scenePhase
     @Binding var showSettings: Bool
     @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
@@ -91,7 +92,10 @@ struct UserPicker: View {
         .opacity(userPickerVisible ? 1.0 : 0.0)
         .onAppear {
             do {
-                m.users = try listUsers()
+                // This check prevents the call of listUsers after the app is suspended, and the database is closed.
+                if case .active = scenePhase {
+                    m.users = try listUsers()
+                }
             } catch let error {
                 logger.error("Error loading users \(responseError(error))")
             }
@@ -123,8 +127,7 @@ struct UserPicker: View {
             }
         }, label: {
             HStack(spacing: 0) {
-                ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))
-                    .frame(width: 44, height: 44)
+                ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemFill))
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                     .fontWeight(user.activeUser ? .medium : .regular)

@@ -40,7 +40,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
       profile = profile,
       close,
       saveProfile = { displayName, fullName, image ->
-        withApi {
+        withBGApi {
           val updated = chatModel.controller.apiUpdateProfile(user.remoteHostId, profile.copy(displayName = displayName.trim(), fullName = fullName, image = image))
           if (updated != null) {
             val (newProfile, _) = updated
@@ -98,9 +98,8 @@ fun UserProfileLayout(
         }
       }
       ModalView(close = closeWithAlert) {
-        Column(
+        ColumnWithScrollBar(
           Modifier
-            .verticalScroll(scrollState)
             .padding(horizontal = DEFAULT_PADDING),
         ) {
           AppBarTitle(stringResource(MR.strings.your_current_profile))

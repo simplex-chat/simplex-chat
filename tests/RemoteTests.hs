@@ -13,7 +13,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Archive (archiveFilesFolder)
-import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..), versionNumber)
+import Simplex.Chat.Controller (versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
@@ -21,7 +21,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 import UnliftIO
 import UnliftIO.Concurrent
 import UnliftIO.Directory
@@ -142,7 +142,7 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
 
-  desktop ##> "/start remote host new addr=127.0.0.1 iface=lo port=52230"
+  desktop ##> "/start remote host new addr=127.0.0.1 iface=\"lo\" port=52230"
   desktop <##. "new remote host started on 127.0.0.1:52230" -- TODO: show ip?
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
@@ -194,7 +194,7 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
 remoteStoreFileTest :: HasCallStack => FilePath -> IO ()
 remoteStoreFileTest =
-  testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
+  testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
     withXFTPServer $ do
       let mobileFiles = "./tests/tmp/mobile_files"
       mobile ##> ("/_files_folder " <> mobileFiles)
@@ -317,15 +317,13 @@ remoteStoreFileTest =
 
       stopMobile mobile desktop
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
     hostError cc err = do
       r <- getTermLine cc
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
 
 remoteCLIFileTest :: HasCallStack => FilePath -> IO ()
-remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
-  createDirectoryIfMissing True "./tests/tmp/tmp/"
+remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
   let mobileFiles = "./tests/tmp/mobile_files"
   mobile ##> ("/_files_folder " <> mobileFiles)
   mobile <## "ok"
@@ -392,8 +390,6 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
   B.readFile (bobFiles </> "test.jpg") `shouldReturn` src'
 
   stopMobile mobile desktop
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
 
 switchRemoteHostTest :: FilePath -> IO ()
 switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do

@@ -15,6 +15,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         logger.debug("AppDelegate: didFinishLaunchingWithOptions")
         application.registerForRemoteNotifications()
         if #available(iOS 17.0, *) { trackKeyboard() }
+        NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
+        removePasscodesIfReinstalled()
         return true
     }
 
@@ -34,6 +36,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     @available(iOS 17.0, *)
     @objc func keyboardWillHide(_ notification: Notification) {
         ChatModel.shared.keyboardHeight = 0
+    }
+
+    @objc func pasteboardChanged() {
+        ChatModel.shared.pasteboardHasStrings = UIPasteboard.general.hasStrings
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -120,6 +126,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         BGManager.shared.receiveMessages(complete)
+    }
+
+    private func removePasscodesIfReinstalled() {
+        // Check for the database existence, because app and self destruct passcodes
+        // will be saved and restored by iOS when a user deletes and re-installs the app.
+        // In this case the database and settings will be deleted, but the passcodes won't be.
+        // Deleting passcodes ensures that the user will not get stuck on "Opening app..." screen.
+        if (kcAppPassword.get() != nil || kcSelfDestructPassword.get() != nil) &&
+           !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA) && !hasDatabase() {
+            _ = kcAppPassword.remove()
+            _ = kcSelfDestructPassword.remove()
+            _ = kcDatabasePassword.remove()
+        }
     }
 
     static func keepScreenOn(_ on: Bool) {

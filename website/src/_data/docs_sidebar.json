@@ -26,7 +26,10 @@
                 "TRANSLATIONS.md",
                 "WEBRTC.md",
                 "XFTP-SERVER.md",
-                "DOWNLOADS.md"
+                "DOWNLOADS.md",
+                "TRANSPARENCY.md",
+                "SECURITY.md",
+                "FAQ.md"
             ]
         },
         {

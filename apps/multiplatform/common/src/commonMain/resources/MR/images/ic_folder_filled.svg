@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24"
+   viewBox="0 -960 960 960"
+   width="24"
+   xmlns="http://www.w3.org/2000/svg">
+  <path
+     id="path151"
+     style="display:inline;fill:#ffffff;stroke-width:58"
+     d="M 480,-880 A 400,400 0 0 0 80,-480 400,400 0 0 0 480,-80 400,400 0 0 0 880,-480 400,400 0 0 0 480,-880 Z m -194.65461,218.29769 h 162.0477 l 33.18257,33.18257 h 194.07895 c 8.44741,0 16.07203,3.40719 22.90296,10.23849 6.83129,6.83091 10.2796,14.49667 10.2796,22.94408 v 263.85691 c 0,8.44742 -3.44831,16.07205 -10.2796,22.90295 -6.83093,6.83132 -14.45555,10.27962 -22.90296,10.27962 H 285.34539 c -8.83193,0 -16.59324,-3.4483 -23.23191,-10.27962 -6.63903,-6.8309 -9.95065,-14.45553 -9.95065,-22.90295 v -297.03948 c 0,-8.44742 3.31162,-16.07205 9.95065,-22.90295 6.63867,-6.83132 14.39998,-10.27962 23.23191,-10.27962 z" />
+  <rect
+     style="font-variation-settings:normal;opacity:1;vector-effect:none;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:19.9532;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000;stop-opacity:1"
+     id="rect151"
+     width="500"
+     height="30"
+     x="220"
+     y="-540" />
+</svg>

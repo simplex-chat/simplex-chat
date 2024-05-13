@@ -16,11 +16,12 @@ import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
-import Data.ByteString.Internal (create, memcpy)
+import Data.ByteString.Internal (create)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
+import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (peek)
@@ -42,7 +43,7 @@ import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import System.IO (utf8)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do
@@ -67,6 +68,8 @@ mobileTests = do
       it "no exception on missing file" testMissingFileEncryptionCApi
     describe "validate name" $ do
       it "should convert invalid name to a valid name" testValidNameCApi
+    describe "JSON length" $ do
+      it "should compute length of JSON encoded string" testChatJsonLengthCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -221,8 +224,6 @@ testChatApi tmp = do
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsg cc `shouldReturn` userContactSubSummary
-  chatRecvMsg cc `shouldReturn` memberSubSummary
-  chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
@@ -291,7 +292,7 @@ testFileCApi fileName tmp = do
   peek ptr' `shouldReturn` (0 :: Word8)
   sz :: Word32 <- peek (ptr' `plusPtr` 1)
   let sz' = fromIntegral sz
-  contents <- create sz' $ \toPtr -> memcpy toPtr (ptr' `plusPtr` 5) sz'
+  contents <- create sz' $ \toPtr -> copyBytes toPtr (ptr' `plusPtr` 5) sz'
   contents `shouldBe` src
   sz' `shouldBe` fromIntegral len
 
@@ -354,6 +355,13 @@ testValidNameCApi _ = do
   peekCString cName1 `shouldReturn` goodName
   cName2 <- cChatValidName =<< newCString " @'Джон'  Доу   👍 "
   peekCString cName2 `shouldReturn` goodName
+
+testChatJsonLengthCApi :: FilePath -> IO ()
+testChatJsonLengthCApi _ = do
+  cInt1 <- cChatJsonLength =<< newCString "Hello!"
+  cInt1 `shouldBe` 6
+  cInt2 <- cChatJsonLength =<< newCString "こんにちは！"
+  cInt2 `shouldBe` 18
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

@@ -30,10 +30,11 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
+import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
@@ -143,6 +144,15 @@ markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
 
+containsFormat :: (Format -> Bool) -> Markdown -> Bool
+containsFormat p (Markdown f _) = maybe False p f
+containsFormat p (m1 :|: m2) = containsFormat p m1 || containsFormat p m2
+
+isSimplexLink :: Format -> Bool
+isSimplexLink = \case
+  SimplexLink {} -> True;
+  _ -> False
+
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP
   where
@@ -231,10 +241,10 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat :: AConnectionRequestUri -> Format
     simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
+        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = SSSimplex}
          in SimplexLink (linkType' crData) uri $ uriHosts crData
       ACR _ (CRInvitationUri crData e2e) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
+        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = SSSimplex} e2e
          in SimplexLink XLInvitation uri $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues

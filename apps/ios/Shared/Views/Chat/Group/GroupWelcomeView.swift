@@ -11,29 +11,32 @@ import SimpleXChat
 
 struct GroupWelcomeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @EnvironmentObject private var m: ChatModel
-    var groupId: Int64
     @Binding var groupInfo: GroupInfo
-    @State private var welcomeText: String = ""
+    @State var groupProfile: GroupProfile
+    @State var welcomeText: String
     @State private var editMode = true
     @FocusState private var keyboardVisible: Bool
     @State private var showSaveDialog = false
+
+    let maxByteCount = 1200
 
     var body: some View {
         VStack {
             if groupInfo.canEdit {
                 editorView()
-                    .modifier(BackButton {
-                        if welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil) {
+                    .modifier(BackButton(disabled: Binding.constant(false)) {
+                        if welcomeTextUnchanged() {
                             dismiss()
                         } else {
                             showSaveDialog = true
                         }
                     })
-                    .confirmationDialog("Save welcome message?", isPresented: $showSaveDialog) {
-                        Button("Save and update group profile") {
-                            save()
-                            dismiss()
+                    .confirmationDialog(
+                        welcomeTextFitsLimit() ? "Save welcome message?" : "Welcome message is too long",
+                        isPresented: $showSaveDialog
+                    ) {
+                        if welcomeTextFitsLimit() {
+                            Button("Save and update group profile") { save() }
                         }
                         Button("Exit without saving") { dismiss() }
                     }
@@ -47,15 +50,15 @@ struct GroupWelcomeView: View {
             }
         }
         .onAppear {
-            welcomeText = groupInfo.groupProfile.description ?? ""
-            keyboardVisible = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                keyboardVisible = true
+            }
         }
     }
 
     private func textPreview() -> some View {
-        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
-            .allowsHitTesting(false)
-            .frame(minHeight: 140, alignment: .topLeading)
+        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false)
+            .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -75,7 +78,7 @@ struct GroupWelcomeView: View {
                         }
                         .padding(.horizontal, -5)
                         .padding(.top, -8)
-                        .frame(height: 140, alignment: .topLeading)
+                        .frame(height: 130, alignment: .topLeading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
@@ -94,6 +97,9 @@ struct GroupWelcomeView: View {
                 }
                 .disabled(welcomeText.isEmpty)
                 copyButton()
+            } footer: {
+                Text(!welcomeTextFitsLimit() ? "Message too large" : "")
+                    .foregroundColor(.red)
             }
 
             Section {
@@ -114,7 +120,15 @@ struct GroupWelcomeView: View {
         Button("Save and update group profile") {
             save()
         }
-        .disabled(welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil))
+        .disabled(welcomeTextUnchanged() || !welcomeTextFitsLimit())
+    }
+
+    private func welcomeTextUnchanged() -> Bool {
+        welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil)
+    }
+
+    private func welcomeTextFitsLimit() -> Bool {
+        chatJsonLength(welcomeText) <= maxByteCount
     }
 
     private func save() {
@@ -124,11 +138,13 @@ struct GroupWelcomeView: View {
                 if welcome?.count == 0 {
                     welcome = nil
                 }
-                var groupProfileUpdated = groupInfo.groupProfile
-                groupProfileUpdated.description = welcome
-                groupInfo = try await apiUpdateGroup(groupId, groupProfileUpdated)
-                m.updateGroup(groupInfo)
-                welcomeText = welcome ?? ""
+                groupProfile.description = welcome
+                let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
+                await MainActor.run {
+                    groupInfo = gInfo
+                    ChatModel.shared.updateGroup(gInfo)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("apiUpdateGroup error: \(responseError(error))")
             }
@@ -138,6 +154,6 @@ struct GroupWelcomeView: View {
 
 struct GroupWelcomeView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupWelcomeView(groupId: 1, groupInfo: Binding.constant(GroupInfo.sampleData))
+        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
     }
 }

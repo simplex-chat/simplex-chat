@@ -14,14 +14,14 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
-import chat.simplex.common.model.ChatController
-import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
@@ -40,7 +40,8 @@ fun showApp() {
           WindowExceptionHandler { e ->
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.app_was_crashed),
-              text = e.stackTraceToString()
+              text = e.stackTraceToString(),
+              shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
             window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
@@ -103,7 +104,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   simplexWindowState.windowState = windowState
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
-    Window(state = windowState, onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
+    Window(state = windowState, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
       if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
         simplexWindowState.backstack.lastOrNull()?.invoke() != null
       } else {
@@ -186,7 +187,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
     }
   }
   // Reload all strings in all @Composable's after language change at runtime
-  if (remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
+  if (remember { ChatController.appPrefs.developerTools.state }.value && remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)

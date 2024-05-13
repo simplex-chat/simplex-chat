@@ -5,14 +5,16 @@ import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.ContentScale
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -24,7 +26,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.*
 import kotlinx.serialization.encodeToString
-import java.io.File
 import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
@@ -34,6 +35,37 @@ expect fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 
 object AppearanceScope {
   @Composable
+  fun ProfileImageSection() {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      val image = remember { chatModel.currentUser }.value?.image
+      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        val size = 60
+        Box(Modifier.offset(x = -(size / 12).dp)) {
+          if (!image.isNullOrEmpty()) {
+            ProfileImage(size.dp, image, MR.images.ic_simplex_light, color = Color.Unspecified)
+          } else {
+            ProfileImage(size.dp, if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark)
+          }
+        }
+        Spacer(Modifier.width(DEFAULT_PADDING_HALF - (size / 12).dp))
+        Slider(
+          remember { appPreferences.profileImageCornerRadius.state }.value,
+          valueRange = 0f..50f,
+          steps = 20,
+          onValueChange = {
+            val diff = it % 2.5f
+            appPreferences.profileImageCornerRadius.set(it + (if (diff >= 1.25f) -diff + 2.5f else -diff))
+          },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          )
+        )
+      }
+    }
+  }
+
+  @Composable
   fun ThemesSection(
     systemDarkTheme: SharedPreference<String?>,
     showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -41,7 +73,7 @@ object AppearanceScope {
   ) {
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
-      val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
+      val darkTheme = isSystemInDarkTheme()
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
         ThemeManager.applyTheme(it, darkTheme)
@@ -57,8 +89,8 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
-    Column(
-      Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+    ColumnWithScrollBar(
+      Modifier.fillMaxWidth(),
     ) {
       val currentTheme by CurrentColors.collectAsState()
 
@@ -131,7 +163,7 @@ object AppearanceScope {
         SectionItemView({
           val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme)
           theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
-          withApi { exportThemeLauncher.launch("simplex.theme")}
+          withLongRunningApi { exportThemeLauncher.launch("simplex.theme")}
         }) {
           Text(generalGetString(MR.strings.export_theme), color = colors.primary)
         }
@@ -144,7 +176,7 @@ object AppearanceScope {
           }
         }
         // Can not limit to YAML mime type since it's unsupported by Android
-        SectionItemView({ withApi { importThemeLauncher.launch("*/*") } }) {
+        SectionItemView({ withLongRunningApi { importThemeLauncher.launch("*/*") } }) {
           Text(generalGetString(MR.strings.import_theme), color = colors.primary)
         }
       }
@@ -208,14 +240,17 @@ object AppearanceScope {
       "es" to "Español",
       "fi" to "Suomi",
       "fr" to "Français",
+      "hu" to "Magyar",
       "it" to "Italiano",
       "iw" to "עִברִית",
       "ja" to "日本語",
+      "lt" to "Lietuvių",
       "nl" to "Nederlands",
       "pl" to "Polski",
       "pt-BR" to "Português, Brasil",
       "ru" to "Русский",
       "th" to "ภาษาไทย",
+      "tr" to "Türkçe",
       "uk" to "Українська",
       "zh-CN" to "简体中文"
     )

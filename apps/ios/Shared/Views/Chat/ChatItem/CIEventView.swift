@@ -17,6 +17,7 @@ struct CIEventView: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
         .textSelection(.disabled)
+        .lineLimit(4)
     }
 }
 

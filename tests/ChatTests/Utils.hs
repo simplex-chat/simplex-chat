@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 
 module ChatTests.Utils where
@@ -11,6 +12,9 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
+import Control.Monad.Except (runExceptT)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
@@ -18,22 +22,29 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.Direct (getContact)
+import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv, withArgs)
-import System.FilePath ((</>))
 import System.IO.Silently (capture_)
 import System.Info (os)
-import Test.Hspec
+import Test.Hspec hiding (it)
+import qualified Test.Hspec as Hspec
+import UnliftIO (timeout)
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
@@ -53,11 +64,17 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
-xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+it :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
+it name test =
+  Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
+  where
+    t = 90 * 1000000
+
+xit' :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit it
+xit'' = ifCI xit Hspec.it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
 xdescribe'' = ifCI xdescribe describe
@@ -67,15 +84,19 @@ ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
 
-versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+skip :: String -> SpecWith a -> SpecWith a
+skip = before_ . pendingWith
+
+-- Bool is pqExpected - see testAddContact
+versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "current" $ testChat2 aliceProfile bobProfile runTest
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
-  it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
-  it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
+  it "current" $ testChat2 aliceProfile bobProfile (runTest True)
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix3 runTest = do
@@ -85,29 +106,6 @@ versionTestMatrix3 runTest = do
   it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
   it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
   it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
-
-inlineCfg :: Integer -> ChatConfig
-inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}
-
-fileTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-fileTestMatrix2 runTest = do
-  it "via connection" $ runTestCfg2 viaConn viaConn runTest
-  it "inline (accepting)" $ runTestCfg2 inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg2 inline viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg2 viaConn inline runTest
-  where
-    inline = inlineCfg 100
-    viaConn = inlineCfg 0
-
-fileTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-fileTestMatrix3 runTest = do
-  it "via connection" $ runTestCfg3 viaConn viaConn viaConn runTest
-  it "inline" $ runTestCfg3 inline inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg3 inline viaConn viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg3 viaConn inline inline runTest
-  where
-    inline = inlineCfg 100
-    viaConn = inlineCfg 0
 
 runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 runTestCfg2 aliceCfg bobCfg runTest tmp =
@@ -180,6 +178,65 @@ cc #$> (cmd, f, res) = do
   cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
 
+-- / PQ combinators
+
+(\#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(\#>) = sndRcv PQEncOff False
+
+(+#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(+#>) = sndRcv PQEncOn False
+
+(++#>) :: HasCallStack => (TestCC, String) -> TestCC -> IO ()
+(++#>) = sndRcv PQEncOn True
+
+sndRcv :: HasCallStack => PQEncryption -> Bool -> (TestCC, String) -> TestCC -> IO ()
+sndRcv pqEnc enabled (cc1, msg) cc2 = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  let cmd = "@" <> name2 <> " " <> msg
+  cc1 `send` cmd
+  when enabled $ cc1 <## (name2 <> ": quantum resistant end-to-end encryption enabled")
+  cc1 <# cmd
+  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
+  when enabled $ cc2 <## (name1 <> ": quantum resistant end-to-end encryption enabled")
+  cc2 <# (name1 <> "> " <> msg)
+  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
+
+(\:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+(\:#>) = sndRcvImg PQEncOff False
+
+(+:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+(+:#>) = sndRcvImg PQEncOn False
+
+(++:#>) :: HasCallStack => (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+(++:#>) = sndRcvImg PQEncOn True
+
+sndRcvImg :: HasCallStack => PQEncryption -> Bool -> (TestCC, String, VersionChat) -> (TestCC, VersionChat) -> IO ()
+sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  g <- C.newRandom
+  img <- atomically $ B64.encode <$> C.randomBytes lrgLen g
+  cc1 `send` ("/_send @2 json {\"msgContent\":{\"type\":\"image\",\"text\":\"" <> msg <> "\",\"image\":\"" <> B.unpack img <> "\"}}")
+  cc1 .<## "}}"
+  cc1 <### ([ConsoleString (name2 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime ("@" <> name2 <> " " <> msg)])
+  cc1 `pqSndForContact` 2 `shouldReturn` pqEnc
+  cc1 `pqVerForContact` 2 `shouldReturn` v1
+  cc2 <### ([ConsoleString (name1 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime (name1 <> "> " <> msg)])
+  cc2 `pqRcvForContact` 2 `shouldReturn` pqEnc
+  cc2 `pqVerForContact` 2 `shouldReturn` v2
+  where
+    lrgLen = maxEncodedMsgLength * 3 `div` 4 - 110 -- 98 is ~ max size for binary image preview given the rest of the message
+
+genProfileImg :: IO ByteString
+genProfileImg = do
+  g <- C.newRandom
+  atomically $ B64.encode <$> C.randomBytes lrgLen g
+  where
+    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
+
+-- PQ combinators /
+
 chat :: String -> [(Int, String)]
 chat = map (\(a, _, _) -> a) . chat''
 
@@ -203,12 +260,19 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' =
-  [ ((0, "Disappearing messages: allowed"), Nothing, Nothing),
+  [ ((0, e2eeInfoPQStr), Nothing, Nothing),
+    ((0, "Disappearing messages: allowed"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
     ((0, "Voice messages: enabled"), Nothing, Nothing),
     ((0, "Audio/video calls: enabled"), Nothing, Nothing)
   ]
+
+e2eeInfoNoPQStr :: String
+e2eeInfoNoPQStr = T.unpack e2eInfoNoPQText
+
+e2eeInfoPQStr :: String
+e2eeInfoPQStr = T.unpack e2eInfoPQText
 
 lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
@@ -218,13 +282,15 @@ groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures'' =
-  [ ((0, "Disappearing messages: off"), Nothing, Nothing),
+  [ ((0, e2eeInfoNoPQStr), Nothing, Nothing),
+    ((0, "Disappearing messages: off"), Nothing, Nothing),
     ((0, "Direct messages: on"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
-    ((0, "Files and media: on"), Nothing, Nothing)
-    -- ((0, "Recent history: on"), Nothing, Nothing)
+    ((0, "Files and media: on"), Nothing, Nothing),
+    ((0, "SimpleX links: on"), Nothing, Nothing),
+    ((0, "Recent history: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -286,6 +352,11 @@ cc <##.. ls = do
   let prefix = any (`isPrefixOf` l) ls
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
+
+(/*) :: HasCallStack => TestCC -> String -> IO ()
+cc /* note = do
+  cc `send` ("/* " <> note)
+  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
 
 data ConsoleResponse
   = ConsoleString String
@@ -462,11 +533,45 @@ withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCTransaction cc action =
   withTransaction (chatStore $ chatController cc) $ \db -> action db
 
+createCCNoteFolder :: TestCC -> IO ()
+createCCNoteFolder cc =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (createNoteFolder db user) >>= either (fail . show) pure
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
     maybeFirstRow fromOnly $
       DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+
+pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
+pqSndForContact = pqForContact_ pqSndEnabled PQEncOff
+
+pqRcvForContact :: TestCC -> ContactId -> IO PQEncryption
+pqRcvForContact = pqForContact_ pqRcvEnabled PQEncOff
+
+pqForContact :: TestCC -> ContactId -> IO PQEncryption
+pqForContact = pqForContact_ (Just . connPQEnabled) (error "impossible")
+
+pqSupportForCt :: TestCC -> ContactId -> IO PQSupport
+pqSupportForCt = pqForContact_ (\Connection {pqSupport} -> Just pqSupport) PQSupportOff
+
+pqVerForContact :: TestCC -> ContactId -> IO VersionChat
+pqVerForContact = pqForContact_ (Just . connChatVersion) (error "impossible")
+
+pqForContact_ :: (Connection -> Maybe a) -> a -> TestCC -> ContactId -> IO a
+pqForContact_ pqSel def cc contactId = (fromMaybe def . pqSel) <$> getCtConn cc contactId
+
+getCtConn :: TestCC -> ContactId -> IO Connection
+getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no connection") pure . contactConn
+
+getTestCCContact :: TestCC -> ContactId -> IO Contact
+getTestCCContact cc contactId = do
+  let TestCC {chatController = ChatController {config = ChatConfig {chatVRange = vr}}} = cc
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db vr user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
@@ -574,25 +679,11 @@ checkActionDeletesFile file action = do
   fileExistsAfter <- doesFileExist file
   fileExistsAfter `shouldBe` False
 
-startFileTransferWithDest' :: HasCallStack => TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
-startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  cc1 #> ("/f @" <> name2 <> " ./tests/fixtures/" <> fileName)
-  cc1 <## "use /fc 1 to cancel sending"
-  cc2 <# (name1 <> "> sends file " <> fileName <> " (" <> fileSize <> ")")
-  cc2 <## "use /fr 1 [<dir>/ | <path>] to receive it"
-  cc2 ##> ("/fr 1" <> maybe "" (" " <>) fileDest_)
-  cc2 <## ("saving file 1 from " <> name1 <> " to " <> maybe id (</>) fileDest_ fileName)
-  concurrently_
-    (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
-    (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
-
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
   "peer chat protocol version range: " <> vRangeStr supportedChatVRange
 
-vRangeStr :: VersionRange -> String
+vRangeStr :: VersionRange v -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"
 
 linkAnotherSchema :: String -> String
@@ -605,3 +696,12 @@ linkAnotherSchema link
 
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+
+setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
+setRelativePaths cc filesFolder tempFolder = do
+  cc ##> "/_stop"
+  cc <## "chat stopped"
+  cc #$> ("/_files_folder " <> filesFolder, id, "ok")
+  cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
+  cc ##> "/_start"
+  cc <## "chat started"

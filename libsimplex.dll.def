@@ -3,6 +3,7 @@ EXPORTS
     hs_init
     hs_init_with_rtsopts
     chat_migrate_init
+    chat_close_store
     chat_send_cmd
     chat_send_remote_cmd
     chat_recv_msg
@@ -11,6 +12,7 @@ EXPORTS
     chat_parse_server
     chat_password_hash
     chat_valid_name
+    chat_json_length
     chat_encrypt_media
     chat_decrypt_media
     chat_write_file

@@ -1,0 +1,18 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "A SimpleX-nek kamera-hozzáférésre van szüksége a QR-kódok beolvasásához, hogy kapcsolódhasson más felhasználókhoz és videohívásokhoz.";
+
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "A SimpleX Face ID-t használ a helyi hitelesítéshez";
+
+/* Privacy - Local Network Usage Description */
+"NSLocalNetworkUsageDescription" = "A SimpleX helyi hálózati hozzáférést használ, hogy lehetővé tegye a felhasználói csevegőprofil használatát számítógépen keresztül ugyanazon a hálózaton.";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "A SimpleX-nek mikrofon-hozzáférésre van szüksége hang- és videohívásokhoz, valamint hangüzenetek rögzítéséhez.";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "A SimpleX-nek hozzáférésre van szüksége a Galériához a rögzített és fogadott média mentéséhez";
+

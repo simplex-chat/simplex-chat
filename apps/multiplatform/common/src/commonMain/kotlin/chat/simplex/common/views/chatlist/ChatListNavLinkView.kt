@@ -24,28 +24,26 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
 import chat.simplex.common.views.chat.group.leaveGroupDialog
-import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
-import java.net.URI
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
+fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
-  val stopped = chatModel.chatRunning.value == false
+  val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
   val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
   LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
   }
-  val selectedChat = remember(chat.id) { derivedStateOf { chat.id == ChatModel.chatId.value } }
+  val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
   val showChatPreviews = chatModel.showChatPreviews.value
   val inProgress = remember { mutableStateOf(false) }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
@@ -64,7 +62,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode, inProgress = false, progressByTimeout = false)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
         click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
@@ -74,15 +72,16 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         showMenu,
-        stopped,
-        selectedChat
+        disabled,
+        selectedChat,
+        nextChatSelected,
       )
     }
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode, inProgress.value, progressByTimeout)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
           }
         },
         click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
@@ -92,9 +91,29 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         showMenu,
-        stopped,
-        selectedChat
+        disabled,
+        selectedChat,
+        nextChatSelected,
       )
+    is ChatInfo.Local -> {
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
+          }
+        },
+        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        dropdownMenuItems = {
+          tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
+            NoteFolderMenuItems(chat, showMenu, showMarkRead)
+          }
+        },
+        showMenu,
+        disabled,
+        selectedChat,
+        nextChatSelected,
+      )
+    }
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
         chatLinkPreview = {
@@ -109,8 +128,9 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         showMenu,
-        stopped,
-        selectedChat
+        disabled,
+        selectedChat,
+        nextChatSelected,
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -120,11 +140,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         click = {
-          ModalManager.center.closeModals()
-          ModalManager.end.closeModals()
-          ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
-            ContactConnectionInfoView(chatModel, chat.remoteHostId, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
-          }
+          chatModel.chatId.value = chat.id
         },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
@@ -132,8 +148,9 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         showMenu,
-        stopped,
-        selectedChat
+        disabled,
+        selectedChat,
+        nextChatSelected,
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -143,13 +160,13 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         click = {
-          ModalManager.end.closeModals()
-          ModalManager.center.showModal(true) { InvalidJSONView(chat.chatInfo.json) }
+          chatModel.chatId.value = chat.id
         },
         dropdownMenuItems = null,
         showMenu,
-        stopped,
-        selectedChat
+        disabled,
+        selectedChat,
+        nextChatSelected,
       )
   }
 }
@@ -176,6 +193,10 @@ fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inP
   }
 }
 
+fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
+  withBGApi { openChat(rhId, ChatInfo.Local(noteFolder), chatModel) }
+}
+
 suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
   if (chat != null) {
@@ -191,18 +212,15 @@ suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) {
 }
 
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
-  Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
     openLoadedChat(chat, chatModel)
-    Log.d(TAG, "TODOCHAT: openChat: opened ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   }
 }
 
 fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
-  chatModel.chatItems.clear()
   chatModel.chatItemStatuses.clear()
-  chatModel.chatItems.addAll(chat.chatItems)
+  chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
 }
 
@@ -218,8 +236,7 @@ suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
   val chatInfo = ch.chatInfo
   val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
   if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.clear()
-  chatModel.chatItems.addAll(0, chat.chatItems)
+  chatModel.chatItems.replaceAll(chat.chatItems)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
@@ -249,7 +266,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-    ClearChatAction(chat, chatModel, showMenu)
+    ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
 }
@@ -288,7 +305,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-      ClearChatAction(chat, chatModel, showMenu)
+      ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
@@ -297,6 +314,16 @@ fun GroupMenuItems(
       }
     }
   }
+}
+
+@Composable
+fun NoteFolderMenuItems(chat: Chat, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
+    MarkReadChatAction(chat, chatModel, showMenu)
+  } else {
+    MarkUnreadChatAction(chat, chatModel, showMenu)
+  }
+  ClearNoteFolderAction(chat, showMenu)
 }
 
 @Composable
@@ -349,12 +376,25 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 }
 
 @Composable
-fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ClearChatAction(chat: Chat, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.clear_chat_menu_action),
     painterResource(MR.images.ic_settings_backup_restore),
     onClick = {
-      clearChatDialog(chat, chatModel)
+      clearChatDialog(chat)
+      showMenu.value = false
+    },
+    color = WarningOrange
+  )
+}
+
+@Composable
+fun ClearNoteFolderAction(chat: Chat, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.clear_chat_menu_action),
+    painterResource(MR.images.ic_settings_backup_restore),
+    onClick = {
+      clearNoteFolderDialog(chat)
       showMenu.value = false
     },
     color = WarningOrange
@@ -396,7 +436,7 @@ fun JoinGroupAction(
   inProgress: MutableState<Boolean>
 ) {
   val joinGroup: () -> Unit = {
-    withApi {
+    withBGApi {
       inProgress.value = true
       chatModel.controller.apiJoinGroup(chat.remoteHostId, groupInfo.groupId)
       inProgress.value = false
@@ -476,10 +516,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactConnectionAlert(rhId, chatInfo.contactConnection, chatModel) {
-        if (chatModel.chatId.value == null) {
-          ModalManager.center.closeModals()
-          ModalManager.end.closeModals()
-        }
+        chatModel.dismissConnReqView(chatInfo.contactConnection.id)
       }
       showMenu.value = false
     },
@@ -586,7 +623,7 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
 }
 
 fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
@@ -596,7 +633,7 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 }
 
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
     chatModel.removeChat(rhId, contactRequest.id)
   }
@@ -611,7 +648,7 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
     ),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(rhId, connection.id)
@@ -630,7 +667,7 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
     text = generalGetString(MR.strings.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
     confirmText = generalGetString(MR.strings.button_delete_contact),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(rhId, chatInfo.id)
@@ -659,7 +696,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
       Column {
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
-          withApi {
+          withBGApi {
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
             if (ok && openChat) {
@@ -671,7 +708,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
         }
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
-          withApi {
+          withBGApi {
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
             if (ok && openChat) {
@@ -712,7 +749,7 @@ fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatMode
     text = generalGetString(MR.strings.you_are_invited_to_group_join_to_connect_with_group_members),
     confirmText = if (groupInfo.membership.memberIncognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
     onConfirm = {
-      withApi {
+      withBGApi {
         inProgress?.value = true
         chatModel.controller.apiJoinGroup(rhId, groupInfo.groupId)
         inProgress?.value = false
@@ -733,7 +770,7 @@ fun cantInviteIncognitoAlert() {
 }
 
 fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(rhId, groupInfo.id)
@@ -774,7 +811,7 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
     }
     else -> null
   }
-  withApi {
+  withBGApi {
     val res = when (newChatInfo) {
       is ChatInfo.Direct -> with(newChatInfo) {
         chatModel.controller.apiSetSettings(chat.remoteHostId, chatType, apiId, contact.chatSettings)
@@ -803,8 +840,9 @@ expect fun ChatListNavLinkLayout(
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
-  stopped: Boolean,
-  selectedChat: State<Boolean>
+  disabled: Boolean,
+  selectedChat: State<Boolean>,
+  nextChatSelected: State<Boolean>,
 )
 
 @Preview/*(
@@ -836,7 +874,7 @@ fun PreviewChatListNavLinkDirect() {
           null,
           null,
           null,
-          stopped = false,
+          disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false
@@ -845,8 +883,9 @@ fun PreviewChatListNavLinkDirect() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
-      selectedChat = remember { mutableStateOf(false) }
+      disabled = false,
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) }
     )
   }
 }
@@ -880,7 +919,7 @@ fun PreviewChatListNavLinkGroup() {
           null,
           null,
           null,
-          stopped = false,
+          disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false
@@ -889,8 +928,9 @@ fun PreviewChatListNavLinkGroup() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
-      selectedChat = remember { mutableStateOf(false) }
+      disabled = false,
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) }
     )
   }
 }
@@ -910,8 +950,9 @@ fun PreviewChatListNavLinkContactRequest() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
-      selectedChat = remember { mutableStateOf(false) }
+      disabled = false,
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) }
     )
   }
 }

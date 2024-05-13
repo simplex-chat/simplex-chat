@@ -2,8 +2,7 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.withBGApi
+import chat.simplex.common.views.helpers.*
 import java.util.*
 import chat.simplex.res.MR
 
@@ -26,17 +25,16 @@ fun initApp() {
     override fun showMessage(title: String, text: String) = chat.simplex.common.model.NtfManager.showMessage(title, text)
   }
   applyAppLocale()
-  withBGApi {
-    initChatController()
-    runMigrations()
+  if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+    initChatControllerAndRunMigrations()
   }
   // LALAL
   //testCrypto()
 }
 
-fun discoverVlcLibs(path: String) {
-  uk.co.caprica.vlcj.binding.LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path, 1)
-}
+//fun discoverVlcLibs(path: String) {
+//  uk.co.caprica.vlcj.binding.LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path, 1)
+//}
 
 private fun applyAppLocale() {
   val lang = ChatController.appPrefs.appLanguage.get()

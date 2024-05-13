@@ -8,6 +8,7 @@
 module Simplex.Chat.Options
   ( ChatOpts (..),
     CoreChatOpts (..),
+    ChatCmdLog (..),
     chatOptsP,
     coreChatOptsP,
     getChatOpts,
@@ -37,8 +38,10 @@ data ChatOpts = ChatOpts
     deviceName :: Maybe Text,
     chatCmd :: String,
     chatCmdDelay :: Int,
+    chatCmdLog :: ChatCmdLog,
     chatServerPort :: Maybe String,
     optFilesFolder :: Maybe FilePath,
+    optTempDirectory :: Maybe FilePath,
     showReactions :: Bool,
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
@@ -61,6 +64,9 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     highlyAvailable :: Bool
   }
+
+data ChatCmdLog = CCLAll | CCLMessages | CCLNone
+  deriving (Eq)
 
 agentLogLevel :: ChatLogLevel -> LogLevel
 agentLogLevel = \case
@@ -229,6 +235,14 @@ chatOptsP appDir defaultDbFileName = do
           <> value 3
           <> showDefault
       )
+  chatCmdLog <-
+    option
+      parseChatCmdLog
+      ( long "execute-log"
+          <> metavar "EXEC_LOG"
+          <> help "Log during command execution: all, messages, none (default)"
+          <> value CCLNone
+      )
   chatServerPort <-
     option
       parseServerPort
@@ -244,6 +258,13 @@ chatOptsP appDir defaultDbFileName = do
         ( long "files-folder"
             <> metavar "FOLDER"
             <> help "Folder to use for sent and received files"
+        )
+  optTempDirectory <-
+    optional $
+      strOption
+        ( long "temp-folder"
+            <> metavar "FOLDER"
+            <> help "Folder for temporary encrypted files (default: system temp directory)"
         )
   showReactions <-
     switch
@@ -288,8 +309,10 @@ chatOptsP appDir defaultDbFileName = do
         deviceName,
         chatCmd,
         chatCmdDelay,
+        chatCmdLog,
         chatServerPort,
         optFilesFolder,
+        optTempDirectory,
         showReactions,
         allowInstantFiles,
         autoAcceptFileSize,
@@ -326,6 +349,13 @@ parseLogLevel = eitherReader $ \case
   "error" -> Right CLLError
   "important" -> Right CLLImportant
   _ -> Left "Invalid log level"
+
+parseChatCmdLog :: ReadM ChatCmdLog
+parseChatCmdLog = eitherReader $ \case
+  "all" -> Right CCLAll
+  "messages" -> Right CCLMessages
+  "none" -> Right CCLNone
+  _ -> Left "Invalid chat command log level"
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =

@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -13,10 +14,13 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Types.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do
@@ -67,6 +71,12 @@ chatProfileTests = do
     xit'' "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
     xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
+    it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
+    describe "group preferences for specific member role" $ do
+      it "direct messages" testGroupPrefsDirectForRole
+      it "files & media" testGroupPrefsFilesForRole
+      it "SimpleX links" testGroupPrefsSimplexLinksForRole
+    it "set user, contact and group UI theme" testSetUITheme
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
@@ -178,10 +188,12 @@ testMultiWordProfileNames =
       alice <# "#'Our Team' 'Bob James'> hi"
       cath <# "#'Our Team' 'Bob James'> hi"
       alice `send` "@'Cath Johnson' hello"
-      alice <## "member #'Our Team' 'Cath Johnson' does not have direct connection, creating"
-      alice <## "contact for member #'Our Team' 'Cath Johnson' is created"
-      alice <## "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'"
-      alice <# "@'Cath Johnson' hello"
+      alice
+        <### [ "member #'Our Team' 'Cath Johnson' does not have direct connection, creating",
+               "contact for member #'Our Team' 'Cath Johnson' is created",
+               "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'",
+               WithTime "@'Cath Johnson' hello"
+             ]
       cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
       cath <# "'Alice Jones'> hello"
       cath <## "'Alice Jones': contact is connected"
@@ -299,6 +311,7 @@ testProfileLink =
       cc <## ("contact address: " <> cLink)
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
+      cc <## "quantum resistant end-to-end encryption"
       cc <## currentChatVRangeInfo
     checkAliceNoProfileLink cc = do
       cc ##> "/info alice"
@@ -307,6 +320,7 @@ testProfileLink =
       cc <##. "sending messages via"
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
+      cc <## "quantum resistant end-to-end encryption"
       cc <## currentChatVRangeInfo
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
@@ -1492,7 +1506,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
 
 testSetContactPrefs :: HasCallStack => FilePath -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
+  \alice bob -> withXFTPServer $ do
     alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
     bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
     createDirectoryIfMissing True "./tests/tmp/alice"
@@ -1508,7 +1522,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    let startFeatures = [(0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
+    let startFeatures = [(0, e2eeInfoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
     let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
@@ -1527,15 +1541,24 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you")])
     alice ##> sendVoice
     alice <## voiceNotAllowed
+
+    -- sending voice message allowed
     bob ##> sendVoice
     bob <# "@alice voice message (00:10)"
     bob <# "/f @alice test.txt"
-    bob <## "completed sending file 1 (test.txt) to alice"
+    bob <## "use /fc 1 to cancel sending"
     alice <# "bob> voice message (00:10)"
     alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
-    alice <## "started receiving file 1 (test.txt) from bob"
+    alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "completed uploading file 1 (test.txt) for alice"
+    alice ##> "/fr 1"
+    alice
+      <### [ "saving file 1 from bob to test_1.txt",
+             "started receiving file 1 (test.txt) from bob"
+           ]
     alice <## "completed receiving file 1 (test.txt) from bob"
     (bob </)
+
     -- alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice ##> "/set voice no"
     alice <## "updated preferences:"
@@ -1558,7 +1581,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
     alice <## "Voice messages: enabled (you allow: yes, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled")])
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled")])
     (alice </)
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
@@ -1569,7 +1592,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "Voice messages: off (you allow: no, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
@@ -1598,13 +1621,13 @@ testUpdateGroupPrefs =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected")])
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
@@ -1614,7 +1637,7 @@ testUpdateGroupPrefs =
       alice <## "updated group preferences:"
       alice <## "Full deletion: off"
       alice <## "Voice messages: off"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: off"
@@ -1624,7 +1647,7 @@ testUpdateGroupPrefs =
       alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
       alice <## "Voice messages: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Voice messages: on"
@@ -1634,14 +1657,14 @@ testUpdateGroupPrefs =
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       -- no update
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1000000
       bob #> "#team hi"
       alice <# "#team bob> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
 testAllowFullDeletionContact :: HasCallStack => FilePath -> IO ()
@@ -1667,7 +1690,7 @@ testAllowFullDeletionGroup =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      threadDelay 1000000
+      threadDelay 1500000
       alice #> "#team hi"
       bob <# "#team alice> hi"
       threadDelay 1000000
@@ -1681,11 +1704,11 @@ testAllowFullDeletionGroup =
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (1, "hey"), (0, "Full deletion: on")])
       bob #$> ("/_delete item #1 " <> msgItemId <> " broadcast", id, "message deleted")
       alice <# "#team bob> [deleted] hey"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
 
 testProhibitDirectMessages :: HasCallStack => FilePath -> IO ()
@@ -1807,12 +1830,12 @@ testEnableTimedMessagesGroup =
       alice #> "#team hi"
       bob <# "#team alice> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "hi")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       bob <## "timed message deleted: hi"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)")])
       -- turn off, messages are not disappearing
       alice ##> "/set disappear #team off"
@@ -1825,7 +1848,7 @@ testEnableTimedMessagesGroup =
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1500000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "Disappearing messages: off"), (0, "hey")])
       -- test api
       alice ##> "/set disappear #team on 30s"
@@ -1864,3 +1887,200 @@ testTimedMessagesEnabledGlobally =
       bob <## "timed message deleted: hey"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
+
+testUpdateMultipleUserPrefs :: HasCallStack => FilePath -> IO ()
+testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    connectUsers alice bob
+    alice #> "@bob hi bob"
+    bob <# "alice> hi bob"
+
+    connectUsers alice cath
+    alice #> "@cath hi cath"
+    cath <# "alice> hi cath"
+
+    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"reactions\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    alice <## "updated preferences:"
+    alice <## "Full deletion allowed: always"
+    alice <## "Message reactions allowed: no"
+
+    bob <## "alice updated preferences for you:"
+    bob <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
+    bob <## "Message reactions: off (you allow: default (yes), contact allows: no)"
+
+    cath <## "alice updated preferences for you:"
+    cath <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
+    cath <## "Message reactions: off (you allow: default (yes), contact allows: no)"
+
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi bob"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
+    alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "hi cath"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
+
+testGroupPrefsDirectForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danProfile $
+  \alice bob cath dan -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set direct #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Direct messages: on for owners"
+    directForOwners bob
+    directForOwners cath
+    threadDelay 1000000
+    bob ##> "@cath hello again"
+    bob <## "bad chat command: direct messages not allowed"
+    (cath </)
+
+    connectUsers cath dan
+    addMember "team" cath dan GRMember
+    dan ##> "/j #team"
+    concurrentlyN_
+      [ cath <## "#team: dan joined the group",
+        do
+          dan <## "#team: you joined the group"
+          dan
+            <### [ "#team: member alice (Alice) is connected",
+                   "#team: member bob (Bob) is connected"
+                 ],
+        do
+          alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
+          alice <## "#team: new member dan is connected",
+        do
+          bob <## "#team: cath added dan (Daniel) to the group (connecting...)"
+          bob <## "#team: new member dan is connected"
+      ]
+    -- dan cannot send direct messages to alice (owner)
+    dan ##> "@alice hello alice"
+    dan <## "bad chat command: direct messages not allowed"
+    (alice </)
+    -- but alice can
+    alice `send` "@dan hello dan"
+    alice <## "member #team dan does not have direct connection, creating"
+    alice <## "contact for member #team dan is created"
+    alice <## "sent invitation to connect directly to member #team dan"
+    alice <# "@dan hello dan"
+    alice <## "dan (Daniel): contact is connected"
+    dan <## "#team alice is creating direct contact alice with you"
+    dan <# "alice> hello dan"
+    dan <## "alice (Alice): contact is connected"
+    -- and now dan can too
+    dan #> "@alice hi alice"
+    alice <# "dan> hi alice"
+  where
+    directForOwners :: HasCallStack => TestCC -> IO ()
+    directForOwners cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Direct messages: on for owners"
+
+testGroupPrefsFilesForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> withXFTPServer $ do
+    alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
+    bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
+    createDirectoryIfMissing True "./tests/tmp/alice"
+    createDirectoryIfMissing True "./tests/tmp/bob"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test1.txt"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test2.txt"
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set files #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Files and media: on for owners"
+    filesForOwners bob
+    filesForOwners cath
+    threadDelay 1000000
+    bob ##> "/f #team test2.txt"
+    bob <## "bad chat command: feature not allowed Files and media"
+    (alice </)
+    (cath </)
+    alice #> "/f #team test1.txt"
+    alice <## "use /fc 1 to cancel sending"
+    alice <## "completed uploading file 1 (test1.txt) for #team"
+    bob <# "#team alice> sends file test1.txt (11 bytes / 11 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    cath <# "#team alice> sends file test1.txt (11 bytes / 11 bytes)"
+    cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  where
+    filesForOwners :: HasCallStack => TestCC -> IO ()
+    filesForOwners cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Files and media: on for owners"
+
+testGroupPrefsSimplexLinksForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> withXFTPServer $ do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set links #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "SimpleX links: on for owners"
+    linksForOwners bob
+    linksForOwners cath
+    threadDelay 1000000
+    bob ##> "/c"
+    inv <- getInvitation bob
+    bob ##> ("#team " <> inv)
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    (alice </)
+    (cath </)
+    alice #> ("#team " <> inv)
+    bob <# ("#team alice> " <> inv)
+    cath <# ("#team alice> " <> inv)
+  where
+    linksForOwners :: HasCallStack => TestCC -> IO ()
+    linksForOwners cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "SimpleX links: on for owners"
+
+testSetUITheme :: HasCallStack => FilePath -> IO ()
+testSetUITheme =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice #$> ("/_set theme user 1 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme @2 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme #1 " <> theme UCMDark, id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/create user alice2"
+    userInfo alice "alice2"
+    alice ##> "/u alice"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/i #team"
+    groupInfo alice
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice #$> ("/_set theme user 1", id, "ok")
+    alice #$> ("/_set theme @2", id, "ok")
+    alice #$> ("/_set theme #1", id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice ##> "/i #team"
+    groupInfo alice
+  where
+    theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors}
+    userInfo a name = do
+      a <## ("user profile: " <> name)
+      a <## "use /p <display name> to change it"
+      a <## "(the updated profile will be sent to all your contacts)"
+    contactInfo a = do
+      a <## "contact ID: 2"
+      a <## "receiving messages via: localhost"
+      a <## "sending messages via: localhost"
+      a <## "you've shared main profile with this contact"
+      a <## "connection not verified, use /code command to see security code"
+      a <## "quantum resistant end-to-end encryption"
+      a <## "peer chat protocol version range: (Version 1, Version 8)"
+    groupInfo a = do
+      a <## "group ID: 1"
+      a <## "current members: 1"

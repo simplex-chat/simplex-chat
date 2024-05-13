@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.AppScreen
+import chat.simplex.common.model.clear
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.*
 import androidx.compose.ui.platform.LocalContext as LocalContext1
 import chat.simplex.res.MR
@@ -65,10 +67,13 @@ actual fun getKeyboardState(): State<KeyboardState> {
   return keyboardState
 }
 
-actual fun hideKeyboard(view: Any?) {
+actual fun hideKeyboard(view: Any?, clearFocus: Boolean) {
   // LALAL
   //  LocalSoftwareKeyboardController.current?.hide()
   if (view is View) {
+    if (clearFocus) {
+      view.clearFocus()
+    }
     (androidAppContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
   }
 }
@@ -97,12 +102,14 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
       mainActivity.get()?.recreate()
     } else {
       mainActivity.get()?.apply {
-        window
-          ?.decorView
-          ?.findViewById<ViewGroup>(android.R.id.content)
-          ?.removeViewAt(0)
-        setContent {
-          AppScreen()
+        runOnUiThread {
+          window
+            ?.decorView
+            ?.findViewById<ViewGroup>(android.R.id.content)
+            ?.removeViewAt(0)
+          setContent {
+            AppScreen()
+          }
         }
       }
     }
@@ -110,7 +117,8 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
     Handler(Looper.getMainLooper()).post {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.app_was_crashed),
-        text = e.stackTraceToString()
+        text = e.stackTraceToString(),
+        shareText = true
       )
     }
   }

@@ -13,7 +13,7 @@ expect fun LocalMultiplatformView(): Any?
 
 @Composable
 expect fun getKeyboardState(): State<KeyboardState>
-expect fun hideKeyboard(view: Any?)
+expect fun hideKeyboard(view: Any?, clearFocus: Boolean = false)
 
 expect fun androidIsFinishingMainActivity(): Boolean
 

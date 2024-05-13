@@ -1,15 +1,20 @@
 package chat.simplex.common.views.helpers
 
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
-import java.io.*
+import kotlinx.coroutines.delay
+import java.io.ByteArrayInputStream
+import java.io.File
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
@@ -17,6 +22,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
+private val uStyle = SpanStyle(textDecoration = TextDecoration.Underline)
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -54,6 +60,22 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
               }
               break
             }
+            text.substringSafe(innerI, 2) == "u>" -> {
+              val textStart = innerI + 2
+              for (insideTagI in textStart until text.length) {
+                if (text[insideTagI] == '<') {
+                  withStyle(uStyle) { append(text.substring(textStart, insideTagI)) }
+                  skipTil = insideTagI + 4
+                  break
+                }
+              }
+              break
+            }
+            text.substringSafe(innerI, 3) == "br>" -> {
+              val textStart = innerI + 3
+              append("\n")
+              skipTil = textStart
+            }
             text.substringSafe(innerI, 4) == "font" -> {
               var textStart = innerI + 5
               var color = "#000000"
@@ -83,6 +105,18 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
   }
 } catch (e: Exception) {
   AnnotatedString(text)
+}
+
+@Composable
+actual fun SetupClipboardListener() {
+  val clipboard = LocalClipboardManager.current
+  chatModel.clipboardHasText.value = clipboard.hasText()
+  LaunchedEffect(Unit) {
+    while (true) {
+      delay(1000)
+      chatModel.clipboardHasText.value = clipboard.hasText()
+    }
+  }
 }
 
 actual fun getAppFileUri(fileName: String): URI {

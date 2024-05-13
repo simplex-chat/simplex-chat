@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.group
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
+import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
@@ -14,7 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -26,8 +29,13 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatJsonLength
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
+
+private const val maxByteCount = 1200
 
 @Composable
 fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () -> Unit) {
@@ -35,7 +43,7 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
   val welcomeText = remember { mutableStateOf(gInfo.groupProfile.description ?: "") }
 
   fun save(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       var welcome: String? = welcomeText.value.trim('\n', ' ')
       if (welcome?.length == 0) {
         welcome = null
@@ -53,8 +61,11 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
 
   ModalView(
     close = {
-      if (welcomeText.value == gInfo.groupProfile.description || (welcomeText.value == "" && gInfo.groupProfile.description == null)) close()
-      else showUnsavedChangesAlert({ save(close) }, close)
+      when {
+        welcomeTextUnchanged(welcomeText, gInfo) -> close()
+        !welcomeTextFitsLimit(welcomeText) -> showUnsavedChangesTooLongAlert(close)
+        else -> showUnsavedChangesAlert({ save(close) }, close)
+      }
     },
   ) {
     GroupWelcomeLayout(
@@ -66,6 +77,14 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
   }
 }
 
+private fun welcomeTextUnchanged(welcomeText: MutableState<String>, groupInfo: GroupInfo): Boolean {
+  return welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)
+}
+
+private fun welcomeTextFitsLimit(welcomeText: MutableState<String>): Boolean {
+  return chatJsonLength(welcomeText.value) <= maxByteCount
+}
+
 @Composable
 private fun GroupWelcomeLayout(
   welcomeText: MutableState<String>,
@@ -73,8 +92,8 @@ private fun GroupWelcomeLayout(
   linkMode: SimplexLinkMode,
   save: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(MR.strings.group_welcome_title))
@@ -94,6 +113,13 @@ private fun GroupWelcomeLayout(
       } else {
         TextPreview(wt.value, linkMode)
       }
+      SectionTextFooter(
+        if (!welcomeTextFitsLimit(wt)) { generalGetString(MR.strings.message_too_large) } else "",
+        color = if (welcomeTextFitsLimit(wt)) MaterialTheme.colors.secondary else Color.Red
+      )
+
+      Spacer(Modifier.size(8.dp))
+
       ChangeModeButton(
         editMode.value,
         click = {
@@ -103,10 +129,18 @@ private fun GroupWelcomeLayout(
       )
       val clipboard = LocalClipboardManager.current
       CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
-      SectionDividerSpaced(maxBottomPadding = false)
+
+      Divider(
+        Modifier.padding(
+          start = DEFAULT_PADDING_HALF,
+          top = 8.dp,
+          end = DEFAULT_PADDING_HALF,
+          bottom = 8.dp)
+      )
+
       SaveButton(
         save = save,
-        disabled = wt.value == groupInfo.groupProfile.description || (wt.value == "" && groupInfo.groupProfile.description == null)
+        disabled = welcomeTextUnchanged(wt, groupInfo) || !welcomeTextFitsLimit(wt)
       )
     } else {
       val clipboard = LocalClipboardManager.current
@@ -119,13 +153,15 @@ private fun GroupWelcomeLayout(
 
 @Composable
 private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
+  val uriHandler = LocalUriHandler.current
   Column {
     SelectionContainer(Modifier.fillMaxWidth()) {
       MarkdownText(
         text,
         formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
+        toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
-        linkMode = linkMode,
+        linkMode = linkMode, uriHandler = uriHandler,
         style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
       )
     }
@@ -177,5 +213,13 @@ private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
     dismissText = generalGetString(MR.strings.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
+  )
+}
+
+private fun showUnsavedChangesTooLongAlert(revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(MR.strings.welcome_message_is_too_long),
+    confirmText = generalGetString(MR.strings.exit_without_saving),
+    onConfirm = revert,
   )
 }

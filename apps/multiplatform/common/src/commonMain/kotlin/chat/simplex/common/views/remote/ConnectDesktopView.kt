@@ -75,8 +75,8 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
   val sessionAddress = remember { mutableStateOf("") }
   val remoteCtrls = remember { mutableStateListOf<RemoteCtrlInfo>() }
   val session = remember { chatModel.remoteCtrlSession }.value
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     val discovery = if (session == null) null else session.sessionState is UIRemoteCtrlSessionState.Searching
     if (discovery == true || (discovery == null && !showConnectScreen.value)) {
@@ -339,16 +339,9 @@ private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<Remot
 @Composable
 private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
   SectionView(stringResource(MR.strings.scan_qr_code_from_desktop).uppercase()) {
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .aspectRatio(ratio = 1F)
-        .padding(DEFAULT_PADDING)
-    ) {
-      QRCodeScanner { text ->
-        sessionAddress.value = text
-        processDesktopQRCode(sessionAddress, text)
-      }
+    QRCodeScanner { text ->
+      sessionAddress.value = text
+      processDesktopQRCode(sessionAddress, text)
     }
   }
 }
@@ -398,8 +391,8 @@ private fun DesktopAddressView(sessionAddress: MutableState<String>) {
 
 @Composable
 private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ColumnWithScrollBar(
+    Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.linked_desktops))
     SectionView(stringResource(MR.strings.desktop_devices).uppercase()) {

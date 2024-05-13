@@ -5,17 +5,20 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
+import Control.Monad ((>=>))
 import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -25,6 +28,7 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
+import Data.Kind (Constraint)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -34,6 +38,8 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
+import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
+import qualified GHC.TypeLits as Type
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
@@ -47,7 +53,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
-data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
+data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
@@ -57,6 +63,7 @@ chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
   CTGroup -> "#"
+  CTLocal -> "*"
   CTContactRequest -> "<@"
   CTContactConnection -> ":"
 
@@ -69,6 +76,7 @@ data ChatRef = ChatRef ChatType Int64
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
+  LocalChat :: NoteFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
 
@@ -84,6 +92,7 @@ chatInfoUpdatedAt :: ChatInfo c -> UTCTime
 chatInfoUpdatedAt = \case
   DirectChat Contact {updatedAt} -> updatedAt
   GroupChat GroupInfo {updatedAt} -> updatedAt
+  LocalChat NoteFolder {updatedAt} -> updatedAt
   ContactRequest UserContactRequest {updatedAt} -> updatedAt
   ContactConnection PendingContactConnection {updatedAt} -> updatedAt
 
@@ -91,6 +100,7 @@ chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId
   GroupChat GroupInfo {groupId} -> ChatRef CTGroup groupId
+  LocalChat NoteFolder {noteFolderId} -> ChatRef CTLocal noteFolderId
   ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
   ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
@@ -102,6 +112,7 @@ chatInfoMembership = \case
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
+  | JCInfoLocal {noteFolder :: NoteFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
 
@@ -118,6 +129,7 @@ jsonChatInfo :: ChatInfo c -> JSONChatInfo
 jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
   GroupChat g -> JCInfoGroup g
+  LocalChat l -> JCInfoLocal l
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
 
@@ -129,6 +141,7 @@ jsonAChatInfo :: JSONChatInfo -> AChatInfo
 jsonAChatInfo = \case
   JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
   JCInfoGroup g -> AChatInfo SCTGroup $ GroupChat g
+  JCInfoLocal l -> AChatInfo SCTLocal $ LocalChat l
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
 
@@ -168,6 +181,8 @@ data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
   CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
   CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
+  CILocalSnd :: CIDirection 'CTLocal 'MDSnd
+  CILocalRcv :: CIDirection 'CTLocal 'MDRcv
 
 deriving instance Show (CIDirection c d)
 
@@ -180,6 +195,8 @@ data JSONCIDirection
   | JCIDirectRcv
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
+  | JCILocalSnd
+  | JCILocalRcv
   deriving (Show)
 
 jsonCIDirection :: CIDirection c d -> JSONCIDirection
@@ -188,6 +205,8 @@ jsonCIDirection = \case
   CIDirectRcv -> JCIDirectRcv
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
+  CILocalSnd -> JCILocalSnd
+  CILocalRcv -> JCILocalRcv
 
 jsonACIDirection :: JSONCIDirection -> ACIDirection
 jsonACIDirection = \case
@@ -195,6 +214,8 @@ jsonACIDirection = \case
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
   JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
   JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
+  JCILocalSnd -> ACID SCTLocal SMDSnd CILocalSnd
+  JCILocalRcv -> ACID SCTLocal SMDRcv CILocalRcv
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show)
@@ -235,6 +256,8 @@ data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
   CDGroupSnd :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
   CDGroupRcv :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+  CDLocalSnd :: NoteFolder -> ChatDirection 'CTLocal 'MDSnd
+  CDLocalRcv :: NoteFolder -> ChatDirection 'CTLocal 'MDRcv
 
 toCIDirection :: ChatDirection c d -> CIDirection c d
 toCIDirection = \case
@@ -242,6 +265,8 @@ toCIDirection = \case
   CDDirectRcv _ -> CIDirectRcv
   CDGroupSnd _ -> CIGroupSnd
   CDGroupRcv _ m -> CIGroupRcv m
+  CDLocalSnd _ -> CILocalSnd
+  CDLocalRcv _ -> CILocalRcv
 
 toChatInfo :: ChatDirection c d -> ChatInfo c
 toChatInfo = \case
@@ -249,6 +274,8 @@ toChatInfo = \case
   CDDirectRcv c -> DirectChat c
   CDGroupSnd g -> GroupChat g
   CDGroupRcv g _ -> GroupChat g
+  CDLocalSnd l -> LocalChat l
+  CDLocalRcv l -> LocalChat l
 
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
@@ -312,10 +339,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
+    itemForwarded :: Maybe CIForwardedFrom,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
+    deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
@@ -323,12 +352,36 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let editable = case itemContent of
-        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
+  let deletable = case itemContent of
+        CISndMsgContent _ ->
+          case chatTypeI @c of
+            SCTLocal -> isNothing itemDeleted
+            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
+      editable = deletable && isNothing itemForwarded
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+
+dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
+dummyMeta itemId ts itemText =
+  CIMeta
+    { itemId,
+      itemTs = ts,
+      itemText,
+      itemStatus = CISSndNew,
+      itemSharedMsgId = Nothing,
+      itemForwarded = Nothing,
+      itemDeleted = Nothing,
+      itemEdited = False,
+      itemTimed = Nothing,
+      itemLive = Nothing,
+      deletable = False,
+      editable = False,
+      forwardedByMember = Nothing,
+      createdAt = ts,
+      updatedAt = ts
+    }
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
@@ -344,7 +397,9 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
   | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
-    TimedMessagesPreference {ttl} = userPreference.preference
+    TimedMessagesPreference {ttl} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
@@ -389,6 +444,12 @@ deriving instance Show ACIReaction
 
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
+type family ChatTypeQuotable (a :: ChatType) :: Constraint where
+  ChatTypeQuotable CTDirect = ()
+  ChatTypeQuotable CTGroup = ()
+  ChatTypeQuotable a =
+    (Int ~ Bool, TypeError (Type.Text "ChatType " :<>: ShowType a :<>: Type.Text " cannot be quoted"))
+
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
   CIQDirectRcv :: CIQDirection 'CTDirect
@@ -397,7 +458,7 @@ data CIQDirection (c :: ChatType) where
 
 deriving instance Show (CIQDirection c)
 
-data ACIQDirection = forall c. ChatTypeI c => ACIQDirection (SChatType c) (CIQDirection c)
+data ACIQDirection = forall c. (ChatTypeI c, ChatTypeQuotable c) => ACIQDirection (SChatType c) (CIQDirection c)
 
 jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
@@ -407,13 +468,15 @@ jsonCIQDirection = \case
   CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
 
-jsonACIQDirection :: Maybe JSONCIDirection -> ACIQDirection
+jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
-  Just JCIDirectSnd -> ACIQDirection SCTDirect CIQDirectSnd
-  Just JCIDirectRcv -> ACIQDirection SCTDirect CIQDirectRcv
-  Just JCIGroupSnd -> ACIQDirection SCTGroup CIQGroupSnd
-  Just (JCIGroupRcv m) -> ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
-  Nothing -> ACIQDirection SCTGroup $ CIQGroupRcv Nothing
+  Just JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
+  Just JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
+  Just JCIGroupSnd -> Right $ ACIQDirection SCTGroup CIQGroupSnd
+  Just (JCIGroupRcv m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
+  Just JCILocalSnd -> Left "unquotable"
+  Just JCILocalRcv -> Left "unquotable"
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
@@ -432,7 +495,7 @@ data CIFile (d :: MsgDirection) = CIFile
   }
   deriving (Show)
 
-data FileProtocol = FPSMP | FPXFTP
+data FileProtocol = FPSMP | FPXFTP | FPLocal
   deriving (Eq, Show, Ord)
 
 instance FromField FileProtocol where fromField = fromTextField_ textDecode
@@ -450,10 +513,12 @@ instance TextEncoding FileProtocol where
   textDecode = \case
     "smp" -> Just FPSMP
     "xftp" -> Just FPXFTP
+    "local" -> Just FPLocal
     _ -> Nothing
   textEncode = \case
     FPSMP -> "smp"
     FPXFTP -> "xftp"
+    FPLocal -> "local"
 
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
@@ -487,6 +552,21 @@ ciFileEnded = \case
   CIFSRcvComplete -> True
   CIFSRcvError -> True
   CIFSInvalid {} -> True
+
+ciFileLoaded :: CIFileStatus d -> Bool
+ciFileLoaded = \case
+  CIFSSndStored -> True
+  CIFSSndTransfer {} -> True
+  CIFSSndComplete -> True
+  CIFSSndCancelled -> True
+  CIFSSndError -> True
+  CIFSRcvInvitation -> False
+  CIFSRcvAccepted -> False
+  CIFSRcvTransfer {} -> False
+  CIFSRcvCancelled -> False
+  CIFSRcvComplete -> True
+  CIFSRcvError -> False
+  CIFSInvalid {} -> False
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
@@ -719,6 +799,7 @@ type ChatItemTs = UTCTime
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
+  SCTLocal :: SChatType 'CTLocal
   SCTContactRequest :: SChatType 'CTContactRequest
   SCTContactConnection :: SChatType 'CTContactConnection
 
@@ -727,6 +808,7 @@ deriving instance Show (SChatType c)
 instance TestEquality SChatType where
   testEquality SCTDirect SCTDirect = Just Refl
   testEquality SCTGroup SCTGroup = Just Refl
+  testEquality SCTLocal SCTLocal = Just Refl
   testEquality SCTContactRequest SCTContactRequest = Just Refl
   testEquality SCTContactConnection SCTContactConnection = Just Refl
   testEquality _ _ = Nothing
@@ -740,6 +822,8 @@ instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
 
 instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
 
+instance ChatTypeI 'CTLocal where chatTypeI = SCTLocal
+
 instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
 
 instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
@@ -748,6 +832,7 @@ toChatType :: SChatType c -> ChatType
 toChatType = \case
   SCTDirect -> CTDirect
   SCTGroup -> CTGroup
+  SCTLocal -> CTLocal
   SCTContactRequest -> CTContactRequest
   SCTContactConnection -> CTContactConnection
 
@@ -755,6 +840,7 @@ aChatType :: ChatType -> AChatType
 aChatType = \case
   CTDirect -> ACT SCTDirect
   CTGroup -> ACT SCTGroup
+  CTLocal -> ACT SCTLocal
   CTContactRequest -> ACT SCTContactRequest
   CTContactConnection -> ACT SCTContactConnection
 
@@ -805,8 +891,7 @@ data SndMsgDelivery = SndMsgDelivery
 data RcvMsgDelivery = RcvMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId,
-    agentMsgMeta :: MsgMeta,
-    agentAckCmdId :: CommandId
+    agentMsgMeta :: MsgMeta
   }
   deriving (Show)
 
@@ -833,7 +918,7 @@ msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId
 
 data MsgDeliveryStatus (d :: MsgDirection) where
   MDSRcvAgent :: MsgDeliveryStatus 'MDRcv
-  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv
+  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv -- not used
   MDSSndPending :: MsgDeliveryStatus 'MDSnd
   MDSSndAgent :: MsgDeliveryStatus 'MDSnd
   MDSSndSent :: MsgDeliveryStatus 'MDSnd
@@ -881,6 +966,7 @@ msgDeliveryStatusT' s =
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c
   CIBlocked :: Maybe UTCTime -> CIDeleted 'CTGroup
+  CIBlockedByAdmin :: Maybe UTCTime -> CIDeleted 'CTGroup
   CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
@@ -890,6 +976,7 @@ data ACIDeleted = forall c. ChatTypeI c => ACIDeleted (SChatType c) (CIDeleted c
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
   | JCIDBlocked {deletedTs :: Maybe UTCTime}
+  | JCIDBlockedByAdmin {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show)
 
@@ -897,25 +984,60 @@ jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
   CIBlocked ts -> JCIDBlocked ts
+  CIBlockedByAdmin ts -> JCIDBlockedByAdmin ts
   CIModerated ts m -> JCIDModerated ts m
 
 jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
 jsonACIDeleted = \case
   JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
   JCIDBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
+  JCIDBlockedByAdmin ts -> ACIDeleted SCTGroup $ CIBlockedByAdmin ts
   JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
 itemDeletedTs = \case
   CIDeleted ts -> ts
   CIBlocked ts -> ts
+  CIBlockedByAdmin ts -> ts
   CIModerated ts _ -> ts
+
+data CIForwardedFrom
+  = CIFFUnknown
+  | CIFFContact {chatName :: Text, msgDir :: MsgDirection, contactId :: Maybe ContactId, chatItemId :: Maybe ChatItemId}
+  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
+  deriving (Show)
+
+cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
+cmForwardedFrom = \case
+  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
+  _ -> Nothing
+
+data CIForwardedFromTag
+  = CIFFUnknown_
+  | CIFFContact_
+  | CIFFGroup_
+
+instance FromField CIForwardedFromTag where fromField = fromTextField_ textDecode
+
+instance ToField CIForwardedFromTag where toField = toField . textEncode
+
+instance TextEncoding CIForwardedFromTag where
+  textDecode = \case
+    "unknown" -> Just CIFFUnknown_
+    "contact" -> Just CIFFContact_
+    "group" -> Just CIFFGroup_
+    _ -> Nothing
+  textEncode = \case
+    CIFFUnknown_ -> "unknown"
+    CIFFContact_ -> "contact"
+    CIFFGroup_ -> "group"
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
-    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
+    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus],
+    forwardedFromChatItem :: Maybe AChatItem
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
@@ -973,6 +1095,8 @@ instance ChatTypeI c => ToJSON (CIDeleted c) where
   toJSON = J.toJSON . jsonCIDeleted
   toEncoding = J.toEncoding . jsonCIDeleted
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CIFF") ''CIForwardedFrom)
+
 $(JQ.deriveJSON defaultJSON ''CITimed)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "SSP") ''SndCIStatusProgress)
@@ -995,8 +1119,6 @@ instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemVersion)
-
-$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''CIMeta)
@@ -1041,7 +1163,7 @@ instance FromJSON ACIDirection where
   parseJSON v = jsonACIDirection <$> J.parseJSON v
 
 instance ChatTypeI c => FromJSON (CIQDirection c) where
-  parseJSON v = (\(ACIQDirection _ x) -> checkChatType x) . jsonACIQDirection <$?> J.parseJSON v
+  parseJSON v = (jsonACIQDirection >=> \(ACIQDirection _ x) -> checkChatType x) <$?> J.parseJSON v
 
 instance ToJSON (CIQDirection c) where
   toJSON = J.toJSON . jsonCIQDirection
@@ -1086,6 +1208,8 @@ instance forall c. ChatTypeI c => FromJSON (CChatItem c) where
 instance ChatTypeI c => ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
+
+$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
 

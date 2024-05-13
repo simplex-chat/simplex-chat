@@ -15,7 +15,7 @@ void haskell_init(void) {
     char *argv[] = {
         "simplex",
         "+RTS", // requires `hs_init_with_rtsopts`
-        "-A16m", // chunk size for new allocations
+        "-A64m", // chunk size for new allocations
         "-H64m", // initial heap size
         "-xn", // non-moving GC
         0

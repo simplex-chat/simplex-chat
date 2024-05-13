@@ -47,8 +47,6 @@
     <string name="allow_voice_messages_question">允許使用語音訊息？</string>
     <string name="cancel_verb">取消</string>
     <string name="icon_descr_cancel_live_message">取消實況訊息</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>新增新的聯絡人</b>：建立你的一次性二維碼給你的聯絡人。]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。]]></string>
     <string name="choose_file">選擇檔案</string>
     <string name="use_camera_button">相機</string>
     <string name="from_gallery_button">從圖片庫選擇圖片</string>
@@ -424,7 +422,6 @@
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 桌面版：在應用程式內掃描一個已存在的二維碼，透過 <b>掃描二維碼</b>。]]></string>
     <string name="icon_descr_settings">設定</string>
     <string name="this_QR_code_is_not_a_link">這個二維碼不是一個連結！</string>
-    <string name="create_one_time_link">建立一次性邀請連結</string>
     <string name="network_use_onion_hosts_prefer">當可行的時候</string>
     <string name="core_version">核心版本：v%s</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -968,7 +965,6 @@
     <string name="button_welcome_message">歡迎訊息</string>
     <string name="save_and_update_group_profile">儲存和更新群組配置檔案</string>
     <string name="save_welcome_message_question">儲存歡迎訊息？</string>
-    <string name="cant_delete_user_profile">無法刪除個人檔案！</string>
     <string name="user_hide">隱藏</string>
     <string name="make_profile_private">將個人資料設為私密！</string>
     <string name="v4_6_audio_video_calls">語音和視訊通話</string>
@@ -994,10 +990,8 @@
     <string name="v4_6_group_welcome_message_descr">設定向新成員顯示的訊息！</string>
     <string name="tap_to_activate_profile">點擊以激活配置檔案。</string>
     <string name="v4_6_audio_video_calls_descr">支援藍牙和其他改進。</string>
-    <string name="should_be_at_least_one_visible_profile">至少要有一個可見的個人檔案。</string>
     <string name="group_welcome_title">歡迎訊息</string>
     <string name="v4_6_chinese_spanish_interface_descr">感謝用戶-透過 Weblate 做出貢獻！</string>
-    <string name="should_be_at_least_one_profile">應該至少有一個個人檔案。</string>
     <string name="user_unmute">解除靜音</string>
     <string name="you_will_still_receive_calls_and_ntfs">當靜音配置檔案處於活動狀態時，你仍會接收來自靜音配置檔案的通話和通知。</string>
     <string name="user_unhide">取消隱藏</string>

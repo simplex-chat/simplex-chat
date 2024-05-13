@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 5.4.4.0
+version: 5.7.3.0
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -36,7 +36,6 @@ dependencies:
   - network >= 3.1.2.7 && < 3.2
   - network-transport == 0.5.6
   - optparse-applicative >= 0.15 && < 0.17
-  - process == 1.6.*
   - random >= 1.1 && < 1.3
   - record-hasfield == 1.0.*
   - simple-logger == 0.1.*
@@ -64,11 +63,13 @@ when:
   - condition: impl(ghc >= 9.6.2)
     dependencies:
       - bytestring == 0.11.*
+      - process == 1.6.*
       - template-haskell == 2.20.*
       - text >= 2.0.1 && < 2.2
   - condition: impl(ghc < 9.6.2)
     dependencies:
       - bytestring == 0.10.*
+      - process >= 1.6 && < 1.6.18
       - template-haskell == 2.16.*
       - text >= 1.2.3.0 && < 1.3
 
@@ -103,16 +104,20 @@ executables:
       - -threaded
 
   simplex-broadcast-bot:
-    source-dirs: apps/simplex-broadcast-bot/src
-    main: ../Main.hs
+    source-dirs:
+      - apps/simplex-broadcast-bot
+      - apps/simplex-broadcast-bot/src
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
       - -threaded
 
   simplex-directory-service:
-    source-dirs: apps/simplex-directory-service/src
-    main: ../Main.hs
+    source-dirs:
+      - apps/simplex-directory-service
+      - apps/simplex-directory-service/src
+    main: Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
@@ -125,13 +130,19 @@ tests:
       - apps/simplex-broadcast-bot/src
       - apps/simplex-directory-service/src
     main: Test.hs
+    when:
+      - condition: impl(ghc >= 9.6.2)
+        dependencies:
+          - hspec == 2.11.*
+      - condition: impl(ghc < 9.6.2)
+        dependencies:
+          - hspec == 2.7.*
     dependencies:
       - QuickCheck == 2.14.*
       - simplex-chat
       - async == 2.2.*
       - deepseq == 1.4.*
       - generic-random == 1.5.*
-      - hspec == 2.11.*
       - network == 3.1.*
       - silently == 1.2.*
       - stm == 2.5.*
@@ -140,6 +151,7 @@ tests:
 
 ghc-options:
   # - -haddock
+  - -O2
   - -Wall
   - -Wcompat
   - -Werror=incomplete-patterns
@@ -147,3 +159,6 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wunused-type-patterns
+
+default-extensions:
+  - StrictData

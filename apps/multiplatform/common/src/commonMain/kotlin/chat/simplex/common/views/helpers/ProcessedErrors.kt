@@ -16,7 +16,7 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
 
   fun newError(error: T, offerRestart: Boolean) {
     timer.cancel()
-    timer = withBGApi {
+    timer = withLongRunningApi(slow = 130_000) {
       val delayBeforeNext = (lastShownTimestamp + interval) - System.currentTimeMillis()
       if ((lastShownOfferRestart || !offerRestart) && delayBeforeNext >= 0) {
         delay(delayBeforeNext)
@@ -43,9 +43,8 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
             title = title,
             text = text,
             confirmText = generalGetString(MR.strings.restart_chat_button),
-            onConfirm = {
-              withApi { restartChatOrApp() }
-            })
+            onConfirm = ::restartChatOrApp
+          )
         } else {
           AlertManager.shared.showAlertMsg(
             title = title,

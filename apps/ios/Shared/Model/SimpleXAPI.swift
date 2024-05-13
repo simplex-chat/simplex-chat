@@ -21,6 +21,8 @@ public let CURRENT_CHAT_VERSION: Int = 2
 // version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
 public let CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion: 2, maxVersion: CURRENT_CHAT_VERSION)
 
+private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network-statuses.lock")
+
 enum TerminalItem: Identifiable {
     case cmd(Date, ChatCommand)
     case resp(Date, ChatResponse)
@@ -90,12 +92,12 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
     let start = Date.now
     let resp = bgTask
-                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
-                : sendSimpleXCmd(cmd)
+                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
+                : sendSimpleXCmd(cmd, ctrl)
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
@@ -106,24 +108,24 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     return resp
 }
 
-func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) async -> ChatResponse {
+func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) async -> ChatResponse {
     await withCheckedContinuation { cont in
-        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay))
+        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl))
     }
 }
 
-func chatRecvMsg() async -> ChatResponse? {
+func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
     await withCheckedContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
-            let resp = recvSimpleXMsg()
+            let resp = recvSimpleXMsg(ctrl)
             cont.resume(returning: resp)
             return resp
         }
     }
 }
 
-func apiGetActiveUser() throws -> User? {
-    let r = chatSendCmdSync(.showActiveUser)
+func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
+    let r = chatSendCmdSync(.showActiveUser, ctrl)
     switch r {
     case let .activeUser(user): return user
     case .chatCmdError(_, .error(.noActiveUser)): return nil
@@ -131,8 +133,8 @@ func apiGetActiveUser() throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp))
+func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -210,8 +212,8 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
     throw r
 }
 
-func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(mainApp: true))
+func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
+    let r = chatSendCmdSync(.startChat(mainApp: true), ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -240,20 +242,14 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
-func apiSetTempFolder(tempFolder: String) throws {
-    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder))
+func apiSetTempFolder(tempFolder: String, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
 
-func apiSetFilesFolder(filesFolder: String) throws {
-    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
-    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
+func apiSetFilesFolder(filesFolder: String, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
@@ -261,6 +257,18 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
     if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSaveAppSettings(settings: AppSettings) throws {
+    let r = chatSendCmdSync(.apiSaveSettings(settings: settings))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiGetAppSettings(settings: AppSettings) throws -> AppSettings {
+    let r = chatSendCmdSync(.apiGetSettings(settings: settings))
+    if case let .appSettings(settings) = r { return settings }
     throw r
 }
 
@@ -280,6 +288,10 @@ func apiDeleteStorage() async throws {
 
 func apiStorageEncryption(currentKey: String = "", newKey: String = "") async throws {
     try await sendCommandOkResp(.apiStorageEncryption(config: DBEncryptionConfig(currentKey: currentKey, newKey: newKey)))
+}
+
+func testStorageEncryption(key: String, _ ctrl: chat_ctrl? = nil) async throws {
+    try await sendCommandOkResp(.testStorageEncryption(key: key), ctrl)
 }
 
 func apiGetChats() throws -> [ChatData] {
@@ -329,11 +341,20 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
+func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64) async -> ChatItem? {
+    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId)
+    return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
+}
+
 func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
-    let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
+    return await processSendMessageCmd(toChatType: type, cmd: cmd)
+}
+
+private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async -> ChatItem? {
+    let chatModel = ChatModel.shared
     let r: ChatResponse
-    if type == .direct {
+    if toChatType == .direct {
         var cItem: ChatItem? = nil
         let endTask = beginBGTask({
             if let cItem = cItem {
@@ -365,10 +386,25 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
     }
 }
 
+func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
+    let r = await chatSendCmd(.apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg))
+    if case let .newChatItem(_, aChatItem) = r { return aChatItem.chatItem }
+    createChatItemErrorAlert(r)
+    return nil
+}
+
 private func sendMessageErrorAlert(_ r: ChatResponse) {
-    logger.error("apiSendMessage error: \(String(describing: r))")
+    logger.error("send message error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
+        message: "Error: \(String(describing: r))"
+    )
+}
+
+private func createChatItemErrorAlert(_ r: ChatResponse) {
+    logger.error("apiCreateChatItem error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating message",
         message: "Error: \(String(describing: r))"
     )
 }
@@ -397,14 +433,14 @@ func apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64
     throw r
 }
 
-func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode, String?) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
-    case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
-    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
+    case let .ntfToken(token, status, ntfMode, ntfServer): return (token, status, ntfMode, ntfServer)
+    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off, nil)
     default:
         logger.debug("apiGetNtfToken response: \(String(describing: r))")
-        return (nil, nil, .off)
+        return (nil, nil, .off, nil)
     }
 }
 
@@ -489,8 +525,14 @@ func getNetworkConfig() async throws -> NetCfg? {
     throw r
 }
 
-func setNetworkConfig(_ cfg: NetCfg) throws {
-    let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg))
+func setNetworkConfig(_ cfg: NetCfg, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg), ctrl)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo) throws {
+    let r = chatSendCmdSync(.apiSetNetworkInfo(networkInfo: networkInfo))
     if case .cmdOk = r { return }
     throw r
 }
@@ -581,15 +623,15 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
+func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
-        return nil
+        return (nil, nil)
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
-    AlertManager.shared.showAlert(connectionErrorAlert(r))
-    return nil
+    if case let .invitation(_, connReqInvitation, connection) = r { return ((connReqInvitation, connection), nil) }
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
 }
 
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
@@ -691,6 +733,9 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Co
 }
 
 func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let chatId = type.rawValue + id.description
+    DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
+    defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
@@ -852,8 +897,38 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: any UserLike, fileId: Int64, encrypted: Bool, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: encrypted, auto: auto) {
+func uploadStandaloneFile(user: any UserLike, file: CryptoFile, ctrl: chat_ctrl? = nil) async -> (FileTransferMeta?, String?) {
+    let r = await chatSendCmd(.apiUploadStandaloneFile(userId: user.userId, file: file), ctrl)
+    if case let .sndStandaloneFileCreated(_, fileTransferMeta) = r {
+        return (fileTransferMeta, nil)
+    } else {
+        logger.error("uploadStandaloneFile error: \(String(describing: r))")
+        return (nil, String(describing: r))
+    }
+}
+
+func downloadStandaloneFile(user: any UserLike, url: String, file: CryptoFile, ctrl: chat_ctrl? = nil) async -> (RcvFileTransfer?, String?) {
+    let r = await chatSendCmd(.apiDownloadStandaloneFile(userId: user.userId, url: url, file: file), ctrl)
+    if case let .rcvStandaloneFileCreated(_, rcvFileTransfer) = r {
+        return (rcvFileTransfer, nil)
+    } else {
+        logger.error("downloadStandaloneFile error: \(String(describing: r))")
+        return (nil, String(describing: r))
+    }
+}
+
+func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationFileLinkData? {
+    let r = await chatSendCmd(.apiStandaloneFileInfo(url: url), ctrl)
+    if case let .standaloneFileInfo(fileMeta) = r {
+        return fileMeta
+    } else {
+        logger.error("standaloneFileInfo error: \(String(describing: r))")
+        return nil
+    }
+}
+
+func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)
     }
 }
@@ -897,8 +972,8 @@ func cancelFile(user: User, fileId: Int64) async {
     }
 }
 
-func apiCancelFile(fileId: Int64) async -> AChatItem? {
-    let r = await chatSendCmd(.cancelFile(fileId: fileId))
+func apiCancelFile(fileId: Int64, ctrl: chat_ctrl? = nil) async -> AChatItem? {
+    let r = await chatSendCmd(.cancelFile(fileId: fileId), ctrl)
     switch r {
     case let .sndFileCancelled(_, chatItem, _, _) : return chatItem
     case let .rcvFileCancelled(_, chatItem, _) : return chatItem
@@ -1070,8 +1145,8 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     }
 }
 
-private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
-    let r = await chatSendCmd(cmd)
+private func sendCommandOkResp(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) async throws {
+    let r = await chatSendCmd(cmd, ctrl)
     if case .cmdOk = r { return }
     throw r
 }
@@ -1123,6 +1198,12 @@ func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMembe
     throw r
 }
 
+func apiBlockMemberForAll(_ groupId: Int64, _ memberId: Int64, _ blocked: Bool) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiBlockMemberForAll(groupId: groupId, memberId: memberId, blocked: blocked), bgTask: false)
+    if case let .memberBlockedForAllUser(_, _, member, _) = r { return member }
+    throw r
+}
+
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)
@@ -1148,7 +1229,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
-        .filter{ !memberContactIds.contains($0.apiId) }
+        .filter{ c in c.ready && c.active && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
@@ -1212,18 +1293,20 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
+func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
+    m.ctrlInitInProgress = true
+    defer { m.ctrlInitInProgress = false }
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
+    NetworkObserver.shared.restartMonitor()
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-    try setXFTPConfig(getXFTPCfg())
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1231,7 +1314,37 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
         m.onboardingStage = .step1_SimpleXInfo
-    } else if start {
+    } else if confirmStart {
+        showStartChatAfterRestartAlert { start in
+            do {
+                if start { AppChatState.shared.set(.active) }
+                try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+            } catch let error {
+                logger.error("ChatInitialized error: \(error)")
+            }
+        }
+    } else {
+        try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+    }
+}
+
+func showStartChatAfterRestartAlert(result: @escaping (_ start: Bool) -> Void) {
+    AlertManager.shared.showAlert(Alert(
+        title: Text("Start chat?"),
+        message: Text("Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat."),
+        primaryButton: .default(Text("Ok")) {
+            result(true)
+        },
+        secondaryButton: .cancel {
+            result(false)
+        }
+    ))
+}
+
+private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
+    let m = ChatModel.shared
+    if m.currentUser == nil { return }
+    if start {
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
@@ -1253,7 +1366,7 @@ func startChat(refreshInvitations: Bool = true) throws {
         if (refreshInvitations) {
             try refreshCallInvitations()
         }
-        (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
         // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
         // when it is called before startChat
         if let token = m.deviceToken {
@@ -1274,6 +1387,16 @@ func startChat(refreshInvitations: Bool = true) throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
+func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
+    logger.debug("startChatWithTemporaryDatabase")
+    let migrationActiveUser = try? apiGetActiveUser(ctrl: ctrl) ?? apiCreateActiveUser(Profile(displayName: "Temp", fullName: ""), ctrl: ctrl)
+    try setNetworkConfig(getNetCfg(), ctrl: ctrl)
+    try apiSetTempFolder(tempFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
+    try apiSetFilesFolder(filesFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
+    _ = try apiStartChat(ctrl: ctrl)
+    return migrationActiveUser
+}
+
 func changeActiveUser(_ userId: Int64, viewPwd: String?) {
     do {
         try changeActiveUser_(userId, viewPwd: viewPwd)
@@ -1289,8 +1412,12 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     try getUserChatData()
 }
 
-func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
-    let currentUser = try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?) async throws {
+    let currentUser = if let userId = userId {
+        try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+    } else {
+        try apiGetActiveUser()
+    }
     let users = try await listUsersAsync()
     await MainActor.run {
         let m = ChatModel.shared
@@ -1299,7 +1426,7 @@ func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
     }
     try await getUserChatDataAsync()
     await MainActor.run {
-        if var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
+        if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
             activateCall(invitation)
         }
@@ -1315,14 +1442,21 @@ func getUserChatData() throws {
 }
 
 private func getUserChatDataAsync() async throws {
-    let userAddress = try await apiGetUserAddressAsync()
-    let chatItemTTL = try await getChatItemTTLAsync()
-    let chats = try await apiGetChatsAsync()
-    await MainActor.run {
-        let m = ChatModel.shared
-        m.userAddress = userAddress
-        m.chatItemTTL = chatItemTTL
-        m.chats = chats.map { Chat.init($0) }
+    let m = ChatModel.shared
+    if m.currentUser != nil {
+        let userAddress = try await apiGetUserAddressAsync()
+        let chatItemTTL = try await getChatItemTTLAsync()
+        let chats = try await apiGetChatsAsync()
+        await MainActor.run {
+            m.userAddress = userAddress
+            m.chatItemTTL = chatItemTTL
+            m.chats = chats.map { Chat.init($0) }
+        }
+    } else {
+        await MainActor.run {
+            m.userAddress = nil
+            m.chats = []
+        }
     }
 }
 
@@ -1330,6 +1464,8 @@ class ChatReceiver {
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
     private var _lastMsgTime = Date.now
+
+    var messagesChannel: ((ChatResponse) -> Void)? = nil
 
     static let shared = ChatReceiver()
 
@@ -1344,14 +1480,15 @@ class ChatReceiver {
     }
 
     func receiveMsgLoop() async {
-        // TODO use function that has timeout
-        if let msg = await chatRecvMsg() {
-            self._lastMsgTime = .now
-            await processReceivedMsg(msg)
-        }
-        if self.receiveMessages {
+        while self.receiveMessages {
+            if let msg = await chatRecvMsg() {
+                self._lastMsgTime = .now
+                await processReceivedMsg(msg)
+                if let messagesChannel {
+                    messagesChannel(msg)
+                }
+            }
             _ = try? await Task.sleep(nanoseconds: 7_500_000)
-            await receiveMsgLoop()
         }
     }
 
@@ -1439,34 +1576,30 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(mergedContact.id)
             }
         }
-    case let .contactsSubscribed(_, contactRefs):
-        await updateContactsStatus(contactRefs, status: .connected)
-    case let .contactsDisconnected(_, contactRefs):
-        await updateContactsStatus(contactRefs, status: .disconnected)
-    case let .contactSubSummary(_, contactSubscriptions):
-        await MainActor.run {
-            for sub in contactSubscriptions {
-// no need to update contact here, and it is slow
-//                if active(user) {
-//                    m.updateContact(sub.contact)
-//                }
-                if let err = sub.contactError {
-                    processContactSubError(sub.contact, err)
-                } else {
-                    m.setContactNetworkStatus(sub.contact, .connected)
-                }
-            }
-        }
     case let .networkStatus(status, connections):
-        await MainActor.run {
+        // dispatch queue to synchronize access
+        networkStatusesLock.sync {
+            var ns = m.networkStatuses
+            // slow loop is on the background thread
             for cId in connections {
-                m.networkStatuses[cId] = status
+                ns[cId] = status
+            }
+            // fast model update is on the main thread
+            DispatchQueue.main.sync {
+                m.networkStatuses = ns
             }
         }
     case let .networkStatuses(_, statuses): ()
-        await MainActor.run {
+        // dispatch queue to synchronize access
+        networkStatusesLock.sync {
+            var ns = m.networkStatuses
+            // slow loop is on the background thread
             for s in statuses {
-                m.networkStatuses[s.agentConnId] = s.networkStatus
+                ns[s.agentConnId] = s.networkStatus
+            }
+            // fast model update is on the main thread
+            DispatchQueue.main.sync {
+                m.networkStatuses = ns
             }
         }
     case let .newChatItem(user, aChatItem):
@@ -1481,7 +1614,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         if let file = cItem.autoReceiveFile() {
             Task {
-                await receiveFile(user: user, fileId: file.fileId, encrypted: cItem.encryptLocalFile, auto: true)
+                await receiveFile(user: user, fileId: file.fileId, auto: true)
             }
         }
         if cItem.showNotification {
@@ -1619,6 +1752,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
         }
+    case let .memberBlockedForAll(user, groupInfo, byMember: _, member: member, blocked: _):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
+        }
     case let .newMemberContactReceivedInv(user, contact, _, _):
         if active(user) {
             await MainActor.run {
@@ -1634,27 +1774,36 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .rcvFileSndCancelled(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupFile(aChatItem) }
-    case let .rcvFileProgressXFTP(user, aChatItem, _, _):
-        await chatItemSimpleUpdate(user, aChatItem)
-    case let .rcvFileError(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
+    case let .rcvFileProgressXFTP(user, aChatItem, _, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+        }
+    case let .rcvFileError(user, aChatItem, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupFile(aChatItem) }
+        }
     case let .sndFileStart(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
     case let .sndFileComplete(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupDirectFile(aChatItem) }
     case let .sndFileRcvCancelled(user, aChatItem, _):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupDirectFile(aChatItem) }
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupDirectFile(aChatItem) }
+        }
     case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
-        await chatItemSimpleUpdate(user, aChatItem)
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+        }
     case let .sndFileCompleteXFTP(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
-    case let .sndFileError(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
-        Task { cleanupFile(aChatItem) }
+    case let .sndFileError(user, aChatItem, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
+            Task { cleanupFile(aChatItem) }
+        }
     case let .callInvitation(invitation):
         await MainActor.run {
             m.callInvitations[invitation.contact.id] = invitation
@@ -1751,6 +1900,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         }
+    case let .contactPQEnabled(user, contact, _):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact)
+            }
+        }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }
@@ -1787,29 +1942,11 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cItem = aChatItem.chatItem
     if active(user) {
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
-            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            if cItem.showNotification {
+                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            }
         }
     }
-}
-
-func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) async {
-    let m = ChatModel.shared
-    await MainActor.run {
-        for c in contactRefs {
-            m.networkStatuses[c.agentConnId] = status
-        }
-    }
-}
-
-func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
-    let m = ChatModel.shared
-    var err: String
-    switch chatError {
-    case .errorAgent(agentError: .BROKER(_, .NETWORK)): err = "network"
-    case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
-    default: err = String(describing: chatError)
-    }
-    m.setContactNetworkStatus(contact, .error(connectionError: err))
 }
 
 func refreshCallInvitations() throws {

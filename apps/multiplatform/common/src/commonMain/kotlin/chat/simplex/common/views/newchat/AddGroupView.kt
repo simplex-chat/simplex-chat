@@ -36,7 +36,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
   val rhId = rh?.remoteHostId
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
-      withApi {
+      withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
           chatModel.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
@@ -94,10 +94,9 @@ fun AddGroupLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = close) {
-        Column(
+        ColumnWithScrollBar(
           Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
           AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
@@ -139,7 +138,8 @@ fun AddGroupLayout(
               createGroup(incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),
                 fullName = "",
-                image = profileImage.value
+                image = profileImage.value,
+                groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
               ))
             },
             textColor = MaterialTheme.colors.primary,
@@ -158,7 +158,7 @@ fun AddGroupLayout(
           )
 
           LaunchedEffect(Unit) {
-            delay(300)
+            delay(1000)
             focusRequester.requestFocus()
           }
         }

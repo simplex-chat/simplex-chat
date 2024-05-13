@@ -28,6 +28,7 @@ class Call: ObservableObject, Equatable {
     @Published var speakerEnabled = false
     @Published var videoEnabled: Bool
     @Published var connectionInfo: ConnectionInfo?
+    @Published var connectedAt: Date? = nil
 
     init(
         direction: CallDirection,
@@ -59,6 +60,7 @@ class Call: ObservableObject, Equatable {
         }
     }
     var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
+    var supportsVideo: Bool { get { peerMedia == .video || localMedia == .video } }
 }
 
 enum CallDirection {
@@ -429,17 +431,18 @@ struct RTCIceServer: Codable, Equatable {
 }
 
 // the servers are expected in this format:
-// stun:stun.simplex.im:443?transport=tcp
-// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443?transport=tcp
+// stuns:stun.simplex.im:443?transport=tcp
+// turns:private2:Hxuq2QxUjnhj96Zq2r4HjqHRj@turn.simplex.im:443?transport=tcp
 func parseRTCIceServer(_ str: String) -> RTCIceServer? {
     var s = replaceScheme(str, "stun:")
+    s = replaceScheme(s, "stuns:")
     s = replaceScheme(s, "turn:")
     s = replaceScheme(s, "turns:")
     if let u: URL = URL(string: s),
        let scheme = u.scheme,
        let host = u.host,
        let port = u.port,
-       u.path == "" && (scheme == "stun" || scheme == "turn" || scheme == "turns")  {
+       u.path == "" && (scheme == "stun" || scheme == "stuns" || scheme == "turn" || scheme == "turns")  {
         let query = u.query == nil || u.query == "" ? "" : "?" + (u.query ?? "")
         return RTCIceServer(
             urls: ["\(scheme):\(host):\(port)\(query)"],

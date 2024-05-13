@@ -66,22 +66,21 @@ fun GroupMemberInfoView(
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
-        withApi {
+        withBGApi {
           val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
           if (c != null) {
             if (chatModel.getContactChat(it) == null) {
               chatModel.addChat(c)
             }
-            chatModel.chatItems.clear()
             chatModel.chatItemStatuses.clear()
-            chatModel.chatItems.addAll(c.chatItems)
+            chatModel.chatItems.replaceAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
           }
         }
       },
       createMemberContact = {
-        withApi {
+        withBGApi {
           progressIndicator = true
           val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
           if (memberContact != null) {
@@ -99,6 +98,8 @@ fun GroupMemberInfoView(
       },
       blockMember = { blockMemberAlert(rhId, groupInfo, member) },
       unblockMember = { unblockMemberAlert(rhId, groupInfo, member) },
+      blockForAll = { blockForAllAlert(rhId, groupInfo, member) },
+      unblockForAll = { unblockForAllAlert(rhId, groupInfo, member) },
       removeMember = { removeMemberDialog(rhId, groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
@@ -107,7 +108,7 @@ fun GroupMemberInfoView(
         updateMemberRoleDialog(it, member, onDismiss = {
           newRole.value = prevValue
         }) {
-          withApi {
+          withBGApi {
             kotlin.runCatching {
               val mem = chatModel.controller.apiMemberRole(rhId, groupInfo.groupId, member.groupMemberId, it)
               chatModel.upsertGroupMember(rhId, groupInfo, mem)
@@ -119,7 +120,7 @@ fun GroupMemberInfoView(
       },
       switchMemberAddress = {
         showSwitchAddressAlert(switchAddress = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
@@ -131,7 +132,7 @@ fun GroupMemberInfoView(
       },
       abortSwitchMemberAddress = {
         showAbortSwitchAddressAlert(abortSwitchAddress = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiAbortSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
@@ -142,7 +143,7 @@ fun GroupMemberInfoView(
         })
       },
       syncMemberConnection = {
-        withApi {
+        withBGApi {
           val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
             connStats.value = r.second
@@ -153,7 +154,7 @@ fun GroupMemberInfoView(
       },
       syncMemberConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = true)
             if (r != null) {
               connStats.value = r.second
@@ -204,7 +205,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withApi {
+      withBGApi {
         val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
         if (removedMember != null) {
           chatModel.upsertGroupMember(rhId, groupInfo, removedMember)
@@ -230,6 +231,8 @@ fun GroupMemberInfoLayout(
   connectViaAddress: (String) -> Unit,
   blockMember: () -> Unit,
   unblockMember: () -> Unit,
+  blockForAll: () -> Unit,
+  unblockForAll: () -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -248,10 +251,49 @@ fun GroupMemberInfoLayout(
     }
   }
 
-  Column(
+  @Composable
+  fun AdminDestructiveSection() {
+    val canBlockForAll = member.canBlockForAll(groupInfo)
+    val canRemove = member.canBeRemoved(groupInfo)
+    if (canBlockForAll || canRemove) {
+      SectionDividerSpaced(maxBottomPadding = false)
+      SectionView {
+        if (canBlockForAll) {
+          if (member.blockedByAdmin) {
+            UnblockForAllButton(unblockForAll)
+          } else {
+            BlockForAllButton(blockForAll)
+          }
+        }
+        if (canRemove) {
+          RemoveMemberButton(removeMember)
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun NonAdminBlockSection() {
+    SectionDividerSpaced(maxBottomPadding = false)
+    SectionView {
+      if (member.blockedByAdmin) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_back_hand),
+          stringResource(MR.strings.member_blocked_by_admin),
+          click = null,
+          disabled = true
+        )
+      } else if (member.memberSettings.showMessages) {
+        BlockMemberButton(blockMember)
+      } else {
+        UnblockMemberButton(unblockMember)
+      }
+    }
+  }
+
+  ColumnWithScrollBar(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
+      .fillMaxWidth(),
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -267,7 +309,7 @@ fun GroupMemberInfoLayout(
       SectionView {
         if (contactId != null && knownDirectChat(contactId) != null) {
           OpenChatButton(onClick = { openDirectChat(contactId) })
-        } else if (groupInfo.fullGroupPreferences.directMessages.on) {
+        } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
           if (contactId != null) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
           } else if (member.activeConn?.peerChatVRange?.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) == true) {
@@ -289,11 +331,11 @@ fun GroupMemberInfoLayout(
 
     if (member.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-        SimpleXLinkQRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        SimpleXLinkQRCode(member.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
         if (contactId != null) {
-          if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on) {
+          if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
             ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
           }
         } else {
@@ -344,16 +386,10 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = false)
-    SectionView {
-      if (member.memberSettings.showMessages) {
-        BlockMemberButton(blockMember)
-      } else {
-        UnblockMemberButton(unblockMember)
-      }
-      if (member.canBeRemoved(groupInfo)) {
-        RemoveMemberButton(removeMember)
-      }
+    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+      AdminDestructiveSection()
+    } else {
+      NonAdminBlockSection()
     }
 
     if (developerTools) {
@@ -370,7 +406,7 @@ fun GroupMemberInfoLayout(
 @Composable
 fun GroupMemberInfoHeader(member: GroupMember) {
   Column(
-    Modifier.padding(horizontal = 8.dp),
+    Modifier.padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
@@ -423,6 +459,26 @@ fun UnblockMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_do_not_touch),
     stringResource(MR.strings.unblock_member_button),
+    click = onClick
+  )
+}
+
+@Composable
+fun BlockForAllButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_back_hand),
+    stringResource(MR.strings.block_for_all),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
+fun UnblockForAllButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_do_not_touch),
+    stringResource(MR.strings.unblock_for_all),
     click = onClick
   )
 }
@@ -505,8 +561,8 @@ private fun updateMemberRoleDialog(
 fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
   try {
     val uri = URI(connReqUri)
-    withApi {
-      planAndConnect(chatModel, rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
+    withBGApi {
+      planAndConnect(rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
     }
   } catch (e: RuntimeException) {
     AlertManager.shared.showAlertMsg(
@@ -553,6 +609,36 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   }
 }
 
+fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.block_for_all_question),
+    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.block_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, mem, true)
+    },
+    destructive = true,
+  )
+}
+
+fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_for_all_question),
+    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.unblock_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, mem, false)
+    },
+  )
+}
+
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
+  withBGApi {
+    val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
+    chatModel.upsertGroupMember(rhId, gInfo, updatedMember)
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -570,6 +656,8 @@ fun PreviewGroupMemberInfoLayout() {
       connectViaAddress = {},
       blockMember = {},
       unblockMember = {},
+      blockForAll = {},
+      unblockForAll = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

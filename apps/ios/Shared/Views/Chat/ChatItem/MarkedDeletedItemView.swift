@@ -33,6 +33,7 @@ struct MarkedDeletedItemView: View {
            var i = m.getChatItemIndex(chatItem) {
             var moderated = 0
             var blocked = 0
+            var blockedByAdmin = 0
             var deleted = 0
             var moderatedBy: Set<String> = []
             while i < m.reversedChatItems.count,
@@ -44,16 +45,19 @@ struct MarkedDeletedItemView: View {
                     moderated += 1
                     moderatedBy.insert(byGroupMember.displayName)
                 case .blocked: blocked += 1
+                case .blockedByAdmin: blockedByAdmin += 1
                 case .deleted: deleted += 1
                 }
                 i += 1
             }
-            let total = moderated + blocked + deleted
+            let total = moderated + blocked + blockedByAdmin + deleted
             return total <= 1
             ? markedDeletedText
             : total == moderated
             ? "\(total) messages moderated by \(moderatedBy.joined(separator: ", "))"
-            : total == blocked
+            : total == blockedByAdmin
+            ? "\(total) messages blocked by admin"
+            : total == blocked + blockedByAdmin
             ? "\(total) messages blocked"
             : "\(total) messages marked deleted"
         } else {
@@ -61,11 +65,14 @@ struct MarkedDeletedItemView: View {
         }
     }
 
+    // same texts are in markedDeletedText in ChatPreviewView, but it returns String;
+    // can be refactored into a single function if functions calling these are changed to return same type
     var markedDeletedText: LocalizedStringKey {
         switch chatItem.meta.itemDeleted {
         case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
         case .blocked: "blocked"
-        default: "marked deleted"
+        case .blockedByAdmin: "blocked by admin"
+        case .deleted, nil: "marked deleted"
         }
     }
 }

@@ -23,3 +23,5 @@ expect fun Modifier.desktopOnExternalDrag(
 ): Modifier
 
 expect fun Modifier.onRightClick(action: () -> Unit): Modifier
+
+expect fun Modifier.desktopPointerHoverIconHand(): Modifier

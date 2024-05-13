@@ -7,10 +7,10 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -32,6 +32,7 @@ import qualified Data.Text as T
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Records.Compat
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
@@ -79,12 +80,12 @@ allChatFeatures =
   ]
 
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
-chatPrefSel f ps = case f of
-  SCFTimedMessages -> ps.timedMessages
-  SCFFullDelete -> ps.fullDelete
-  SCFReactions -> ps.reactions
-  SCFVoice -> ps.voice
-  SCFCalls -> ps.calls
+chatPrefSel f Preferences {timedMessages, fullDelete, reactions, voice, calls} = case f of
+  SCFTimedMessages -> timedMessages
+  SCFFullDelete -> fullDelete
+  SCFReactions -> reactions
+  SCFVoice -> voice
+  SCFCalls -> calls
 
 chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
@@ -104,12 +105,12 @@ instance PreferenceI (Maybe Preferences) where
   getPreference f prefs = fromMaybe (getPreference f defaultChatPrefs) (chatPrefSel f =<< prefs)
 
 instance PreferenceI FullPreferences where
-  getPreference f ps = case f of
-    SCFTimedMessages -> ps.timedMessages
-    SCFFullDelete -> ps.fullDelete
-    SCFReactions -> ps.reactions
-    SCFVoice -> ps.voice
-    SCFCalls -> ps.calls
+  getPreference f FullPreferences {timedMessages, fullDelete, reactions, voice, calls} = case f of
+    SCFTimedMessages -> timedMessages
+    SCFFullDelete -> fullDelete
+    SCFReactions -> reactions
+    SCFVoice -> voice
+    SCFCalls -> calls
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
@@ -149,6 +150,7 @@ data GroupFeature
   | GFReactions
   | GFVoice
   | GFFiles
+  | GFSimplexLinks
   | GFHistory
   deriving (Show)
 
@@ -159,13 +161,22 @@ data SGroupFeature (f :: GroupFeature) where
   SGFReactions :: SGroupFeature 'GFReactions
   SGFVoice :: SGroupFeature 'GFVoice
   SGFFiles :: SGroupFeature 'GFFiles
+  SGFSimplexLinks :: SGroupFeature 'GFSimplexLinks
   SGFHistory :: SGroupFeature 'GFHistory
 
 deriving instance Show (SGroupFeature f)
 
 data AGroupFeature = forall f. GroupFeatureI f => AGF (SGroupFeature f)
 
+data AGroupFeatureNoRole = forall f. GroupFeatureNoRoleI f => AGFNR (SGroupFeature f)
+
+data AGroupFeatureRole = forall f. GroupFeatureRoleI f => AGFR (SGroupFeature f)
+
 deriving instance Show AGroupFeature
+
+deriving instance Show AGroupFeatureNoRole
+
+deriving instance Show AGroupFeatureRole
 
 groupFeatureNameText :: GroupFeature -> Text
 groupFeatureNameText = \case
@@ -175,37 +186,43 @@ groupFeatureNameText = \case
   GFReactions -> "Message reactions"
   GFVoice -> "Voice messages"
   GFFiles -> "Files and media"
+  GFSimplexLinks -> "SimpleX links"
   GFHistory -> "Recent history"
 
 groupFeatureNameText' :: SGroupFeature f -> Text
 groupFeatureNameText' = groupFeatureNameText . toGroupFeature
 
-groupFeatureAllowed' :: GroupFeatureI f => SGroupFeature f -> FullGroupPreferences -> Bool
+groupFeatureAllowed' :: GroupFeatureNoRoleI f => SGroupFeature f -> FullGroupPreferences -> Bool
 groupFeatureAllowed' feature prefs =
   getField @"enable" (getGroupPreference feature prefs) == FEOn
 
-allGroupFeatureItems :: [AGroupFeature]
-allGroupFeatureItems =
+groupFeatureMemberAllowed' :: GroupFeatureRoleI f => SGroupFeature f -> GroupMemberRole -> FullGroupPreferences -> Bool
+groupFeatureMemberAllowed' feature role prefs =
+  let pref = getGroupPreference feature prefs
+   in getField @"enable" pref == FEOn && maybe True (role >=) (getField @"role" pref)
+
+allGroupFeatures :: [AGroupFeature]
+allGroupFeatures =
   [ AGF SGFTimedMessages,
     AGF SGFDirectMessages,
     AGF SGFFullDelete,
     AGF SGFReactions,
     AGF SGFVoice,
-    AGF SGFFiles
+    AGF SGFFiles,
+    AGF SGFSimplexLinks,
+    AGF SGFHistory
   ]
 
-allGroupFeatures :: [AGroupFeature]
-allGroupFeatures = allGroupFeatureItems <> [AGF SGFHistory]
-
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel f ps = case f of
-  SGFTimedMessages -> ps.timedMessages
-  SGFDirectMessages -> ps.directMessages
-  SGFFullDelete -> ps.fullDelete
-  SGFReactions -> ps.reactions
-  SGFVoice -> ps.voice
-  SGFFiles -> ps.files
-  SGFHistory -> ps.history
+groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, history} = case f of
+  SGFTimedMessages -> timedMessages
+  SGFDirectMessages -> directMessages
+  SGFFullDelete -> fullDelete
+  SGFReactions -> reactions
+  SGFVoice -> voice
+  SGFFiles -> files
+  SGFSimplexLinks -> simplexLinks
+  SGFHistory -> history
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -215,6 +232,7 @@ toGroupFeature = \case
   SGFReactions -> GFReactions
   SGFVoice -> GFVoice
   SGFFiles -> GFFiles
+  SGFSimplexLinks -> GFSimplexLinks
   SGFHistory -> GFHistory
 
 class GroupPreferenceI p where
@@ -227,14 +245,15 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference f ps = case f of
-    SGFTimedMessages -> ps.timedMessages
-    SGFDirectMessages -> ps.directMessages
-    SGFFullDelete -> ps.fullDelete
-    SGFReactions -> ps.reactions
-    SGFVoice -> ps.voice
-    SGFFiles -> ps.files
-    SGFHistory -> ps.history
+  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, history} = case f of
+    SGFTimedMessages -> timedMessages
+    SGFDirectMessages -> directMessages
+    SGFFullDelete -> fullDelete
+    SGFReactions -> reactions
+    SGFVoice -> voice
+    SGFFiles -> files
+    SGFSimplexLinks -> simplexLinks
+    SGFHistory -> history
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -245,16 +264,24 @@ data GroupPreferences = GroupPreferences
     reactions :: Maybe ReactionsGroupPreference,
     voice :: Maybe VoiceGroupPreference,
     files :: Maybe FilesGroupPreference,
+    simplexLinks :: Maybe SimplexLinksGroupPreference,
     history :: Maybe HistoryGroupPreference
   }
   deriving (Eq, Show)
 
-setGroupPreference :: forall f. GroupFeatureI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreference :: forall f. GroupFeatureNoRoleI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
 setGroupPreference f enable prefs_ = setGroupPreference_ f pref prefs
   where
     prefs = mergeGroupPreferences prefs_
     pref :: GroupFeaturePreference f
     pref = setField @"enable" (getGroupPreference f prefs) enable
+
+setGroupPreferenceRole :: forall f. GroupFeatureRoleI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupMemberRole -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreferenceRole f enable role prefs_ = setGroupPreference_ f pref prefs
+  where
+    prefs = mergeGroupPreferences prefs_
+    pref :: GroupFeaturePreference f
+    pref = setField @"role" (setField @"enable" (getGroupPreference f prefs) enable) role
 
 setGroupPreference' :: SGroupFeature f -> GroupFeaturePreference f -> Maybe GroupPreferences -> GroupPreferences
 setGroupPreference' f pref prefs_ = setGroupPreference_ f pref prefs
@@ -270,6 +297,7 @@ setGroupPreference_ f pref prefs =
     SGFReactions -> prefs {reactions = pref}
     SGFVoice -> prefs {voice = pref}
     SGFFiles -> prefs {files = pref}
+    SGFSimplexLinks -> prefs {simplexLinks = pref}
     SGFHistory -> prefs {history = pref}
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
@@ -298,6 +326,7 @@ data FullGroupPreferences = FullGroupPreferences
     reactions :: ReactionsGroupPreference,
     voice :: VoiceGroupPreference,
     files :: FilesGroupPreference,
+    simplexLinks :: SimplexLinksGroupPreference,
     history :: HistoryGroupPreference
   }
   deriving (Eq, Show)
@@ -349,16 +378,17 @@ defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
   FullGroupPreferences
     { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = Just 86400},
-      directMessages = DirectMessagesGroupPreference {enable = FEOff},
+      directMessages = DirectMessagesGroupPreference {enable = FEOff, role = Nothing},
       fullDelete = FullDeleteGroupPreference {enable = FEOff},
       reactions = ReactionsGroupPreference {enable = FEOn},
-      voice = VoiceGroupPreference {enable = FEOn},
-      files = FilesGroupPreference {enable = FEOn},
+      voice = VoiceGroupPreference {enable = FEOn, role = Nothing},
+      files = FilesGroupPreference {enable = FEOn, role = Nothing},
+      simplexLinks = SimplexLinksGroupPreference {enable = FEOn, role = Nothing},
       history = HistoryGroupPreference {enable = FEOff}
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
@@ -384,19 +414,19 @@ class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureA
   prefParam :: FeaturePreference f -> Maybe Int
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, p.allow)
+  hasField p@TimedMessagesPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" FullDeletePreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, p.allow)
+  hasField p@FullDeletePreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" ReactionsPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, p.allow)
+  hasField p@ReactionsPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" VoicePreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, p.allow)
+  hasField p@VoicePreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" CallsPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, p.allow)
+  hasField p@CallsPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
@@ -434,7 +464,7 @@ data TimedMessagesGroupPreference = TimedMessagesGroupPreference
   deriving (Eq, Show)
 
 data DirectMessagesGroupPreference = DirectMessagesGroupPreference
-  {enable :: GroupFeatureEnabled}
+  {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
 data FullDeleteGroupPreference = FullDeleteGroupPreference
@@ -446,11 +476,15 @@ data ReactionsGroupPreference = ReactionsGroupPreference
   deriving (Eq, Show)
 
 data VoiceGroupPreference = VoiceGroupPreference
-  {enable :: GroupFeatureEnabled}
+  {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
 data FilesGroupPreference = FilesGroupPreference
-  {enable :: GroupFeatureEnabled}
+  {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
+  deriving (Eq, Show)
+
+data SimplexLinksGroupPreference = SimplexLinksGroupPreference
+  {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
 data HistoryGroupPreference = HistoryGroupPreference
@@ -461,71 +495,121 @@ class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference 
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
   sGroupFeature :: SGroupFeature f
   groupPrefParam :: GroupFeaturePreference f -> Maybe Int
+  groupPrefRole :: GroupFeaturePreference f -> Maybe GroupMemberRole
+
+class GroupFeatureI f => GroupFeatureNoRoleI f
+
+class (GroupFeatureI f, HasField "role" (GroupFeaturePreference f) (Maybe GroupMemberRole)) => GroupFeatureRoleI f
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@GroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" TimedMessagesGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@TimedMessagesGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" DirectMessagesGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@DirectMessagesGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" ReactionsGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@ReactionsGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" FullDeleteGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@FullDeleteGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@VoiceGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" FilesGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@FilesGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" SimplexLinksGroupPreference GroupFeatureEnabled where
+  hasField p@SimplexLinksGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p@HistoryGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
   sGroupFeature = SGFTimedMessages
   groupPrefParam TimedMessagesGroupPreference {ttl} = ttl
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
   sGroupFeature = SGFDirectMessages
   groupPrefParam _ = Nothing
+  groupPrefRole DirectMessagesGroupPreference {role} = role
 
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
   sGroupFeature = SGFFullDelete
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureI 'GFReactions where
   type GroupFeaturePreference 'GFReactions = ReactionsGroupPreference
   sGroupFeature = SGFReactions
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
 
 instance GroupFeatureI 'GFVoice where
   type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
   sGroupFeature = SGFVoice
   groupPrefParam _ = Nothing
+  groupPrefRole VoiceGroupPreference {role} = role
 
 instance GroupFeatureI 'GFFiles where
   type GroupFeaturePreference 'GFFiles = FilesGroupPreference
   sGroupFeature = SGFFiles
   groupPrefParam _ = Nothing
+  groupPrefRole FilesGroupPreference {role} = role
+
+instance GroupFeatureI 'GFSimplexLinks where
+  type GroupFeaturePreference 'GFSimplexLinks = SimplexLinksGroupPreference
+  sGroupFeature = SGFSimplexLinks
+  groupPrefParam _ = Nothing
+  groupPrefRole SimplexLinksGroupPreference {role} = role
 
 instance GroupFeatureI 'GFHistory where
   type GroupFeaturePreference 'GFHistory = HistoryGroupPreference
   sGroupFeature = SGFHistory
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
 
-groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature -> p -> Maybe Int -> Text
-groupPrefStateText feature pref param =
+instance GroupFeatureNoRoleI 'GFTimedMessages
+
+instance GroupFeatureNoRoleI 'GFFullDelete
+
+instance GroupFeatureNoRoleI 'GFReactions
+
+instance GroupFeatureNoRoleI 'GFHistory
+
+instance HasField "role" DirectMessagesGroupPreference (Maybe GroupMemberRole) where
+  hasField p@DirectMessagesGroupPreference {role} = (\r -> p {role = r}, role)
+
+instance HasField "role" VoiceGroupPreference (Maybe GroupMemberRole) where
+  hasField p@VoiceGroupPreference {role} = (\r -> p {role = r}, role)
+
+instance HasField "role" FilesGroupPreference (Maybe GroupMemberRole) where
+  hasField p@FilesGroupPreference {role} = (\r -> p {role = r}, role)
+
+instance HasField "role" SimplexLinksGroupPreference (Maybe GroupMemberRole) where
+  hasField p@SimplexLinksGroupPreference {role} = (\r -> p {role = r}, role)
+
+instance GroupFeatureRoleI 'GFDirectMessages
+
+instance GroupFeatureRoleI 'GFVoice
+
+instance GroupFeatureRoleI 'GFFiles
+
+instance GroupFeatureRoleI 'GFSimplexLinks
+
+groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature -> p -> Maybe Int -> Maybe GroupMemberRole -> Text
+groupPrefStateText feature pref param role =
   let enabled = getField @"enable" pref
       paramText = if enabled == FEOn then groupParamText_ feature param else ""
-   in groupFeatureNameText feature <> ": " <> safeDecodeUtf8 (strEncode enabled) <> paramText
+      roleText = maybe "" (\r -> " for " <> safeDecodeUtf8 (strEncode r) <> "s") role
+   in groupFeatureNameText feature <> ": " <> safeDecodeUtf8 (strEncode enabled) <> paramText <> roleText
 
 groupParamText_ :: GroupFeature -> Maybe Int -> Text
 groupParamText_ feature param = case feature of
@@ -535,7 +619,7 @@ groupParamText_ feature param = case feature of
 groupPreferenceText :: forall f. GroupFeatureI f => GroupFeaturePreference f -> Text
 groupPreferenceText pref =
   let feature = toGroupFeature $ sGroupFeature @f
-   in groupPrefStateText feature pref $ groupPrefParam pref
+   in groupPrefStateText feature pref (groupPrefParam pref) (groupPrefRole pref)
 
 timedTTLText :: Int -> Text
 timedTTLText 0 = "0 sec"
@@ -605,7 +689,7 @@ instance StrEncoding GroupFeatureEnabled where
     "on" -> Right FEOn
     "off" -> Right FEOff
     r -> Left $ "bad GroupFeatureEnabled " <> B.unpack r
-  strP = strDecode <$?> A.takeByteString
+  strP = strDecode <$?> A.takeTill (== ' ')
 
 instance FromJSON GroupFeatureEnabled where
   parseJSON = strParseJSON "GroupFeatureEnabled"
@@ -614,11 +698,13 @@ instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
+groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int, Maybe GroupMemberRole)
 groupFeatureState p =
   let enable = getField @"enable" p
-      param = if enable == FEOn then groupPrefParam p else Nothing
-   in (enable, param)
+      (param, role)
+        | enable == FEOn = (groupPrefParam p, groupPrefRole p)
+        | otherwise = (Nothing, Nothing)
+   in (enable, param, role)
 
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
@@ -644,6 +730,7 @@ mergeGroupPreferences groupPreferences =
       reactions = pref SGFReactions,
       voice = pref SGFVoice,
       files = pref SGFFiles,
+      simplexLinks = pref SGFSimplexLinks,
       history = pref SGFHistory
     }
   where
@@ -659,6 +746,7 @@ toGroupPreferences groupPreferences =
       reactions = pref SGFReactions,
       voice = pref SGFVoice,
       files = pref SGFFiles,
+      simplexLinks = pref SGFSimplexLinks,
       history = pref SGFHistory
     }
   where
@@ -722,12 +810,12 @@ preferenceState pref =
    in (allow, param)
 
 getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactUserPreference (FeaturePreference f)
-getContactUserPreference f ps = case f of
-  SCFTimedMessages -> ps.timedMessages
-  SCFFullDelete -> ps.fullDelete
-  SCFReactions -> ps.reactions
-  SCFVoice -> ps.voice
-  SCFCalls -> ps.calls
+getContactUserPreference f ContactUserPreferences {timedMessages, fullDelete, reactions, voice, calls} = case f of
+  SCFTimedMessages -> timedMessages
+  SCFFullDelete -> fullDelete
+  SCFReactions -> reactions
+  SCFVoice -> voice
+  SCFCalls -> calls
 
 $(J.deriveJSON (enumJSON $ dropPrefix "CF") ''ChatFeature)
 
@@ -764,6 +852,8 @@ $(J.deriveJSON defaultJSON ''FullDeleteGroupPreference)
 $(J.deriveJSON defaultJSON ''VoiceGroupPreference)
 
 $(J.deriveJSON defaultJSON ''FilesGroupPreference)
+
+$(J.deriveJSON defaultJSON ''SimplexLinksGroupPreference)
 
 $(J.deriveJSON defaultJSON ''HistoryGroupPreference)
 
