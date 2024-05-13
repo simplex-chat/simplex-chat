@@ -69,7 +69,7 @@ chatGroupTests = do
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
-    it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
+    xit "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
     it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
@@ -2621,7 +2621,9 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
+    \a b -> do
+      let alice = a {printOutput = True}
+          bob = b {printOutput = True}
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"

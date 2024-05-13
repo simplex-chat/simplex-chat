@@ -9,6 +9,7 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
@@ -48,7 +49,8 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemes :: Maybe UIThemes
+    uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
+    uiThemes :: Maybe [UITheme]
   }
   deriving (Show)
 
@@ -78,6 +80,7 @@ defaultAppSettings =
       uiProfileImageCornerRadius = Just 22.5,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
+      uiCurrentThemeIds = Nothing,
       uiThemes = Nothing
     }
 
@@ -107,6 +110,7 @@ defaultParseAppSettings =
       uiProfileImageCornerRadius = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
+      uiCurrentThemeIds = Nothing,
       uiThemes = Nothing
     }
 
@@ -136,6 +140,7 @@ combineAppSettings platformDefaults storedSettings =
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
+      uiCurrentThemeIds = p uiCurrentThemeIds,
       uiThemes = p uiThemes
     }
   where
@@ -177,6 +182,7 @@ instance FromJSON AppSettings where
     uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
+    uiCurrentThemeIds <- p "uiCurrentThemeIds"
     uiThemes <- p "uiThemes"
     pure
       AppSettings
@@ -203,6 +209,7 @@ instance FromJSON AppSettings where
           uiProfileImageCornerRadius,
           uiColorScheme,
           uiDarkColorScheme,
+          uiCurrentThemeIds,
           uiThemes
         }
     where

@@ -2039,9 +2039,9 @@ processChatCommand' vr = \case
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
   ReceiveFile fileId encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withFileLock "receiveFile" fileId . procCmd $ do
-      (user, ft) <- withStore (`getRcvFileTransferById` fileId)
+      (user, ft@RcvFileTransfer {fileStatus}) <- withStore (`getRcvFileTransferById` fileId)
       encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
-      ft' <- (if encrypt then setFileToEncrypt else pure) ft
+      ft' <- (if encrypt && fileStatus == RFSNew then setFileToEncrypt else pure) ft
       receiveFile' user ft' rcvInline_ filePath_
   SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withFileLock "setFileToReceive" fileId . procCmd $ do
@@ -3036,7 +3036,7 @@ receiveFile' user ft rcvInline_ filePath_ = do
   where
     processError = \case
       -- TODO AChatItem in Cancelled events
-      ChatErrorAgent (SMP SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
+      ChatErrorAgent (SMP _ SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
       ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
       e -> throwError e
 
@@ -3373,7 +3373,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
             errorNetworkStatus :: ChatError -> String
             errorNetworkStatus = \case
               ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
-              ChatErrorAgent (SMP SMP.AUTH) _ -> "contact deleted"
+              ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
     -- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> CM ()
@@ -4499,7 +4499,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         MERR _ err -> do
           cancelSndFileTransfer user ft True >>= mapM_ (deleteAgentConnectionAsync user)
           case err of
-            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
+            SMP _ SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
               ci <- withStore $ \db -> do
                 liftIO (lookupChatRefByFileId db user fileId) >>= \case
                   Just (ChatRef CTDirect _) -> liftIO $ updateFileCancelled db user fileId CIFSSndCancelled
@@ -4654,7 +4654,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     incAuthErrCounter connEntity conn err = do
       case err of
-        SMP SMP.AUTH -> do
+        SMP _ SMP.AUTH -> do
           authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ do
             toView $ CRConnectionDisabled connEntity
@@ -4706,7 +4706,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> updateSndMsgDeliveryStatus db connId msgId MDSSndSent
 
     agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
-    agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
+    agentErrToItemStatus (SMP _ AUTH) = CISSndErrorAuth
     agentErrToItemStatus err = CISSndError . T.unpack . safeDecodeUtf8 $ strEncode err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()

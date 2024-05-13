@@ -2443,7 +2443,7 @@
 "member %@ changed to %@" = "%1$@ megváltoztatta a nevét erre: %2$@";
 
 /* rcv group event chat item */
-"member connected" = "kapcsolódva";
+"member connected" = "kapcsolódott";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre meg fog változni erre: \"%@\". A csoport minden tagja értesítést kap róla.";
