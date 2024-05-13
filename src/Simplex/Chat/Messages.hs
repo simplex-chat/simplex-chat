@@ -45,6 +45,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -276,6 +277,12 @@ toChatInfo = \case
   CDGroupRcv g _ -> GroupChat g
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
+
+contactChatDeleted :: ChatDirection c d -> Bool
+contactChatDeleted = \case
+  CDDirectSnd Contact {chatDeleted} -> chatDeleted
+  CDDirectRcv Contact {chatDeleted} -> chatDeleted
+  _ -> False
 
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,

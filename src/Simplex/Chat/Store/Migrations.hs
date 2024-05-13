@@ -106,6 +106,7 @@ import Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
 import Simplex.Chat.Migrations.M20240324_custom_data
 import Simplex.Chat.Migrations.M20240402_item_forwarded
 import Simplex.Chat.Migrations.M20240430_ui_theme
+import Simplex.Chat.Migrations.M20240501_chat_deleted
 import Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
@@ -213,6 +214,7 @@ schemaMigrations =
     ("20240324_custom_data", m20240324_custom_data, Just down_m20240324_custom_data),
     ("20240402_item_forwarded", m20240402_item_forwarded, Just down_m20240402_item_forwarded),
     ("20240430_ui_theme", m20240430_ui_theme, Just down_m20240430_ui_theme),
+    ("20240501_chat_deleted", m20240501_chat_deleted, Just down_m20240501_chat_deleted),
     ("20240510_chat_items_via_proxy", m20240510_chat_items_via_proxy, Just down_m20240510_chat_items_via_proxy)
   ]
 

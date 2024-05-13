@@ -180,9 +180,9 @@
     <string name="change_member_role_question">Csoport szerepkör megváltoztatása?</string>
     <string name="change_lock_mode">Zárolási mód megváltoztatása</string>
     <string name="notification_contact_connected">Kapcsolódott</string>
-    <string name="rcv_group_event_member_connected">kapcsolódva</string>
+    <string name="rcv_group_event_member_connected">kapcsolódott</string>
     <string name="connect_via_link_verb">Kapcsolódás</string>
-    <string name="group_member_status_connected">kapcsolódva</string>
+    <string name="group_member_status_connected">kapcsolódott</string>
     <string name="connected_mobile">Csatlakoztatott telefon</string>
     <string name="server_connected">kapcsolódva</string>
     <string name="change_role">Szerepkör megváltoztatása</string>
@@ -1151,7 +1151,7 @@
     <string name="callstate_received_answer">fogadott válasz…</string>
     <string name="restore_database_alert_title">Adatbázismentés visszaállítása?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
-    <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódtak</string>
+    <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódott</string>
     <string name="you_are_observer">megfigyelő szerep</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
