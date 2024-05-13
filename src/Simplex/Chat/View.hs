@@ -50,7 +50,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import qualified Simplex.FileTransfer.Transport as XFTPTransport
+import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ActivePendingSubs (..), ProtocolTestFailure (..), ProtocolTestStep (..), SubInfo (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
@@ -1174,8 +1174,8 @@ viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [St
 viewServerTestResult (AProtoServerWithAuth p _) = \case
   Just ProtocolTestFailure {testStep, testError} ->
     result
-      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTPTransport.AUTH]
+      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && (case testError of SMP _ SMP.AUTH -> True; _ -> False)]
+      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
       <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
@@ -2020,7 +2020,7 @@ viewChatError logLevel testView = \case
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
     CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
-    SMP SMP.AUTH ->
+    SMP _ SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"

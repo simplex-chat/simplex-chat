@@ -27,7 +27,6 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import Data.Int (Int64)
@@ -1479,9 +1478,6 @@ serializeIntroStatus = \case
   GMIntroReConnected -> "re-con"
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
-
-textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
-textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
 
 data NetworkStatus
   = NSUnknown

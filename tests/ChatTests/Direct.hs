@@ -185,9 +185,10 @@ testAddContact = versionTestMatrix2 runTestAddContact
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
           alice #$> ("/_read user 1", id, "ok")
-        features = if pqExpected
-          then chatFeatures
-          else (0, e2eeInfoNoPQStr) : tail chatFeatures
+        features =
+          if pqExpected
+            then chatFeatures
+            else (0, e2eeInfoNoPQStr) : tail chatFeatures
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
