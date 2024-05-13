@@ -251,7 +251,7 @@ public enum ChatCommand {
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(encodeJSON(chatDeleteMode))"
+            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(chatDeleteMode.cmdString)"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -473,10 +473,6 @@ public enum ChatCommand {
         return nil
     }
 
-    private func onOff(_ b: Bool) -> String {
-        b ? "on" : "off"
-    }
-
     private func onOffParam(_ param: String, _ b: Bool?) -> String {
         if let b = b {
             return " \(param)=\(onOff(b))"
@@ -487,6 +483,10 @@ public enum ChatCommand {
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
+}
+
+private func onOff(_ b: Bool) -> String {
+    b ? "on" : "off"
 }
 
 public struct APIResponse: Decodable {
@@ -988,6 +988,14 @@ public enum ChatDeleteMode: Codable {
     case full(notify: Bool)
     case entity(notify: Bool)
     case messages
+
+    var cmdString: String {
+        switch self {
+        case let .full(notify): "full nofity=\(onOff(notify))"
+        case let .entity(notify): "entity nofity=\(onOff(notify))"
+        case .messages: "messages"
+        }
+    }
 }
 
 public enum ConnectionPlan: Decodable {
