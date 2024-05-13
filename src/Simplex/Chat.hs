@@ -46,6 +46,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -2205,8 +2206,8 @@ processChatCommand' vr = \case
   ResetAgentStats -> lift (withAgent' resetAgentStats) >> ok_
   GetAgentMsgCounts -> lift $ do
     counts <- map (first decodeLatin1) <$> withAgent' getMsgCounts
-    let allMsgs = foldl' (\(s1, s2) (_, (n1, n2)) -> (s1 + n1, s2 + n2)) (0, 0) counts
-    pure CRAgentMsgCounts {msgCounts = ("all", allMsgs) : counts}
+    let allMsgs = foldl' (\(ts, ds) (_, (t, d)) -> (ts + t, ds + d)) (0, 0) counts
+    pure CRAgentMsgCounts {msgCounts = ("all", allMsgs) : sortOn (Down . snd) (filter (\(_, (_, d)) -> d /= 0) counts)}
   GetAgentSubs -> lift $ summary <$> withAgent' getAgentSubscriptions
     where
       summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
