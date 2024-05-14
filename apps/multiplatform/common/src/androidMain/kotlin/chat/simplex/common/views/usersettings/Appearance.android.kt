@@ -189,25 +189,25 @@ fun PreviewAppearanceSettings() {
 
 @Composable
 actual fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
-//  ColorPickerRectHueSaturationHSV(
-//    modifier = Modifier
-//      .fillMaxWidth()
-//      .height(300.dp)
-//      .padding(horizontal = DEFAULT_PADDING * 2),
-//    initialColor = initialColor,
-//    onColorChange = { color: Color, _ ->
-//      onColorChanged(color)
-//    }
-//  )
-  ClassicColorPicker(modifier = Modifier
-    .fillMaxWidth()
-    .height(300.dp)
-    .padding(horizontal = DEFAULT_PADDING),
-    color = HsvColor.from(color = initialColor), showAlphaBar = true,
-    onColorChanged = { color: HsvColor ->
-      onColorChanged(color.toColor())
+  ColorPickerRectHueSaturationHSV(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(300.dp)
+      .padding(horizontal = DEFAULT_PADDING * 2),
+    initialColor = initialColor,
+    onColorChange = { color: Color, _ ->
+      onColorChanged(color)
     }
   )
+//  ClassicColorPicker(modifier = Modifier
+//    .fillMaxWidth()
+//    .height(300.dp)
+//    .padding(horizontal = DEFAULT_PADDING),
+//    color = HsvColor.from(color = initialColor), showAlphaBar = true,
+//    onColorChanged = { color: HsvColor ->
+//      onColorChanged(color.toColor())
+//    }
+//  )
 }
 
 
