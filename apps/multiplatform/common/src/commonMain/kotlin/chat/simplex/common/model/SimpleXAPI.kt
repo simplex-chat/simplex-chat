@@ -2031,13 +2031,21 @@ object ChatController {
         }
       }
       is CR.ContactSwitch ->
-        chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+        }
       is CR.GroupMemberSwitch ->
-        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+        }
       is CR.ContactRatchetSync ->
-        chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+        }
       is CR.GroupMemberRatchetSync ->
-        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        }
       is CR.RemoteHostSessionCode -> {
         chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
@@ -4175,7 +4183,7 @@ sealed class CR {
   @Serializable @SerialName("rcvStandaloneFileComplete") class RcvStandaloneFileComplete(val user: UserRef, val targetPath: String, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem_: AChatItem?, val agentError: AgentErrorType, val rcvFileTransfer: RcvFileTransfer): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
@@ -4501,7 +4509,7 @@ sealed class CR {
     is RcvFileSndCancelled -> withUser(user, json.encodeToString(chatItem))
     is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem_)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
     is RcvStandaloneFileComplete -> withUser(user, targetPath)
-    is RcvFileError -> withUser(user, json.encodeToString(chatItem_))
+    is RcvFileError -> withUser(user, "chatItem_: ${json.encodeToString(chatItem_)}\nagentError: ${agentError.string}\nrcvFileTransfer: $rcvFileTransfer")
     is SndFileCancelled -> json.encodeToString(chatItem_)
     is SndStandaloneFileCreated -> noDetails()
     is SndFileStartXFTP -> withUser(user, json.encodeToString(chatItem))

@@ -2961,6 +2961,9 @@
 "Profile image" = "Profil fotoğrafı";
 
 /* No comment provided by engineer. */
+"Profile images" = "Profil resimleri";
+
+/* No comment provided by engineer. */
 "Profile name" = "Profil ismi";
 
 /* No comment provided by engineer. */
@@ -3051,7 +3054,7 @@
 "Read more in our GitHub repository." = "Daha fazlasını GitHub depomuzdan oku.";
 
 /* No comment provided by engineer. */
-"Receipts are disabled" = "Makbuzlar devre dışı bırakıldı";
+"Receipts are disabled" = "Gönderildi bilgisi devre dışı bırakıldı";
 
 /* No comment provided by engineer. */
 "received answer…" = "alınan cevap…";
@@ -3417,7 +3420,7 @@
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Görüldü bilgisi, tüm görünür sohbet profillerindeki tüm kişiler için etkinleştirilecektir.";
 
 /* No comment provided by engineer. */
-"Sending delivery receipts will be enabled for all contacts." = "Teslimat makbuzlarının gönderilmesi tüm kişiler için etkinleştirilecektir.";
+"Sending delivery receipts will be enabled for all contacts." = "Gönderildi bilgisi tüm kişiler için etkinleştirilecektir.";
 
 /* No comment provided by engineer. */
 "Sending file will be stopped." = "Dosya gönderimi durdurulacaktır.";
@@ -3502,6 +3505,9 @@
 
 /* No comment provided by engineer. */
 "Settings" = "Ayarlar";
+
+/* No comment provided by engineer. */
+"Shape profile images" = "Profil resimlerini şekillendir";
 
 /* chat item action */
 "Share" = "Paylaş";
@@ -3604,6 +3610,9 @@
 
 /* notification title */
 "Somebody" = "Biri";
+
+/* No comment provided by engineer. */
+"Square, circle, or anything in between." = "Kare,daire, veya aralarında herhangi bir şey.";
 
 /* chat item text */
 "standard end-to-end encryption" = "standart uçtan uca şifreleme";

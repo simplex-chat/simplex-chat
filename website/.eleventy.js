@@ -6,6 +6,7 @@ const uri = require('fast-uri')
 const i18n = require('eleventy-plugin-i18n')
 const fs = require("fs")
 const path = require("path")
+const matter = require('gray-matter')
 const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
 
@@ -388,16 +389,36 @@ module.exports = function (ty) {
     linkify: true,
     replaceLink: function (link, _env) {
       let parsed = uri.parse(link)
-      if (parsed.scheme || parsed.host || !parsed.path.endsWith(".md")) {
-        return link
+      if (parsed.scheme || parsed.host) return link
+
+      let hostFile = path.resolve(_env.page.inputPath)
+      let linkFile = path.resolve(hostFile, '..', parsed.path)
+      if (parsed.path.startsWith('/')) {
+        let srcIndex = hostFile.indexOf("/src")
+        if (srcIndex !== -1) {
+          linkFile = path.join(hostFile.slice(0, srcIndex + 4), parsed.path)
+        }
       }
-      if (parsed.path.startsWith("../../blog")) {
-        parsed.path = parsed.path.replace("../../blog", "/blog")
+
+      if (fs.existsSync(linkFile) && fs.statSync(linkFile).isFile()) {
+        // this condition works if the link is a valid website file
+        const fileContent = fs.readFileSync(linkFile, 'utf8')
+        parsed.path = (matter(fileContent).data?.permalink || parsed.path).replace(/\.md$/, ".html").toLowerCase()
+      } else if (!fs.existsSync(linkFile)) {
+        linkFile = linkFile.replace('/website/src', '')
+        if (fs.existsSync(linkFile)) {
+          // this condition works if the link is a valid project file
+          const githubUrl = "https://github.com/simplex-chat/simplex-chat/blob/stable"
+          const keyword = "/simplex-chat"
+          index = linkFile.indexOf(keyword)
+          linkFile = linkFile.substring(index + keyword.length)
+          parsed.path = `${githubUrl}${linkFile}`
+        } else {
+          // if the link is not a valid website file or project file
+          throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
+        }
       }
-      if (parsed.path.startsWith("../PRIVACY.md")) {
-        parsed.path = parsed.path.replace("../PRIVACY.md", "/privacy")
-      }
-      parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
+
       return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {

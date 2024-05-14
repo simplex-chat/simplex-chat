@@ -1530,7 +1530,7 @@
     <string name="multicast_discoverable_via_local_network">Yerel ağ üzerinden keşfedilebilir</string>
     <string name="info_row_updated_at">Kayıt güncellendi</string>
     <string name="smp_servers_use_server">Sunucu kullan</string>
-    <string name="share_text_received_at">Şuradan alındı: %s</string>
+    <string name="share_text_received_at">Alınma tarihi: %s</string>
     <string name="add_contact_tab">Kişi Ekle</string>
     <string name="v5_3_discover_join_groups_descr">- dizin hizmetine bağlan
 \n(BETADA!)
@@ -1767,4 +1767,7 @@
     <string name="network_type_network_wifi">WiFi</string>
     <string name="v5_7_call_sounds_descr">Sesli ve görüntülü aramalara bağlanırken.</string>
     <string name="network_type_ethernet">Kablolu ethernet</string>
+    <string name="settings_section_title_profile_images">Profil resimleri</string>
+    <string name="v5_7_shape_profile_images">Profil resimlerini şekillendir</string>
+    <string name="v5_7_shape_profile_images_descr">Kare,daire, veya aralarında herhangi bir şey.</string>
 </resources>

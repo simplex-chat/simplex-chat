@@ -22,8 +22,6 @@ import Control.Monad
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
-import Data.Text (Text)
-import Data.Time.Clock (UTCTime (..))
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
@@ -32,7 +30,6 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -100,20 +97,20 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           db
           [sql|
             SELECT
-              c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, c.via_group, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
-              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.contact_group_member_id, c.contact_grp_inv_sent, c.custom_data
+              c.contact_profile_id, c.local_display_name, c.via_group, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
+              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.contact_group_member_id, c.contact_grp_inv_sent, c.ui_themes, c.chat_deleted, c.custom_data
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Int64, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool, Maybe CustomData)] -> Either StoreError Contact
-    toContact' contactId conn [(profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, customData)] =
+    toContact' :: Int64 -> Connection -> [ContactRow'] -> Either StoreError Contact
+    toContact' contactId conn [(profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
-       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, customData}
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -125,7 +122,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
               -- GroupInfo
               g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
               g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-              g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.custom_data,
+              g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.ui_themes, g.custom_data,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
               mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,

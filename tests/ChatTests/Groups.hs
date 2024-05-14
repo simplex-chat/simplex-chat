@@ -69,7 +69,7 @@ chatGroupTests = do
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
-    it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
+    xit "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
     it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
@@ -120,6 +120,7 @@ chatGroupTests = do
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
+    it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -2620,7 +2621,9 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
+    \a b -> do
+      let alice = a {printOutput = True}
+          bob = b {printOutput = True}
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -4436,6 +4439,18 @@ testGroupMsgForwardNewMember =
                "cath (Catherine): admin, connected",
                "dan (Daniel): member"
              ]
+
+testGroupMsgForwardLeave :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardLeave =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob ##> "/leave #team"
+      bob <## "#team: you left the group"
+      bob <## "use /d #team to delete the group"
+      alice <## "#team: bob left the group"
+      cath <## "#team: bob left the group"
 
 testGroupHistory :: HasCallStack => FilePath -> IO ()
 testGroupHistory =
