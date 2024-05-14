@@ -497,7 +497,7 @@ data ChatCommand
   | DebugEvent ChatResponse
   | GetAgentStats
   | ResetAgentStats
-  | GetAgentSubs
+  | GetAgentSubs {diffOnly :: Bool}
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | GetAgentMsgCounts

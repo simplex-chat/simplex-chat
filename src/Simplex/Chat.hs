@@ -2227,7 +2227,7 @@ processChatCommand' vr = \case
     counts <- map (first decodeLatin1) <$> withAgent' getMsgCounts
     let allMsgs = foldl' (\(ts, ds) (_, (t, d)) -> (ts + t, ds + d)) (0, 0) counts
     pure CRAgentMsgCounts {msgCounts = ("all", allMsgs) : sortOn (Down . snd) (filter (\(_, (_, d)) -> d /= 0) counts)}
-  GetAgentSubs -> lift $ CRAgentSubs <$> withAgent' getAgentSubscriptions
+  GetAgentSubs diff -> withUser $ \User {userId} -> lift $ CRAgentSubs <$> withAgent' (\a -> getAgentSubscriptions a diff (Just userId))
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
   CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
@@ -7348,7 +7348,7 @@ chatCommandP =
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
-      "/get subs" $> GetAgentSubs,
+      "/get subs" *> (GetAgentSubs <$> (" diff" $> True <|> pure False)),
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
       "/get msgs" $> GetAgentMsgCounts,
