@@ -182,7 +182,7 @@ fun FramedItemView(
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
     if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler)
+      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy)
     }
   }
 
@@ -246,7 +246,7 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
                 }
               }
               is MsgContent.MCVideo -> {
@@ -254,29 +254,29 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
                 }
               }
               is MsgContent.MCVoice -> {
                 CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile)
                 if (mc.text != "") {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
                 }
               }
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
                 } else {
                   ciFileView(ci, mc.text)
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
                 Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
                 }
               }
-              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
             }
           }
         }
@@ -294,14 +294,15 @@ fun CIMarkdownText(
   chatTTL: Int?,
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
-  onLinkLongClick: (link: String) -> Unit = {}
+  onLinkLongClick: (link: String) -> Unit = {},
+  showViaProxy: Boolean
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy
     )
   }
 }

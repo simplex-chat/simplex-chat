@@ -69,7 +69,8 @@ fun MarkdownText (
   modifier: Modifier = Modifier,
   linkMode: SimplexLinkMode,
   inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
-  onLinkLongClick: (link: String) -> Unit = {}
+  onLinkLongClick: (link: String) -> Unit = {},
+  showViaProxy: Boolean = false
 ) {
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -77,7 +78,7 @@ fun MarkdownText (
   val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
     "\n"
   } else if (meta != null) {
-    reserveSpaceForMeta(meta, chatTTL, null) // LALAL
+    reserveSpaceForMeta(meta, chatTTL, null, showViaProxy = showViaProxy) // LALAL
   } else {
     "    "
   }
