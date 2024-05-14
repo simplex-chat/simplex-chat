@@ -36,6 +36,8 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
+import com.godaddy.android.colorpicker.ClassicColorPicker
+import com.godaddy.android.colorpicker.HsvColor
 import com.smarttoolfactory.colorpicker.model.ColorModel
 import com.smarttoolfactory.colorpicker.selector.SelectorRectHueSaturationHSV
 import com.smarttoolfactory.colorpicker.slider.SliderCircleColorDisplayValueHSV
@@ -187,14 +189,23 @@ fun PreviewAppearanceSettings() {
 
 @Composable
 actual fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
-  ColorPickerRectHueSaturationHSV(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(300.dp)
-      .padding(horizontal = DEFAULT_PADDING * 2),
-    initialColor = initialColor,
-    onColorChange = { color: Color, _ ->
-      onColorChanged(color)
+//  ColorPickerRectHueSaturationHSV(
+//    modifier = Modifier
+//      .fillMaxWidth()
+//      .height(300.dp)
+//      .padding(horizontal = DEFAULT_PADDING * 2),
+//    initialColor = initialColor,
+//    onColorChange = { color: Color, _ ->
+//      onColorChanged(color)
+//    }
+//  )
+  ClassicColorPicker(modifier = Modifier
+    .fillMaxWidth()
+    .height(300.dp)
+    .padding(horizontal = DEFAULT_PADDING),
+    color = HsvColor.from(color = initialColor), showAlphaBar = true,
+    onColorChanged = { color: HsvColor ->
+      onColorChanged(color.toColor())
     }
   )
 }

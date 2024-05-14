@@ -10,6 +10,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
@@ -477,8 +478,17 @@ object AppearanceScope {
         onColorChange(currentColor)
       }
       val clipboard = LocalClipboardManager.current
-      Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+      Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
         Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
+        val textField = remember { mutableStateOf("") }
+        TextField(textField.value, modifier = Modifier.width(130.dp), onValueChange = { color ->
+          val color = color.trim()
+          textField.value = color
+          if ((color.startsWith("#") && (color.length == 7 || color.length == 9)) || (!color.startsWith("#") && (color.length == 6 || color.length == 8))) {
+            currentColor = if (color.length == 6 || color.length == 7) ("ff$color").colorFromReadableHex() else color.colorFromReadableHex()
+            onColorChange(currentColor)
+          }
+        })
         Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
       }
       val savedColor by remember { mutableStateOf(initialColor) }
