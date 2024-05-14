@@ -396,18 +396,29 @@ module.exports = function (ty) {
       if (parsed.path.startsWith('/')) {
         let srcIndex = hostFile.indexOf("/src")
         if (srcIndex !== -1) {
-          let basePath = hostFile.slice(0, srcIndex + 4)
-          linkFile = basePath + parsed.path
+          linkFile = path.join(hostFile.slice(0, srcIndex + 4), parsed.path);
         }
       }
-      try {
-        const frontMatterData = getFrontMatter(linkFile)
-        parsed.path = frontMatterData?.permalink || parsed.path
-      } catch (error) {
-        console.log(`Broken link: ${parsed.path} in ${hostFile}`)
+
+      if (fs.existsSync(linkFile) && fs.statSync(linkFile).isFile()) {
+        // this condition works if the link is a valid website file
+        const fileContent = fs.readFileSync(linkFile, 'utf8')
+        parsed.path = (matter(fileContent).data?.permalink || parsed.path).replace(/\.md$/, ".html").toLowerCase()
+      } else if (!fs.existsSync(linkFile)) {
+        linkFile = linkFile.replace('/website/src', '')
+        if (fs.existsSync(linkFile)) {
+          // this condition works if the link is a valid project file
+          const githubUrl = "https://github.com/simplex-chat/simplex-chat/blob/stable"
+          const keyword = "/simplex-chat"
+          index = linkFile.indexOf(keyword)
+          linkFile = linkFile.substring(index + keyword.length)
+          parsed.path = `${githubUrl}${linkFile}`
+        } else {
+          // if the link is not a valid website file or project file
+          throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
+        }
       }
 
-      parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {
@@ -431,22 +442,5 @@ module.exports = function (ty) {
     markdownTemplateEngine: 'njk',
     htmlTemplateEngine: 'njk',
     dataTemplateEngine: 'njk',
-  }
-}
-
-function getFrontMatter(filePath) {
-  try {
-    if (fs.existsSync(filePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf8')
-      const frontMatter = matter(fileContent)
-      return frontMatter.data
-    } else {
-      throw new Error('broken-link')
-    }
-  } catch (error) {
-    if (error.message === 'broken-link') {
-      throw error
-    }
-    return null
   }
 }

@@ -97,7 +97,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Uwaga:** Jeśli napotkasz błąd `` version `GLIBC_2.28' not found ``, przebuduj go z obrazem bazowym `haskell:8.10.7-stretch` (zmień go w Twoim lokalnym pliku [Dockerfile](Dockerfile)).
+> **Uwaga:** Jeśli napotkasz błąd `` version `GLIBC_2.28' not found ``, przebuduj go z obrazem bazowym `haskell:8.10.7-stretch` (zmień go w Twoim lokalnym pliku [Dockerfile](/Dockerfile)).
 
 #### Używając Haskella na dowolnym systemie operacyjnym
 
