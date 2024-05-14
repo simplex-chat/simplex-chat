@@ -46,6 +46,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -1022,22 +1023,41 @@ processChatCommand' vr = \case
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat (ChatRef cType chatId) notify -> withUser $ \user@User {userId} -> case cType of
+  APIDeleteChat cRef@(ChatRef cType chatId) cdm -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db vr user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
-      withContactLock "deleteChat direct" chatId . procCmd $ do
-        cancelFilesInProgress user filesInfo
-        deleteFilesLocally filesInfo
-        let doSendDel = contactReady ct && contactActive ct && notify
-        when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchChatError` const (pure ())
-        contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db vr userId ct)
-        deleteAgentConnectionsAsync' user contactConnIds doSendDel
-        -- functions below are called in separate transactions to prevent crashes on android
-        -- (possibly, race condition on integrity check?)
-        withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
-        withStore $ \db -> deleteContact db user ct
-        pure $ CRContactDeleted user ct
+      withContactLock "deleteChat direct" chatId . procCmd $
+        case cdm of
+          CDMFull notify -> do
+            cancelFilesInProgress user filesInfo
+            deleteFilesLocally filesInfo
+            sendDelDeleteConns ct notify
+            -- functions below are called in separate transactions to prevent crashes on android
+            -- (possibly, race condition on integrity check?)
+            withStore' $ \db -> do
+              deleteContactConnections db user ct
+              deleteContactFiles db user ct
+            withStore $ \db -> deleteContact db user ct
+            pure $ CRContactDeleted user ct
+          CDMEntity notify -> do
+            cancelFilesInProgress user filesInfo
+            sendDelDeleteConns ct notify
+            ct' <- withStore $ \db -> do
+              liftIO $ deleteContactConnections db user ct
+              liftIO $ void $ updateContactStatus db user ct CSDeletedByUser
+              getContact db vr user chatId
+            pure $ CRContactDeleted user ct'
+          CDMMessages -> do
+            void $ processChatCommand $ APIClearChat cRef
+            withStore' $ \db -> setContactChatDeleted db user ct True
+            pure $ CRContactDeleted user ct {chatDeleted = True}
+      where
+        sendDelDeleteConns ct notify = do
+          let doSendDel = contactReady ct && contactActive ct && notify
+          when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchChatError` const (pure ())
+          contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db vr userId ct)
+          deleteAgentConnectionsAsync' user contactConnIds doSendDel
     CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId . procCmd $ do
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync user acId
@@ -1554,7 +1574,7 @@ processChatCommand' vr = \case
       CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
         processChatCommand $ APIConnectContactViaAddress userId incognito contactId
       _ -> processChatCommand $ APIConnect userId incognito (Just cReqUri)
-  DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
+  DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) cdm
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
     CRContactsList user <$> withStore' (\db -> getUserContacts db vr user)
@@ -1889,7 +1909,7 @@ processChatCommand' vr = \case
     processChatCommand $ APILeaveGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId) True
+    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId) (CDMFull True)
   ClearGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIClearChat (ChatRef CTGroup groupId)
@@ -2203,6 +2223,10 @@ processChatCommand' vr = \case
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> lift (withAgent' resetAgentStats) >> ok_
+  GetAgentMsgCounts -> lift $ do
+    counts <- map (first decodeLatin1) <$> withAgent' getMsgCounts
+    let allMsgs = foldl' (\(ts, ds) (_, (t, d)) -> (ts + t, ds + d)) (0, 0) counts
+    pure CRAgentMsgCounts {msgCounts = ("all", allMsgs) : sortOn (Down . snd) (filter (\(_, (_, d)) -> d /= 0) counts)}
   GetAgentSubs -> lift $ CRAgentSubs <$> withAgent' getAgentSubscriptions
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
@@ -6663,7 +6687,7 @@ saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage 
 saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemForwarded itemTimed live = do
   createdAt <- liftIO getCurrentTime
   ciId <- withStore' $ \db -> do
-    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
@@ -6677,7 +6701,7 @@ saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c
 saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live = do
   createdAt <- liftIO getCurrentTime
   (ciId, quotedItem, itemForwarded) <- withStore' $ \db -> do
-    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
     r@(ciId, _, _) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure r
@@ -6943,7 +6967,7 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
   where
     updateChat :: DB.Connection -> UTCTime -> ChatDirection c d -> [CIContent d] -> IO ()
     updateChat db createdAt cd contents
-      | any ciRequiresAttention contents = updateChatTs db user cd createdAt
+      | any ciRequiresAttention contents || contactChatDeleted cd = updateChatTs db user cd createdAt
       | otherwise = pure ()
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
@@ -7091,7 +7115,7 @@ chatCommandP =
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
-      "/_delete " *> (APIDeleteChat <$> chatRefP <*> (A.space *> "notify=" *> onOffP <|> pure True)),
+      "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal),
@@ -7197,7 +7221,7 @@ chatCommandP =
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
-      ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
+      ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName <*> chatDeleteMode),
       "/clear *" $> ClearNoteFolder,
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
@@ -7327,6 +7351,7 @@ chatCommandP =
       "/get subs" $> GetAgentSubs,
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
+      "/get msgs" $> GetAgentMsgCounts,
       "//" *> (CustomChatCommand <$> A.takeByteString)
     ]
   where
@@ -7347,6 +7372,15 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
+    chatDeleteMode =
+      A.choice
+        [ " full" *> (CDMFull <$> notifyP),
+          " entity" *> (CDMEntity <$> notifyP),
+          " messages" $> CDMMessages,
+          CDMFull <$> notifyP -- backwards compatible
+        ]
+      where
+        notifyP = " notify=" *> onOffP <|> pure True
     displayName = safeDecodeUtf8 <$> (quoted "'" <|> takeNameTill isSpace)
       where
         takeNameTill p =

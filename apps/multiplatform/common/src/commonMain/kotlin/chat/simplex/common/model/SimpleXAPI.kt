@@ -2031,13 +2031,21 @@ object ChatController {
         }
       }
       is CR.ContactSwitch ->
-        chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+        }
       is CR.GroupMemberSwitch ->
-        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+        }
       is CR.ContactRatchetSync ->
-        chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+        }
       is CR.GroupMemberRatchetSync ->
-        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        }
       is CR.RemoteHostSessionCode -> {
         chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }

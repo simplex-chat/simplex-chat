@@ -177,6 +177,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     uiThemes :: Maybe UIThemeEntityOverrides,
+    chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -226,7 +227,7 @@ contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
 contactDeleted :: Contact -> Bool
-contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
@@ -236,7 +237,8 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
-  | CSDeleted -- contact deleted by contact
+  | CSDeleted
+  | CSDeletedByUser
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
@@ -254,10 +256,12 @@ instance TextEncoding ContactStatus where
   textDecode = \case
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
+    "deletedByUser" -> Just CSDeletedByUser
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
+    CSDeletedByUser -> "deletedByUser"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
