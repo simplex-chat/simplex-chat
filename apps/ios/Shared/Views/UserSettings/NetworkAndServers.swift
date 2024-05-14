@@ -83,26 +83,28 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Picker("SMP proxy mode", selection: $proxyMode) {
+                    Picker("Forward via your relays", selection: $proxyMode) {
                         ForEach(SMPProxyMode.values, id: \.self) { Text($0.text) }
                     }
                     .frame(height: 36)
 
-                    Picker("SMP proxy fallback", selection: $proxyFallback) {
+                    Picker("Send directly", selection: $proxyFallback) {
                         ForEach(SMPProxyFallback.values, id: \.self) { Text($0.text) }
                     }
                     .frame(height: 36)
                     .disabled(proxyMode == .never)
 
-                    Toggle("Show \"sent via proxy\"", isOn: $showSentViaProxy)
-                        .disabled(proxyMode == .never)
-                } header: {
-                    Text("Send via SMP proxy")
-                } footer: {
-                    if showSentViaProxy {
-                        Text("Show this icon on messages sent via SMP proxy:") + Text(" ") + Text(Image(systemName: "arrow.forward"))
+                    settingsRow("chevron.forward.circle") {
+                        Toggle("Show \"forwarded\" icon", isOn: $showSentViaProxy)
                     }
+                } header: {
+                    Text("Use your relays to send messages")
                 }
+//                footer: {
+//                    if showSentViaProxy {
+//                        Text("Show **>** when message is forwarded via your relay")
+//                    }
+//                }
 
                 Section("Calls") {
                     NavigationLink {
