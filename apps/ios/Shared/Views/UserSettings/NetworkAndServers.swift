@@ -101,8 +101,6 @@ struct NetworkAndServers: View {
                 } footer: {
                     if showSentViaProxy {
                         Text("Show this icon on messages sent via SMP proxy:") + Text(" ") + Text(Image(systemName: "arrow.forward"))
-                    } else {
-                        Text("Don't show additional icon on messages sent via SMP proxy.")
                     }
                 }
 

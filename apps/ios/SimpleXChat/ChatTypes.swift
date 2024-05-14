@@ -2711,7 +2711,8 @@ public enum CIStatus: Decodable {
     case sndSent(sndProgress: SndCIStatusProgress)
     case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
     case sndErrorAuth
-    case sndError(agentError: String)
+    case sndError(agentError: SndError)
+    case sndWarning(agentError: SndError)
     case rcvNew
     case rcvRead
     case invalid(text: String)
@@ -2723,6 +2724,7 @@ public enum CIStatus: Decodable {
         case .sndRcvd: return "sndRcvd"
         case .sndErrorAuth: return "sndErrorAuth"
         case .sndError: return "sndError"
+        case .sndWarning: return "sndWarning"
         case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
         case .invalid: return "invalid"
@@ -2739,7 +2741,8 @@ public enum CIStatus: Decodable {
             case .badMsgHash: return ("checkmark", .red)
             }
         case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("exclamationmark.triangle.fill", .yellow)
+        case .sndError: return ("multiply", .red)
+        case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
         case .rcvRead: return nil
         case .invalid: return ("questionmark", metaColor)
@@ -2757,7 +2760,11 @@ public enum CIStatus: Decodable {
             )
         case let .sndError(agentError): return (
                 NSLocalizedString("Message delivery error", comment: "item status text"),
-                String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "item status description"), agentError)
+                agentError.errorInfo
+            )
+        case let .sndWarning(agentError): return (
+                NSLocalizedString("Message delivery warning", comment: "item status text"),
+                agentError.errorInfo
             )
         case .rcvNew: return nil
         case .rcvRead: return nil
@@ -2769,21 +2776,41 @@ public enum CIStatus: Decodable {
     }
 }
 
-//public enum SndError: Decodable {
-//    case auth
-//    case sndSent(sndProgress: SndCIStatusProgress)
-//    case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
-//    case sndErrorAuth
-//    case sndError(agentError: String)
-//}
-//
-//public enum SrvError: Decodable {
-//    case host
-//    case version
-//    case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
-//    case sndErrorAuth
-//    case other(agentError: String)
-//}
+public enum SndError: Decodable {
+    case auth
+    case quota
+    case expired
+    case relay(srvError: SrvError)
+    case proxy(proxyServer: String, srvError: SrvError)
+    case proxyRelay(proxyServer: String, srvError: SrvError)
+    case other(sndError: String)
+
+    public var errorInfo: String {
+        switch self {
+        case .auth: NSLocalizedString("Auth error - most likely this connection is deleted.", comment: "snd error text")
+        case .quota: NSLocalizedString("Quota error - recipient hasn't retrieved older messages.", comment: "snd error text")
+        case .expired: NSLocalizedString("Expired - message sending has been aborted due to network issues.", comment: "snd error text")
+        case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("Relay error:\n%@", comment: "snd error text"), srvError.errorInfo)
+        case let .proxy(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nProxy error:\n%@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .proxyRelay(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nError between proxy and relay:\n%@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .other(sndError): String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "snd error text"), sndError)
+        }
+    }
+}
+
+public enum SrvError: Decodable {
+    case host
+    case version
+    case other(srvError: String)
+
+    public var errorInfo: String {
+        switch self {
+        case .host: NSLocalizedString("Host mode is incompatible", comment: "srv error text")
+        case .version: NSLocalizedString("Version is incompatible", comment: "srv error text")
+        case let .other(srvError): String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "srv error text"), srvError)
+        }
+    }
+}
 
 public enum MsgReceiptStatus: String, Decodable {
     case ok
