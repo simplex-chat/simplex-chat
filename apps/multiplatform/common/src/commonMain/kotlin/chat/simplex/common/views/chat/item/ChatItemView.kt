@@ -83,17 +83,15 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    val onClick = {
-      when (cItem.meta.itemStatus) {
-        is CIStatus.SndErrorAuth -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.message_delivery_error_desc))
-        }
-        is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
-        }
-        else -> {}
+    val info = cItem.meta.itemStatus.statusInto
+    val onClick = if (info != null) {
+      {
+        AlertManager.shared.showAlertMsg(
+          title = info.first,
+          text = info.second,
+        )
       }
-    }
+    } else { {} }
 
     @Composable
     fun ChatItemReactions() {
@@ -817,13 +815,6 @@ fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteM
     onConfirm = {
       deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
     }
-  )
-}
-
-private fun showMsgDeliveryErrorAlert(description: String) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.message_delivery_error_title),
-    text = description,
   )
 }
 

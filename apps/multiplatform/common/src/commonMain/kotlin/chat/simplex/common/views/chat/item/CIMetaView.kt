@@ -159,7 +159,7 @@ fun PreviewCIMetaViewSendFailed() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
-      status = CIStatus.SndError("CMD SYNTAX")
+      status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
     null
   )

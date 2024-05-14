@@ -255,7 +255,19 @@
 
   <!-- Chat Alerts - ChatItemView.kt -->
   <string name="message_delivery_error_title">Message delivery error</string>
+  <string name="message_delivery_warning_title">Message delivery warning</string>
   <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
+
+  <!-- CIStatus errors -->
+  <string name="ci_status_other_error">Unexpected error: %1$s</string>
+  <string name="snd_error_auth">Auth error - most likely this connection is deleted.</string>
+  <string name="snd_error_quota">Quota error - recipient hasn\'t retrieved older messages.</string>
+  <string name="snd_error_expired">Expired - message sending has been aborted due to network issues.</string>
+  <string name="snd_error_relay">Relay error: %1$s</string>
+  <string name="snd_error_proxy">Proxy server: %1$s\nProxy error: %2$s</string>
+  <string name="snd_error_proxy_relay">Proxy server: %1$s\nError between proxy and relay: %2$s</string>
+  <string name="srv_error_host">Host mode is incompatible</string>
+  <string name="srv_error_version">Version is incompatible</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
