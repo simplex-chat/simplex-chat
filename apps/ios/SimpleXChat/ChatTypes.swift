@@ -2787,13 +2787,13 @@ public enum SndError: Decodable {
 
     public var errorInfo: String {
         switch self {
-        case .auth: NSLocalizedString("Auth error - most likely this connection is deleted.", comment: "snd error text")
-        case .quota: NSLocalizedString("Quota error - recipient hasn't retrieved older messages.", comment: "snd error text")
-        case .expired: NSLocalizedString("Expired - message sending has been aborted due to network issues.", comment: "snd error text")
-        case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("Relay error: %@", comment: "snd error text"), srvError.errorInfo)
-        case let .proxy(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nProxy error: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
-        case let .proxyRelay(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nError between proxy and relay: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
-        case let .other(sndError): String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "snd error text"), sndError)
+        case .auth: NSLocalizedString("Wrong key or unknown connection - most likely this connection is deleted.", comment: "snd error text")
+        case .quota: NSLocalizedString("Capacity exceeded - recipient did not receive previously sent messages.", comment: "snd error text")
+        case .expired: NSLocalizedString("Network issues - message expired after many attempts to send it.", comment: "snd error text")
+        case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("Destination server error: %@", comment: "snd error text"), srvError.errorInfo)
+        case let .proxy(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Forwarding server: %@\nError: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .proxyRelay(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Forwarding server: %@\nDestination server error: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .other(sndError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "snd error text"), sndError)
         }
     }
 }
@@ -2805,9 +2805,9 @@ public enum SrvError: Decodable {
 
     public var errorInfo: String {
         switch self {
-        case .host: NSLocalizedString("Host mode is incompatible", comment: "srv error text")
-        case .version: NSLocalizedString("Version is incompatible", comment: "srv error text")
-        case let .other(srvError): String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "srv error text"), srvError)
+        case .host: NSLocalizedString("Server address is incompatible with network settings.", comment: "srv error text.")
+        case .version: NSLocalizedString("Server version is incompatible with network settings.", comment: "srv error text")
+        case let .other(srvError): srvError
         }
     }
 }

@@ -1307,7 +1307,7 @@ public enum SMPProxyMode: String, Codable {
         switch self {
         case .always: return "always"
         case .unknown: return "unknown relays"
-        case .unprotected: return "unprotected IP"
+        case .unprotected: return "unprotected"
         case .never: return "never"
         }
     }
@@ -1324,9 +1324,9 @@ public enum SMPProxyFallback: String, Codable {
 
     public var text: LocalizedStringKey {
         switch self {
-        case .allow: return "allow"
-        case .allowProtected: return "allow with protected IP"
-        case .prohibit: return "prohibit"
+        case .allow: return "yes"
+        case .allowProtected: return "when IP hidden"
+        case .prohibit: return "no"
         }
     }
 

@@ -83,28 +83,25 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Picker("Forward via your relays", selection: $proxyMode) {
+                    Picker("2-hop routing", selection: $proxyMode) {
                         ForEach(SMPProxyMode.values, id: \.self) { Text($0.text) }
                     }
                     .frame(height: 36)
 
-                    Picker("Send directly", selection: $proxyFallback) {
+                    Picker("Allow downgrade", selection: $proxyFallback) {
                         ForEach(SMPProxyFallback.values, id: \.self) { Text($0.text) }
                     }
-                    .frame(height: 36)
                     .disabled(proxyMode == .never)
+                    .frame(height: 36)
 
-                    settingsRow("arrow.forward") {
-                        Toggle("Show \"forwarded\" icon", isOn: $showSentViaProxy)
-                    }
+                    Toggle("Show message status", isOn: $showSentViaProxy)
                 } header: {
-                    Text("Use your relays to send messages")
+                    Text("Private message routing")
+                } footer: {
+                    if showSentViaProxy {
+                        Text("Show → on messages sent via 2-hop routing.")
+                    }
                 }
-//                footer: {
-//                    if showSentViaProxy {
-//                        Text("Show **>** when message is forwarded via your relay")
-//                    }
-//                }
 
                 Section("Calls") {
                     NavigationLink {
@@ -180,7 +177,7 @@ struct NetworkAndServers: View {
                 )
             case let .updateSMPProxyMode(proxyMode):
                 return Alert(
-                    title: Text("Update SMP proxy mode?"),
+                    title: Text("Message routing mode"),
                     message: Text(proxyModeInfo(proxyMode)) + Text("\n") + Text("Updating this setting will re-connect the client to all servers."),
                     primaryButton: .default(Text("Ok")) {
                         netCfg.smpProxyMode = proxyMode
@@ -192,7 +189,7 @@ struct NetworkAndServers: View {
                 )
             case let .updateSMPProxyFallback(proxyFallback):
                 return Alert(
-                    title: Text("Update SMP proxy fallback mode?"),
+                    title: Text("Message routing fallback"),
                     message: Text(proxyFallbackInfo(proxyFallback)) + Text("\n") + Text("Updating this setting will re-connect the client to all servers."),
                     primaryButton: .default(Text("Ok")) {
                         netCfg.smpProxyFallback = proxyFallback
@@ -252,18 +249,18 @@ struct NetworkAndServers: View {
     
     private func proxyModeInfo(_ mode: SMPProxyMode) -> LocalizedStringKey {
         switch mode {
-        case .always: return "Always send messages via SMP proxy."
-        case .unknown: return "Use SMP proxy with unknown relays."
-        case .unprotected: return "Use SMP proxy with unknown relays when IP address is not protected (i.e., when .onion address is not used)."
-        case .never: return "Don't use SMP proxy."
+        case .always: return "Always use 2-hop onion routing."
+        case .unknown: return "Use 2-hop onion routing with unknown servers."
+        case .unprotected: return "Use 2-hop onion routing with unknown servers when IP address is not protected."
+        case .never: return "Do NOT use 2-hop onion routing."
         }
     }
 
     private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
         switch proxyFallback {
-        case .allow: return "Connect directly when chosen proxy or destination relay do not support proxy protocol."
-        case .allowProtected: return "Connect directly only when IP address is protected (i.e., when .onion address is used)."
-        case .prohibit: return "Prohibit direct connection to destination relay."
+        case .allow: return "Send messages directly when your or destination server does not support 2-hop onion routing."
+        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support 2-hop onion routing."
+        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support 2-hop onion routing."
         }
     }
 }

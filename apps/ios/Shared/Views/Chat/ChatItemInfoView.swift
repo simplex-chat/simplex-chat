@@ -411,7 +411,7 @@ struct ChatItemInfoView: View {
             Spacer()
             if sentViaProxy == true {
                 Image(systemName: "arrow.forward")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.secondary).opacity(0.67)
             }
             let v = Group {
                 if let (icon, statusColor) = status.statusIcon(Color.secondary) {
