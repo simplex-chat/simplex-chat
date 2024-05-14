@@ -157,7 +157,7 @@ enum class PredefinedBackgroundImage(
   fun toType(scale: Float? = null): BackgroundImageType =
     BackgroundImageType.Repeated(
       filename,
-      scale ?: appPrefs.themeOverrides.get().firstOrNull { it.wallpaper.preset == filename && it.base == CurrentColors.value.base }?.wallpaper?.scale ?: 1f
+      scale ?: appPrefs.themeOverrides.get().firstOrNull { it.wallpaper != null && it.wallpaper.preset == filename && it.base == CurrentColors.value.base }?.wallpaper?.scale ?: 1f
     )
 
   companion object {

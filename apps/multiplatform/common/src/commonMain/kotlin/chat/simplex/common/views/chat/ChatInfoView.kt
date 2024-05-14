@@ -43,7 +43,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import java.util.*
 
 @Composable
 fun ChatInfoView(
@@ -704,16 +703,26 @@ fun ModalData.WallpaperEditorModal(chat: Chat) {
       ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes
       ?: ThemeModeOverrides()
   }
+  val systemDark = isInDarkTheme()
+  val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
   val initialTheme = remember(CurrentColors.value.base) {
-    (themes.preferredTheme() ?: ThemeModeOverride()).copy(mode = CurrentColors.value.base.mode)
+    val globalTheme = ThemeManager.defaultActiveTheme(systemDark, appPrefs.themeOverrides.get())
+    val preferred = themes.preferredTheme()
+    if (preferred != null) {
+      preferred
+    } else {
+      globalThemeUsed.value = true
+      ThemeModeOverride(colors = globalTheme?.colors ?: ThemeColors(), wallpaper = globalTheme?.wallpaper)
+    }
   }
   WallpaperEditor(
     initialTheme,
     applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+    globalThemeUsed = globalThemeUsed,
     save = { applyToMode, newTheme ->
     withBGApi {
-      val unchangedThemes: ThemeModeOverrides? = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
-      val backgroundFiles = listOf(unchangedThemes?.light?.wallpaper?.imageFile, unchangedThemes?.dark?.wallpaper?.imageFile)
+      val unchangedThemes: ThemeModeOverrides = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
+      val backgroundFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
       var changedThemes: ThemeModeOverrides? = unchangedThemes
       val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
       changedThemes = if (applyToMode == null) {
@@ -762,7 +771,7 @@ fun ModalData.WallpaperEditorModal(chat: Chat) {
 }
 
 @Composable
-fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThemeMode?, save: (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit, setDefaultsToAll: suspend () -> ThemeModeOverride) {
+fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThemeMode?, globalThemeUsed: MutableState<Boolean>, save: (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit, setDefaultsToAll: suspend () -> ThemeModeOverride) {
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
@@ -781,6 +790,30 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
     val backgroundColor = remember { derivedStateOf { themeModeOverride.value.wallpaper?.background?.colorFromReadableHex() } }
     val tintColor = remember { derivedStateOf { themeModeOverride.value.wallpaper?.tint?.colorFromReadableHex() } }
 
+    val onTypeCopyFromSameTheme: (BackgroundImageType?) -> Boolean = { type ->
+      val success = ThemeManager.copyFromSameThemeOverrides(type, themeModeOverride)
+      if (success) {
+        save(applyToMode.value, themeModeOverride.value)
+        globalThemeUsed.value = false
+      }
+      success
+    }
+    val preApplyGlobalIfNeeded = {
+      if (globalThemeUsed.value) {
+        onTypeCopyFromSameTheme(themeModeOverride.value.type)
+      }
+    }
+    val onTypeChange: (BackgroundImageType?) -> Unit = { type ->
+      if (globalThemeUsed.value) {
+        preApplyGlobalIfNeeded()
+        // Saves copied static image instead of original from global theme
+        ThemeManager.applyBackgroundImage(themeModeOverride.value.type, themeModeOverride)
+      } else {
+        ThemeManager.applyBackgroundImage(type, themeModeOverride)
+      }
+      save(applyToMode.value, themeModeOverride.value)
+    }
+
     val editColor: (ThemeColor, Color) -> Unit = { name: ThemeColor, initialColor: Color ->
       ModalManager.end.showModal {
         AppearanceScope.ColorEditor(
@@ -791,25 +824,16 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
           themeModeOverride.value.type?.image,
           backgroundColor.value,
           tintColor.value,
+          currentColors = {
+            ThemeManager.currentColors(systemDark, null, themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
+          },
           onColorChange = { color ->
+            preApplyGlobalIfNeeded()
             ThemeManager.applyThemeColor(name, color, themeModeOverride)
             save(applyToMode.value, themeModeOverride.value)
           }
         )
       }
-    }
-
-
-    val onTypeCopyFromSameTheme: (BackgroundImageType?) -> Boolean = { type ->
-      val success = ThemeManager.copyFromSameThemeOverrides(type, themeModeOverride)
-      if (success) {
-        save(applyToMode.value, themeModeOverride.value)
-      }
-      success
-    }
-    val onTypeChange: (BackgroundImageType?) -> Unit = { type ->
-      ThemeManager.applyBackgroundImage(type, themeModeOverride)
-      save(applyToMode.value, themeModeOverride.value)
     }
 
     AppearanceScope.WallpaperPresetSelector(
@@ -821,6 +845,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
         ThemeManager.currentColors(systemDark, type to true, if (type?.filename == themeModeOverride.value.type?.filename) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.state.value)
       },
       onColorChange = { name, color ->
+        preApplyGlobalIfNeeded()
         ThemeManager.applyThemeColor(name, color, themeModeOverride)
         save(applyToMode.value, themeModeOverride.value)
       },
@@ -840,11 +865,14 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
     SectionSpacer()
 
     ResetToGlobalThemeButton {
-      themeModeOverride.value = ThemeModeOverride()
+      val globalTheme = ThemeManager.defaultActiveTheme(systemDark, appPrefs.themeOverrides.get())
+      globalThemeUsed.value = true
+      themeModeOverride.value = ThemeModeOverride(colors = globalTheme?.colors ?: ThemeColors(), wallpaper = globalTheme?.wallpaper)
       save(applyToMode.value, null)
     }
 
     SetDefaultThemeButton {
+      globalThemeUsed.value = false
       if (applyToMode.value == null) {
         withBGApi {
           themeModeOverride.value = setDefaultsToAll()
@@ -854,12 +882,24 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
         val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
         val mode = themeModeOverride.value.mode
         themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
-        save(null, themeModeOverride.value)
+        save(applyToMode.value, themeModeOverride.value)
       }
     }
 
     KeyChangeEffect(theme.mode) {
       themeModeOverride.value = theme
+      if (applyToMode.value != null) {
+        applyToMode.value = theme.mode
+      }
+    }
+
+    // Applies updated global theme if current one tracks global theme
+    KeyChangeEffect(CurrentColors.value) {
+      if (globalThemeUsed.value) {
+        val globalTheme = ThemeManager.defaultActiveTheme(systemDark, appPrefs.themeOverrides.get())
+        globalThemeUsed.value = true
+        themeModeOverride.value = ThemeModeOverride(colors = globalTheme?.colors ?: ThemeColors(), wallpaper = globalTheme?.wallpaper)
+      }
     }
 
     SectionSpacer()

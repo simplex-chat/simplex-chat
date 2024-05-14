@@ -834,36 +834,34 @@ expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
-  SimpleXTheme {
-    ChatItemView(
-      rhId = null,
-      ChatInfo.Direct.sampleData,
-      chatItem,
-      useLinkPreviews = true,
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      revealed = remember { mutableStateOf(false) },
-      range = 0..1,
-      deleteMessage = { _, _ -> },
-      deleteMessages = { _ -> },
-      receiveFile = { _ -> },
-      cancelFile = {},
-      joinGroup = { _, _ -> },
-      acceptCall = { _ -> },
-      scrollToItem = {},
-      acceptFeature = { _, _, _ -> },
-      openDirectChat = { _ -> },
-      updateContactStats = { },
-      updateMemberStats = { _, _ -> },
-      syncContactConnection = { },
-      syncMemberConnection = { _, _ -> },
-      findModelChat = { null },
-      findModelMember = { null },
-      setReaction = { _, _, _, _ -> },
-      showItemDetails = { _, _ -> },
-      developerTools = false,
-    )
-  }
+  ChatItemView(
+    rhId = null,
+    ChatInfo.Direct.sampleData,
+    chatItem,
+    useLinkPreviews = true,
+    linkMode = SimplexLinkMode.DESCRIPTION,
+    composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+    revealed = remember { mutableStateOf(false) },
+    range = 0..1,
+    deleteMessage = { _, _ -> },
+    deleteMessages = { _ -> },
+    receiveFile = { _ -> },
+    cancelFile = {},
+    joinGroup = { _, _ -> },
+    acceptCall = { _ -> },
+    scrollToItem = {},
+    acceptFeature = { _, _, _ -> },
+    openDirectChat = { _ -> },
+    updateContactStats = { },
+    updateMemberStats = { _, _ -> },
+    syncContactConnection = { },
+    syncMemberConnection = { _, _ -> },
+    findModelChat = { null },
+    findModelMember = { null },
+    setReaction = { _, _, _, _ -> },
+    showItemDetails = { _, _ -> },
+    developerTools = false,
+  )
 }
 
 @Preview

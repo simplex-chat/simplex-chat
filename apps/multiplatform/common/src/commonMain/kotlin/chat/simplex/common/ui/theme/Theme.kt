@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
@@ -242,7 +243,7 @@ data class ThemeWallpaper (
       image = null,
       imageFile = if (type is BackgroundImageType.Static) type.filename else null,
       preset = if (type is BackgroundImageType.Repeated) type.filename else null,
-      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type != null) (type as BackgroundImageType.Static).scale else 1f,
+      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type != null) (type as BackgroundImageType.Static).scale else null,
       scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
       background = aw.background?.toReadableHex(),
       tint = aw.tint?.toReadableHex(),
@@ -279,10 +280,18 @@ data class ThemeWallpaper (
 @Serializable
 data class ThemeOverrides (
   val themeId: String = UUID.randomUUID().toString(),
-  val base: DefaultTheme = CurrentColors.value.base,
+  val base: DefaultTheme = DefaultTheme.entries.firstOrNull { it.themeName == appPrefs.currentTheme.get() } ?: DefaultTheme.LIGHT,
   val colors: ThemeColors = ThemeColors(),
-  val wallpaper: ThemeWallpaper = ThemeWallpaper(),
+  val wallpaper: ThemeWallpaper? = null,
 ) {
+
+  fun isSame(type: BackgroundImageType?, themeName: String): Boolean =
+    (
+        (wallpaper?.preset != null && wallpaper.preset == type?.filename) ||
+        (wallpaper?.imageFile != null && type is BackgroundImageType.Static) ||
+        (wallpaper?.preset == null && wallpaper?.imageFile == null && type == null)
+    ) && base.themeName == themeName
+
   fun withUpdatedColor(name: ThemeColor, color: String?): ThemeOverrides {
     return copy(
       colors = when (name) {
@@ -298,9 +307,9 @@ data class ThemeOverrides (
         ThemeColor.WALLPAPER_BACKGROUND -> colors.copy()
         ThemeColor.WALLPAPER_TINT -> colors.copy()
       }, wallpaper = when (name) {
-        ThemeColor.WALLPAPER_BACKGROUND -> wallpaper.copy(background = color)
-        ThemeColor.WALLPAPER_TINT -> wallpaper.copy(tint = color)
-        else -> wallpaper.copy()
+        ThemeColor.WALLPAPER_BACKGROUND -> wallpaper?.copy(background = color)
+        ThemeColor.WALLPAPER_TINT -> wallpaper?.copy(tint = color)
+        else -> wallpaper?.copy()
       }
     )
   }
@@ -359,7 +368,10 @@ fun List<ThemeOverrides>.getTheme(themeId: String?): ThemeOverrides? =
   firstOrNull { it.themeId == themeId }
 
 fun List<ThemeOverrides>.replace(theme: ThemeOverrides): List<ThemeOverrides> {
-  val index = indexOfFirst { it.themeId == theme.themeId }
+  val index = indexOfFirst { it.themeId == theme.themeId ||
+      // prevent situation when two themes has the same type but different theme id (maybe something was changed in prefs by hand)
+      it.isSame(BackgroundImageType.from(theme.wallpaper), theme.base.themeName)
+  }
   return if (index != -1) {
     val a = ArrayList(this)
     a[index] = theme
@@ -368,6 +380,8 @@ fun List<ThemeOverrides>.replace(theme: ThemeOverrides): List<ThemeOverrides> {
     this + theme
   }
 }
+
+fun List<ThemeOverrides>.sameTheme(type: BackgroundImageType?, themeName: String): ThemeOverrides? = firstOrNull { it.isSame(type, themeName) }
 
 @Serializable
 data class ThemeModeOverrides (
@@ -391,7 +405,6 @@ data class ThemeModeOverride (
   val type = BackgroundImageType.from(wallpaper)
 
   fun withUpdatedColor(name: ThemeColor, color: String?): ThemeModeOverride {
-    val wallpaper = wallpaper ?: ThemeWallpaper()
     return copy(colors = when (name) {
       ThemeColor.PRIMARY -> colors.copy(primary = color)
       ThemeColor.PRIMARY_VARIANT -> colors.copy(primaryVariant = color)
@@ -405,9 +418,9 @@ data class ThemeModeOverride (
       ThemeColor.WALLPAPER_BACKGROUND -> colors.copy()
       ThemeColor.WALLPAPER_TINT -> colors.copy()
     }, wallpaper = when (name) {
-      ThemeColor.WALLPAPER_BACKGROUND -> wallpaper.copy(background = color)
-      ThemeColor.WALLPAPER_TINT -> wallpaper.copy(tint = color)
-      else -> wallpaper.copy()
+      ThemeColor.WALLPAPER_BACKGROUND -> wallpaper?.copy(background = color)
+      ThemeColor.WALLPAPER_TINT -> wallpaper?.copy(tint = color)
+      else -> wallpaper?.copy()
     }
     )
   }

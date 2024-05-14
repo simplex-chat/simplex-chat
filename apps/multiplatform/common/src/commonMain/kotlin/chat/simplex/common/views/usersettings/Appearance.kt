@@ -32,7 +32,6 @@ import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import chat.simplex.common.views.chat.item.PreviewChatItemView
-import chat.simplex.common.views.usersettings.AppearanceScope.WallpaperPresetSelector
 import chat.simplex.res.MR
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -103,8 +102,13 @@ object AppearanceScope {
       .padding(DEFAULT_PADDING_HALF)
     ) {
       if (withMessages) {
-        PreviewChatItemView(ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), stringResource(MR.strings.background_image_preview_hello_bob)))
-        PreviewChatItemView(ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.background_image_preview_hello_alice)))
+        val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.background_image_preview_hello_bob)) }
+        PreviewChatItemView(alice)
+        PreviewChatItemView(
+          ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.background_image_preview_hello_alice),
+          quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+        )
+        )
       } else {
         Box(Modifier.fillMaxSize())
       }
@@ -122,11 +126,6 @@ object AppearanceScope {
     onTypeChange: (BackgroundImageType?) -> Unit,
     onTypeCopyFromSameTheme: (BackgroundImageType?) -> Boolean
   ) {
-    val resetColors = {
-      onColorChange(ThemeColor.WALLPAPER_BACKGROUND, null)
-      onColorChange(ThemeColor.WALLPAPER_TINT, null)
-    }
-
     val cornerRadius = 22
 
     @Composable
@@ -150,10 +149,6 @@ object AppearanceScope {
           contentAlignment = Alignment.Center
         ) {
           if (background != null) {
-            /*val overrides = remember(background.filename, baseTheme) { appPrefs.themeOverrides.get().firstOrNull { it.wallpaper.preset == background.filename && it.base == baseTheme } }
-            val backgroundColor = overrides?.wallpaper?.background?.colorFromReadableHex() ?: background.background[baseTheme]
-            val tintColor = overrides?.wallpaper?.tint?.colorFromReadableHex() ?: background.tint[baseTheme]
-            val backgroundImage = remember(background.filename) { PredefinedBackgroundImage.from(background.filename)?.res?.toComposeImageBitmap() }*/
             SimpleXThemeOverride(remember(background, selectedBackground?.filename) { currentColors(background.toType()) }) {
               ChatThemePreview(
                 baseTheme,
@@ -170,7 +165,7 @@ object AppearanceScope {
 
       @Composable
       fun OwnBackgroundItem(type: BackgroundImageType?) {
-        val overrides = remember(type?.filename, baseTheme) { appPrefs.themeOverrides.get().firstOrNull { it.wallpaper.imageFile != null && it.base == baseTheme && File(getBackgroundImageFilePath(it.wallpaper.imageFile)).exists() } }
+        val overrides = remember(type?.filename, baseTheme) { appPrefs.themeOverrides.get().firstOrNull { it.wallpaper?.imageFile != null && it.base == baseTheme && File(getBackgroundImageFilePath(it.wallpaper.imageFile)).exists() } }
         val backgroundColor = overrides?.wallpaper?.background?.colorFromReadableHex() ?: selectedBackground?.defaultBackgroundColor(baseTheme)
         val tintColor = overrides?.wallpaper?.tint?.colorFromReadableHex() ?: selectedBackground?.defaultTintColor(baseTheme)
         val backgroundImage = overrides?.wallpaper?.toAppWallpaper()?.type?.image ?: selectedBackground?.image
@@ -190,7 +185,7 @@ object AppearanceScope {
             .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable {
-              if (checked || overrides == null || backgroundImage == null || !onTypeCopyFromSameTheme(overrides.wallpaper.toAppWallpaper().type)) {
+              if (checked || overrides == null || backgroundImage == null || !onTypeCopyFromSameTheme(overrides.wallpaper?.toAppWallpaper()?.type)) {
                 withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
               }
             },
@@ -222,12 +217,8 @@ object AppearanceScope {
         OwnBackgroundItem(selectedBackground)
       }
     }
-    /*val overrides = remember(selectedBackground?.filename, baseTheme) { appPrefs.themeOverrides.get().firstOrNull { ((selectedBackground is BackgroundImageType.Repeated && it.wallpaper.preset == selectedBackground.filename) || (selectedBackground is BackgroundImageType.Static && it.wallpaper.imageFile != null)) && it.base == baseTheme } }
-    val backgroundColor = overrides?.wallpaper?.background?.colorFromReadableHex() ?: selectedBackground?.defaultBackgroundColor(baseTheme)
-    val tintColor = overrides?.wallpaper?.tint?.colorFromReadableHex() ?: selectedBackground?.defaultTintColor(baseTheme)
-    val backgroundImage = selectedBackground?.image*/
 
-    SimpleXThemeOverride(remember(selectedBackground?.filename) { currentColors(selectedBackground) }) {
+    SimpleXThemeOverride(remember(selectedBackground?.filename, CurrentColors.collectAsState().value) { currentColors(selectedBackground) }) {
       ChatThemePreview(
         baseTheme,
         MaterialTheme.wallpaper.type?.image,
@@ -463,6 +454,7 @@ object AppearanceScope {
     backgroundImage: ImageBitmap?,
     previewBackgroundColor: Color? = MaterialTheme.wallpaper.background,
     previewTintColor: Color? = MaterialTheme.wallpaper.tint,
+    currentColors: () -> ThemeManager.ActiveTheme,
     onColorChange: (Color) -> Unit,
   ) {
     ColumnWithScrollBar(
@@ -471,9 +463,11 @@ object AppearanceScope {
     ) {
       AppBarTitle(name.text)
 
-      val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
+      val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
       if (supportedLiveChange) {
-        ChatThemePreview(theme, backgroundImage, backgroundImageType, previewBackgroundColor, previewTintColor)
+        SimpleXThemeOverride(currentColors()) {
+          ChatThemePreview(theme, backgroundImage, backgroundImageType, previewBackgroundColor, previewTintColor)
+        }
         SectionSpacer()
       }
 
