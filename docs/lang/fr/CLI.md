@@ -97,7 +97,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Veuillez noter** : Si vous rencontrez l'erreur ``version `GLIBC_2.28' non trouvée``, reconstruisez-le avec l'image de base `haskell:8.10.7-stretch`(changez-la dans votre [Dockerfile](Dockerfile) local).
+> **Veuillez noter** : Si vous rencontrez l'erreur ``version `GLIBC_2.28' non trouvée``, reconstruisez-le avec l'image de base `haskell:8.10.7-stretch`(changez-la dans votre [Dockerfile](/Dockerfile) local).
 
 #### Utiliser Haskell stack
 
