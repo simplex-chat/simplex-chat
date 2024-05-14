@@ -346,7 +346,7 @@ testDeleteContactDeletesProfile =
       connectUsers alice bob
       alice <##> bob
       -- alice deletes contact, profile is deleted
-      alice ##> "/_delete @2 {\"type\": \"full\", \"notify\": true}"
+      alice ##> "/_delete @2 full notify=on"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
@@ -366,7 +366,7 @@ testDeleteContactKeepConversation =
       connectUsers alice bob
       alice <##> bob
 
-      alice ##> "/_delete @2 {\"type\": \"entity\", \"notify\": true}"
+      alice ##> "/_delete @2 entity notify=on"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
 
@@ -386,7 +386,7 @@ testDeleteConversationKeepContact =
 
       alice @@@ [("@bob", "hey")]
 
-      alice ##> "/_delete @2 {\"type\": \"messages\", \"notify\": true}"
+      alice ##> "/_delete @2 messages"
       alice <## "bob: contact is deleted"
 
       alice @@@ [("@bob", "")] -- UI would filter
