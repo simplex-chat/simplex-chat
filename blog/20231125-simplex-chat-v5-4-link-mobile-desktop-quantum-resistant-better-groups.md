@@ -40,7 +40,7 @@ This is only possible when both devices are connected to the same local network.
 
 **On desktop**
 
-If you don't have desktop app installed yet, [download it](https://simplex.chat/downloads/) and create any chat profile - you don't need to use it, and when you create it there are no server requests sent and no accounts are created. Think about it as about user profile on your computer.
+If you don't have desktop app installed yet, [download it](../docs/DOWNLOADS.md) and create any chat profile - you don't need to use it, and when you create it there are no server requests sent and no accounts are created. Think about it as about user profile on your computer.
 
 Then in desktop app settings choose *Link a mobile* - it will show a QR code.
 

@@ -97,7 +97,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Uwaga:** Jeśli napotkasz błąd `` version `GLIBC_2.28' not found ``, przebuduj go z obrazem bazowym `haskell:8.10.7-stretch` (zmień go w Twoim lokalnym pliku [Dockerfile](Dockerfile)).
+> **Uwaga:** Jeśli napotkasz błąd `` version `GLIBC_2.28' not found ``, przebuduj go z obrazem bazowym `haskell:8.10.7-stretch` (zmień go w Twoim lokalnym pliku [Dockerfile](/Dockerfile)).
 
 #### Używając Haskella na dowolnym systemie operacyjnym
 
@@ -200,7 +200,7 @@ Po uruchomieniu czatu zostaniesz poproszony o podanie swojej "nazwy wyświetlane
 Poniższy schemat przedstawia sposób łączenia się z kontaktem i wysyłania do niego wiadomości:
 
 <div align="center">
-  <img align="center" src="../images/how-to-use-simplex.svg">
+  <img align="center" src="/images/how-to-use-simplex.svg">
 </div>
 
 Gdy już skonfigurujesz swój profil lokalny, wpisz `/c` (oznaczające `/connect`), aby utworzyć nowe połączenie i wygenerować zaproszenie. Wyślij to zaproszenie do swojego kontaktu za pośrednictwem dowolnego innego kanału komunikacji.
@@ -219,7 +219,7 @@ Użyj `/help` na czacie, by uzyskać listę pozostałych dostępnych komend.
 
 Aby utworzyć grupę, użyj `/g <nazwa_grupy>`, a następnie dodaj do niej kontakty za pomocą `/a <nazwa_grupy> <nazwa_kontaktu>`. Możesz wysyłać wiadomości do grupy wpisując `#<nazwa_grupy> <wiadomość>`. Użyj `/help groups`, by uzyskać listę pozostałych dostępnych komend.
 
-![simplex-chat](../images/groups.gif)
+![simplex-chat](/images/groups.gif)
 
 > **Uwaga**: informacje o grupach nie są przechowywane na żadnym serwerze, są one zapisywane jako lista członków w bazie danych aplikacji klientów, do których będą wysyłane wiadomości.
 
@@ -227,7 +227,7 @@ Aby utworzyć grupę, użyj `/g <nazwa_grupy>`, a następnie dodaj do niej konta
 
 Możesz wysłać plik do kontaktu za pomocą `/f @<nazwa_kontaktu> <ścieżka_do_pliku>` - odbiorca będzie musiał go zaakceptować przed rozpoczęciem wysyłania. Użyj `/help files`, by uzyskać listę pozostałych dostępnych komend.
 
-![simplex-chat](../images/files.gif)
+![simplex-chat](/images/files.gif)
 
 Możesz wysyłać pliki do grupy za pomocą `/f #<nazwa_grupy> <ścieżka_do_pliku>`.
 
@@ -241,4 +241,4 @@ Prośby o kontakt możesz przyjąć za pomocą komendy `/ac <nazwa>` oraz odrzuc
 
 Użyj `/help address`, by uzyskać listę pozostałych dostępnych komend.
 
-![simplex-chat](../images/user-addresses.gif)
+![simplex-chat](/images/user-addresses.gif)
