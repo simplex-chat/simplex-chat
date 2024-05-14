@@ -2621,6 +2621,7 @@ public struct CIMeta: Decodable {
     public var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
+    public var sentViaProxy: Bool?
     public var createdAt: Date
     public var updatedAt: Date
     public var itemForwarded: CIForwardedFrom?
@@ -2767,6 +2768,22 @@ public enum CIStatus: Decodable {
         }
     }
 }
+
+//public enum SndError: Decodable {
+//    case auth
+//    case sndSent(sndProgress: SndCIStatusProgress)
+//    case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
+//    case sndErrorAuth
+//    case sndError(agentError: String)
+//}
+//
+//public enum SrvError: Decodable {
+//    case host
+//    case version
+//    case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
+//    case sndErrorAuth
+//    case other(agentError: String)
+//}
 
 public enum MsgReceiptStatus: String, Decodable {
     case ok

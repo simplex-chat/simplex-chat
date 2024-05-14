@@ -1242,9 +1242,12 @@ public struct ServerAddress: Decodable {
 
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
+    var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
     public var sessionMode: TransportSessionMode
+    public var smpProxyMode: SMPProxyMode = .never
+    public var smpProxyFallback: SMPProxyFallback = .allow
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
@@ -1287,6 +1290,49 @@ public enum HostMode: String, Codable {
     case onionViaSocks
     case onionHost = "onion"
     case publicHost = "public"
+}
+
+public enum SocksMode: String, Codable {
+    case always = "always"
+    case onion = "onion"
+}
+
+public enum SMPProxyMode: String, Codable {
+    case always = "always"
+    case unknown = "unknown"
+    case unprotected = "unprotected"
+    case never = "never"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .always: return "always"
+        case .unknown: return "unknown relays"
+        case .unprotected: return "unprotected IP"
+        case .never: return "never"
+        }
+    }
+
+    public var id: SMPProxyMode { self }
+
+    public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
+}
+
+public enum SMPProxyFallback: String, Codable {
+    case allow = "allow"
+    case allowProtected = "allowProtected"
+    case prohibit = "prohibit"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .allow: return "allow"
+        case .allowProtected: return "allow with protected IP"
+        case .prohibit: return "prohibit"
+        }
+    }
+
+    public var id: SMPProxyFallback { self }
+
+    public static let values: [SMPProxyFallback] = [.allow, .allowProtected, .prohibit]
 }
 
 public enum OnionHosts: String, Identifiable {

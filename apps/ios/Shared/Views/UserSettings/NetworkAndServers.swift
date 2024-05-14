@@ -12,12 +12,16 @@ import SimpleXChat
 private enum NetworkAlert: Identifiable {
     case updateOnionHosts(hosts: OnionHosts)
     case updateSessionMode(mode: TransportSessionMode)
+    case updateSMPProxyMode(proxyMode: SMPProxyMode)
+    case updateSMPProxyFallback(proxyFallback: SMPProxyFallback)
     case error(err: String)
 
     var id: String {
         switch self {
         case let .updateOnionHosts(hosts): return "updateOnionHosts \(hosts)"
         case let .updateSessionMode(mode): return "updateSessionMode \(mode)"
+        case let .updateSMPProxyMode(proxyMode): return "updateSMPProxyMode \(proxyMode)"
+        case let .updateSMPProxyFallback(proxyFallback): return "updateSMPProxyFallback \(proxyFallback)"
         case let .error(err): return "error \(err)"
         }
     }
@@ -26,11 +30,14 @@ private enum NetworkAlert: Identifiable {
 struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = true
     @State private var cfgLoaded = false
     @State private var currentNetCfg = NetCfg.defaults
     @State private var netCfg = NetCfg.defaults
     @State private var onionHosts: OnionHosts = .no
     @State private var sessionMode: TransportSessionMode = .user
+    @State private var proxyMode: SMPProxyMode = .never
+    @State private var proxyFallback: SMPProxyFallback = .allow
     @State private var alert: NetworkAlert?
 
     var body: some View {
@@ -75,6 +82,30 @@ struct NetworkAndServers: View {
                     Text("Using .onion hosts requires compatible VPN provider.")
                 }
 
+                Section {
+                    Picker("SMP proxy mode", selection: $proxyMode) {
+                        ForEach(SMPProxyMode.values, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
+
+                    Picker("SMP proxy fallback", selection: $proxyFallback) {
+                        ForEach(SMPProxyFallback.values, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
+                    .disabled(proxyMode == .never)
+
+                    Toggle("Show \"sent via proxy\"", isOn: $showSentViaProxy)
+                        .disabled(proxyMode == .never)
+                } header: {
+                    Text("SMP proxy")
+                } footer: {
+                    if showSentViaProxy {
+                        Text("Show this icon on messages sent via SMP proxy:") + Text(" ") + Text(Image(systemName: "arrow.forward"))
+                    } else {
+                        Text("Don't show additional icon on messages sent via SMP proxy.")
+                    }
+                }
+
                 Section("Calls") {
                     NavigationLink {
                         RTCServers()
@@ -99,14 +130,24 @@ struct NetworkAndServers: View {
             currentNetCfg = getNetCfg()
             resetNetCfgView()
         }
-        .onChange(of: onionHosts) { _ in
-            if onionHosts != OnionHosts(netCfg: currentNetCfg) {
-                alert = .updateOnionHosts(hosts: onionHosts)
+        .onChange(of: onionHosts) { hosts in
+            if hosts != OnionHosts(netCfg: currentNetCfg) {
+                alert = .updateOnionHosts(hosts: hosts)
             }
         }
-        .onChange(of: sessionMode) { _ in
-            if sessionMode != netCfg.sessionMode {
-                alert = .updateSessionMode(mode: sessionMode)
+        .onChange(of: sessionMode) { mode in
+            if mode != netCfg.sessionMode {
+                alert = .updateSessionMode(mode: mode)
+            }
+        }
+        .onChange(of: proxyMode) { mode in
+            if mode != netCfg.smpProxyMode {
+                alert = .updateSMPProxyMode(proxyMode: mode)
+            }
+        }
+        .onChange(of: proxyFallback) { fallbackMode in
+            if fallbackMode != netCfg.smpProxyFallback {
+                alert = .updateSMPProxyFallback(proxyFallback: fallbackMode)
             }
         }
         .alert(item: $alert) { a in
@@ -131,6 +172,30 @@ struct NetworkAndServers: View {
                     message: Text(sessionModeInfo(mode)) + Text("\n") + Text("Updating this setting will re-connect the client to all servers."),
                     primaryButton: .default(Text("Ok")) {
                         netCfg.sessionMode = mode
+                        saveNetCfg()
+                    },
+                    secondaryButton: .cancel() {
+                        resetNetCfgView()
+                    }
+                )
+            case let .updateSMPProxyMode(proxyMode):
+                return Alert(
+                    title: Text("Update SMP proxy mode?"),
+                    message: Text(proxyModeInfo(proxyMode)) + Text("\n") + Text("Updating this setting will re-connect the client to all servers."),
+                    primaryButton: .default(Text("Ok")) {
+                        netCfg.smpProxyMode = proxyMode
+                        saveNetCfg()
+                    },
+                    secondaryButton: .cancel() {
+                        resetNetCfgView()
+                    }
+                )
+            case let .updateSMPProxyFallback(proxyFallback):
+                return Alert(
+                    title: Text("Update SMP proxy fallback mode?"),
+                    message: Text(proxyFallbackInfo(proxyFallback)) + Text("\n") + Text("Updating this setting will re-connect the client to all servers."),
+                    primaryButton: .default(Text("Ok")) {
+                        netCfg.smpProxyFallback = proxyFallback
                         saveNetCfg()
                     },
                     secondaryButton: .cancel() {
@@ -166,6 +231,8 @@ struct NetworkAndServers: View {
         netCfg = currentNetCfg
         onionHosts = OnionHosts(netCfg: netCfg)
         sessionMode = netCfg.sessionMode
+        proxyMode = netCfg.smpProxyMode
+        proxyFallback = netCfg.smpProxyFallback
     }
 
     private func onionHostsInfo(_ hosts: OnionHosts) -> LocalizedStringKey {
@@ -180,6 +247,23 @@ struct NetworkAndServers: View {
         switch mode {
         case .user: return "A separate TCP connection will be used **for each chat profile you have in the app**."
         case .entity: return "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail."
+        }
+    }
+    
+    private func proxyModeInfo(_ mode: SMPProxyMode) -> LocalizedStringKey {
+        switch mode {
+        case .always: return "Always send messages via SMP proxy."
+        case .unknown: return "Use SMP proxy with unknown relays."
+        case .unprotected: return "Use SMP proxy with unknown relays when IP address is not protected (i.e., when .onion address is not used)."
+        case .never: return "Don't use SMP proxy."
+        }
+    }
+
+    private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
+        switch proxyFallback {
+        case .allow: return "Connect directly when chosen proxy or destination relay do not support proxy protocol."
+        case .allowProtected: return "Connect directly only when IP address is protected (i.e., when .onion address is used)."
+        case .prohibit: return "Prohibit direct connection to destination relay."
         }
     }
 }

@@ -35,6 +35,8 @@ struct MsgContentView: View {
     @State private var typingIdx = 0
     @State private var timer: Timer?
 
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+
     var body: some View {
         if meta?.isLive == true {
             msgContentView()
@@ -81,7 +83,7 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, transparent: true)
+        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
     }
 }
 
