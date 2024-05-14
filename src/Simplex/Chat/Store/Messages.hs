@@ -315,7 +315,7 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
   DirectChat Contact {contactId} ->
     DB.execute
       db
-      "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
+      "UPDATE contacts SET chat_ts = ?, chat_deleted = 0 WHERE user_id = ? AND contact_id = ?"
       (chatTs, userId, contactId)
   GroupChat GroupInfo {groupId} ->
     DB.execute

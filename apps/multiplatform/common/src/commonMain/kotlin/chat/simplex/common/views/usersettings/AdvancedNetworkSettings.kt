@@ -159,7 +159,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-          listOf(10_000000, 15_000000, 20_000000, 25_000000, 35_000000, 50_000000), secondsLabel
+          listOf(10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
         )
       }
       SectionItemView {
@@ -175,12 +175,12 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
           listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel
         )
       }
-      SectionItemView {
-        IntSettingRow(
-          stringResource(MR.strings.network_option_rcv_concurrency), networkRcvConcurrency,
-          listOf(1, 2, 4, 8, 12, 16, 24), ""
-        )
-      }
+      // SectionItemView {
+      //   IntSettingRow(
+      //     stringResource(MR.strings.network_option_rcv_concurrency), networkRcvConcurrency,
+      //     listOf(1, 2, 4, 8, 12, 16, 24), ""
+      //   )
+      // }
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,

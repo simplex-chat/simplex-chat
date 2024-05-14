@@ -296,7 +296,7 @@ data ChatCommand
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
+  | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -395,7 +395,7 @@ data ChatCommand
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
-  | DeleteContact ContactName
+  | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
@@ -501,6 +501,7 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
+  | GetAgentMsgCounts
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -746,6 +747,7 @@ data ChatResponse
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
@@ -823,6 +825,12 @@ data ChatListQuery
 
 clqNoFilters :: ChatListQuery
 clqNoFilters = CLQFilters {favorite = False, unread = False}
+
+data ChatDeleteMode
+  = CDMFull {notify :: Bool} -- delete both contact and conversation
+  | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
+  | CDMMessages -- delete conversation, keep contact - can be re-opened from Contacts view
+  deriving (Show)
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
