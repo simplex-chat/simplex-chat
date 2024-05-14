@@ -396,7 +396,7 @@ module.exports = function (ty) {
       if (parsed.path.startsWith('/')) {
         let srcIndex = hostFile.indexOf("/src")
         if (srcIndex !== -1) {
-          linkFile = path.join(hostFile.slice(0, srcIndex + 4), parsed.path);
+          linkFile = path.join(hostFile.slice(0, srcIndex + 4), parsed.path)
         }
       }
 
