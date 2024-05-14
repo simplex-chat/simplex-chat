@@ -34,6 +34,7 @@ fun FramedItemView(
   uriHandler: UriHandler? = null,
   imageProvider: (() -> ImageGalleryProvider)? = null,
   linkMode: SimplexLinkMode,
+  showViaProxy: Boolean,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
@@ -257,7 +258,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, longClick = { onLinkLongClick("") }, receiveFile)
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile)
                 if (mc.text != "") {
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler)
                 }
@@ -281,7 +282,7 @@ fun FramedItemView(
         }
       }
       Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, chatTTL, metaColor)
+        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy)
       }
     }
   }

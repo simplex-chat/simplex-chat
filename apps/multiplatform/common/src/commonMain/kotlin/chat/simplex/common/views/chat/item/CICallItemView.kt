@@ -47,7 +47,7 @@ fun CICallItemView(
       CICallStatus.Error -> {}
     }
 
-    CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false)
+    CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false)
   }
 }
 
