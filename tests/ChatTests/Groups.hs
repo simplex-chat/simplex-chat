@@ -68,7 +68,7 @@ chatGroupTests = do
     it "group link ok to connect; known group" testPlanGroupLinkOkKnown
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
-    fit "connecting via group link" testPlanGroupLinkConnecting
+    it "connecting via group link" testPlanGroupLinkConnecting
     xit "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
@@ -82,7 +82,7 @@ chatGroupTests = do
   describe "group links without contact connection plan" $ do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
-  fdescribe "group message errors" $ do
+  describe "group message errors" $ do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
@@ -3296,6 +3296,7 @@ testGroupSyncRatchet tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 

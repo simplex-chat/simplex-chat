@@ -95,7 +95,7 @@ chatDirectTests = do
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
-  fdescribe "connection switch" $ do
+  describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
@@ -107,7 +107,7 @@ chatDirectTests = do
       sameVerificationCode "123 456 789" "12345 6789" `shouldBe` True
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
-  fdescribe "message errors" $ do
+  describe "message errors" $ do
     it "show message decryption error" testMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testSyncRatchet
     it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
@@ -2295,6 +2295,7 @@ testSwitchContact =
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
+      threadDelay 100000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "you changed address")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
@@ -2322,6 +2323,7 @@ testAbortSwitchContact tmp = do
       bob <## "alice started changing address for you"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
+      threadDelay 100000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
@@ -2336,6 +2338,7 @@ testSwitchGroupMember =
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
@@ -2367,6 +2370,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
@@ -2516,6 +2520,7 @@ testSyncRatchet tmp =
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -2555,6 +2560,7 @@ testSyncRatchetCodeReset tmp =
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat @2 count=4", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
       alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
