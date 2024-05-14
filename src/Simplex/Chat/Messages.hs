@@ -738,16 +738,16 @@ data SndError
   = SndErrAuth
   | SndErrQuota
   | SndErrExpired -- TIMEOUT/NETWORK errors
-  | SndErrRelay SrvError -- BROKER errors (other than TIMEOUT/NETWORK)
-  | SndErrProxy String SrvError -- SMP PROXY errors, String is proxy server
-  | SndErrProxyRelay String SrvError -- PROXY BROKER errors, String is proxy server
-  | SndErrOther Text -- other errors
+  | SndErrRelay {srvError :: SrvError} -- BROKER errors (other than TIMEOUT/NETWORK)
+  | SndErrProxy {proxyServer :: String, srvError :: SrvError} -- SMP PROXY errors
+  | SndErrProxyRelay {proxyServer :: String, srvError :: SrvError} -- PROXY BROKER errors
+  | SndErrOther {sndError :: Text} -- other errors
   deriving (Eq, Show)
 
 data SrvError
   = SrvErrHost
   | SrvErrVersion
-  | SrvErrOther Text
+  | SrvErrOther {srvError :: Text}
   deriving (Eq, Show)
 
 instance StrEncoding SndError where
