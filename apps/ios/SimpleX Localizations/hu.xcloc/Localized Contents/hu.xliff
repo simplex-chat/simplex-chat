@@ -6963,9 +6963,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>az ismerősnél az e2e titkosítás nem elérhető</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="creator" xml:space="preserve">
+      <trans-unit id="creator" xml:space="preserve" approved="no">
         <source>creator</source>
-        <target>szerző</target>
+        <target state="translated">készítő</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="custom" xml:space="preserve">
@@ -7183,9 +7183,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>meghívás a(z) %@ csoportba</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invited" xml:space="preserve">
+      <trans-unit id="invited" xml:space="preserve" approved="no">
         <source>invited</source>
-        <target>meghívta</target>
+        <target state="translated">meghíva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve">
