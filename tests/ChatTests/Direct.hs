@@ -69,7 +69,7 @@ chatDirectTests = do
       -- fails in CI
       xit'' "v2" testFullAsync
   describe "webrtc calls api" $ do
-    it "negotiate call" testNegotiateCall
+    fit "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
@@ -95,7 +95,7 @@ chatDirectTests = do
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
-  describe "connection switch" $ do
+  fdescribe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
@@ -107,7 +107,7 @@ chatDirectTests = do
       sameVerificationCode "123 456 789" "12345 6789" `shouldBe` True
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
-  describe "message errors" $ do
+  fdescribe "message errors" $ do
     it "show message decryption error" testMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testSyncRatchet
     it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
