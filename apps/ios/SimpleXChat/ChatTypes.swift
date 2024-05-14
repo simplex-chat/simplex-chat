@@ -2790,9 +2790,9 @@ public enum SndError: Decodable {
         case .auth: NSLocalizedString("Auth error - most likely this connection is deleted.", comment: "snd error text")
         case .quota: NSLocalizedString("Quota error - recipient hasn't retrieved older messages.", comment: "snd error text")
         case .expired: NSLocalizedString("Expired - message sending has been aborted due to network issues.", comment: "snd error text")
-        case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("Relay error:\n%@", comment: "snd error text"), srvError.errorInfo)
-        case let .proxy(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nProxy error:\n%@", comment: "snd error text"), proxyServer, srvError.errorInfo)
-        case let .proxyRelay(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nError between proxy and relay:\n%@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("Relay error: %@", comment: "snd error text"), srvError.errorInfo)
+        case let .proxy(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nProxy error: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .proxyRelay(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Proxy server: %@\nError between proxy and relay: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
         case let .other(sndError): String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "snd error text"), sndError)
         }
     }
