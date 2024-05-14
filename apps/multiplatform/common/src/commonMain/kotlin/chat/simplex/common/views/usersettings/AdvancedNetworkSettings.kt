@@ -66,6 +66,8 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       hostMode = currentCfg.value.hostMode,
       requiredHostMode = currentCfg.value.requiredHostMode,
       sessionMode = currentCfg.value.sessionMode,
+      smpProxyMode = currentCfg.value.smpProxyMode,
+      smpProxyFallback = currentCfg.value.smpProxyFallback,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
       tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
