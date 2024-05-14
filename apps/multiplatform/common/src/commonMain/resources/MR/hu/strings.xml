@@ -291,7 +291,7 @@
     <string name="configure_ICE_servers">ICE kiszolgálók beállítása</string>
     <string name="button_delete_group">Csoport törlése</string>
     <string name="clear_verification">Hitelesítés törlése</string>
-    <string name="group_member_status_creator">szerző</string>
+    <string name="group_member_status_creator">készítő</string>
     <string name="confirm_verb">Megerősítés</string>
     <string name="for_me_only">Törlés nálam</string>
     <string name="delete_messages__question">%d üzenet törlése?</string>
@@ -690,7 +690,7 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Elutasítás esetén a feladó NEM kap értesítést.</string>
     <string name="icon_descr_expand_role">Szerepkör kiválasztásának bővítése</string>
     <string name="image_will_be_received_when_contact_is_online">A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
-    <string name="group_member_status_invited">meghívta</string>
+    <string name="group_member_status_invited">meghíva</string>
     <string name="invalid_connection_link">Érvénytelen kapcsolati hivatkozás</string>
     <string name="mute_chat">Némítás</string>
     <string name="no_details">nincsenek részletek</string>
