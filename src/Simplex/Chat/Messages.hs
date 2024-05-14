@@ -686,7 +686,6 @@ data CIStatus (d :: MsgDirection) where
   CISSndSent :: SndCIStatusProgress -> CIStatus 'MDSnd
   CISSndRcvd :: MsgReceiptStatus -> SndCIStatusProgress -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd -- deprecated
-  -- CISSndError :: String -> CIStatus 'MDSnd -- deprecated
   CISSndError :: SndError -> CIStatus 'MDSnd
   CISSndWarning :: SndError -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
@@ -707,7 +706,6 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndSent sndProgress -> "snd_sent " <> strEncode sndProgress
     CISSndRcvd msgRcptStatus sndProgress -> "snd_rcvd " <> strEncode msgRcptStatus <> " " <> strEncode sndProgress
     CISSndErrorAuth -> "snd_error_auth"
-    -- CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e) -- deprecated
     CISSndError sndErr -> "snd_error " <> strEncode sndErr
     CISSndWarning sndErr -> "snd_warning " <> strEncode sndErr
     CISRcvNew -> "rcv_new"
@@ -768,7 +766,7 @@ instance StrEncoding SndError where
       "proxy" -> SndErrProxy . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
       "proxy_relay" -> SndErrProxyRelay . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
       "other" -> SndErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      s -> SndErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString -- for deprecated CISSndError
+      s -> SndErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString -- for backward compatibility with `CISSndError String`
 
 instance StrEncoding SrvError where
   strEncode = \case

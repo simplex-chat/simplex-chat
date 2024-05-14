@@ -4072,14 +4072,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MWARN msgId err ->
-          updateDirectItemStatus ct conn msgId (CISSndWarning $ agentErrToSndErr err)
+          updateDirectItemStatus ct conn msgId (CISSndWarning $ agentSndError err)
         MERR msgId err -> do
-          updateDirectItemStatus ct conn msgId (CISSndError $ agentErrToSndErr err)
+          updateDirectItemStatus ct conn msgId (CISSndError $ agentSndError err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           incAuthErrCounter connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
-          updateDirectItemsStatus ct conn (L.toList msgIds) (CISSndError $ agentErrToSndErr err)
+          updateDirectItemsStatus ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4457,14 +4457,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       MWARN msgId err ->
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentErrToSndErr err)
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
       MERR msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndError $ agentErrToSndErr err)
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
       MERRS msgIds err -> do
-        let newStatus = CISSndError $ agentErrToSndErr err
+        let newStatus = CISSndError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
@@ -4737,25 +4737,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     sentMsgDeliveryEvent Connection {connId} msgId =
       withStore' $ \db -> updateSndMsgDeliveryStatus db connId msgId MDSSndSent
 
-    agentErrToSndErr :: AgentErrorType -> SndError
-    agentErrToSndErr (SMP _ AUTH) = SndErrAuth
-    agentErrToSndErr (SMP _ QUOTA) = SndErrQuota
-    agentErrToSndErr (BROKER _ e) = brokerError e SndErrRelay
-    agentErrToSndErr (SMP proxySrv (SMP.PROXY (SMP.BROKER e))) = brokerError e $ SndErrProxy proxySrv
-    agentErrToSndErr (AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e)))) = brokerError e $ SndErrProxyRelay proxySrv
-    agentErrToSndErr err = SndErrOther . safeDecodeUtf8 $ strEncode err
-
-    brokerError :: BrokerErrorType -> (SrvError -> SndError) -> SndError
-    brokerError e wrapErr = case e of
-      NETWORK -> SndErrExpired
-      TIMEOUT -> SndErrExpired
-      _ -> wrapErr brokerHostError
+    agentSndError :: AgentErrorType -> SndError
+    agentSndError = \case
+      SMP _ AUTH -> SndErrAuth
+      SMP _ QUOTA -> SndErrQuota
+      BROKER _ e -> brokerError SndErrRelay e
+      SMP proxySrv (SMP.PROXY (SMP.BROKER e)) -> brokerError (SndErrProxy proxySrv) e
+      AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e))) -> brokerError (SndErrProxyRelay proxySrv) e
+      e -> SndErrOther . safeDecodeUtf8 $ strEncode e
       where
-        brokerHostError :: SrvError
-        brokerHostError = case e of
-          HOST -> SrvErrHost
-          SMP.TRANSPORT TEVersion -> SrvErrVersion
-          _ -> SrvErrOther . safeDecodeUtf8 $ strEncode e
+        brokerError srvErr = \case
+          NETWORK -> SndErrExpired
+          TIMEOUT -> SndErrExpired
+          HOST -> srvErr SrvErrHost
+          SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
+          e -> srvErr . SrvErrOther . safeDecodeUtf8 $ strEncode e
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
