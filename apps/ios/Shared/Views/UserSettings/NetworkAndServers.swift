@@ -97,7 +97,7 @@ struct NetworkAndServers: View {
                     Toggle("Show \"sent via proxy\"", isOn: $showSentViaProxy)
                         .disabled(proxyMode == .never)
                 } header: {
-                    Text("SMP proxy")
+                    Text("Send via SMP proxy")
                 } footer: {
                     if showSentViaProxy {
                         Text("Show this icon on messages sent via SMP proxy:") + Text(" ") + Text(Image(systemName: "arrow.forward"))

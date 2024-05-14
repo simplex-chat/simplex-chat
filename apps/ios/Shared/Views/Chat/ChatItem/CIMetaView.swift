@@ -81,7 +81,7 @@ func ciMetaText(
         }
         r = r + Text(" ")
     }
-    if showViaProxy, let viaProxy = meta.sentViaProxy, viaProxy {
+    if showViaProxy, meta.sentViaProxy == true {
         r = r + statusIconText("arrow.forward", color).font(.caption2)
         r = r + Text(" ")
     }

@@ -3930,4 +3930,5 @@ public struct ChatItemVersion: Decodable {
 public struct MemberDeliveryStatus: Decodable {
     public var groupMemberId: Int64
     public var memberDeliveryStatus: CIStatus
+    public var sentViaProxy: Bool?
 }

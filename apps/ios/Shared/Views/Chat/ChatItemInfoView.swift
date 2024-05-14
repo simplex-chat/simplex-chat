@@ -383,7 +383,7 @@ struct ChatItemInfoView: View {
             let mss = membersStatuses(memberDeliveryStatuses)
             if !mss.isEmpty {
                 ForEach(mss, id: \.0.groupMemberId) { memberStatus in
-                    memberDeliveryStatusView(memberStatus.0, memberStatus.1)
+                    memberDeliveryStatusView(memberStatus.0, memberStatus.1, memberStatus.2)
                 }
             } else {
                 Text("No delivery information")
@@ -392,23 +392,27 @@ struct ChatItemInfoView: View {
         }
     }
 
-    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus, Bool?)] {
         memberDeliveryStatuses.compactMap({ mds in
             if let mem = chatModel.getGroupMember(mds.groupMemberId) {
-                return (mem.wrapped, mds.memberDeliveryStatus)
+                return (mem.wrapped, mds.memberDeliveryStatus, mds.sentViaProxy)
             } else {
                 return nil
             }
         })
     }
 
-    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus, _ sentViaProxy: Bool?) -> some View {
         HStack{
             ProfileImage(imageStr: member.image, size: 30)
                 .padding(.trailing, 2)
             Text(member.chatViewName)
                 .lineLimit(1)
             Spacer()
+            if sentViaProxy == true {
+                Image(systemName: "arrow.forward")
+                    .foregroundColor(.secondary)
+            }
             let v = Group {
                 if let (icon, statusColor) = status.statusIcon(Color.secondary) {
                     switch status {
