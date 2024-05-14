@@ -94,7 +94,7 @@ struct NetworkAndServers: View {
                     .frame(height: 36)
                     .disabled(proxyMode == .never)
 
-                    settingsRow("chevron.forward.circle") {
+                    settingsRow("arrow.forward") {
                         Toggle("Show \"forwarded\" icon", isOn: $showSentViaProxy)
                     }
                 } header: {
