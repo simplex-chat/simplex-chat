@@ -2556,16 +2556,20 @@ setGroupSndViaProxy db itemId memberId viaProxy =
     |]
     (viaProxy, itemId, memberId)
 
-getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [(GroupMemberId, CIStatus 'MDSnd, Maybe Bool)]
+getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [MemberDeliveryStatus]
 getGroupSndStatuses db itemId =
-  DB.query
-    db
-    [sql|
-      SELECT group_member_id, group_snd_item_status, via_proxy
-      FROM group_snd_item_statuses
-      WHERE chat_item_id = ?
-    |]
-    (Only itemId)
+  map memStatus
+    <$> DB.query
+      db
+      [sql|
+        SELECT group_member_id, group_snd_item_status, via_proxy
+        FROM group_snd_item_statuses
+        WHERE chat_item_id = ?
+      |]
+      (Only itemId)
+  where
+    memStatus (groupMemberId, memberDeliveryStatus, sentViaProxy) =
+      MemberDeliveryStatus {groupMemberId, memberDeliveryStatus, sentViaProxy}
 
 getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
 getGroupSndStatusCounts db itemId =

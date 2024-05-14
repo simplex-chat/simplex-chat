@@ -700,10 +700,7 @@ processChatCommand' vr = \case
       (,) <$> getAChatItem db vr user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
     let itemVersions = if null versions then maybeToList $ mkItemVersion ci else versions
     memberDeliveryStatuses <- case (cType, dir) of
-      (SCTGroup, SMDSnd) -> do
-        withStore' (`getGroupSndStatuses` itemId) >>= \case
-          [] -> pure Nothing
-          memStatuses -> pure $ Just $ map (\(x, y, z) -> MemberDeliveryStatus x y z) memStatuses
+      (SCTGroup, SMDSnd) -> L.nonEmpty <$> withStore' (`getGroupSndStatuses` itemId)
       _ -> pure Nothing
     forwardedFromChatItem <- getForwardedFromItem user ci
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}

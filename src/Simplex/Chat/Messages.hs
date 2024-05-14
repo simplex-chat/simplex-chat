@@ -29,6 +29,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1098,7 +1099,7 @@ instance TextEncoding CIForwardedFromTag where
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
-    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus],
+    memberDeliveryStatuses :: Maybe (NonEmpty MemberDeliveryStatus),
     forwardedFromChatItem :: Maybe AChatItem
   }
   deriving (Show)
