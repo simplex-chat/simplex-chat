@@ -17,13 +17,13 @@ val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFo
 val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiFont)
 
 @Composable
-fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?) {
+fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean) {
   Column(
     Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     EmojiText(chatItem.content.text)
-    CIMetaView(chatItem, timedMessagesTTL)
+    CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy)
   }
 }
 
