@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Profiles
     deleteCommand,
     updateCommandStatus,
     getCommandDataByCorrId,
+    setUserUIThemes,
   )
 where
 
@@ -82,6 +83,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -123,7 +125,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -274,8 +276,8 @@ updateUserProfile db user p'
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
-        DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
-        pure $ Just currentTs
+          DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
+          pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
     userMemberProfileChanged = newName /= displayName || newFullName /= fullName || newImage /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
@@ -619,3 +621,8 @@ getCommandDataByCorrId db User {userId} corrId =
   where
     toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
     toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
+
+setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeEntityOverrides -> IO ()
+setUserUIThemes db User {userId} uiThemes = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)

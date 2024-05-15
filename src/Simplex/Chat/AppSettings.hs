@@ -9,8 +9,10 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Client (NetworkConfig, defaultNetworkConfig)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (catchAll_)
@@ -43,7 +45,13 @@ data AppSettings = AppSettings
     confirmDBUpgrades :: Maybe Bool,
     androidCallOnLockScreen :: Maybe LockScreenCalls,
     iosCallKitEnabled :: Maybe Bool,
-    iosCallKitCallsInRecents :: Maybe Bool
+    iosCallKitCallsInRecents :: Maybe Bool,
+    uiProfileImageCornerRadius :: Maybe Double,
+    uiColorScheme :: Maybe UIColorScheme,
+    uiDarkColorScheme :: Maybe DarkColorScheme,
+    uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
+    uiThemes :: Maybe [UITheme],
+    oneHandUI :: Maybe Bool
   }
   deriving (Show)
 
@@ -69,7 +77,13 @@ defaultAppSettings =
       confirmDBUpgrades = Just False,
       androidCallOnLockScreen = Just LSCShow,
       iosCallKitEnabled = Just True,
-      iosCallKitCallsInRecents = Just False
+      iosCallKitCallsInRecents = Just False,
+      uiProfileImageCornerRadius = Just 22.5,
+      uiColorScheme = Just UCSSystem,
+      uiDarkColorScheme = Just DCSSimplex,
+      uiCurrentThemeIds = Nothing,
+      uiThemes = Nothing,
+      oneHandUI = Just True
     }
 
 defaultParseAppSettings :: AppSettings
@@ -94,13 +108,19 @@ defaultParseAppSettings =
       confirmDBUpgrades = Nothing,
       androidCallOnLockScreen = Nothing,
       iosCallKitEnabled = Nothing,
-      iosCallKitCallsInRecents = Nothing
+      iosCallKitCallsInRecents = Nothing,
+      uiProfileImageCornerRadius = Nothing,
+      uiColorScheme = Nothing,
+      uiDarkColorScheme = Nothing,
+      uiCurrentThemeIds = Nothing,
+      uiThemes = Nothing,
+      oneHandUI = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
 combineAppSettings platformDefaults storedSettings =
   AppSettings
-    { appPlatform = p appPlatform, 
+    { appPlatform = p appPlatform,
       networkConfig = p networkConfig,
       privacyEncryptLocalFiles = p privacyEncryptLocalFiles,
       privacyAcceptImages = p privacyAcceptImages,
@@ -119,7 +139,13 @@ combineAppSettings platformDefaults storedSettings =
       confirmDBUpgrades = p confirmDBUpgrades,
       iosCallKitEnabled = p iosCallKitEnabled,
       iosCallKitCallsInRecents = p iosCallKitCallsInRecents,
-      androidCallOnLockScreen = p androidCallOnLockScreen
+      androidCallOnLockScreen = p androidCallOnLockScreen,
+      uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
+      uiColorScheme = p uiColorScheme,
+      uiDarkColorScheme = p uiDarkColorScheme,
+      uiCurrentThemeIds = p uiCurrentThemeIds,
+      uiThemes = p uiThemes,
+      oneHandUI = p oneHandUI
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -157,6 +183,12 @@ instance FromJSON AppSettings where
     iosCallKitEnabled <- p "iosCallKitEnabled"
     iosCallKitCallsInRecents <- p "iosCallKitCallsInRecents"
     androidCallOnLockScreen <- p "androidCallOnLockScreen"
+    uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
+    uiColorScheme <- p "uiColorScheme"
+    uiDarkColorScheme <- p "uiDarkColorScheme"
+    uiCurrentThemeIds <- p "uiCurrentThemeIds"
+    uiThemes <- p "uiThemes"
+    oneHandUI <- p "oneHandUI"
     pure
       AppSettings
         { appPlatform,
@@ -178,7 +210,13 @@ instance FromJSON AppSettings where
           confirmDBUpgrades,
           iosCallKitEnabled,
           iosCallKitCallsInRecents,
-          androidCallOnLockScreen
+          androidCallOnLockScreen,
+          uiProfileImageCornerRadius,
+          uiColorScheme,
+          uiDarkColorScheme,
+          uiCurrentThemeIds,
+          uiThemes,
+          oneHandUI
         }
     where
       p key = v .:? key <|> pure Nothing

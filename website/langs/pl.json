@@ -18,7 +18,7 @@
     "copyright-label": "© 2020-2023 SimpleX | Projekt Open-Source",
     "simplex-chat-protocol": "Protokół SimpleX Chat",
     "terminal-cli": "Terminal CLI",
-    "terms-and-privacy-policy": "Warunki i polityka prywatności",
+    "terms-and-privacy-policy": "Polityka prywatności",
     "hero-header": "Prywatność zdefiniowana na nowo",
     "hero-subheader": "Pierwszy komunikator<br>bez identyfikatorów użytkowników (ID)",
     "hero-overlay-1-textlink": "Dlaczego identyfikatory użytkowników (ID) są złe dla prywatności?",
@@ -252,5 +252,8 @@
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> jest wiodącą firmą konsultingową w zakresie bezpieczeństwa i technologii, której klientami są duże firmy technologiczne, agencje rządowe i główne projekty blockchain.",
     "docs-dropdown-9": "Pliki do pobrania",
     "please-enable-javascript": "Prosimy o włączenie JavaScript w celu wyświetlenia kodu QR.",
-    "please-use-link-in-mobile-app": "Prosimy o skorzystanie z linku w aplikacji mobilnej"
+    "please-use-link-in-mobile-app": "Prosimy o skorzystanie z linku w aplikacji mobilnej",
+    "docs-dropdown-10": "Przezroczystość",
+    "docs-dropdown-12": "Bezpieczeństwo",
+    "docs-dropdown-11": "Często zadawane pytania"
 }

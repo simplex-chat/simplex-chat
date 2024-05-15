@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -15,6 +16,8 @@ import qualified Data.Text as T
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Types.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -73,6 +76,7 @@ chatProfileTests = do
       it "direct messages" testGroupPrefsDirectForRole
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
+    it "set user, contact and group UI theme" testSetUITheme
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
@@ -393,6 +397,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
+    threadDelay 100000
     alice @@@ [("@bob", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -466,6 +471,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
+    threadDelay 100000
     alice @@@ [("@robert", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -484,6 +490,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "use @alice <message> to send messages"
 
     alice <##> bob
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
@@ -651,6 +658,7 @@ testPlanAddressOwn tmp =
              "alice_2 (Alice): contact is connected"
            ]
 
+    threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
@@ -1935,8 +1943,8 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
           dan <## "#team: you joined the group"
           dan
             <### [ "#team: member alice (Alice) is connected",
-                    "#team: member bob (Bob) is connected"
-                  ],
+                   "#team: member bob (Bob) is connected"
+                 ],
         do
           alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
           alice <## "#team: new member dan is connected",
@@ -1944,21 +1952,29 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
           bob <## "#team: cath added dan (Daniel) to the group (connecting...)"
           bob <## "#team: new member dan is connected"
       ]
-    -- dan cannot send direct messages to alice (owner)
+
+    -- dan cannot send direct messages to alice
     dan ##> "@alice hello alice"
     dan <## "bad chat command: direct messages not allowed"
-    (alice </)    
-    -- but alice can
+    (alice </)
+
+    -- alice (owner) can send direct messages to dan
     alice `send` "@dan hello dan"
-    alice <## "member #team dan does not have direct connection, creating"
-    alice <## "contact for member #team dan is created"
-    alice <## "sent invitation to connect directly to member #team dan"
-    alice <# "@dan hello dan"
-    alice <## "dan (Daniel): contact is connected"
-    dan <## "#team alice is creating direct contact alice with you"
-    dan <# "alice> hello dan"
-    dan <## "alice (Alice): contact is connected"
-    -- and now dan can too
+    alice
+      <### [ "member #team dan does not have direct connection, creating",
+             "contact for member #team dan is created",
+             "sent invitation to connect directly to member #team dan",
+             WithTime "@dan hello dan"
+           ]
+    dan
+      <### [ "#team alice is creating direct contact alice with you",
+             WithTime "alice> hello dan"
+           ]
+    concurrently_
+      (alice <## "dan (Daniel): contact is connected")
+      (dan <## "alice (Alice): contact is connected")
+
+    -- now dan can send messages to alice
     dan #> "@alice hi alice"
     alice <# "dan> hi alice"
   where
@@ -2029,3 +2045,54 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
       cc <## "alice updated group #team:"
       cc <## "updated group preferences:"
       cc <## "SimpleX links: on for owners"
+
+testSetUITheme :: HasCallStack => FilePath -> IO ()
+testSetUITheme =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice #$> ("/_set theme user 1 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme @2 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme #1 " <> theme UCMDark, id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/create user alice2"
+    userInfo alice "alice2"
+    alice ##> "/u alice"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/i #team"
+    groupInfo alice
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice #$> ("/_set theme user 1", id, "ok")
+    alice #$> ("/_set theme @2", id, "ok")
+    alice #$> ("/_set theme #1", id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice ##> "/i #team"
+    groupInfo alice
+  where
+    theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors}
+    userInfo a name = do
+      a <## ("user profile: " <> name)
+      a <## "use /p <display name> to change it"
+      a <## "(the updated profile will be sent to all your contacts)"
+    contactInfo a = do
+      a <## "contact ID: 2"
+      a <## "receiving messages via: localhost"
+      a <## "sending messages via: localhost"
+      a <## "you've shared main profile with this contact"
+      a <## "connection not verified, use /code command to see security code"
+      a <## "quantum resistant end-to-end encryption"
+      a <## "peer chat protocol version range: (Version 1, Version 8)"
+    groupInfo a = do
+      a <## "group ID: 1"
+      a <## "current members: 1"
