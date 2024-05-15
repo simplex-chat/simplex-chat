@@ -68,6 +68,7 @@ fun ChatItemView(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   developerTools: Boolean,
+  showViaProxy: Boolean
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -83,17 +84,15 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    val onClick = {
-      when (cItem.meta.itemStatus) {
-        is CIStatus.SndErrorAuth -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.message_delivery_error_desc))
-        }
-        is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
-        }
-        else -> {}
+    val info = cItem.meta.itemStatus.statusInto
+    val onClick = if (info != null) {
+      {
+        AlertManager.shared.showAlertMsg(
+          title = info.first,
+          text = info.second,
+        )
       }
-    }
+    } else { {} }
 
     @Composable
     fun ChatItemReactions() {
@@ -130,7 +129,7 @@ fun ChatItemView(
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -334,14 +333,14 @@ fun ChatItemView(
         fun ContentItem() {
           val mc = cItem.content.msgContent
           if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
-            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
+            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
             MarkedDeletedItemDropdownMenu()
           } else {
             if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
               if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
-                EmojiItemView(cItem, cInfo.timedMessagesTTL)
+                EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
               } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, longClick = { onLinkLongClick("") }, receiveFile)
+                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile)
               } else {
                 framedItemView()
               }
@@ -353,7 +352,7 @@ fun ChatItemView(
         }
 
         @Composable fun LegacyDeletedItem() {
-          DeletedItemView(cItem, cInfo.timedMessagesTTL)
+          DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -406,7 +405,7 @@ fun ChatItemView(
 
         @Composable
         fun DeletedItem() {
-          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
@@ -816,13 +815,6 @@ fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteM
   )
 }
 
-private fun showMsgDeliveryErrorAlert(description: String) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.message_delivery_error_title),
-    text = description,
-  )
-}
-
 expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 
 @Preview
@@ -858,6 +850,7 @@ fun PreviewChatItemView() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       developerTools = false,
+      showViaProxy = false
     )
   }
 }
@@ -893,6 +886,7 @@ fun PreviewChatItemViewDeletedContent() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       developerTools = false,
+      showViaProxy = false
     )
   }
 }
