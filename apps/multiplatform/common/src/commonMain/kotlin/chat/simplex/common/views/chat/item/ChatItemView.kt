@@ -203,14 +203,10 @@ fun ChatItemView(
                 }
                 val clipboard = LocalClipboardManager.current
                 val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
-                fun fileForwardingAllowed() = when {
-                  cItem.file != null && chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded -> true
-                  getLoadedFilePath(cItem.file) != null -> true
-                  else -> false
-                }
+
                 val copyAndShareAllowed = when {
                   cItem.content.text.isNotEmpty() -> true
-                  fileForwardingAllowed() -> true
+                  cItem.file?.forwardingAllowed() == true -> true
                   else -> false
                 }
 
@@ -260,7 +256,7 @@ fun ChatItemView(
                   })
                 }
                 if (cItem.meta.itemDeleted == null &&
-                  (cItem.file == null || fileForwardingAllowed()) &&
+                  (cItem.file == null || cItem.file.forwardingAllowed()) &&
                   !cItem.isLiveDummy && !live
                   ) {
                   ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {

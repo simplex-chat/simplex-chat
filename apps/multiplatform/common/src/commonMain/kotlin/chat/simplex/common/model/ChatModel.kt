@@ -2696,6 +2696,12 @@ data class CIFile(
     return res
   }
 
+  fun forwardingAllowed(): Boolean = when {
+    chatModel.connectedToRemote() && cachedRemoteFileRequests[fileSource] != false && loaded -> true
+    getLoadedFilePath(this) != null -> true
+    else -> false
+  }
+
   companion object {
     fun getSample(
       fileId: Long = 1,
