@@ -142,7 +142,7 @@ fun CIFileView(
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
-        when(file.fileStatus) {
+        when (file.fileStatus) {
           is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
