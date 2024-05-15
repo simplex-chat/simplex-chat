@@ -584,7 +584,7 @@ private fun SMPProxyFallbackPicker(
     generalGetString(MR.strings.network_smp_proxy_fallback_allow_downgrade),
     smpProxyFallback,
     values,
-    icon = painterResource(MR.images.ic_settings_ethernet),
+    icon = painterResource(MR.images.ic_arrows_left_right),
     enabled = enabled,
     onSelected = {
       showModal {
