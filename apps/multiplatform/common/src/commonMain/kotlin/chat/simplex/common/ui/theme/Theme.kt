@@ -222,7 +222,7 @@ data class ThemeWallpaper (
   }
 
   // LALAL
-  fun withFilledWallpaperBase64(perUserTheme: ThemeModeOverride?): ThemeWallpaper {
+  fun withFilledWallpaperBase64(): ThemeWallpaper {
     val aw = toAppWallpaper()
     val type = aw.type
     return ThemeWallpaper(
@@ -256,8 +256,9 @@ data class ThemeWallpaper (
      try {
        val parsed = base64ToBitmap(image)
        val filename = saveBackgroundImage(parsed)
-       copy(image = filename)
+       copy(image = null, imageFile = filename)
      } catch (e: Exception) {
+       Log.e(TAG, "Error while parsing/copying the image: ${e.stackTraceToString()}")
        ThemeWallpaper()
      }
    } else this
@@ -366,6 +367,9 @@ data class ThemeOverrides (
 
 fun List<ThemeOverrides>.getTheme(themeId: String?): ThemeOverrides? =
   firstOrNull { it.themeId == themeId }
+
+fun List<ThemeOverrides>.getTheme(themeId: String?, type: BackgroundImageType?, base: DefaultTheme): ThemeOverrides? =
+  firstOrNull { it.themeId == themeId || it.isSame(type, base.themeName)}
 
 fun List<ThemeOverrides>.replace(theme: ThemeOverrides): List<ThemeOverrides> {
   val index = indexOfFirst { it.themeId == theme.themeId ||
@@ -565,6 +569,9 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     reactOnDarkThemeChanges(systemDark)
   }
   val theme by CurrentColors.collectAsState()
+  LaunchedEffect(remember { chatModel.currentUser }.value?.uiThemes) {
+    ThemeManager.applyTheme(appPrefs.currentTheme.get()!!, systemDark)
+  }
   MaterialTheme(
     colors = theme.colors,
     typography = Typography,

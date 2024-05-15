@@ -1167,7 +1167,7 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSetUserUIThemes(rh: Long?, userId: Long, themes: Map<String, ThemeOverrides>?): Boolean {
+  suspend fun apiSetUserUIThemes(rh: Long?, userId: Long, themes: ThemeModeOverrides?): Boolean {
     val r = sendCmd(rh, CC.ApiSetUserUIThemes(userId, themes))
     if (r is CR.CmdOk) return true
     Log.e(TAG, "apiSetUserUIThemes bad response: ${r.responseType} ${r.details}")
@@ -2489,7 +2489,7 @@ sealed class CC {
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
-  class ApiSetUserUIThemes(val userId: Long, val themes: Map<String, ThemeOverrides>?): CC()
+  class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
   class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()

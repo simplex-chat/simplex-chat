@@ -13,7 +13,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,7 +33,6 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
-import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
@@ -54,8 +52,6 @@ enum class AppIcon(val image: ImageResource) {
 @Composable
 actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
-  val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
-
   fun setAppIcon(newIcon: AppIcon) {
     if (appIcon.value == newIcon) return
     val newComponent = ComponentName(APPLICATION_ID, "chat.simplex.app.MainActivity_${newIcon.name.lowercase()}")
@@ -72,21 +68,12 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 
     appIcon.value = newIcon
   }
-
-  val baseTheme = CurrentColors.collectAsState().value.base
-  val backgroundImage = MaterialTheme.wallpaper.type?.image
-  val backgroundImageType = MaterialTheme.wallpaper.type
   AppearanceScope.AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
     showSettingsModal = showSettingsModal,
-    editColor = { name, initialColor ->
-      ModalManager.start.showModal {
-        ColorEditor(name, initialColor, baseTheme, backgroundImageType, backgroundImage, currentColors = { CurrentColors.value }, onColorChange = { color -> ThemeManager.saveAndApplyThemeColor(baseTheme, name, color) })
-      }
-    },
   )
 }
 
@@ -97,7 +84,6 @@ fun AppearanceScope.AppearanceLayout(
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  editColor: (ThemeColor, Color) -> Unit,
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
@@ -132,7 +118,7 @@ fun AppearanceScope.AppearanceLayout(
     }
 
     SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
+    ThemesSection(systemDarkTheme, showSettingsModal)
 
     SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()
@@ -182,7 +168,6 @@ fun PreviewAppearanceSettings() {
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
       showSettingsModal = { {} },
-      editColor = { _, _ -> },
     )
   }
 }

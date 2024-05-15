@@ -77,7 +77,7 @@ fun MarkdownText (
   val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
     "\n"
   } else if (meta != null) {
-    reserveSpaceForMeta(meta, chatTTL, null) // LALAL
+    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary) // LALAL
   } else {
     "    "
   }

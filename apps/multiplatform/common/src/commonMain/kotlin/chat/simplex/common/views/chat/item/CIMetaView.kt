@@ -12,7 +12,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
@@ -105,7 +104,7 @@ private fun CIMetaText(
 }
 
 // the conditions in this function should match CIMetaText
-fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, showStatus: Boolean = true, showEdited: Boolean = true): String {
+fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, secondaryColor: Color, showStatus: Boolean = true, showEdited: Boolean = true): String {
   val iconSpace = "    "
   var res = ""
   if (showEdited && meta.itemEdited) res += iconSpace
@@ -116,7 +115,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, showSt
       res += shortTimeText(ttl)
     }
   }
-  if (showStatus && (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing)) {
+  if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
     res += iconSpace
   }
   if (encrypted != null) {

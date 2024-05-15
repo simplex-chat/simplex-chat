@@ -791,7 +791,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
     val tintColor = remember { derivedStateOf { themeModeOverride.value.wallpaper?.tint?.colorFromReadableHex() } }
 
     val onTypeCopyFromSameTheme: (BackgroundImageType?) -> Boolean = { type ->
-      val success = ThemeManager.copyFromSameThemeOverrides(type, themeModeOverride)
+      val success = ThemeManager.copyFromSameThemeOverrides(type, withColors = true, themeModeOverride)
       if (success) {
         save(applyToMode.value, themeModeOverride.value)
         globalThemeUsed.value = false
@@ -843,11 +843,6 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
       baseTheme = CurrentColors.collectAsState().value.base,
       currentColors = { type ->
         ThemeManager.currentColors(systemDark, type to true, if (type?.filename == themeModeOverride.value.type?.filename) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.state.value)
-      },
-      onColorChange = { name, color ->
-        preApplyGlobalIfNeeded()
-        ThemeManager.applyThemeColor(name, color, themeModeOverride)
-        save(applyToMode.value, themeModeOverride.value)
       },
       onTypeChange = onTypeChange,
       onTypeCopyFromSameTheme = onTypeCopyFromSameTheme,
