@@ -548,7 +548,7 @@ private fun SMPProxyModePicker(
     generalGetString(MR.strings.network_smp_proxy_mode_private_routing),
     smpProxyMode,
     values,
-    icon = painterResource(MR.images.ic_dns),
+    icon = painterResource(MR.images.ic_settings_ethernet),
     onSelected = {
       showModal {
         ColumnWithScrollBar(
@@ -584,7 +584,7 @@ private fun SMPProxyFallbackPicker(
     generalGetString(MR.strings.network_smp_proxy_fallback_allow_downgrade),
     smpProxyFallback,
     values,
-    icon = painterResource(MR.images.ic_dns),
+    icon = painterResource(MR.images.ic_arrow_downward),
     enabled = enabled,
     onSelected = {
       showModal {
