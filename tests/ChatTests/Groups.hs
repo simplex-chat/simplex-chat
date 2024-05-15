@@ -69,7 +69,7 @@ chatGroupTests = do
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
-    fit "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
+    it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
     it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
