@@ -2308,7 +2308,7 @@ sealed class SrvError {
   val errorInfo: String get() = when (this) {
     is SrvError.Host -> generalGetString(MR.strings.srv_error_host)
     is SrvError.Version -> generalGetString(MR.strings.srv_error_version)
-    is SrvError.Other -> generalGetString(MR.strings.ci_status_other_error).format(srvError)
+    is SrvError.Other -> srvError
   }
 }
 
