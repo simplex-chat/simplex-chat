@@ -1763,4 +1763,16 @@
     <string name="settings_section_title_profile_images">Profilképek</string>
     <string name="v5_7_shape_profile_images">Profilkép alakzat</string>
     <string name="v5_7_shape_profile_images_descr">Négyzet, kör vagy bármi a kettő között.</string>
+    <string name="snd_error_relay">Célkiszolgáló hiba: %1$s</string>
+    <string name="snd_error_proxy">Továbbító kiszolgáló: %1$s
+\nHiba: %2$s</string>
+    <string name="snd_error_expired">Hálózati problémák - az üzenet többszöri elküldési kísérlet után lejárt.</string>
+    <string name="srv_error_version">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</string>
+    <string name="snd_error_auth">Rossz kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</string>
+    <string name="snd_error_proxy_relay">Továbbító kiszolgáló: %1$s
+\nCélkiszolgáló hiba: %2$s</string>
+    <string name="ci_status_other_error">Hiba: %1$s</string>
+    <string name="snd_error_quota">Kapacitás túllépés - a címzett nem kapta meg a korábban elküldött üzeneteket.</string>
+    <string name="message_delivery_warning_title">Üzenet kézbesítési figyelmeztetés</string>
+    <string name="srv_error_host">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal.</string>
 </resources>
