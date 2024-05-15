@@ -19,6 +19,8 @@ struct CIRcvDecryptionError: View {
     var chatItem: ChatItem
     @State private var alert: CIRcvDecryptionErrorAlert?
 
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+
     enum CIRcvDecryptionErrorAlert: Identifiable {
         case syncAllowedAlert(_ syncConnection: () -> Void)
         case syncNotSupportedContactAlert
@@ -119,7 +121,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(syncSupported ? .accentColor : .secondary)
                         .font(.callout)
                     + Text("   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
                 )
             }
             .padding(.horizontal, 12)
@@ -140,7 +142,7 @@ struct CIRcvDecryptionError: View {
                     .foregroundColor(.red)
                     .italic()
                 + Text("   ")
-                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
+                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
             }
             .padding(.horizontal, 12)
             CIMetaView(chat: chat, chatItem: chatItem)
