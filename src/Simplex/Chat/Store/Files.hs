@@ -29,8 +29,8 @@ module Simplex.Chat.Store.Files
     createExtraSndFTDescrs,
     updateSndFTDeliveryXFTP,
     setSndFTAgentDeleted,
-    getXFTPSndFileDBId,
-    getXFTPRcvFileDBId,
+    getXFTPSndFileDBIds,
+    getXFTPRcvFileDBIds,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -109,7 +109,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -336,15 +336,37 @@ setSndFTAgentDeleted db User {userId} fileId = do
     "UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (currentTs, userId, fileId)
 
-getXFTPSndFileDBId :: DB.Connection -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
-getXFTPSndFileDBId db aSndFileId =
-  ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
-    DB.query db "SELECT file_id FROM files WHERE agent_snd_file_id = ?" (Only aSndFileId)
+getXFTPSndFileDBIds :: DB.Connection -> AgentSndFileId -> ExceptT StoreError IO (Maybe ChatRef, FileTransferId)
+getXFTPSndFileDBIds db aSndFileId =
+  ExceptT . firstRow' toFileRef (SESndFileNotFoundXFTP aSndFileId) $
+    DB.query
+      db
+      [sql|
+        SELECT file_id, contact_id, group_id, note_folder_id
+        FROM files
+        WHERE agent_snd_file_id = ?
+      |]
+      (Only aSndFileId)
 
-getXFTPRcvFileDBId :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
-getXFTPRcvFileDBId db aRcvFileId =
-  ExceptT . firstRow fromOnly (SERcvFileNotFoundXFTP aRcvFileId) $
-    DB.query db "SELECT file_id FROM rcv_files WHERE agent_rcv_file_id = ?" (Only aRcvFileId)
+getXFTPRcvFileDBIds :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO (Maybe ChatRef, FileTransferId)
+getXFTPRcvFileDBIds db aRcvFileId =
+  ExceptT . firstRow' toFileRef (SERcvFileNotFoundXFTP aRcvFileId) $
+    DB.query
+      db
+      [sql|
+        SELECT rf.file_id, f.contact_id, f.group_id, f.note_folder_id
+        FROM rcv_files rf
+        JOIN files f ON f.file_id = rf.file_id
+        WHERE rf.agent_rcv_file_id = ?
+      |]
+      (Only aRcvFileId)
+
+toFileRef :: (FileTransferId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (Maybe ChatRef, FileTransferId)
+toFileRef = \case
+  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId, fileId)
+  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef CTGroup groupId, fileId)
+  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CTLocal folderId, fileId)
+  (fileId, _, _, _) -> Right (Nothing, fileId)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do

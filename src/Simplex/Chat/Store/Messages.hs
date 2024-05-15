@@ -95,6 +95,7 @@ module Simplex.Chat.Store.Messages
     lookupChatItemByFileId,
     getChatItemByGroupId,
     updateDirectChatItemStatus,
+    setDirectSndChatItemViaProxy,
     getTimedItems,
     getChatItemTTL,
     setChatItemTTL,
@@ -108,6 +109,7 @@ module Simplex.Chat.Store.Messages
     createGroupSndStatus,
     getGroupSndStatus,
     updateGroupSndStatus,
+    setGroupSndViaProxy,
     getGroupSndStatuses,
     getGroupSndStatusCounts,
     getGroupHistoryItems,
@@ -315,7 +317,7 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
   DirectChat Contact {contactId} ->
     DB.execute
       db
-      "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
+      "UPDATE contacts SET chat_ts = ?, chat_deleted = 0 WHERE user_id = ? AND contact_id = ?"
       (chatTs, userId, contactId)
   GroupChat GroupInfo {groupId} ->
     DB.execute
@@ -806,7 +808,7 @@ getLocalChatPreview_ db user (LocalChatPD _ noteFolderId lastItemId_ stats) = do
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toLocalChatItem :: UTCTime -> ChatItemRow -> Either StoreError (CChatItem 'CTLocal)
-toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) =
+toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -839,7 +841,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
             _ -> Just (CIDeleted @CTLocal deletedTs)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
+       in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -1407,7 +1409,7 @@ type ChatItemModeRow = (Maybe Int, Maybe UTCTime, Maybe Bool)
 type ChatItemForwardedFromRow = (Maybe CIForwardedFromTag, Maybe Text, Maybe MsgDirection, Maybe Int64, Maybe Int64, Maybe Int64)
 
 type ChatItemRow =
-  (Int64, ChatItemTs, AMsgDirection, Text, Text, ACIStatus, Maybe SharedMsgId)
+  (Int64, ChatItemTs, AMsgDirection, Text, Text, ACIStatus, Maybe Bool, Maybe SharedMsgId)
     :. (Int, Maybe UTCTime, Maybe Bool, UTCTime, UTCTime)
     :. ChatItemForwardedFromRow
     :. ChatItemModeRow
@@ -1426,7 +1428,7 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toDirectChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
+toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -1459,7 +1461,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
             _ -> Just (CIDeleted @CTDirect deletedTs)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
+       in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -1483,7 +1485,7 @@ toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction 
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toGroupChatItem :: UTCTime -> Int64 -> ChatItemRow :. Only (Maybe GroupMemberId) :. MaybeGroupMemberRow :. GroupQuoteRow :. MaybeGroupMemberRow -> Either StoreError (CChatItem 'CTGroup)
-toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. Only forwardedByMember :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_) = do
+toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. Only forwardedByMember :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_) = do
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     member_ = toMaybeGroupMember userContactId memberRow_
@@ -1521,7 +1523,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
             _ -> Just (maybe (CIDeleted @CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt
+       in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -1599,6 +1601,11 @@ updateDirectChatItemStatus db user@User {userId} ct@Contact {contactId} itemId i
   currentTs <- liftIO getCurrentTime
   liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (itemStatus, currentTs, userId, contactId, itemId)
   pure ci {meta = (meta ci) {itemStatus}}
+
+setDirectSndChatItemViaProxy :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect 'MDSnd -> Bool -> IO (ChatItem 'CTDirect 'MDSnd)
+setDirectSndChatItemViaProxy db User {userId} Contact {contactId} ci viaProxy = do
+  DB.execute db "UPDATE chat_items SET via_proxy = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (viaProxy, userId, contactId, chatItemId' ci)
+  pure ci {meta = (meta ci) {sentViaProxy = Just viaProxy}}
 
 updateDirectChatItem :: MsgDirectionI d => DB.Connection -> User -> Contact -> ChatItemId -> CIContent d -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
 updateDirectChatItem db user ct@Contact {contactId} itemId newContent edited live timed_ msgId_ = do
@@ -1758,7 +1765,7 @@ getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
         [sql|
           SELECT
             -- ChatItem
-            i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id,
+            i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.timed_ttl, i.timed_delete_at, i.item_live,
@@ -2001,7 +2008,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
         [sql|
           SELECT
             -- ChatItem
-            i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id,
+            i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.timed_ttl, i.timed_delete_at, i.item_live,
@@ -2105,7 +2112,7 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
         [sql|
           SELECT
             -- ChatItem
-            i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id,
+            i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.timed_ttl, i.timed_delete_at, i.item_live,
@@ -2538,16 +2545,31 @@ updateGroupSndStatus db itemId memberId status = do
     |]
     (status, currentTs, itemId, memberId)
 
-getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [(GroupMemberId, CIStatus 'MDSnd)]
-getGroupSndStatuses db itemId =
-  DB.query
+setGroupSndViaProxy :: DB.Connection -> ChatItemId -> GroupMemberId -> Bool -> IO ()
+setGroupSndViaProxy db itemId memberId viaProxy =
+  DB.execute
     db
     [sql|
-      SELECT group_member_id, group_snd_item_status
-      FROM group_snd_item_statuses
-      WHERE chat_item_id = ?
+      UPDATE group_snd_item_statuses
+      SET via_proxy = ?
+      WHERE chat_item_id = ? AND group_member_id  = ?
     |]
-    (Only itemId)
+    (viaProxy, itemId, memberId)
+
+getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [MemberDeliveryStatus]
+getGroupSndStatuses db itemId =
+  map memStatus
+    <$> DB.query
+      db
+      [sql|
+        SELECT group_member_id, group_snd_item_status, via_proxy
+        FROM group_snd_item_statuses
+        WHERE chat_item_id = ?
+      |]
+      (Only itemId)
+  where
+    memStatus (groupMemberId, memberDeliveryStatus, sentViaProxy) =
+      MemberDeliveryStatus {groupMemberId, memberDeliveryStatus, sentViaProxy}
 
 getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
 getGroupSndStatusCounts db itemId =

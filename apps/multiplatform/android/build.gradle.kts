@@ -13,7 +13,7 @@ android {
     defaultConfig {
         applicationId = "chat.simplex.app"
         namespace = "chat.simplex.app"
-        minSdk = 28
+        minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 33
         // !!!

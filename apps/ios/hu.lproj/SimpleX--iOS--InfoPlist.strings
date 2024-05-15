@@ -2,7 +2,7 @@
 "CFBundleName" = "SimpleX";
 
 /* Privacy - Camera Usage Description */
-"NSCameraUsageDescription" = "A SimpleX-nek kamera-hozzáférésre van szüksége a QR-kódok beolvasásához, hogy csatlakozhasson más felhasználókhoz és videohívásokhoz.";
+"NSCameraUsageDescription" = "A SimpleX-nek kamera-hozzáférésre van szüksége a QR-kódok beolvasásához, hogy kapcsolódhasson más felhasználókhoz és videohívásokhoz.";
 
 /* Privacy - Face ID Usage Description */
 "NSFaceIDUsageDescription" = "A SimpleX Face ID-t használ a helyi hitelesítéshez";

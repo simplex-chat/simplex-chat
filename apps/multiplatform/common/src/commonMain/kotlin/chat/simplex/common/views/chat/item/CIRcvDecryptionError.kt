@@ -174,7 +174,7 @@ fun DecryptionErrorItemFixButton(
           )
         }
       }
-      CIMetaView(ci, timedMessagesTTL = null)
+      CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false)
     }
   }
 }
@@ -202,7 +202,7 @@ fun DecryptionErrorItem(
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
       )
-      CIMetaView(ci, timedMessagesTTL = null)
+      CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false)
     }
   }
 }

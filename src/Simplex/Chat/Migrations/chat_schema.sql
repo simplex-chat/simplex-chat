@@ -34,7 +34,8 @@ CREATE TABLE users(
   show_ntfs INTEGER NOT NULL DEFAULT 1,
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
-  user_member_profile_updated_at TEXT, -- 1 for active user
+  user_member_profile_updated_at TEXT,
+  ui_themes TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -74,6 +75,8 @@ CREATE TABLE contacts(
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
   custom_data BLOB,
+  ui_themes TEXT,
+  chat_deleted INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -122,7 +125,8 @@ CREATE TABLE groups(
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
   user_member_profile_sent_at TEXT,
-  custom_data BLOB, -- received
+  custom_data BLOB,
+  ui_themes TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -389,7 +393,8 @@ CREATE TABLE chat_items(
   fwd_from_msg_dir INTEGER,
   fwd_from_contact_id INTEGER REFERENCES contacts ON DELETE SET NULL,
   fwd_from_group_id INTEGER REFERENCES groups ON DELETE SET NULL,
-  fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL
+  fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
+  via_proxy INTEGER
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -500,6 +505,8 @@ CREATE TABLE group_snd_item_statuses(
   group_snd_item_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  via_proxy INTEGER
 );
 CREATE TABLE IF NOT EXISTS "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,

@@ -50,7 +50,7 @@ Możesz połączyć się z naszym zespołem za pośrednictwem aplikacji, korzyst
 
 Odpowiadamy na pytania manualnie, więc nie jest to natychmiastowe - może to potrwać do 24 godzin.
 
-Jeśli jesteś zainteresowany pomocą w integracji otwartoźródłowych modeli językowych i [dołączeniem do naszego zespołu](./docs/lang/pl/JOIN_TEAM.md), skontaktuj się z nami.
+Jeśli jesteś zainteresowany pomocą w integracji otwartoźródłowych modeli językowych i [dołączeniem do naszego zespołu](../../JOIN_TEAM.md), skontaktuj się z nami.
 
 ## Dołącz do grup użytkowników
 
@@ -62,7 +62,7 @@ Możesz również:
 - krytykować aplikację i dokonywać porównań z innymi komunikatorami.
 - udostępniać nowe komunikatory, które Twoim zdaniem mogą być interesujące z punktu widzenia prywatności, o ile nie spamujesz.
 - udostępniać niektóre publikacje związane z prywatnością, raczej dość rzadko.
-- po wstępnym zatwierdzeniu przez administratora w prywatnej wiadomości, udostępnić link do utworzonej grupy, ale tylko raz. Gdy grupa ma więcej niż 10 członków, może zostać przesłana do [SimpleX Directory Service](./docs/DIRECTORY.md), gdzie nowi użytkownicy będą mogli ją odkryć.
+- po wstępnym zatwierdzeniu przez administratora w prywatnej wiadomości, udostępnić link do utworzonej grupy, ale tylko raz. Gdy grupa ma więcej niż 10 członków, może zostać przesłana do [SimpleX Directory Service](../../DIRECTORY.md), gdzie nowi użytkownicy będą mogli ją odkryć.
 
 Musisz:
 - być uprzejmym wobec innych użytkowników.
@@ -74,7 +74,7 @@ Wiadomości nieprzestrzegające tych zasad będą usuwane, prawo do wysyłania w
 
 Jeśli chcesz zadać jakieś pytania, możesz dołączyć do anglojęzycznej grupy użytkowników: [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
 
-Istnieje również [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F6eHqy7uAbZPOcA6qBtrQgQquVlt4Ll91%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAqV_pg3FF00L98aCXp4D3bOs4Sxv_UmSd-gb0juVoQVs%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22XonlixcHBIb2ijCehbZoiw%3D%3D%22%7D) dla deweloperów, którzy na bazie platformy SimpleX tworzą:
+Istnieje również [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) dla deweloperów, którzy na bazie platformy SimpleX tworzą:
 
 - czatboty i automatyzacje
 - integracje z innymi aplikacjami
@@ -104,11 +104,11 @@ Kanał, za pośrednictwem którego udostępniasz link, nie musi być bezpieczny 
 
 <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Wykonaj prywatne połączenie" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Połączenie wideo" height="360">
 
-Po wykonaniu połączenia możesz [zweryfikować kod bezpieczeństwa połączenia](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
+Po wykonaniu połączenia możesz [zweryfikować kod bezpieczeństwa połączenia](../../../blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
 
 ## Poradnik dla użytkownika (NOWE)
 
-Przeczytaj o funkcjach i ustawieniach aplikacji w nowym [Przewodniku użytkownika](./docs/guide/README.md).
+Przeczytaj o funkcjach i ustawieniach aplikacji w nowym [Przewodniku użytkownika](../../guide/README.md).
 
 ## Pomóż nam przetłumaczyć SimpleX Chat
 
@@ -139,13 +139,13 @@ Dołącz do naszych tłumaczy, aby pomóc SimpleX w rozwoju!
 |🇺🇦 uk|Українська| |[![android app](https://hosted.weblate.org/widgets/simplex-chat/uk/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/uk/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/uk/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/uk/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/uk/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/uk/)||
 |🇨🇳 zh-CHS|简体中文|[sith-on-mars](https://github.com/sith-on-mars)<br><br>[Float-hu](https://github.com/Float-hu)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/zh_Hans/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/zh_Hans/)<br>&nbsp;|<br><br>[![website](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/zh_Hans/)||
 
-Trwają prace nad wersjami językowymi: Arabski, japoński, koreański, portugalski i [inne](https://hosted.weblate.org/projects/simplex-chat/#languages). Będziemy dodawać kolejne języki, gdy niektóre z już dodanych zostaną ukończone - zasugeruj nowe języki, przejrzyj [przewodnik po tłumaczeniach](./docs/lang/pl/TRANSLATIONS.md) i skontaktuj się z nami!
+Trwają prace nad wersjami językowymi: Arabski, japoński, koreański, portugalski i [inne](https://hosted.weblate.org/projects/simplex-chat/#languages). Będziemy dodawać kolejne języki, gdy niektóre z już dodanych zostaną ukończone - zasugeruj nowe języki, przejrzyj [przewodnik po tłumaczeniach](./TRANSLATIONS.md) i skontaktuj się z nami!
 
 ## Kontrybuuj
 
 Chcielibyśmy, abyś przyczynił się do naszego rozwoju! Możesz nam pomóc:
 
-- [dzieląc się motywem kolorystycznym](./docs/THEMES.md), którego używasz w aplikacji na Androida!
+- [dzieląc się motywem kolorystycznym](../../THEMES.md), którego używasz w aplikacji na Androida!
 - pisząc samouczki lub poradniki, które dotyczą hostowania serwerów, automatyzacji czatbotów itp.
 - współtworząc bazy wiedzy SimpleX Chat.
 - rozwijając funkcje - skontaktuj się z nami za pośrednictwem czatu, abyśmy mogli pomóc Ci zacząć.
@@ -208,23 +208,23 @@ Używanie szyfrowanego komunikatora end-to-end nie jest wystarczające. Powinni�
 
 ### Kompletna prywatność Twojej tożsamości, profilu, kontaktów i metadanych.
 
-**W przeciwieństwie do innych komunikatorów, SimpleX nie posiada żadnych identyfikatorów przypisanych do użytkowników**. Nie posiada nawet numerów generowanych losowo. Zapewnia to prywatność tego, z kim się komunikujesz, ukrywając jego tożsamość oraz fakt komunikacji przed serwerami platformy SimpleX i wszelkimi obserwatorami [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
+**W przeciwieństwie do innych komunikatorów, SimpleX nie posiada żadnych identyfikatorów przypisanych do użytkowników**. Nie posiada nawet numerów generowanych losowo. Zapewnia to prywatność tego, z kim się komunikujesz, ukrywając jego tożsamość oraz fakt komunikacji przed serwerami platformy SimpleX i wszelkimi obserwatorami [Czytaj więcej](./SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
 ### Najlepsza ochrona przed spamem i nadużyciami
 
-Ponieważ na platformie SimpleX nie masz identyfikatora ani stałego adresu, nikt nie może się z Tobą skontaktować, chyba że udostępnisz jednorazowy lub tymczasowy adres użytkownika, w postaci kodu QR lub linku. [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#the-best-protection-against-spam-and-abuse).
+Ponieważ na platformie SimpleX nie masz identyfikatora ani stałego adresu, nikt nie może się z Tobą skontaktować, chyba że udostępnisz jednorazowy lub tymczasowy adres użytkownika, w postaci kodu QR lub linku. [Czytaj więcej](./SIMPLEX.md#the-best-protection-against-spam-and-abuse).
 
 ### Pełna kontrola i bezpieczeństwo Twoich danych
 
-SimpleX przechowuje wszystkie dane użytkownika na urządzeniach klienckich, wiadomości są przechowywane tymczasowo na serwerach przekaźnikowych SimpleX do momentu ich odebrania, po czym są trwale usuwane. [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#complete-ownership-control-and-security-of-your-data).
+SimpleX przechowuje wszystkie dane użytkownika na urządzeniach klienckich, wiadomości są przechowywane tymczasowo na serwerach przekaźnikowych SimpleX do momentu ich odebrania, po czym są trwale usuwane. [Czytaj więcej](./SIMPLEX.md#complete-ownership-control-and-security-of-your-data).
 
 ### Użytkownicy są właścicielami sieci SimpleX
 
-Możesz używać SimpleX na własnych serwerach i nadal komunikować się z ludźmi za pomocą serwerów, które są wstępnie skonfigurowane w aplikacjach lub z dowolnymi innymi serwerami SimpleX. [Czytaj więcej](./docs/lang/pl/SIMPLEX.md#users-own-simplex-network).
+Możesz używać SimpleX na własnych serwerach i nadal komunikować się z ludźmi za pomocą serwerów, które są wstępnie skonfigurowane w aplikacjach lub z dowolnymi innymi serwerami SimpleX. [Czytaj więcej](./SIMPLEX.md#users-own-simplex-network).
 
 ## Często zadawane pytania
 
-1. _W jaki sposób SimpleX może dostarczać wiadomości bez jakichkolwiek identyfikatorów użytkownika?_ Zobacz [ogłoszenie wydania v2](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) wyjaśniające jak SimpleX działa.
+1. _W jaki sposób SimpleX może dostarczać wiadomości bez jakichkolwiek identyfikatorów użytkownika?_ Zobacz [ogłoszenie wydania v2](../../../blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) wyjaśniające jak SimpleX działa.
 
 2. _Dlaczego po prostu nie mogę używać Signal?_ Signal to scentralizowana platforma, która wykorzystuje numery telefonów do identyfikacji użytkowników i ich kontaktów. Oznacza to, że podczas gdy treść wiadomości w Signal jest chroniona solidnym szyfrowaniem end-to-end, istnieje duża ilość metadanych widocznych dla Signal - to, z kim rozmawiasz i kiedy.
 
@@ -234,29 +234,29 @@ Możesz używać SimpleX na własnych serwerach i nadal komunikować się z lud�
 
 Najnowsze i ważne wiadomości:
 
-[Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
+[Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](../../../blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
 
-[Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
+[Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](../../../blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
-[Jan 24, 2024. SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.](./blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
+[Jan 24, 2024. SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.](../../../blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
 
-[Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
+[Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](../../../blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
 
-[Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
+[Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](../../../blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
 
-[Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
+[Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](../../../blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
 
-[May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
+[May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](../../../blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
-[Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
+[Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](../../../blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
-[Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
+[Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](../../../blog/20230301-simplex-file-transfer-protocol.md).
 
-[Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+[Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
-[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](../../../blog/20220928-simplex-chat-v4-encrypted-database.md).
 
-[All updates](./blog)
+[All updates](../../../blog)
 
 ## :zap: Szybka instalacja terminalowej wersji aplikacji
 
@@ -268,13 +268,13 @@ Po pobraniu klienta czatu można go uruchomić za pomocą polecenia `simplex-cha
 
 ![simplex-chat](./images/connection.gif)
 
-Przeczytaj więcej o [instalowaniu i używaniu terminalowej wersji czatu](./docs/lang/pl/CLI.md).
+Przeczytaj więcej o [instalowaniu i używaniu terminalowej wersji czatu](./CLI.md).
 
 ## Budowa Platformy SimpleX
 
 SimpleX to sieć typu klient-serwer z unikatową topologią sieciową, która wykorzystuje redundantne, jednorazowe węzły przekazywania wiadomości do asynchronicznego przekazywania wiadomości za pośrednictwem jednokierunkowych (simpleksowych) kolejek wiadomości, zapewniając anonimowość odbiorcy i nadawcy.
 
-W przeciwieństwie do sieci P2P, wszystkie wiadomości są przekazywane przez jeden lub kilka węzłów serwera, które nawet nie muszą być trwałe. Obecna implementacja [serwera SMP](https://github.com/simplex-chat/simplexmq#smp-server) wykorzystuje przechowywanie wiadomości w pamięci, utrzymując jedynie rejestr kolejki. SimpleX zapewnia lepszą ochronę metadanych niż projekty P2P, ponieważ żadne globalne identyfikatory uczestników nie są używane do dostarczania wiadomości i pozwala to uniknąć [różnych problemów związanych z sieciami P2P](./docs/lang/pl/SIMPLEX.md#comparison-with-p2p-messaging-protocols).
+W przeciwieństwie do sieci P2P, wszystkie wiadomości są przekazywane przez jeden lub kilka węzłów serwera, które nawet nie muszą być trwałe. Obecna implementacja [serwera SMP](https://github.com/simplex-chat/simplexmq#smp-server) wykorzystuje przechowywanie wiadomości w pamięci, utrzymując jedynie rejestr kolejki. SimpleX zapewnia lepszą ochronę metadanych niż projekty P2P, ponieważ żadne globalne identyfikatory uczestników nie są używane do dostarczania wiadomości i pozwala to uniknąć [różnych problemów związanych z sieciami P2P](./SIMPLEX.md#comparison-with-p2p-messaging-protocols).
 
 W przeciwieństwie do sieci sfederowanych, węzły serwera **nie posiadają danych użytkowników**, **nie komunikują się ze sobą** i **nie przechowują wiadomości** po ich dostarczeniu do odbiorców. Nie ma możliwości na odkrycie pełnej listy serwerów działających w sieci SimpleX. Taka konstrukcja pozwala uniknąć problemu związanego z widocznością metadanych, z którym borykają się wszystkie sieci sfederowane i pozwala ona na lepszą ochronę przed atakami obejmującymi całą sieć.
 
@@ -282,29 +282,29 @@ Informacje o użytkownikach, ich kontaktach i grupach znajdują się wyłącznie
 
 Przeczytaj [whitepaper SimpleX](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md) po więcej informacji o zadaniach platformy oraz by dowiedzieć się jak wygląda koncepcja techniczna modelu.
 
-Zobacz [Protokół Czatu SimpleX](./docs/protocol/simplex-chat.md) by dowiedzieć się o formacie wiadomości wysyłanych między klientem czatu za pośrednictwem [Protokołu Wiadomości SimpleX](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
+Zobacz [Protokół Czatu SimpleX](../../protocol/simplex-chat.md) by dowiedzieć się o formacie wiadomości wysyłanych między klientem czatu za pośrednictwem [Protokołu Wiadomości SimpleX](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
 
 ## Prywatność i bezpieczeństwo: szczegóły techniczne i ograniczenia
 
 Prace nad SimpleX Chat wciąż trwają - udostępniamy nowe ulepszenia, gdy tylko będą gotowe. To Ty musisz zdecydować, czy obecny stan jest wystarczająco dobry dla Twojego przypadku zastosowania.
 
-Stworzyliśmy [słownik pojęć](./docs/GLOSSARY.md) używany do opisu systemów komunikacyjnych, aby pomóc zrozumieć niektóre z poniższych pojęć oraz aby pomóc Ci w porównaniu zalet i wad różnych systemów komunikacyjnych.
+Stworzyliśmy [słownik pojęć](../../GLOSSARY.md) używany do opisu systemów komunikacyjnych, aby pomóc zrozumieć niektóre z poniższych pojęć oraz aby pomóc Ci w porównaniu zalet i wad różnych systemów komunikacyjnych.
 
 Co zostało już wprowadzone:
 
-1. Zamiast identyfikatorów użytkownika używanych przez wszystkie inne platformy, nawet te najbardziej prywatne, SimpleX używa [pairwise per-queue identifiers](./docs/GLOSSARY.md#pairwise-pseudonymous-identifier) (2 adresy dla każdej jednokierunkowej kolejki wiadomości, z opcjonalnym trzecim adresem dla powiadomień push na iOS, 2 kolejki w każdym połączeniu między użytkownikami). Sprawia to, że trudniej jest w ten sposób obserwować przebieg połączeń sieciowych na poziomie aplikacji, ponieważ dla `n` użytkowników może istnieć do `n * (n-1)` kolejek wiadomości.
-2. [Szyfrowanie end-to-end](./docs/GLOSSARY.md#end-to-end-encryption) w każdej kolejce wiadomości używając [cryptoboxa NaCl](https://nacl.cr.yp.to/box.html). Zostało to dodane, aby umożliwić redundancję w przyszłości (przekazywanie każdej wiadomości przez kilka serwerów), aby uniknąć posiadania tego samego ciphertext w różnych kolejkach (które byłyby widoczne tylko dla atakującego, w przypadku przejęcia TLS). Klucze szyfrujące używane do tego szyfrowania nie są rotowane, zamiast tego planujemy rotować kolejki. Do negocjacji kluczy używane są klucze Curve25519.
-3. Szyfrowanie end-to-end [double ratchet](./docs/GLOSSARY.md#double-ratchet-algorithm) w każdej rozmowie między dwoma użytkownikami (lub członkami grupy). Jest to ten sam algorytm, który jest używany w Signal i wielu innych komunikatorach; zapewnia on komunikację OTR z [forward secrecy](./docs/GLOSSARY.md#forward-secrecy) (każda wiadomość jest szyfrowana własnym kluczem efemerycznym) i [break-in recovery](./docs/GLOSSARY.md#post-compromise-security) (klucze są często renegocjowane w ramach wymiany wiadomości). Dwie pary kluczy Curve448 są używane do początkowego [key agreement](./docs/GLOSSARY.md#key-agreement-protocol), strona inicjująca przekazuje te klucze przez link połączenia, a strona akceptująca - w nagłówku wiadomości potwierdzającej.
+1. Zamiast identyfikatorów użytkownika używanych przez wszystkie inne platformy, nawet te najbardziej prywatne, SimpleX używa [pairwise per-queue identifiers](../../GLOSSARY.md#pairwise-pseudonymous-identifier) (2 adresy dla każdej jednokierunkowej kolejki wiadomości, z opcjonalnym trzecim adresem dla powiadomień push na iOS, 2 kolejki w każdym połączeniu między użytkownikami). Sprawia to, że trudniej jest w ten sposób obserwować przebieg połączeń sieciowych na poziomie aplikacji, ponieważ dla `n` użytkowników może istnieć do `n * (n-1)` kolejek wiadomości.
+2. [Szyfrowanie end-to-end](../../GLOSSARY.md#end-to-end-encryption) w każdej kolejce wiadomości używając [cryptoboxa NaCl](https://nacl.cr.yp.to/box.html). Zostało to dodane, aby umożliwić redundancję w przyszłości (przekazywanie każdej wiadomości przez kilka serwerów), aby uniknąć posiadania tego samego ciphertext w różnych kolejkach (które byłyby widoczne tylko dla atakującego, w przypadku przejęcia TLS). Klucze szyfrujące używane do tego szyfrowania nie są rotowane, zamiast tego planujemy rotować kolejki. Do negocjacji kluczy używane są klucze Curve25519.
+3. Szyfrowanie end-to-end [double ratchet](../../GLOSSARY.md#double-ratchet-algorithm) w każdej rozmowie między dwoma użytkownikami (lub członkami grupy). Jest to ten sam algorytm, który jest używany w Signal i wielu innych komunikatorach; zapewnia on komunikację OTR z [forward secrecy](../../GLOSSARY.md#forward-secrecy) (każda wiadomość jest szyfrowana własnym kluczem efemerycznym) i [break-in recovery](../../GLOSSARY.md#post-compromise-security) (klucze są często renegocjowane w ramach wymiany wiadomości). Dwie pary kluczy Curve448 są używane do początkowego [key agreement](../../GLOSSARY.md#key-agreement-protocol), strona inicjująca przekazuje te klucze przez link połączenia, a strona akceptująca - w nagłówku wiadomości potwierdzającej.
 4. Dodatkowa warstwa szyfrowania przy użyciu NaCL cryptobox dla wiadomości dostarczanych z serwera do odbiorcy. Warstwa ta pozwala uniknąć wspólnego szyfrogramu między wysyłanym i odbieranym ruchem serwera wewnątrz TLS (i nie ma też wspólnych identyfikatorów).
-5. Kilka poziomów [content padding](./docs/GLOSSARY.md#message-padding) w celu utrudnienia ataków na rozmiar wiadomości.
+5. Kilka poziomów [content padding](../../GLOSSARY.md#message-padding) w celu utrudnienia ataków na rozmiar wiadomości.
 6. Wszystkie metadane wiadomości, w tym czas odebrania wiadomości przez serwer (zaokrąglony do sekundy), są wysyłane do odbiorców w zaszyfrowanej postaci, więc nawet jeśli TLS zostanie przejęty, nie można ich zobaczyć.
 7. Dozwolone są tylko TLS 1.2/1.3 dla połączeń klient-serwer, z ograniczeniem do algorytmów kryptograficznych: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
 8. Aby zapobiec atakom typu replay, serwery SimpleX wymagają [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) jako identyfikatora sesji w każdym poleceniu klienta podpisanym kluczem efemerycznym dla każdej kolejki.
-9. Aby ochronić swój adres IP, wszystkie klienty SimpleX Chat obsługują dostęp do serwerów komunikacyjnych za pośrednictwem Tora - zobacz [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) po więcej szczegółów.
+9. Aby ochronić swój adres IP, wszystkie klienty SimpleX Chat obsługują dostęp do serwerów komunikacyjnych za pośrednictwem Tora - zobacz [v3.1 release announcement](../../../blog/20220808-simplex-chat-v3.1-chat-groups.md) po więcej szczegółów.
 10. Lokalne szyfrowanie bazy danych z hasłem - kontakty, grupy oraz wszystkie wysłane i odebrane wiadomości są przechowywane w postaci zaszyfrowanej. Jeśli korzystałeś z SimpleX Chat przed wersją v4.0, musisz włączyć szyfrowanie w ustawieniach aplikacji.
 11. Izolacja transportu - różne połączenia TCP i obwody Tor używane są dla ruchu różnych profili użytkowników, opcjonalnie - dla różnych kontaktów i połączeń członków grupy.
 12. Ręczne obracanie kolejki wiadomości w celu przeniesienia konwersacji do innego przekaźnika SMP.
-13. Wysyłanie zaszyfrowanych plików end-to-end przy użyciu [protokołu XFTP](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
+13. Wysyłanie zaszyfrowanych plików end-to-end przy użyciu [protokołu XFTP](../../../blog/20230301-simplex-file-transfer-protocol.md).
 14. Szyfrowanie plików lokalnych.
 
 Planujemy dodać:
@@ -322,7 +322,7 @@ Możesz:
 - korzystać z biblioteki SimpleX Chat w celu zintegrowania funkcji czatu z aplikacjami mobilnymi.
 - tworzyć boty i usługi czatu w języku Haskell - zobacz [prosty](./apps/simplex-bot/) i bardziej [zaawansowany przykład bota czatu](./apps/simplex-bot-advanced/).
 - tworzenie chat botów i usług w dowolnym języku z wykorzystaniem terminala CLI SimpleX Chat jako lokalnego serwera WebSocket. Zobacz [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) i [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
-- uruchomić [simplex-chat w terminal ](./docs/lang/pl/CLI.md), aby wykonywać poszczególne polecenia czatu, np. wysyłać wiadomości w ramach wykonywania skryptu powłoki.
+- uruchomić [simplex-chat w terminal ](./CLI.md), aby wykonywać poszczególne polecenia czatu, np. wysyłać wiadomości w ramach wykonywania skryptu powłoki.
 
 Jeśli chcesz rozwijać platformę SimpleX, skontaktuj się z nami, aby uzyskać porady i wsparcie.
 
@@ -365,7 +365,7 @@ Dołącz również do grupy [#simplex-devs](https://simplex.chat/contact#/?v=1-2
 - ✅ Ulepszone połączenia audio i wideo.
 - ✅ Obsługa starszego systemu operacyjnego Android i 32-bitowych procesorów.
 - ✅ Ukryte profile czatu.
-- ✅ Wysyłanie i odbieranie dużych plików przez [protokół XFTP](./blog/20230301-simplex-file-transfer-protocol.md).
+- ✅ Wysyłanie i odbieranie dużych plików przez [protokół XFTP](../../../blog/20230301-simplex-file-transfer-protocol.md).
 - ✅ Wiadomości wideo.
 - ✅ Kod dostępu do aplikacji.
 - ✅ Ulepszenie interfejsu Androidowej aplikacji.
@@ -402,7 +402,7 @@ Dołącz również do grupy [#simplex-devs](https://simplex.chat/contact#/?v=1-2
 
 [Protokoły i model bezpieczeństwa SimpleX](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) zostały poddane przeglądowi i zawierały wiele istotnych zmian i ulepszeń w wersji v1.0.0.
 
-Audyt bezpieczeństwa został przeprowadzony w październiku 2022 r. przez [Trail of Bits](https://www.trailofbits.com/about), a większość poprawek została wydana w wersji 4.2.0 - zobacz [ogłoszenie](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+Audyt bezpieczeństwa został przeprowadzony w październiku 2022 r. przez [Trail of Bits](https://www.trailofbits.com/about), a większość poprawek została wydana w wersji 4.2.0 - zobacz [ogłoszenie](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 SimpleX Chat jest nadal na stosunkowo wczesnym etapie rozwoju (aplikacje mobilne zostały wydane w marcu 2022 r.), więc możesz odkryć pewne błędy i brakujące funkcje. Będziemy bardzo wdzięczni za poinformowanie nas o wszystkim, co wymaga naprawy lub ulepszenia.
 

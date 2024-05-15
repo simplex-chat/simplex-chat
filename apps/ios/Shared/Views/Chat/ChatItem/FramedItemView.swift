@@ -87,12 +87,17 @@ struct FramedItemView: View {
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
-        switch chatItem.meta.itemStatus {
-        case .sndErrorAuth:
-            v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
-        case let .sndError(agentError):
-            v.onTapGesture { msgDeliveryError("Unexpected error: \(agentError)") }
-        default: v
+        if let (title, text) = chatItem.meta.itemStatus.statusInfo {
+            v.onTapGesture {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text(title),
+                        message: Text(text)
+                    )
+                )
+            }
+        } else {
+            v
         }
     }
 
@@ -156,13 +161,6 @@ struct FramedItemView: View {
                 ciMsgContentView(chatItem)
             }
         }
-    }
-    
-    private func msgDeliveryError(_ err: LocalizedStringKey) {
-        AlertManager.shared.showAlertMsg(
-            title: "Message delivery error",
-            message: err
-        )
     }
 
     @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
@@ -248,7 +246,10 @@ struct FramedItemView: View {
         Group {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(sender).font(.caption).foregroundColor(.secondary)
+                    Text(sender)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
             } else {

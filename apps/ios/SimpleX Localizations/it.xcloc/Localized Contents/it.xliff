@@ -2805,6 +2805,7 @@ Non è reversibile!</target>
       </trans-unit>
       <trans-unit id="Forward and save messages" xml:space="preserve">
         <source>Forward and save messages</source>
+        <target>Inoltra e salva i messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3174,6 +3175,7 @@ Non è reversibile!</target>
       </trans-unit>
       <trans-unit id="In-call sounds" xml:space="preserve">
         <source>In-call sounds</source>
+        <target>Suoni nelle chiamate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3653,6 +3655,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
         <source>Message source remains private.</source>
+        <target>La fonte del messaggio resta privata.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -3772,6 +3775,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="More reliable network connection." xml:space="preserve">
         <source>More reliable network connection.</source>
+        <target>Connessione di rete più affidabile.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
@@ -3816,6 +3820,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Network management" xml:space="preserve">
         <source>Network management</source>
+        <target>Gestione della rete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -4371,6 +4376,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Profile images" xml:space="preserve">
         <source>Profile images</source>
+        <target>Immagini del profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -5195,6 +5201,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
+        <target>Forma delle immagini del profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -5364,6 +5371,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
+        <target>Quadrata, circolare o qualsiasi forma tra le due.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
@@ -6244,6 +6252,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="When connecting audio and video calls." xml:space="preserve">
         <source>When connecting audio and video calls.</source>
+        <target>Quando si connettono le chiamate audio e video.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
@@ -6263,6 +6272,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
         <source>Will be enabled in direct chats!</source>
+        <target>Viene attivata nelle chat dirette!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wired ethernet" xml:space="preserve">

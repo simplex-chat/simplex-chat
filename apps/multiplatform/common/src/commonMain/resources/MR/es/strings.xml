@@ -1767,4 +1767,7 @@
     <string name="v5_7_call_sounds_descr">Al iniciar llamadas de audio y vídeo.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">¡Será habilitado en los chats directos!</string>
     <string name="v5_7_network_descr">Conexión de red más fiable.</string>
+    <string name="settings_section_title_profile_images">Imágenes del perfil</string>
+    <string name="v5_7_shape_profile_images">Dar forma a las imágenes de perfil</string>
+    <string name="v5_7_shape_profile_images_descr">Cuadrada, circular o cualquier forma intermedia.</string>
 </resources>
