@@ -23,7 +23,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.chat.MEMBER_IMAGE_SIZE
 import chat.simplex.res.MR
 import kotlin.math.min
 
@@ -179,7 +178,7 @@ fun FramedItemView(
 
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
+    CIFileView(ci.file, ci.meta.itemEdited, showMenu, receiveFile)
     if (text != "" || ci.meta.isLive) {
       CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler)
     }
