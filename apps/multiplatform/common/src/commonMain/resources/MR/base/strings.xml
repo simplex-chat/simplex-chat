@@ -255,7 +255,19 @@
 
   <!-- Chat Alerts - ChatItemView.kt -->
   <string name="message_delivery_error_title">Message delivery error</string>
+  <string name="message_delivery_warning_title">Message delivery warning</string>
   <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
+
+  <!-- CIStatus errors -->
+  <string name="ci_status_other_error">Error: %1$s</string>
+  <string name="snd_error_auth">Wrong key or unknown connection - most likely this connection is deleted.</string>
+  <string name="snd_error_quota">Capacity exceeded - recipient did not receive previously sent messages.</string>
+  <string name="snd_error_expired">Network issues - message expired after many attempts to send it.</string>
+  <string name="snd_error_relay">Destination server error: %1$s</string>
+  <string name="snd_error_proxy">Forwarding server: %1$s\nError: %2$s</string>
+  <string name="snd_error_proxy_relay">Forwarding server: %1$s\nDestination server error: %2$s</string>
+  <string name="srv_error_host">Server address is incompatible with network settings.</string>
+  <string name="srv_error_version">Server version is incompatible with network settings.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
