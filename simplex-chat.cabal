@@ -143,6 +143,7 @@ library
       Simplex.Chat.Migrations.M20240402_item_forwarded
       Simplex.Chat.Migrations.M20240430_ui_theme
       Simplex.Chat.Migrations.M20240501_chat_deleted
+      Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
