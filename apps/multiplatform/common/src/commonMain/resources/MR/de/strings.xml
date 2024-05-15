@@ -1849,4 +1849,16 @@
     <string name="settings_section_title_profile_images">Profil-Bilder</string>
     <string name="v5_7_shape_profile_images">Form der Profil-Bilder</string>
     <string name="v5_7_shape_profile_images_descr">Quadratisch, kreisförmig oder irgendetwas dazwischen.</string>
+    <string name="snd_error_relay">Fehler auf dem Zielserver: %1$s</string>
+    <string name="ci_status_other_error">Fehler: %1$s</string>
+    <string name="message_delivery_warning_title">Warnung bei der Nachrichtenzustellung</string>
+    <string name="snd_error_auth">Falscher Schlüssel oder unbekannte Verbindung - höchstwahrscheinlich ist diese Verbindung gelöscht.</string>
+    <string name="srv_error_version">Die Server-Version ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
+    <string name="snd_error_quota">Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</string>
+    <string name="snd_error_proxy_relay">Weiterleitungsserver: %1$s
+\nFehler auf dem Zielserver: %2$s</string>
+    <string name="snd_error_proxy">Weiterleitungsserver: %1$s
+\nFehler: %2$s</string>
+    <string name="snd_error_expired">Netzwerk-Fehler - die Nachricht ist nach vielen Sende-Versuchen abgelaufen.</string>
+    <string name="srv_error_host">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
 </resources>
