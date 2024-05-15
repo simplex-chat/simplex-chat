@@ -2646,6 +2646,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "#team: you joined the group"
         ]
 
+      threadDelay 100000
+
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
@@ -2653,6 +2655,8 @@ testPlanGroupLinkLeaveRejoin =
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
+
+      threadDelay 100000
 
       bob ##> "/leave #team"
       concurrentlyN_
