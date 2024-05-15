@@ -142,39 +142,44 @@ fun CIFileView(
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
-        when {
-          file.fileStatus is CIFileStatus.SndStored ->
+        when(file.fileStatus) {
+          is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> fileIcon()
               FileProtocol.LOCAL -> fileIcon()
             }
-          file.fileStatus is CIFileStatus.SndTransfer ->
+          is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
               FileProtocol.LOCAL -> {}
             }
-          file.fileStatus is CIFileStatus.SndComplete && (file.forwardingAllowed() || (chatModel.connectedToRemote() && CIFile.cachedRemoteFileRequests[file.fileSource] == true)) -> fileIcon()
-          file.fileStatus is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
-          file.fileStatus is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
-          file.fileStatus is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
-          file.fileStatus is CIFileStatus.RcvInvitation ->
+          is CIFileStatus.SndComplete -> {
+            if ((file.forwardingAllowed() || (chatModel.connectedToRemote() && CIFile.cachedRemoteFileRequests[file.fileSource] == true))) {
+              fileIcon()
+            } else {
+              fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
+            }
+          }
+          is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.RcvInvitation ->
             if (fileSizeValid(file))
               fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
             else
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
-          file.fileStatus is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
-          file.fileStatus is CIFileStatus.RcvTransfer ->
+          is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
+          is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
               progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
             } else {
               progressIndicator()
             }
-          file.fileStatus is CIFileStatus.RcvComplete -> fileIcon()
-          file.fileStatus is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
-          file.fileStatus is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
-          file.fileStatus is CIFileStatus.Invalid -> fileIcon(innerIcon = painterResource(MR.images.ic_question_mark))
+          is CIFileStatus.RcvComplete -> fileIcon()
+          is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.Invalid -> fileIcon(innerIcon = painterResource(MR.images.ic_question_mark))
         }
       } else {
         fileIcon()
