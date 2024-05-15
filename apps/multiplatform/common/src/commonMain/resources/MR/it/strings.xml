@@ -1780,4 +1780,25 @@
     <string name="ci_status_other_error">Errore: %1$s</string>
     <string name="snd_error_quota">Quota superata - il destinatario non ha ricevuto i messaggi precedentemente inviati.</string>
     <string name="message_delivery_warning_title">Avviso di consegna del messaggio</string>
+    <string name="network_smp_proxy_mode_private_routing">Instradamento privato</string>
+    <string name="network_smp_proxy_mode_never">Mai</string>
+    <string name="network_smp_proxy_mode_unknown">Relay sconosciuti</string>
+    <string name="network_smp_proxy_mode_unknown_description">Usa l\'instradamento privato con server sconosciuti.</string>
+    <string name="update_network_smp_proxy_mode_question">Modalità instradamento messaggio</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Usa l\'instradamento privato con server sconosciuti quando l\'indirizzo IP non è protetto.</string>
+    <string name="network_smp_proxy_fallback_allow">Sì</string>
+    <string name="network_smp_proxy_fallback_allow_description">Invia messaggi direttamente quando il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Quando l\'IP è nascosto</string>
+    <string name="update_network_smp_proxy_fallback_question">Ripiego instradamento messaggio</string>
+    <string name="private_routing_show_message_status">Mostra stato del messaggio</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Consenti downgrade</string>
+    <string name="network_smp_proxy_mode_always">Sempre</string>
+    <string name="network_smp_proxy_mode_always_description">Usa sempre l\'instradamento privato.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">NON inviare messaggi direttamente, anche se il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
+    <string name="network_smp_proxy_mode_never_description">NON usare l\'instradamento privato.</string>
+    <string name="network_smp_proxy_fallback_prohibit">No</string>
+    <string name="settings_section_title_private_message_routing">INSTRADAMENTO PRIVATO MESSAGGI</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Invia messaggi direttamente quando l\'indirizzo IP è protetto e il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
+    <string name="private_routing_explanation">Per proteggere il tuo indirizzo IP, l\'instradamento privato usa i tuoi server SMP per consegnare i messaggi.</string>
+    <string name="network_smp_proxy_mode_unprotected">Non protetto</string>
 </resources>
