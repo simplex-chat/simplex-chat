@@ -257,7 +257,7 @@ fun NetworkAndServersView() {
         SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
       SectionCustomFooter {
-        Text(annotatedStringResource(MR.strings.private_routing_explanation))
+        Text(stringResource(MR.strings.private_routing_explanation))
       }
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
