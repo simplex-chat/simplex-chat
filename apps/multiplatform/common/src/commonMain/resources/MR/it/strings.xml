@@ -1768,4 +1768,16 @@
     <string name="v5_7_forward_descr">La fonte del messaggio resta privata.</string>
     <string name="v5_7_shape_profile_images">Forma delle immagini del profilo</string>
     <string name="v5_7_shape_profile_images_descr">Quadrata, circolare o qualsiasi forma tra le due</string>
+    <string name="snd_error_proxy_relay">Server di inoltro: %1$s
+\nErrore del server di destinazione: %2$s</string>
+    <string name="snd_error_proxy">Server di inoltro: %1$s
+\nErrore: %2$s</string>
+    <string name="snd_error_expired">Problemi di rete - messaggio scaduto dopo molti tentativi di inviarlo.</string>
+    <string name="srv_error_host">L\'indirizzo del server non è compatibile con le impostazioni di rete.</string>
+    <string name="srv_error_version">La versione del server non è compatibile con le impostazioni di rete.</string>
+    <string name="snd_error_auth">Chiave sbagliata o connessione sconosciuta - molto probabilmente questa connessione è stata eliminata.</string>
+    <string name="snd_error_relay">Errore del server di destinazione: %1$s</string>
+    <string name="ci_status_other_error">Errore: %1$s</string>
+    <string name="snd_error_quota">Quota superata - il destinatario non ha ricevuto i messaggi precedentemente inviati.</string>
+    <string name="message_delivery_warning_title">Avviso di consegna del messaggio</string>
 </resources>
