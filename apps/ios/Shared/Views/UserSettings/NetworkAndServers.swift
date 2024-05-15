@@ -83,7 +83,7 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Picker("2-hop routing", selection: $proxyMode) {
+                    Picker("Private routing", selection: $proxyMode) {
                         ForEach(SMPProxyMode.values, id: \.self) { Text($0.text) }
                     }
                     .frame(height: 36)
@@ -98,8 +98,11 @@ struct NetworkAndServers: View {
                 } header: {
                     Text("Private message routing")
                 } footer: {
-                    if showSentViaProxy {
-                        Text("Show → on messages sent via 2-hop routing.")
+                    VStack(alignment: .leading) {
+                        Text("To protect your IP address, private routing uses your SMP servers to deliver messages.")
+                        if showSentViaProxy {
+                            Text("Show → on messages sent via private routing.")
+                        }
                     }
                 }
 
@@ -249,10 +252,10 @@ struct NetworkAndServers: View {
     
     private func proxyModeInfo(_ mode: SMPProxyMode) -> LocalizedStringKey {
         switch mode {
-        case .always: return "Always use 2-hop onion routing."
-        case .unknown: return "Use 2-hop onion routing with unknown servers."
-        case .unprotected: return "Use 2-hop onion routing with unknown servers when IP address is not protected."
-        case .never: return "Do NOT use 2-hop onion routing."
+        case .always: return "Always use private routing."
+        case .unknown: return "Use private routing with unknown servers."
+        case .unprotected: return "Use private routing with unknown servers when IP address is not protected."
+        case .never: return "Do NOT use private routing."
         }
     }
 
