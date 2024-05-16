@@ -64,7 +64,7 @@ fun CIFileView(
   fun fileAction() {
     if (file != null) {
       when {
-        file.fileStatus is CIFileStatus.RcvInvitation -> {
+        file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted -> {
           if (fileSizeValid(file)) {
             receiveFile(file.fileId)
           } else {
@@ -176,6 +176,8 @@ fun CIFileView(
             } else {
               progressIndicator()
             }
+          is CIFileStatus.RcvAborted ->
+            fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
           is CIFileStatus.RcvComplete -> fileIcon()
           is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))

@@ -994,6 +994,9 @@
   <string name="protect_app_screen">Protect app screen</string>
   <string name="encrypt_local_files">Encrypt local files</string>
   <string name="auto_accept_images">Auto-accept images</string>
+  <string name="protect_ip_address">Protect IP address</string>
+  <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
+  <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
@@ -1058,6 +1061,7 @@
   <string name="settings_section_title_app">APP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_section_title_files">FILES</string>
   <string name="settings_section_title_delivery_receipts">SEND DELIVERY RECEIPTS TO</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
