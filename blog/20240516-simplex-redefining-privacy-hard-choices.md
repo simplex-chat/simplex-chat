@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX network: Redefining Privacy by Making Hard Choices"
 date: 2024-05-16
-previewBody: blog_previews/20240426.html
+previewBody: blog_previews/20240516.html
 image: images/simplex-explained.svg
 imageWide: true
 permalink: "/blog/20240516-simplex-redefining-privacy-hard-choices.html"
@@ -12,15 +12,13 @@ permalink: "/blog/20240516-simplex-redefining-privacy-hard-choices.html"
 
 **Published:** May 16, 2024
 
-When it comes to open source privacy tools, the status quo often dictates the limitations of existing protocols and structures. However, we’d like to normalize challenging these norms and radically shift how we approach genuinely private communication. This requires doing some uncomfortable things, like making hard choices as it relates to funding, alternative decentralization models, doubling down on privacy over convenience, and more.
+When it comes to open source privacy tools, the status quo often dictates the limitations of existing protocols and structures. However, these norms need to be challenged to radically shift how we approach genuinely private communication. This requires doing some uncomfortable things, like making hard choices as it relates to funding, alternative decentralization models, doubling down on privacy over convenience, and more.
 
 There will always be questions on why the SimpleX Chat and network makes the choices it makes, and that’s good! It’s important to question us and to understand the reasoning behind each decision, whether it’s technical, structural, financial or any other.
 
-In this post we explain a bit more about why SimpleX operates and prioritizes features the way it does.
+In this post we explain a bit more about why SimpleX operates and makes decisions the way it does.
 
 ## No account model
-
-<img src="./images/simplex-explained.svg" width="40%" class="float-right">
 
 Within SimpleX network there are no user accounts, and more importantly, no user profile identifiers whatsoever at the protocol level, not even random numbers or cryptographic keys used to identify the users. This means there is absolutely nothing that uniquely links users to their contacts or to the network relays. While it's accurate to say, "You need an address to send something," it's crucial to understand that this "address" serves merely as a transient delivery destination, and not as a user profile identifier in any sense.
 
@@ -44,6 +42,8 @@ Session’s decision was based on [the incorrect statements](https://getsession.
 
 ## Network decentralization
 
+<img src="./images/simplex-explained.svg" width="40%" class="float-right">
+
 It's important to recognize that a model of decentralization where all servers are openly known and accessible to all clients, that some users ask for, actually results in a less decentralized network, and as the network grows it often requires to introduce a central authority to protect from malicious participants. Therefore, we've deliberately opted for a slower path towards achieving a higher degree of decentralization where there is no central server registry or network authority. For example, p2p designs may offer higher initial decentralization but often compromise on privacy and eventual decentralization. In essence, our approach prioritizes a balance between initial decentralization, privacy, and higher degree of decentralization down the line.
 
 Additionally, while it's true that we haven't yet established a model to incentivize other network operators, it's certainly on the roadmap. We see the decentralization of network operators offered within the app as a top priority. 
@@ -52,13 +52,13 @@ Where it stands today, users have the freedom to select their preferred servers 
 
 Decentralization is an ongoing journey, and we strive to proceed at a measured pace to ensure its proper implementation. While the immediate results may not always appear ideal, prioritizing a careful approach ensures that in the long run, the decisions made in this area align with our ultimate objectives of a private, efficient, reliable and fully decentralized network.
 
-## Funding
+## Funding and profitability
 
 We explain our rationale for funding [here](../docs/FAQ.md#funding-and-business-model). Funding sources is always one of the most difficult choices to make, and it’s important to underline that VC models don’t necessarily translate to a quest for control, interference of any kind, or overall influence on product roadmap and strategy. The vast majority of investors seek profitability. Irrespective of the organization type profitability is essential for a sustainable operation, and it can and should be done while adhering to the highest possible standards for privacy. For-profit vs. nonprofit is also not an accurate metric to measure a commitment towards privacy and open standards, which is further explained [here](./20240404-why-i-joined-simplex-chat-esraa-al-shafei.md).  
 
 To make a profit, satisfying customers is the key. Unlike the many companies that profit from selling customer data, we put user privacy first. Doing this at scale requires investments. If the investors don’t own or control a company, their participation becomes merely about profit for them, and not about how this profit is obtained. With the investors we have, we are completely aligned on this - they are betting on the future where privacy is the norm. They do not dictate on anything related to our model. We build SimpleX chat, protocols and network the way Internet should have been built if we as developers always put the privacy and empowerment of users first.
 
-## Jurisdiction
+## Company jurisdiction
 
 <img src="./images/20240516-parliament.jpg" width="40%" class="float-right">
 
