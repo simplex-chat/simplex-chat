@@ -1,5 +1,19 @@
 # Blog
 
+May 16, 2024 [SimpleX: Redefining Privacy by Making Hard Choices](./20240516-simplex-redefining-privacy-hard-choices.md)
+
+When it comes to open source privacy tools, the status quo often dictates the limitations of existing protocols and structures. However, these norms need to be challenged to radically shift how we approach genuinely private communication. This requires doing some uncomfortable things, like making hard choices as it relates to funding, alternative decentralization models, doubling down on privacy over convenience, and more.
+
+In this post we explain a bit more about why SimpleX operates and makes decisions the way it does:
+
+- No user accounts.
+- Privacy over convenience.
+- Network decentralization.
+- Funding and profitability.
+- Company jurisdiction.
+
+---
+
 Apr 26, 2024 [SimpleX network: legally binding transparency, v5.7 released with better calls and messages](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
 
 We published Transparency Reports, Security Policy, and Frequently Asked Questions, and updated Privacy Policy.
