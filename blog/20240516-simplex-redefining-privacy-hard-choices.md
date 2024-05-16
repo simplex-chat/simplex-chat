@@ -62,14 +62,17 @@ To make a profit, satisfying customers is the key. Unlike the many companies tha
 
 <img src="./images/20240516-parliament.jpg" width="40%" class="float-right">
 
-With regards to jurisdictions, nowhere is perfect. For that reason we plan to establish the foundations for protocol governance in [various jurisdictions](https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#the-journey-to-the-decentralized-non-profit-protocol-governance). But we’d like to explain some misconceptions about the UK, where SimpleX Chat Ltd. is registered.
+With regards to jurisdictions, nowhere is perfect. For that reason we plan to establish the foundations for protocol governance in [various jurisdictions](https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#the-journey-to-the-decentralized-non-profit-protocol-governance).
 
-It is important to clarify misconceptions about the UK legislation. For example, the Online Safety Act (OSA). Some people believe that it applies only to UK companies, but the OSA applicability isn’t determined by the company’s jurisdiction. It applies based on the nature and characteristics of the business and its services, as well as the number of its users in the UK. In the case of SimpleX, the OSA doesn’t apply for both of these reasons.
+But we’d like to clarify some misconceptions about the UK, where SimpleX Chat Ltd. is registered, and the UK legislation.
 
-The other concern of the users is about the UK’s position on communication encryption, and more specifically end-to-end encrypted messaging. Most recently, the legislative intent was to propose technical measures to block CSAM and was trying to explore ways to do this via backdoors or client-side scanning by companies and governments, which of course weakens encryption. However, and thanks to the hard work of privacy experts, researchers, academics and rights organizations throughout the UK, the Online Safety Bill did not pass a ban on end-to-end encrypted apps without such scanners that weakens encryption. The debate continues on whether or not such technology will ever be possible. For now, strong end-to-end encryption remains permissible and protected, and we hope to also add to the privacy advocacy and debates as a UK-based company to keep it legally protected.
+For example, the Online Safety Act (OSA). Some people believe that it applies only to UK companies. But the OSA applicability isn’t determined by the company’s jurisdiction - it applies based on the nature and characteristics of the business and its services, as well as the number of its users in the UK. In case of SimpleX network, the OSA doesn’t apply for both of these reasons.
 
+The UK’s position on communication encryption, and more specifically, on end-to-end encrypted messaging, remains the subject of political debates. But with the OSA, the legislative intent was to propose technical measures to block CSAM, and it was trying to explore ways to do this via client-side scanning, which of course would undermine the encryption. However, and thanks to the hard work of privacy experts, researchers, academics and rights organizations throughout the UK and the rest of the world, the Online Safety Bill did not prohibit end-to-end encrypted apps without such scanners. It is an open question whether such technology will ever be possible, and the UK government made a public commitment that client-side scanning won't be required until it is.
 
-We view the UK, while imperfect, as still a favorable jurisdiction compared to other alternatives, and there are trade-offs everywhere.
+For now, strong end-to-end encryption remains permissible and protected, and we hope to also add to the privacy advocacy and debates as a UK-based company to keep it legally protected.
+
+Overall, we view the UK as being better jurisdiction for privacy than many alternatives - there are some trade-offs everywhere.
 
 ## Looking ahead 
 
