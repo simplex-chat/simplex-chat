@@ -119,6 +119,8 @@
   <string name="error_joining_group">Error joining group</string>
   <string name="cannot_receive_file">Cannot receive file</string>
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
+  <string name="file_not_approved_title">Unknown servers!</string>
+  <string name="file_not_approved_descr">Without Tor or VPN, your IP address will be visible to these XFTP relays: %1$s.</string>
   <string name="error_receiving_file">Error receiving file</string>
   <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
