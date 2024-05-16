@@ -4,8 +4,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,11 +18,13 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
+import chat.simplex.common.views.chatlist.ChatListView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
@@ -194,6 +195,20 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
         SimpleXTheme {
           TerminalView(ChatModel) { hiddenUntilRestart = true }
+        }
+      }
+    }
+  }
+
+  if (remember { ChatController.appPrefs.developerTools.state }.value && remember { ChatController.appPrefs.chatListAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
+    var hiddenUntilRestart by remember { mutableStateOf(false) }
+    if (!hiddenUntilRestart) {
+      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
+      Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
+        SimpleXTheme {
+          val scaffoldState = rememberScaffoldState(DrawerState(DrawerValue.Closed))
+          val settingsState = remember { SettingsViewState(MutableStateFlow(AnimatedViewState.VISIBLE), scaffoldState) }
+          ChatListView(chatModel, settingsState, AppLock::setPerformLA, false)
         }
       }
     }

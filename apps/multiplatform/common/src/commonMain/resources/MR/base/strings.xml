@@ -1163,6 +1163,7 @@
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="terminal_always_visible">Show console in new window</string>
+  <string name="chat_list_always_visible">Show chat list in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
   <string name="upgrade_and_open_chat">Upgrade and open chat</string>
   <string name="downgrade_and_open_chat">Downgrade and open chat</string>

@@ -361,13 +361,51 @@ object AppearanceScope {
       val backgroundImage = MaterialTheme.wallpaper.type?.image
       val backgroundImageType = MaterialTheme.wallpaper.type
       val baseTheme = CurrentColors.value.base
-      ChatThemePreview(baseTheme, backgroundImage, backgroundImageType)
-      SectionSpacer()
+      // REMOVE IF
+      if (backgroundImageType == null) {
+        ChatThemePreview(baseTheme, backgroundImage, backgroundImageType)
+        SectionSpacer()
+      }
 
       val isInDarkTheme = isInDarkTheme()
       val editColor = { name: ThemeColor, initialColor: Color ->
         ModalManager.start.showModal {
-          ColorEditor(name, initialColor, baseTheme, backgroundImageType, backgroundImage, currentColors = { CurrentColors.value }, onColorChange = { color ->
+          ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, backgroundImage, currentColors = { CurrentColors.value },
+            header = {
+              // LALAL TO REMOVE
+              WallpaperPresetSelector(
+                selectedBackground = MaterialTheme.wallpaper.type,
+                baseTheme = currentTheme.base,
+                currentColors = { type ->
+                  // If applying for :
+                  // - all themes: no overrides needed
+                  // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
+                  val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType?.filename == type?.filename) chatModel.currentUser.value?.uiThemes else null
+                  ThemeManager.currentColors(isInDarkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
+                },
+                onTypeChange = { type ->
+                  if (themeUserDestination.value == null) {
+                    ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+                  } else {
+                    ThemeManager.applyBackgroundImage(type, perUserTheme)
+                    updateThemeUserDestination()
+                  }
+                  saveThemeToDatabase(themeUserDestination.value)
+                },
+                onTypeCopyFromSameTheme = { type ->
+                  if (themeUserDestination.value == null) {
+                    ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+                  } else {
+                    ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
+                    updateThemeUserDestination()
+                  }
+                  saveThemeToDatabase(themeUserDestination.value)
+                  true
+                }
+              )
+              // LALAL TO REMOVE
+            },
+            onColorChange = { color ->
             if (themeUserDestination.value == null) {
               ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
             } else {
@@ -381,6 +419,40 @@ object AppearanceScope {
 
       if (backgroundImageType != null) {
         SectionView(stringResource(MR.strings.settings_section_title_wallpaper).uppercase()) {
+
+          // LALAL TO REMOVE
+          WallpaperPresetSelector(
+            selectedBackground = backgroundImageType,
+            baseTheme = currentTheme.base,
+            currentColors = { type ->
+              // If applying for :
+              // - all themes: no overrides needed
+              // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
+              val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.filename == type?.filename) chatModel.currentUser.value?.uiThemes else null
+              ThemeManager.currentColors(isInDarkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
+            },
+            onTypeChange = { type ->
+              if (themeUserDestination.value == null) {
+                ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+              } else {
+                ThemeManager.applyBackgroundImage(type, perUserTheme)
+                updateThemeUserDestination()
+              }
+              saveThemeToDatabase(themeUserDestination.value)
+            },
+            onTypeCopyFromSameTheme = { type ->
+              if (themeUserDestination.value == null) {
+                ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+              } else {
+                ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
+                updateThemeUserDestination()
+              }
+              saveThemeToDatabase(themeUserDestination.value)
+              true
+            }
+          )
+          // LALAL TO REMOVE
+
           WallpaperSetupView(
             backgroundImageType,
             baseTheme,
@@ -584,6 +656,7 @@ object AppearanceScope {
     previewBackgroundColor: Color? = MaterialTheme.wallpaper.background,
     previewTintColor: Color? = MaterialTheme.wallpaper.tint,
     currentColors: () -> ThemeManager.ActiveTheme,
+    header: (@Composable () -> Unit)? = null,
     onColorChange: (Color) -> Unit,
   ) {
     ColumnWithScrollBar(
@@ -593,11 +666,14 @@ object AppearanceScope {
       AppBarTitle(name.text)
 
       val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
-      if (supportedLiveChange) {
+      // LALAL REMOVE HEADER AND ELSE
+      if (supportedLiveChange && header == null) {
         SimpleXThemeOverride(currentColors()) {
           ChatThemePreview(theme, backgroundImage, backgroundImageType, previewBackgroundColor, previewTintColor)
         }
         SectionSpacer()
+      } else {
+        header?.invoke()
       }
 
       var currentColor by remember { mutableStateOf(initialColor) }
