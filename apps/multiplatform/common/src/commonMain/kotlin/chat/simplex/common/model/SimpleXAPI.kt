@@ -2061,6 +2061,11 @@ object ChatController {
         chatModel.currentRemoteHost.value = r.remoteHost
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
+      is CR.ContactDisabled -> {
+        if (active(r.user)) {
+          chatModel.updateContact(rhId, r.contact)
+        }
+      }
       is CR.RemoteHostStopped -> {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.remoteHostPairing.value = null
@@ -4257,6 +4262,7 @@ sealed class CR {
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
   @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactDisabled") class ContactDisabled(val user: UserRef, val contact: Contact): CR()
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
@@ -4421,6 +4427,7 @@ sealed class CR {
     is CallExtraInfo -> "callExtraInfo"
     is CallEnded -> "callEnded"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is ContactDisabled -> "contactDisabled"
     is RemoteHostList -> "remoteHostList"
     is CurrentRemoteHost -> "currentRemoteHost"
     is RemoteHostStarted -> "remoteHostStarted"
@@ -4581,6 +4588,7 @@ sealed class CR {
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
+    is ContactDisabled -> withUser(user, json.encodeToString(contact))
     // remote events (mobile)
     is RemoteHostList -> json.encodeToString(remoteHosts)
     is CurrentRemoteHost -> if (remoteHost_ == null) "local" else json.encodeToString(remoteHost_)
