@@ -392,7 +392,6 @@ object AppearanceScope {
             ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
             ThemeColor.RECEIVED_MESSAGE -> MaterialTheme.appColors.receivedMessage
           }
-          println("LALAL NAME $name  $initialColor")
           ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, backgroundImage, currentColors = { CurrentColors.value },
             header = {
               // LALAL TO REMOVE
