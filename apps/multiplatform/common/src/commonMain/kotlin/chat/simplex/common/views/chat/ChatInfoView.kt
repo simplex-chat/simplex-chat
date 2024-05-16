@@ -821,15 +821,15 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
         val initialColor: Color = when (name) {
           ThemeColor.WALLPAPER_BACKGROUND -> wallpaperBackgroundColor
           ThemeColor.WALLPAPER_TINT -> wallpaperTintColor
-          ThemeColor.PRIMARY -> MaterialTheme.colors.primary
-          ThemeColor.PRIMARY_VARIANT -> MaterialTheme.colors.primaryVariant
-          ThemeColor.SECONDARY -> MaterialTheme.colors.secondary
-          ThemeColor.SECONDARY_VARIANT -> MaterialTheme.colors.secondaryVariant
-          ThemeColor.BACKGROUND -> MaterialTheme.colors.background
-          ThemeColor.SURFACE -> MaterialTheme.colors.surface
-          ThemeColor.TITLE -> MaterialTheme.appColors.title
-          ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
-          ThemeColor.RECEIVED_MESSAGE -> MaterialTheme.appColors.receivedMessage
+          ThemeColor.PRIMARY -> currentTheme.colors.primary
+          ThemeColor.PRIMARY_VARIANT -> currentTheme.colors.primaryVariant
+          ThemeColor.SECONDARY -> currentTheme.colors.secondary
+          ThemeColor.SECONDARY_VARIANT -> currentTheme.colors.secondaryVariant
+          ThemeColor.BACKGROUND -> currentTheme.colors.background
+          ThemeColor.SURFACE -> currentTheme.colors.surface
+          ThemeColor.TITLE -> currentTheme.appColors.title
+          ThemeColor.SENT_MESSAGE -> currentTheme.appColors.sentMessage
+          ThemeColor.RECEIVED_MESSAGE -> currentTheme.appColors.receivedMessage
         }
         AppearanceScope.ColorEditor(
           name,
