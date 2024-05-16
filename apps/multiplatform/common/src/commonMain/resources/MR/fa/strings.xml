@@ -6,7 +6,7 @@
     <string name="group_info_section_title_num_members">%1$s عضو</string>
     <string name="contact_wants_to_connect_via_call">%1$s می‌خواهد به شما متصل شود، به وسیله</string>
     <string name="chat_item_ttl_day">۱ روز</string>
-    <string name="send_disappearing_message_1_minute">1 دقیقه</string>
+    <string name="send_disappearing_message_1_minute">۱ دقیقه</string>
     <string name="abort_switch_receiving_address_confirm">لغو</string>
     <string name="abort_switch_receiving_address">لغو تغییر نشانی</string>
     <string name="abort_switch_receiving_address_question">تغییر نشانی را لغو می‌کنید؟</string>
@@ -49,15 +49,15 @@
     <string name="invalid_data">داده نامعتبر</string>
     <string name="error_showing_content">خطا در نمایش محتوا</string>
     <string name="decryption_error">خطا در رمزگشایی</string>
-    <string name="send_disappearing_message_5_minutes">5 دقیقه</string>
+    <string name="send_disappearing_message_5_minutes">۵ دقیقه</string>
     <string name="learn_more_about_address">درباره نشانی سیمپل‌اکس(SimpleX)</string>
     <string name="one_time_link_short">لینک یک بار مصرف</string>
     <string name="about_simplex_chat">درباره سیمپل‌اکس چت(SimpleX Chat)</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d پیام از قلم افتاد.</string>
-    <string name="chat_item_ttl_month">1 ماه</string>
-    <string name="chat_item_ttl_week">1 هفته</string>
-    <string name="v5_3_new_interface_languages">6 زبان جدید برای رابط کاربری</string>
-    <string name="send_disappearing_message_30_seconds">30 ثانیه</string>
+    <string name="chat_item_ttl_month">۱ ماه</string>
+    <string name="chat_item_ttl_week">۱ هفته</string>
+    <string name="v5_3_new_interface_languages">۶ زبان جدید برای رابط کاربری</string>
+    <string name="send_disappearing_message_30_seconds">۳۰ ثانیه</string>
     <string name="description_you_shared_one_time_link_incognito">شما لینک یک بار مصرف ناشناس به اشتراک گذاشتید</string>
     <string name="description_via_group_link">به وسیله لینک گروه</string>
     <string name="description_via_group_link_incognito">ناشناس به وسیله لینک گروه</string>
@@ -376,7 +376,7 @@
     <string name="icon_descr_waiting_for_image">در انتظار تصویر</string>
     <string name="voice_message_send_text">پیام صوتی…</string>
     <string name="text_field_set_contact_placeholder">تعیین نام مخاطب…</string>
-    <string name="icon_descr_server_status_disconnected">قطع شده</string>
+    <string name="icon_descr_server_status_disconnected">قطع شد</string>
     <string name="icon_descr_server_status_pending">در حال انتظار</string>
     <string name="switch_receiving_address_question">نشانی‌ دریافت تغییر کند؟</string>
     <string name="abort_switch_receiving_address_desc">تغییر نشانی‌ لغو خواهد شد. نشانی‌ دریافت پیشین استفاده خواهد شد.</string>
@@ -413,7 +413,7 @@
     <string name="to_connect_via_link_title">اتصال از طریق لینک</string>
     <string name="image_will_be_received_when_contact_is_online">تصویر وقتی دریافت خواهد شد که مخاطبتان آنلاین شود، لطفا صبر کنید یا بعدا بررسی کنید!</string>
     <string name="la_lock_mode">نوع قفل SimpleX</string>
-    <string name="la_lock_mode_system">تصدیق سامانه</string>
+    <string name="la_lock_mode_system">تصدیق سیستم</string>
     <string name="la_change_app_passcode">تغییر کد عبور</string>
     <string name="in_reply_to">در پاسخ به</string>
     <string name="la_immediately">فوری</string>
@@ -1577,4 +1577,224 @@
     <string name="bad_desktop_address">نشانی کامپیوتر ناصحیح</string>
     <string name="desktop_incompatible_version">نسخه ناسازگار</string>
     <string name="v5_3_new_interface_languages_descr">عربی، بلغاری، فنلاندی، عبری، تایلندی و اوکراینی - با سپاس از کاربران و Weblate</string>
+    <string name="snd_error_proxy_relay">سرور فرستادن: %1$s
+\nخطای سرور مقصد: %2$s</string>
+    <string name="snd_error_proxy">سرور فرستادن: %1$s
+\nخطا: %2$s</string>
+    <string name="message_delivery_warning_title">هشدار تحویل پیام</string>
+    <string name="snd_error_expired">مشکلات شبکه - پیام بعد از تلاش‌های زیاد برای ارسالش منقضی شد.</string>
+    <string name="srv_error_host">نشانی سرور با تنظیمات شبکه ناسازگار است.</string>
+    <string name="srv_error_version">نسخه سرور با تنظیمات شبکه ناسازگار است.</string>
+    <string name="snd_error_auth">کلید اشتباه یا اتصال ناشناخته - به احتمال زیاد این اتصال حذف شده است.</string>
+    <string name="agent_internal_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
+\n%s</string>
+    <string name="v5_2_fix_encryption">نگه‌داشتن اتصال‌های خود</string>
+    <string name="network_smp_proxy_mode_never">هرگز</string>
+    <string name="network_smp_proxy_mode_unknown_description">استفاده از مسیریابی خصوصی با سرورهای ناشناخته.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">استفاده از مسیریابی خصوصی با سرورهای ناشناخته وقتی نشانی IP محافظت نشده است.</string>
+    <string name="update_network_smp_proxy_mode_question">حالت مسیریابی پیام</string>
+    <string name="network_smp_proxy_fallback_allow">بله</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">پیام‌ها مستقیما فرستاده نشود، حتی اگر سرور مقصد شما از مسیریابی خصوصی پشتیبانی نکند.</string>
+    <string name="update_network_smp_proxy_fallback_question">گزینه پس‌رفت مسیریابی پیام</string>
+    <string name="private_routing_show_message_status">نمایش وضعیت پیام</string>
+    <string name="private_routing_explanation">برای محافظت از نشانی IP شما، مسیریابی خصوصی از سرورهای SMP شما به منظور تحویل پیام‌ها استفاده می‌کند.</string>
+    <string name="settings_section_title_private_message_routing">مسیریابی پیام خصوصی</string>
+    <string name="network_smp_proxy_mode_private_routing">مسیریابی خصوصی</string>
+    <string name="v4_3_improved_server_configuration">تنظیمات سرور بهبودیافته</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">با پیام خوشامدگویی اختیاری.</string>
+    <string name="v4_3_irreversible_message_deletion_desc">مخاطبان شما می‌توانند اجازه حذف کامل پیام را بدهند.</string>
+    <string name="v4_5_multiple_chat_profiles">چندین نمایه گپ</string>
+    <string name="v4_5_private_filenames">نام‌های پرونده خصوصی</string>
+    <string name="v5_2_favourites_filter_descr">پالایش گپ‌های خوانده نشده و برگزیده.</string>
+    <string name="v5_2_fix_encryption_descr">اصلاح رمزگذاری بعد از برگرداندن پشتیبان‌ها.</string>
+    <string name="v4_6_group_moderation">مدیریت گروه</string>
+    <string name="v5_1_japanese_portuguese_interface">رابط کاربری ژاپنی و پرتقالی</string>
+    <string name="v5_2_disappear_one_message">ناپدید کردن یک پیام</string>
+    <string name="v4_5_reduced_battery_usage">استفاده باتری کاهش یافته</string>
+    <string name="v5_0_app_passcode_descr">به جای تصدیق سیستم آن را تعیین کنید.</string>
+    <string name="v4_6_audio_video_calls_descr">پشتیبانی از بلوتوث و دیگر بهبودها.</string>
+    <string name="v5_1_better_messages_descr">- پیام‌های صوتی تا ۵ دقیقه.
+\n- زمان سفارشی برای ناپدید کردن.
+\n- ویرایش تاریخچه.</string>
+    <string name="v5_4_better_groups_descr">پیوستن سریع‌تر و پیام‌های قابل اطمینان تر.</string>
+    <string name="v5_7_forward">باز فرستادن و ذخیره پیام‌ها</string>
+    <string name="v5_7_shape_profile_images_descr">مربع، دایره، و هر چیزی در این بین.</string>
+    <string name="v5_7_quantum_resistant_encryption_descr">در گپ‌های مستقیم فعال خواهد شد!</string>
+    <string name="sending_delivery_receipts_will_be_enabled">ارسال رسیدهای تحویل برای تمام مخاطبان فعال خواهد شد.</string>
+    <string name="you_can_enable_delivery_receipts_later">می‌توانید بعدا از طریق تنظیمات آن را فعال کنید</string>
+    <string name="this_device_name">نام این دستگاه</string>
+    <string name="verify_code_on_mobile">تایید کد در موبایل</string>
+    <string name="remote_host_was_disconnected_toast">موبایل <b>%s</b> قطع شد</string>
+    <string name="this_device">این دستگاه</string>
+    <string name="waiting_for_mobile_to_connect">در انتظار متصل شدن موبایل:</string>
+    <string name="remote_host_error_busy">موبایل <b>%s</b> مشغول است</string>
+    <string name="random_port">تصادفی</string>
+    <string name="refresh_qr_code">تجدید</string>
+    <string name="remote_host_error_bad_version">موبایل <b>%s</b> نسخه پشتیبانی نشده دارد. لطفا، اطمینان حاصل کنید که از نسخه یکسان روی هر دو دستگاه استفاده می‌کنید</string>
+    <string name="remote_host_error_disconnected">اتصال موبایل <b>%s</b> قطع شد</string>
+    <string name="in_developing_desc">این ویژگی هنوز پشتیبانی نمی‌شود. انتشار بعدی را امتحان کنید.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">شما هم اکنون در حال اتصال به <b>%1$s</b> هستید.</string>
+    <string name="connect_plan_group_already_exists">گروه از قبل وجود دارد!</string>
+    <string name="connect_plan_you_are_already_joining_the_group_via_this_link">شما هم اکنون در حال پیوستن به گروه از طریق این لینک هستید.</string>
+    <string name="migrate_to_device_importing_archive">در حال وارد کردن آرشیو</string>
+    <string name="or_paste_archive_link">یا لینک آرشیو را الصاق کنید</string>
+    <string name="paste_archive_link">الصاق لینک آرشیو</string>
+    <string name="migrate_to_device_try_again">می‌توانید دوباره امتحان کنید.</string>
+    <string name="migrate_to_device_file_delete_or_link_invalid">پرونده حذف شد یا لینک نامعتبر است</string>
+    <string name="migrate_from_device_title">جابه‌جایی دستگاه</string>
+    <string name="migrate_from_device_database_init">در حال آماده‌سازی بارگذاری</string>
+    <string name="migrate_from_device_finalize_migration">نهایی‌سازی جابه‌جایی</string>
+    <string name="migrate_from_device_or_share_this_file_link">یا لینک پرونده را به صورت امن به اشتراک بگذارید</string>
+    <string name="migrate_from_device_start_chat">شروع گپ</string>
+    <string name="network_type_ethernet">اترنت باسیم</string>
+    <string name="v4_5_reduced_battery_usage_descr">بهبودهای بیشتر به زودی!</string>
+    <string name="not_compatible">سازگار نیست!</string>
+    <string name="verify_connections">تایید اتصال‌ها</string>
+    <string name="remote_host_error_inactive">موبایل <b>%s</b> غیرفعال است</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">شما از پیش اتصال به وسیله این نشانی را درخواست کرده‌اید!</string>
+    <string name="restart_chat_button">شروع مجدد گپ</string>
+    <string name="v5_2_disappear_one_message_descr">حتی وقتی در مکالمه غیرفعال باشند.</string>
+    <string name="network_smp_proxy_fallback_prohibit">خیر</string>
+    <string name="no_connected_mobile">موبایل متصلی وجود ندارد</string>
+    <string name="v4_6_group_moderation_descr">مدیران حالا می‌توانند:
+\n- پیام‌های اعضا را حذف کنند.
+\n- اعضا را غیرفعال کنند ( نقش «ناظر»)</string>
+    <string name="migrate_to_device_confirm_network_settings_footer">لطفا تایید کنید که تنظیمات شبکه برای این دستگاه درست هستند.</string>
+    <string name="v4_5_message_draft_descr">محفوظ نگه داشتن پیش‌نویس پیام آخر، به همراه ضمیمه‌ها.</string>
+    <string name="connect_plan_repeat_connection_request">درخواست اتصال تکرار شود؟</string>
+    <string name="scan_from_mobile">از موبایل اسکن کنید</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">ارسال رسیدهای تحویل برای تمام مخاطبان در تمام نمایه‌های گپ قابل مشاهده، فعال خواهد شد.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">پیام‌ها مستقیما ارسال شود وقتی نشانی IP محافظت می‌شود و سرور مقصد شما از مسیریابی خصوصی پشتیبانی نمی‌کند.</string>
+    <string name="network_smp_proxy_fallback_allow_description">پیام‌ها مستقیما ارسال شود وقتی سرور مقصد شما از مسیریابی خصوصی پشتیبانی نمی‌کند.</string>
+    <string name="v5_7_shape_profile_images">شکل دادن به تصاویر نمایه</string>
+    <string name="v4_4_french_interface_descr">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
+    <string name="v4_5_italian_interface_descr">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">این لینک یک‌بارمصرف خودتان است!</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">این نشانی‌ SimpleX خودتان است!</string>
+    <string name="network_smp_proxy_mode_unknown">واسطه‌های ناشناخته</string>
+    <string name="network_smp_proxy_mode_unprotected">محافظت نشده</string>
+    <string name="verify_connection">تایید اتصال</string>
+    <string name="migrate_from_device_verify_database_passphrase">تایید عبارت عبور پایگاه داده</string>
+    <string name="network_smp_proxy_fallback_allow_protected">وقتی IP پنهان است</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">شما هم اکنون در حال اتصال از طریق لینک یک‌بارمصرف هستید!</string>
+    <string name="v4_6_hidden_chat_profiles">نمایه‌های گپ پنهان</string>
+    <string name="this_device_version"><i>(این دستگاه v%s)</i></string>
+    <string name="link_a_mobile">متصل کردن یک موبایل</string>
+    <string name="v4_5_message_draft">پیش‌نویس پیام</string>
+    <string name="v4_3_voice_messages_desc">حداکثر ۴۰ ثانیه، دریافت فوری.</string>
+    <string name="v4_3_voice_messages">پیام‌های صوتی</string>
+    <string name="v4_4_disappearing_messages_desc">پیام‌های ارسال شده بعد زمان تعیین شده حذف خواهند شد.</string>
+    <string name="v4_4_french_interface">رابط فرانسوی</string>
+    <string name="v4_6_hidden_chat_profiles_descr">به وسیله یک کلمه عبور از نمایه‌های گپ خود محافظت کنید!</string>
+    <string name="v4_6_reduced_battery_usage_descr">بهبودهای بیشتر به زودی!</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
+    <string name="v5_2_message_delivery_receipts">رسیدهای تحویل پیام!</string>
+    <string name="remote_host_error_timeout">مهلت زمانی هنگام اتصال به موبایل <b>%s</b> به پایان رسید</string>
+    <string name="agent_critical_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
+\n%s
+\n
+\nپیشنهاد می‌شود که برنامه را شروع مجدد کنید.</string>
+    <string name="v4_5_italian_interface">رابط ایتالیایی</string>
+    <string name="v5_2_more_things_descr">- تحویل پیام پایدارتر
+\n- گروه‌های کمی بهتر
+\n- و بیشتر!</string>
+    <string name="v5_1_self_destruct_passcode">کد عبور خودتخریبی</string>
+    <string name="v4_6_chinese_spanish_interface_descr">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
+    <string name="v5_0_large_files_support">ویدئوها و پرونده‌ها تا ۱ گیگابایت</string>
+    <string name="migrate_from_device_verify_passphrase">تایید عبارت عبور</string>
+    <string name="invalid_file_link">لینک نامعتبر</string>
+    <string name="v5_7_call_sounds_descr">هنگام برقراری تماس‌های صوتی و تصویری.</string>
+    <string name="v5_7_call_sounds">صداهای تماس</string>
+    <string name="v5_7_forward_descr">منبع پیام خصوصی باقی خواهد ماند.</string>
+    <string name="v5_7_new_interface_languages">رابط کاربری لیتوانی</string>
+    <string name="custom_time_unit_minutes">دقیقه</string>
+    <string name="v5_7_network_descr">اتصال شبکه پایدارتر.</string>
+    <string name="v5_7_network">مدیریت شبکه</string>
+    <string name="custom_time_unit_weeks">هفته</string>
+    <string name="custom_time_unit_months">ماه</string>
+    <string name="custom_time_picker_select">انتخاب</string>
+    <string name="new_mobile_device">دستگاه موبایل جدید</string>
+    <string name="migrate_from_device_stopping_chat">در حال متوقف کردن گپ</string>
+    <string name="network_type_no_network_connection">بدون اتصال شبکه</string>
+    <string name="network_type_other">دیگر</string>
+    <string name="v4_4_verify_connection_security">تایید امنیت اتصال</string>
+    <string name="migrate_to_device_database_init">در حال آماده‌سازی بارگیری</string>
+    <string name="migrate_from_device_migration_complete">جابه‌جایی کامل شد</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device">شما <b>نباید</b> از یک پایگاه داده روی دو دستگاه استفاده کنید.</string>
+    <string name="v4_6_group_welcome_message">پیام خوشامدگویی گروه</string>
+    <string name="v5_4_more_things_descr">- مطلع کردن اختیاری مخاطبان حذف شده.
+\n- نام‌های نمایه شامل فاصله.
+\n- و بیشتر!</string>
+    <string name="v5_5_new_interface_languages">رابط کاربری مجارستانی و ترکی</string>
+    <string name="v5_6_app_data_migration_descr">جابه‌جایی به دستگاه دیگر از طریق کد QR.</string>
+    <string name="connect_plan_open_group">گشودن گروه</string>
+    <string name="network_type_network_wifi">WiFi</string>
+    <string name="v5_6_picture_in_picture_calls">تماس‌های تصویر در تصویر</string>
+    <string name="v5_6_picture_in_picture_calls_descr">استفاده از برنامه در حین مکالمه.</string>
+    <string name="migrate_to_device_migrating">در حال جابه‌جایی</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName">این لینک شما است برای گروه <b>%1$s</b>!</string>
+    <string name="v4_3_improved_privacy_and_security">امنیت و حریم خصوصی بهبودیافته</string>
+    <string name="v4_3_improved_privacy_and_security_desc">پنهان کردن صفحه برنامه در برنامه‌های اخیر.</string>
+    <string name="v4_4_live_messages">پیام‌های زنده</string>
+    <string name="v4_4_live_messages_desc">گیرنده‌ها به‌روزرسانی‌ها را هم‌زمان با تایپ کردن شما مشاهده می‌کنند.</string>
+    <string name="v4_5_private_filenames_descr">برای محافظت از منطقه زمانی، پرونده‌های تصویر/صدا از UTC استفاده می‌کنند.</string>
+    <string name="v5_0_large_files_support_descr">سریع و بدون منتظر ماندن تا زمانی که فرستنده آنلاین شود.</string>
+    <string name="v4_6_reduced_battery_usage">کاهش بیشتر استفاده باتری</string>
+    <string name="v4_6_group_welcome_message_descr">تعیین پیام نمایش داده شده به اعضای جدید!</string>
+    <string name="v5_0_polish_interface">رابط لهستانی</string>
+    <string name="v5_0_polish_interface_descr">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
+    <string name="v5_1_message_reactions">واکنش‌های پیام</string>
+    <string name="v5_1_message_reactions_descr">بالاخره، ما آن‌ها را داریم! 🚀</string>
+    <string name="v5_2_message_delivery_receipts_descr">تیک دومی که ما نداشتیم! ✅</string>
+    <string name="v5_4_block_group_members_descr">برای پنهان کردن پیام‌های ناخواسته.</string>
+    <string name="v5_5_private_notes">یادداشت‌های خصوصی</string>
+    <string name="v5_5_private_notes_descr">با پرونده‌ها و رسانه رمزگذاری شده.</string>
+    <string name="v5_5_message_delivery">تحویل پیام بهبود یافته</string>
+    <string name="custom_time_unit_hours">ساعت</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">می‌توانید بعدا از طریق تنظیمات حریم خصوصی و امنیت برنامه آن‌ها را فعال کنید.</string>
+    <string name="open_port_in_firewall_title">گشودن پورت در فایروال</string>
+    <string name="remote_host_error_missing">موبایل <b>%s</b> مفقود است</string>
+    <string name="open_port_in_firewall_desc">برای اجازه دادن به برنامه موبایل به کامپیوتر متصل شوید، این پورت را در فایروال خود باز کنید، اگر فعال است</string>
+    <string name="agent_internal_error_title">خطای داخلی</string>
+    <string name="migrate_to_device_title">جابه‌جایی به اینجا</string>
+    <string name="connect_plan_you_are_already_in_group_vName">شما هم اکنون در گروه <b>%1$s</b> هستید.</string>
+    <string name="migrate_to_device_repeat_download">تکرار بارگیری</string>
+    <string name="migrate_to_device_import_failed">وارد کردن ناموفق بود</string>
+    <string name="migrate_to_device_repeat_import">تکرار وارد کردن</string>
+    <string name="migrate_to_device_finalize_migration">نهایی‌سازی جابه‌جایی در دستگاه دیگر.</string>
+    <string name="migrate_from_device_chat_should_be_stopped">برای ادامه دادن، گپ باید متوقف شود.</string>
+    <string name="migrate_from_device_repeat_upload">تکرار بارگذاری</string>
+    <string name="migrate_from_device_bytes_uploaded">%s بارگذاری شد</string>
+    <string name="migrate_from_device_upload_failed">بارگذاری ناموفق بود</string>
+    <string name="migrate_from_device_uploading_archive">در حال بارگذاری آرشیو</string>
+    <string name="migrate_from_device_try_again">می‌توانید دوباره امتحان کنید.</string>
+    <string name="migrate_from_device_error_verifying_passphrase">خطا در تایید عبارت عبور:</string>
+    <string name="v4_2_security_assessment">ارزیابی امنیت</string>
+    <string name="v5_4_incognito_groups">گروه‌های ناشناس</string>
+    <string name="v5_3_simpler_incognito_mode">حالت ناشناس ساده‌شده</string>
+    <string name="v5_3_simpler_incognito_mode_descr">تغییر حالت ناشناس هنگام اتصال.</string>
+    <string name="v5_5_join_group_conversation">پیوستن به مکالمات گروه</string>
+    <string name="v5_5_simpler_connect_ui">جهت اتصال لینک را الصاق کنید</string>
+    <string name="v5_5_join_group_conversation_descr">تاریخچه اخیر و روبات فهرست راهنمای بهبودیافته.</string>
+    <string name="v5_5_simpler_connect_ui_descr">نوار جستجو لینک‌های دعوت قبول می‌کند.</string>
+    <string name="v5_5_message_delivery_descr">با استفاده باتری کاهش یافته.</string>
+    <string name="custom_time_unit_seconds">ثانیه</string>
+    <string name="v5_6_quantum_resistant_encryption">رمزگذاری مقاوم در برابر کوانتوم</string>
+    <string name="v5_6_safer_groups">گروه‌های امن‌تر</string>
+    <string name="only_one_device_can_work_at_the_same_time">تنها یک دستگاه در هر زمان می‌تواند مورد استفاده قرار گیرد</string>
+    <string name="connect_plan_repeat_join_request">درخواست پیوستن تکرار شود؟</string>
+    <string name="connect_plan_join_your_group">به گروه خود می‌پیوندید؟</string>
+    <string name="migrate_to_device_bytes_downloaded">%s بارگیری شد</string>
+    <string name="migrate_from_device_exported_file_doesnt_exist">پرونده صادر شده وجود ندارد</string>
+    <string name="migrate_from_device_to_another_device">جابه‌جایی به دستگاه دیگر</string>
+    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">هشدار: شروع گپ روی چندین دستگاه پشتیبانی نمی‌شود و باعث عدم موفقیت در تحویل پیام خواهد شد</string>
+    <string name="this_device_name_shared_with_mobile">نام دستگاه با کلاینت موبایل متصل شده به اشتراک گذاشته خواهد شد.</string>
+    <string name="v5_2_favourites_filter">پیدا کردن سریع‌تر گپ‌ها</string>
+    <string name="v4_2_group_links">لینک‌های گروه</string>
+    <string name="v4_3_irreversible_message_deletion">حذف غیرقابل برگشت پیام</string>
+    <string name="v4_2_security_assessment_desc">امنیت SimpleX Chat به وسیله Tails of Bits مورد سنجش قرار گرفت.</string>
+    <string name="v4_5_transport_isolation">انزوای ترابری</string>
+    <string name="session_code">کد نشست</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">شما هم اکنون در حال پیوستن به گروه <b>%1$s</b> هستید.</string>
+    <string name="linked_mobiles">موبایل‌های متصل</string>
 </resources>
