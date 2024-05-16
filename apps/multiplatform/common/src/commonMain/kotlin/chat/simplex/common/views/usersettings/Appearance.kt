@@ -375,8 +375,24 @@ object AppearanceScope {
       }
 
       val isInDarkTheme = isInDarkTheme()
-      val editColor = { name: ThemeColor, initialColor: Color ->
+      val editColor = { name: ThemeColor ->
         ModalManager.start.showModalCloseable { close ->
+          val wallpaperBackgroundColor = MaterialTheme.wallpaper.background ?: backgroundImageType?.defaultBackgroundColor(currentTheme.base) ?: Color.Transparent
+          val wallpaperTintColor = MaterialTheme.wallpaper.tint ?: backgroundImageType?.defaultTintColor(currentTheme.base) ?: Color.Transparent
+          val initialColor: Color = when (name) {
+            ThemeColor.WALLPAPER_BACKGROUND -> wallpaperBackgroundColor
+            ThemeColor.WALLPAPER_TINT -> wallpaperTintColor
+            ThemeColor.PRIMARY -> MaterialTheme.colors.primary
+            ThemeColor.PRIMARY_VARIANT -> MaterialTheme.colors.primaryVariant
+            ThemeColor.SECONDARY -> MaterialTheme.colors.secondary
+            ThemeColor.SECONDARY_VARIANT -> MaterialTheme.colors.secondaryVariant
+            ThemeColor.BACKGROUND -> MaterialTheme.colors.background
+            ThemeColor.SURFACE -> MaterialTheme.colors.surface
+            ThemeColor.TITLE -> MaterialTheme.appColors.title
+            ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
+            ThemeColor.RECEIVED_MESSAGE -> MaterialTheme.appColors.receivedMessage
+          }
+          println("LALAL NAME $name  $initialColor")
           ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, backgroundImage, currentColors = { CurrentColors.value },
             header = {
               // LALAL TO REMOVE
@@ -480,8 +496,8 @@ object AppearanceScope {
             baseTheme,
             MaterialTheme.wallpaper.background,
             MaterialTheme.wallpaper.tint,
-            editColor = { name, initialColor ->
-              editColor(name, initialColor)
+            editColor = { name ->
+              editColor(name)
             },
             onTypeChange = { type ->
               if (themeUserDestination.value == null) {
@@ -497,8 +513,8 @@ object AppearanceScope {
         SectionDividerSpaced(maxTopPadding = true)
       }
 
-      CustomizeThemeColorsSection(currentTheme) { name, color ->
-        editColor(name, color)
+      CustomizeThemeColorsSection(currentTheme) { name ->
+        editColor(name)
       }
 
       val canResetColors = if (themeUserDestination.value == null) {
@@ -634,49 +650,49 @@ object AppearanceScope {
   }
 
   @Composable
-  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor, Color) -> Unit) {
+  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor) -> Unit) {
     SectionView(stringResource(MR.strings.theme_colors_section_title)) {
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY) }) {
         val title = generalGetString(MR.strings.color_primary)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.primary)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT) }) {
         val title = generalGetString(MR.strings.color_primary_variant)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.primaryVariant)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY) }) {
         val title = generalGetString(MR.strings.color_secondary)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.secondary)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT) }) {
         val title = generalGetString(MR.strings.color_secondary_variant)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.secondaryVariant)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND) }) {
         val title = generalGetString(MR.strings.color_background)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.background)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE, currentTheme.colors.surface) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE) }) {
         val title = generalGetString(MR.strings.color_surface)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.surface)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE, currentTheme.appColors.title) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE) }) {
         val title = generalGetString(MR.strings.color_title)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
         val title = generalGetString(MR.strings.color_sent_message)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE, currentTheme.appColors.receivedMessage) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
         val title = generalGetString(MR.strings.color_received_message)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
@@ -726,6 +742,12 @@ object AppearanceScope {
         ColorPicker(currentColor) {
           currentColor = it
           onColorChange(currentColor)
+        }
+      }
+      KeyChangeEffect(initialColor) {
+        if (initialColor != currentColor) {
+          currentColor = initialColor
+          togglePicker.value = !togglePicker.value
         }
       }
       val clipboard = LocalClipboardManager.current
@@ -845,7 +867,7 @@ fun WallpaperSetupView(
   theme: DefaultTheme,
   initialBackgroundColor: Color?,
   initialTintColor: Color?,
-  editColor: (ThemeColor, Color) -> Unit,
+  editColor: (ThemeColor) -> Unit,
   onTypeChange: (BackgroundImageType?) -> Unit,
 ) {
   if (backgroundImageType is BackgroundImageType.Static) {
@@ -883,13 +905,13 @@ fun WallpaperSetupView(
 
   if (backgroundImageType != null) {
     val wallpaperBackgroundColor = initialBackgroundColor ?: backgroundImageType.defaultBackgroundColor(theme)
-    SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND, wallpaperBackgroundColor) }) {
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND) }) {
       val title = generalGetString(MR.strings.color_wallpaper_background)
       Text(title)
       Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
     }
     val wallpaperTintColor = initialTintColor ?: backgroundImageType.defaultTintColor(theme)
-    SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT, wallpaperTintColor) }) {
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT) }) {
       val title = generalGetString(MR.strings.color_wallpaper_tint)
       Text(title)
       Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)

@@ -814,8 +814,23 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
       save(applyToMode.value, themeModeOverride.value)
     }
 
-    val editColor: (ThemeColor, Color) -> Unit = { name: ThemeColor, initialColor: Color ->
+    val editColor: (ThemeColor) -> Unit = { name: ThemeColor ->
       ModalManager.end.showModalCloseable { close ->
+        val wallpaperBackgroundColor = backgroundColor.value ?: themeModeOverride.value.type?.defaultBackgroundColor(currentTheme.base) ?: Color.Transparent
+        val wallpaperTintColor = tintColor.value ?: themeModeOverride.value.type?.defaultTintColor(currentTheme.base) ?: Color.Transparent
+        val initialColor: Color = when (name) {
+          ThemeColor.WALLPAPER_BACKGROUND -> wallpaperBackgroundColor
+          ThemeColor.WALLPAPER_TINT -> wallpaperTintColor
+          ThemeColor.PRIMARY -> MaterialTheme.colors.primary
+          ThemeColor.PRIMARY_VARIANT -> MaterialTheme.colors.primaryVariant
+          ThemeColor.SECONDARY -> MaterialTheme.colors.secondary
+          ThemeColor.SECONDARY_VARIANT -> MaterialTheme.colors.secondaryVariant
+          ThemeColor.BACKGROUND -> MaterialTheme.colors.background
+          ThemeColor.SURFACE -> MaterialTheme.colors.surface
+          ThemeColor.TITLE -> MaterialTheme.appColors.title
+          ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
+          ThemeColor.RECEIVED_MESSAGE -> MaterialTheme.appColors.receivedMessage
+        }
         AppearanceScope.ColorEditor(
           name,
           initialColor,
