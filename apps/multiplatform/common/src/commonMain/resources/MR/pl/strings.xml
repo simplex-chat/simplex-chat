@@ -1768,4 +1768,7 @@
     <string name="v5_7_shape_profile_images_descr">Kwadrat, okrąg lub cokolwiek pomiędzy.</string>
     <string name="v5_7_forward_descr">Źródło wiadomości pozostaje prywatne.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Zostanie włączone w czatach bezpośrednich!</string>
+    <string name="network_smp_proxy_mode_always_description">Zawsze używaj prywatnego routingu.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Zezwól na obniżenie wersji</string>
+    <string name="network_smp_proxy_mode_always">Zawsze</string>
 </resources>
