@@ -3,7 +3,7 @@ layout: layouts/article.html
 title: "SimpleX: Redefining Privacy by Making Hard Choices"
 date: 2024-05-16
 previewBody: blog_previews/20240516.html
-image: images/simplex-explained.svg
+image: images/simplex-explained.png
 imageWide: true
 permalink: "/blog/20240516-simplex-redefining-privacy-hard-choices.html"
 ---
