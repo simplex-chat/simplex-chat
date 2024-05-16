@@ -291,7 +291,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId}
+  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
