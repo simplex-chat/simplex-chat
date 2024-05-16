@@ -166,10 +166,14 @@ object AppearanceScope {
 
       @Composable
       fun OwnBackgroundItem(type: BackgroundImageType?) {
-        val overrides = remember(type?.filename, baseTheme) { appPrefs.themeOverrides.get().firstOrNull { it.wallpaper?.imageFile != null && it.base == baseTheme && File(getBackgroundImageFilePath(it.wallpaper.imageFile)).exists() } }
-        val backgroundColor = overrides?.wallpaper?.background?.colorFromReadableHex() ?: selectedBackground?.defaultBackgroundColor(baseTheme)
-        val tintColor = overrides?.wallpaper?.tint?.colorFromReadableHex() ?: selectedBackground?.defaultTintColor(baseTheme)
-        val backgroundImage = overrides?.wallpaper?.toAppWallpaper()?.type?.image ?: selectedBackground?.image
+        val selectedIsStatic = type is BackgroundImageType.Static
+        val overrides = remember(type?.filename, baseTheme) {
+          appPrefs.themeOverrides.get().firstOrNull { it.wallpaper?.imageFile != null && it.base == baseTheme && File(getBackgroundImageFilePath(it.wallpaper.imageFile)).exists() }
+        }
+        val backgroundColor = if (selectedIsStatic) selectedBackground?.defaultBackgroundColor(baseTheme) else overrides?.wallpaper?.background?.colorFromReadableHex()
+        val tintColor = if (selectedIsStatic) selectedBackground?.defaultTintColor(baseTheme) else overrides?.wallpaper?.tint?.colorFromReadableHex()
+        val appWallpaper = overrides?.wallpaper?.toAppWallpaper()
+        val backgroundImage = if (selectedIsStatic) selectedBackground?.image else appWallpaper?.type?.image
         val checked = type is BackgroundImageType.Static && backgroundImage != null
         val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
           if (to != null) {
@@ -186,7 +190,7 @@ object AppearanceScope {
             .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable {
-              if (checked || overrides == null || backgroundImage == null || !onTypeCopyFromSameTheme(overrides.wallpaper?.toAppWallpaper()?.type)) {
+              if (checked || overrides == null || backgroundImage == null || !onTypeCopyFromSameTheme(appWallpaper?.type)) {
                 withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
               }
             },
@@ -197,7 +201,7 @@ object AppearanceScope {
             ChatThemePreview(
               baseTheme,
               backgroundImage,
-              overrides?.wallpaper?.toAppWallpaper()?.type ?: type,
+              appWallpaper?.type ?: type,
               backgroundColor = if (checked) activeBackgroundColor ?: backgroundColor else backgroundColor,
               tintColor = if (checked) activeTintColor ?: tintColor else tintColor,
               withMessages = false
@@ -327,7 +331,10 @@ object AppearanceScope {
           if (themeUserDestination.value == null) {
             ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
           } else {
+            val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
             ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
+            val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
+            backgroundFilesToDelete.forEach(::removeBackgroundImage)
             updateThemeUserDestination()
           }
           saveThemeToDatabase(themeUserDestination.value)
@@ -396,7 +403,10 @@ object AppearanceScope {
                   if (themeUserDestination.value == null) {
                     ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
                   } else {
+                    val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
                     ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
+                    val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
+                    backgroundFilesToDelete.forEach(::removeBackgroundImage)
                     updateThemeUserDestination()
                   }
                   saveThemeToDatabase(themeUserDestination.value)
@@ -444,7 +454,10 @@ object AppearanceScope {
               if (themeUserDestination.value == null) {
                 ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
               } else {
+                val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
                 ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
+                val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
+                backgroundFilesToDelete.forEach(::removeBackgroundImage)
                 updateThemeUserDestination()
               }
               saveThemeToDatabase(themeUserDestination.value)
