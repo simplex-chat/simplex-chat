@@ -376,7 +376,7 @@ object AppearanceScope {
 
       val isInDarkTheme = isInDarkTheme()
       val editColor = { name: ThemeColor, initialColor: Color ->
-        ModalManager.start.showModal {
+        ModalManager.start.showModalCloseable { close ->
           ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, backgroundImage, currentColors = { CurrentColors.value },
             header = {
               // LALAL TO REMOVE
@@ -415,14 +415,24 @@ object AppearanceScope {
               )
               // LALAL TO REMOVE
             },
+            onColorReset = {
+              if (themeUserDestination.value == null) {
+                ThemeManager.saveAndApplyThemeColor(baseTheme, name, null)
+              } else {
+                ThemeManager.applyThemeColor(name, null, perUserTheme)
+                updateThemeUserDestination()
+              }
+              saveThemeToDatabase(themeUserDestination.value)
+              close()
+            },
             onColorChange = { color ->
-            if (themeUserDestination.value == null) {
-              ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
-            } else {
-              ThemeManager.applyThemeColor(name, color, perUserTheme)
-              updateThemeUserDestination()
-            }
-            saveThemeToDatabase(themeUserDestination.value)
+              if (themeUserDestination.value == null) {
+                ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
+              } else {
+                ThemeManager.applyThemeColor(name, color, perUserTheme)
+                updateThemeUserDestination()
+              }
+              saveThemeToDatabase(themeUserDestination.value)
           })
         }
       }
@@ -496,6 +506,12 @@ object AppearanceScope {
       } else {
         perUserTheme.value.colors != ThemeColors() || perUserTheme.value.wallpaper?.background != null || perUserTheme.value.wallpaper?.tint != null
       }
+      val canRemoveOverrides = if (themeUserDestination.value == null) {
+        false
+      } else {
+        perUserTheme.value != ThemeModeOverride()
+      }
+      SectionSpacer()
       if (canResetColors) {
         SectionItemView({
           if (themeUserDestination.value == null) {
@@ -507,6 +523,16 @@ object AppearanceScope {
           saveThemeToDatabase(themeUserDestination.value)
         }) {
           Text(generalGetString(MR.strings.reset_color), color = colors.primary)
+        }
+      }
+      if (canRemoveOverrides) {
+        SectionItemView({
+          val dest = themeUserDestination.value ?: return@SectionItemView
+          perUserTheme.value = ThemeModeOverride()
+          themeUserDestination.value = dest.first to null
+          saveThemeToDatabase(themeUserDestination.value)
+        }) {
+          Text(generalGetString(MR.strings.remove_changes), color = colors.primary)
         }
       }
       SectionSpacer()
@@ -669,6 +695,7 @@ object AppearanceScope {
     previewTintColor: Color? = MaterialTheme.wallpaper.tint,
     currentColors: () -> ThemeManager.ActiveTheme,
     header: (@Composable () -> Unit)? = null,
+    onColorReset: () -> Unit,
     onColorChange: (Color) -> Unit,
   ) {
     ColumnWithScrollBar(
@@ -689,9 +716,17 @@ object AppearanceScope {
       }
 
       var currentColor by remember { mutableStateOf(initialColor) }
-      ColorPicker(initialColor) {
-        currentColor = it
-        onColorChange(currentColor)
+      val togglePicker = remember { mutableStateOf(false) }
+      if (togglePicker.value) {
+        ColorPicker(currentColor) {
+          currentColor = it
+          onColorChange(currentColor)
+        }
+      } else {
+        ColorPicker(currentColor) {
+          currentColor = it
+          onColorChange(currentColor)
+        }
       }
       val clipboard = LocalClipboardManager.current
       Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -703,6 +738,7 @@ object AppearanceScope {
           if ((color.startsWith("#") && (color.length == 7 || color.length == 9)) || (!color.startsWith("#") && (color.length == 6 || color.length == 8))) {
             currentColor = if (color.length == 6 || color.length == 7) ("ff$color").colorFromReadableHex() else color.colorFromReadableHex()
             onColorChange(currentColor)
+            togglePicker.value = !togglePicker.value
           }
         })
         Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
@@ -714,7 +750,11 @@ object AppearanceScope {
         Box(Modifier.size(80.dp, 40.dp).background(savedColor).clickable {
           currentColor = savedColor
           onColorChange(currentColor)
+          togglePicker.value = !togglePicker.value
         })
+        IconButton(onColorReset, Modifier.size(30.dp, 40.dp)) {
+          Icon(painterResource(MR.images.ic_refresh), null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+        }
         Box(Modifier.size(80.dp, 40.dp).background(currentColor))
       }
       SectionSpacer()

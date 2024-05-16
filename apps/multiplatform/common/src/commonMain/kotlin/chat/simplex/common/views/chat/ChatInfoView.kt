@@ -815,7 +815,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
     }
 
     val editColor: (ThemeColor, Color) -> Unit = { name: ThemeColor, initialColor: Color ->
-      ModalManager.end.showModal {
+      ModalManager.end.showModalCloseable { close ->
         AppearanceScope.ColorEditor(
           name,
           initialColor,
@@ -826,6 +826,12 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
           tintColor.value,
           currentColors = {
             ThemeManager.currentColors(systemDark, null, themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
+          },
+          onColorReset = {
+            preApplyGlobalIfNeeded()
+            ThemeManager.applyThemeColor(name, null, themeModeOverride)
+            save(applyToMode.value, themeModeOverride.value)
+            close()
           },
           onColorChange = { color ->
             preApplyGlobalIfNeeded()
