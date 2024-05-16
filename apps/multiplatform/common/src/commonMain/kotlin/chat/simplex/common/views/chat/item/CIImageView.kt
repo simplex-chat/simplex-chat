@@ -21,17 +21,12 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
-import java.io.File
-import java.net.URI
 
 @Composable
 fun CIImageView(
   image: String,
   file: CIFile?,
-  metaColor: Color,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit
@@ -51,7 +46,7 @@ fun CIImageView(
       icon,
       stringResource(stringId),
       Modifier.fillMaxSize(),
-      tint = metaColor
+      tint = Color.White
     )
   }
 

@@ -73,7 +73,7 @@ fun CIVideoView(
         VideoPreviewImageView(preview, onClick = {
           if (file != null) {
             when (file.fileStatus) {
-              CIFileStatus.RcvInvitation ->
+              CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
                 receiveFileIfValidSize(file, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
@@ -102,7 +102,7 @@ fun CIVideoView(
         if (file != null) {
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
-        if (file?.fileStatus is CIFileStatus.RcvInvitation) {
+        if (file?.fileStatus is CIFileStatus.RcvInvitation || file?.fileStatus is CIFileStatus.RcvAborted) {
           PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
@@ -396,6 +396,7 @@ private fun loadingIndicator(file: CIFile?) {
           } else {
             progressIndicator()
           }
+        is CIFileStatus.RcvAborted -> fileIcon(painterResource(MR.images.ic_sync_problem), MR.strings.icon_descr_file)
         is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
         is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
         is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)

@@ -4917,7 +4917,7 @@ sealed class ChatErrorType {
       is FileCancel -> "fileCancel"
       is FileAlreadyExists -> "fileAlreadyExists"
       is FileRead -> "fileRead"
-      is FileWrite -> "fileWrite"
+      is FileWrite -> "fileWrite $message"
       is FileSend -> "fileSend"
       is FileRcvChunk -> "fileRcvChunk"
       is FileInternal -> "fileInternal"
