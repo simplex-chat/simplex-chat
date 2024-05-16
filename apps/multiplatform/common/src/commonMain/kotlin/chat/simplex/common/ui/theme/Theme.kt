@@ -545,6 +545,12 @@ fun AppColors.updateColorsFrom(other: AppColors) {
   receivedMessage = other.receivedMessage
 }
 
+fun AppWallpaper.updateWallpaperFrom(other: AppWallpaper) {
+  background = other.background
+  tint = other.tint
+  type = other.type
+}
+
 val MaterialTheme.wallpaper: AppWallpaper
   @Composable
   @ReadOnlyComposable
@@ -565,22 +571,40 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
       CurrentColors.value = ThemeManager.currentColors(darkTheme, null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
   }
   val systemDark = isSystemInDarkTheme()
-  LaunchedEffect(systemDark) {
-    reactOnDarkThemeChanges(systemDark)
+  LaunchedEffect(Unit) {
+    // snapshotFlow vs LaunchedEffect reduce number of recomposes
+    snapshotFlow { systemDark }
+      .collect {
+        reactOnDarkThemeChanges(systemDark)
+      }
   }
   val theme by CurrentColors.collectAsState()
-  LaunchedEffect(remember { chatModel.currentUser }.value?.uiThemes) {
-    ThemeManager.applyTheme(appPrefs.currentTheme.get()!!, systemDark)
+  LaunchedEffect(Unit) {
+    // snapshotFlow vs LaunchedEffect reduce number of recomposes when user is changed or it's themes
+    snapshotFlow { chatModel.currentUser.value?.uiThemes }
+      .collect {
+        ThemeManager.applyTheme(appPrefs.currentTheme.get()!!, systemDark)
+      }
   }
   MaterialTheme(
     colors = theme.colors,
     typography = Typography,
     shapes = Shapes,
     content = {
+      val rememberedAppColors = remember {
+        // Explicitly creating a new object here so we don't mutate the initial [appColors]
+        // provided, and overwrite the values set in it.
+        theme.appColors.copy()
+      }.apply { updateColorsFrom(theme.appColors) }
+      val rememberedWallpaper = remember {
+        // Explicitly creating a new object here so we don't mutate the initial [wallpaper]
+        // provided, and overwrite the values set in it.
+        theme.wallpaper.copy()
+      }.apply { updateWallpaperFrom(theme.wallpaper) }
       CompositionLocalProvider(
         LocalContentColor provides MaterialTheme.colors.onBackground,
-        LocalAppColors provides theme.appColors,
-        LocalAppWallpaper provides theme.wallpaper,
+        LocalAppColors provides rememberedAppColors,
+        LocalAppWallpaper provides rememberedWallpaper,
         content = content)
     }
   )
@@ -598,10 +622,15 @@ fun SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable (
         // provided, and overwrite the values set in it.
         theme.appColors.copy()
       }.apply { updateColorsFrom(theme.appColors) }
+      val rememberedWallpaper = remember {
+        // Explicitly creating a new object here so we don't mutate the initial [wallpaper]
+        // provided, and overwrite the values set in it.
+        theme.wallpaper.copy()
+      }.apply { updateWallpaperFrom(theme.wallpaper) }
       CompositionLocalProvider(
         LocalContentColor provides MaterialTheme.colors.onBackground,
         LocalAppColors provides rememberedAppColors,
-        LocalAppWallpaper provides theme.wallpaper,
+        LocalAppWallpaper provides rememberedWallpaper,
         content = content)
     }
   )
