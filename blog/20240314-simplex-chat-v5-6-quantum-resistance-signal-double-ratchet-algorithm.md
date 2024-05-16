@@ -10,6 +10,8 @@ permalink: "/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ra
 
 # SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm
 
+**Published:** Mar 14, 2024
+
 This is a major upgrade for SimpleX messaging protocols, we are really proud to present the results of the hard work of our whole team on the [Pi day](https://en.wikipedia.org/wiki/Pi_Day).
 
 This post also covers various aspects of end-to-end encryption, compares different messengers, and explains why and how quantum-resistant encryption is added to SimpleX Chat:
