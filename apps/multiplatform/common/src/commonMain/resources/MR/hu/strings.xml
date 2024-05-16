@@ -1784,4 +1784,16 @@
     <string name="network_smp_proxy_fallback_prohibit">Nem</string>
     <string name="network_smp_proxy_mode_unprotected">Nem védett</string>
     <string name="network_smp_proxy_fallback_allow">Igen</string>
+    <string name="network_smp_proxy_mode_never_description">Ne használjon privát útválasztást.</string>
+    <string name="network_smp_proxy_mode_private_routing">Privát útválasztás</string>
+    <string name="network_smp_proxy_mode_unknown_description">Használjon privát útválasztást ismeretlen kiszolgálókkal.</string>
+    <string name="network_smp_proxy_mode_always_description">Mindig használjon privát útválasztást.</string>
+    <string name="update_network_smp_proxy_mode_question">Üzenet útválasztási mód</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
+    <string name="private_routing_explanation">Az ön IP-címének védelme érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
+    <string name="update_network_smp_proxy_fallback_question">Üzenet útválasztási tartalék</string>
+    <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET ÚTVÁLASZTÁS</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
 </resources>
