@@ -376,7 +376,7 @@ object AppearanceScope {
 
       val isInDarkTheme = isInDarkTheme()
       val editColor = { name: ThemeColor ->
-        ModalManager.start.showModalCloseable { close ->
+        ModalManager.start.showModal {
           val wallpaperBackgroundColor = MaterialTheme.wallpaper.background ?: backgroundImageType?.defaultBackgroundColor(currentTheme.base) ?: Color.Transparent
           val wallpaperTintColor = MaterialTheme.wallpaper.tint ?: backgroundImageType?.defaultTintColor(currentTheme.base) ?: Color.Transparent
           val initialColor: Color = when (name) {

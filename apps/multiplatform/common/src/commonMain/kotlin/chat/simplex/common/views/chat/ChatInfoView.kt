@@ -815,7 +815,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
     }
 
     val editColor: (ThemeColor) -> Unit = { name: ThemeColor ->
-      ModalManager.end.showModalCloseable { close ->
+      ModalManager.end.showModal {
         val wallpaperBackgroundColor = backgroundColor.value ?: themeModeOverride.value.type?.defaultBackgroundColor(currentTheme.base) ?: Color.Transparent
         val wallpaperTintColor = tintColor.value ?: themeModeOverride.value.type?.defaultTintColor(currentTheme.base) ?: Color.Transparent
         val initialColor: Color = when (name) {
