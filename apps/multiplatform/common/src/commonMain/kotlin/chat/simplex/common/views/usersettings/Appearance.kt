@@ -439,7 +439,6 @@ object AppearanceScope {
                 updateThemeUserDestination()
               }
               saveThemeToDatabase(themeUserDestination.value)
-              close()
             },
             onColorChange = { color ->
               if (themeUserDestination.value == null) {

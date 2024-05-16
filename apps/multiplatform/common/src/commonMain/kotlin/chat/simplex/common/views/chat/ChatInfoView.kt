@@ -846,7 +846,6 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
             preApplyGlobalIfNeeded()
             ThemeManager.applyThemeColor(name, null, themeModeOverride)
             save(applyToMode.value, themeModeOverride.value)
-            close()
           },
           onColorChange = { color ->
             preApplyGlobalIfNeeded()
