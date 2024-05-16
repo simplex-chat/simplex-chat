@@ -26,7 +26,7 @@ You can read more about how SimpleX works [here](https://simplex.chat/#how-simpl
 
 ## Privacy over convenience
 
-One of the main considerations often ignored in security and privacy comparisons between messaging applications is multi-device access. For example, in Signal’s case, the Sesame protocol used to support multi-device access has the vulnerability that is [described in detail here](https://eprint.iacr.org/2021/626.pdf):
+One of the main considerations often ignored in security and privacy comparisons between messaging applications is multi-device access. For example, in Signal’s case, the Sesame protocol used to support multi-device access has the vulnerability that is [explained in detail here](https://eprint.iacr.org/2021/626.pdf):
 
 _"We present an attack on the post-compromise security of the Signal messenger that allows to stealthily register a new device via the Sesame protocol. [...] This new device can send and receive messages without raising any ‘Bad encrypted message’ errors. Our attack thus shows that the Signal messenger does not guarantee post-compromise security at all in the multi-device setting"_.
 
