@@ -1775,4 +1775,13 @@
     <string name="snd_error_quota">Kapacitás túllépés - a címzett nem kapta meg a korábban elküldött üzeneteket.</string>
     <string name="message_delivery_warning_title">Üzenet kézbesítési figyelmeztetés</string>
     <string name="srv_error_host">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal.</string>
+    <string name="network_smp_proxy_mode_never">Sosem</string>
+    <string name="network_smp_proxy_mode_unknown">Ismeretlen átjátszók</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Ha az IP-cím rejtett</string>
+    <string name="private_routing_show_message_status">Üzenet állapot megjelenítése</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Korábbi verzióra történő visszatérés engedélyezése</string>
+    <string name="network_smp_proxy_mode_always">Mindig</string>
+    <string name="network_smp_proxy_fallback_prohibit">Nem</string>
+    <string name="network_smp_proxy_mode_unprotected">Nem védett</string>
+    <string name="network_smp_proxy_fallback_allow">Igen</string>
 </resources>
