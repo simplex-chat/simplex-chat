@@ -4685,8 +4685,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case err of
         SMP _ SMP.AUTH -> do
           authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
-          when (authErrCounter' >= authErrDisableCount) $ do
-            toView $ CRConnectionDisabled connEntity
+          when (authErrCounter' >= authErrDisableCount) $ case connEntity of
+            RcvDirectMsgConnection ctConn (Just ct) -> do
+              toView $ CRContactDisabled user ct {activeConn = Just ctConn {authErrCounter = authErrCounter'}}
+            _ -> toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
