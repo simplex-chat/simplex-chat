@@ -1,6 +1,6 @@
 ---
 layout: layouts/article.html
-title: "SimpleX network: Redefining Privacy by Making Hard Choices"
+title: "SimpleX: Redefining Privacy by Making Hard Choices"
 date: 2024-05-16
 previewBody: blog_previews/20240516.html
 image: images/simplex-explained.svg
@@ -8,7 +8,7 @@ imageWide: true
 permalink: "/blog/20240516-simplex-redefining-privacy-hard-choices.html"
 ---
 
-# SimpleX network: Redefining Privacy by Making Hard Choices
+# SimpleX: Redefining Privacy by Making Hard Choices
 
 **Published:** May 16, 2024
 
@@ -18,7 +18,7 @@ There will always be questions on why the SimpleX Chat and network makes the cho
 
 In this post we explain a bit more about why SimpleX operates and makes decisions the way it does.
 
-## No account model
+## No user accounts
 
 Within SimpleX network there are no user accounts, and more importantly, no user profile identifiers whatsoever at the protocol level, not even random numbers or cryptographic keys used to identify the users. This means there is absolutely nothing that uniquely links users to their contacts or to the network relays. While it's accurate to say, "You need an address to send something," it's crucial to understand that this "address" serves merely as a transient delivery destination, and not as a user profile identifier in any sense.
 

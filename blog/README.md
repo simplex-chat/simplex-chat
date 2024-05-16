@@ -1,12 +1,12 @@
 # Blog
 
-May 16, 2024 [SimpleX network: Redefining Privacy by Making Hard Choices](./20240516-simplex-redefining-privacy-hard-choices.md)
+May 16, 2024 [SimpleX: Redefining Privacy by Making Hard Choices](./20240516-simplex-redefining-privacy-hard-choices.md)
 
 When it comes to open source privacy tools, the status quo often dictates the limitations of existing protocols and structures. However, these norms need to be challenged to radically shift how we approach genuinely private communication. This requires doing some uncomfortable things, like making hard choices as it relates to funding, alternative decentralization models, doubling down on privacy over convenience, and more.
 
 In this post we explain a bit more about why SimpleX operates and makes decisions the way it does:
 
-- No account model.
+- No user accounts.
 - Privacy over convenience.
 - Network decentralization.
 - Funding and profitability.
