@@ -261,9 +261,9 @@ struct NetworkAndServers: View {
 
     private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
         switch proxyFallback {
-        case .allow: return "Send messages directly when your or destination server does not support 2-hop onion routing."
-        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support 2-hop onion routing."
-        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support 2-hop onion routing."
+        case .allow: return "Send messages directly when your or destination server does not support private routing."
+        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support private routing."
+        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support private routing."
         }
     }
 }
