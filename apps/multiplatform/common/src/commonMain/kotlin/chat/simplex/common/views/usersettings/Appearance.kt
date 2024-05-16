@@ -369,7 +369,7 @@ object AppearanceScope {
       val backgroundImageType = MaterialTheme.wallpaper.type
       val baseTheme = CurrentColors.value.base
       // REMOVE IF
-      if (backgroundImageType == null) {
+      if (false) {
         ChatThemePreview(baseTheme, backgroundImage, backgroundImageType)
         SectionSpacer()
       }
@@ -427,45 +427,44 @@ object AppearanceScope {
         }
       }
 
+      // LALAL TO REMOVE
+      WallpaperPresetSelector(
+        selectedBackground = backgroundImageType,
+        baseTheme = currentTheme.base,
+        currentColors = { type ->
+          // If applying for :
+          // - all themes: no overrides needed
+          // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
+          val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType?.filename == type?.filename) chatModel.currentUser.value?.uiThemes else null
+          ThemeManager.currentColors(isInDarkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
+        },
+        onTypeChange = { type ->
+          if (themeUserDestination.value == null) {
+            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+          } else {
+            ThemeManager.applyBackgroundImage(type, perUserTheme)
+            updateThemeUserDestination()
+          }
+          saveThemeToDatabase(themeUserDestination.value)
+        },
+        onTypeCopyFromSameTheme = { type ->
+          if (themeUserDestination.value == null) {
+            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+          } else {
+            val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
+            ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
+            val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
+            backgroundFilesToDelete.forEach(::removeBackgroundImage)
+            updateThemeUserDestination()
+          }
+          saveThemeToDatabase(themeUserDestination.value)
+          true
+        }
+      )
+      // LALAL TO REMOVE
+
       if (backgroundImageType != null) {
         SectionView(stringResource(MR.strings.settings_section_title_wallpaper).uppercase()) {
-
-          // LALAL TO REMOVE
-          WallpaperPresetSelector(
-            selectedBackground = backgroundImageType,
-            baseTheme = currentTheme.base,
-            currentColors = { type ->
-              // If applying for :
-              // - all themes: no overrides needed
-              // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
-              val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.filename == type?.filename) chatModel.currentUser.value?.uiThemes else null
-              ThemeManager.currentColors(isInDarkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
-            },
-            onTypeChange = { type ->
-              if (themeUserDestination.value == null) {
-                ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-              } else {
-                ThemeManager.applyBackgroundImage(type, perUserTheme)
-                updateThemeUserDestination()
-              }
-              saveThemeToDatabase(themeUserDestination.value)
-            },
-            onTypeCopyFromSameTheme = { type ->
-              if (themeUserDestination.value == null) {
-                ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-              } else {
-                val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
-                ThemeManager.copyFromSameThemeOverrides(type, withColors = false, perUserTheme)
-                val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
-                backgroundFilesToDelete.forEach(::removeBackgroundImage)
-                updateThemeUserDestination()
-              }
-              saveThemeToDatabase(themeUserDestination.value)
-              true
-            }
-          )
-          // LALAL TO REMOVE
-
           WallpaperSetupView(
             backgroundImageType,
             baseTheme,
