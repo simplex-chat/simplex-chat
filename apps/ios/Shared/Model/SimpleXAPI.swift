@@ -1873,6 +1873,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
             }
         }
+    case let .contactDisabled(user, contact):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact)
+            }
+        }
     case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
         await MainActor.run {
             if let sess = m.remoteCtrlSession, case .searching = sess.sessionState {
