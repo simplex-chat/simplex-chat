@@ -35,6 +35,7 @@ fun CIVoiceView(
   hasText: Boolean,
   ci: ChatItem,
   timedMessagesTTL: Int?,
+  showViaProxy: Boolean,
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
@@ -76,7 +77,7 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, play, pause, longClick, receiveFile) {
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
     } else {
@@ -102,6 +103,7 @@ private fun VoiceLayout(
   sent: Boolean,
   hasText: Boolean,
   timedMessagesTTL: Int?,
+  showViaProxy: Boolean,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
@@ -171,7 +173,7 @@ private fun VoiceLayout(
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
         }
         Box(Modifier.padding(top = 6.dp, end = 6.dp)) {
-          CIMetaView(ci, timedMessagesTTL)
+          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
     }
@@ -186,7 +188,7 @@ private fun VoiceLayout(
           }
         }
         Box(Modifier.padding(top = 6.dp)) {
-          CIMetaView(ci, timedMessagesTTL)
+          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
     }

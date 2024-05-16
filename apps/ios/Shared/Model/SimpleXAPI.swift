@@ -341,8 +341,8 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
-func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64) async -> ChatItem? {
-    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId)
+func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?) async -> ChatItem? {
+    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
@@ -1871,6 +1871,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) {
             await MainActor.run {
                 m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+            }
+        }
+    case let .contactDisabled(user, contact):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact)
             }
         }
     case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):

@@ -408,14 +408,15 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = true)
     }
 
-    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo): ChatItem? {
+    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
       val chatItem = controller.apiForwardChatItem(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
-        itemId = forwardedItem.id
+        itemId = forwardedItem.id,
+        ttl = ttl
       )
       if (chatItem != null) {
         chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
@@ -490,9 +491,9 @@ fun ComposeView(
       sendMemberContactInvitation()
       sent = null
     } else if (cs.contextItem is ComposeContextItem.ForwardingItem) {
-      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo)
+      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo, ttl = ttl)
       if (cs.message.isNotEmpty()) {
-        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = null)
+        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = ttl)
       }
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem

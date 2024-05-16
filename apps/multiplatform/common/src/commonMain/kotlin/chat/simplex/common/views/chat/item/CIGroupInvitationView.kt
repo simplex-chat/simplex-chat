@@ -145,7 +145,7 @@ fun CIGroupInvitationView(
         }
       }
 
-      CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false)
+      CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false)
     }
   }
 }

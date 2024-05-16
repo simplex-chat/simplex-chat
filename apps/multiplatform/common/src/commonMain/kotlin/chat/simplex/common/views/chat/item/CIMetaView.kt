@@ -34,7 +34,8 @@ fun CIMetaView(
       blue = minOf(metaColor.red * 1.33F, 1F))
   },
   showStatus: Boolean = true,
-  showEdited: Boolean = true
+  showEdited: Boolean = true,
+  showViaProxy: Boolean
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
@@ -52,7 +53,8 @@ fun CIMetaView(
         metaColor,
         paleMetaColor,
         showStatus = showStatus,
-        showEdited = showEdited
+        showEdited = showEdited,
+        showViaProxy = showViaProxy
       )
     }
   }
@@ -67,7 +69,8 @@ private fun CIMetaText(
   color: Color,
   paleColor: Color,
   showStatus: Boolean = true,
-  showEdited: Boolean = true
+  showEdited: Boolean = true,
+  showViaProxy: Boolean
 ) {
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
@@ -80,6 +83,9 @@ private fun CIMetaText(
       Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
     }
     Spacer(Modifier.width(4.dp))
+  }
+  if (showViaProxy && meta.sentViaProxy == true) {
+    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
@@ -104,7 +110,15 @@ private fun CIMetaText(
 }
 
 // the conditions in this function should match CIMetaText
-fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, secondaryColor: Color, showStatus: Boolean = true, showEdited: Boolean = true): String {
+fun reserveSpaceForMeta(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  secondaryColor: Color,
+  showStatus: Boolean = true,
+  showEdited: Boolean = true,
+  showViaProxy: Boolean = false
+): String {
   val iconSpace = "    "
   var res = ""
   if (showEdited && meta.itemEdited) res += iconSpace
@@ -114,6 +128,9 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, second
     if (ttl != chatTTL) {
       res += shortTimeText(ttl)
     }
+  }
+  if (showViaProxy && meta.sentViaProxy == true) {
+    res += iconSpace
   }
   if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
     res += iconSpace
@@ -136,7 +153,8 @@ fun PreviewCIMetaView() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -148,7 +166,8 @@ fun PreviewCIMetaViewUnread() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       status = CIStatus.RcvNew()
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -158,9 +177,10 @@ fun PreviewCIMetaViewSendFailed() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
-      status = CIStatus.SndError("CMD SYNTAX")
+      status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -171,7 +191,8 @@ fun PreviewCIMetaViewSendNoAuth() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -182,7 +203,8 @@ fun PreviewCIMetaViewSendSent() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -194,7 +216,8 @@ fun PreviewCIMetaViewEdited() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -207,7 +230,8 @@ fun PreviewCIMetaViewEditedUnread() {
       itemEdited = true,
       status= CIStatus.RcvNew()
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -220,7 +244,8 @@ fun PreviewCIMetaViewEditedSent() {
       itemEdited = true,
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -229,6 +254,7 @@ fun PreviewCIMetaViewEditedSent() {
 fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
     chatItem = ChatItem.getDeletedContentSampleData(),
-    null
+    null,
+    showViaProxy = false
   )
 }

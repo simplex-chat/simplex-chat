@@ -69,7 +69,7 @@ chatGroupTests = do
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
-    xit "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
+    it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
     it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
@@ -2578,13 +2578,15 @@ testPlanGroupLinkOwn tmp =
 
 testPlanGroupLinkConnecting :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkConnecting tmp = do
-  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+  -- gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
-  withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  -- withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -2598,13 +2600,15 @@ testPlanGroupLinkConnecting tmp = do
     bob <## "group link: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChatCfg tmp cfg "alice" $ \alice -> do
+  -- withTestChatCfg tmp cfg "alice" $ \alice -> do
+  withTestChatCfg tmp cfg "alice" $ \a -> withTestOutput a $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
-  withTestChatCfg tmp cfg "bob" $ \bob -> do
+  -- withTestChatCfg tmp cfg "bob" $ \bob -> do
+  withTestChatCfg tmp cfg "bob" $ \b -> withTestOutput b $ \bob -> do
     threadDelay 500000
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting"
@@ -2621,9 +2625,8 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \a b -> do
-      let alice = a {printOutput = True}
-          bob = b {printOutput = True}
+    -- \alice bob -> do
+    \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2643,6 +2646,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "#team: you joined the group"
         ]
 
+      threadDelay 100000
+
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
@@ -2651,6 +2656,8 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
+      threadDelay 100000
+
       bob ##> "/leave #team"
       concurrentlyN_
         [ do
@@ -2658,6 +2665,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "use /d #team to delete the group",
           alice <## "#team: bob left the group"
         ]
+
+      threadDelay 100000
 
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
@@ -3296,6 +3305,7 @@ testGroupSyncRatchet tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -3336,6 +3346,7 @@ testGroupSyncRatchetCodeReset tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 

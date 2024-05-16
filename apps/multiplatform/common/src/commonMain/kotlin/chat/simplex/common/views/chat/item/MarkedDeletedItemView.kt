@@ -20,7 +20,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
@@ -35,7 +35,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
       Box(Modifier.weight(1f, false)) {
         MergedMarkedDeletedText(ci, revealed)
       }
-      CIMetaView(ci, timedMessagesTTL)
+      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
     }
   }
 }
@@ -112,7 +112,8 @@ fun PreviewMarkedDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
       ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
-      null
+      null,
+      showViaProxy = false
     )
   }
 }

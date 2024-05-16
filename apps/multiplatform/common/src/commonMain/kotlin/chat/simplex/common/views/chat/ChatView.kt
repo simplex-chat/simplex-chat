@@ -481,6 +481,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             },
             onComposed,
             developerTools = chatModel.controller.appPrefs.developerTools.get(),
+            showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
           )
         }
       }
@@ -551,6 +552,7 @@ fun ChatLayout(
   onSearchValueChanged: (String) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
+  showViaProxy: Boolean
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
@@ -619,7 +621,7 @@ fun ChatLayout(
               useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-              setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools,
+              setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy,
             )
           }
         }
@@ -898,6 +900,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
+  showViaProxy: Boolean
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -988,7 +991,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools)
+            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
           }
         }
 
@@ -1556,6 +1559,7 @@ fun PreviewChatLayout() {
       onSearchValueChanged = {},
       onComposed = {},
       developerTools = false,
+      showViaProxy = false,
     )
   }
 }
@@ -1628,6 +1632,7 @@ fun PreviewGroupChatLayout() {
       onSearchValueChanged = {},
       onComposed = {},
       developerTools = false,
+      showViaProxy = false,
     )
   }
 }

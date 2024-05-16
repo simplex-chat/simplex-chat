@@ -157,7 +157,7 @@ fun SendMsgView(
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
 
-            if (cs.liveMessage == null && !cs.editing && !cs.forwarding && !nextSendGrpInv || sendMsgEnabled) {
+            if (cs.liveMessage == null && !cs.editing && !nextSendGrpInv || sendMsgEnabled) {
               if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&
