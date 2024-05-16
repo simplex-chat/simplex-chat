@@ -323,7 +323,7 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">مخاطب و تمام پیام‌ها حذف خواهند شد - این عمل قابل برگشت نیست!</string>
     <string name="allow_voice_messages_question">پیام‌های صوتی مجازند؟</string>
     <string name="voice_messages_prohibited">پیام‌های صوتی ممنوع هستند!</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 دسکتاپ: از برنامه کد QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن کد QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 کامپیوتر: از برنامه کد QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن کد QR</b>.</string>
     <string name="share_file">اشتراک‌گذاری پرونده…</string>
     <string name="images_limit_title">تعداد تصویر بیش از اندازه!</string>
     <string name="tap_to_scan">برای اسکن لمس کنید</string>
@@ -376,7 +376,7 @@
     <string name="icon_descr_waiting_for_image">در انتظار تصویر</string>
     <string name="voice_message_send_text">پیام صوتی…</string>
     <string name="text_field_set_contact_placeholder">تعیین نام مخاطب…</string>
-    <string name="icon_descr_server_status_disconnected">قطع اتصال</string>
+    <string name="icon_descr_server_status_disconnected">قطع شده</string>
     <string name="icon_descr_server_status_pending">در حال انتظار</string>
     <string name="switch_receiving_address_question">نشانی‌ دریافت تغییر کند؟</string>
     <string name="abort_switch_receiving_address_desc">تغییر نشانی‌ لغو خواهد شد. نشانی‌ دریافت پیشین استفاده خواهد شد.</string>
@@ -793,7 +793,7 @@
     <string name="receipts_groups_override_disabled">ارسال رسید برای %d گروه غیرفعال است</string>
     <string name="settings_section_title_support">حمایت از SIMPLEX CHAT</string>
     <string name="settings_section_title_socks">پروکسی SOCKS</string>
-    <string name="settings_section_title_use_from_desktop">استفاده از دسکتاپ</string>
+    <string name="settings_section_title_use_from_desktop">استفاده از کامپیوتر</string>
     <string name="new_database_archive">آرشیو پایگاه داده جدید</string>
     <string name="old_database_archive">آرشیو پایگاه داده قدیمی</string>
     <string name="error_starting_chat">خطا در شروع گپ</string>
@@ -1455,4 +1455,126 @@
     <string name="only_your_contact_can_add_message_reactions">فقط مخاطبتان می‌تواند واکنش‌های پیام اضافه کند.</string>
     <string name="allow_to_delete_messages">اجازه حذف پیام‌های ارسالی به صورت غیرقابل برگشت را می‌دهید. (۲۴ ساعت)</string>
     <string name="prohibit_direct_messages">ارسال پیام‌های مستقیم به اعضا را منع می‌کنید.</string>
+    <string name="snd_error_quota">ظرفیت از محدودیت فراتر رفت - گیرنده پیام‌های ارسالی پیشین را دریافت نکرد.</string>
+    <string name="snd_error_relay">خطای سرور مقصد: %1$s</string>
+    <string name="ci_status_other_error">خطا: %1$s</string>
+    <string name="connect_plan_already_joining_the_group">هم اکنون در حال پیوستن به گروه هستید!</string>
+    <string name="agent_critical_error_title">خطای بسیار مهم</string>
+    <string name="desktop_connection_terminated">اتصال خاتمه یافت</string>
+    <string name="network_smp_proxy_mode_never_description">از مسیریابی خصوصی استفاده نشود.</string>
+    <string name="delivery_receipts_title">رسیدهای تحویل!</string>
+    <string name="dont_enable_receipts">فعال نشود</string>
+    <string name="error_enabling_delivery_receipts">خطا در فعال‌سازی رسیدهای تحویل!</string>
+    <string name="devices">دستگاه‌ها</string>
+    <string name="disconnect_desktop_question">اتصال کامپیوتر قطع شود؟اتصال کامپیوتر قطع شود؟</string>
+    <string name="remote_ctrl_disconnected_with_reason">قطع شد، به دلیل: %s</string>
+    <string name="desktop_app_version_is_incompatible">نسخه برنامه کامپیوتر %s با این برنامه سازگار نیست.</string>
+    <string name="waiting_for_desktop">در انتظار کامپیوتر…</string>
+    <string name="connect_to_desktop">اتصال به کامپیوتر</string>
+    <string name="linked_desktops">کامپیوترهای متصل</string>
+    <string name="remote_ctrl_error_disconnected">اتصال کامپیوتر قطع شد</string>
+    <string name="remote_host_error_bad_state">اتصال به موبایل <b>%s</b> در وضع بدی است</string>
+    <string name="connect_plan_connect_to_yourself">به خودتان متصل می‌شوید؟</string>
+    <string name="migrate_to_device_error_downloading_archive">خطا در بارگیری آرشیو</string>
+    <string name="migrate_from_device_cancel_migration">لغو جابه‌جایی</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>هشدار</b>: آرشیو حذف خواهد شد.</string>
+    <string name="connect_plan_already_connecting">هم اکنون در حال اتصال هستید!</string>
+    <string name="network_smp_proxy_mode_always">همیشه</string>
+    <string name="network_smp_proxy_mode_always_description">همیشه از مسیریابی خصوصی استفاده شود.</string>
+    <string name="migrate_to_device_apply_onion">اعمال</string>
+    <string name="v5_0_app_passcode">کد عبور برنامه</string>
+    <string name="v4_6_audio_video_calls">تماس‌های صوتی و تصویری</string>
+    <string name="v4_3_improved_server_configuration_desc">سرورها را به وسیله اسکن کد QR اضافه کنید.</string>
+    <string name="v5_6_safer_groups_descr">مدیران می‌توانند یک عضو را برای همه مسدود کنند.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">اجازه تنزل</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>لطفا توجه داشته باشید</b>: به منظور حفاظت امنیت، استفاده از پایگاه داده یکسان در دو دستگاه، رمزگشایی پیام‌های اتصال‌های شما را از کار خواهد انداخت.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device">از دستگاه جدید <i>جابه‌جایی از دستگاهی دیگر</i> را انتخاب و کد QR را اسکن کنید.</string>
+    <string name="migrate_to_device_confirm_network_settings">تایید تنظیمات شبکه</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">تایید کنید که عبارت عبور پایگاه داده رای برای جابه‌جایی آن به خاطر دارید.</string>
+    <string name="connected_desktop">کامپیوتر متصل شد</string>
+    <string name="connecting_to_desktop">در حال اتصال به کامپیوتر</string>
+    <string name="remote_host_was_disconnected_title">اتصال متوقف شد</string>
+    <string name="remote_ctrl_error_inactive">کامپیوتر غیرفعال است</string>
+    <string name="remote_ctrl_was_disconnected_title">اتصال متوقف شد</string>
+    <string name="desktop_devices">دستگاه‌های کامپیوتر</string>
+    <string name="found_desktop">کامپیوتر پیدا شد</string>
+    <string name="connected_to_desktop">به کامپیوتر متصل شد</string>
+    <string name="linked_desktop_options">تنظیمات کامپیوتر متصل</string>
+    <string name="scan_qr_code_from_desktop">اسکن کد QR از کامپیوتر</string>
+    <string name="remote_ctrl_error_bad_invitation">کامپیوتر دارای کد دعوت اشتباه است</string>
+    <string name="remote_ctrl_error_bad_version">کامپیوتر دارای نسخه پشتیبانی نشده است. لطفا، اطمینان حاصل کنید که از نسخه یکسان روی هر دو دستگاه استفاده می‌کنید.</string>
+    <string name="connect_plan_connect_via_link">از طریق لینک متصل می‌شوید؟</string>
+    <string name="delivery_receipts_are_disabled">رسیدهای تحویل غیرفعال هستند!</string>
+    <string name="migrate_to_device_downloading_details">در حال بارگیری جزئیات لینک</string>
+    <string name="migrate_to_device_enter_passphrase">عبارت عبور را وارد کنید</string>
+    <string name="migrate_from_device_error_deleting_database">خطا در حذف پایگاه داده</string>
+    <string name="v4_4_verify_connection_security_desc">کدهای امنیتی را با مخاطبان خود مقایسه کنید.</string>
+    <string name="v5_3_encrypt_local_files_descr">برنامه پرونده‌های جدید محلی (به جز ویدئوها) را رمزگذاری می‌کند.</string>
+    <string name="v5_3_encrypt_local_files">رمزگذاری پرونده‌ها و رسانه ذخیره شده</string>
+    <string name="v5_4_link_mobile_desktop_descr">به وسیله پروتکل امن مقاوم در برابر کوانتوم.</string>
+    <string name="v5_4_block_group_members">مسدودسازی اعضای گروه</string>
+    <string name="error">خطا</string>
+    <string name="remote_host_disconnected_from">اتصال از موبایل <b>%s</b> قطع شد، به دلیل: %s</string>
+    <string name="desktop_device">کامپیوتر</string>
+    <string name="v4_6_chinese_spanish_interface">رابط چینی و اسپانیایی</string>
+    <string name="v4_5_transport_isolation_descr">به وسیله نمایه گپ (پیش‌فرض) یا به وسیله اتصال (آزمایشی).</string>
+    <string name="remote_ctrl_error_timeout">در حین اتصال به کامپیوتر، مهلت زمان اتصال تمام شد.</string>
+    <string name="custom_time_unit_days">روز‍</string>
+    <string name="enable_receipts_all">فعال کردن</string>
+    <string name="custom_time_picker_custom">سفارشی</string>
+    <string name="disconnect_remote_host">قطع اتصال</string>
+    <string name="verify_code_with_desktop">تایید کد با کامپیوتر</string>
+    <string name="migrate_from_device_error_uploading_archive">خطا در بارگذاری آرشیو</string>
+    <string name="migrate_from_device_archiving_database">در حال آرشیو پایگاه داده</string>
+    <string name="migrate_from_device_creating_archive_link">ایجاد لینک آرشیو</string>
+    <string name="migrate_from_device_delete_database_from_device">حذف پایگاه داده از این دستگاه</string>
+    <string name="remote_ctrl_error_bad_state">اتصال به کامپیوتر در وضع بدی است</string>
+    <string name="v4_5_multiple_chat_profiles_descr">نام‌ها، آواتارها و انزوای ترابری متفاوت.</string>
+    <string name="v5_2_more_things">چند چیز دیگر</string>
+    <string name="remote_ctrl_error_busy">کامپیوتر مشغول است</string>
+    <string name="v4_4_disappearing_messages">پیام‌های ناپدید شونده</string>
+    <string name="unlink_desktop">قطع اتصال</string>
+    <string name="v5_1_better_messages">پیام‌های بهتر</string>
+    <string name="multicast_connect_automatically">اتصال به صورت خودکار</string>
+    <string name="multicast_discoverable_via_local_network">قابل کشف از طریق شبکه محلی</string>
+    <string name="network_type_cellular">سلولی</string>
+    <string name="v5_3_new_desktop_app_descr">ایجاد نمایه جدید در برنامه کامپیوتر. 💻</string>
+    <string name="desktop_address">نشانی کامپیوتر</string>
+    <string name="paste_desktop_address">الصاق نشانی کامپیوتر</string>
+    <string name="discover_on_network">یافتن از طریق شبکه محلی</string>
+    <string name="v5_1_self_destruct_passcode_descr">تمام اطلاعات وقتی وارد می‌شوند پاک می‌شوند.</string>
+    <string name="v5_1_custom_themes_descr">سفارشی کردن و اشتراک‌گذاری تم‌های رنگ.</string>
+    <string name="v5_1_custom_themes">تم‌های سفارشی</string>
+    <string name="v5_3_discover_join_groups_descr">- اتصال به سرویس فهرست راهنما (آزمایشی)!
+\n- رسیدهای تحویل (تا ۲۰ دقیقه).
+\n- سریع‌تر و پایداری بیشتر.</string>
+    <string name="v5_4_better_groups">گروه‌های بهتر</string>
+    <string name="v5_6_quantum_resistant_encryption_descr">فعال کردن در گپ های مستقیم (آزمایشی)!</string>
+    <string name="unlink_desktop_question">اتصال با کامپیوتر قطع شود؟</string>
+    <string name="in_developing_title">به زودی!</string>
+    <string name="migrate_to_device_download_failed">بارگیری موفق نبود</string>
+    <string name="migrate_to_device_chat_migrated">گپ جابه‌جا شد!</string>
+    <string name="migrate_from_device_archive_and_upload">آرشیو و بارگذاری</string>
+    <string name="migrate_from_device_confirm_upload">تایید بارگذاری</string>
+    <string name="migrate_from_device_check_connection_and_try_again">اتصال اینترنت خود را بررسی و دوباره امتحان کنید</string>
+    <string name="v5_3_new_desktop_app">برنامه کامپیوتر جدید</string>
+    <string name="v5_4_link_mobile_desktop">وصل کردن برنامه‌های موبایل و کامپیوتر! 🔗</string>
+    <string name="v5_3_discover_join_groups">یافتن و پیوستن به گروه‌ها</string>
+    <string name="v5_4_incognito_groups_descr">ایجاد یک گروه با استفاده از یک نمایه تصادفی.</string>
+    <string name="v5_6_app_data_migration">جابه‌جایی اطلاعات برنامه</string>
+    <string name="open_on_mobile_and_scan_qr_code"><i>استفاده از کامپیوتر</i> را در برنامه موبایل باز و کد QR را اسکن کنید.</string>
+    <string name="migrate_to_device_downloading_archive">در حال بارگیری آرشیو</string>
+    <string name="migrate_from_device_error_exporting_archive">خطا در صدور پایگاه داده گپ</string>
+    <string name="migrate_from_device_error_saving_settings">خطا در ذخیره تنظیمات</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">تمام مخاطبان، مکالمات و پرونده‌های شما به صورت امن، رمزگذاری و به صورت بسته‌های داده به واسطه‌های XFTP تنظیم شده، بارگذاری خواهند شد.</string>
+    <string name="connected_mobile">موبایل متصل شد</string>
+    <string name="v4_2_group_links_desc">مدیران می‌توانند لینک‌ها را برای پیوستن به گروه‌ها ایجاد کنند.</string>
+    <string name="disconnect_remote_hosts">قطع اتصال موبایل‌ها</string>
+    <string name="connected_to_mobile">به موبایل متصل شد</string>
+    <string name="enter_this_device_name">نام این دستگاه را وارد کنید…</string>
+    <string name="new_desktop"><i>(جدید)</i></string>
+    <string name="v4_2_auto_accept_contact_requests">پذیرفتن خودکار درخواست‌های مخاطب</string>
+    <string name="bad_desktop_address">نشانی کامپیوتر ناصحیح</string>
+    <string name="desktop_incompatible_version">نسخه ناسازگار</string>
+    <string name="v5_3_new_interface_languages_descr">عربی، بلغاری، فنلاندی، عبری، تایلندی و اوکراینی - با سپاس از کاربران و Weblate</string>
 </resources>
