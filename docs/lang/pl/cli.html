@@ -907,7 +907,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 </code></pre>
 <blockquote>
-<p><strong>Uwaga:</strong> Jeśli napotkasz błąd <code>version `GLIBC_2.28' not found</code>, przebuduj go z obrazem bazowym <code>haskell:8.10.7-stretch</code> (zmień go w Twoim lokalnym pliku <a href="Dockerfile">Dockerfile</a>).</p>
+<p><strong>Uwaga:</strong> Jeśli napotkasz błąd <code>version `GLIBC_2.28' not found</code>, przebuduj go z obrazem bazowym <code>haskell:8.10.7-stretch</code> (zmień go w Twoim lokalnym pliku <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/Dockerfile">Dockerfile</a>).</p>
 </blockquote>
 <h4 id="uzywajac-haskella-na-dowolnym-systemie-operacyjnym" tabindex="-1">Używając Haskella na dowolnym systemie operacyjnym</h4>
 <ol>
@@ -972,7 +972,7 @@ brew services start tor
 <p>Po uruchomieniu czatu zostaniesz poproszony o podanie swojej &quot;nazwy wyświetlanej&quot; oraz opcjonalnej &quot;pełnej nazwy&quot; w celu utworzenia lokalnego profilu czatu. Nazwa wyświetlana jest aliasem, za pomocą którego kontakty mogą się do ciebie odnosić - nie jest ona unikalna i nie służy jako globalna tożsamość. Jeśli kilka kontaktów wybrało tę samą nazwę wyświetlaną, klient czatu dodaje numeryczną końcówkę (sufiks) do ich lokalnej nazwy wyświetlanej.</p>
 <p>Poniższy schemat przedstawia sposób łączenia się z kontaktem i wysyłania do niego wiadomości:</p>
 <div align="center">
-  <img align="center" src="../images/how-to-use-simplex.svg">
+  <img align="center" src="/images/how-to-use-simplex.svg">
 </div>
 <p>Gdy już skonfigurujesz swój profil lokalny, wpisz <code>/c</code> (oznaczające <code>/connect</code>), aby utworzyć nowe połączenie i wygenerować zaproszenie. Wyślij to zaproszenie do swojego kontaktu za pośrednictwem dowolnego innego kanału komunikacji.</p>
 <p>Możesz utworzyć wiele zaproszeń, kilkukrotnie wpisując <code>/connect</code> i wysłać te zaproszenia do kontaktów, z którymi chcesz się połączyć.</p>
@@ -982,20 +982,20 @@ brew services start tor
 <p>Użyj <code>/help</code> na czacie, by uzyskać listę pozostałych dostępnych komend.</p>
 <h3 id="grupy" tabindex="-1">Grupy</h3>
 <p>Aby utworzyć grupę, użyj <code>/g &lt;nazwa_grupy&gt;</code>, a następnie dodaj do niej kontakty za pomocą <code>/a &lt;nazwa_grupy&gt; &lt;nazwa_kontaktu&gt;</code>. Możesz wysyłać wiadomości do grupy wpisując <code>#&lt;nazwa_grupy&gt; &lt;wiadomość&gt;</code>. Użyj <code>/help groups</code>, by uzyskać listę pozostałych dostępnych komend.</p>
-<p><img src="../images/groups.gif" alt="simplex-chat"></p>
+<p><img src="/images/groups.gif" alt="simplex-chat"></p>
 <blockquote>
 <p><strong>Uwaga</strong>: informacje o grupach nie są przechowywane na żadnym serwerze, są one zapisywane jako lista członków w bazie danych aplikacji klientów, do których będą wysyłane wiadomości.</p>
 </blockquote>
 <h3 id="wysylanie-plikow" tabindex="-1">Wysyłanie plików</h3>
 <p>Możesz wysłać plik do kontaktu za pomocą <code>/f @&lt;nazwa_kontaktu&gt; &lt;ścieżka_do_pliku&gt;</code> - odbiorca będzie musiał go zaakceptować przed rozpoczęciem wysyłania. Użyj <code>/help files</code>, by uzyskać listę pozostałych dostępnych komend.</p>
-<p><img src="../images/files.gif" alt="simplex-chat"></p>
+<p><img src="/images/files.gif" alt="simplex-chat"></p>
 <p>Możesz wysyłać pliki do grupy za pomocą <code>/f #&lt;nazwa_grupy&gt; &lt;ścieżka_do_pliku&gt;</code>.</p>
 <h3 id="adresy-kontaktowe-uzytkownikow" tabindex="-1">Adresy kontaktowe użytkowników</h3>
 <p>Alternatywą dla jednorazowych linków zapraszających są adresy długoterminowe. Możesz je utworzyć za pomocą <code>/ad</code> (oznaczające <code>/address</code>). Utworzony adres może być następnie udostępniony za pośrednictwem dowolnego innego kanału komunikacji i użyty przez innych użytkowników jako link do prośby o kontakt używając <code>/c &lt;adres_kontaktowy_użytkownika&gt;</code>.</p>
 <p>Prośby o kontakt możesz przyjąć za pomocą komendy <code>/ac &lt;nazwa&gt;</code> oraz odrzucić za pomocą <code>/rc &lt;nazwa&gt;</code>.</p>
 <p>&quot;Długoterminowy&quot; adres użytkownika jest długoterminowy w tym sensie, że jest to link wielokrotnego użytku - może być używany do momentu usunięcia go przez użytkownika. Po usunięciu wszystkie nawiązane połączenia pozostaną aktywne (w przeciwieństwie do tego, jak działa to w przypadku poczty e-mail, gdy zmiana adresu powoduje, że ludzie nie mogą już wysyłać do siebie wiadomości).</p>
 <p>Użyj <code>/help address</code>, by uzyskać listę pozostałych dostępnych komend.</p>
-<p><img src="../images/user-addresses.gif" alt="simplex-chat"></p>
+<p><img src="/images/user-addresses.gif" alt="simplex-chat"></p>
 </div>
                 </article>
             </main>

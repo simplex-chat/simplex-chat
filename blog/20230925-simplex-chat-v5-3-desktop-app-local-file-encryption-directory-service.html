@@ -415,11 +415,11 @@ window.addEventListener('scroll',changeHeaderBg);
 <li>you cannot send voice messages.</li>
 <li>there is no support for calls yet.</li>
 </ul>
-<p>You can download the desktop app for Linux and Mac via <a href="https://simplex.chat/downloads">downloads page</a>. Windows version will be available soon.</p>
+<p>You can download the desktop app for Linux and Mac via <a href="/downloads/index.html">downloads page</a>. Windows version will be available soon.</p>
 <h2 id="group-directory-service-and-other-group-improvements" tabindex="-1">Group directory service and other group improvements</h2>
 <img src="./images/20230925-directory.png" width="330" class="float-to-left">
 <p>Directory service provides a way to search for public groups submitted by the users. To use it, you need to connect to it via SimpleX Chat, as you would connect to any other contact, and type some words to search.</p>
-<p>You can also create and register your group, with some limitations explained <a href="docs/directory.html">here</a>.</p>
+<p>You can also create and register your group, with some limitations explained <a href="/docs/directory.html">here</a>.</p>
 <p>Other group improvements in this release:</p>
 <ul>
 <li>
@@ -436,7 +436,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <h2 id="encrypted-local-files-and-media-with-forward-secrecy" tabindex="-1">Encrypted local files and media with forward secrecy</h2>
 <img src="./images/20230925-encrypted.png" width="330" class="float-to-left">
 <p>All messages, files and media sent via SimpleX Chat were always end-to-end encrypted from the very beginning. SimpleX Chat uses double-ratchet algorithm with encrypted message headers, for the best possible meta-data protection.</p>
-<p>You contacts, groups and messages are stored in the local database on your device, and this database was encrypted from <a href="20220928-simplex-chat-v4-encrypted-database.html">v4.0 released a year ago</a>.</p>
+<p>You contacts, groups and messages are stored in the local database on your device, and this database was encrypted from <a href="/blog/20220928-simplex-chat-v4-encrypted-database.html">v4.0 released a year ago</a>.</p>
 <p>But until this version all files and media in the app storage were not encrypted, and when you exported the chat archive, they were unencrypted there as well.</p>
 <p>From v5.3 all files and media (except videos, for now) are encrypted with a random symmetric key - in many cases they are encrypted before they are written to the storage. Local file encryption can be disabled via Privacy &amp; Security settings, for example, if you need to access the files from the storage outside of the app.</p>
 <p>In addition to the videos that are stored unencrypted, there are other rare scenarios when the received files may be unencrypted in this release. Files have an open or closed lock icons to indicate whether they were encrypted locally. These limitations will be addressed in the next release. In any case, all files and media are always sent end-to-end encrypted, without any exceptions.</p>
@@ -444,12 +444,12 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>This approach provides forward secrecy for locally stored files, unlike file encryption schemes used in some other apps when the same passphrase is used for all files.</p>
 <h2 id="simplified-incognito-mode" tabindex="-1">Simplified incognito mode</h2>
 <img src="./images/20230925-incognito.png" width="330" class="float-to-left">
-<p>Incognito mode was <a href="20220901-simplex-chat-v3.2-incognito-mode.html">added a year ago</a> to improve anonymity of your profile, but it was confusing for some users - it was a global setting, but it only affected the new connections.</p>
+<p>Incognito mode was <a href="/blog/20220901-simplex-chat-v3.2-incognito-mode.html">added a year ago</a> to improve anonymity of your profile, but it was confusing for some users - it was a global setting, but it only affected the new connections.</p>
 <p>It is now simpler to use - you can decide whether to connect to a contact or join a group using your main profile at a point when you create an invitation link or connect via a link or QR code.</p>
 <p>When you are connecting to people you know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.</p>
 <h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
 <p>Some links to answer the most common questions:</p>
-<p><a href="20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment</a>.</p>
+<p><a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment</a>.</p>
 <p><a href="https://simplex.chat/#how-simplex-works">How can SimpleX deliver messages without user identifiers</a>.</p>
 <p><a href="https://simplex.chat/#why-ids-bad-for-privacy">What are the risks to have identifiers assigned to the users</a>.</p>
 <p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>

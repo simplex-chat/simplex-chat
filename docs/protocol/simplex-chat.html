@@ -790,7 +790,7 @@ window.addEventListener('scroll',changeHeaderBg);
 </code></pre>
 <p><code>msgId</code> property is a 12 bytes base64url-encoded random message ID that the clients can use to reference the message in the future, e.g. when editing, quoting or deleting it.</p>
 <p><code>event</code> property is the type of the message that defines the semantics of the message and the allowed format of <code>params</code> property.</p>
-<p><code>params</code> property includes message data, depending on <code>event</code>, as defined below and in <a href="./simplex-chat.schema.json">JTD schema</a>.</p>
+<p><code>params</code> property includes message data, depending on <code>event</code>, as defined below and in <a href="simplex-chat.schema.json">JTD schema</a>.</p>
 <h3 id="binary-format-for-sending-files" tabindex="-1">Binary format for sending files</h3>
 <p>SimpleX Chat clients use separate connections to send files using a binary format. File chunk size send in each message MUST NOT be bigger than 15,780 bytes to fit into 16kb (16384 bytes) transport block.</p>
 <p>The syntax of each message used to send files is defined by the following ABNF notation:</p>
@@ -822,7 +822,7 @@ eventWord = 1* ALPHA
 <li><code>x.call.*</code> - messages to invite to WebRTC calls and send signalling messages.</li>
 <li><code>x.ok</code> - message sent during connection handshake.</li>
 </ul>
-<p>JTD schema defining messages for all chat functions is available in <a href="./simplex-chat.schema.json">this file</a> – please refer to this document for all properties of the message <code>params</code>.</p>
+<p>JTD schema defining messages for all chat functions is available in <a href="simplex-chat.schema.json">this file</a> – please refer to this document for all properties of the message <code>params</code>.</p>
 <h2 id="xcontact-sending-connection-request" tabindex="-1">x.contact - sending connection request</h2>
 <p>The message is sent as part of the connection request to the long-term user address. <code>contactReqId</code> property is used to identify a duplicate contact request - the receiving client MAY put repeated request on top of the list in the UI.</p>
 <h2 id="sub-protocol-for-contact-profile" tabindex="-1">Sub-protocol for contact profile</h2>
@@ -835,7 +835,7 @@ eventWord = 1* ALPHA
 <h2 id="sub-protocol-for-content-messages" tabindex="-1">Sub-protocol for content messages</h2>
 <h3 id="xmsgnew-a-new-content-message" tabindex="-1">x.msg.new - a new content message</h3>
 <p>When chat clients receive or send this message, they MUST create a new chat item in the conversation. Top level <code>msgId</code> property is defined to allow referencing this chat item or message in the future, e.g. to delete, update or quote chat item, or to accept file.</p>
-<p>This message uses <code>params</code> property of the message as content message container, without any top level properties for the container. Message container (<code>params</code>) includes message <code>content</code> property, an optional &quot;invitation&quot; to receive file or image attachment in <code>file</code> property (that is interpreted depending on message content type) and optional indication whether this message is forwarded (<code>&quot;forward&quot;: true</code> property of container) or sent in reply to other message (<code>&quot;quote&quot;: {&lt;quoted message&gt;}</code>). See <code>/definition/msgContainer</code> in <a href="./simplex-chat.schema.json">JTD schema</a> for message container format.</p>
+<p>This message uses <code>params</code> property of the message as content message container, without any top level properties for the container. Message container (<code>params</code>) includes message <code>content</code> property, an optional &quot;invitation&quot; to receive file or image attachment in <code>file</code> property (that is interpreted depending on message content type) and optional indication whether this message is forwarded (<code>&quot;forward&quot;: true</code> property of container) or sent in reply to other message (<code>&quot;quote&quot;: {&lt;quoted message&gt;}</code>). See <code>/definition/msgContainer</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
 <p>Message content can be one of four types:</p>
 <ul>
 <li><code>text</code> - no file attachment is expected for this format, <code>text</code> property MUST be non-empty.</li>
@@ -843,7 +843,7 @@ eventWord = 1* ALPHA
 <li><code>image</code> - attached file is required, <code>text</code> property MAY be empty.</li>
 <li><code>link</code> - no file attachment is expected, <code>text</code> property MUST be non-empty. <code>preview</code> property contains information about link preview.</li>
 </ul>
-<p>See <code>/definition/msgContent</code> in <a href="./simplex-chat.schema.json">JTD schema</a> for message container format.</p>
+<p>See <code>/definition/msgContent</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
 <h3 id="xmsgupdate-update-of-the-previously-sent-message" tabindex="-1">x.msg.update - update of the previously sent message</h3>
 <p>This message is used to update previously created chat item. Its <code>params</code> property contains <code>msgId</code> of the previously sent message that this one is updating and <code>content</code> with the message content that the clients must use to replace the content of the original chat item.</p>
 <p>If the referenced message does not exist, the clients MUST create a new chat item with the ID of the referenced message. If the referenced message is not a content message, the clients MUST ignore this message.</p>
@@ -862,7 +862,7 @@ eventWord = 1* ALPHA
 <p>Clients are RECOMMENDED to indicate in the UI whether the connection to a group member or contact was made directly or via annother user.</p>
 <p>Each member in the group is identified by a group-wide unique identifier used by all members in the group. This is to allow referencing members in the messages and to allow group message integrity validation.</p>
 <p>The diagram below shows the sequence of messages sent between the users' clients to add the new member to the group.</p>
-<p><img src="./diagrams/group.svg" alt="Adding member to the group"></p>
+<p><img src="diagrams/group.svg" alt="Adding member to the group"></p>
 <h3 id="member-roles" tabindex="-1">Member roles</h3>
 <p>Currently members can have one of three roles - <code>owner</code>, <code>admin</code> and <code>member</code>. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only <code>owner</code> and <code>admin</code> members can add new members; only <code>owner</code> members can add members with <code>owner</code> role.</p>
 <h3 id="messages-to-manage-groups-and-add-members" tabindex="-1">Messages to manage groups and add members</h3>

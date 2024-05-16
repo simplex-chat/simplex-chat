@@ -413,20 +413,20 @@ window.addEventListener('scroll',changeHeaderBg);
 <h2 id="improved-messages" tabindex="-1">Improved messages</h2>
 <h3 id="voice-messages-up-to-5-minutes-better-quality-playback-control" tabindex="-1">Voice messages: up to 5 minutes, better quality, playback control</h3>
 <img src="./images/20230523-voice.png" width="288" class="float-to-left">
-<p>Since <a href="20221206-simplex-chat-v4.3-voice-messages.html#instant-voice-messages">v4.3</a> voice messages were sent in small 16kb chunks, so we had to limit them to 30-40 seconds for better user experience, as sending larger files would require the sender to be online.</p>
+<p>Since <a href="/blog/20221206-simplex-chat-v4.3-voice-messages.html#instant-voice-messages">v4.3</a> voice messages were sent in small 16kb chunks, so we had to limit them to 30-40 seconds for better user experience, as sending larger files would require the sender to be online.</p>
 <p>With the new XFTP protocol that allows sending files up to 1gb it is now possible to increase the message size - we decided to limit it at 5 min, increasing their quality 2x (the bitrate is increased from 16 to 32kbps). We also added a slider to control the playback.</p>
 <h3 id="disappearing-messages-choose-any-time" tabindex="-1">Disappearing messages: choose any time!</h3>
 <p><img src="./images/20230523-disappearing1.png" width="288">    <img src="./images/20230523-disappearing2.png" width="288"></p>
-<p>Since <a href="20230103-simplex-chat-v4.4-disappearing-messages.html#disappearing-messages">v4.4</a> disappearing messages were only configurable for the whole conversation, with a limited choice of allowed times between 30 seconds and 1 month.</p>
+<p>Since <a href="/blog/20230103-simplex-chat-v4.4-disappearing-messages.html#disappearing-messages">v4.4</a> disappearing messages were only configurable for the whole conversation, with a limited choice of allowed times between 30 seconds and 1 month.</p>
 <p>This version allows to configure the time for messages to disappear more granularly, in the range from 1 second to 3 months. You can also set a different time to disappear when you send the message (hold the Send button), as long as disappearing messages are enabled in the conversation.</p>
 <h3 id="message-editing-history" tabindex="-1">Message editing history</h3>
 <img src="./images/20230523-info.png" width="288" class="float-to-left">
-<p>I <a href="20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion">wrote previously</a> why we decided to require the recipient concent before the messages can be fully deleted by the sender - in short, it is to support recipient's data sovereignty and prevent the possibility of offensive messages being removed without any trace. By default, when the sender deletes the message it is marked as deleted, rather than fully deleted, and you can reveal the original message.</p>
+<p>I <a href="/blog/20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion">wrote previously</a> why we decided to require the recipient concent before the messages can be fully deleted by the sender - in short, it is to support recipient's data sovereignty and prevent the possibility of offensive messages being removed without any trace. By default, when the sender deletes the message it is marked as deleted, rather than fully deleted, and you can reveal the original message.</p>
 <p>You've found the workaround for it of course - it's enough to simply edit the message to hide the original content. This version adds a visible message editing history, together with other detailed information about when the message was sent, received or deleted, that wasn't visible in the conversation.</p>
 <h2 id="customize-and-share-color-themes" tabindex="-1">Customize and share color themes</h2>
 <img src="./images/20230523-theme.png" width="288" class="float-to-left">
 <p>Android app now allows choosing between three color themes - Light, Dark and SimpleX (a dark blue theme). You can customize any theme by setting 9 different colors used in the app, including titles, menus, accent colors and colors for sent and received messages.</p>
-<p>You can share your theme with other users by exporting it to a file and sending to them. You can also <a href="docs/themes.html">contribute your favorite themes</a> to our GitHub repository.</p>
+<p>You can share your theme with other users by exporting it to a file and sending to them. You can also <a href="/docs/themes.html">contribute your favorite themes</a> to our GitHub repository.</p>
 <h2 id="self-destruct-passcode" tabindex="-1">Self-destruct passcode</h2>
 <img src="./images/20230523-self-destruct.png" width="288" class="float-to-left">
 <p>This is something many of you asked before - when asked to enter the app passcode under duress, to be able to enter a special self-destruct code that would remove the app data. This feature is offered in many security tools, and now you can configure it in SimpleX Chat as well.</p>
@@ -439,7 +439,7 @@ window.addEventListener('scroll',changeHeaderBg);
 </ul>
 <h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
 <p>Some links to answer the most common questions:</p>
-<p><a href="20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment</a>.</p>
+<p><a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment</a>.</p>
 <p><a href="https://simplex.chat/#how-simplex-works">How can SimpleX deliver messages without user identifiers</a>.</p>
 <p><a href="https://simplex.chat/#why-ids-bad-for-privacy">What are the risks to have identifiers assigned to the users</a>.</p>
 <p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>

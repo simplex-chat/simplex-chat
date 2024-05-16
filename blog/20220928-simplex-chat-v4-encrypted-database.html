@@ -393,9 +393,9 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>Also, this version adds German language to mobile apps UI - huge thanks to <a href="https://github.com/mlanp">Michael</a> who contributed them!</p>
 <p>Other new features since v3:</p>
 <ul>
-<li>secret chat groups (see details in <a href="20220808-simplex-chat-v3.1-chat-groups.html#secret-chat-groups">v3.1 announcement</a> - they are fully decentralized, only their members know these groups exist.</li>
-<li>accessing messaging servers via Tor with support for .onion server addresses (see details in <a href="20220808-simplex-chat-v3.1-chat-groups.html#access-messaging-servers-via-tor">v3.1</a> and <a href="20220901-simplex-chat-v3.2-incognito-mode.html#using-onion-server-addresses-with-tor">v3.2</a> announcements) - to protect users anonymity on the TCP transport level.</li>
-<li>Incognito mode - sharing a random profile name with each new contact, to completely eliminate any shared data between them (see details in <a href="20220901-simplex-chat-v3.2-incognito-mode.html#incognito-mode">v3.2</a> announcement).</li>
+<li>secret chat groups (see details in <a href="/blog/20220808-simplex-chat-v3.1-chat-groups.html#secret-chat-groups">v3.1 announcement</a> - they are fully decentralized, only their members know these groups exist.</li>
+<li>accessing messaging servers via Tor with support for .onion server addresses (see details in <a href="/blog/20220808-simplex-chat-v3.1-chat-groups.html#access-messaging-servers-via-tor">v3.1</a> and <a href="/blog/20220901-simplex-chat-v3.2-incognito-mode.html#using-onion-server-addresses-with-tor">v3.2</a> announcements) - to protect users anonymity on the TCP transport level.</li>
+<li>Incognito mode - sharing a random profile name with each new contact, to completely eliminate any shared data between them (see details in <a href="/blog/20220901-simplex-chat-v3.2-incognito-mode.html#incognito-mode">v3.2</a> announcement).</li>
 <li>endless scrolling and search in chats.</li>
 <li>reduced Android APK size for direct download and in F-Droid repo from 200 to 50Mb!</li>
 </ul>
@@ -408,7 +408,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>For additional security of your messages you also have the option to remove the passphrase from the device. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it safely.</p>
 <h3 id="self-hosted-webrtc-ice-servers" tabindex="-1">Self-hosted WebRTC ICE servers</h3>
 <img src="./images/20220928-ice-servers.png" width="330">
-<p>You could make audio and video calls via SimpleX Chat WebRTC servers since <a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#end-to-end-encrypted-audiovideo-calls">v3</a> - that meant that our servers could observe your IP addresses. This release adds configuration to use your own STUN/TURN servers, helping you protect your privacy.</p>
+<p>You could make audio and video calls via SimpleX Chat WebRTC servers since <a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#end-to-end-encrypted-audiovideo-calls">v3</a> - that meant that our servers could observe your IP addresses. This release adds configuration to use your own STUN/TURN servers, helping you protect your privacy.</p>
 <p>See <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md">this guide</a> to learn how to deploy your own <code>coturn</code> server and to configure the mobile apps to use it.</p>
 <h3 id="improved-stability-of-creating-new-connections" tabindex="-1">Improved stability of creating new connections</h3>
 <p>Secret groups made SimpleX Chat much more useful, but because SimpleX groups are completely decentralized and for them to work each member should connect to all other members, sometimes these connections fail and the group becomes fragmented - some members do not receive all messages. That was more common for larger groups, as the number of required member connections is O(n^2) of the group size.</p>
@@ -448,9 +448,9 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>We are really looking forward to seeing what applications you create - please submit your ideas and implementations, we will publish the links on a separate page on the website and GitHub repository.</p>
 <h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
 <p>Some links to answer the most common questions:</p>
-<p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
-<p><a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
-<p><a href="20220723-simplex-chat-v3.1-tor-groups-efficiency.html#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
 <p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
 <h2 id="we-ask-you-to-help-us-pay-for-3rd-party-security-audit" tabindex="-1">We ask you to help us pay for 3rd party security audit</h2>
 <p>We have already signed the agreement and paid for the security audit!</p>

@@ -940,7 +940,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 </code></pre>
 <blockquote>
-<p><strong>Please note:</strong> If you encounter <code>version `GLIBC_2.28' not found</code> error, rebuild it with <code>haskell:8.10.7-stretch</code> base image (change it in your local <a href="Dockerfile">Dockerfile</a>).</p>
+<p><strong>Please note:</strong> If you encounter <code>version `GLIBC_2.28' not found</code> error, rebuild it with <code>haskell:8.10.7-stretch</code> base image (change it in your local <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/Dockerfile">Dockerfile</a>).</p>
 </blockquote>
 <h4 id="in-any-os" tabindex="-1">In any OS</h4>
 <ol>
@@ -1015,20 +1015,20 @@ brew services start tor
 <p>Use <code>/help</code> in chat to see the list of available commands.</p>
 <h3 id="groups" tabindex="-1">Groups</h3>
 <p>To create a group use <code>/g &lt;group&gt;</code>, then add contacts to it with <code>/a &lt;group&gt; &lt;name&gt;</code>. You can then send messages to the group by entering <code>#&lt;group&gt; &lt;message&gt;</code>. Use <code>/help groups</code> for other commands.</p>
-<p><img src="../images/groups.gif" alt="simplex-chat"></p>
+<p><img src="images/groups.gif" alt="simplex-chat"></p>
 <blockquote>
 <p><strong>Please note</strong>: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.</p>
 </blockquote>
 <h3 id="sending-files" tabindex="-1">Sending files</h3>
 <p>You can send a file to your contact with <code>/f @&lt;contact&gt; &lt;file_path&gt;</code> - the recipient will have to accept it before it is sent. Use <code>/help files</code> for other commands.</p>
-<p><img src="../images/files.gif" alt="simplex-chat"></p>
+<p><img src="images/files.gif" alt="simplex-chat"></p>
 <p>You can send files to a group with <code>/f #&lt;group&gt; &lt;file_path&gt;</code>.</p>
 <h3 id="user-contact-addresses" tabindex="-1">User contact addresses</h3>
 <p>As an alternative to one-time invitation links, you can create a long-term address with <code>/ad</code> (for <code>/address</code>). The created address can then be shared via any channel, and used by other users as a link to make a contact request with <code>/c &lt;user_contact_address&gt;</code>.</p>
 <p>You can accept or reject incoming requests with <code>/ac &lt;name&gt;</code> and <code>/rc &lt;name&gt;</code> commands.</p>
 <p>User address is &quot;long-term&quot; in a sense that it is a multiple-use connection link - it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike how it works with email, when changing the address results in people not being able to message you).</p>
 <p>Use <code>/help address</code> for other commands.</p>
-<p><img src="../images/user-addresses.gif" alt="simplex-chat"></p>
+<p><img src="images/user-addresses.gif" alt="simplex-chat"></p>
 </div>
                 </article>
             </main>
