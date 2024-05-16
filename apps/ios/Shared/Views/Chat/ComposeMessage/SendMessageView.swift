@@ -224,8 +224,7 @@ struct SendMessageView: View {
 
     @ViewBuilder private func sendButtonContextMenuItems() -> some View {
         if composeState.liveMessage == nil,
-           !composeState.editing,
-           !composeState.forwarding {
+           !composeState.editing {
             if case .noContextItem = composeState.contextItem,
                !composeState.voicePreview,
                let send = sendLiveMessage,
