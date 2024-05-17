@@ -98,7 +98,7 @@ class AppColors(
 class AppWallpaper(
   background: Color? = null,
   tint: Color? = null,
-  type: BackgroundImageType? = null,
+  type: BackgroundImageType = BackgroundImageType.Empty,
 ) {
   var background by mutableStateOf(background, structuralEqualityPolicy())
     internal set
@@ -110,7 +110,7 @@ class AppWallpaper(
   fun copy(
     background: Color? = this.background,
     tint: Color? = this.tint,
-    type: BackgroundImageType? = this.type,
+    type: BackgroundImageType = this.type,
   ): AppWallpaper = AppWallpaper(
     background,
     tint,
@@ -209,15 +209,16 @@ data class ThemeWallpaper (
       background = background?.colorFromReadableHex(),
       tint = tint?.colorFromReadableHex(),
       type = if (preset != null) {
-        BackgroundImageType.Repeated(filename = preset, scale ?: 1f)
+        BackgroundImageType.Repeated(filename = preset, scale)
       } else if (imageFile != null) {
         BackgroundImageType.Static(
           filename = imageFile,
-          scale ?: 1f,
-          scaleType ?: BackgroundImageScaleType.FILL
+          scale,
+          scaleType
         )
-      } else
-        null
+      } else {
+        BackgroundImageType.Empty
+      }
     )
   }
 
@@ -229,7 +230,7 @@ data class ThemeWallpaper (
       image = if (type is BackgroundImageType.Static && type.image != null) resizeImageToStrSize(type.image!!, 5_000_000) else null,
       imageFile = null,
       preset = if (type is BackgroundImageType.Repeated) type.filename else null,
-      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type != null) (type as BackgroundImageType.Static).scale else 1f,
+      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type is BackgroundImageType.Static) type.scale else 1f,
       scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
       background = aw.background?.toReadableHex(),
       tint = aw.tint?.toReadableHex(),
@@ -243,8 +244,8 @@ data class ThemeWallpaper (
       image = null,
       imageFile = if (type is BackgroundImageType.Static) type.filename else null,
       preset = if (type is BackgroundImageType.Repeated) type.filename else null,
-      scale = if (type is BackgroundImageType.Repeated) type.scale else if (type != null) (type as BackgroundImageType.Static).scale else null,
-      scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
+      scale = if (scale == null) null else if (type is BackgroundImageType.Repeated) type.scale else if (type is BackgroundImageType.Static) scale else null,
+      scaleType = if (scaleType == null) null else if (type is BackgroundImageType.Static) type.scaleType else null,
       background = aw.background?.toReadableHex(),
       tint = aw.tint?.toReadableHex(),
     )
@@ -269,7 +270,7 @@ data class ThemeWallpaper (
         image = null,
         imageFile = if (type is BackgroundImageType.Static) type.filename else null,
         preset = if (type is BackgroundImageType.Repeated) type.filename else null,
-        scale = if (type is BackgroundImageType.Repeated) type.scale else (type as BackgroundImageType.Static).scale,
+        scale = if (type is BackgroundImageType.Repeated) type.scale else if (type is BackgroundImageType.Static) type.scale else null,
         scaleType = if (type is BackgroundImageType.Static) type.scaleType else null,
         background = background,
         tint = tint,
@@ -288,9 +289,9 @@ data class ThemeOverrides (
 
   fun isSame(type: BackgroundImageType?, themeName: String): Boolean =
     (
-        (wallpaper?.preset != null && wallpaper.preset == type?.filename) ||
+        (wallpaper?.preset != null && type is BackgroundImageType.Repeated && wallpaper.preset == type.filename) ||
         (wallpaper?.imageFile != null && type is BackgroundImageType.Static) ||
-        (wallpaper?.preset == null && wallpaper?.imageFile == null && type == null)
+        (wallpaper?.preset == null && wallpaper?.imageFile == null && (type == BackgroundImageType.Empty || type == null))
     ) && base.themeName == themeName
 
   fun withUpdatedColor(name: ThemeColor, color: String?): ThemeOverrides {
@@ -333,7 +334,7 @@ data class ThemeOverrides (
     )
   }
 
-  fun toAppColors(base: DefaultTheme, perChatTheme: ThemeColors?, perUserTheme: ThemeColors?, presetWallpaperTheme: ThemeColors?): AppColors {
+  fun toAppColors(base: DefaultTheme, perChatTheme: ThemeColors?, perChatWallpaperType: BackgroundImageType?, perUserTheme: ThemeColors?, perUserWallpaperType: BackgroundImageType?, presetWallpaperTheme: ThemeColors?): AppColors {
     val baseColors = when (base) {
       DefaultTheme.LIGHT -> LightColorPaletteApp
       DefaultTheme.DARK -> DarkColorPaletteApp
@@ -341,16 +342,51 @@ data class ThemeOverrides (
       // shouldn't be here
       DefaultTheme.SYSTEM -> LightColorPaletteApp
     }
+
+    val sentMessageFallback = colors.sentMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage
+    val receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage
     return baseColors.copy(
       title = perChatTheme?.title?.colorFromReadableHex() ?: perUserTheme?.title?.colorFromReadableHex() ?: colors.title?.colorFromReadableHex() ?: presetWallpaperTheme?.title?.colorFromReadableHex() ?: baseColors.title,
-      sentMessage = perChatTheme?.sentMessage?.colorFromReadableHex() ?: perUserTheme?.sentMessage?.colorFromReadableHex() ?: colors.sentMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
-      receivedMessage = perChatTheme?.receivedMessage?.colorFromReadableHex() ?: perUserTheme?.receivedMessage?.colorFromReadableHex() ?: colors.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
+      sentMessage = if (perChatTheme?.sentMessage != null) perChatTheme.sentMessage.colorFromReadableHex()
+        else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.sentMessage?.colorFromReadableHex() ?: sentMessageFallback
+        else sentMessageFallback,
+      receivedMessage = if (perChatTheme?.receivedMessage != null) perChatTheme.receivedMessage.colorFromReadableHex()
+        else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.receivedMessage?.colorFromReadableHex() ?: receivedMessageFallback
+        else receivedMessageFallback,
     )
   }
 
-  fun withFilledColors(base: DefaultTheme, perChatTheme: ThemeColors?, perUserTheme: ThemeColors?, presetWallpaperTheme: ThemeColors?): ThemeColors {
+  fun toAppWallpaper(themeOverridesForType: BackgroundImageType?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverride?, materialBackgroundColor: Color): AppWallpaper {
+    val mainType = when {
+      themeOverridesForType != null -> themeOverridesForType
+      // type can be null if override is empty `"wallpaper": "{}"`, in this case no wallpaper is needed, empty.
+      // It's not null to override upper level wallpaper
+      perChatTheme?.wallpaper != null -> perChatTheme.wallpaper.toAppWallpaper().type
+      perUserTheme?.wallpaper != null -> perUserTheme.wallpaper.toAppWallpaper().type
+      else -> wallpaper?.toAppWallpaper()?.type ?: return AppWallpaper()
+    }
+    val first: ThemeWallpaper? = if (themeOverridesForType == null && mainType.sameType(perChatTheme?.wallpaper?.toAppWallpaper()?.type)) perChatTheme?.wallpaper else null
+    val second: ThemeWallpaper? = if (mainType.sameType(perUserTheme?.wallpaper?.toAppWallpaper()?.type)) perUserTheme?.wallpaper else null
+    val third: ThemeWallpaper? = if (mainType.sameType(this.wallpaper?.toAppWallpaper()?.type)) this.wallpaper else null
+
+    return AppWallpaper(type = when (mainType) {
+        is BackgroundImageType.Repeated -> mainType.copy(
+          scale = mainType.scale ?: first?.scale ?: second?.scale ?: third?.scale
+        )
+        is BackgroundImageType.Static -> mainType.copy(
+          scale = mainType.scale ?: first?.scale ?: second?.scale ?: third?.scale,
+          scaleType = mainType.scaleType ?: first?.scaleType ?: second?.scaleType ?: third?.scaleType,
+        )
+        is BackgroundImageType.Empty -> mainType
+      },
+      background = (first?.background ?: second?.background ?: third?.background)?.colorFromReadableHex() ?: mainType.defaultBackgroundColor(base, materialBackgroundColor),
+      tint = (first?.tint ?: second?.tint ?: third?.tint)?.colorFromReadableHex() ?: mainType.defaultTintColor(base)
+    )
+  }
+
+  fun withFilledColors(base: DefaultTheme, perChatTheme: ThemeColors?, perChatWallpaperType: BackgroundImageType?, perUserTheme: ThemeColors?, perUserWallpaperType: BackgroundImageType?, presetWallpaperTheme: ThemeColors?): ThemeColors {
     val c = toColors(base, perChatTheme, perUserTheme, presetWallpaperTheme)
-    val ac = toAppColors(base, perChatTheme, perUserTheme, presetWallpaperTheme)
+    val ac = toAppColors(base, perChatTheme, perChatWallpaperType, perUserTheme, perUserWallpaperType, presetWallpaperTheme)
     return ThemeColors(
       primary = c.primary.toReadableHex(),
       primaryVariant = c.primaryVariant.toReadableHex(),
@@ -432,7 +468,7 @@ data class ThemeModeOverride (
     fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride =
       ThemeModeOverride(
         mode = mode,
-        colors = ThemeOverrides().withFilledColors(base, null, null, null),
+        colors = ThemeOverrides().withFilledColors(base, null, null, null, null, null),
         wallpaper = ThemeWallpaper()
       )
   }

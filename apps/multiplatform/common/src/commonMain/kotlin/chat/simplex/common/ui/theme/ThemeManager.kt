@@ -36,45 +36,28 @@ object ThemeManager {
     }
   }
 
-  fun defaultActiveTheme(darkForSystemTheme: Boolean, appSettingsTheme: List<ThemeOverrides>): ThemeOverrides? {
+  private fun defaultActiveTheme(darkForSystemTheme: Boolean, appSettingsTheme: List<ThemeOverrides>): ThemeOverrides? {
     val nonSystemThemeName = nonSystemThemeName(darkForSystemTheme)
     val defaultThemeId = appPrefs.currentThemeIds.get()[nonSystemThemeName]
     return appSettingsTheme.getTheme(defaultThemeId)
+  }
+
+  fun defaultActiveTheme(darkForSystemTheme: Boolean, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ThemeModeOverride {
+    val perUserTheme = if (darkForSystemTheme) perUserTheme?.dark else perUserTheme?.light
+    if (perUserTheme != null) {
+      return perUserTheme
+    }
+    val defaultTheme = defaultActiveTheme(darkForSystemTheme, appSettingsTheme)
+    return ThemeModeOverride(colors = defaultTheme?.colors ?: ThemeColors(), wallpaper = defaultTheme?.wallpaper)
   }
 
   fun currentColors(darkForSystemTheme: Boolean, themeOverridesForType: Pair<BackgroundImageType?, Boolean>?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ActiveTheme {
     val themeName = appPrefs.currentTheme.get()!!
     val nonSystemThemeName = nonSystemThemeName(darkForSystemTheme)
     val defaultTheme = defaultActiveTheme(darkForSystemTheme, appSettingsTheme)
-    val theme = if (themeOverridesForType == null) {
-      defaultTheme
-    } else {
-      val type = themeOverridesForType.first
-      val customTheme = appSettingsTheme.sameTheme(type, nonSystemThemeName)
-      if (customTheme == null) {
-        defaultTheme?.copy(colors = ThemeColors(), wallpaper = if (type != null) ThemeWallpaper.from(type, null,null) else null)
-      } else {
-        val c = customTheme.colors
-        customTheme.copy(
-          colors = if (themeOverridesForType.second) ThemeColors(
-            primary = c.primary ?: defaultTheme?.colors?.primary,
-            primaryVariant = c.primaryVariant ?: defaultTheme?.colors?.primaryVariant,
-            secondary = c.secondary ?: defaultTheme?.colors?.secondary,
-            secondaryVariant = c.secondaryVariant ?: defaultTheme?.colors?.secondaryVariant,
-            background = c.background ?: defaultTheme?.colors?.background,
-            surface = c.surface ?: defaultTheme?.colors?.surface,
-            title = c.title ?: defaultTheme?.colors?.title,
-            sentMessage = c.sentMessage ?: defaultTheme?.colors?.sentMessage,
-            receivedMessage = c.receivedMessage ?: defaultTheme?.colors?.receivedMessage,
-          ) else c,
-          wallpaper = customTheme.wallpaper?.copy(
-            background = if (themeOverridesForType.second) customTheme.wallpaper.background ?: defaultTheme?.wallpaper?.background else customTheme.wallpaper.background,
-            tint = if (themeOverridesForType.second) customTheme.wallpaper.tint ?: defaultTheme?.wallpaper?.tint else customTheme.wallpaper.tint,
-          )
-        )
-      }
-    }
     val perUserTheme = if (darkForSystemTheme) perUserTheme?.dark else perUserTheme?.light
+
+    val theme = (appSettingsTheme.sameTheme(themeOverridesForType?.first ?: perChatTheme?.type ?: perUserTheme?.type, nonSystemThemeName) ?: defaultTheme)
     val baseTheme = when (nonSystemThemeName) {
       DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
       DefaultTheme.DARK.themeName -> ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
@@ -91,23 +74,13 @@ object ThemeManager {
       else -> if (theme?.wallpaper?.preset != null) PredefinedBackgroundImage.from(theme.wallpaper.preset)?.colors?.get(baseTheme.base) else null
     }
     val themeOrEmpty = theme ?: ThemeOverrides()
-    var wallpaper = themeOrEmpty.wallpaper?.toAppWallpaper() ?: AppWallpaper(type = themeOverridesForType?.first)
-    wallpaper = if (perUserTheme?.wallpaper != null) wallpaper.copy(
-      background = perUserTheme.wallpaper.toAppWallpaper().background ?: wallpaper.background,
-      tint = perUserTheme.wallpaper.toAppWallpaper().tint ?: wallpaper.tint,
-      type = perUserTheme.type,
-    ) else wallpaper
-    wallpaper = if (perChatTheme?.wallpaper != null) wallpaper.copy(
-      background = perChatTheme.wallpaper.toAppWallpaper().background ?: wallpaper.background,
-      tint = perChatTheme.wallpaper.toAppWallpaper().tint ?: wallpaper.tint,
-      type = perChatTheme.type,
-    ) else wallpaper
+    val colors = themeOrEmpty.toColors(themeOrEmpty.base, perChatTheme?.colors, perUserTheme?.colors, presetWallpaperTheme)
     return ActiveTheme(
       themeName,
       baseTheme.base,
-      themeOrEmpty.toColors(themeOrEmpty.base, perChatTheme?.colors, perUserTheme?.colors, presetWallpaperTheme),
-      themeOrEmpty.toAppColors(themeOrEmpty.base, perChatTheme?.colors, perUserTheme?.colors, presetWallpaperTheme),
-      wallpaper
+      colors,
+      themeOrEmpty.toAppColors(themeOrEmpty.base, perChatTheme?.colors, perChatTheme?.type, perUserTheme?.colors, perUserTheme?.type, presetWallpaperTheme),
+      themeOrEmpty.toAppWallpaper(themeOverridesForType?.first, perChatTheme, perUserTheme, colors.background)
     )
   }
 
@@ -208,12 +181,12 @@ object ThemeManager {
     CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
 
-  fun copyFromSameThemeOverrides(type: BackgroundImageType?, withColors: Boolean, pref: MutableState<ThemeModeOverride>): Boolean {
+  fun copyFromSameThemeOverrides(type: BackgroundImageType?, pref: MutableState<ThemeModeOverride>): Boolean {
     val overrides = appPrefs.themeOverrides.get()
     val sameTheme = overrides.sameTheme(type, CurrentColors.value.base.themeName)
     if (sameTheme == null) {
       if (type != null) {
-        pref.value = ThemeModeOverride(wallpaper = ThemeWallpaper.from(type, null, null))
+        pref.value = ThemeModeOverride(wallpaper = ThemeWallpaper.from(type, null, null).copy(scale = null, scaleType = null))
       } else {
         // Make an empty wallpaper to override any top level ones
         pref.value = ThemeModeOverride(wallpaper = ThemeWallpaper())
@@ -232,23 +205,13 @@ object ThemeManager {
       }
     }
     val prevValue = pref.value
-    pref.value = if (withColors) {
-      prevValue.copy(
-        colors = sameTheme.colors.copy(),
-        wallpaper = if (type != null)
-          ThemeWallpaper.from(type, sameTheme.wallpaper?.background, sameTheme.wallpaper?.tint)
-        // Make an empty wallpaper to override any top level ones
-        else ThemeWallpaper()
-      )
-    } else {
-      prevValue.copy(
-        colors = ThemeColors(),
-        wallpaper = if (type != null)
-          ThemeWallpaper.from(type, null, null)
-        // Make an empty wallpaper to override any top level ones
-        else ThemeWallpaper()
-      )
-    }
+    pref.value = prevValue.copy(
+      colors = ThemeColors(),
+      wallpaper = if (type != null)
+        ThemeWallpaper.from(type, null, null).copy(scale = null, scaleType = null)
+      // Make an empty wallpaper to override any top level ones
+      else ThemeWallpaper()
+    )
     return true
   }
 

@@ -50,7 +50,7 @@ enum class AppIcon(val image: ImageResource) {
 }
 
 @Composable
-actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+actual fun AppearanceView(m: ChatModel) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
   fun setAppIcon(newIcon: AppIcon) {
     if (appIcon.value == newIcon) return
@@ -73,7 +73,6 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
-    showSettingsModal = showSettingsModal,
   )
 }
 
@@ -83,7 +82,6 @@ fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
@@ -118,7 +116,7 @@ fun AppearanceScope.AppearanceLayout(
     }
 
     SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal)
+    ThemesSection(systemDarkTheme)
 
     SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()
@@ -167,7 +165,6 @@ fun PreviewAppearanceSettings() {
       languagePref = SharedPreference({ null }, {}),
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
-      showSettingsModal = { {} },
     )
   }
 }

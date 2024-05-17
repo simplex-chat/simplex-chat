@@ -22,11 +22,10 @@ import kotlinx.coroutines.delay
 import java.util.Locale
 
 @Composable
-actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+actual fun AppearanceView(m: ChatModel) {
   AppearanceScope.AppearanceLayout(
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
-    showSettingsModal = showSettingsModal,
   )
 }
 
@@ -34,7 +33,6 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
@@ -57,7 +55,7 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
     SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal)
+    ThemesSection(systemDarkTheme)
 
     SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()

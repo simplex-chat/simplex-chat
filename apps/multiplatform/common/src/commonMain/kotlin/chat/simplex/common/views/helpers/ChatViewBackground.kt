@@ -175,11 +175,19 @@ enum class BackgroundImageScaleType(val contentScale: ContentScale, val text: St
 
 @Serializable
 sealed class BackgroundImageType {
-  abstract val filename: String
-  abstract val scale: Float
+  abstract val scale: Float?
 
   val image by lazy {
     val cache = cachedImage
+
+    val filename = when (this) {
+      is Repeated -> filename
+      is Static -> filename
+      else -> {
+        cachedImage = null
+        return@lazy null
+      }
+    }
     if (cache != null && cache.first == filename) {
       cache.second
     } else {
@@ -199,28 +207,37 @@ sealed class BackgroundImageType {
     }
   }
 
+  fun sameType(other: BackgroundImageType?): Boolean =
+    if (this is Repeated && other is Repeated) this.filename == other.filename
+    else this.javaClass == other?.javaClass
+
+  fun samePreset(other: PredefinedBackgroundImage?): Boolean = this is Repeated && filename == other?.filename
+
   @Serializable @SerialName("repeated") data class Repeated(
-    override val filename: String,
-    override val scale: Float,
+    val filename: String,
+    override val scale: Float?,
   ): BackgroundImageType() {
     val predefinedImageScale = PredefinedBackgroundImage.from(filename)?.scale ?: 1f
   }
 
   @Serializable @SerialName("static") data class Static(
-    override val filename: String,
-    override val scale: Float,
-    val scaleType: BackgroundImageScaleType,
+    val filename: String,
+    override val scale: Float?,
+    val scaleType: BackgroundImageScaleType?,
   ): BackgroundImageType()
 
-  @Composable
-  fun defaultBackgroundColor(theme: DefaultTheme): Color =
+  @Serializable @SerialName("empty") object Empty: BackgroundImageType() {
+    override val scale: Float?
+      get() = null
+  }
+
+  fun defaultBackgroundColor(theme: DefaultTheme, materialBackground: Color): Color =
     if (this is Repeated) {
       (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).background[theme]!!
     } else {
-      MaterialTheme.colors.background
+      materialBackground
     }
 
-  @Composable
   fun defaultTintColor(theme: DefaultTheme): Color =
     if (this is Repeated) {
       (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).tint[theme]!!
@@ -237,10 +254,14 @@ sealed class BackgroundImageType {
     private var cachedImage: Pair<String, ImageBitmap>? = null
 
     fun from(wallpaper: ThemeWallpaper?): BackgroundImageType? {
-      return if (wallpaper?.preset != null) {
-        Repeated(wallpaper.preset, wallpaper.scale ?: 1f)
+      return if (wallpaper == null) {
+        null
+      } else if (wallpaper.preset != null) {
+        Repeated(wallpaper.preset, wallpaper.scale)
+      } else if (wallpaper.imageFile != null) {
+        Static(wallpaper.imageFile, wallpaper.scale, wallpaper.scaleType)
       } else {
-        Static(wallpaper?.imageFile ?: return null, wallpaper.scale ?: 1f, wallpaper.scaleType ?: BackgroundImageScaleType.FILL)
+        Empty
       }
     }
   }
@@ -263,15 +284,15 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: BackgroundImageT
 
   drawRect(background)
   when (imageType) {
-    is BackgroundImageType.Repeated -> repeat(imageType.scale * imageType.predefinedImageScale)
-    is BackgroundImageType.Static -> when (imageType.scaleType) {
-      BackgroundImageScaleType.REPEAT -> repeat(imageType.scale)
+    is BackgroundImageType.Repeated -> repeat((imageType.scale ?: 1f) * imageType.predefinedImageScale)
+    is BackgroundImageType.Static -> when (val scaleType = imageType.scaleType ?: BackgroundImageScaleType.FILL) {
+      BackgroundImageScaleType.REPEAT -> repeat(imageType.scale ?: 1f)
       BackgroundImageScaleType.FILL, BackgroundImageScaleType.FIT -> {
-        val scale = imageType.scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
+        val scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
         val scaledWidth = (image.width * scale.scaleX).roundToInt()
         val scaledHeight = (image.height * scale.scaleY).roundToInt()
         drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
-        if (imageType.scaleType == BackgroundImageScaleType.FIT) {
+        if (scaleType == BackgroundImageScaleType.FIT) {
           if (scaledWidth < size.width) {
             // has black lines at left and right sides
             var x = (size.width - scaledWidth) / 2
@@ -301,5 +322,6 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: BackgroundImageT
         drawRect(tint)
       }
     }
+    is BackgroundImageType.Empty -> {}
   }
 }
