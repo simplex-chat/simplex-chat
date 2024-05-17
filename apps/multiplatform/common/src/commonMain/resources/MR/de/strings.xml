@@ -1861,4 +1861,25 @@
 \nFehler: %2$s</string>
     <string name="snd_error_expired">Netzwerk-Fehler - die Nachricht ist nach vielen Sende-Versuchen abgelaufen.</string>
     <string name="srv_error_host">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
+    <string name="network_smp_proxy_mode_always">Immer</string>
+    <string name="network_smp_proxy_mode_private_routing">Privates Routing</string>
+    <string name="network_smp_proxy_mode_never">Nie</string>
+    <string name="network_smp_proxy_mode_unknown">Unbekannte Relais</string>
+    <string name="network_smp_proxy_mode_unprotected">Ungeschützt</string>
+    <string name="network_smp_proxy_mode_unknown_description">Privates Routing mit unbekannten Servern nutzen.</string>
+    <string name="network_smp_proxy_mode_never_description">Nutzen Sie kein privates Routing.</string>
+    <string name="update_network_smp_proxy_mode_question">Modus für das Nachrichten-Routing</string>
+    <string name="network_smp_proxy_fallback_allow">Ja</string>
+    <string name="network_smp_proxy_fallback_prohibit">Nein</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Wenn die IP-Adresse versteckt ist</string>
+    <string name="update_network_smp_proxy_fallback_question">Fallback für das Nachrichten-Routing</string>
+    <string name="private_routing_show_message_status">Nachrichtenstatus anzeigen</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Herunterstufung erlauben</string>
+    <string name="network_smp_proxy_mode_always_description">Immer privates Routing nutzen.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Senden Sie keine direkten Nachrichten, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="settings_section_title_private_message_routing">PRIVATES NACHRICHTEN-ROUTING</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten direkt versenden, wenn die IP-Adresse geschützt ist und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Nachrichten direkt versenden, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="private_routing_explanation">Für die Auslieferung Ihrer Nachrichten wird privates Routing Ihrer SMP-Server genutzt, um Ihre IP-Adresse zu schützen.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Privates Routing mit unbekannten Servern nutzen, wenn die IP-Adresse nicht geschützt ist.</string>
 </resources>
