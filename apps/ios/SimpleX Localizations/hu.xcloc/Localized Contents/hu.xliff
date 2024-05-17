@@ -3468,9 +3468,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Tudjon meg többet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave" xml:space="preserve">
+      <trans-unit id="Leave" xml:space="preserve" approved="no">
         <source>Leave</source>
-        <target>Elhagy</target>
+        <target state="translated">Elhagyás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
@@ -7188,9 +7188,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target state="translated">meghíva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="invited %@" xml:space="preserve">
+      <trans-unit id="invited %@" xml:space="preserve" approved="no">
         <source>invited %@</source>
-        <target>meghívta %@-t</target>
+        <target state="translated">meghívta őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
