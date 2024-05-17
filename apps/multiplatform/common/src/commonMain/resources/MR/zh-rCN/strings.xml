@@ -69,7 +69,7 @@
     <string name="always_use_relay">总是通过中继连接</string>
     <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不不可逆地删除已发送消息。（24小时）</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
-    <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
+    <string name="allow_voice_messages_only_if">允许语音消息，前提是你的联系人允许这样的消息。</string>
     <string name="group_info_member_you">您: %1$s</string>
     <string name="allow_your_contacts_to_send_voice_messages">允许您的联系人发送语音消息。</string>
     <string name="chat_preferences_always">始终</string>
@@ -87,8 +87,8 @@
     <string name="delete_contact_question">删除联系人？</string>
     <string name="rcv_group_event_group_deleted">已删除群组</string>
     <string name="delete_image">删除图片</string>
-    <string name="allow_disappearing_messages_only_if">仅有您的联系人许可后才允许限时消息。</string>
-    <string name="allow_irreversible_message_deletion_only_if">只有您的联系人同意才允许不可逆地删除消息。（24小时）</string>
+    <string name="allow_disappearing_messages_only_if">允许限时消息，前提是你的联系人允许这样的消息。</string>
+    <string name="allow_irreversible_message_deletion_only_if">允许不可逆的消息删除，前提是你的联系人允许这样做。（24小时）</string>
     <string name="allow_to_delete_messages">允许不可逆地删除已发送消息。（24小时）</string>
     <string name="users_delete_profile_for">为此删除聊天资料</string>
     <string name="delete_database">删除数据库</string>
@@ -1111,13 +1111,13 @@
     <string name="only_you_can_make_calls">只有您可以拨打电话。</string>
     <string name="only_your_contact_can_make_calls">只有您的联系人可以拨打电话。</string>
     <string name="allow_your_contacts_to_call">允许您的联系人与您进行语音通话。</string>
-    <string name="allow_calls_only_if">仅当您的联系人允许时才允许呼叫。</string>
+    <string name="allow_calls_only_if">允许通话，前提是你的联系人允许它们。</string>
     <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
     <string name="send_disappearing_message_1_minute">1分钟</string>
     <string name="one_time_link_short">一次性链接</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">您和您的联系人都可以添加消息回应。</string>
     <string name="allow_message_reactions">允许消息回应。</string>
-    <string name="allow_message_reactions_only_if">只有您的联系人允许时才允许消息回应。</string>
+    <string name="allow_message_reactions_only_if">允许消息回应，前提是你的联系人允许它们。</string>
     <string name="app_passcode_replaced_with_self_destruct">应用程序密码被替换为自毁密码。</string>
     <string name="change_self_destruct_mode">更改自毁模式</string>
     <string name="learn_more_about_address">关于 SimpleX 地址</string>
