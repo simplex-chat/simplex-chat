@@ -74,7 +74,7 @@ object ThemeManager {
       perUserTheme?.wallpaper != null -> if (perUserTheme.wallpaper.preset != null) PredefinedBackgroundImage.from(perUserTheme.wallpaper.preset)?.colors?.get(baseTheme.base) else null
       else -> if (theme?.wallpaper?.preset != null) PredefinedBackgroundImage.from(theme.wallpaper.preset)?.colors?.get(baseTheme.base) else null
     }
-    val themeOrEmpty = theme ?: ThemeOverrides()
+    val themeOrEmpty = theme ?: ThemeOverrides(base = baseTheme.base)
     val colors = themeOrEmpty.toColors(themeOrEmpty.base, perChatTheme?.colors, perUserTheme?.colors, presetWallpaperTheme)
     return ActiveTheme(
       themeName,
@@ -158,7 +158,7 @@ object ThemeManager {
     }
     val overrides = pref.get()
     val themeId = appPrefs.currentThemeIds.get()[nonSystemThemeName]
-    val prevValue = overrides.getTheme(themeId) ?: ThemeOverrides()
+    val prevValue = overrides.getTheme(themeId) ?: ThemeOverrides(base = baseTheme)
     pref.set(overrides.replace(prevValue.withUpdatedColor(name, colorToSet?.toReadableHex())))
     val themeIds = appPrefs.currentThemeIds.get().toMutableMap()
     themeIds[nonSystemThemeName] = prevValue.themeId
@@ -174,7 +174,7 @@ object ThemeManager {
     val nonSystemThemeName = baseTheme.themeName
     val overrides = pref.get()
     val theme = overrides.sameTheme(type, baseTheme.themeName)
-    val prevValue = theme ?: ThemeOverrides()
+    val prevValue = theme ?: ThemeOverrides(base = baseTheme)
     pref.set(overrides.replace(prevValue.copy(wallpaper = if (type != null && type !is BackgroundImageType.Empty) ThemeWallpaper.from(type, prevValue.wallpaper?.background, prevValue.wallpaper?.tint) else null)))
     val themeIds = appPrefs.currentThemeIds.get().toMutableMap()
     themeIds[nonSystemThemeName] = prevValue.themeId
@@ -233,7 +233,7 @@ object ThemeManager {
     val wallpaper = theme.wallpaper?.importFromString()
     val nonSystemThemeName = theme.base.themeName
     val overrides = pref.get()
-    val prevValue = overrides.getTheme(null, wallpaper?.toAppWallpaper()?.type, theme.base) ?: ThemeOverrides()
+    val prevValue = overrides.getTheme(null, wallpaper?.toAppWallpaper()?.type, theme.base) ?: ThemeOverrides(base = theme.base)
     if (prevValue.wallpaper?.imageFile != null) {
       File(getBackgroundImageFilePath(prevValue.wallpaper.imageFile)).delete()
     }

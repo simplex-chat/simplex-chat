@@ -282,7 +282,7 @@ data class ThemeWallpaper (
 @Serializable
 data class ThemeOverrides (
   val themeId: String = UUID.randomUUID().toString(),
-  val base: DefaultTheme = DefaultTheme.entries.firstOrNull { it.themeName == appPrefs.currentTheme.get() } ?: DefaultTheme.LIGHT,
+  val base: DefaultTheme,// = DefaultTheme.LIGHT,
   val colors: ThemeColors = ThemeColors(),
   val wallpaper: ThemeWallpaper? = null,
 ) {
@@ -468,7 +468,7 @@ data class ThemeModeOverride (
     fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride =
       ThemeModeOverride(
         mode = mode,
-        colors = ThemeOverrides().withFilledColors(base, null, null, null, null, null),
+        colors = ThemeOverrides(base = base).withFilledColors(base, null, null, null, null, null),
         wallpaper = ThemeWallpaper()
       )
   }
