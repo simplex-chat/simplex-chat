@@ -142,7 +142,6 @@ object AppearanceScope {
         Box(
           Modifier
             .size(width, height)
-            .background(MaterialTheme.colors.background)
             .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable { onTypeCopyFromSameTheme(background?.toType()) },
@@ -187,7 +186,7 @@ object AppearanceScope {
         Box(
           Modifier
             .size(width, height)
-            .background(MaterialTheme.colors.background).clip(RoundedCornerShape(percent = cornerRadius))
+            .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable {
               if (checked || overrides == null || backgroundImage == null || !onTypeCopyFromSameTheme(appWallpaper?.type)) {
