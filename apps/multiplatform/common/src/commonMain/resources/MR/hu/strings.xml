@@ -731,7 +731,7 @@
     <string name="v4_6_group_moderation_descr">Most már az adminok is:
 \n- törölhetik a tagok üzeneteit.
 \n- letilthatnak tagokat (\"megfigyelő\" szerepkör)</string>
-    <string name="rcv_group_event_member_added">meghívta %1$s-t</string>
+    <string name="rcv_group_event_member_added">meghívta őt: %1$s</string>
     <string name="message_reactions_are_prohibited">Ebben a csoportban az üzenetreakciók le vannak tiltva.</string>
     <string name="network_use_onion_hosts_no">Nem</string>
     <string name="item_info_no_text">nincs szöveg</string>
@@ -785,7 +785,7 @@
     <string name="linked_mobiles">Összekapcsolt mobil eszközök</string>
     <string name="incognito_info_allows">Lehetővé teszi, hogy egyetlen csevegőprofilon belül több anonim kapcsolat legyen, anélkül, hogy megosztott adatok lennének közöttük.</string>
     <string name="delete_message_mark_deleted_warning">Az üzenet törlésre lesz jelölve. A címzett(ek) képes(ek) lesz(nek) felfedni ezt az üzenetet.</string>
-    <string name="leave_group_button">Elhagy</string>
+    <string name="leave_group_button">Elhagyás</string>
     <string name="ok">Rendben</string>
     <string name="no_filtered_chats">Nincsenek szűrt csevegések</string>
     <string name="invalid_data">érvénytelen adat</string>
@@ -1205,7 +1205,7 @@
     <string name="protect_app_screen">Alkalmazás képernyőjének védelme</string>
     <string name="show_QR_code">QR-kód megjelenítése</string>
     <string name="icon_descr_video_call">videóhívás</string>
-    <string name="unfavorite_chat">Nem kedvenc</string>
+    <string name="unfavorite_chat">Kedvenc törlése</string>
     <string name="send_receipts">Üzenet kézbesítési jelentések küldése</string>
     <string name="icon_descr_address">SimpleX azonosító</string>
     <string name="chat_help_tap_button">Koppintson a</string>
