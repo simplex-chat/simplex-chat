@@ -1766,4 +1766,37 @@
     <string name="v5_7_shape_profile_images">Vorm profiel afbeeldingen</string>
     <string name="settings_section_title_profile_images">Profiel afbeeldingen</string>
     <string name="v5_7_shape_profile_images_descr">Vierkant, cirkel of iets daartussenin.</string>
+    <string name="snd_error_quota">Capaciteit overschreden - ontvanger heeft eerder verzonden berichten niet ontvangen.</string>
+    <string name="snd_error_relay">Fout met bestemmingsserver: %1$s</string>
+    <string name="ci_status_other_error">Fout: %1$s</string>
+    <string name="snd_error_proxy_relay">Doorstuurserver: %1$s
+\nBestemmingsserverfout: %2$s</string>
+    <string name="snd_error_proxy">Doorstuurserver: %1$s
+\nFout: %2$s</string>
+    <string name="message_delivery_warning_title">Waarschuwing voor berichtbezorging</string>
+    <string name="snd_error_expired">Netwerkproblemen - bericht is verlopen na vele pogingen om het te verzenden.</string>
+    <string name="srv_error_host">Serveradres is niet compatibel met netwerkinstellingen.</string>
+    <string name="srv_error_version">Serverversie is incompatibel met netwerkinstellingen.</string>
+    <string name="snd_error_auth">Verkeerde sleutel of onbekende verbinding - hoogstwaarschijnlijk is deze verbinding verwijderd.</string>
+    <string name="network_smp_proxy_mode_always">Altijd</string>
+    <string name="network_smp_proxy_mode_private_routing">Privéroutering</string>
+    <string name="network_smp_proxy_mode_unknown">Onbekende relays</string>
+    <string name="network_smp_proxy_mode_never">Nooit</string>
+    <string name="network_smp_proxy_mode_unprotected">Onbeschermd</string>
+    <string name="network_smp_proxy_mode_always_description">Gebruik altijd privéroutering.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Gebruik privéroutering met onbekende servers.</string>
+    <string name="network_smp_proxy_mode_never_description">Gebruik GEEN privéroutering.</string>
+    <string name="update_network_smp_proxy_mode_question">Berichtrouteringsmodus</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Gebruik privéroutering met onbekende servers wanneer het IP-adres niet beveiligd is.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Downgraden toestaan</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Wanneer IP verborgen is</string>
+    <string name="network_smp_proxy_fallback_allow">Ja</string>
+    <string name="network_smp_proxy_fallback_prohibit">Nee</string>
+    <string name="network_smp_proxy_fallback_allow_description">Stuur berichten rechtstreeks wanneer uw of de doelserver geen privéroutering ondersteunt.</string>
+    <string name="private_routing_show_message_status">Toon berichtstatus</string>
+    <string name="private_routing_explanation">Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.</string>
+    <string name="update_network_smp_proxy_fallback_question">Terugval op berichtroutering</string>
+    <string name="settings_section_title_private_message_routing">PRIVÉBERICHT ROUTING</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.</string>
 </resources>
