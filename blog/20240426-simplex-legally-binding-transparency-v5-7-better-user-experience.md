@@ -10,6 +10,8 @@ permalink: "/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user
 
 # SimpleX network: legally binding transparency, v5.7 released with better calls and messages
 
+**Published:** Apr 26, 2024
+
 What's new in v5.7:
 - [quantum resistant end-to-end encryption](#quantum-resistant-end-to-end-encryption) with all contacts.
 - [forward and save messages](#forward-and-save-messages) without revealing the source.
@@ -23,10 +25,10 @@ Also, we added Lithuanian interface language to the Android and desktop apps, th
 
 We are committed to open-source, privacy and security. Here are the recent changes we made:
 
-- We now have a [Transparency Reports](https://simplex.chat/transparency/) page.
-- We updated our [Privacy Policy](https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md) to remove undefined terms "impermissible" and "acceptable", which would allow us to remove anything we don't like, without any clarity on what that is. You can see the edits [here](https://github.com/simplex-chat/simplex-chat/pull/4076/files).
-- We published a new page with [Frequently Asked Questions](https://simplex.chat/faq/), thanks to the guidance from users.
-- We also have a new [Security Policy](https://simplex.chat/security/) – we welcome your feedback on it.
+- We now have a [Transparency Reports](../docs/TRANSPARENCY.md) page.
+- We updated our [Privacy Policy](../PRIVACY.md) to remove undefined terms "impermissible" and "acceptable", which would allow us to remove anything we don't like, without any clarity on what that is. You can see the edits [here](https://github.com/simplex-chat/simplex-chat/pull/4076/files).
+- We published a new page with [Frequently Asked Questions](../docs/FAQ.md), thanks to the guidance from users.
+- We also have a new [Security Policy](../docs/SECURITY.md) – we welcome your feedback on it.
 
 What do we mean by “legally binding transparency?”. It includes these principles:
 - Accountability: an empty promise or commitment to transparency that is not legally binding is just marketing, and can provide opportunities for the organizations to be misleading or not disclose important information that can affect their users privacy and security.
