@@ -993,9 +993,9 @@
         <target>Tag blokkolása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member for all?" xml:space="preserve">
+      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
         <source>Block member for all?</source>
-        <target>Tag letiltása mindenki számára?</target>
+        <target state="translated">Mindenki számára letiltja ezt a tagot?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
@@ -4639,14 +4639,14 @@ Hiba: %@</target>
         <target>Eltávolítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove member" xml:space="preserve">
+      <trans-unit id="Remove member" xml:space="preserve" approved="no">
         <source>Remove member</source>
-        <target>Tag eltávolítása</target>
+        <target state="translated">Eltávolítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove member?" xml:space="preserve">
+      <trans-unit id="Remove member?" xml:space="preserve" approved="no">
         <source>Remove member?</source>
-        <target>Tag eltávolítása?</target>
+        <target state="translated">Biztosan eltávolítja?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
