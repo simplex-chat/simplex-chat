@@ -106,7 +106,7 @@
     <string name="icon_descr_cancel_image_preview">Fénykép előnézet visszavonása</string>
     <string name="v5_1_self_destruct_passcode_descr">A jelkód megadása után minden adat törlésre kerül.</string>
     <string name="icon_descr_video_asked_to_receive">Felkérték a videó fogadására</string>
-    <string name="block_member_button">Tag letiltása</string>
+    <string name="block_member_button">Letiltás</string>
     <string name="v5_2_more_things">Még néhány dolog</string>
     <string name="authentication_cancelled">Hitelesítés megszakítva</string>
     <string name="allow_to_send_files">A fájlok- és a médiatartalom küldése engedélyezve van.</string>
@@ -131,7 +131,7 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Legjobb akkumulátoridő</b>. Csak akkor kap értesítést, ha az alkalmazás fut (NINCS háttérszolgáltatás).]]></string>
     <string name="appearance_settings">Megjelenés</string>
     <string name="turning_off_service_and_periodic">Az akkumulátor optimalizálása aktív, mely kikapcsolja a háttérszolgáltatást és az új üzenetek rendszeres kérését. A beállításokon keresztül újra engedélyezhetők.</string>
-    <string name="block_member_question">Tag letiltása?</string>
+    <string name="block_member_question">Biztosan letiltja?</string>
     <string name="callstatus_ended">%1$s hívása befejeződött</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. A háttérszolgáltatás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.]]></string>
     <string name="group_member_role_author">szerző</string>
@@ -1054,7 +1054,7 @@
     <string name="is_verified">%s ellenőrzött</string>
     <string name="password_to_show">Jelszó megjelenítése</string>
     <string name="privacy_and_security">Adatvédelem és biztonság</string>
-    <string name="button_remove_member">Tag eltávolítása</string>
+    <string name="button_remove_member">Eltávolítás</string>
     <string name="passcode_set">A jelkód beállítva!</string>
     <string name="sent_message">Elküldött üzenet</string>
     <string name="select_contacts">Ismerősök kiválasztása</string>
@@ -1117,7 +1117,7 @@
     <string name="unknown_error">Ismeretlen hiba</string>
     <string name="smp_servers_your_server_address">Saját kiszolgáló cím</string>
     <string name="auth_open_chat_console">Csevegés konzol megnyitása</string>
-    <string name="remove_member_button">Tag eltávolítása</string>
+    <string name="remove_member_button">Eltávolítás</string>
     <string name="set_database_passphrase">Adatbázis jelmondat beállítása</string>
     <string name="view_security_code">Biztonsági kód megtekintése</string>
     <string name="unblock_member_question">Tag feloldása?</string>
@@ -1143,7 +1143,7 @@
     <string name="connect_plan_repeat_join_request">Csatlakozási kérés megismétlése?</string>
     <string name="waiting_for_image">Képre várakozás</string>
     <string name="v4_3_voice_messages">Hangüzenetek</string>
-    <string name="button_remove_member_question">Tag eltávolítása?</string>
+    <string name="button_remove_member_question">Biztosan eltávolítja?</string>
     <string name="verify_security_code">Biztonsági kód ellenőrzése</string>
     <string name="rcv_group_event_user_deleted">eltávolítottak</string>
     <string name="simplex_address">SimpleX azonosító</string>
@@ -1618,7 +1618,7 @@
     <string name="member_blocked_by_admin">Letiltva az admin által</string>
     <string name="rcv_group_event_member_blocked">%s letiltva</string>
     <string name="block_for_all">Mindenki számára letiltva</string>
-    <string name="block_for_all_question">Tag letiltása mindenki számára?</string>
+    <string name="block_for_all_question">Mindenki számára letiltja ezt a tagot?</string>
     <string name="blocked_by_admin_items_description">%d üzenet letiltva az admin által</string>
     <string name="unblock_for_all">Letiltás feloldása mindenki számára</string>
     <string name="unblock_for_all_question">Mindenki számára feloldja a tag letiltását?</string>
