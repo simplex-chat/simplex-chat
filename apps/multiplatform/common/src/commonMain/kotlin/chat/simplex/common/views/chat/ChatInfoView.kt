@@ -872,8 +872,11 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
       themeModeOverride.value.type,
       CurrentColors.collectAsState().value.base,
       currentTheme.wallpaper,
+      currentTheme.appColors.sentMessage,
+      currentTheme.appColors.receivedMessage,
       editColor = editColor,
       onTypeChange = onTypeChange,
+      showSentReceivedColors = true
     )
 
     SectionSpacer()
@@ -944,7 +947,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
 
       SectionSpacer()
 
-      AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
+      AppearanceScope.CustomizeThemeColorsSection(currentTheme, showSentReceivedColors = false, editColor = editColor)
     } else {
       AdvancedSettingsButton { showMore = true }
     }

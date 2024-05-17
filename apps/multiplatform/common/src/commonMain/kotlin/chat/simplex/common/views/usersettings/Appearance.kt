@@ -505,6 +505,9 @@ object AppearanceScope {
             backgroundImageType,
             baseTheme,
             MaterialTheme.wallpaper,
+            MaterialTheme.appColors.sentMessage,
+            MaterialTheme.appColors.receivedMessage,
+            showSentReceivedColors = false,
             editColor = { name ->
               // If no wallpaper is set, nothing to apply new color to. So if user didn't select any wallpaper yet, do it automatically before choosing color
               if (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredTheme(baseTheme)?.wallpaper == null) {
@@ -514,13 +517,13 @@ object AppearanceScope {
             },
             onTypeChange = { type ->
               onTypeChange(type)
-            }
+            },
           )
         }
         SectionDividerSpaced(maxTopPadding = true)
       }
 
-      CustomizeThemeColorsSection(currentTheme) { name ->
+      CustomizeThemeColorsSection(currentTheme, showSentReceivedColors = true) { name ->
         editColor(name)
       }
 
@@ -658,7 +661,7 @@ object AppearanceScope {
   }
 
   @Composable
-  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor) -> Unit) {
+  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, showSentReceivedColors: Boolean, editColor: (ThemeColor) -> Unit) {
     SectionView(stringResource(MR.strings.theme_colors_section_title)) {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY) }) {
         val title = generalGetString(MR.strings.color_primary)
@@ -695,15 +698,17 @@ object AppearanceScope {
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
       }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
-        val title = generalGetString(MR.strings.color_sent_message)
-        Text(title)
-        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
-      }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
-        val title = generalGetString(MR.strings.color_received_message)
-        Text(title)
-        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
+      if (showSentReceivedColors) {
+        SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
+          val title = generalGetString(MR.strings.color_sent_message)
+          Text(title)
+          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
+        }
+        SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
+          val title = generalGetString(MR.strings.color_received_message)
+          Text(title)
+          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
+        }
       }
     }
   }
@@ -874,6 +879,9 @@ fun WallpaperSetupView(
   backgroundImageType: BackgroundImageType?,
   theme: DefaultTheme,
   initialWallpaper: AppWallpaper?,
+  initialSentColor: Color,
+  initialReceivedColor: Color,
+  showSentReceivedColors: Boolean,
   editColor: (ThemeColor) -> Unit,
   onTypeChange: (BackgroundImageType?) -> Unit,
 ) {
@@ -922,6 +930,19 @@ fun WallpaperSetupView(
       val title = generalGetString(MR.strings.color_wallpaper_tint)
       Text(title)
       Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+    }
+  }
+
+  if (showSentReceivedColors) {
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
+      val title = generalGetString(MR.strings.color_sent_message)
+      Text(title)
+      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentColor)
+    }
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
+      val title = generalGetString(MR.strings.color_received_message)
+      Text(title)
+      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedColor)
     }
   }
 }

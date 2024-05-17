@@ -57,7 +57,8 @@ object ThemeManager {
     val defaultTheme = defaultActiveTheme(darkForSystemTheme, appSettingsTheme)
     val perUserTheme = if (darkForSystemTheme) perUserTheme?.dark else perUserTheme?.light
 
-    val theme = (appSettingsTheme.sameTheme(themeOverridesForType?.first ?: perChatTheme?.type ?: perUserTheme?.type, nonSystemThemeName) ?: defaultTheme)
+    val theme = (appSettingsTheme.sameTheme(themeOverridesForType?.first ?: perChatTheme?.type ?: perUserTheme?.type ?: defaultTheme?.wallpaper?.toAppWallpaper()?.type, nonSystemThemeName) ?: defaultTheme)
+
     val baseTheme = when (nonSystemThemeName) {
       DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
       DefaultTheme.DARK.themeName -> ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
@@ -93,7 +94,7 @@ object ThemeManager {
       themeId = "",
       base = current.base,
       colors = ThemeColors.from(current.colors, current.appColors),
-      wallpaper = if (wType != null) ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64() else ThemeWallpaper()
+      wallpaper = if (wType !is BackgroundImageType.Empty) ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64() else null
     )
   }
 
@@ -174,7 +175,7 @@ object ThemeManager {
     val overrides = pref.get()
     val theme = overrides.sameTheme(type, baseTheme.themeName)
     val prevValue = theme ?: ThemeOverrides()
-    pref.set(overrides.replace(prevValue.copy(wallpaper = if (type != null) ThemeWallpaper.from(type, prevValue.wallpaper?.background, prevValue.wallpaper?.tint) else null)))
+    pref.set(overrides.replace(prevValue.copy(wallpaper = if (type != null && type !is BackgroundImageType.Empty) ThemeWallpaper.from(type, prevValue.wallpaper?.background, prevValue.wallpaper?.tint) else null)))
     val themeIds = appPrefs.currentThemeIds.get().toMutableMap()
     themeIds[nonSystemThemeName] = prevValue.themeId
     appPrefs.currentThemeIds.set(themeIds)
