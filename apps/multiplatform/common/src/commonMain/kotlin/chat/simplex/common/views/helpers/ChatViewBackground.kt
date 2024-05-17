@@ -1,7 +1,5 @@
 package chat.simplex.common.views.helpers
 
-import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -178,18 +176,13 @@ sealed class BackgroundImageType {
   abstract val scale: Float?
 
   val image by lazy {
-    val cache = cachedImage
-
     val filename = when (this) {
       is Repeated -> filename
       is Static -> filename
-      else -> {
-        cachedImage = null
-        return@lazy null
-      }
+      else -> return@lazy null
     }
-    if (cache != null && cache.first == filename) {
-      cache.second
+    if (cachedImages[filename] != null) {
+      cachedImages[filename]
     } else {
       val res = if (this is Repeated) {
         (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).res.toComposeImageBitmap()!!
@@ -202,7 +195,7 @@ sealed class BackgroundImageType {
           null
         }
       }
-      cachedImage = if (res != null) filename to res else null
+      cachedImages[filename] = res ?: return@lazy null
       res
     }
   }
@@ -251,7 +244,7 @@ sealed class BackgroundImageType {
     val default: BackgroundImageType
       get() = PredefinedBackgroundImage.CATS.toType()
 
-    private var cachedImage: Pair<String, ImageBitmap>? = null
+    private var cachedImages: MutableMap<String, ImageBitmap> = mutableMapOf()
 
     fun from(wallpaper: ThemeWallpaper?): BackgroundImageType? {
       return if (wallpaper == null) {

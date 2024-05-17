@@ -885,7 +885,7 @@ fun WallpaperSetupView(
   onTypeChange: (BackgroundImageType?) -> Unit,
 ) {
   if (backgroundImageType is BackgroundImageType.Static) {
-    val state = remember(backgroundImageType.scaleType) { mutableStateOf(backgroundImageType.scaleType) }
+    val state = remember(backgroundImageType.scaleType, initialWallpaper?.type) { mutableStateOf(backgroundImageType.scaleType ?: (initialWallpaper?.type as? BackgroundImageType.Static)?.scaleType ?: BackgroundImageScaleType.FILL) }
     val values = remember {
       BackgroundImageScaleType.entries.map { it to generalGetString(it.text) }
     }
