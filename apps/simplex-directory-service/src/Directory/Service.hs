@@ -31,7 +31,7 @@ import Directory.Search
 import Directory.Store
 import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller
+import Simplex.Chat.Controller hiding (logError, logInfo)
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
@@ -586,7 +586,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
             sendChatCmdStr cc cmdStr >>= \r -> do
               ts <- getCurrentTime
               tz <- getCurrentTimeZone
-              sendReply $ serializeChatResponse (Nothing, Just user) ts tz Nothing r
+              ll <- readTVarIO $ appLogLevel cc
+              sendReply $ serializeChatResponse (Nothing, Just user) ll ts tz Nothing r
           DCCommandError tag -> sendReply $ "Command error: " <> show tag
       | otherwise = sendReply "You are not allowed to use this command"
       where

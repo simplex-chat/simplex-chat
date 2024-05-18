@@ -48,7 +48,8 @@ simplexChatCLI cfg server_ = do
           ts <- getCurrentTime
           tz <- getCurrentTimeZone
           rh <- readTVarIO $ currentRemoteHost cc
-          putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
+          ll <- readTVarIO $ appLogLevel cc
+          putStrLn $ serializeChatResponse (rh, Just user) ll ts tz rh r
 
 welcome :: ChatOpts -> IO ()
 welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, networkConfig}} =

@@ -85,9 +85,9 @@ textMsgContent :: String -> MsgContent
 textMsgContent = MCText . T.pack
 
 printLog :: ChatController -> ChatLogLevel -> String -> IO ()
-printLog cc level s
-  | logLevel (config cc) <= level = putStrLn s
-  | otherwise = pure ()
+printLog cc level s = do
+  ll <- readTVarIO $ appLogLevel cc
+  when (ll <= level) $ putStrLn s
 
 contactInfo :: Contact -> String
 contactInfo Contact {contactId, localDisplayName} = T.unpack localDisplayName <> " (" <> show contactId <> ")"

@@ -19,6 +19,8 @@ module Simplex.Chat.Controller where
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception
+import qualified Control.Logger.Simple as Logger
+import Control.Monad (when)
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -139,7 +141,6 @@ data ChatConfig = ChatConfig
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
-    logLevel :: ChatLogLevel,
     testView :: Bool,
     initialCleanupManagerDelay :: Int64,
     cleanupManagerInterval :: NominalDiffTime,
@@ -221,6 +222,7 @@ data ChatController = ChatController
     remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe (SessionSeq, RemoteCtrlSession)), -- Supervisor process for hosted controllers
     config :: ChatConfig,
+    appLogLevel :: TVar ChatLogLevel,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
@@ -493,6 +495,7 @@ data ChatCommand
   | APIStandaloneFileInfo FileDescriptionURI
   | QuitChat
   | ShowVersion
+  | SetAppLogLevel ChatLogLevel
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentStats
@@ -757,6 +760,8 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
+  | CRAgentLog {agentLogLevel :: AgentLogLevel, errorMessage :: Text}
+  | CRChatLog {chatLogLevel :: ChatLogLevel, errorMessage :: Text}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
@@ -1052,6 +1057,30 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
 
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
+
+instance StrEncoding ChatLogLevel where
+  strEncode = \case
+    CLLDebug -> "debug"
+    CLLInfo -> "info"
+    CLLWarning -> "warn"
+    CLLError -> "error"
+    CLLImportant -> "important"
+  strP =
+    A.takeTill (== ' ')
+      >>= \case
+        "debug" -> pure CLLDebug
+        "info" -> pure CLLInfo
+        "warn" -> pure CLLWarning
+        "error" -> pure CLLError
+        "important" -> pure CLLImportant
+        _ -> fail "Invalid log level"
+
+instance ToJSON ChatLogLevel where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON ChatLogLevel where
+  parseJSON = strParseJSON "ChatLogLevel"
 
 data CoreVersionInfo = CoreVersionInfo
   { version :: String,
@@ -1396,6 +1425,34 @@ withAgent action =
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action
+
+logDebug :: Text -> CM ()
+logDebug = lift . logDebug'
+{-# INLINE logDebug #-}
+
+logDebug' :: Text -> CM' ()
+logDebug' s = logToView CLLDebug s >> Logger.logDebug s
+
+logInfo :: Text -> CM ()
+logInfo s = lift (logToView CLLInfo s) >> Logger.logInfo s
+
+logWarn :: Text -> CM ()
+logWarn s = lift (logToView CLLWarning s) >> Logger.logWarn s
+
+logError :: Text -> CM ()
+logError = lift . logError'
+{-# INLINE logError #-}
+
+logError' :: Text -> CM' ()
+logError' s = logToView CLLError s >> Logger.logError s
+
+logImportant :: Text -> CM ()
+logImportant s = lift (logToView CLLImportant s) >> Logger.logError s
+
+logToView :: ChatLogLevel -> Text -> CM' ()
+logToView ll' s = do
+  ll <- chatReadVar' appLogLevel
+  when (ll' >= ll) $ toView' $ CRChatLog ll s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
