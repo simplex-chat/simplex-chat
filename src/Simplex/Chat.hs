@@ -17,7 +17,7 @@ module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
-import Control.Logger.Simple
+import Control.Logger.Simple (LogConfig (..))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -155,7 +155,6 @@ defaultChatConfig =
       autoAcceptFileSize = 0,
       showReactions = False,
       showReceipts = False,
-      logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
       testView = False,
@@ -218,7 +217,7 @@ newChatController
   ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable}, deviceName, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
+        config = cfg {showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
         firstTime = dbNew chatStore
     currentUser <- newTVarIO user
     currentRemoteHost <- newTVarIO Nothing
@@ -241,6 +240,7 @@ newChatController
     remoteHostSessions <- atomically TM.empty
     remoteHostsFolder <- newTVarIO Nothing
     remoteCtrlSession <- newTVarIO Nothing
+    appLogLevel <- newTVarIO logLevel
     filesFolder <- newTVarIO optFilesFolder
     chatStoreChanged <- newTVarIO False
     expireCIThreads <- newTVarIO M.empty
@@ -279,6 +279,7 @@ newChatController
           remoteHostsFolder,
           remoteCtrlSession,
           config,
+          appLogLevel,
           filesFolder,
           expireCIThreads,
           expireCIFlags,
@@ -436,18 +437,19 @@ restoreCalls = do
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
 
-stopChatController :: ChatController -> IO ()
+stopChatController :: ChatController -> CM' ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
-  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
-  disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
-  closeFiles sndFiles
-  closeFiles rcvFiles
-  atomically $ do
-    keys <- M.keys <$> readTVar expireCIFlags
-    forM_ keys $ \k -> TM.insert k False expireCIFlags
-    writeTVar s Nothing
+  liftIO $ do
+    atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
+    disconnectAgentClient smpAgent
+    readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+    closeFiles sndFiles
+    closeFiles rcvFiles
+    atomically $ do
+      keys <- M.keys <$> readTVar expireCIFlags
+      forM_ keys $ \k -> TM.insert k False expireCIFlags
+      writeTVar s Nothing
   where
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
@@ -601,7 +603,7 @@ processChatCommand' vr = \case
       Just _ -> pure CRChatRunning
       _ -> checkStoreNotChanged . lift $ startChatController mainApp $> CRChatStarted
   APIStopChat -> do
-    ask >>= liftIO . stopChatController
+    ask >>= lift . stopChatController
     pure CRChatStopped
   APIActivateChat restoreChat -> withUser $ \_ -> do
     lift $ when restoreChat restoreCalls
@@ -2199,6 +2201,10 @@ processChatCommand' vr = \case
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
+  SetAppLogLevel ll -> do
+    chatWriteVar appLogLevel ll
+    lift $ withAgent' (`setAgentLogLevel` toLogLevel ll)
+    ok_
   DebugLocks -> lift $ do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
@@ -3629,6 +3635,7 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
+  LOG ll s -> toView $ CRAgentLog ll s
   where
     hostEvent :: ChatResponse -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
@@ -7377,6 +7384,7 @@ chatCommandP =
       "/_download " *> (APIDownloadStandaloneFile <$> A.decimal <* A.space <*> strP_ <*> cryptoFileP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
+      "/log " *> (SetAppLogLevel <$> strP),
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get stats" $> GetAgentStats,

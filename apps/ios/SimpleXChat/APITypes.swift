@@ -140,6 +140,7 @@ public enum ChatCommand {
     case apiStandaloneFileInfo(url: String)
     // misc
     case showVersion
+    case setAppLogLevel(appLogLevel: ChatLogLevel)
     case string(String)
 
     public var cmdString: String {
@@ -297,6 +298,7 @@ public enum ChatCommand {
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case .showVersion: return "/version"
+            case let .setAppLogLevel(ll): return "/log \(ll.rawValue)"
             case let .string(str): return str
             }
         }
@@ -429,6 +431,7 @@ public enum ChatCommand {
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .showVersion: return "showVersion"
+            case .setAppLogLevel: return "setAppLogLevel"
             case .string: return "console command"
             }
         }
@@ -2166,4 +2169,12 @@ public enum UserNetworkType: String, Codable {
         case .other: "Other"
         }
     }
+}
+
+public enum ChatLogLevel: String, Codable, CaseIterable {
+    case debug
+    case info
+    case warn
+    case error
+    case important
 }

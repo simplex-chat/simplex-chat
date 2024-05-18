@@ -11,6 +11,7 @@ module Simplex.Chat.Core
   )
 where
 
+import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Reader
@@ -110,7 +111,8 @@ createActiveUser cc = do
         r -> do
           ts <- getCurrentTime
           tz <- getCurrentTimeZone
-          putStrLn $ serializeChatResponse (Nothing, Nothing) ts tz Nothing r
+          ll <- readTVarIO $ appLogLevel cc
+          putStrLn $ serializeChatResponse (Nothing, Nothing) ll ts tz Nothing r
           loop
 
 getWithPrompt :: String -> IO String

@@ -1286,6 +1286,10 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
+func apiSetAppLogLevel(_ ll: ChatLogLevel) async throws {
+    try await sendCommandOkResp(.setAppLogLevel(appLogLevel: ll))
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId

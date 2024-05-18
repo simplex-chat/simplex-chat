@@ -14,6 +14,7 @@ module Simplex.Chat.Options
     getChatOpts,
     protocolServersP,
     fullNetworkConfig,
+    toLogLevel,
   )
 where
 
@@ -68,13 +69,13 @@ data CoreChatOpts = CoreChatOpts
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
   deriving (Eq)
 
-agentLogLevel :: ChatLogLevel -> LogLevel
-agentLogLevel = \case
+toLogLevel :: ChatLogLevel -> LogLevel
+toLogLevel = \case
   CLLDebug -> LogDebug
   CLLInfo -> LogInfo
   CLLWarning -> LogWarn
   CLLError -> LogError
-  CLLImportant -> LogInfo
+  CLLImportant -> LogError
 
 coreChatOptsP :: FilePath -> FilePath -> Parser CoreChatOpts
 coreChatOptsP appDir defaultDbFileName = do
@@ -194,11 +195,11 @@ coreChatOptsP appDir defaultDbFileName = do
         dbKey,
         smpServers,
         xftpServers,
-        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
+        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel <= CLLDebug),
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
-        logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
+        logAgent = if logAgent || logLevel <= CLLDebug then Just $ toLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
         highlyAvailable
@@ -342,13 +343,7 @@ protocolServersP :: ProtocolTypeI p => A.Parser [ProtoServerWithAuth p]
 protocolServersP = strP `A.sepBy1` A.char ' '
 
 parseLogLevel :: ReadM ChatLogLevel
-parseLogLevel = eitherReader $ \case
-  "debug" -> Right CLLDebug
-  "info" -> Right CLLInfo
-  "warn" -> Right CLLWarning
-  "error" -> Right CLLError
-  "important" -> Right CLLImportant
-  _ -> Left "Invalid log level"
+parseLogLevel = eitherReader $ strDecode . B.pack
 
 parseChatCmdLog :: ReadM ChatCmdLog
 parseChatCmdLog = eitherReader $ \case

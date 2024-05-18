@@ -79,11 +79,11 @@ data WCallCommand
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "WCCall") ''WCallCommand)
 
-serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> String
-serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
+serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> ChatLogLevel -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> String
+serializeChatResponse user_ logLevel ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig logLevel False ts tz remoteHost_
 
-responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
-responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
+responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> ChatLogLevel -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
+responseToView hu@(currentRH, user_) ChatConfig {showReactions, showReceipts, testView} logLevel liveItems ts tz outputRH = \case
   CRActiveUser User {profile, uiThemes} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -391,6 +391,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
+  CRAgentLog {} -> []
+  CRChatLog {} -> []
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
@@ -1969,8 +1971,8 @@ viewChatError logLevel testView = \case
     CEFileImageType _ -> ["image type must be jpg, send as a file using " <> highlight' "/f"]
     CEFileImageSize _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
     CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
-    CEXFTPRcvFile fileId aFileId e -> ["error receiving XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
-    CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
+    CEXFTPRcvFile fileId aFileId e -> ["error receiving XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel <= CLLError]
+    CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel <= CLLError]
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
@@ -2032,7 +2034,7 @@ viewChatError logLevel testView = \case
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
-    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
+    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel <= CLLDebug]
     AGENT A_PROHIBITED -> [withConnEntity <> "error: AGENT A_PROHIBITED" | logLevel <= CLLWarning]
     CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
     CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]

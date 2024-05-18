@@ -10,7 +10,6 @@
 module Simplex.Chat.Terminal.Output where
 
 import Control.Concurrent (ThreadId)
-import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
@@ -168,9 +167,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
-      runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
-        CRActiveUser {user} -> updateRemoteUser ct user rhId
-        cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
+      flip runReaderT cc $
+        execChatCommand (Just rhId) "/user" >>= \case
+          CRActiveUser {user} -> liftIO $ updateRemoteUser ct user rhId
+          cr -> logError' $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
@@ -275,7 +275,8 @@ responseString ct cc liveItems outputRH r = do
   cu <- getCurrentUser ct cc
   ts <- getCurrentTime
   tz <- getCurrentTimeZone
-  pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+  ll <- readTVarIO $ appLogLevel cc
+  pure $ responseToView cu (config cc) ll liveItems ts tz outputRH r
 
 updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
 updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentRemoteUsers ct)

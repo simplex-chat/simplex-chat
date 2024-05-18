@@ -193,7 +193,7 @@ mobileChatOpts dbFilePrefix =
             smpServers = [],
             xftpServers = [],
             networkConfig = defaultNetworkConfig,
-            logLevel = CLLImportant,
+            logLevel = CLLError,
             logConnections = False,
             logServerHosts = True,
             logAgent = Nothing,
@@ -220,7 +220,6 @@ defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
-      logLevel = CLLError,
       coreApi = True,
       deviceNameForRemote = "Mobile"
     }

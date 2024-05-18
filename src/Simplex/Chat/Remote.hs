@@ -13,7 +13,6 @@
 module Simplex.Chat.Remote where
 
 import Control.Applicative ((<|>))
-import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -249,7 +248,7 @@ startRemoteHostSession rhKey = do
 
 closeRemoteHost :: RHKey -> CM ()
 closeRemoteHost rhKey = do
-  logNote $ "Closing remote host session for " <> tshow rhKey
+  logInfo $ "Closing remote host session for " <> tshow rhKey
   cancelRemoteHostSession Nothing rhKey
 
 cancelRemoteHostSession :: Maybe (SessionSeq, RemoteHostStopReason) -> RHKey -> CM ()
@@ -266,7 +265,7 @@ cancelRemoteHostSession handlerInfo_ rhKey = do
           modifyTVar' crh $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
           pure $ Just rhs
   forM_ deregistered $ \session -> do
-    liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
+    lift (cancelRemoteHost handlingError session) `catchAny` (logError . tshow)
     forM_ (snd <$> handlerInfo_) $ \rhStopReason ->
       toView CRRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhStopReason}
   where
@@ -275,25 +274,26 @@ cancelRemoteHostSession handlerInfo_ rhKey = do
       RHNew -> Nothing
       RHId rhId -> Just rhId
 
-cancelRemoteHost :: Bool -> RemoteHostSession -> IO ()
+cancelRemoteHost :: Bool -> RemoteHostSession -> CM' ()
 cancelRemoteHost handlingError = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting _inv rhs -> cancelPendingSession rhs
   RHSessionPendingConfirmation _sessCode tls rhs -> do
     cancelPendingSession rhs
-    closeConnection tls
+    closeConn tls
   RHSessionConfirmed tls rhs -> do
     cancelPendingSession rhs
-    closeConnection tls
+    closeConn tls
   RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
-    cancelHostClient rchClient `catchAny` (logError . tshow)
-    closeConnection tls `catchAny` (logError . tshow)
-    unless handlingError $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
+    liftIO (cancelHostClient rchClient) `catchAny` (logError' . tshow)
+    closeConn tls
+    unless handlingError $ liftIO (closeHTTP2Client httpClient) `catchAny` (logError' . tshow)
   where
+    closeConn tls = liftIO (closeConnection tls) `catchAny` (logError' . tshow)
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
-      unless handlingError $ uninterruptibleCancel rhsWaitSession `catchAny` (logError . tshow)
-      cancelHostClient rchClient `catchAny` (logError . tshow)
+      unless handlingError $ uninterruptibleCancel rhsWaitSession `catchAny` (logError' . tshow)
+      liftIO (cancelHostClient rchClient) `catchAny` (logError' . tshow)
 
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
@@ -495,7 +495,7 @@ parseCtrlAppInfo ctrlAppInfo = do
 
 handleRemoteCommand :: (ByteString -> CM' ChatResponse) -> RemoteCrypto -> TBQueue ChatResponse -> HTTP2Request -> CM' ()
 handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
-  logDebug "handleRemoteCommand"
+  logDebug' "handleRemoteCommand"
   liftIO (tryRemoteError' parseRequest) >>= \case
     Right (getNext, rc) -> do
       chatReadVar' currentUser >>= \case
@@ -511,7 +511,7 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
     processCommand :: User -> GetChunk -> RemoteCommand -> CM ()
     processCommand user getNext = \case
       RCSend {command} -> lift $ handleSend execChatCommand command >>= reply
-      RCRecv {wait = time} -> lift $ liftIO (handleRecv time remoteOutputQ) >>= reply
+      RCRecv {wait = time} -> lift $ handleRecv time remoteOutputQ >>= reply
       RCStoreFile {fileName, fileSize, fileDigest} -> lift $ handleStoreFile encryption fileName fileSize fileDigest getNext >>= reply
       RCGetFile {file} -> handleGetFile encryption user file replyWith
     reply :: RemoteResponse -> CM' ()
@@ -547,14 +547,14 @@ tryRemoteError' = tryAllErrors' (RPEException . tshow)
 
 handleSend :: (ByteString -> CM' ChatResponse) -> Text -> CM' RemoteResponse
 handleSend execChatCommand command = do
-  logDebug $ "Send: " <> tshow command
+  logDebug' $ "Send: " <> tshow command
   -- execChatCommand checks for remote-allowed commands
   -- convert errors thrown in execChatCommand into error responses to prevent aborting the protocol wrapper
   RRChatResponse <$> execChatCommand (encodeUtf8 command)
 
-handleRecv :: Int -> TBQueue ChatResponse -> IO RemoteResponse
+handleRecv :: Int -> TBQueue ChatResponse -> CM' RemoteResponse
 handleRecv time events = do
-  logDebug $ "Recv: " <> tshow time
+  logDebug' $ "Recv: " <> tshow time
   RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
 
 -- TODO this command could remember stored files and return IDs to allow removing files that are not needed.
