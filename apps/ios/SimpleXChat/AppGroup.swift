@@ -44,6 +44,7 @@ public let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphra
 public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
 public let GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED = "pqExperimentalEnabled" // no longer used
+public let GROUP_DEFAULT_APP_LOG_LEVEL = "appLogLevel"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -76,6 +77,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
         GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
+        GROUP_DEFAULT_APP_LOG_LEVEL: ChatLogLevel.important.rawValue,
     ])
 }
 
@@ -214,6 +216,12 @@ public let initialRandomDBPassphraseGroupDefault = BoolDefault(defaults: groupDe
 public let confirmDBUpgradesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CONFIRM_DB_UPGRADES)
 
 public let callKitEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CALL_KIT_ENABLED)
+
+public let appLogLevelGroupDefault = EnumDefault<ChatLogLevel>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_APP_LOG_LEVEL,
+    withDefault: .important
+)
 
 public class DateDefault {
     var defaults: UserDefaults

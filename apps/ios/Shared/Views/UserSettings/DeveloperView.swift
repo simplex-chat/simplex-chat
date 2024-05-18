@@ -12,6 +12,7 @@ import SimpleXChat
 struct DeveloperView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
+    @State private var appLogLevel = appLogLevelGroupDefault.get()
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -36,6 +37,24 @@ struct DeveloperView: View {
                     }
                     settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Show developer options", isOn: $developerTools)
+                    }
+                    settingsRow("text.justify") {
+                        Picker("Log level", selection: $appLogLevel) {
+                            ForEach(ChatLogLevel.allCases, id: \.self) { ll in
+                                Text(ll.rawValue)
+                            }
+                        }
+                        .frame(height: 36)
+                        .onChange(of: appLogLevel) { ll in
+                            Task {
+                                do {
+                                    try await apiSetAppLogLevel(ll)
+                                    appLogLevelGroupDefault.set(ll)
+                                } catch let e {
+                                    logger.error("apiSetAppLogLevel error: \(responseError(e))")
+                                }
+                            }
+                        }
                     }
                 } header: {
                     Text("")
