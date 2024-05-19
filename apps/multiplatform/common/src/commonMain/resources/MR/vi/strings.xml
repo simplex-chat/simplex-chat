@@ -172,4 +172,17 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">Cả bạn và liên hệ của bạn đều có thể thả cảm xúc tin nhắn.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Xin lưu ý</b>: relay tin nhắn và tệp được kết nối thông qua SOCKS proxy. Các cuộc gọi và bản xem trước liên kết sử dụng kết nối trực tiếp.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Tốt cho pin</b>. Dịch vụ nền kiểm tra tin nhắn 10 phút một lần. Bạn có thể bỏ lỡ các cuộc gọi hoặc tin nhắn khẩn cấp.]]></string>
+    <string name="network_smp_proxy_mode_always">Luôn luôn</string>
+    <string name="callstatus_calling">đang gọi…</string>
+    <string name="v4_5_transport_isolation_descr">Theo hồ sơ trò chuyện (mặc định) hoặc theo kết nối (BETA).</string>
+    <string name="callstatus_in_progress">cuộc gọi đang chờ</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Sử dụng nhiều pin hơn</b>! Dịch vụ chạy nền luôn luôn chạy - thông báo sẽ được hiển thị ngay khi nhận được tin nhắn.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>Cảnh báo</b>: kho lưu trữ sẽ bị xóa.</string>
+    <string name="icon_descr_call_progress">Cuộc gọi đang chờ</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Cho phép hạ cấp</string>
+    <string name="call_already_ended">Cuộc gọi đã kết thúc!</string>
+    <string name="network_smp_proxy_mode_always_description">Luôn luôn sử dụng định tuyến riêng tư.</string>
+    <string name="icon_descr_call_ended">Cuộc gọi kết thúc</string>
+    <string name="callstatus_ended">cuộc gọi kết thúc %1$s</string>
+    <string name="callstatus_error">lỗi cuộc gọi</string>
 </resources>
