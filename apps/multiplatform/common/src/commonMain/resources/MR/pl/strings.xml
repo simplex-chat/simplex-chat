@@ -1801,4 +1801,11 @@
     <string name="network_smp_proxy_fallback_allow_protected_description">Wysyłaj wiadomości bezpośrednio, gdy adres IP jest chroniony i Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
     <string name="network_smp_proxy_fallback_allow_description">Wysyłaj wiadomości bezpośrednio, gdy Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Używaj prywatnego trasowania z nieznanymi serwerami, gdy adres IP nie jest chroniony.</string>
+    <string name="file_not_approved_title">Nieznane serwery!</string>
+    <string name="file_not_approved_descr">Bez Tor lub VPN, Twój adres IP będzie widoczny dla tych przekaźników XFTP:
+\n%1$s.</string>
+    <string name="protect_ip_address">Chroń adres IP</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikacja będzie prosić o potwierdzenie pobierań z nieznanych serwerów plików (z wyjątkiem .onion lub gdy proxy SOCKS jest włączone).</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Bez Tor lub VPN, Twój adres IP będzie widoczny do serwerów plików.</string>
+    <string name="settings_section_title_files">PLIKI</string>
 </resources>
