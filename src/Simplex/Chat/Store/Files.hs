@@ -514,7 +514,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
       -- cryptoArgs = Nothing here, the decision to encrypt is made when receiving it
-      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False, userApprovedRelays = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
     DB.execute
@@ -535,7 +535,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
       -- cryptoArgs = Nothing here, the decision to encrypt is made when receiving it
-      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False, userApprovedRelays = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
     DB.execute
@@ -676,7 +676,9 @@ getRcvFileTransfer_ db userId fileId = do
         [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
-            f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline, r.agent_rcv_file_id, r.agent_rcv_file_deleted, c.connection_id, c.agent_conn_id
+            f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays,
+            c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
@@ -690,9 +692,9 @@ getRcvFileTransfer_ db userId fileId = do
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, Bool, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, agentRcvFileDeleted) :. (connId_, agentConnId_)) =
+    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays) :. (connId_, agentConnId_)) =
       case contactName_ <|> memberName_ <|> standaloneName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name ->
@@ -709,7 +711,7 @@ getRcvFileTransfer_ db userId fileId = do
         ft senderDisplayName fileStatus =
           let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
               cryptoArgs = CFArgs <$> fileKey <*> fileNonce
-              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted}) <$> rfd_
+              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays}) <$> rfd_
            in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId, cryptoArgs}
         rfi = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_
         rfi_ = case (filePath_, connId_, agentConnId_) of
@@ -720,7 +722,7 @@ getRcvFileTransfer_ db userId fileId = do
 acceptRcvFileTransfer :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
   currentTs <- getCurrentTime
-  acceptRcvFT_ db user fileId filePath Nothing currentTs
+  acceptRcvFT_ db user fileId filePath False Nothing currentTs
   DB.execute
     db
     "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at, to_subscribe) VALUES (?,?,?,?,?,?,?,?)"
@@ -740,33 +742,40 @@ getContactByFileId db vr user@User {userId} fileId = do
 
 acceptRcvInlineFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db vr user fileId filePath = do
-  liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
+  liftIO $ acceptRcvFT_ db user fileId filePath False (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db vr user fileId
 
 startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Maybe InlineFileMode -> IO ()
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
-  acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
+  acceptRcvFT_ db user fileId filePath False rcvFileInline =<< getCurrentTime
 
-xftpAcceptRcvFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
-xftpAcceptRcvFT db vr user fileId filePath = do
-  liftIO $ acceptRcvFT_ db user fileId filePath Nothing =<< getCurrentTime
+xftpAcceptRcvFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> Bool -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT db vr user fileId filePath userApprovedRelays = do
+  liftIO $ acceptRcvFT_ db user fileId filePath userApprovedRelays Nothing =<< getCurrentTime
   getChatItemByFileId db vr user fileId
 
-acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Maybe InlineFileMode -> UTCTime -> IO ()
-acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
+acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Bool -> Maybe InlineFileMode -> UTCTime -> IO ()
+acceptRcvFT_ db User {userId} fileId filePath userApprovedRelays rcvFileInline currentTs = do
   DB.execute
     db
     "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
   DB.execute
     db
-    "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
-    (rcvFileInline, FSAccepted, currentTs, fileId)
+    "UPDATE rcv_files SET user_approved_relays = ?, rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
+    (userApprovedRelays, rcvFileInline, FSAccepted, currentTs, fileId)
 
-setRcvFileToReceive :: DB.Connection -> FileTransferId -> Maybe CryptoFileArgs -> IO ()
-setRcvFileToReceive db fileId cfArgs_ = do
+setRcvFileToReceive :: DB.Connection -> FileTransferId -> Bool -> Maybe CryptoFileArgs -> IO ()
+setRcvFileToReceive db fileId userApprovedRelays cfArgs_ = do
   currentTs <- getCurrentTime
-  DB.execute db "UPDATE rcv_files SET to_receive = 1, updated_at = ? WHERE file_id = ?" (currentTs, fileId)
+  DB.execute
+    db
+    [sql|
+      UPDATE rcv_files
+      SET to_receive = 1, user_approved_relays = ?, updated_at = ?
+      WHERE file_id = ?
+    |]
+    (userApprovedRelays, currentTs, fileId)
   forM_ cfArgs_ $ \cfArgs -> setFileCryptoArgs_ db fileId cfArgs currentTs
 
 setFileCryptoArgs :: DB.Connection -> FileTransferId -> CryptoFileArgs -> IO ()
@@ -950,7 +959,7 @@ getFileTransferMeta_ db userId fileId =
     fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
       let cryptoArgs = CFArgs <$> fileKey <*> fileNonce
           xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
-        in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
+       in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
 lookupFileTransferRedirectMeta :: DB.Connection -> User -> Int64 -> IO [FileTransferMeta]
 lookupFileTransferRedirectMeta db User {userId} fileId = do
