@@ -1072,7 +1072,8 @@ data RcvFileTransfer = RcvFileTransfer
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    userApprovedRelays :: Bool
   }
   deriving (Eq, Show)
 
