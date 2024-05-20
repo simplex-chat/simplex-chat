@@ -1048,9 +1048,13 @@ data class Contact(
   override val apiId get() = contactId
   override val ready get() = activeConn?.connStatus == ConnStatus.Ready
   val active get() = contactStatus == ContactStatus.Active
-  override val sendMsgEnabled get() =
-    (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false))
-        || nextSendGrpInv
+  override val sendMsgEnabled get() = (
+      ready
+          && active
+          && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false)
+          && !(activeConn?.connDisabled ?: true)
+      )
+      || nextSendGrpInv
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = contactConnIncognito
@@ -1150,15 +1154,19 @@ data class Connection(
   val pqEncryption: Boolean,
   val pqSndEnabled: Boolean? = null,
   val pqRcvEnabled: Boolean? = null,
-  val connectionStats: ConnectionStats? = null
+  val connectionStats: ConnectionStats? = null,
+  val authErrCounter: Int
 ) {
   val id: ChatId get() = ":$connId"
+
+  val connDisabled: Boolean
+    get() = authErrCounter >= 10 // authErrDisableCount in core
 
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
 
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false, authErrCounter = 0)
   }
 }
 
