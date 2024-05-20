@@ -69,7 +69,7 @@ struct CIVideoView: View {
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {
-                            case .rcvInvitation:
+                            case .rcvInvitation, .rcvAborted:
                                 receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                             case .rcvAccepted:
                                 switch file.fileProtocol {
@@ -95,13 +95,21 @@ struct CIVideoView: View {
                 }
                 durationProgress()
             }
-            if let file = file, case .rcvInvitation = file.fileStatus {
+            if let file = file, showDownloadButton(file.fileStatus) {
                 Button {
                     receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                 } label: {
                     playPauseIcon("play.fill")
                 }
             }
+        }
+    }
+
+    private func showDownloadButton(_ fileStatus: CIFileStatus) -> Bool {
+        switch fileStatus {
+        case .rcvInvitation: true
+        case .rcvAborted: true
+        default: false
         }
     }
 
@@ -280,6 +288,7 @@ struct CIVideoView: View {
                 } else {
                     progressView()
                 }
+            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case .rcvError: fileIcon("xmark", 10, 13)
             case .invalid: fileIcon("questionmark", 10, 13)
@@ -318,10 +327,10 @@ struct CIVideoView: View {
     }
 
     // TODO encrypt: where file size is checked?
-    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool) async -> Void) {
+    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
         Task {
             if let user = m.currentUser {
-                await receiveFile(user, file.fileId, false)
+                await receiveFile(user, file.fileId, false, false)
             }
         }
     }

@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.group.toggleShowMemberMessages
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -106,6 +107,7 @@ class AppPreferences {
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
+  val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -292,6 +294,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
+    private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -1337,9 +1340,9 @@ object ChatController {
     }
   }
 
-  suspend fun apiReceiveFile(rh: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
+  suspend fun apiReceiveFile(rh: Long?, fileId: Long, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
-    val r = sendCmd(rh, CC.ReceiveFile(fileId, encrypted, inline))
+    val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1358,7 +1361,23 @@ object ChatController {
           val maybeChatError = chatError(r)
           if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
             Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
-          } else {
+          } else if (maybeChatError is ChatErrorType.FileNotApproved) {
+            Log.d(TAG, "apiReceiveFile FileNotApproved error")
+            if (!auto) {
+              val srvs = maybeChatError.unknownServers.map{ serverHostname(it) }
+              AlertManager.shared.showAlertDialog(
+                title = generalGetString(MR.strings.file_not_approved_title),
+                text = generalGetString(MR.strings.file_not_approved_descr).format(srvs.sorted().joinToString(separator = ", ")),
+                confirmText = generalGetString(MR.strings.download_file),
+                onConfirm = {
+                  val user = chatModel.currentUser.value
+                  if (user != null) {
+                    withBGApi { chatModel.controller.receiveFile(rh, user, fileId, userApprovedRelays = true) }
+                  }
+                },
+              )
+            }
+          } else if (!auto) {
             apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
         }
@@ -2216,9 +2235,14 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, auto: Boolean = false) {
-    val encrypted = appPrefs.privacyEncryptLocalFiles.get()
-    val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    val chatItem = apiReceiveFile(
+      rhId,
+      fileId,
+      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
+      encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+      auto = auto
+    )
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
     }
@@ -2501,7 +2525,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val encrypt: Boolean, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val userApprovedRelays: Boolean, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
   // Remote control
   class SetLocalDeviceName(val displayName: String): CC()
@@ -2652,6 +2676,7 @@ sealed class CC {
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile ->
       "/freceive $fileId" +
+          (" approved_relays=${onOff(userApprovedRelays)}") +
           (if (encrypt == null) "" else " encrypt=${onOff(encrypt)}") +
           (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
@@ -4892,13 +4917,14 @@ sealed class ChatErrorType {
       is FileCancel -> "fileCancel"
       is FileAlreadyExists -> "fileAlreadyExists"
       is FileRead -> "fileRead"
-      is FileWrite -> "fileWrite"
+      is FileWrite -> "fileWrite $message"
       is FileSend -> "fileSend"
       is FileRcvChunk -> "fileRcvChunk"
       is FileInternal -> "fileInternal"
       is FileImageType -> "fileImageType"
       is FileImageSize -> "fileImageSize"
       is FileNotReceived -> "fileNotReceived"
+      is FileNotApproved -> "fileNotApproved"
       // is XFTPRcvFile -> "xftpRcvFile"
       // is XFTPSndFile -> "xftpSndFile"
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
@@ -4978,6 +5004,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileImageType") class FileImageType(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileImageSize") class FileImageSize(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileNotReceived") class FileNotReceived(val fileId: Long): ChatErrorType()
+  @Serializable @SerialName("fileNotApproved") class FileNotApproved(val fileId: Long, val unknownServers: List<String>): ChatErrorType()
   // @Serializable @SerialName("xFTPRcvFile") object XFTPRcvFile: ChatErrorType()
   // @Serializable @SerialName("xFTPSndFile") object XFTPSndFile: ChatErrorType()
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
@@ -5476,6 +5503,7 @@ enum class NotificationsMode() {
 data class AppSettings(
   var networkConfig: NetCfg? = null,
   var privacyEncryptLocalFiles: Boolean? = null,
+  var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
   var privacyShowChatPreviews: Boolean? = null,
@@ -5499,6 +5527,7 @@ data class AppSettings(
     val def = defaults
     if (networkConfig != def.networkConfig) { empty.networkConfig = networkConfig }
     if (privacyEncryptLocalFiles != def.privacyEncryptLocalFiles) { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+    if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -5530,6 +5559,7 @@ data class AppSettings(
       setNetCfg(net)
     }
     privacyEncryptLocalFiles?.let { def.privacyEncryptLocalFiles.set(it) }
+    privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
@@ -5554,6 +5584,7 @@ data class AppSettings(
       get() = AppSettings(
         networkConfig = NetCfg.defaults,
         privacyEncryptLocalFiles = true,
+        privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
         privacyShowChatPreviews = true,
@@ -5579,6 +5610,7 @@ data class AppSettings(
         return defaults.copy(
           networkConfig = getNetCfg(),
           privacyEncryptLocalFiles = def.privacyEncryptLocalFiles.get(),
+          privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
