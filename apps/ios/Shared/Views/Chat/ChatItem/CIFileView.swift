@@ -60,6 +60,7 @@ struct CIFileView: View {
             case .rcvInvitation: return true
             case .rcvAccepted: return true
             case .rcvTransfer: return false
+            case .rcvAborted: return true
             case .rcvComplete: return true
             case .rcvCancelled: return false
             case .rcvError: return false
@@ -73,10 +74,10 @@ struct CIFileView: View {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
-            case .rcvInvitation:
+            case .rcvInvitation, .rcvAborted:
                 if fileSizeValid(file) {
                     Task {
-                        logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
+                        logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
                             await receiveFile(user: user, fileId: file.fileId)
                         }
@@ -148,6 +149,8 @@ struct CIFileView: View {
                 } else {
                     progressView()
                 }
+            case .rcvAborted:
+                fileIcon("doc.fill", color: .accentColor, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)

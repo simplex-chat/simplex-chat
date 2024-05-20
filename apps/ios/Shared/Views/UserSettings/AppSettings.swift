@@ -23,6 +23,7 @@ extension AppSettings {
             setNetCfg(val)
         }
         if let val = privacyEncryptLocalFiles { privacyEncryptLocalFilesGroupDefault.set(val) }
+        if let val = privacyAskToApproveRelays { privacyAskToApproveRelaysGroupDefault.set(val) }
         if let val = privacyAcceptImages {
             privacyAcceptImagesGroupDefault.set(val)
             def.setValue(val, forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
@@ -50,6 +51,7 @@ extension AppSettings {
         var c = AppSettings.defaults
         c.networkConfig = getNetCfg()
         c.privacyEncryptLocalFiles = privacyEncryptLocalFilesGroupDefault.get()
+        c.privacyAskToApproveRelays = privacyAskToApproveRelaysGroupDefault.get()
         c.privacyAcceptImages = privacyAcceptImagesGroupDefault.get()
         c.privacyLinkPreviews = def.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
         c.privacyShowChatPreviews = def.bool(forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS)

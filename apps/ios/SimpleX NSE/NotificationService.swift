@@ -696,14 +696,16 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
 }
 
 func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil) -> AChatItem? {
-    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
+    let userApprovedRelays = !privacyAskToApproveRelaysGroupDefault.get()
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
 
 func apiSetFileToReceive(fileId: Int64, encrypted: Bool) {
-    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId, encrypted: encrypted))
+    let userApprovedRelays = !privacyAskToApproveRelaysGroupDefault.get()
+    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted))
     if case .cmdOk = r { return }
     logger.error("setFileToReceive error: \(responseError(r))")
 }
