@@ -95,7 +95,7 @@ fun PrivacySettingsView(
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SettingsPreferenceItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
+      SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
     }
     SectionCustomFooter {
       if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {
