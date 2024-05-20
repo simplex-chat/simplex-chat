@@ -608,6 +608,7 @@
   <!-- NewChatView.kt -->
   <string name="new_chat">New chat</string>
   <string name="add_contact_tab">Add contact</string>
+  <string name="scan_paste_link">Scan / Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>

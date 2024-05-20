@@ -15,7 +15,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun DefaultTopAppBar(
-  navigationButton: @Composable RowScope.() -> Unit,
+  navigationButton: (@Composable RowScope.() -> Unit)? = null,
   title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
