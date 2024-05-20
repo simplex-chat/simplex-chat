@@ -22,6 +22,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.flow.*
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
@@ -220,7 +221,8 @@ private fun PlayPauseButton(
   error: Boolean,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  icon: ImageResource = MR.images.ic_play_arrow_filled,
 ) {
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
@@ -241,7 +243,7 @@ private fun PlayPauseButton(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
+        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(icon),
         contentDescription = null,
         Modifier.size(36.dp),
         tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -294,6 +296,8 @@ private fun VoiceMsgIndicator(
       ) {
         ProgressIndicator()
       }
+    } else if (file?.fileStatus is CIFileStatus.RcvAborted) {
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick, icon = MR.images.ic_sync_problem)
     } else {
       PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
     }
