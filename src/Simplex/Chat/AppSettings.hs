@@ -29,6 +29,7 @@ data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
     networkConfig :: Maybe NetworkConfig,
     privacyEncryptLocalFiles :: Maybe Bool,
+    privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
     privacyLinkPreviews :: Maybe Bool,
     privacyShowChatPreviews :: Maybe Bool,
@@ -61,6 +62,7 @@ defaultAppSettings =
     { appPlatform = Nothing,
       networkConfig = Just defaultNetworkConfig,
       privacyEncryptLocalFiles = Just True,
+      privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
       privacyLinkPreviews = Just True,
       privacyShowChatPreviews = Just True,
@@ -92,6 +94,7 @@ defaultParseAppSettings =
     { appPlatform = Nothing,
       networkConfig = Nothing,
       privacyEncryptLocalFiles = Nothing,
+      privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
       privacyLinkPreviews = Nothing,
       privacyShowChatPreviews = Nothing,
@@ -123,6 +126,7 @@ combineAppSettings platformDefaults storedSettings =
     { appPlatform = p appPlatform,
       networkConfig = p networkConfig,
       privacyEncryptLocalFiles = p privacyEncryptLocalFiles,
+      privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
       privacyLinkPreviews = p privacyLinkPreviews,
       privacyShowChatPreviews = p privacyShowChatPreviews,
@@ -166,6 +170,7 @@ instance FromJSON AppSettings where
     appPlatform <- p "appPlatform"
     networkConfig <- p "networkConfig"
     privacyEncryptLocalFiles <- p "privacyEncryptLocalFiles"
+    privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
     privacyLinkPreviews <- p "privacyLinkPreviews"
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
@@ -194,6 +199,7 @@ instance FromJSON AppSettings where
         { appPlatform,
           networkConfig,
           privacyEncryptLocalFiles,
+          privacyAskToApproveRelays,
           privacyAcceptImages,
           privacyLinkPreviews,
           privacyShowChatPreviews,

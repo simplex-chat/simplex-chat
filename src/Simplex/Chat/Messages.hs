@@ -539,6 +539,7 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
+  CIFSRcvAborted :: CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
   CIFSRcvError :: CIFileStatus 'MDRcv
@@ -558,6 +559,7 @@ ciFileEnded = \case
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
+  CIFSRcvAborted -> True
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
   CIFSRcvError -> True
@@ -573,6 +575,7 @@ ciFileLoaded = \case
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
+  CIFSRcvAborted -> False
   CIFSRcvCancelled -> False
   CIFSRcvComplete -> True
   CIFSRcvError -> False
@@ -592,6 +595,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
+    CIFSRcvAborted -> "rcv_aborted"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
     CIFSRcvError -> "rcv_error"
@@ -614,6 +618,7 @@ instance StrEncoding ACIFileStatus where
           "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
           "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
           "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
+          "rcv_aborted" -> pure $ AFS SMDRcv CIFSRcvAborted
           "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
           "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
           "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
@@ -631,6 +636,7 @@ data JSONCIFileStatus
   | JCIFSRcvInvitation
   | JCIFSRcvAccepted
   | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
+  | JCIFSRcvAborted
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
   | JCIFSRcvError
@@ -646,6 +652,7 @@ jsonCIFileStatus = \case
   CIFSRcvInvitation -> JCIFSRcvInvitation
   CIFSRcvAccepted -> JCIFSRcvAccepted
   CIFSRcvTransfer rcvd total -> JCIFSRcvTransfer rcvd total
+  CIFSRcvAborted -> JCIFSRcvAborted
   CIFSRcvComplete -> JCIFSRcvComplete
   CIFSRcvCancelled -> JCIFSRcvCancelled
   CIFSRcvError -> JCIFSRcvError
@@ -661,6 +668,7 @@ aciFileStatusJSON = \case
   JCIFSRcvInvitation -> AFS SMDRcv CIFSRcvInvitation
   JCIFSRcvAccepted -> AFS SMDRcv CIFSRcvAccepted
   JCIFSRcvTransfer rcvd total -> AFS SMDRcv $ CIFSRcvTransfer rcvd total
+  JCIFSRcvAborted -> AFS SMDRcv CIFSRcvAborted
   JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
   JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
   JCIFSRcvError -> AFS SMDRcv CIFSRcvError

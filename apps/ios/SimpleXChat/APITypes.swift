@@ -123,8 +123,8 @@ public enum ChatCommand {
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
-    case setFileToReceive(fileId: Int64, encrypted: Bool?)
+    case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
+    case setFileToReceive(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?)
     case cancelFile(fileId: Int64)
     // remote desktop commands
     case setLocalDeviceName(displayName: String)
@@ -278,8 +278,8 @@ public enum ChatCommand {
             case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
-            case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
+            case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
             case let .connectRemoteCtrl(xrcpInv): return "/connect remote ctrl \(xrcpInv)"
@@ -1770,6 +1770,7 @@ public enum ChatErrorType: Decodable {
     case fileImageType(filePath: String)
     case fileImageSize(filePath: String)
     case fileNotReceived(fileId: Int64)
+    case fileNotApproved(fileId: Int64, unknownServers: [String])
     // case xFTPRcvFile
     // case xFTPSndFile
     case fallbackToSMPProhibited(fileId: Int64)
@@ -2048,6 +2049,7 @@ public struct MigrationFileLinkData: Codable {
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
+    public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
     public var privacyLinkPreviews: Bool? = nil
     public var privacyShowChatPreviews: Bool? = nil
@@ -2072,6 +2074,7 @@ public struct AppSettings: Codable, Equatable {
         let def = AppSettings.defaults
         if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
         if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+        if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -2097,6 +2100,7 @@ public struct AppSettings: Codable, Equatable {
         AppSettings (
             networkConfig: NetCfg.defaults,
             privacyEncryptLocalFiles: true,
+            privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
             privacyShowChatPreviews: true,
