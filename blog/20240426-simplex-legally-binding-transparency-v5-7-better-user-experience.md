@@ -10,6 +10,8 @@ permalink: "/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user
 
 # SimpleX network: legally binding transparency, v5.7 released with better calls and messages
 
+**Published:** Apr 26, 2024
+
 What's new in v5.7:
 - [quantum resistant end-to-end encryption](#quantum-resistant-end-to-end-encryption) with all contacts.
 - [forward and save messages](#forward-and-save-messages) without revealing the source.
