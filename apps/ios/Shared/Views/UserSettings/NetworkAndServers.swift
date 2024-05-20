@@ -82,29 +82,29 @@ struct NetworkAndServers: View {
                     Text("Using .onion hosts requires compatible VPN provider.")
                 }
 
-                Section {
-                    Picker("Private routing", selection: $proxyMode) {
-                        ForEach(SMPProxyMode.values, id: \.self) { Text($0.text) }
-                    }
-                    .frame(height: 36)
-
-                    Picker("Allow downgrade", selection: $proxyFallback) {
-                        ForEach(SMPProxyFallback.values, id: \.self) { Text($0.text) }
-                    }
-                    .disabled(proxyMode == .never)
-                    .frame(height: 36)
-
-                    Toggle("Show message status", isOn: $showSentViaProxy)
-                } header: {
-                    Text("Private message routing")
-                } footer: {
-                    VStack(alignment: .leading) {
-                        Text("To protect your IP address, private routing uses your SMP servers to deliver messages.")
-                        if showSentViaProxy {
-                            Text("Show → on messages sent via private routing.")
-                        }
-                    }
-                }
+//                Section {
+//                    Picker("Private routing", selection: $proxyMode) {
+//                        ForEach(SMPProxyMode.values, id: \.self) { Text($0.text) }
+//                    }
+//                    .frame(height: 36)
+//
+//                    Picker("Allow downgrade", selection: $proxyFallback) {
+//                        ForEach(SMPProxyFallback.values, id: \.self) { Text($0.text) }
+//                    }
+//                    .disabled(proxyMode == .never)
+//                    .frame(height: 36)
+//
+//                    Toggle("Show message status", isOn: $showSentViaProxy)
+//                } header: {
+//                    Text("Private message routing")
+//                } footer: {
+//                    VStack(alignment: .leading) {
+//                        Text("To protect your IP address, private routing uses your SMP servers to deliver messages.")
+//                        if showSentViaProxy {
+//                            Text("Show → on messages sent via private routing.")
+//                        }
+//                    }
+//                }
 
                 Section("Calls") {
                     NavigationLink {
@@ -261,9 +261,9 @@ struct NetworkAndServers: View {
 
     private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
         switch proxyFallback {
-        case .allow: return "Send messages directly when your or destination server does not support 2-hop onion routing."
-        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support 2-hop onion routing."
-        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support 2-hop onion routing."
+        case .allow: return "Send messages directly when your or destination server does not support private routing."
+        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support private routing."
+        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support private routing."
         }
     }
 }

@@ -1510,7 +1510,12 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
-        (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false))
+        (
+            ready
+            && active
+            && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
+            && !(activeConn?.connDisabled ?? true)
+        )
         || nextSendGrpInv
     } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
@@ -1601,14 +1606,19 @@ public struct Connection: Decodable {
     public var pqEncryption: Bool
     public var pqSndEnabled: Bool?
     public var pqRcvEnabled: Bool?
+    public var authErrCounter: Int
 
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter
     }
 
     public var id: ChatId { get { ":\(connId)" } }
+
+    public var connDisabled: Bool {
+        authErrCounter >= 10 // authErrDisableCount in core
+    }
 
     public var connPQEnabled: Bool {
         pqSndEnabled == true && pqRcvEnabled == true
@@ -1622,7 +1632,8 @@ public struct Connection: Decodable {
         connLevel: 0,
         viaGroupLink: false,
         pqSupport: false,
-        pqEncryption: false
+        pqEncryption: false,
+        authErrCounter: 0
     )
 }
 

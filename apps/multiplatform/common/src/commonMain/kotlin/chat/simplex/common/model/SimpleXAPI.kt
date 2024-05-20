@@ -782,8 +782,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiForwardChatItem(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemId: Long): ChatItem? {
-    val cmd = CC.ApiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId)
+  suspend fun apiForwardChatItem(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemId: Long, ttl: Int?): ChatItem? {
+    val cmd = CC.ApiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl)
     return processSendMessageCmd(rh, cmd)?.chatItem
   }
 
@@ -2061,6 +2061,11 @@ object ChatController {
         chatModel.currentRemoteHost.value = r.remoteHost
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
+      is CR.ContactDisabled -> {
+        if (active(r.user)) {
+          chatModel.updateContact(rhId, r.contact)
+        }
+      }
       is CR.RemoteHostStopped -> {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.remoteHostPairing.value = null
@@ -2428,7 +2433,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
-  class ApiForwardChatItem(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemId: Long): CC()
+  class ApiForwardChatItem(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemId: Long, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
@@ -2570,7 +2575,10 @@ sealed class CC {
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
-    is ApiForwardChatItem -> "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} $itemId"
+    is ApiForwardChatItem -> {
+      val ttlStr = if (ttl != null) "$ttl" else "default"
+      "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} $itemId ttl=${ttlStr}"
+    }
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -4254,6 +4262,7 @@ sealed class CR {
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
   @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactDisabled") class ContactDisabled(val user: UserRef, val contact: Contact): CR()
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
@@ -4418,6 +4427,7 @@ sealed class CR {
     is CallExtraInfo -> "callExtraInfo"
     is CallEnded -> "callEnded"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is ContactDisabled -> "contactDisabled"
     is RemoteHostList -> "remoteHostList"
     is CurrentRemoteHost -> "currentRemoteHost"
     is RemoteHostStarted -> "remoteHostStarted"
@@ -4578,6 +4588,7 @@ sealed class CR {
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
+    is ContactDisabled -> withUser(user, json.encodeToString(contact))
     // remote events (mobile)
     is RemoteHostList -> json.encodeToString(remoteHosts)
     is CurrentRemoteHost -> if (remoteHost_ == null) "local" else json.encodeToString(remoteHost_)

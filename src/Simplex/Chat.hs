@@ -870,15 +870,15 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
-  APIForwardChatItem (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemId -> withUser $ \user -> case toCType of
+  APIForwardChatItem (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemId itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
       (cm, ciff) <- prepareForward user
       withContactLock "forwardChatItem, to contact" toChatId $
-        sendContactContentMessage user toChatId False Nothing cm ciff
+        sendContactContentMessage user toChatId False itemTTL cm ciff
     CTGroup -> do
       (cm, ciff) <- prepareForward user
       withGroupLock "forwardChatItem, to group" toChatId $
-        sendGroupContentMessage user toChatId False Nothing cm ciff
+        sendGroupContentMessage user toChatId False itemTTL cm ciff
     CTLocal -> do
       (cm, ciff) <- prepareForward user
       createNoteFolderContentItem user toChatId cm ciff
@@ -1626,17 +1626,17 @@ processChatCommand' vr = \case
     contactId <- withStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId Nothing
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId Nothing
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withStore (`getUserNoteFolderId` user)
     forwardedItemId <- withStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId Nothing
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
@@ -4685,8 +4685,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case err of
         SMP _ SMP.AUTH -> do
           authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
-          when (authErrCounter' >= authErrDisableCount) $ do
-            toView $ CRConnectionDisabled connEntity
+          when (authErrCounter' >= authErrDisableCount) $ case connEntity of
+            RcvDirectMsgConnection ctConn (Just ct) -> do
+              toView $ CRContactDisabled user ct {activeConn = Just ctConn {authErrCounter = authErrCounter'}}
+            _ -> toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
@@ -7141,7 +7143,7 @@ chatCommandP =
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
-      "/_forward " *> (APIForwardChatItem <$> chatRefP <* A.space <*> chatRefP <* A.space <*> A.decimal),
+      "/_forward " *> (APIForwardChatItem <$> chatRefP <* A.space <*> chatRefP <* A.space <*> A.decimal <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
