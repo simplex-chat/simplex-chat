@@ -568,9 +568,9 @@
         <note>accept contact request via notification
    accept incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Accept connection request?" xml:space="preserve">
+      <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
-        <target>Kapcsolatfelvétel elfogadása?</target>
+        <target state="translated">Kapcsolódási kérelem elfogadása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -3088,9 +3088,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen törlődik!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target>Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:</target>
+        <target state="translated">Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
