@@ -4,16 +4,12 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
@@ -28,6 +24,7 @@ import chat.simplex.common.views.chat.ChatView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.DatabaseErrorView
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.home.*
 import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -287,7 +284,7 @@ fun StartPartOfScreen(settingsState: SettingsViewState) {
   } else {
     val stopped = chatModel.chatRunning.value == false
     if (chatModel.sharedContent.value == null)
-      ChatListView(chatModel, settingsState, AppLock::setPerformLA, stopped)
+      HomeView(chatModel, settingsState, AppLock::setPerformLA, stopped)
     else
       ShareListView(chatModel, settingsState, stopped)
   }

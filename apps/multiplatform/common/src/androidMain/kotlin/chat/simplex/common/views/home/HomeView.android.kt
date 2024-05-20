@@ -1,4 +1,4 @@
-package chat.simplex.common.views.chatlist
+package chat.simplex.common.views.home
 
 import android.app.Activity
 import androidx.compose.foundation.*
