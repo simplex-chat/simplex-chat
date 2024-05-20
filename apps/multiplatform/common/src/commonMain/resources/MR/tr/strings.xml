@@ -1769,4 +1769,37 @@
     <string name="settings_section_title_profile_images">Profil resimleri</string>
     <string name="v5_7_shape_profile_images">Profil resimlerini şekillendir</string>
     <string name="v5_7_shape_profile_images_descr">Kare,daire, veya aralarında herhangi bir şey.</string>
+    <string name="snd_error_quota">Kapasite aşıldı - alıcı önceden gönderilen mesajları almadı.</string>
+    <string name="snd_error_relay">Hedef sunucu hatası: %1$s</string>
+    <string name="ci_status_other_error">Hata: %1$s</string>
+    <string name="snd_error_proxy_relay">Yönlendirme sunucusu: %1$s
+\nHedef sunucu hatası: %2$s</string>
+    <string name="snd_error_proxy">Yönlendirme sunucusu: %1$s
+\nHata: %2$s</string>
+    <string name="message_delivery_warning_title">Mesaj iletimi uyarısı</string>
+    <string name="snd_error_expired">Ağ sorunları - birçok gönderme denemesinden sonra mesajın süresi doldu.</string>
+    <string name="srv_error_host">Sunucu adresi ağ ayarlarıyla uyumlu değil.</string>
+    <string name="srv_error_version">Sunucu sürümü ağ ayarlarıyla uyumlu değil.</string>
+    <string name="snd_error_auth">Yanlış anahtar veya bilinmeyen bağlantı - büyük olasılıkla bu bağlantı silinmiştir.</string>
+    <string name="network_smp_proxy_mode_private_routing">Gizli yönlendirme</string>
+    <string name="network_smp_proxy_mode_unknown">Bilinmeyen röleler</string>
+    <string name="network_smp_proxy_mode_always_description">Her zaman gizli yönlendirmeyi kullan.</string>
+    <string name="network_smp_proxy_mode_never_description">Gizli yönlendirmeyi KULLANMA.</string>
+    <string name="update_network_smp_proxy_mode_question">Mesaj yönlendirme modu</string>
+    <string name="network_smp_proxy_mode_never">Hiçbir zaman</string>
+    <string name="network_smp_proxy_mode_unknown_description">Bilinmeyen sunucularla gizli yönlendirme kullan.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Sürüm düşürmeye izin ver</string>
+    <string name="network_smp_proxy_fallback_prohibit">Hayır</string>
+    <string name="update_network_smp_proxy_fallback_question">Mesaj yönlendirme yedeklemesi</string>
+    <string name="network_smp_proxy_mode_always">Her zaman</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
+    <string name="settings_section_title_private_message_routing">GİZLİ MESAJ YÖNLENDİRME</string>
+    <string name="private_routing_show_message_status">Mesaj durumunu göster</string>
+    <string name="private_routing_explanation">IP adresinizi korumak için,özel yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.</string>
+    <string name="network_smp_proxy_mode_unprotected">Korumasız</string>
+    <string name="network_smp_proxy_mode_unprotected_description">IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">IP gizliyken</string>
+    <string name="network_smp_proxy_fallback_allow">Evet</string>
 </resources>
