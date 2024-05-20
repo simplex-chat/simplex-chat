@@ -166,7 +166,7 @@ class AppPreferences {
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
 
-  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.themeName)
+  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
   val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), String.serializer()), it)
@@ -179,11 +179,7 @@ class AppPreferences {
   }, decode = {
     jsonCoerceInputValues.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, settingsThemes)
-  val themeOverrides = mkListPreference(SHARED_PREFS_THEME_OVERRIDES, listOf(), encode = {
-    json.encodeToString(ListSerializer(ThemeOverrides.serializer()), it)
-  }, decode = {
-    jsonCoerceInputValues.decodeFromString(ListSerializer(ThemeOverrides.serializer()), it)
-  }, settingsThemes)
+  val themeOverrides = mkThemeOverridesPreference()
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
@@ -278,10 +274,11 @@ class AppPreferences {
       set = fun(value) = prefs.putString(prefName, encode(value))
     )
 
-  private fun <T> mkListPreference(prefName: String, default: List<T>, encode: (List<T>) -> String, decode: (String) -> List<T>, prefs: Settings = settings): SharedPreference<List<T>> =
+  private var themeOverridesStore: List<ThemeOverrides>? = null
+  private fun mkThemeOverridesPreference(): SharedPreference<List<ThemeOverrides>> =
     SharedPreference(
-      get = fun() = decode(prefs.getString(prefName, encode(default))),
-      set = fun(value) = prefs.putString(prefName, encode(value))
+      get = fun() = themeOverridesStore ?: (readThemeOverrides()).also { themeOverridesStore = it },
+      set = fun(value) { if (writeThemeOverrides(value)) { themeOverridesStore = value } }
     )
 
   companion object {
@@ -5624,7 +5621,7 @@ data class AppSettings(
         iosCallKitEnabled = true,
         iosCallKitCallsInRecents = false,
         uiProfileImageCornerRadius = 22.5f,
-        uiColorScheme = DefaultTheme.SYSTEM.themeName,
+        uiColorScheme = DefaultTheme.SYSTEM_THEME_NAME,
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
@@ -5654,7 +5651,7 @@ data class AppSettings(
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
           uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
-          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM.themeName,
+          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM_THEME_NAME,
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),

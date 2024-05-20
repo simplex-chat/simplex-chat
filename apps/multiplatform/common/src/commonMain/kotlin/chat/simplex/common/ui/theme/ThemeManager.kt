@@ -24,12 +24,13 @@ object ThemeManager {
   private fun systemDarkThemeColors(): Pair<Colors, DefaultTheme> = when (appPrefs.systemDarkTheme.get()) {
     DefaultTheme.DARK.themeName -> DarkColorPalette to DefaultTheme.DARK
     DefaultTheme.SIMPLEX.themeName -> SimplexColorPalette to DefaultTheme.SIMPLEX
+    DefaultTheme.BLACK.themeName -> BlackColorPalette to DefaultTheme.BLACK
     else -> SimplexColorPalette to DefaultTheme.SIMPLEX
   }
 
   private fun nonSystemThemeName(darkForSystemTheme: Boolean): String {
     val themeName = appPrefs.currentTheme.get()!!
-    return if (themeName != DefaultTheme.SYSTEM.themeName) {
+    return if (themeName != DefaultTheme.SYSTEM_THEME_NAME) {
       themeName
     } else {
       if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName
@@ -63,6 +64,7 @@ object ThemeManager {
       DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
       DefaultTheme.DARK.themeName -> ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
       DefaultTheme.SIMPLEX.themeName -> ActiveTheme(DefaultTheme.SIMPLEX.themeName, DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
+      DefaultTheme.BLACK.themeName -> ActiveTheme(DefaultTheme.BLACK.themeName, DefaultTheme.BLACK, BlackColorPalette, BlackColorPaletteApp)
       else -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
     }
 
@@ -99,34 +101,41 @@ object ThemeManager {
   }
 
   // colors, default theme enum, localized name of theme
-  fun allThemes(darkForSystemTheme: Boolean): List<Triple<Colors, DefaultTheme, String>> {
-    val allThemes = ArrayList<Triple<Colors, DefaultTheme, String>>()
+  fun allThemes(darkForSystemTheme: Boolean): List<Triple<Colors, String, String>> {
+    val allThemes = ArrayList<Triple<Colors, String, String>>()
     allThemes.add(
       Triple(
         if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette,
-        DefaultTheme.SYSTEM,
+        DefaultTheme.SYSTEM_THEME_NAME,
         generalGetString(MR.strings.theme_system)
       )
     )
     allThemes.add(
       Triple(
         LightColorPalette,
-        DefaultTheme.LIGHT,
+        DefaultTheme.LIGHT.themeName,
         generalGetString(MR.strings.theme_light)
       )
     )
     allThemes.add(
       Triple(
         DarkColorPalette,
-        DefaultTheme.DARK,
+        DefaultTheme.DARK.themeName,
         generalGetString(MR.strings.theme_dark)
       )
     )
     allThemes.add(
       Triple(
         SimplexColorPalette,
-        DefaultTheme.SIMPLEX,
+        DefaultTheme.SIMPLEX.themeName,
         generalGetString(MR.strings.theme_simplex)
+      )
+    )
+    allThemes.add(
+      Triple(
+        BlackColorPalette,
+        DefaultTheme.BLACK.themeName,
+        generalGetString(MR.strings.theme_black)
       )
     )
     return allThemes
@@ -152,6 +161,7 @@ object ThemeManager {
         DefaultTheme.LIGHT.themeName -> name.fromColors(LightColorPalette, LightColorPaletteApp, AppWallpaper())
         DefaultTheme.DARK.themeName -> name.fromColors(DarkColorPalette, DarkColorPaletteApp, AppWallpaper())
         DefaultTheme.SIMPLEX.themeName -> name.fromColors(SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper())
+        DefaultTheme.BLACK.themeName -> name.fromColors(BlackColorPalette, BlackColorPaletteApp, AppWallpaper())
         // Will not be here
         else -> return
       }
@@ -226,10 +236,6 @@ object ThemeManager {
   }
 
   fun saveAndApplyThemeOverrides(theme: ThemeOverrides, pref: SharedPreference<List<ThemeOverrides>> = appPrefs.themeOverrides) {
-    if (theme.base == DefaultTheme.SYSTEM) {
-      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), generalGetString(MR.strings.theme_has_unsupported_base))
-      return
-    }
     val wallpaper = theme.wallpaper?.importFromString()
     val nonSystemThemeName = theme.base.themeName
     val overrides = pref.get()

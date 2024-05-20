@@ -91,12 +91,6 @@ kotlin {
 
         // Calls lifecycle listener
         implementation("androidx.lifecycle:lifecycle-process:2.4.1")
-
-        implementation("com.github.SmartToolFactory:Compose-Color-Picker-Bundle:1.2.0") {
-          // This library doesn't exist anymore. Excluding it helps without making any problems
-          exclude(group = "com.github.SmartToolFactory", module = "Compose-Image-Cropper")
-        }
-        implementation("com.github.SmartToolFactory:Compose-Extended-Colors:1.0.0-alpha07")
       }
     }
     val desktopMain by getting {

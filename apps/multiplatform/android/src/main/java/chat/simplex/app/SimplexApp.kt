@@ -255,7 +255,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
 
-        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.themeName) {
+        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
           CurrentColors.value.colors.isLight

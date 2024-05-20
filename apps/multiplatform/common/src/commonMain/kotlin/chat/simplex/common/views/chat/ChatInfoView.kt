@@ -749,7 +749,7 @@ fun ModalData.WallpaperEditorModal(chat: Chat) {
       val backgroundFilesToDelete = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
 
       val lightBase = DefaultTheme.LIGHT
-      val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
+      val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
       val modeLight = ThemeModeOverride.withFilledAppDefaults(DefaultThemeMode.LIGHT, lightBase)
       val modeDark = ThemeModeOverride.withFilledAppDefaults(DefaultThemeMode.DARK, darkBase)
       val changedThemes = ThemeModeOverrides(light = modeLight, dark = modeDark)
@@ -828,8 +828,11 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
           ThemeColor.BACKGROUND -> currentTheme.colors.background
           ThemeColor.SURFACE -> currentTheme.colors.surface
           ThemeColor.TITLE -> currentTheme.appColors.title
+          ThemeColor.PRIMARY_VARIANT2 -> currentTheme.appColors.primaryVariant2
           ThemeColor.SENT_MESSAGE -> currentTheme.appColors.sentMessage
+          ThemeColor.SENT_QUOTE -> currentTheme.appColors.sentQuote
           ThemeColor.RECEIVED_MESSAGE -> currentTheme.appColors.receivedMessage
+          ThemeColor.RECEIVED_QUOTE -> currentTheme.appColors.receivedQuote
         }
         AppearanceScope.ColorEditor(
           name,
@@ -873,10 +876,11 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
       CurrentColors.collectAsState().value.base,
       currentTheme.wallpaper,
       currentTheme.appColors.sentMessage,
+      currentTheme.appColors.sentQuote,
       currentTheme.appColors.receivedMessage,
+      currentTheme.appColors.receivedQuote,
       editColor = editColor,
       onTypeChange = onTypeChange,
-      showSentReceivedColors = true
     )
 
     SectionSpacer()
@@ -897,7 +901,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
         }
       } else {
         val lightBase = DefaultTheme.LIGHT
-        val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
+        val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
         val mode = themeModeOverride.value.mode
         themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
         save(applyToMode.value, themeModeOverride.value)
@@ -939,7 +943,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
           applyToMode.value = it
           if (it != null && it != CurrentColors.value.base.mode) {
             val lightBase = DefaultTheme.LIGHT
-            val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else DefaultTheme.SIMPLEX
+            val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
             ThemeManager.applyTheme(if (it == DefaultThemeMode.LIGHT) lightBase.themeName else darkBase.themeName, systemDark)
           }
         }
@@ -947,7 +951,7 @@ fun ModalData.WallpaperEditor(theme: ThemeModeOverride, applyToMode: DefaultThem
 
       SectionSpacer()
 
-      AppearanceScope.CustomizeThemeColorsSection(currentTheme, showSentReceivedColors = false, editColor = editColor)
+      AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
     } else {
       AdvancedSettingsButton { showMore = true }
     }

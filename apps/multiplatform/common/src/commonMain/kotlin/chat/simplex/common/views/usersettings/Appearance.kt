@@ -34,6 +34,8 @@ import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.res.MR
+import com.godaddy.android.colorpicker.ClassicColorPicker
+import com.godaddy.android.colorpicker.HsvColor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -343,11 +345,10 @@ object AppearanceScope {
         ThemeManager.applyTheme(it, darkTheme)
         saveThemeToDatabase(null)
       }
-      if (state.value == DefaultTheme.SYSTEM.themeName) {
-        DarkThemeSelector(remember { systemDarkTheme.state }) {
-          ThemeManager.changeDarkTheme(it, darkTheme)
-          saveThemeToDatabase(null)
-        }
+
+      DarkThemeSelector(remember { systemDarkTheme.state }) {
+        ThemeManager.changeDarkTheme(it, darkTheme)
+        saveThemeToDatabase(null)
       }
     }
     SectionItemView(click = {
@@ -391,8 +392,11 @@ object AppearanceScope {
             ThemeColor.BACKGROUND -> MaterialTheme.colors.background
             ThemeColor.SURFACE -> MaterialTheme.colors.surface
             ThemeColor.TITLE -> MaterialTheme.appColors.title
+            ThemeColor.PRIMARY_VARIANT2 -> MaterialTheme.appColors.primaryVariant2
             ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
+            ThemeColor.SENT_QUOTE -> MaterialTheme.appColors.sentQuote
             ThemeColor.RECEIVED_MESSAGE -> MaterialTheme.appColors.receivedMessage
+            ThemeColor.RECEIVED_QUOTE -> MaterialTheme.appColors.receivedQuote
           }
           ColorEditor(name, initialColor, baseTheme, MaterialTheme.wallpaper.type, backgroundImage, currentColors = { CurrentColors.value },
             header = {
@@ -499,14 +503,15 @@ object AppearanceScope {
           }
           saveThemeToDatabase(themeUserDestination.value)
         }
-        SectionView(stringResource(MR.strings.settings_section_title_wallpaper).uppercase()) {
+        SectionView(stringResource(MR.strings.settings_section_title_chat_colors).uppercase()) {
           WallpaperSetupView(
             backgroundImageType,
             baseTheme,
             MaterialTheme.wallpaper,
             MaterialTheme.appColors.sentMessage,
+            MaterialTheme.appColors.sentQuote,
             MaterialTheme.appColors.receivedMessage,
-            showSentReceivedColors = false,
+            MaterialTheme.appColors.receivedQuote,
             editColor = { name ->
               // If no wallpaper is set, nothing to apply new color to. So if user didn't select any wallpaper yet, do it automatically before choosing color
               if (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredTheme(baseTheme)?.wallpaper == null) {
@@ -522,7 +527,7 @@ object AppearanceScope {
         SectionDividerSpaced(maxTopPadding = true)
       }
 
-      CustomizeThemeColorsSection(currentTheme, showSentReceivedColors = true) { name ->
+      CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
       }
 
@@ -660,7 +665,7 @@ object AppearanceScope {
   }
 
   @Composable
-  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, showSentReceivedColors: Boolean, editColor: (ThemeColor) -> Unit) {
+  fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor) -> Unit) {
     SectionView(stringResource(MR.strings.theme_colors_section_title)) {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY) }) {
         val title = generalGetString(MR.strings.color_primary)
@@ -697,17 +702,10 @@ object AppearanceScope {
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
       }
-      if (showSentReceivedColors) {
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
-          val title = generalGetString(MR.strings.color_sent_message)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
-        }
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
-          val title = generalGetString(MR.strings.color_received_message)
-          Text(title)
-          Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
-        }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT2) }) {
+        val title = generalGetString(MR.strings.color_primary_variant2)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.primaryVariant2)
       }
     }
   }
@@ -777,7 +775,7 @@ object AppearanceScope {
         })
         Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
       }
-      val savedColor by remember { mutableStateOf(initialColor) }
+      val savedColor by remember(backgroundImageType) { mutableStateOf(initialColor) }
 
       SectionSpacer()
       Row(Modifier.align(Alignment.CenterHorizontally)) {
@@ -839,7 +837,7 @@ object AppearanceScope {
   private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
     val darkTheme = isSystemInDarkTheme()
     val values by remember(ChatController.appPrefs.appLanguage.state.value) {
-      mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.themeName to it.third })
+      mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second to it.third })
     }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.theme),
@@ -857,6 +855,7 @@ object AppearanceScope {
       val darkThemes = ArrayList<Pair<String, String>>()
       darkThemes.add(DefaultTheme.DARK.themeName to generalGetString(MR.strings.theme_dark))
       darkThemes.add(DefaultTheme.SIMPLEX.themeName to generalGetString(MR.strings.theme_simplex))
+      darkThemes.add(DefaultTheme.BLACK.themeName to generalGetString(MR.strings.theme_black))
       mutableStateOf(darkThemes.toList())
     }
     ExposedDropDownSettingRow(
@@ -879,8 +878,9 @@ fun WallpaperSetupView(
   theme: DefaultTheme,
   initialWallpaper: AppWallpaper?,
   initialSentColor: Color,
+  initialSentQuoteColor: Color,
   initialReceivedColor: Color,
-  showSentReceivedColors: Boolean,
+  initialReceivedQuoteColor: Color,
   editColor: (ThemeColor) -> Unit,
   onTypeChange: (BackgroundImageType?) -> Unit,
 ) {
@@ -930,21 +930,40 @@ fun WallpaperSetupView(
       Text(title)
       Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
     }
+    SectionSpacer()
   }
 
-  if (showSentReceivedColors) {
-    SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
-      val title = generalGetString(MR.strings.color_sent_message)
-      Text(title)
-      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentColor)
-    }
-    SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
-      val title = generalGetString(MR.strings.color_received_message)
-      Text(title)
-      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedColor)
-    }
+  SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
+    val title = generalGetString(MR.strings.color_sent_message)
+    Text(title)
+    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentColor)
+  }
+  SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_QUOTE) }) {
+    val title = generalGetString(MR.strings.color_sent_quote)
+    Text(title)
+    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentQuoteColor)
+  }
+  SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
+    val title = generalGetString(MR.strings.color_received_message)
+    Text(title)
+    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedColor)
+  }
+  SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_QUOTE) }) {
+    val title = generalGetString(MR.strings.color_received_quote)
+    Text(title)
+    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedQuoteColor)
   }
 }
 
 @Composable
-expect fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit)
+private fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
+  ClassicColorPicker(modifier = Modifier
+    .fillMaxWidth()
+    .height(300.dp),
+    color = HsvColor.from(color = initialColor),
+    showAlphaBar = false,
+    onColorChanged = { color: HsvColor ->
+      onColorChanged(color.toColor())
+    }
+  )
+}

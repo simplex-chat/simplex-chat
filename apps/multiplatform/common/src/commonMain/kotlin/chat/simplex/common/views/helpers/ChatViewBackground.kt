@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -28,127 +29,184 @@ enum class PredefinedBackgroundImage(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cats") CATS(MR.images.background_cats, "cats", MR.strings.background_cats, 0.5f,
-    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+  @SerialName("cats") CATS(MR.images.background_cats, "cats", MR.strings.background_cats, 0.63394785f,
+    mapOf(DefaultTheme.LIGHT to "#ffF8F6EA".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
+    mapOf(DefaultTheme.LIGHT to "#ffEFDCA6".colorFromReadableHex(), DefaultTheme.DARK to "#ff4B0E3A".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff4A104A".colorFromReadableHex(), DefaultTheme.BLACK to "#ff4B0E3A".colorFromReadableHex()),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
-//       primary = "#ff000000"
+        sentMessage = "#ffFFF9EA",
+        sentQuote = "#ffFAF0D6",
+        receivedMessage = "#ffF8F7F4",
+        receivedQuote = "#ffEFEDE7",
       ),
       DefaultTheme.DARK to ThemeColors(
-//        primary = "#ff000000"
+        sentMessage = "#ff321027",
+        sentQuote = "#ff4D0E3C",
+        receivedMessage = "#ff2A2628",
+        receivedQuote = "#ff42393E",
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-//        primary = "#ff000000"
-      )
+        sentMessage = "#ff4C1F4E",
+        sentQuote = "#ff782870",
+        receivedMessage = "#ff29283B",
+        receivedQuote = "#ff413B4E",
+      ),
+      DefaultTheme.BLACK to ThemeColors(
+        sentMessage = "#ff4C1F4E",
+        sentQuote = "#ff782870",
+        receivedMessage = "#ff29283B",
+        receivedQuote = "#ff413B4E",
+      ),
     )
   ),
-  @SerialName("hearts") HEARTS(MR.images.background_hearts, "hearts", MR.strings.background_hearts, 0.5f,
-    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+  @SerialName("flowers") FLOWERS(MR.images.background_flowers, "flowers", MR.strings.background_flowers, 0.53655575f,
+    mapOf(DefaultTheme.LIGHT to "#ffE2FFE4".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
+    mapOf(DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(), DefaultTheme.DARK to "#ff31560D".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff31570D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
+        sentMessage = "#ffEBFEDC",
+        sentQuote = "#ffD7F6BE",
+        receivedMessage = "#ffF4F8F2",
+        receivedQuote = "#ffE7EEE3",
       ),
       DefaultTheme.DARK to ThemeColors(
+        sentMessage = "#ff163521",
+        sentQuote = "#ff1B5330",
+        receivedMessage = "#ff242523",
+        receivedQuote = "#ff353733",
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-      )
+        sentMessage = "#ff184739",
+        sentQuote = "#ff1F6F4B",
+        receivedMessage = "#ff232736",
+        receivedQuote = "#ff343944",
+      ),
+      DefaultTheme.BLACK to ThemeColors(
+        sentMessage = "#ff184739",
+        sentQuote = "#ff1F6F4B",
+        receivedMessage = "#ff232736",
+        receivedQuote = "#ff343944",
+      ),
     )
   ),
-  @SerialName("school") SCHOOL(MR.images.background_school, "school",  MR.strings.background_school, 0.5f,
-  mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+  @SerialName("hearts") HEARTS(MR.images.background_hearts, "hearts", MR.strings.background_hearts, 0.5980665f,
+    mapOf(DefaultTheme.LIGHT to "#ffFDECEC".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
+    mapOf(DefaultTheme.LIGHT to "#ffFCDADA".colorFromReadableHex(), DefaultTheme.DARK to "#ff3C0F0F".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff381221".colorFromReadableHex(), DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
+        sentMessage = "#ffFFF1F1",
+        sentQuote = "#ffFBE3E3",
+        receivedMessage = "#ffF8F5F5",
+        receivedQuote = "#ffEFE9E9",
       ),
       DefaultTheme.DARK to ThemeColors(
+        sentMessage = "#ff301515",
+        sentQuote = "#ff4C1818",
+        receivedMessage = "#ff292626",
+        receivedQuote = "#ff403939",
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-      )
+        sentMessage = "#ff491A28",
+        sentQuote = "#ff761F29",
+        receivedMessage = "#ff282839",
+        receivedQuote = "#ff3F3B4A",
+      ),
+      DefaultTheme.BLACK to ThemeColors(
+        sentMessage = "#ff491A28",
+        sentQuote = "#ff761F29",
+        receivedMessage = "#ff282839",
+        receivedQuote = "#ff3F3B4A",
+      ),
     )
   ),
-  @SerialName("internet") INTERNET(MR.images.background_internet, "internet", MR.strings.background_internet, 0.5f,
-  mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+  @SerialName("kids") KIDS(MR.images.background_kids, "kids", MR.strings.background_kids, 0.5382644f,
+    mapOf(DefaultTheme.LIGHT to "#ffD1FDFC".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
+    mapOf(DefaultTheme.LIGHT to "#ff90E4F3".colorFromReadableHex(), DefaultTheme.DARK to "#ff16404B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff143047".colorFromReadableHex(), DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
+        sentMessage = "#ffDCFEFF",
+        sentQuote = "#ffBEF6F8",
+        receivedMessage = "#ffF3FAFA",
+        receivedQuote = "#ffE7F2F2",
       ),
       DefaultTheme.DARK to ThemeColors(
+        sentMessage = "#ff16302F",
+        sentQuote = "#ff1A4A49",
+        receivedMessage = "#ff252626",
+        receivedQuote = "#ff373A39",
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-      )
+        sentMessage = "#ff174855",
+        sentQuote = "#ff1D707A",
+        receivedMessage = "#ff242839",
+        receivedQuote = "#ff363C4A",
+      ),
+      DefaultTheme.BLACK to ThemeColors(
+        sentMessage = "#ff174855",
+        sentQuote = "#ff1D707A",
+        receivedMessage = "#ff242839",
+        receivedQuote = "#ff363C4A",
+      ),
     )
   ),
-  @SerialName("travel") TRAVEL(MR.images.background_travel, "travel", MR.strings.background_travel, 0.5f,
-  mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+  @SerialName("school") SCHOOL(MR.images.background_school, "school",  MR.strings.background_school, 0.5365557f,
+  mapOf(DefaultTheme.LIGHT to "#ffE7F5FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
+  mapOf(DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(), DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff0E2B4D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
+        sentMessage = "#ffEAF7FF",
+        sentQuote = "#ffD6EDFA",
+        receivedMessage = "#ffF3F5F9",
+        receivedQuote = "#ffE6E9F0",
       ),
       DefaultTheme.DARK to ThemeColors(
+        sentMessage = "#ff172833",
+        sentQuote = "#ff1C3E4F",
+        receivedMessage = "#ff282A2E",
+        receivedQuote = "#ff3E434A",
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-      )
+        sentMessage = "#ff1A3C5D",
+        sentQuote = "#ff225E85",
+        receivedMessage = "#ff282D41",
+        receivedQuote = "#ff3E455B",
+      ),
+      DefaultTheme.BLACK to ThemeColors(
+        sentMessage = "#ff1A3C5D",
+        sentQuote = "#ff225E85",
+        receivedMessage = "#ff282D41",
+        receivedQuote = "#ff3E455B",
+      ),
     )
   ),
-  @SerialName("pets") PETS(MR.images.background_pets, "pets", MR.strings.background_pets, 0.5f,
-  mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
+  @SerialName("travel") TRAVEL(MR.images.background_travel, "travel", MR.strings.background_travel, 0.68008095f,
+    mapOf(DefaultTheme.LIGHT to "#ffF7E9FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
+    mapOf(DefaultTheme.LIGHT to "#ffEDD8FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff311E48".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff34225E".colorFromReadableHex(), DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
+        sentMessage = "#ffF8ECFF",
+        sentQuote = "#ffEEDAFA",
+        receivedMessage = "#ffF6F4F7",
+        receivedQuote = "#ffEBE7ED",
       ),
       DefaultTheme.DARK to ThemeColors(
+        sentMessage = "#ff33263B",
+        sentQuote = "#ff53385E",
+        receivedMessage = "#ff272528",
+        receivedQuote = "#ff3B373E",
       ),
       DefaultTheme.SIMPLEX to ThemeColors(
-      )
-    )
-  ),
-  @SerialName("space") SPACE(MR.images.background_space, "space", MR.strings.background_space, 0.5f,
-  mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-  mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
-    mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
+        sentMessage = "#ff3C255D",
+        sentQuote = "#ff623485",
+        receivedMessage = "#ff26273B",
+        receivedQuote = "#ff3A394F",
       ),
-      DefaultTheme.DARK to ThemeColors(
+      DefaultTheme.BLACK to ThemeColors(
+        sentMessage = "#ff3C255D",
+        sentQuote = "#ff623485",
+        receivedMessage = "#ff26273B",
+        receivedQuote = "#ff3A394F",
       ),
-      DefaultTheme.SIMPLEX to ThemeColors(
-      )
-    )
-  ),
-  @SerialName("flowers") FLOWERS(MR.images.background_flowers, "flowers", MR.strings.background_flowers, 0.5f,
-    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
-    mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
-      ),
-      DefaultTheme.DARK to ThemeColors(
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
-      )
-    )
-  ),
-  @SerialName("kids") KIDS(MR.images.background_kids, "kids", MR.strings.background_kids, 0.5f,
-    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
-    mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
-      ),
-      DefaultTheme.DARK to ThemeColors(
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
-      )
-    )
-  ),
-  @SerialName("social") SOCIAL(MR.images.background_social, "social", MR.strings.background_social, 0.5f,
-    mapOf(DefaultTheme.LIGHT to Color.White, DefaultTheme.DARK to Color.Black, DefaultTheme.SIMPLEX to Color.Black),
-    mapOf(DefaultTheme.LIGHT to Color.Blue, DefaultTheme.DARK to Color.Blue, DefaultTheme.SIMPLEX to Color.Blue),
-    mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
-      ),
-      DefaultTheme.DARK to ThemeColors(
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
-      )
     )
   );
 

@@ -744,7 +744,7 @@
   <string name="private_routing_explanation">To protect your IP address, private routing uses your SMP servers to deliver messages.</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
-  <string name="theme_colors_section_title">THEME COLORS</string>
+  <string name="theme_colors_section_title">INTERFACE COLORS</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>
@@ -1067,6 +1067,7 @@
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
   <string name="settings_section_title_wallpaper">Wallpaper</string>
+  <string name="settings_section_title_chat_colors">Chat colors</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_private_message_routing">PRIVATE MESSAGE ROUTING</string>
   <string name="settings_section_title_calls">CALLS</string>
@@ -1543,6 +1544,7 @@
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
   <string name="theme_simplex">SimpleX</string>
+  <string name="theme_black">Black</string>
 
   <!-- Languages -->
   <string name="language_system">System</string>
@@ -1559,7 +1561,6 @@
   <string name="reset_color">Reset colors</string>
   <string name="remove_changes">Remove changes</string>
   <string name="theme_destination_all_profiles">All chat profiles</string>
-  <string name="theme_has_unsupported_base">The theme has unsupported base theme</string>
   <string name="color_primary">Accent</string>
   <string name="color_primary_variant">Additional accent</string>
   <string name="color_secondary">Secondary</string>
@@ -1567,22 +1568,21 @@
   <string name="color_background">Background</string>
   <string name="color_surface">Menus &amp; alerts</string>
   <string name="color_title">Title</string>
+  <string name="color_primary_variant2">Additional accent2</string>
   <string name="color_sent_message">Sent message</string>
+  <string name="color_sent_quote">Sent reply</string>
   <string name="color_received_message">Received message</string>
-  <string name="color_wallpaper_background">Background</string>
-  <string name="color_wallpaper_tint">Tint</string>
+  <string name="color_received_quote">Received reply</string>
+  <string name="color_wallpaper_background">Wallpaper background</string>
+  <string name="color_wallpaper_tint">Wallpaper accent</string>
 
   <!-- Backgrounds -->
   <string name="background_cats">Cats</string>
   <string name="background_flowers">Flowers</string>
   <string name="background_hearts">Hearts</string>
-  <string name="background_internet">Internet</string>
   <string name="background_kids">Kids</string>
-  <string name="background_pets">Pets</string>
   <string name="background_school">School</string>
-  <string name="background_social">Social</string>
   <string name="background_travel">Travel</string>
-  <string name="background_space">Space</string>
   <string name="background_image_preview_hello_alice">Hello, Alice</string>
   <string name="background_image_preview_hello_bob">Hello, Bob</string>
   <string name="background_image_scale">Scale</string>

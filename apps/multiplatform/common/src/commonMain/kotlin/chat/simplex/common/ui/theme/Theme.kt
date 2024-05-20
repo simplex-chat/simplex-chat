@@ -21,7 +21,11 @@ import kotlinx.serialization.Transient
 import java.util.UUID
 
 enum class DefaultTheme {
-  SYSTEM, LIGHT, DARK, SIMPLEX;
+  LIGHT, DARK, SIMPLEX, BLACK;
+
+  companion object {
+    const val SYSTEM_THEME_NAME: String = "SYSTEM"
+  }
 
   val themeName: String
     get() = name
@@ -31,16 +35,16 @@ enum class DefaultTheme {
   // Call it only with base theme, not SYSTEM
   fun hasChangedAnyColor(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Boolean {
     val palette = when (this) {
-      SYSTEM -> return false
       LIGHT -> LightColorPalette
       DARK -> DarkColorPalette
       SIMPLEX -> SimplexColorPalette
+      BLACK -> BlackColorPalette
     }
     val appPalette = when (this) {
-      SYSTEM -> return false
       LIGHT -> LightColorPaletteApp
       DARK -> DarkColorPaletteApp
       SIMPLEX -> SimplexColorPaletteApp
+      BLACK -> BlackColorPaletteApp
     }
     return colors.primary != palette.primary ||
         colors.primaryVariant != palette.primaryVariant ||
@@ -63,32 +67,50 @@ enum class DefaultThemeMode {
 @Stable
 class AppColors(
   title: Color,
+  primaryVariant2: Color,
   sentMessage: Color,
-  receivedMessage: Color
+  sentQuote: Color,
+  receivedMessage: Color,
+  receivedQuote: Color,
 ) {
   var title by mutableStateOf(title, structuralEqualityPolicy())
     internal set
+  var primaryVariant2 by mutableStateOf(primaryVariant2, structuralEqualityPolicy())
+    internal set
   var sentMessage by mutableStateOf(sentMessage, structuralEqualityPolicy())
     internal set
+  var sentQuote by mutableStateOf(sentQuote, structuralEqualityPolicy())
+    internal set
   var receivedMessage by mutableStateOf(receivedMessage, structuralEqualityPolicy())
+    internal set
+  var receivedQuote by mutableStateOf(receivedQuote, structuralEqualityPolicy())
     internal set
 
   fun copy(
     title: Color = this.title,
+    primaryVariant2: Color = this.primaryVariant2,
     sentMessage: Color = this.sentMessage,
+    sentQuote: Color = this.sentQuote,
     receivedMessage: Color = this.receivedMessage,
+    receivedQuote: Color = this.receivedQuote,
   ): AppColors = AppColors(
     title,
+    primaryVariant2,
     sentMessage,
+    sentQuote,
     receivedMessage,
+    receivedQuote,
   )
 
   override fun toString(): String {
     return buildString {
       append("AppColors(")
       append("title=$title, ")
+      append("primaryVariant2=$primaryVariant2, ")
       append("sentMessage=$sentMessage, ")
-      append("receivedMessage=$receivedMessage")
+      append("sentQuote=$sentQuote, ")
+      append("receivedMessage=$receivedMessage, ")
+      append("receivedQuote=$receivedQuote")
       append(")")
     }
   }
@@ -129,7 +151,7 @@ class AppWallpaper(
 }
 
 enum class ThemeColor {
-  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, RECEIVED_MESSAGE, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
+  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, SENT_QUOTE, RECEIVED_MESSAGE, RECEIVED_QUOTE, PRIMARY_VARIANT2, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
 
   fun fromColors(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Color? {
     return when (this) {
@@ -140,8 +162,11 @@ enum class ThemeColor {
       BACKGROUND -> colors.background
       SURFACE -> colors.surface
       TITLE -> appColors.title
+      PRIMARY_VARIANT2 -> appColors.primaryVariant2
       SENT_MESSAGE -> appColors.sentMessage
+      SENT_QUOTE -> appColors.sentQuote
       RECEIVED_MESSAGE -> appColors.receivedMessage
+      RECEIVED_QUOTE -> appColors.receivedQuote
       WALLPAPER_BACKGROUND -> appWallpaper.background
       WALLPAPER_TINT -> appWallpaper.tint
     }
@@ -156,8 +181,11 @@ enum class ThemeColor {
       BACKGROUND -> generalGetString(MR.strings.color_background)
       SURFACE -> generalGetString(MR.strings.color_surface)
       TITLE -> generalGetString(MR.strings.color_title)
+      PRIMARY_VARIANT2 -> generalGetString(MR.strings.color_primary_variant2)
       SENT_MESSAGE -> generalGetString(MR.strings.color_sent_message)
+      SENT_QUOTE -> generalGetString(MR.strings.color_sent_quote)
       RECEIVED_MESSAGE -> generalGetString(MR.strings.color_received_message)
+      RECEIVED_QUOTE -> generalGetString(MR.strings.color_received_quote)
       WALLPAPER_BACKGROUND -> generalGetString(MR.strings.color_wallpaper_background)
       WALLPAPER_TINT -> generalGetString(MR.strings.color_wallpaper_tint)
     }
@@ -175,8 +203,14 @@ data class ThemeColors(
   @SerialName("menus")
   val surface: String? = null,
   val title: String? = null,
+  @SerialName("accentVariant2")
+  val primaryVariant2: String? = null,
   val sentMessage: String? = null,
+  @SerialName("sentReply")
+  val sentQuote: String? = null,
   val receivedMessage: String? = null,
+  @SerialName("receivedReply")
+  val receivedQuote: String? = null,
 ) {
   companion object {
     fun from(colors: Colors, appColors: AppColors): ThemeColors =
@@ -188,8 +222,11 @@ data class ThemeColors(
         background = colors.background.toReadableHex(),
         surface = colors.surface.toReadableHex(),
         title = appColors.title.toReadableHex(),
+        primaryVariant2 = appColors.primaryVariant2.toReadableHex(),
         sentMessage = appColors.sentMessage.toReadableHex(),
+        sentQuote = appColors.sentQuote.toReadableHex(),
         receivedMessage = appColors.receivedMessage.toReadableHex(),
+        receivedQuote = appColors.receivedQuote.toReadableHex(),
       )
   }
 }
@@ -280,6 +317,11 @@ data class ThemeWallpaper (
 }
 
 @Serializable
+data class ThemesFile(
+  val themes: List<ThemeOverrides> = emptyList()
+)
+
+@Serializable
 data class ThemeOverrides (
   val themeId: String = UUID.randomUUID().toString(),
   val base: DefaultTheme,// = DefaultTheme.LIGHT,
@@ -304,8 +346,11 @@ data class ThemeOverrides (
         ThemeColor.BACKGROUND -> colors.copy(background = color)
         ThemeColor.SURFACE -> colors.copy(surface = color)
         ThemeColor.TITLE -> colors.copy(title = color)
+        ThemeColor.PRIMARY_VARIANT2 -> colors.copy(primaryVariant2 = color)
         ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
+        ThemeColor.SENT_QUOTE -> colors.copy(sentQuote = color)
         ThemeColor.RECEIVED_MESSAGE -> colors.copy(receivedMessage = color)
+        ThemeColor.RECEIVED_QUOTE -> colors.copy(receivedQuote = color)
         ThemeColor.WALLPAPER_BACKGROUND -> colors.copy()
         ThemeColor.WALLPAPER_TINT -> colors.copy()
       }, wallpaper = when (name) {
@@ -321,8 +366,7 @@ data class ThemeOverrides (
       DefaultTheme.LIGHT -> LightColorPalette
       DefaultTheme.DARK -> DarkColorPalette
       DefaultTheme.SIMPLEX -> SimplexColorPalette
-      // shouldn't be here
-      DefaultTheme.SYSTEM -> LightColorPalette
+      DefaultTheme.BLACK -> BlackColorPalette
     }
     return baseColors.copy(
       primary = perChatTheme?.primary?.colorFromReadableHex() ?: perUserTheme?.primary?.colorFromReadableHex() ?: colors.primary?.colorFromReadableHex() ?: presetWallpaperTheme?.primary?.colorFromReadableHex() ?: baseColors.primary,
@@ -339,20 +383,28 @@ data class ThemeOverrides (
       DefaultTheme.LIGHT -> LightColorPaletteApp
       DefaultTheme.DARK -> DarkColorPaletteApp
       DefaultTheme.SIMPLEX -> SimplexColorPaletteApp
-      // shouldn't be here
-      DefaultTheme.SYSTEM -> LightColorPaletteApp
+      DefaultTheme.BLACK -> BlackColorPaletteApp
     }
 
     val sentMessageFallback = colors.sentMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage
+    val sentQuoteFallback = colors.sentQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.sentQuote?.colorFromReadableHex() ?: baseColors.sentQuote
     val receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage
+    val receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedQuote?.colorFromReadableHex() ?: baseColors.receivedQuote
     return baseColors.copy(
       title = perChatTheme?.title?.colorFromReadableHex() ?: perUserTheme?.title?.colorFromReadableHex() ?: colors.title?.colorFromReadableHex() ?: presetWallpaperTheme?.title?.colorFromReadableHex() ?: baseColors.title,
+      primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?: perUserTheme?.primaryVariant2?.colorFromReadableHex() ?: colors.primaryVariant2?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant2?.colorFromReadableHex() ?: baseColors.primaryVariant2,
       sentMessage = if (perChatTheme?.sentMessage != null) perChatTheme.sentMessage.colorFromReadableHex()
         else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.sentMessage?.colorFromReadableHex() ?: sentMessageFallback
         else sentMessageFallback,
+      sentQuote = if (perChatTheme?.sentQuote != null) perChatTheme.sentQuote.colorFromReadableHex()
+        else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.sentQuote?.colorFromReadableHex() ?: sentQuoteFallback
+        else sentQuoteFallback,
       receivedMessage = if (perChatTheme?.receivedMessage != null) perChatTheme.receivedMessage.colorFromReadableHex()
         else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.receivedMessage?.colorFromReadableHex() ?: receivedMessageFallback
         else receivedMessageFallback,
+      receivedQuote = if (perChatTheme?.receivedQuote != null) perChatTheme.receivedQuote.colorFromReadableHex()
+        else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.receivedQuote?.colorFromReadableHex() ?: receivedQuoteFallback
+        else receivedQuoteFallback,
     )
   }
 
@@ -395,8 +447,11 @@ data class ThemeOverrides (
       background = c.background.toReadableHex(),
       surface = c.surface.toReadableHex(),
       title = ac.title.toReadableHex(),
+      primaryVariant2 = ac.primaryVariant2.toReadableHex(),
       sentMessage = ac.sentMessage.toReadableHex(),
+      sentQuote = ac.sentQuote.toReadableHex(),
       receivedMessage = ac.receivedMessage.toReadableHex(),
+      receivedQuote = ac.receivedQuote.toReadableHex(),
     )
   }
 }
@@ -453,8 +508,11 @@ data class ThemeModeOverride (
       ThemeColor.BACKGROUND -> colors.copy(background = color)
       ThemeColor.SURFACE -> colors.copy(surface = color)
       ThemeColor.TITLE -> colors.copy(title = color)
+      ThemeColor.PRIMARY_VARIANT2 -> colors.copy(primaryVariant2 = color)
       ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
+      ThemeColor.SENT_QUOTE -> colors.copy(sentQuote = color)
       ThemeColor.RECEIVED_MESSAGE -> colors.copy(receivedMessage = color)
+      ThemeColor.RECEIVED_QUOTE -> colors.copy(receivedQuote = color)
       ThemeColor.WALLPAPER_BACKGROUND -> colors.copy()
       ThemeColor.WALLPAPER_TINT -> colors.copy()
     }, wallpaper = when (name) {
@@ -516,8 +574,11 @@ val DarkColorPalette = darkColors(
 )
 val DarkColorPaletteApp = AppColors(
   title = SimplexBlue,
-  sentMessage = SentMessageColor,
+  primaryVariant2 = Color(0xFF18262E),
+  sentMessage = Color(0xFF18262E),
+  sentQuote = Color(0xFF1D3847),
   receivedMessage = Color(0x20B1B0B5),
+  receivedQuote = Color(0x20B1B0B5), //LALAL
 )
 
 val LightColorPalette = lightColors(
@@ -535,8 +596,11 @@ val LightColorPalette = lightColors(
 )
 val LightColorPaletteApp = AppColors(
   title = SimplexBlue,
-  sentMessage = SentMessageColor,
+  primaryVariant2 = Color(0xFFE9F7FF),
+  sentMessage = Color(0xFFE9F7FF),
+  sentQuote = Color(0xFFD6F0FF),
   receivedMessage = Color(0x20B1B0B5),
+  receivedQuote = Color(0x20B1B0B5),
 )
 
 val SimplexColorPalette = darkColors(
@@ -555,8 +619,34 @@ val SimplexColorPalette = darkColors(
 )
 val SimplexColorPaletteApp = AppColors(
   title = Color(0xFF267BE5),
-  sentMessage = SentMessageColor,
+  primaryVariant2 = Color(0xFF172941),
+  sentMessage = Color(0xFF172941),
+  sentQuote = Color(0xFF1C3A57),
   receivedMessage = Color(0x20B1B0B5),
+  receivedQuote = Color(0x20B1B0B5),
+)
+
+val BlackColorPalette = darkColors(
+  primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = SimplexBlue,
+  secondary = HighOrLowlight,
+  secondaryVariant = DarkGray,
+  //  background = Color.Black,
+  surface = Color(0xFF222222),
+  //  background = Color(0xFF121212),
+  //  surface = Color(0xFF121212),
+  error = Color.Red,
+  onBackground = Color(0xFFFFFBFA),
+  onSurface = Color(0xFFFFFBFA),
+  //  onError: Color = Color.Black,
+)
+val BlackColorPaletteApp = AppColors(
+  title = SimplexBlue,
+  primaryVariant2 = Color(0xFF18262E),
+  sentMessage = Color(0xFF18262E),
+  sentQuote = Color(0xFF1D3847),
+  receivedMessage = Color(0x20B1B0B5),
+  receivedQuote = Color(0x20B1B0B5),
 )
 
 val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode(), null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get()))
@@ -577,8 +667,11 @@ val MaterialTheme.appColors: AppColors
 
 fun AppColors.updateColorsFrom(other: AppColors) {
   title = other.title
+  primaryVariant2 = other.primaryVariant2
   sentMessage = other.sentMessage
+  sentQuote = other.sentQuote
   receivedMessage = other.receivedMessage
+  receivedQuote = other.receivedQuote
 }
 
 fun AppWallpaper.updateWallpaperFrom(other: AppWallpaper) {
@@ -593,9 +686,9 @@ val MaterialTheme.wallpaper: AppWallpaper
   get() = LocalAppWallpaper.current
 
 fun reactOnDarkThemeChanges(isDark: Boolean) {
-  if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM.themeName && CurrentColors.value.colors.isLight == isDark) {
+  if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.value.colors.isLight == isDark) {
     // Change active colors from light to dark and back based on system theme
-    ThemeManager.applyTheme(DefaultTheme.SYSTEM.themeName, isDark)
+    ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME, isDark)
   }
 }
 
