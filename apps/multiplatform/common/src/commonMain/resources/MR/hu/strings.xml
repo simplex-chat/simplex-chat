@@ -26,7 +26,7 @@
     <string name="accept_call_on_lock_screen">Elfogadás</string>
     <string name="above_then_preposition_continuation">gombra fent, majd:</string>
     <string name="accept_contact_incognito_button">Elfogadás inkognítóban</string>
-    <string name="accept_connection_request__question">Kapcsolatfelvétel elfogadása?</string>
+    <string name="accept_connection_request__question">Kapcsolódási kérelem elfogadása?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
     <string name="add_address_to_your_profile">Azonosító hozzáadása a profilhoz, hogy az ismerősei megoszthassák másokkal. A profilfrissítés elküldésre kerül az ismerősök számára.</string>
@@ -364,8 +364,8 @@
     <string name="auth_device_authentication_is_disabled_turning_off">Eszközhitelesítés kikapcsolva. SimpleX zárolás kikapcsolása.</string>
     <string name="no_call_on_lock_screen">Letiltás</string>
     <string name="receipts_groups_disable_for_all">Letiltás minden csoport számára</string>
-    <string name="receipts_groups_enable_for_all">Engedélyezés minden csoport részére</string>
-    <string name="feature_enabled_for_contact">engedélyezve ismerős részére</string>
+    <string name="receipts_groups_enable_for_all">Engedélyezés minden csoport számára</string>
+    <string name="feature_enabled_for_contact">engedélyezve az ismerős számára</string>
     <string name="disappearing_messages_are_prohibited">Az eltűnő üzenetek küldése le van tiltva ebben a csoportban.</string>
     <string name="delete_address">Azonosító törlése</string>
     <string name="ttl_week">%d hét</string>
@@ -462,7 +462,7 @@
     <string name="total_files_count_and_size">%d fájl %s összméretben</string>
     <string name="database_passphrase_is_required">Adatbázis jelmondat szükséges a csevegés megnyitásához.</string>
     <string name="ttl_d">%dnap</string>
-    <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki részére</string>
+    <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki számára</string>
     <string name="delivery_receipts_are_disabled">Kézbesítési jelentések kikapcsolva!</string>
     <string name="expand_verb">Kibontás</string>
     <string name="error_sending_message">Hiba az üzenet küldésekor</string>
@@ -521,7 +521,7 @@
     <string name="settings_experimental_features">Kísérleti funkciók</string>
     <string name="receipts_contacts_enable_keep_overrides">Engedélyezés (felülírások megtartásával)</string>
     <string name="enter_correct_passphrase">Helyes jelmondat bevitele.</string>
-    <string name="delete_group_for_self_cannot_undo_warning">A csoport törlésre kerül az ön részére - ez a művelet nem vonható vissza!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">A csoport törlésre kerül az ön számára - ez a művelet nem vonható vissza!</string>
     <string name="encrypt_database_question">Adatbázis titkosítása?</string>
     <string name="allow_accepting_calls_from_lock_screen">A zárolási képernyőn megjelenő hívások engedélyezése a Beállításokban.</string>
     <string name="conn_event_ratchet_sync_agreed">titkosítás egyeztetve</string>
@@ -679,7 +679,7 @@
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>.]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Kapott SimpleX Chat meghívó hivatkozását megnyithatja böngészőjében:</string>
-    <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:</string>
+    <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</string>
     <string name="found_desktop">Megtalált számítógép</string>
     <string name="desktop_devices">Számítógépek</string>
     <string name="how_to_use_markdown">A markdown használata</string>
@@ -1440,7 +1440,7 @@
     <string name="you_control_your_chat">Ön irányítja csevegését!</string>
     <string name="verify_code_with_desktop">Kód ellenőrzése a számítógépen</string>
     <string name="v4_5_private_filenames_descr">Az időzóna védelme érdekében a kép-/hangfájlok UTC-t használnak.</string>
-    <string name="connect_via_member_address_alert_desc">Csoporttag részére a kapcsolódási kérelem elküldésre kerül.</string>
+    <string name="connect_via_member_address_alert_desc">A kapcsolódási kérelem elküldésre kerül ezen csoporttag számára</string>
     <string name="incognito_info_share">Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már kért egy kapcsolódási kérelmet ezen az azonosítón keresztül!</string>
     <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX azonosítót az ismerőseivel, hogy kapcsolatba léphessenek vele: %s.</string>
@@ -1488,7 +1488,7 @@
     <string name="receipts_groups_override_enabled">Kézbesítési jelentések engedélyezve vannak a(z) %d csoportban</string>
     <string name="member_role_will_be_changed_with_notification">A szerepkör meg fog változni erre: \"%s\". A csoportban mindenki értesítve lesz.</string>
     <string name="users_delete_with_connections">Profil és kiszolgálókapcsolatok</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Üzenetküldő és alkalmazásplatform, amely védi az ön adatvédelmét és biztonságát.</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Egy üzenetküldő- és alkalmazásplatform, amely védi az ön adatait és biztonságát.</string>
     <string name="tap_to_activate_profile">A profil aktiválásához koppintson az ikonra.</string>
     <string name="receipts_contacts_override_disabled">Kézbesítési jelentések le vannak tiltva %d ismerősnél</string>
     <string name="session_code">Munkamenet kód</string>
@@ -1791,9 +1791,16 @@
     <string name="update_network_smp_proxy_mode_question">Üzenet útválasztási mód</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
-    <string name="private_routing_explanation">Az ön IP-címének védelme érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
+    <string name="private_routing_explanation">Az IP-címe védelme érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
     <string name="update_network_smp_proxy_fallback_question">Üzenet útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET ÚTVÁLASZTÁS</string>
     <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.</string>
+    <string name="settings_section_title_files">FÁJLOK</string>
+    <string name="protect_ip_address">Az IP-cím védelme</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS proxy engedélyezve van).</string>
+    <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
+    <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe látható lesz az XFTP átjátszók számára:
+\n%1$s.</string>
 </resources>
