@@ -207,14 +207,14 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
           // Delete and notify contact
           SectionItemView({
             AlertManager.shared.hideAlert()
-            deleteContact(chat, chatModel, close, notify = true)
+            deleteContact(chat, chatModel, close, chatDeleteMode = ChatDeleteMode.Full(notify = true))
           }) {
             Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
           // Delete
           SectionItemView({
             AlertManager.shared.hideAlert()
-            deleteContact(chat, chatModel, close, notify = false)
+            deleteContact(chat, chatModel, close, chatDeleteMode = ChatDeleteMode.Full(notify = false))
           }) {
             Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
@@ -238,11 +238,11 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean? = null) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
-    val r = chatModel.controller.apiDeleteChat(chatRh, chatInfo.chatType, chatInfo.apiId, notify)
+    val r = chatModel.controller.apiDeleteChat(chatRh, chatInfo.chatType, chatInfo.apiId, chatDeleteMode)
     if (r) {
       chatModel.removeChat(chatRh, chatInfo.id)
       if (chatModel.chatId.value == chatInfo.id) {

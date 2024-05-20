@@ -1073,16 +1073,16 @@ object ChatController {
     }
   }
 
-  suspend fun deleteChat(chat: Chat, notify: Boolean? = null) {
+  suspend fun deleteChat(chat: Chat, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
     val cInfo = chat.chatInfo
-    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, notify = notify)) {
+    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, chatDeleteMode = chatDeleteMode)) {
       chatModel.removeChat(chat.remoteHostId, cInfo.id)
     }
   }
 
-  suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+  suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Boolean {
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, notify))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
     val success = when {
       r is CR.ContactDeleted && type == ChatType.Direct -> true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> true
@@ -1811,6 +1811,10 @@ object ChatController {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
+          if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+            val updatedContact = cInfo.contact.copy(chatDeleted = false)
+            chatModel.updateContact(rhId, updatedContact)
+          }
           chatModel.addChatItem(rhId, cInfo, cItem)
         } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
           chatModel.increaseUnreadCounter(rhId, r.user)
@@ -2476,7 +2480,7 @@ sealed class CC {
   class APIConnectPlan(val userId: Long, val connReq: String): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long, val notify: Boolean?): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -2621,11 +2625,7 @@ sealed class CC {
     is APIConnectPlan -> "/_connect plan $userId $connReq"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> if (notify != null) {
-      "/_delete ${chatRef(type, id)} notify=${onOff(notify)}"
-    } else {
-      "/_delete ${chatRef(type, id)}"
-    }
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id)} ${chatDeleteMode.cmdString}"
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
@@ -2833,8 +2833,6 @@ sealed class CC {
       null
     }
 
-  private fun onOff(b: Boolean): String = if (b) "on" else "off"
-
   private fun maybePwd(pwd: String?): String = if (pwd == "" || pwd == null) "" else " " + json.encodeToString(pwd)
 
   companion object {
@@ -2843,6 +2841,8 @@ sealed class CC {
     fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
+
+fun onOff(b: Boolean): String = if (b) "on" else "off"
 
 @Serializable
 data class NewUser(
@@ -4643,6 +4643,19 @@ fun chatError(r: CR): ChatErrorType? {
       else if (r is CR.ChatRespError && r.chatError is ChatError.ChatErrorChat) r.chatError.errorType
       else null
       )
+}
+
+@Serializable
+sealed class ChatDeleteMode {
+  @Serializable @SerialName("full") class Full(val notify: Boolean): ChatDeleteMode()
+  @Serializable @SerialName("entity") class Entity(val notify: Boolean): ChatDeleteMode()
+  @Serializable @SerialName("messages") class Messages: ChatDeleteMode()
+
+  val cmdString: String get() = when (this) {
+    is ChatDeleteMode.Full -> "full notify=${onOff(notify)}"
+    is ChatDeleteMode.Entity -> "entity notify=${onOff(notify)}"
+    is ChatDeleteMode.Messages -> "messages"
+  }
 }
 
 @Serializable
