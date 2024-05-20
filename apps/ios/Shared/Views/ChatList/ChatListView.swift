@@ -19,7 +19,7 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
 
     var body: some View {
         if #available(iOS 16.0, *) {

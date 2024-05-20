@@ -21,8 +21,9 @@ struct HomeView: View {
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
     @State private var newChatMenuOption: NewChatMenuOption? = nil
+    @State private var toolbarHeight: CGFloat = 0
 
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -31,32 +32,9 @@ struct HomeView: View {
                     get: { chatModel.chatId != nil },
                     set: { _ in }
                 ),
-                destination: chatView
-            ) {
-                VStack {
-                    switch homeTab {
-                    case .contacts:
-                        contactsView()
-                            .navigationBarTitleDisplayMode(.inline)
-                            .navigationTitle("Contacts")
-                    case .chats:
-                        chatListView()
-                            .navigationBarTitleDisplayMode(.inline)
-                            .navigationTitle("Chats")
-                    }
-                }
-                .toolbar {
-                    ToolbarItemGroup(placement: .bottomBar) {
-                        settingsButton()
-                        Spacer()
-                        contactsButton()
-                        Spacer()
-                        chatsButton()
-                        Spacer()
-                        newChatButton()
-                    }
-                }
-            }
+                destination: chatView,
+                content: homeView
+            )
 
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
@@ -76,6 +54,40 @@ struct HomeView: View {
         }
     }
 
+    @ViewBuilder private func homeView() -> some View {
+        let v = VStack {
+            switch homeTab {
+            case .contacts: withToolbar("Contacts", contactsView)
+            case .chats: withToolbar("Chats", chatListView)
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .bottomBar) {
+                settingsButton()
+                Spacer()
+                contactsButton()
+                Spacer()
+                chatsButton()
+                Spacer()
+                newChatButton()
+            }
+        }
+
+        if #unavailable(iOS 16) {
+            v
+        } else if oneHandUI {
+            v.toolbarBackground(.visible, for: .navigationBar, .bottomBar)
+        } else {
+            v.toolbarBackground(.visible, for: .bottomBar)
+        }
+    }
+
+    func withToolbar<V: View>(_ title: LocalizedStringKey, _ content: () -> V) -> some View {
+        content()
+            .navigationBarTitleDisplayMode(oneHandUI ? .inline : .large)
+            .navigationTitle(title)
+    }
+
     @ViewBuilder private func settingsButton() -> some View {
         let user = chatModel.currentUser ?? User.sampleData
         let multiUser = chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1
@@ -90,8 +102,8 @@ struct HomeView: View {
         } label: {
             VStack(spacing: 2) {
                 ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 38, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.top, 2)
+                    ProfileImage(imageStr: user.image, size: 42, color: Color(uiColor: .quaternaryLabel))
+                        .padding(.top, 3)
                         .padding(.trailing, 3)
                     let allRead = chatModel.users
                         .filter { u in !u.user.activeUser && !u.user.hidden }
@@ -115,7 +127,7 @@ struct HomeView: View {
         Button {
             homeTab = .contacts
         } label: {
-            iconLabel(homeTab == .contacts ? "book.fill" : "book", "Contacts")
+            iconLabel(homeTab == .contacts ? "person.crop.circle.fill" : "person.crop.circle", "Contacts")
         }
         .foregroundColor(.secondary)
     }
@@ -196,13 +208,11 @@ struct HomeView: View {
 
     @ViewBuilder private func contactsView() -> some View {
         ContactsView()
-            .padding(.vertical, oneHandUI ? 1 : 0)
     }
 
     @ViewBuilder private func chatListView() -> some View {
         // TODO reverse scale effect for swipe actions
         ChatListView()
-            .padding(.vertical, oneHandUI ? 1 : 0)
     }
 
     @ViewBuilder private func chatView() -> some View {

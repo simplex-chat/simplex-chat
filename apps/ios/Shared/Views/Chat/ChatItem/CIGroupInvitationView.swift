@@ -21,6 +21,8 @@ struct CIGroupInvitationView: View {
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
         let v = ZStack(alignment: .bottomTrailing) {
@@ -43,7 +45,7 @@ struct CIGroupInvitationView: View {
                                     .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
                                     .font(.callout)
                                 + Text("   ")
-                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false)
+                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
                             )
                             .overlay(DetermineWidth())
                         }
@@ -51,7 +53,7 @@ struct CIGroupInvitationView: View {
                         (
                             groupInvitationText()
                             + Text("   ")
-                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false)
+                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
                         )
                         .overlay(DetermineWidth())
                     }

@@ -63,6 +63,7 @@ let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 let DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
 let DEFAULT_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
+let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
@@ -92,7 +93,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
-    DEFAULT_ONE_HAND_UI: true,
+    DEFAULT_ONE_HAND_UI: false,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -105,7 +106,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
     DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE: true,
-    DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true,
+    DEFAULT_SHOW_SENT_VIA_RPOXY: false
 ]
 
 // not used anymore

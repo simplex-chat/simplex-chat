@@ -375,6 +375,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
+  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", plain . LB.unpack $ J.encode msgCounts]
+  CRContactDisabled u c -> ttyUser u ["[" <> ttyContact' c <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)

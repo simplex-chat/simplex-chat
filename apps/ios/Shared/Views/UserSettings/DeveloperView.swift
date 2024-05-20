@@ -12,6 +12,7 @@ import SimpleXChat
 struct DeveloperView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -31,9 +32,6 @@ struct DeveloperView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
-                    settingsRow("internaldrive") {
-                        Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
-                    }
                     settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Show developer options", isOn: $developerTools)
                     }
@@ -41,6 +39,19 @@ struct DeveloperView: View {
                     Text("")
                 } footer: {
                     (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
+                }
+
+                if developerTools {
+                    Section {
+                        settingsRow("internaldrive") {
+                            Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
+                        }
+                        settingsRow("hand.wave") {
+                            Toggle("One-hand UI", isOn: $oneHandUI)
+                        }
+                    } header: {
+                        Text("Developer options")
+                    }
                 }
             }
         }

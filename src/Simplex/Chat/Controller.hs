@@ -291,7 +291,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId}
+  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
@@ -395,7 +395,7 @@ data ChatCommand
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
-  | DeleteContact ContactName
+  | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
@@ -501,6 +501,7 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
+  | GetAgentMsgCounts
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -746,6 +747,8 @@ data ChatResponse
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
+  | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
@@ -825,9 +828,9 @@ clqNoFilters :: ChatListQuery
 clqNoFilters = CLQFilters {favorite = False, unread = False}
 
 data ChatDeleteMode
-  = CDMFull {notify :: Bool}   -- delete both contact and conversation
+  = CDMFull {notify :: Bool} -- delete both contact and conversation
   | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
-  | CDMMessages                -- delete conversation, keep contact - can be re-opened from Contacts view
+  | CDMMessages -- delete conversation, keep contact - can be re-opened from Contacts view
   deriving (Show)
 
 data ConnectionPlan
@@ -1397,8 +1400,6 @@ withAgent' action = asks smpAgent >>= liftIO . action
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CDM") ''ChatDeleteMode)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 

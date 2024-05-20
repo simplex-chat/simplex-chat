@@ -25,7 +25,7 @@ struct AppearanceSettings: View {
     @State private var userInterfaceStyle = getUserInterfaceStyleDefault()
     @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
 
     var body: some View {
         VStack{
@@ -40,11 +40,11 @@ struct AppearanceSettings: View {
                     }
                 }
 
-                Section("Interface") {
-                    settingsRow("hand.wave") {
-                        Toggle("One-hand UI", isOn: $oneHandUI)
-                    }
-                }
+                // Section("Interface") {
+                //     settingsRow("hand.wave") {
+                //         Toggle("One-hand UI", isOn: $oneHandUI)
+                //     }
+                // }
 
                 Section("App icon") {
                     HStack {
