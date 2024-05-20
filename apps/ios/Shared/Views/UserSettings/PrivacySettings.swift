@@ -110,7 +110,7 @@ struct PrivacySettings: View {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
-                    settingsRow("externaldrive.connected.to.line.below") {
+                    settingsRow("network.badge.shield.half.filled") {
                         Toggle("Protect IP address", isOn: $askToApproveRelays)
                     }
                 } header: {
