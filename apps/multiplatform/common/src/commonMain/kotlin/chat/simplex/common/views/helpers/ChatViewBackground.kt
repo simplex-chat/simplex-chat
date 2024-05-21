@@ -29,7 +29,7 @@ enum class PredefinedBackgroundImage(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cats") CATS(MR.images.background_cats, "cats", MR.strings.background_cats, 0.63394785f,
+  @SerialName("cats") CATS(MR.images.background_cats, "cats", MR.strings.background_cats, 0.63f,
     mapOf(DefaultTheme.LIGHT to "#ffF8F6EA".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ffEFDCA6".colorFromReadableHex(), DefaultTheme.DARK to "#ff4B0E3A".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff4A104A".colorFromReadableHex(), DefaultTheme.BLACK to "#ff4B0E3A".colorFromReadableHex()),
     mapOf(
@@ -59,7 +59,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("flowers") FLOWERS(MR.images.background_flowers, "flowers", MR.strings.background_flowers, 0.53655575f,
+  @SerialName("flowers") FLOWERS(MR.images.background_flowers, "flowers", MR.strings.background_flowers, 0.53f,
     mapOf(DefaultTheme.LIGHT to "#ffE2FFE4".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(), DefaultTheme.DARK to "#ff31560D".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff31570D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()),
     mapOf(
@@ -89,7 +89,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("hearts") HEARTS(MR.images.background_hearts, "hearts", MR.strings.background_hearts, 0.5980665f,
+  @SerialName("hearts") HEARTS(MR.images.background_hearts, "hearts", MR.strings.background_hearts, 0.59f,
     mapOf(DefaultTheme.LIGHT to "#ffFDECEC".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ffFCDADA".colorFromReadableHex(), DefaultTheme.DARK to "#ff3C0F0F".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff381221".colorFromReadableHex(), DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()),
     mapOf(
@@ -119,7 +119,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("kids") KIDS(MR.images.background_kids, "kids", MR.strings.background_kids, 0.5382644f,
+  @SerialName("kids") KIDS(MR.images.background_kids, "kids", MR.strings.background_kids, 0.53f,
     mapOf(DefaultTheme.LIGHT to "#ffD1FDFC".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ff90E4F3".colorFromReadableHex(), DefaultTheme.DARK to "#ff16404B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff143047".colorFromReadableHex(), DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()),
     mapOf(
@@ -149,7 +149,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("school") SCHOOL(MR.images.background_school, "school",  MR.strings.background_school, 0.5365557f,
+  @SerialName("school") SCHOOL(MR.images.background_school, "school",  MR.strings.background_school, 0.53f,
   mapOf(DefaultTheme.LIGHT to "#ffE7F5FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
   mapOf(DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(), DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff0E2B4D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()),
     mapOf(
@@ -179,7 +179,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("travel") TRAVEL(MR.images.background_travel, "travel", MR.strings.background_travel, 0.68008095f,
+  @SerialName("travel") TRAVEL(MR.images.background_travel, "travel", MR.strings.background_travel, 0.68f,
     mapOf(DefaultTheme.LIGHT to "#ffF7E9FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff121212".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ffEDD8FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff311E48".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff34225E".colorFromReadableHex(), DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()),
     mapOf(

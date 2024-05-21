@@ -902,7 +902,7 @@ fun WallpaperSetupView(
       Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
       Slider(
         state.value,
-        valueRange = 0.2f..4f,
+        valueRange = 0.5f..2f,
         onValueChange = {
           if (backgroundImageType is BackgroundImageType.Repeated) {
             onTypeChange(backgroundImageType.copy(scale = it))
