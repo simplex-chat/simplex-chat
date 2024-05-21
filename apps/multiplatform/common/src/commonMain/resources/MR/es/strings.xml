@@ -1802,4 +1802,11 @@
     <string name="snd_error_auth">Clave incorrecta o conexión desconocida - probablemente esta conexión fue eliminada</string>
     <string name="network_smp_proxy_mode_unknown_description">Usar enrutamiento privado con servidores desconocidos.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Enviar los mensajes directamente cuando tu dirección IP está protegida y tu servidor o el de destino no soporten enrutamiento privado.</string>
+    <string name="file_not_approved_title">Servidores desconocidos!</string>
+    <string name="file_not_approved_descr">Sin Tor o VPN, tu dirección IP será visible para estos relés XFTP:
+\n%1$s.</string>
+    <string name="protect_ip_address">Proteger dirección IP</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sin Tor o VPN, tu dirección IP será visible para los servidores de archivos.</string>
+    <string name="settings_section_title_files">ARCHIVOS</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">La aplicación pedirá confirmar las descargas de servidores de archivos desconocidos (excepto .onion o cuando se active SOCKS proxy).</string>
 </resources>
