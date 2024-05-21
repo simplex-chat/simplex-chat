@@ -1799,4 +1799,11 @@
     <string name="update_network_smp_proxy_fallback_question">Terugval op berichtroutering</string>
     <string name="settings_section_title_private_message_routing">PRIVÉBERICHT ROUTING</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.</string>
+    <string name="file_not_approved_title">Onbekende servers!</string>
+    <string name="file_not_approved_descr">Zonder Tor of VPN is uw IP-adres zichtbaar voor deze XFTP-relays:
+\n%1$s.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Zonder Tor of VPN is uw IP-adres zichtbaar voor bestandsservers.</string>
+    <string name="settings_section_title_files">BESTANDEN</string>
+    <string name="protect_ip_address">Bescherm het IP-adres</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">De app vraagt om downloads van onbekende bestandsservers te bevestigen (behalve .onion of wanneer SOCKS-proxy is ingeschakeld).</string>
 </resources>
