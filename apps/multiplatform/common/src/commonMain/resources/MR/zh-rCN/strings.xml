@@ -1801,4 +1801,11 @@
     <string name="snd_error_proxy_relay">转发服务器：%1$s
 \n目标服务器错误：%2$s</string>
     <string name="update_network_smp_proxy_mode_question">消息路由模式</string>
+    <string name="file_not_approved_title">未知服务器！</string>
+    <string name="file_not_approved_descr">没有 Tor 或 VPN，这些 XFTP 中继可以看到你的 IP 地址：
+\n%1$s.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">没有 Tor 或 VPN，文件服务器可以看到你的 IP 地址。</string>
+    <string name="protect_ip_address">保护 IP 地址</string>
+    <string name="settings_section_title_files">文件</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">应用将请求确认来自未知服务器的下载（.onion 或启用 SOCKS 代理时除外）。</string>
 </resources>
