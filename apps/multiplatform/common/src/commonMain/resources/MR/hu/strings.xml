@@ -92,7 +92,7 @@
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
     <string name="invite_prohibited">Ismerősök meghívása le van tiltva!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
-    <string name="v4_2_auto_accept_contact_requests">Ismerős jelölések automatikus elfogadása</string>
+    <string name="v4_2_auto_accept_contact_requests">Kapcsolódási kérelmek automatikus elfogadása</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Figyelem</b>: NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.]]></string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos</string>
@@ -813,9 +813,9 @@
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
     <string name="invalid_QR_code">Érvénytelen QR-kód</string>
-    <string name="mark_read">Megjelölés olvasottként</string>
+    <string name="mark_read">Olvasottként jelölés</string>
     <string name="live">ÉLŐ</string>
-    <string name="mark_unread">Olvasatlannak jelölve</string>
+    <string name="mark_unread">Olvasatlannak jelölés</string>
     <string name="icon_descr_more_button">Több</string>
     <string name="auth_log_in_using_credential">Bejelentkezés hitelesítő adatokkal</string>
     <string name="invalid_message_format">érvénytelen üzenet formátum</string>
