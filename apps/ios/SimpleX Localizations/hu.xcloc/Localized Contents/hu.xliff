@@ -908,9 +908,9 @@
         <target state="translated">A hívások kezdeményezése le van tiltva ebben a csevegésben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication cancelled" xml:space="preserve">
+      <trans-unit id="Authentication cancelled" xml:space="preserve" approved="no">
         <source>Authentication cancelled</source>
-        <target>Hitelesítés megszakítva</target>
+        <target state="translated">Hitelesítés visszavonva</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
@@ -5049,9 +5049,9 @@ Hiba: %@</target>
         <target>Az utolsó 100 üzenet elküldése az új tagoknak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve" approved="no">
         <source>Sender cancelled file transfer.</source>
-        <target>A küldő megszakította a fájl átvitelt.</target>
+        <target state="translated">A fájl küldője visszavonta az átvitelt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
@@ -5596,9 +5596,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A beolvasott kód nem egy SimpleX hivatkozás QR-kód.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
+      <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve" approved="no">
         <source>The connection you accepted will be cancelled!</source>
-        <target>Az ön által elfogadott kapcsolat megszakad!</target>
+        <target state="translated">Az ön által elfogadott kapcsolat vissza lesz vonva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
@@ -6639,11 +6639,11 @@ Kapcsolódási kérés megismétlése?</target>
         <target>Csevegési profiljai</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
+      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve" approved="no">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
-        <target>Az ismerősnek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
-Megszakíthatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</target>
+        <target state="translated">Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
+Visszavonhatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -6848,9 +6848,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>hívás…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="cancelled %@" xml:space="preserve">
+      <trans-unit id="cancelled %@" xml:space="preserve" approved="no">
         <source>cancelled %@</source>
-        <target>%@ törölve</target>
+        <target state="translated">%@ visszavonva</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
