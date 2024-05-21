@@ -125,5 +125,6 @@ private fun TopAppBar(
 
 val AppBarHeight = 56.dp
 val AppBarHorizontalPadding = 4.dp
+val BottomAppBarHeight = 60.dp
 private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
 val TitleInsetWithIcon = 72.dp

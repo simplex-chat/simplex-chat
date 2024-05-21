@@ -4,6 +4,7 @@ package chat.simplex.common.views.home
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,8 +17,10 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.chatModel
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -33,8 +36,14 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.net.URI
 
+sealed class HomeTab {
+  class Chats: HomeTab()
+  class Contacts: HomeTab()
+}
+
 @Composable
 fun HomeView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
+  val homeTab = remember { mutableStateOf<HomeTab>(HomeTab.Chats()) }
   val newChatSheetState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val showNewChatSheet = {
     newChatSheetState.value = AnimatedViewState.VISIBLE
@@ -66,8 +75,8 @@ fun HomeView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformL
   val scope = rememberCoroutineScope()
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(
-    topBar = { Box(Modifier.padding(end = endPadding)) { HomeTopBar(stopped) } },
-    bottomBar = { HomeBottomBar(scaffoldState.drawerState, userPickerState, stopped) },
+    topBar = { Box(Modifier.padding(end = endPadding)) { HomeTopBar(homeTab, stopped) } },
+    bottomBar = { HomeBottomBar(scaffoldState.drawerState, userPickerState, homeTab, stopped) },
     scaffoldState = scaffoldState,
     drawerContent = {
       tryOrShowError("Settings", error = { ErrorSettingsView() }) {
@@ -102,19 +111,9 @@ fun HomeView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformL
     }
   ) {
     Box(Modifier.padding(it).padding(end = endPadding)) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-      ) {
-        if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText)
-        }
-        if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats),
-            Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
-          )
-        }
+      when (homeTab.value) {
+        is HomeTab.Chats -> ChatsView(searchText)
+        is HomeTab.Contacts -> ContactsView(searchText)
       }
     }
   }
@@ -141,7 +140,48 @@ fun HomeView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformL
 }
 
 @Composable
-private fun HomeTopBar(stopped: Boolean) {
+private fun ChatsView(searchText: MutableState<TextFieldValue>) {
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+  ) {
+    if (!chatModel.desktopNoUserNoRemote) {
+      ChatList(chatModel, searchText = searchText)
+    }
+    if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+      Text(stringResource(
+        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats),
+        Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
+      )
+    }
+  }
+}
+
+@Composable
+private fun ContactsView(searchText: MutableState<TextFieldValue>) {
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+  ) {
+    if (!chatModel.desktopNoUserNoRemote) {
+      Text("Contacts")
+      // ChatList(chatModel, searchText = searchText)
+    }
+    if (contactChats().isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+      Text(stringResource(
+        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.no_contacts),
+        Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
+      )
+    }
+  }
+}
+
+fun contactChats(): List<Chat> {
+  return chatModel.chats.filter { it.chatInfo is ChatInfo.Direct }
+}
+
+@Composable
+private fun HomeTopBar(homeTab: MutableState<HomeTab>, stopped: Boolean) {
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   if (stopped) {
     barButtons.add {
@@ -159,11 +199,15 @@ private fun HomeTopBar(stopped: Boolean) {
       }
     }
   }
+  val title = when (homeTab.value) {
+    is HomeTab.Chats -> stringResource(MR.strings.your_chats)
+    is HomeTab.Contacts -> stringResource(MR.strings.contacts)
+  }
   DefaultTopAppBar(
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          stringResource(MR.strings.your_chats),
+          title,
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
@@ -178,11 +222,15 @@ private fun HomeTopBar(stopped: Boolean) {
 }
 
 @Composable
-private fun HomeBottomBar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun HomeBottomBar(
+  drawerState: DrawerState,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  homeTab: MutableState<HomeTab>,
+  stopped: Boolean) {
   Box(
     Modifier
       .fillMaxWidth()
-      .height(AppBarHeight)
+      .height(BottomAppBarHeight)
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
       .padding(horizontal = 4.dp),
     contentAlignment = Alignment.CenterStart,
@@ -196,9 +244,17 @@ private fun HomeBottomBar(drawerState: DrawerState, userPickerState: MutableStat
     ) {
       SettingsButton(drawerState, userPickerState, stopped)
 
-      Text("Chats")
+      HomeTabButton(
+        icon = painterResource(if (homeTab.value is HomeTab.Chats) MR.images.ic_chat_bubble_filled else MR.images.ic_chat_bubble),
+        title = generalGetString(MR.strings.your_chats),
+        onClick = { homeTab.value = HomeTab.Chats() }
+      )
 
-      Text("Contacts")
+      HomeTabButton(
+        icon = painterResource(if (homeTab.value is HomeTab.Contacts) MR.images.ic_account_circle_filled else MR.images.ic_account_circle),
+        title = generalGetString(MR.strings.contacts),
+        onClick = { homeTab.value = HomeTab.Contacts() }
+      )
     }
   }
 }
@@ -230,7 +286,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       Box {
         ProfileImage(
           image = image,
-          size = 52.dp,
+          size = 56.dp,
           color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
         )
         if (!allRead) {
@@ -263,6 +319,35 @@ private fun BoxScope.unreadBadge(text: String? = "") {
       .padding(vertical = 1.dp)
       .align(Alignment.TopEnd)
   )
+}
+
+@Composable
+fun HomeTabButton(icon: Painter, title: String, onClick: () -> Unit) {
+  Surface(
+    Modifier
+      .size(56.dp),
+    shape = RoundedCornerShape(10.dp),
+    color = Color.Transparent,
+  ) {
+    Column(
+      Modifier
+        .clickable { onClick () },
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center
+    ) {
+      Icon(
+        icon,
+        contentDescription = null,
+        Modifier.size(24.dp),
+        tint = MaterialTheme.colors.secondary
+      )
+      Text(
+        title,
+        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal, fontSize = 12.sp),
+        color = MaterialTheme.colors.secondary
+      )
+    }
+  }
 }
 
 @Composable
