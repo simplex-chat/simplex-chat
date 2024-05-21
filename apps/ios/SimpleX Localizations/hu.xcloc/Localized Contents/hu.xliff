@@ -933,9 +933,9 @@
         <target>Automatikus elfogadás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept contact requests" xml:space="preserve">
+      <trans-unit id="Auto-accept contact requests" xml:space="preserve" approved="no">
         <source>Auto-accept contact requests</source>
-        <target>Ismerős jelölések automatikus elfogadása</target>
+        <target state="translated">Kapcsolódási kérelmek automatikus elfogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
@@ -3583,9 +3583,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Jelölje meg mindenki számára töröltként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mark read" xml:space="preserve">
+      <trans-unit id="Mark read" xml:space="preserve" approved="no">
         <source>Mark read</source>
-        <target>Megjelölés olvasottként</target>
+        <target state="translated">Olvasottként jelölés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve" approved="no">
