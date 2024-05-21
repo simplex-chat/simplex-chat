@@ -18,7 +18,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chatlist.ChatListNavLinkView
 import chat.simplex.common.views.chatlist.ToggleFilterButton
 import chat.simplex.common.views.home.contactChats
 import chat.simplex.res.MR
@@ -115,7 +114,7 @@ fun ContactsList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>)
       val nextChatSelected = remember(chat.id, filteredContactChats) { derivedStateOf {
         chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
-      ChatListNavLinkView(chat, nextChatSelected)
+      ContactListNavLinkView(chat, nextChatSelected)
     }
   }
   if (filteredContactChats.isEmpty() && contactChats().isNotEmpty()) {

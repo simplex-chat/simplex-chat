@@ -172,7 +172,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
 }
 
 @Composable
-private fun ErrorChatListItem() {
+fun ErrorChatListItem() {
   Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)) {
     Text(stringResource(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
