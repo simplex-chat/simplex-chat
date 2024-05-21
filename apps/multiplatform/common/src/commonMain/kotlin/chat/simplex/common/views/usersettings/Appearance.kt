@@ -492,40 +492,37 @@ object AppearanceScope {
         }
       )
       // LALAL TO REMOVE
-
-      if (backgroundImageType != BackgroundImageType.Empty) {
-        val onTypeChange = { type: BackgroundImageType? ->
-          if (themeUserDestination.value == null) {
-            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-          } else {
-            ThemeManager.applyBackgroundImage(type, perUserTheme)
-            updateThemeUserDestination()
-          }
-          saveThemeToDatabase(themeUserDestination.value)
+      val onTypeChange = { type: BackgroundImageType? ->
+        if (themeUserDestination.value == null) {
+          ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+        } else {
+          ThemeManager.applyBackgroundImage(type, perUserTheme)
+          updateThemeUserDestination()
         }
-        SectionView(stringResource(MR.strings.settings_section_title_chat_colors).uppercase()) {
-          WallpaperSetupView(
-            backgroundImageType,
-            baseTheme,
-            MaterialTheme.wallpaper,
-            MaterialTheme.appColors.sentMessage,
-            MaterialTheme.appColors.sentQuote,
-            MaterialTheme.appColors.receivedMessage,
-            MaterialTheme.appColors.receivedQuote,
-            editColor = { name ->
-              // If no wallpaper is set, nothing to apply new color to. So if user didn't select any wallpaper yet, do it automatically before choosing color
-              if (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredTheme(baseTheme)?.wallpaper == null) {
-                onTypeChange(currentTheme.wallpaper.type)
-              }
-              editColor(name)
-            },
-            onTypeChange = { type ->
-              onTypeChange(type)
-            },
-          )
-        }
-        SectionDividerSpaced(maxTopPadding = true)
+        saveThemeToDatabase(themeUserDestination.value)
       }
+      SectionView(stringResource(MR.strings.settings_section_title_chat_colors).uppercase()) {
+        WallpaperSetupView(
+          backgroundImageType,
+          baseTheme,
+          MaterialTheme.wallpaper,
+          MaterialTheme.appColors.sentMessage,
+          MaterialTheme.appColors.sentQuote,
+          MaterialTheme.appColors.receivedMessage,
+          MaterialTheme.appColors.receivedQuote,
+          editColor = { name ->
+            // If no wallpaper is set, nothing to apply new color to. So if user didn't select any wallpaper yet, do it automatically before choosing color
+            if (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredTheme(baseTheme)?.wallpaper == null) {
+              onTypeChange(currentTheme.wallpaper.type)
+            }
+            editColor(name)
+          },
+          onTypeChange = { type ->
+            onTypeChange(type)
+          },
+        )
+      }
+      SectionDividerSpaced(maxTopPadding = true)
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
