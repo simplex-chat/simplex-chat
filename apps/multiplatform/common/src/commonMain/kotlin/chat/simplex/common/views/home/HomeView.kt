@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.chatModel
@@ -251,7 +252,7 @@ private fun HomeBottomBar(
       )
 
       HomeTabButton(
-        icon = painterResource(if (homeTab.value is HomeTab.Contacts) MR.images.ic_account_circle_filled else MR.images.ic_account_circle),
+        icon = if (homeTab.value is HomeTab.Contacts) rememberVectorPainter(AccountCircleFilled) else painterResource(MR.images.ic_account_circle_filled),
         title = generalGetString(MR.strings.contacts),
         onClick = { homeTab.value = HomeTab.Contacts() }
       )

@@ -1,15 +1,9 @@
 package chat.simplex.common.views.contacts
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
@@ -31,7 +25,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
 
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
-      ContactListNavLinkLayout(
+      ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
             ContactPreviewView(chat, disabled)
@@ -88,35 +82,4 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
     },
     color = Color.Red
   )
-}
-
-// TODO differentiate android and desktop (dividers)
-@Composable
-fun ContactListNavLinkLayout(
-  chatLinkPreview: @Composable () -> Unit,
-  click: () -> Unit,
-  dropdownMenuItems: (@Composable () -> Unit)?,
-  showMenu: MutableState<Boolean>,
-  disabled: Boolean,
-  selectedChat: State<Boolean>,
-  nextChatSelected: State<Boolean>,
-) {
-  var modifier = Modifier.fillMaxWidth()
-  if (!disabled) modifier = modifier
-    .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
-    .onRightClick { showMenu.value = true }
-  Box(modifier) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
-      verticalAlignment = Alignment.Top
-    ) {
-      chatLinkPreview()
-    }
-    if (dropdownMenuItems != null) {
-      DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
-    }
-  }
-  Divider(Modifier.padding(horizontal = 8.dp))
 }
