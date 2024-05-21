@@ -1801,4 +1801,11 @@
     <string name="network_smp_proxy_fallback_allow_protected_description">Invia messaggi direttamente quando l\'indirizzo IP è protetto e il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
     <string name="private_routing_explanation">Per proteggere il tuo indirizzo IP, l\'instradamento privato usa i tuoi server SMP per consegnare i messaggi.</string>
     <string name="network_smp_proxy_mode_unprotected">Non protetto</string>
+    <string name="file_not_approved_title">Server sconosciuti!</string>
+    <string name="protect_ip_address">Proteggi l\'indirizzo IP</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">L\'app chiederà di confermare i download da server di file sconosciuti (eccetto .onion o quando il proxy SOCKS è attivo).</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Senza Tor o VPN, il tuo indirizzo IP sarà visibile ai server di file.</string>
+    <string name="settings_section_title_files">FILE</string>
+    <string name="file_not_approved_descr">Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP:
+\n%1$s.</string>
 </resources>
