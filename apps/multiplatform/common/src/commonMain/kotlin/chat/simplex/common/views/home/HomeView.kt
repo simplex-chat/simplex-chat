@@ -159,6 +159,7 @@ private fun ChatsView(searchText: MutableState<TextFieldValue>) {
   }
 }
 
+// TODO contacts don't update
 @Composable
 private fun ContactsView(searchText: MutableState<TextFieldValue>) {
   Box(

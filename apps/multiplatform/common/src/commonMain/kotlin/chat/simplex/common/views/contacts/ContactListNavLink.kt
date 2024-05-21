@@ -7,7 +7,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.group.GroupChatInfoView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -23,6 +22,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     delay(500L)
   }
   val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
+  val view = LocalMultiplatformView()
 
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
@@ -32,7 +32,29 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ContactPreviewView(chat, disabled)
           }
         },
-        click = { openInfoAction(chat.remoteHostId, chat, chatModel) },
+        click = {
+          val chatRh = chat.remoteHostId
+          if (ModalManager.end.hasModalsOpen()) {
+            ModalManager.end.closeModals()
+            // return@ChatLayout -- TODO what's this for?
+          }
+          hideKeyboard(view)
+          withBGApi {
+            var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
+            var preloadedCode: String? = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
+            ModalManager.end.showModalCloseable(true) { close ->
+              var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+              var code: String? by remember { mutableStateOf(preloadedCode) }
+              KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
+                contactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
+                preloadedContactInfo = contactInfo
+                code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
+                preloadedCode = code
+              }
+              ChatInfoView(chatModel, chat.chatInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+            }
+          }
+        },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
             ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu)
@@ -45,35 +67,6 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       )
     }
     else -> {}
-  }
-}
-
-fun openInfoAction(chatRh: Long?, chat: Chat, chatModel: ChatModel) {
-  if (ModalManager.end.hasModalsOpen()) {
-    ModalManager.end.closeModals()
-//    return@ChatLayout
-  }
-//  hideKeyboard(view)
-  withBGApi {
-    var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
-    var preloadedCode: String? = null
-    if (chat.chatInfo is ChatInfo.Direct) {
-      preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
-      preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
-    }
-    ModalManager.end.showModalCloseable(true) { close ->
-      if (chat.chatInfo is ChatInfo.Direct) {
-        var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
-        var code: String? by remember { mutableStateOf(preloadedCode) }
-        KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
-          contactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
-          preloadedContactInfo = contactInfo
-          code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
-          preloadedCode = code
-        }
-        ChatInfoView(chatModel, chat.chatInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
-      }
-    }
   }
 }
 
