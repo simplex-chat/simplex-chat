@@ -35,7 +35,7 @@
     <string name="v5_4_block_group_members">Csoporttagok letiltása</string>
     <string name="la_authenticate">Hitelesítés</string>
     <string name="empty_chat_profile_is_created">Egy üres csevegési profil jön létre a megadott névvel, és az alkalmazás a szokásos módon megnyílik.</string>
-    <string name="feature_cancelled_item">megszakítva %s</string>
+    <string name="feature_cancelled_item">%s visszavonva</string>
     <string name="smp_servers_preset_add">Előre beállított kiszolgálók hozzáadása</string>
     <string name="calls_prohibited_with_this_contact">A hívások kezdeményezése le van tiltva ebben a csevegésben.</string>
     <string name="network_session_mode_entity_description">Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesz használva <b>minden ismerős és csoporttag számára</b>. 
@@ -108,7 +108,7 @@
     <string name="icon_descr_video_asked_to_receive">Felkérték a videó fogadására</string>
     <string name="block_member_button">Letiltás</string>
     <string name="v5_2_more_things">Még néhány dolog</string>
-    <string name="authentication_cancelled">Hitelesítés megszakítva</string>
+    <string name="authentication_cancelled">Hitelesítés visszavonva</string>
     <string name="allow_to_send_files">A fájlok- és a médiatartalom küldése engedélyezve van.</string>
     <string name="users_delete_all_chats_deleted">Minden csevegés és üzenet törlésre kerül - ez a művelet nem vonható vissza!</string>
     <string name="icon_descr_audio_call">hanghívás</string>
@@ -1277,7 +1277,7 @@
     <string name="smp_servers_test_failed">Sikertelen kiszolgáló-teszt!</string>
     <string name="verify_connection">Kapcsolat ellenőrzése</string>
     <string name="whats_new_read_more">Tudjon meg többet</string>
-    <string name="sender_cancelled_file_transfer">A küldő megszakította a fájl átvitelt.</string>
+    <string name="sender_cancelled_file_transfer">A fájl küldője visszavonta az átvitelt.</string>
     <string name="stop_chat_question">Csevegési szolgáltatás megállítása?</string>
     <string name="info_row_received_at">Fogadva ekkor:</string>
     <string name="accept_feature_set_1_day">Beállítva 1 nap</string>
@@ -1315,8 +1315,8 @@
     <string name="paste_desktop_address">Számítógép azonosítójának beillesztése</string>
     <string name="description_via_contact_address_link">kapcsolattartási azonosító-hivatkozáson keresztül</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem megőrzése érdekkében a push értesítési rendszer helyett az alkalmazás a <b>SimpleX háttérszolgáltatást </b> használja - az akkumulátor néhány százalékát használja naponta.]]></string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősnek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
-\nMegszakíthatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással)</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
+\nVisszavonhatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">Az ismerősei továbbra is kapcsolódva maradnak.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze jelszavát</string>
@@ -1494,7 +1494,7 @@
     <string name="session_code">Munkamenet kód</string>
     <string name="v4_4_french_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="receipts_section_groups">Kis csoportok (max. 20 tag)</string>
-    <string name="connection_you_accepted_will_be_cancelled">Az ön által elfogadott kapcsolat megszakad!</string>
+    <string name="connection_you_accepted_will_be_cancelled">Az ön által elfogadott kapcsolat vissza lesz vonva!</string>
     <string name="send_live_message_desc">Élő üzenet küldése - a címzett(ek) számára frissül, ahogy beírja</string>
     <string name="settings_section_title_delivery_receipts">A KÉZBESÍTÉSI JELENTÉSEKET A KÖVETKEZŐ CÍMRE KELL KÜLDENI</string>
     <string name="alert_text_msg_bad_id">A következő üzenet azonosítója hibás (kisebb vagy egyenlő az előzővel).
