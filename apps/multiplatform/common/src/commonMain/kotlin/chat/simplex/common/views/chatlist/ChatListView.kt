@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import java.net.URI
 
 @Composable
-private fun ToggleFilterButton() {
+fun ToggleFilterButton() {
   val pref = remember { ChatController.appPrefs.showUnreadAndFavorites }
   IconButton(onClick = { pref.set(!pref.get()) }) {
     Icon(
@@ -191,17 +191,18 @@ private fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty() && !showUnreadAndFavorites)
-      chats
+      chats.filter { chat -> !chat.chatInfo.chatDeleted }
     else {
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> if (s.isEmpty()) {
-            chat.id == chatModel.chatId.value || filtered(chat)
-          } else {
-            (viewNameContains(cInfo, s) ||
-                cInfo.contact.profile.displayName.lowercase().contains(s) ||
-                cInfo.contact.fullName.lowercase().contains(s))
-          }
+          is ChatInfo.Direct -> !chat.chatInfo.chatDeleted && (
+              if (s.isEmpty()) {
+                chat.id == chatModel.chatId.value || filtered(chat)
+              } else {
+                (viewNameContains(cInfo, s) ||
+                    cInfo.contact.profile.displayName.lowercase().contains(s) ||
+                    cInfo.contact.fullName.lowercase().contains(s))
+              })
           is ChatInfo.Group -> if (s.isEmpty()) {
             chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
           } else {

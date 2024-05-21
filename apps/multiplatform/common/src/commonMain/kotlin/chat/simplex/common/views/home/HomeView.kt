@@ -30,6 +30,7 @@ import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.contacts.ContactsList
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -164,8 +165,7 @@ private fun ContactsView(searchText: MutableState<TextFieldValue>) {
       .fillMaxSize()
   ) {
     if (!chatModel.desktopNoUserNoRemote) {
-      Text("Contacts")
-      // ChatList(chatModel, searchText = searchText)
+      ContactsList(chatModel, searchText = searchText)
     }
     if (contactChats().isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
       Text(stringResource(
