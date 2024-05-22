@@ -28,37 +28,34 @@ object ThemeManager {
     else -> SimplexColorPalette to DefaultTheme.SIMPLEX
   }
 
-  private fun nonSystemThemeName(darkForSystemTheme: Boolean): String {
+  private fun nonSystemThemeName(): String {
     val themeName = appPrefs.currentTheme.get()!!
     return if (themeName != DefaultTheme.SYSTEM_THEME_NAME) {
       themeName
     } else {
-      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName
+      if (systemInDarkThemeCurrently) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName
     }
   }
 
-  fun defaultActiveTheme(darkForSystemTheme: Boolean, appSettingsTheme: List<ThemeOverrides>): ThemeOverrides? {
-    val nonSystemThemeName = nonSystemThemeName(darkForSystemTheme)
+  fun defaultActiveTheme(appSettingsTheme: List<ThemeOverrides>): ThemeOverrides? {
+    val nonSystemThemeName = nonSystemThemeName()
     val defaultThemeId = appPrefs.currentThemeIds.get()[nonSystemThemeName]
     return appSettingsTheme.getTheme(defaultThemeId)
   }
 
-  fun defaultActiveTheme(darkForSystemTheme: Boolean, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ThemeModeOverride {
-    val perUserTheme = if (darkForSystemTheme) perUserTheme?.dark else perUserTheme?.light
+  fun defaultActiveTheme(perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ThemeModeOverride {
+    val perUserTheme = if (!CurrentColors.value.colors.isLight) perUserTheme?.dark else perUserTheme?.light
     if (perUserTheme != null) {
       return perUserTheme
     }
-    val defaultTheme = defaultActiveTheme(darkForSystemTheme, appSettingsTheme)
+    val defaultTheme = defaultActiveTheme(appSettingsTheme)
     return ThemeModeOverride(colors = defaultTheme?.colors ?: ThemeColors(), wallpaper = defaultTheme?.wallpaper)
   }
 
-  fun currentColors(darkForSystemTheme: Boolean, themeOverridesForType: BackgroundImageType?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ActiveTheme {
+  fun currentColors(themeOverridesForType: BackgroundImageType?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ActiveTheme {
     val themeName = appPrefs.currentTheme.get()!!
-    val nonSystemThemeName = nonSystemThemeName(darkForSystemTheme)
-    val defaultTheme = defaultActiveTheme(darkForSystemTheme, appSettingsTheme)
-    val perUserTheme = if (darkForSystemTheme) perUserTheme?.dark else perUserTheme?.light
-
-    val theme = (appSettingsTheme.sameTheme(themeOverridesForType ?: perChatTheme?.type ?: perUserTheme?.type ?: defaultTheme?.wallpaper?.toAppWallpaper()?.type, nonSystemThemeName) ?: defaultTheme)
+    val nonSystemThemeName = nonSystemThemeName()
+    val defaultTheme = defaultActiveTheme(appSettingsTheme)
 
     val baseTheme = when (nonSystemThemeName) {
       DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
@@ -67,6 +64,9 @@ object ThemeManager {
       DefaultTheme.BLACK.themeName -> ActiveTheme(DefaultTheme.BLACK.themeName, DefaultTheme.BLACK, BlackColorPalette, BlackColorPaletteApp)
       else -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
     }
+
+    val perUserTheme = if (baseTheme.colors.isLight) perUserTheme?.light else perUserTheme?.dark
+    val theme = (appSettingsTheme.sameTheme(themeOverridesForType ?: perChatTheme?.type ?: perUserTheme?.type ?: defaultTheme?.wallpaper?.toAppWallpaper()?.type, nonSystemThemeName) ?: defaultTheme)
 
     if (theme == null && perUserTheme == null && perChatTheme == null && themeOverridesForType == null) {
       return ActiveTheme(themeName, baseTheme.base, baseTheme.colors, baseTheme.appColors, baseTheme.wallpaper)
@@ -87,8 +87,8 @@ object ThemeManager {
     )
   }
 
-  fun currentThemeOverridesForExport(darkForSystemTheme: Boolean, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?): ThemeOverrides {
-    val current = currentColors(darkForSystemTheme, null, perChatTheme, perUserTheme, appPrefs.themeOverrides.get())
+  fun currentThemeOverridesForExport(perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?): ThemeOverrides {
+    val current = currentColors(null, perChatTheme, perUserTheme, appPrefs.themeOverrides.get())
     val wType = current.wallpaper.type
     val wBackground = current.wallpaper.background
     val wTint = current.wallpaper.tint
@@ -101,11 +101,11 @@ object ThemeManager {
   }
 
   // colors, default theme enum, localized name of theme
-  fun allThemes(darkForSystemTheme: Boolean): List<Triple<Colors, String, String>> {
+  fun allThemes(): List<Triple<Colors, String, String>> {
     val allThemes = ArrayList<Triple<Colors, String, String>>()
     allThemes.add(
       Triple(
-        if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette,
+        if (systemInDarkThemeCurrently) systemDarkThemeColors().first else LightColorPalette,
         DefaultTheme.SYSTEM_THEME_NAME,
         generalGetString(MR.strings.theme_system)
       )
@@ -141,15 +141,15 @@ object ThemeManager {
     return allThemes
   }
 
-  fun applyTheme(theme: String, darkForSystemTheme: Boolean) {
+  fun applyTheme(theme: String) {
     appPrefs.currentTheme.set(theme)
-    CurrentColors.value = currentColors(darkForSystemTheme, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
   }
 
-  fun changeDarkTheme(theme: String, darkForSystemTheme: Boolean) {
+  fun changeDarkTheme(theme: String) {
     appPrefs.systemDarkTheme.set(theme)
-    CurrentColors.value = currentColors(darkForSystemTheme, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
 
   fun saveAndApplyThemeColor(baseTheme: DefaultTheme, name: ThemeColor, color: Color? = null, pref: SharedPreference<List<ThemeOverrides>> = appPrefs.themeOverrides) {
@@ -173,7 +173,7 @@ object ThemeManager {
     val themeIds = appPrefs.currentThemeIds.get().toMutableMap()
     themeIds[nonSystemThemeName] = prevValue.themeId
     appPrefs.currentThemeIds.set(themeIds)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
 
   fun applyThemeColor(name: ThemeColor, color: Color? = null, pref: MutableState<ThemeModeOverride>) {
@@ -189,7 +189,7 @@ object ThemeManager {
     val themeIds = appPrefs.currentThemeIds.get().toMutableMap()
     themeIds[nonSystemThemeName] = prevValue.themeId
     appPrefs.currentThemeIds.set(themeIds)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    CurrentColors.value = currentColors( null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
 
   fun copyFromSameThemeOverrides(type: BackgroundImageType?, lowerLevelOverride: ThemeModeOverride?, pref: MutableState<ThemeModeOverride>): Boolean {
@@ -245,16 +245,16 @@ object ThemeManager {
     val currentThemeIds = appPrefs.currentThemeIds.get().toMutableMap()
     currentThemeIds[nonSystemThemeName] = prevValue.themeId
     appPrefs.currentThemeIds.set(currentThemeIds)
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
 
-  fun resetAllThemeColors(darkForSystemTheme: Boolean, pref: SharedPreference<List<ThemeOverrides>> = appPrefs.themeOverrides) {
-    val nonSystemThemeName = nonSystemThemeName(darkForSystemTheme)
+  fun resetAllThemeColors(pref: SharedPreference<List<ThemeOverrides>> = appPrefs.themeOverrides) {
+    val nonSystemThemeName = nonSystemThemeName()
     val themeId = appPrefs.currentThemeIds.get()[nonSystemThemeName] ?: return
     val overrides = pref.get()
     val prevValue = overrides.getTheme(themeId) ?: return
     pref.set(overrides.replace(prevValue.copy(colors = ThemeColors(), wallpaper = prevValue.wallpaper?.copy(background = null, tint = null))))
-    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight, null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
 
   fun resetAllThemeColors(pref: MutableState<ThemeModeOverride>) {

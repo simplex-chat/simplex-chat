@@ -1567,7 +1567,6 @@
   <string name="export_theme">Export theme</string>
   <string name="reset_color">Reset colors</string>
   <string name="reset_single_color">Reset color</string>
-  <string name="remove_changes">Remove changes</string>
   <string name="theme_destination_all_profiles">All chat profiles</string>
   <string name="color_primary">Accent</string>
   <string name="color_primary_variant">Additional accent</string>

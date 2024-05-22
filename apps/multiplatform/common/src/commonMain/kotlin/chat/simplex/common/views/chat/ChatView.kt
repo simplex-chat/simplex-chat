@@ -114,12 +114,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
-    val darkTheme = isInDarkTheme()
     val clipboard = LocalClipboardManager.current
     when (chat.chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
-        val perChatTheme = remember(chat.chatInfo, CurrentColors.value.base) { if (chat.chatInfo is ChatInfo.Direct) chat.chatInfo.contact.uiThemes?.preferredMode(darkTheme) else if (chat.chatInfo is ChatInfo.Group) chat.chatInfo.groupInfo.uiThemes?.preferredMode(darkTheme) else null }
-        val overrides = if (perChatTheme != null) ThemeManager.currentColors(isInDarkTheme(), null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.state.value) else null
+        val perChatTheme = remember(chat.chatInfo, CurrentColors.value.base) { if (chat.chatInfo is ChatInfo.Direct) chat.chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chat.chatInfo is ChatInfo.Group) chat.chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
+        val overrides = if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.state.value) else null
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           ChatLayout(
             chat,

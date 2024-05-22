@@ -650,7 +650,9 @@ val BlackColorPaletteApp = AppColors(
   receivedQuote = Color(0x20B1B0B5),
 )
 
-val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode(), null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get()))
+var systemInDarkThemeCurrently: Boolean = isInNightMode()
+
+val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get()))
 
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLight
@@ -687,25 +689,28 @@ val MaterialTheme.wallpaper: AppWallpaper
   get() = LocalAppWallpaper.current
 
 fun reactOnDarkThemeChanges(isDark: Boolean) {
+  systemInDarkThemeCurrently = isDark
   if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.value.colors.isLight == isDark) {
     // Change active colors from light to dark and back based on system theme
-    ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME, isDark)
+    ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
   }
 }
 
 @Composable
 fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
-  LaunchedEffect(darkTheme) {
-    // For preview
-    if (darkTheme != null)
-      CurrentColors.value = ThemeManager.currentColors(darkTheme, null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
-  }
-  val systemDark = isSystemInDarkTheme()
+// TODO: Fix preview working with dark/light theme
+
+//  LaunchedEffect(darkTheme) {
+//    // For preview
+//    if (darkTheme != null)
+//      CurrentColors.value = ThemeManager.currentColors(darkTheme, null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
+//  }
+  val systemDark = rememberUpdatedState(isSystemInDarkTheme())
   LaunchedEffect(Unit) {
     // snapshotFlow vs LaunchedEffect reduce number of recomposes
-    snapshotFlow { systemDark }
+    snapshotFlow { systemDark.value }
       .collect {
-        reactOnDarkThemeChanges(systemDark)
+        reactOnDarkThemeChanges(systemDark.value)
       }
   }
   val theme by CurrentColors.collectAsState()
@@ -713,7 +718,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     // snapshotFlow vs LaunchedEffect reduce number of recomposes when user is changed or it's themes
     snapshotFlow { chatModel.currentUser.value?.uiThemes }
       .collect {
-        ThemeManager.applyTheme(appPrefs.currentTheme.get()!!, systemDark)
+        ThemeManager.applyTheme(appPrefs.currentTheme.get()!!)
       }
   }
   MaterialTheme(
