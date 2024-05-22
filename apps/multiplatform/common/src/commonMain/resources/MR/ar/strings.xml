@@ -1766,4 +1766,44 @@
     <string name="v5_7_shape_profile_images">شكل الصور الشخصية</string>
     <string name="v5_7_new_interface_languages">واجهة المستخدم الليتوانية</string>
     <string name="v5_7_shape_profile_images_descr">مربع أو دائرة أو أي شيء بينهما.</string>
+    <string name="srv_error_host">عنوان الخادم غير متوافق مع إعدادات الشبكة.</string>
+    <string name="srv_error_version">إصدار الخادم غير متوافق مع إعدادات الشبكة.</string>
+    <string name="snd_error_auth">مفتاح خاطئ أو اتصال غير معروف - على الأرجح حُذف هذا الاتصال.</string>
+    <string name="snd_error_quota">تم تجاوز السعة - لم يتلق المُستلم الرسائل المُرسلة مسبقًا.</string>
+    <string name="snd_error_relay">خطأ في خادم الوجهة: %1$s</string>
+    <string name="ci_status_other_error">خطأ: %1$s</string>
+    <string name="snd_error_proxy_relay">خادم إعادة التوجيه: %1$s
+\nخطأ في الخادم الوجهة: %2$s</string>
+    <string name="snd_error_proxy">خادم إعادة التوجيه: %1$s
+\nخطأ: %2$s</string>
+    <string name="message_delivery_warning_title">تحذير تسليم الرسالة</string>
+    <string name="snd_error_expired">مشكلات الشبكة - انتهت صلاحية الرسالة بعد عِدة محاولات لإرسالها.</string>
+    <string name="network_smp_proxy_fallback_allow">نعم</string>
+    <string name="private_routing_explanation">لحماية عنوان IP الخاص بك، يستخدم التوجيه الخاص خوادم SMP الخاصة بك لتسليم الرسائل.</string>
+    <string name="settings_section_title_private_message_routing">توجيه الرسائل الخاصة</string>
+    <string name="network_smp_proxy_mode_private_routing">التوجيه الخاص</string>
+    <string name="network_smp_proxy_mode_unprotected">غير محمي</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">السماح بالرجوع إلى إصدار سابق</string>
+    <string name="network_smp_proxy_mode_never_description">لا تستخدم التوجيه الخاص.</string>
+    <string name="update_network_smp_proxy_mode_question">وضع توجيه الرسائل</string>
+    <string name="network_smp_proxy_fallback_prohibit">لا</string>
+    <string name="network_smp_proxy_fallback_allow_protected">عندما يكون IP مخفيًا</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">لا ترسل رسائل مباشرةً، حتى لو كان خادمك أو خادم الوجهة لا يدعم التوجيه الخاص.</string>
+    <string name="network_smp_proxy_fallback_allow_description">أرسل الرسائل مباشرة عندما لا يدعم الخادم الوجهة الخاص بك أو الخادم الوجهة التوجيه الخاص.</string>
+    <string name="update_network_smp_proxy_fallback_question">احتياطي توجيه الرسالة</string>
+    <string name="private_routing_show_message_status">أظهِر حالة الرسالة</string>
+    <string name="protect_ip_address">احمِ عنوان IP</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لخوادم الملفات.</string>
+    <string name="network_smp_proxy_mode_unknown_description">استخدم التوجيه الخاص مع خوادم غير معروفة.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">استخدم التوجيه الخاص مع خوادم غير معروفة عندما لا يكون عنوان IP محميًا.</string>
+    <string name="network_smp_proxy_mode_always">دائمًا</string>
+    <string name="network_smp_proxy_mode_always_description">استخدم دائمًا التوجيه الخاص.</string>
+    <string name="settings_section_title_files">الملفات</string>
+    <string name="network_smp_proxy_mode_never">مطلقًا</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">سيطلب التطبيق تأكيد التنزيلات من خوادم ملفات غير معروفة (باستثناء .onion أو عند تفعيل وكيل SOCKS).</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">أرسل الرسائل مباشرة عندما يكون عنوان IP محميًا ولا يدعم الخادم الوجهة لديك التوجيه الخاص.</string>
+    <string name="network_smp_proxy_mode_unknown">مُرحلات غير معروفة</string>
+    <string name="file_not_approved_title">خوادم غير معروفة!</string>
+    <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه:
+\n%1$s.</string>
 </resources>
