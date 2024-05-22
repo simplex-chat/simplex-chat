@@ -693,9 +693,9 @@
         <target>Alle Ihre Kontakte bleiben verbunden. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target>Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Server hochgeladen.</target>
+        <target state="translated">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -4002,14 +4002,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Einmal-Einladungslink</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
-        <target>Für die Verbindung werden Onion-Hosts benötigt. Dies erfordert die Aktivierung eines VPNs.</target>
+        <target state="translated">Für diese Verbindung werden Onion-Hosts benötigt. Dies erfordert die Aktivierung eines VPNs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>Onion-Hosts werden verwendet, sobald sie verfügbar sind. Dies erfordert die Aktivierung eines VPNs.</target>
+        <target state="translated">Wenn Onion-Hosts verfügbar sind, werden sie verwendet. Dies erfordert die Aktivierung eines VPNs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
