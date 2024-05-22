@@ -261,7 +261,6 @@ private fun HomeBottomBar(
   }
 }
 
-// TODO move user picker to bottom left
 @Composable
 fun SettingsButton(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val scope = rememberCoroutineScope()
