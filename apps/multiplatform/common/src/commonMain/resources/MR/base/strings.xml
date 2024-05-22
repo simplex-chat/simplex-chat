@@ -421,6 +421,11 @@
   <string name="notifications">Notifications</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
+  <string name="info_view_connect_button">connect</string>
+  <string name="info_view_open_button">open</string>
+  <string name="info_view_message_button">message</string>
+  <string name="info_view_call_button">call</string>
+  <string name="info_view_video_button">video</string>
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
   <string name="delete_and_notify_contact">Delete and notify contact</string>

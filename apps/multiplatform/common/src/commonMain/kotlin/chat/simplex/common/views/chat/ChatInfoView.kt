@@ -12,12 +12,14 @@ import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -34,7 +36,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chatlist.updateChatSettings
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
@@ -45,6 +47,7 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatInfoView(
   chatModel: ChatModel,
+  openedFromChatView: Boolean,
   contact: Contact,
   connectionStats: ConnectionStats?,
   customUserProfile: Profile?,
@@ -65,6 +68,7 @@ fun ChatInfoView(
     val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
+      openedFromChatView = openedFromChatView,
       chat,
       contact,
       currentUser,
@@ -163,7 +167,8 @@ fun ChatInfoView(
             )
           }
         }
-      }
+      },
+      close = close,
     )
   }
 }
@@ -277,6 +282,7 @@ fun clearNoteFolderDialog(chat: Chat, close: (() -> Unit)? = null) {
 
 @Composable
 fun ChatInfoLayout(
+  openedFromChatView: Boolean,
   chat: Chat,
   contact: Contact,
   currentUser: User,
@@ -297,6 +303,7 @@ fun ChatInfoLayout(
   syncContactConnection: () -> Unit,
   syncContactConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
+  close: () -> Unit,
 ) {
   val cStats = connStats.value
   val scrollState = rememberScrollState()
@@ -316,7 +323,31 @@ fun ChatInfoLayout(
     }
 
     LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
+
     SectionSpacer()
+
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 10.dp),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      if (contact.activeConn == null && contact.profile.contactLink != null && contact.active) {
+        ConnectButton(openedFromChatView, chat, contact, close)
+      } else if (!contact.active && !contact.chatDeleted) {
+        OpenButton(openedFromChatView, chat, close)
+      } else {
+        MessageButton(openedFromChatView, chat, contact, close)
+      }
+      Spacer(Modifier.width(10.dp))
+      CallButton(contact)
+      Spacer(Modifier.width(10.dp))
+      VideoButton(contact)
+    }
+
+    SectionSpacer()
+
     if (customUserProfile != null) {
       SectionView(generalGetString(MR.strings.incognito).uppercase()) {
         SectionItemViewSpaceBetween {
@@ -506,6 +537,151 @@ fun LocalAliasEditor(
   }
   DisposableEffect(chatId) {
     onDispose { if (updatedValueAtLeastOnce) updateValue(state.value.text) } // just in case snapshotFlow will be canceled when user presses Back too fast
+  }
+}
+
+// when contact is a "contact card"
+@Composable
+private fun ConnectButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    title = generalGetString(MR.strings.info_view_connect_button),
+    disabled = false,
+    onClick = {
+      AlertManager.privacySensitive.showAlertDialogButtonsColumn(
+        title = String.format(generalGetString(MR.strings.connect_with_contact_name_question), contact.chatViewName),
+        buttons = {
+          Column {
+            SectionItemView({
+              AlertManager.privacySensitive.hideAlert()
+              infoConnectContactViaAddress(openedFromChatView, chat, contact, incognito = false, close)
+            }) {
+              Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+            SectionItemView({
+              AlertManager.privacySensitive.hideAlert()
+              infoConnectContactViaAddress(openedFromChatView, chat, contact, incognito = true, close)
+            }) {
+              Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+            SectionItemView({
+              AlertManager.privacySensitive.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+        },
+        hostDevice = hostDevice(chat.remoteHostId),
+      )
+    }
+  )
+}
+
+private fun infoConnectContactViaAddress(openedFromChatView: Boolean, chat: Chat, contact: Contact, incognito: Boolean, close: () -> Unit) {
+  withBGApi {
+    val ok = connectContactViaAddress(chatModel, chat.remoteHostId, contact.contactId, incognito = incognito)
+    if (ok) {
+      if (openedFromChatView) {
+        close.invoke()
+      } else {
+        if (contact.chatDeleted) {
+          chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
+        }
+        close.invoke()
+        chatModel.chatId.value = chat.id
+      }
+    }
+  }
+}
+
+@Composable
+private fun OpenButton(openedFromChatView: Boolean, chat: Chat, close: () -> Unit) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    title = generalGetString(MR.strings.info_view_open_button),
+    disabled = false,
+    onClick = {
+      if (openedFromChatView) {
+        close.invoke()
+      } else {
+        close.invoke()
+        chatModel.chatId.value = chat.id
+      }
+    }
+  )
+}
+
+@Composable
+private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    title = generalGetString(MR.strings.info_view_message_button),
+    disabled = !contact.sendMsgEnabled,
+    onClick = {
+      if (openedFromChatView) {
+        close.invoke()
+      } else {
+        if (contact.chatDeleted) {
+          chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
+        }
+        close.invoke()
+        chatModel.chatId.value = chat.id
+      }
+    }
+  )
+}
+
+@Composable
+private fun CallButton(contact: Contact) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_call_filled),
+    title = generalGetString(MR.strings.info_view_call_button),
+    disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
+    onClick = {
+
+    }
+  )
+}
+
+@Composable
+private fun VideoButton(contact: Contact) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_videocam_filled),
+    title = generalGetString(MR.strings.info_view_video_button),
+    disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
+    onClick = {
+
+    }
+  )
+}
+
+@Composable
+fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClick: () -> Unit) {
+  Surface(
+    Modifier
+      .width(96.dp)
+      .height(66.dp),
+    shape = RoundedCornerShape(20.dp),
+    color = MaterialTheme.colors.secondaryVariant,
+  ) {
+    val modifier = if (disabled) Modifier else Modifier.clickable { onClick () }
+    Column(
+      modifier,
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center
+    ) {
+      Icon(
+        icon,
+        contentDescription = null,
+        Modifier.size(26.dp),
+        tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+      )
+      Text(
+        title,
+        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
+        color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+      )
+    }
   }
 }
 
@@ -716,6 +892,7 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
     ChatInfoLayout(
+      openedFromChatView = false,
       chat = Chat(
         remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
@@ -740,6 +917,7 @@ fun PreviewChatInfoLayout() {
       syncContactConnection = {},
       syncContactConnectionForce = {},
       verifyClicked = {},
+      close = {},
     )
   }
 }

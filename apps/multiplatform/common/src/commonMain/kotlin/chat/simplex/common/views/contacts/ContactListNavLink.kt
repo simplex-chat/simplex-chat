@@ -51,7 +51,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                 code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
                 preloadedCode = code
               }
-              ChatInfoView(chatModel, chat.chatInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+              ChatInfoView(chatModel, openedFromChatView = false, chat.chatInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
             }
           }
         },
