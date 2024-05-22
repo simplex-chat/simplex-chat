@@ -53,6 +53,7 @@ data DirectoryEvent
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
   | DEContactCommand Contact ChatItemId ADirectoryCmd
+  | DELogChatResponse ChatResponse
   deriving (Show)
 
 crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
@@ -77,6 +78,10 @@ crDirectoryEvent = \case
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
+  r@CRMessageError {} -> Just $ DELogChatResponse r {user_ = Nothing}
+  r@CRChatCmdError {} -> Just $ DELogChatResponse r {user_ = Nothing}
+  r@CRChatError {} -> Just $ DELogChatResponse r {user_ = Nothing}
+  r@CRChatErrors {} -> Just $ DELogChatResponse r {user_ = Nothing}
   _ -> Nothing
 
 data DirectoryRole = DRUser | DRSuperUser
