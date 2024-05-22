@@ -3937,7 +3937,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO only acknowledge without saving message?
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
-          withAckMessage' "new contact" agentConnId meta $
+          withAckMessage' "new contact msg" agentConnId meta $
             void $
               saveDirectRcvMSG conn meta msgBody
         SENT msgId _proxy ->
@@ -3970,7 +3970,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           logDebug $ "contact msg: " <> tshow agentConnId <> " " <> contactName
-          withAckMessage "contact" agentConnId msgMeta True $ do
+          withAckMessage "contact msg" agentConnId msgMeta True $ do
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
@@ -4384,7 +4384,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         logDebug $ "group msg: " <> tshow agentConnId <> " " <> groupName <> ", member: " <> memberName
-        withAckMessage "group" agentConnId msgMeta True $ do
+        withAckMessage "group msg" agentConnId msgMeta True $ do
           checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
