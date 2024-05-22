@@ -428,8 +428,17 @@
   <string name="info_view_video_button">video</string>
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_conversation_question">Delete conversation?</string>
+  <string name="delete_conversation_all_messages_deleted_cannot_undo_warning">Conversation and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_conversation">Delete conversation</string>
+  <string name="only_delete_conversation">Only delete conversation</string>
+  <string name="notify_delete_contact_question">Notify contact?</string>
+  <string name="confirm_delete_contact_question">Confirm contact deletion?</string>
   <string name="delete_and_notify_contact">Delete and notify contact</string>
+  <string name="delete_without_notification">Delete without notification</string>
   <string name="button_delete_contact">Delete contact</string>
+  <string name="conversation_deleted">Conversation deleted!</string>
+  <string name="you_can_still_send_messages_to_contact">You can still send messages to %1$s from the Contacts tab.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>

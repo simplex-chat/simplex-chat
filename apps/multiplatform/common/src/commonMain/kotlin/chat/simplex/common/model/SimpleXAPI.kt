@@ -189,6 +189,8 @@ class AppPreferences {
 
   val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
 
+  val showDeleteConversationNotice = mkBoolPreference(SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE, true)
+  val showDeleteContactNotice = mkBoolPreference(SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE, true)
   val showSentViaProxy = mkBoolPreference(SHARED_PREFS_SHOW_SENT_VIA_RPOXY, false)
 
 
@@ -357,6 +359,8 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
+    private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 
     private const val SHARED_PREFS_IOS_CALL_KIT_ENABLED = "iOSCallKitEnabled"
@@ -1104,6 +1108,22 @@ object ChatController {
     }
     chatModel.deletedChats.value -= rh to type.type + id
     return success
+  }
+
+  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Contact? {
+    val type = ChatType.Direct
+    chatModel.deletedChats.value += rh to type.type + id
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val contact = when {
+      r is CR.ContactDeleted -> r.contact
+      else -> {
+        val titleId = MR.strings.error_deleting_contact
+        apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+        null
+      }
+    }
+    chatModel.deletedChats.value -= rh to type.type + id
+    return contact
   }
 
   fun clearChat(chat: Chat, close: (() -> Unit)? = null) {

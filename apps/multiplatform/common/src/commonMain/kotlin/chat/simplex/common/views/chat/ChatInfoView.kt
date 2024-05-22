@@ -248,9 +248,16 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
-    val r = chatModel.controller.apiDeleteChat(chatRh, chatInfo.chatType, chatInfo.apiId, chatDeleteMode)
-    if (r) {
-      chatModel.removeChat(chatRh, chatInfo.id)
+    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
+    if (ct != null) {
+      when (chatDeleteMode) {
+        is ChatDeleteMode.Full ->
+          chatModel.removeChat(chatRh, chatInfo.id)
+        is ChatDeleteMode.Entity ->
+          chatModel.updateContact(chatRh, ct)
+        is ChatDeleteMode.Messages ->
+          chatModel.clearChat(chatRh, ChatInfo.Direct(ct))
+      }
       if (chatModel.chatId.value == chatInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -337,7 +344,7 @@ fun ChatInfoLayout(
       if (contact.activeConn == null && contact.profile.contactLink != null && contact.active) {
         ConnectButton(openedFromChatView, chat, contact, close)
       } else if (!contact.active && !contact.chatDeleted) {
-        OpenButton(openedFromChatView, chat, close)
+        OpenButton(openedFromChatView, chat, contact, close)
       } else {
         MessageButton(openedFromChatView, chat, contact, close)
       }
@@ -589,14 +596,14 @@ private fun infoConnectContactViaAddress(openedFromChatView: Boolean, chat: Chat
           chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
         }
         close.invoke()
-        chatModel.chatId.value = chat.id
+        openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
       }
     }
   }
 }
 
 @Composable
-private fun OpenButton(openedFromChatView: Boolean, chat: Chat, close: () -> Unit) {
+private fun OpenButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_chat_bubble_filled),
     title = generalGetString(MR.strings.info_view_open_button),
@@ -606,7 +613,9 @@ private fun OpenButton(openedFromChatView: Boolean, chat: Chat, close: () -> Uni
         close.invoke()
       } else {
         close.invoke()
-        chatModel.chatId.value = chat.id
+        withBGApi {
+          openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
+        }
       }
     }
   )
@@ -626,7 +635,9 @@ private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Cont
           chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
         }
         close.invoke()
-        chatModel.chatId.value = chat.id
+        withBGApi {
+          openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
+        }
       }
     }
   )
