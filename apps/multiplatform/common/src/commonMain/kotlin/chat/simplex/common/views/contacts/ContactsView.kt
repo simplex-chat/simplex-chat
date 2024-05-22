@@ -85,9 +85,7 @@ fun ContactsList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>)
   }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val allContactChats = remember(chatModel.chats.toList()) { contactChats(chatModel.chats) }
-  // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
-  // which is related to [derivedStateOf]. Using safe alternative instead
-  // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
+  // See "IndexOutOfBoundsException" comment in ChatListView
   val filteredContactChats = filteredContactChats(showUnreadAndFavorites, searchText.value.text, allContactChats.toList())
   LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
