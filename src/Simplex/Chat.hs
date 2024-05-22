@@ -3318,7 +3318,7 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   env <- ask
   liftIO $
-    forever (atomically (readTBQueue q) >>= \ev -> process ev `runReaderT` env >> logDebug "agent event")
+    forever (logDebug "waiting for agent event" >> atomically (readTBQueue q) >>= \ev -> process ev `runReaderT` env >> logDebug "agent event processed")
       `E.finally` logDebug "exited agentSubscriber"
   where
     process :: (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
