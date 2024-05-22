@@ -722,7 +722,7 @@ private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Cont
 }
 
 @Composable
-private fun CallButton(chat: Chat, contact: Contact) {
+fun CallButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_call_filled),
     title = generalGetString(MR.strings.info_view_call_button),
@@ -734,7 +734,7 @@ private fun CallButton(chat: Chat, contact: Contact) {
 }
 
 @Composable
-private fun VideoButton(chat: Chat, contact: Contact) {
+fun VideoButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_videocam_filled),
     title = generalGetString(MR.strings.info_view_video_button),
