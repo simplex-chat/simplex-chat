@@ -234,9 +234,8 @@ private fun HomeBottomBar(
       .fillMaxWidth()
       .height(BottomAppBarHeight)
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
-      .padding(horizontal = 4.dp),
-    contentAlignment = Alignment.CenterStart,
   ) {
+    Divider()
     Row(
       Modifier
         .fillMaxHeight()
