@@ -731,12 +731,12 @@ object AppearanceScope {
       val togglePicker = remember { mutableStateOf(false) }
       Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
         if (togglePicker.value) {
-          ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
+          ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static || currentColor.alpha < 1f) {
             currentColor = it
             onColorChange(currentColor)
           }
         } else {
-          ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
+          ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static || currentColor.alpha < 1f) {
             currentColor = it
             onColorChange(currentColor)
           }
