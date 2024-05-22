@@ -3317,6 +3317,7 @@ agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   forever $ atomically (readTBQueue q) >>= process >> logDebug "agent event"
+  logDebug "exited agentSubscriber"
   where
     process :: (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
     process (corrId, entId, APC e msg) = run $ case e of
