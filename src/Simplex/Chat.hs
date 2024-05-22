@@ -3316,7 +3316,7 @@ deleteGroupLink_ user gInfo conn = do
 agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
-  forever $ atomically (readTBQueue q) >>= process
+  forever $ atomically (readTBQueue q) >>= process >> logDebug "agent event"
   where
     process :: (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
     process (corrId, entId, APC e msg) = run $ case e of
