@@ -400,11 +400,11 @@
     <string name="network_use_onion_hosts_prefer">Wenn verfügbar</string>
     <string name="network_use_onion_hosts_no">Nein</string>
     <string name="network_use_onion_hosts_required">Erforderlich</string>
-    <string name="network_use_onion_hosts_prefer_desc">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Wenn Onion-Hosts verfügbar sind, werden sie verwendet.</string>
     <string name="network_use_onion_hosts_no_desc">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc">Für die Verbindung werden Onion-Hosts benötigt.
 \nBitte beachten Sie: Ohne .onion-Adresse können Sie keine Verbindung mit den Servern herstellen.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Wenn Onion-Hosts verfügbar sind, werden sie verwendet.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
     <string name="appearance_settings">Erscheinungsbild</string>
@@ -502,7 +502,7 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Audio- &amp; Videoanrufe</string>
     <string name="your_calls">Ihre Anrufe</string>
-    <string name="always_use_relay">Über ein Relais verbinden</string>
+    <string name="always_use_relay">Immer über ein Relais verbinden</string>
     <string name="call_on_lock_screen">Anrufe auf Sperrbildschirm:</string>
     <string name="accept_call_on_lock_screen">Akzeptieren</string>
     <string name="show_call_on_lock_screen">Anzeigen</string>
@@ -1459,7 +1459,7 @@
     <string name="open_database_folder">Datenbank-Ordner öffnen</string>
     <string name="passphrase_will_be_saved_in_settings">Das Passwort wird in Klartext in den Einstellungen gespeichert, nachdem Sie es geändert oder die App neu gestartet haben.</string>
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Dateirelais sind per SOCKS Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
+    <string name="socks_proxy_setting_limitations"><b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.</string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
     <string name="rcv_group_event_open_chat">Öffnen</string>
     <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
@@ -1728,7 +1728,7 @@
     <string name="migrate_to_device_downloading_details">Link-Details werden heruntergeladen</string>
     <string name="migrate_to_device_downloading_archive">Archiv wird heruntergeladen</string>
     <string name="migrate_to_device_apply_onion">Anwenden</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Server hochgeladen.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.</string>
     <string name="migrate_from_device_archive_and_upload">Archivieren und Hochladen</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Warnung</b>: Das Archiv wird gelöscht.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Überprüfen Sie Ihre Internet-Verbindung und probieren Sie es nochmals</string>
@@ -1882,4 +1882,11 @@
     <string name="network_smp_proxy_fallback_allow_description">Nachrichten direkt versenden, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
     <string name="private_routing_explanation">Für die Auslieferung Ihrer Nachrichten wird privates Routing Ihrer SMP-Server genutzt, um Ihre IP-Adresse zu schützen.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Privates Routing mit unbekannten Servern nutzen, wenn die IP-Adresse nicht geschützt ist.</string>
+    <string name="protect_ip_address">IP-Adresse schützen</string>
+    <string name="settings_section_title_files">DATEIEN</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Die App wird bei unbekannten Datei-Servern nach einer Download-Bestätigung fragen (außer bei .onion oder wenn ein SOCKS-Proxy aktiviert ist).</string>
+    <string name="file_not_approved_title">Unbekannte Server!</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für Datei-Server sichtbar sein.</string>
+    <string name="file_not_approved_descr">Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Relais sichtbar sein:
+\n%1$s.</string>
 </resources>
