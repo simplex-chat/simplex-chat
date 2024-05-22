@@ -16,7 +16,6 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var disableEditing: Bool
     @Binding var height: CGFloat
     @Binding var focused: Bool
-    let alignment: TextAlignment
     let onImagesAdded: ([UploadContent]) -> Void
     
     private let minHeight: CGFloat = 37
@@ -30,13 +29,16 @@ struct NativeTextEditor: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextView {
         let field = CustomUITextField(height: _height)
         field.text = text
-        field.textAlignment = alignment == .leading ? .left : .right
+        field.textAlignment = alignment(text)
         field.autocapitalizationType = .sentences
         field.setOnTextChangedListener { newText, images in
             if !disableEditing {
-                // Speed up the process of updating layout, reduce jumping content on screen
-                if !isShortEmoji(newText) { updateHeight(field) }
                 text = newText
+                field.textAlignment = alignment(text)
+                updateFont(field)
+                // Speed up the process of updating layout, reduce jumping content on screen
+                updateHeight(field)
+                self.height = field.frame.size.height
             } else {
                 field.text = text
             }
@@ -53,10 +55,12 @@ struct NativeTextEditor: UIViewRepresentable {
     }
     
     func updateUIView(_ field: UITextView, context: Context) {
-        field.text = text
-        field.textAlignment = alignment == .leading ? .left : .right
-        updateFont(field)
-        updateHeight(field)
+        if field.markedTextRange == nil && field.text != text {
+            field.text = text
+            field.textAlignment = alignment(text)
+            updateFont(field)
+            updateHeight(field)
+        }
     }
 
     private func updateHeight(_ field: UITextView) {
@@ -73,10 +77,17 @@ struct NativeTextEditor: UIViewRepresentable {
     }
 
     private func updateFont(_ field: UITextView) {
-        field.font = isShortEmoji(field.text)
+        let newFont = isShortEmoji(field.text)
         ? (field.text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
         : UIFont.preferredFont(forTextStyle: .body)
+        if field.font != newFont {
+            field.font = newFont
+        }
     }
+}
+
+private func alignment(_ text: String) -> NSTextAlignment {
+    isRightToLeft(text) ? .right : .left
 }
 
 private class CustomUITextField: UITextView, UITextViewDelegate {
@@ -205,7 +216,6 @@ struct NativeTextEditor_Previews: PreviewProvider{
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
-            alignment: TextAlignment.leading,
             onImagesAdded: { _ in }
         )
         .fixedSize(horizontal: false, vertical: true)

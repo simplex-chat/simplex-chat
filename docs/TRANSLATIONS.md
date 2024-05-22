@@ -3,7 +3,7 @@ title: Contributing translations to SimpleX Chat
 revision: 19.03.2023
 ---
 
-| 19.03.2023 | EN, [CZ](/docs/lang/cs/TRANSLATIONS.md), [FR](/docs/lang/fr/TRANSLATIONS.md) |
+| 19.03.2023 | EN, [CZ](/docs/lang/cs/TRANSLATIONS.md), [FR](/docs/lang/fr/TRANSLATIONS.md), [PL](/docs/lang/pl/TRANSLATIONS.md) |
 
 # Contributing translations to SimpleX Chat
 

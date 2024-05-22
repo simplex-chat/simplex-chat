@@ -32,8 +32,6 @@ public enum ChatCommand {
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetEncryptLocalFiles(enable: Bool)
-    case apiSetPQEncryption(enable: Bool)
-    case apiSetContactPQ(contactId: Int64, enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -50,6 +48,7 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
+    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -77,6 +76,7 @@ public enum ChatCommand {
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
+    case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
     case reconnectAllServers
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
@@ -170,8 +170,6 @@ public enum ChatCommand {
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
-            case let .apiSetPQEncryption(enable): return "/pq \(onOff(enable))"
-            case let .apiSetContactPQ(contactId, enable): return "/_pq @\(contactId) \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -194,6 +192,7 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
+            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId): return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -221,6 +220,7 @@ public enum ChatCommand {
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
+            case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
             case .reconnectAllServers: return "/reconnect"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
@@ -322,8 +322,6 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
-            case .apiSetPQEncryption: return "apiSetPQEncryption"
-            case .apiSetContactPQ: return "apiSetContactPQ"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -341,6 +339,7 @@ public enum ChatCommand {
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
+            case .apiForwardChatItem: return "apiForwardChatItem"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -368,6 +367,7 @@ public enum ChatCommand {
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
+            case .apiSetNetworkInfo: return "apiSetNetworkInfo"
             case .reconnectAllServers: return "reconnectAllServers"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
@@ -647,7 +647,6 @@ public enum ChatResponse: Decodable, Error {
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
     // pq
-    case contactPQAllowed(user: UserRef, contact: Contact, pqEncryption: Bool)
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
@@ -803,8 +802,7 @@ public enum ChatResponse: Decodable, Error {
             case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
             case .remoteCtrlConnected: return "remoteCtrlConnected"
             case .remoteCtrlStopped: return "remoteCtrlStopped"
-            case .contactPQAllowed: return "contactPQAllowed"
-            case .contactPQEnabled: return "contactPQAllowed"
+            case .contactPQEnabled: return "contactPQEnabled"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
@@ -961,7 +959,6 @@ public enum ChatResponse: Decodable, Error {
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
-            case let .contactPQAllowed(u, contact, pqEncryption): return withUser(u, "contact: \(String(describing: contact))\npqEncryption: \(pqEncryption)")
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
@@ -1251,6 +1248,7 @@ public struct NetCfg: Codable, Equatable {
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
+    public var rcvConcurrency: Int // pool size
     public var tcpKeepAlive: KeepAliveOpts?
     public var smpPingInterval: Int // microseconds
     public var smpPingCount: Int // times
@@ -1259,9 +1257,10 @@ public struct NetCfg: Codable, Equatable {
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 20_000_000,
+        tcpConnectTimeout: 25_000_000,
         tcpTimeout: 15_000_000,
-        tcpTimeoutPerKb: 45_000,
+        tcpTimeoutPerKb: 10_000,
+        rcvConcurrency: 12,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1271,9 +1270,10 @@ public struct NetCfg: Codable, Equatable {
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 30_000_000,
+        tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
-        tcpTimeoutPerKb: 60_000,
+        tcpTimeoutPerKb: 15_000,
+        rcvConcurrency: 8,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1714,6 +1714,8 @@ public enum ChatErrorType: Decodable {
     case fallbackToSMPProhibited(fileId: Int64)
     case inlineFileProhibited(fileId: Int64)
     case invalidQuote
+    case invalidForward
+    case forwardNoFile
     case invalidChatItemUpdate
     case invalidChatItemDelete
     case hasCurrentCall
@@ -2085,4 +2087,32 @@ public enum AppSettingsLockScreenCalls: String, Codable {
     case disable
     case show
     case accept
+}
+
+public struct UserNetworkInfo: Codable, Equatable {
+    public let networkType: UserNetworkType
+    public let online: Bool
+
+    public init(networkType: UserNetworkType, online: Bool) {
+        self.networkType = networkType
+        self.online = online
+    }
+}
+
+public enum UserNetworkType: String, Codable {
+    case none
+    case cellular
+    case wifi
+    case ethernet
+    case other
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .none: "No network connection"
+        case .cellular: "Cellular"
+        case .wifi: "WiFi"
+        case .ethernet: "Wired ethernet"
+        case .other: "Other"
+        }
+    }
 }

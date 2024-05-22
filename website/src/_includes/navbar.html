@@ -13,7 +13,7 @@
         <a href="/{{ '' if lang == 'en' else lang }}" class="dark:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
         <a href="/{{ '' if lang == 'en' else lang }}" class="hidden dark:inline-block dark:lg:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
         
-        <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 lg:top-0 lg:relative" id="menu">
+        <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 h-[calc(100vh-66px)] lg:h-[66px] lg:top-0 lg:relative" id="menu">
             <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
                 <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
                     
@@ -60,6 +60,8 @@
                                 >Whitepaper
                                 <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                             </a></li>
+                            <li><a href="/privacy" class="lg:px-[20px] inline-block"
+                                >{{ "terms-and-privacy-policy" | i18n({}, lang ) | safe }}</a></li>
                             <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
                                 target="_blank" class="lg:px-[20px] flex items-center gap-1"
                                 >{{ "smp-protocol" | i18n({}, lang ) | safe }}
@@ -116,7 +118,7 @@
                 </ul>
 
                 <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations"
-                    target="_blank" class="whitespace-nowrap flex items-center gap-1 self-center text-white dark:text-black text-[16px] font-medium tracking-[0.02em] rounded-[34px] bg-primary-light dark:bg-primary-dark py-3 lg:py-2 px-20 lg:px-5 mb-16 lg:mb-0"
+                    target="_blank" class="whitespace-nowrap flex items-center gap-1 self-center text-white dark:text-black text-[16px] font-medium tracking-[0.02em] rounded-[34px] bg-primary-light dark:bg-primary-dark py-3 lg:py-2 px-20 lg:px-5 mb-auto lg:mb-0"
                     >{{ "donate" | i18n({}, lang ) | safe }}
                 </a>
 

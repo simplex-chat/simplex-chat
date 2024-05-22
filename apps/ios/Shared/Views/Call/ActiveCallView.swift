@@ -9,6 +9,7 @@
 import SwiftUI
 import WebKit
 import SimpleXChat
+import AVFoundation
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
@@ -21,6 +22,7 @@ struct ActiveCallView: View {
     @Binding var canConnectCall: Bool
     @State var prevColorScheme: ColorScheme = .dark
     @State var pipShown = false
+    @State var wasConnected = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -69,6 +71,11 @@ struct ActiveCallView: View {
             Task { await m.callCommand.setClient(nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
+            CallSoundsPlayer.shared.stop()
+            try? AVAudioSession.sharedInstance().setCategory(.soloAmbient)
+            if (wasConnected) {
+                CallSoundsPlayer.shared.vibrate(long: true)
+            }
         }
         .background(m.activeCallViewIsCollapsed ? .clear : .black)
         // Quite a big delay when opening/closing the view when a scheme changes (globally) this way. It's not needed when CallKit is used since status bar is green with white text on it
@@ -103,6 +110,11 @@ struct ActiveCallView: View {
                         call.callState = .invitationSent
                         call.localCapabilities = capabilities
                     }
+                    if call.supportsVideo && !AVAudioSession.sharedInstance().hasExternalAudioDevice() {
+                        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    }
+                    CallSoundsPlayer.shared.startConnectingCallSound()
+                    activeCallWaitDeliveryReceipt()
                 }
             case let .offer(offer, iceCandidates, capabilities):
                 Task {
@@ -126,6 +138,7 @@ struct ActiveCallView: View {
                     }
                     await MainActor.run {
                         call.callState = .negotiated
+                        CallSoundsPlayer.shared.stop()
                     }
                 }
             case let .ice(iceCandidates):
@@ -144,6 +157,10 @@ struct ActiveCallView: View {
                     : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
                     call.connectedAt = .now
+                    if !wasConnected {
+                        CallSoundsPlayer.shared.vibrate(long: false)
+                        wasConnected = true
+                    }
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
@@ -161,6 +178,10 @@ struct ActiveCallView: View {
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
                 call.connectedAt = .now
+                if !wasConnected {
+                    CallSoundsPlayer.shared.vibrate(long: false)
+                    wasConnected = true
+                }
             case .ended:
                 closeCallView(client)
                 call.callState = .ended
@@ -187,6 +208,22 @@ struct ActiveCallView: View {
         }
     }
 
+    private func activeCallWaitDeliveryReceipt() {
+        ChatReceiver.shared.messagesChannel = { msg in
+            guard let call = ChatModel.shared.activeCall, call.callState == .invitationSent else {
+                ChatReceiver.shared.messagesChannel = nil
+                return
+            }
+            if case let .chatItemStatusUpdated(_, msg) = msg,
+               msg.chatInfo.id == call.contact.id,
+               case .sndCall = msg.chatItem.content,
+               case .sndRcvd = msg.chatItem.meta.itemStatus {
+                CallSoundsPlayer.shared.startInCallSound()
+                ChatReceiver.shared.messagesChannel = nil
+            }
+        }
+    }
+
     private func closeCallView(_ client: WebRTCClient) {
         if m.activeCall != nil {
             m.showCallView = false
@@ -198,6 +235,7 @@ struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
     var client: WebRTCClient
+    @ObservedObject private var deviceManager = CallAudioDeviceManager.shared
 
     var body: some View {
         VStack {
@@ -213,7 +251,16 @@ struct ActiveCallOverlay: View {
                 HStack {
                     toggleAudioButton()
                     Spacer()
-                    Color.clear.frame(width: 40, height: 40)
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                        toggleSpeakerButton()
+                            .frame(width: 40, height: 40)
+                    } else if call.hasMedia {
+                        AudioDevicePicker()
+                            .scaleEffect(2)
+                            .frame(maxWidth: 40, maxHeight: 40)
+                    } else {
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                     Spacer()
                     endCallButton()
                     Spacer()
@@ -239,9 +286,7 @@ struct ActiveCallOverlay: View {
                             .foregroundColor(.white.opacity(0.8))
                     }
                     VStack {
-                        ProfileImage(imageStr: call.contact.profile.image)
-                            .scaledToFit()
-                            .frame(width: 192, height: 192)
+                        ProfileImage(imageStr: call.contact.profile.image, size: 192)
                         audioCallInfoView(call)
                     }
                     .foregroundColor(.white)
@@ -256,14 +301,33 @@ struct ActiveCallOverlay: View {
                     toggleAudioButton()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
-                    toggleSpeakerButton()
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    // Check if the only input is microphone. And in this case show toggle button, 
+                    // If there are more inputs, it probably means something like bluetooth headphones are available
+                    // and in this case show iOS button for choosing different output.
+                    // There is no way to get available outputs, only inputs
+                    if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                        toggleSpeakerButton()
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else if call.hasMedia {
+                        AudioDevicePicker()
+                            .scaleEffect(2)
+                            .frame(maxWidth: 50, maxHeight: 40)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    } else {
+                        Color.clear.frame(width: 50, height: 40)
+                    }
                 }
                 .padding(.bottom, 60)
                 .padding(.horizontal, 48)
             }
         }
         .frame(maxWidth: .infinity)
+        .onAppear {
+            deviceManager.start()
+        }
+        .onDisappear {
+            deviceManager.stop()
+        }
     }
 
     private func audioCallInfoView(_ call: Call) -> some View {
@@ -341,11 +405,16 @@ struct ActiveCallOverlay: View {
     private func toggleSpeakerButton() -> some View {
         controlButton(call, call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
             Task {
-                client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
+                let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+                client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
                 DispatchQueue.main.async {
-                    call.speakerEnabled = !call.speakerEnabled
+                    call.speakerEnabled = !speakerEnabled
                 }
             }
+        }
+        .onAppear {
+            deviceManager.call = call
+            //call.speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
         }
     }
 

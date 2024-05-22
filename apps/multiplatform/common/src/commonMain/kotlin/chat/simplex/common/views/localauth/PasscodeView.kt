@@ -135,7 +135,9 @@ fun PasscodeView(
   if (!buttonsEnabled.value) {
     ProgressIndicator()
   }
+  val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
+    hideKeyboard(view, true)
     focusRequester.requestFocus()
     // Disallow to steal a focus by clicking on buttons or using Tab
     focusRequester.captureFocus()

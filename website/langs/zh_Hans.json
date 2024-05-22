@@ -1,7 +1,7 @@
 {
     "simplex-explained-tab-3-p-2": "用户可以通过使用 Tor 访问服务器以进一步提高元数据隐私，防止通过 IP 地址关联实际身份。",
     "chat-bot-example": "聊天机器人示例",
-    "terms-and-privacy-policy": "条款和隐私政策",
+    "terms-and-privacy-policy": "隐私政策",
     "hero-overlay-1-textlink": "为什么用户 ID 不利于隐私？",
     "hero-2-header": "建立私人连接",
     "hero-overlay-2-title": "为什么用户 ID 不利于隐私？",
@@ -252,5 +252,8 @@
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> 是一家领先的安全和技术咨询企业，其客户包括大型科技公司、政府机构和重要的区块链项目。",
     "docs-dropdown-9": "下载",
     "please-use-link-in-mobile-app": "请使用移动应用程序中的链接",
-    "please-enable-javascript": "请启用 JavaScript 以查看二维码。"
+    "please-enable-javascript": "请启用 JavaScript 以查看二维码。",
+    "docs-dropdown-10": "透明度",
+    "docs-dropdown-11": "常问问题",
+    "docs-dropdown-12": "安全性"
 }

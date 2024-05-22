@@ -15,7 +15,6 @@ import chat.simplex.common.simplexWindowState
 import kotlinx.coroutines.delay
 import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.*
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64

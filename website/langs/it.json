@@ -13,7 +13,7 @@
     "copyright-label": "© 2020-2023 SimpleX | Progetto Open-Source",
     "simplex-chat-protocol": "Protocollo di SimpleX Chat",
     "terminal-cli": "Terminale CLI",
-    "terms-and-privacy-policy": "Termini e Informativa sulla privacy",
+    "terms-and-privacy-policy": "Informativa sulla privacy",
     "hero-header": "Privacy ridefinita",
     "hero-subheader": "Il primo messenger<br>senza ID utente",
     "hero-p-1": "Le altre app hanno gli ID utente: Signal, Matrix, Session, Briar, Jami, Cwtch, ecc.<br> SimpleX invece no, <strong>neanche dei numeri casuali</strong>.<br> Ciò aumenta radicalmente la tua privacy.",
@@ -252,5 +252,8 @@
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> è leader nella consulenza di sicurezza e tecnologia, i cui clienti includono grandi aziende, agenzie governative e importanti progetti di blockchain.",
     "docs-dropdown-9": "Download",
     "please-enable-javascript": "Attiva JavaScript per vedere il codice QR.",
-    "please-use-link-in-mobile-app": "Usa il link nell'app mobile"
+    "please-use-link-in-mobile-app": "Usa il link nell'app mobile",
+    "docs-dropdown-10": "Trasparenza",
+    "docs-dropdown-12": "Sicurezza",
+    "docs-dropdown-11": "Domande frequenti"
 }

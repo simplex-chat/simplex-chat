@@ -15,7 +15,6 @@ import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -170,8 +169,14 @@ fun saveImage(image: ImageBitmap): CryptoFile? {
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
-      val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
-      CryptoFile(destFileName, args)
+      try {
+        val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
+        CryptoFile(destFileName, args)
+      } catch (e: Exception) {
+        Log.e(TAG, "Unable to write crypto file: " + e.stackTraceToString())
+        AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+        null
+      }
     } else {
       val output = FileOutputStream(destFile)
       dataResized.writeTo(output)
@@ -217,8 +222,14 @@ fun saveAnimImage(uri: URI): CryptoFile? {
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
-      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
-      CryptoFile(destFileName, args)
+      try {
+        val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
+        CryptoFile(destFileName, args)
+      } catch (e: Exception) {
+        Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+        AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+        null
+      }
     } else {
       Files.copy(uri.inputStream(), destFile.toPath())
       CryptoFile.plain(destFileName)
@@ -242,8 +253,14 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
           Files.copy(inputStream, tmpFile.toPath())
-          val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
-          CryptoFile(destFileName, args)
+          try {
+            val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
+            CryptoFile(destFileName, args)
+          } catch (e: Exception) {
+            Log.e(TAG, "Unable to encrypt plain file: " + e.stackTraceToString())
+            AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+            null
+          }
         }
       } else {
         Files.copy(inputStream, destFile.toPath())

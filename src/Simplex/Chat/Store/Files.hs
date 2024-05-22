@@ -29,8 +29,8 @@ module Simplex.Chat.Store.Files
     createExtraSndFTDescrs,
     updateSndFTDeliveryXFTP,
     setSndFTAgentDeleted,
-    getXFTPSndFileDBId,
-    getXFTPRcvFileDBId,
+    getXFTPSndFileDBIds,
+    getXFTPRcvFileDBIds,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -109,7 +109,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -174,7 +174,7 @@ getPendingSndChunks db fileId connId =
       |]
       (fileId, connId)
 
-createSndDirectFTConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createSndDirectFTConnection :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
 createSndDirectFTConnection db vr user@User {userId} fileId (cmdId, acId) subMode = do
   currentTs <- getCurrentTime
   Connection {connId} <- createSndFileConnection_ db vr userId fileId acId subMode
@@ -194,7 +194,7 @@ createSndGroupFileTransfer db userId GroupInfo {groupId} filePath FileInvitation
   fileId <- insertedRowId db
   pure FileTransferMeta {fileId, xftpSndFile = Nothing, xftpRedirectFor = Nothing, fileName, filePath, fileSize, fileInline, chunkSize, cancelled = False}
 
-createSndGroupFileTransferConnection :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> SubscriptionMode -> IO ()
+createSndGroupFileTransferConnection :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> SubscriptionMode -> IO ()
 createSndGroupFileTransferConnection db vr user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} subMode = do
   currentTs <- getCurrentTime
   Connection {connId} <- createSndFileConnection_ db vr userId fileId acId subMode
@@ -336,15 +336,37 @@ setSndFTAgentDeleted db User {userId} fileId = do
     "UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (currentTs, userId, fileId)
 
-getXFTPSndFileDBId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
-getXFTPSndFileDBId db User {userId} aSndFileId =
-  ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
-    DB.query db "SELECT file_id FROM files WHERE user_id = ? AND agent_snd_file_id = ?" (userId, aSndFileId)
+getXFTPSndFileDBIds :: DB.Connection -> AgentSndFileId -> ExceptT StoreError IO (Maybe ChatRef, FileTransferId)
+getXFTPSndFileDBIds db aSndFileId =
+  ExceptT . firstRow' toFileRef (SESndFileNotFoundXFTP aSndFileId) $
+    DB.query
+      db
+      [sql|
+        SELECT file_id, contact_id, group_id, note_folder_id
+        FROM files
+        WHERE agent_snd_file_id = ?
+      |]
+      (Only aSndFileId)
 
-getXFTPRcvFileDBId :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
-getXFTPRcvFileDBId db aRcvFileId =
-  ExceptT . firstRow fromOnly (SERcvFileNotFoundXFTP aRcvFileId) $
-    DB.query db "SELECT file_id FROM rcv_files WHERE agent_rcv_file_id = ?" (Only aRcvFileId)
+getXFTPRcvFileDBIds :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO (Maybe ChatRef, FileTransferId)
+getXFTPRcvFileDBIds db aRcvFileId =
+  ExceptT . firstRow' toFileRef (SERcvFileNotFoundXFTP aRcvFileId) $
+    DB.query
+      db
+      [sql|
+        SELECT rf.file_id, f.contact_id, f.group_id, f.note_folder_id
+        FROM rcv_files rf
+        JOIN files f ON f.file_id = rf.file_id
+        WHERE rf.agent_rcv_file_id = ?
+      |]
+      (Only aRcvFileId)
+
+toFileRef :: (FileTransferId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (Maybe ChatRef, FileTransferId)
+toFileRef = \case
+  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId, fileId)
+  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef CTGroup groupId, fileId)
+  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CTLocal folderId, fileId)
+  (fileId, _, _, _) -> Right (Nothing, fileId)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do
@@ -430,10 +452,10 @@ lookupChatRefByFileId db User {userId} fileId =
         (userId, fileId)
 
 -- TODO v6.0 remove
-createSndFileConnection_ :: DB.Connection -> (PQSupport -> VersionRangeChat) -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
+createSndFileConnection_ :: DB.Connection -> VersionRangeChat -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
 createSndFileConnection_ db vr userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (minVersion $ vr PQSupportOff) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (minVersion vr) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
@@ -695,7 +717,7 @@ getRcvFileTransfer_ db userId fileId = do
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
-acceptRcvFileTransfer :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
+acceptRcvFileTransfer :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
   currentTs <- getCurrentTime
   acceptRcvFT_ db user fileId filePath Nothing currentTs
@@ -707,7 +729,7 @@ acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus f
   setCommandConnId db user cmdId connId
   runExceptT $ getChatItemByFileId db vr user fileId
 
-getContactByFileId :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> ExceptT StoreError IO Contact
+getContactByFileId :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> ExceptT StoreError IO Contact
 getContactByFileId db vr user@User {userId} fileId = do
   cId <- getContactIdByFileId
   getContact db vr user cId
@@ -716,7 +738,7 @@ getContactByFileId db vr user@User {userId} fileId = do
       ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $
         DB.query db "SELECT contact_id FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
 
-acceptRcvInlineFT :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db vr user fileId
@@ -725,7 +747,7 @@ startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Mayb
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
   acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-xftpAcceptRcvFT :: DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 xftpAcceptRcvFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath Nothing =<< getCurrentTime
   getChatItemByFileId db vr user fileId
@@ -1000,7 +1022,7 @@ getLocalCryptoFile db userId fileId sent =
       pure $ CryptoFile filePath fileCryptoArgs
     _ -> throwError $ SEFileNotFound fileId
 
-updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> (PQSupport -> VersionRangeChat) -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
+updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRangeChat -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db vr user fileId fileStatus = do
   aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db vr user fileId
   case (cType, testEquality d $ msgDirection @d) of

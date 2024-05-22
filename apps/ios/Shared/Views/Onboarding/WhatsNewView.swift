@@ -375,6 +375,37 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
+    ),
+    VersionDescription(
+        version: "v5.7",
+        post: URL(string: "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"),
+        features: [
+            FeatureDescription(
+                icon: "key",
+                title: "Quantum resistant encryption",
+                description: "Will be enabled in direct chats!"
+            ),
+            FeatureDescription(
+                icon: "arrowshape.turn.up.forward",
+                title: "Forward and save messages",
+                description: "Message source remains private."
+            ),
+            FeatureDescription(
+                icon: "music.note",
+                title: "In-call sounds",
+                description: "When connecting audio and video calls."
+            ),
+            FeatureDescription(
+                icon: "person.crop.square",
+                title: "Shape profile images",
+                description: "Square, circle, or anything in between."
+            ),
+            FeatureDescription(
+                icon: "antenna.radiowaves.left.and.right",
+                title: "Network management",
+                description: "More reliable network connection."
+            )
+        ]
     )
 ]
 

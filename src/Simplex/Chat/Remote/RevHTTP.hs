@@ -21,9 +21,9 @@ attachRevHTTP2Client disconnected = attachHTTP2Client config ANY_ADDR_V4 "0" dis
 
 attachHTTP2Server :: TLS -> (HTTP2Request -> IO ()) -> IO ()
 attachHTTP2Server tls processRequest =
-  runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
+  runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId sessionALPN r sendResponse -> do
     reqBody <- getHTTP2Body r doNotPrefetchHead
-    processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}
+    processRequest HTTP2Request {sessionId, sessionALPN, request = r, reqBody, sendResponse}
 
 -- | Suppress storing initial chunk in bodyHead, forcing clients and servers to stream chunks
 doNotPrefetchHead :: Int

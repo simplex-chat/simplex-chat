@@ -300,6 +300,7 @@ private fun setChatItemTTLAlert(
     confirmText = generalGetString(MR.strings.delete_messages),
     onConfirm = { setCiTTL(m, rhId, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
     onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
+    onDismissRequest = { selectedChatItemTTL.value = m.chatItemTTL.value },
     destructive = true,
   )
 }

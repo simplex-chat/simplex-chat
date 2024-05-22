@@ -9,7 +9,6 @@ import chat.simplex.common.views.helpers.DatabaseUtils.randomDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
 import java.io.File
 import java.nio.ByteBuffer
 
@@ -88,13 +87,13 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       Log.d(TAG, "Unable to migrate successfully: $res")
       return
     }
+    platform.androidRestartNetworkObserver()
     controller.apiSetTempFolder(coreTmpDir.absolutePath)
     controller.apiSetFilesFolder(appFilesDir.absolutePath)
     if (appPlatform.isDesktop) {
       controller.apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
     }
     controller.apiSetEncryptLocalFiles(controller.appPrefs.privacyEncryptLocalFiles.get())
-    controller.apiSetPQEncryption(controller.appPrefs.pqExperimentalEnabled.get())
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)

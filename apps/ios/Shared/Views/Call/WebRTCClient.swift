@@ -49,7 +49,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
-    private let audioQueue = DispatchQueue(label: "audio")
+    private let audioQueue = DispatchQueue(label: "chat.simplex.app.audio")
     private var sendCallResponse: (WVAPIMessage) async -> Void
     var activeCall: Binding<Call?>
     private var localRendererAspectRatio: Binding<CGFloat?>
@@ -65,14 +65,14 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         self.localRendererAspectRatio = localRendererAspectRatio
         rtcAudioSession.useManualAudio = CallController.useCallKit()
         rtcAudioSession.isAudioEnabled = !CallController.useCallKit()
-        logger.debug("WebRTCClient: rtcAudioSession has manual audio \(self.rtcAudioSession.useManualAudio) and audio enabled \(self.rtcAudioSession.isAudioEnabled)}")
+        logger.debug("WebRTCClient: rtcAudioSession has manual audio \(self.rtcAudioSession.useManualAudio) and audio enabled \(self.rtcAudioSession.isAudioEnabled)")
         super.init()
     }
 
     let defaultIceServers: [WebRTC.RTCIceServer] = [
-        WebRTC.RTCIceServer(urlStrings: ["stun:stun.simplex.im:443"]),
-        WebRTC.RTCIceServer(urlStrings: ["turn:turn.simplex.im:443?transport=udp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"),
-        WebRTC.RTCIceServer(urlStrings: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"),
+        WebRTC.RTCIceServer(urlStrings: ["stuns:stun.simplex.im:443"]),
+        //WebRTC.RTCIceServer(urlStrings: ["turns:turn.simplex.im:443?transport=udp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"),
+        WebRTC.RTCIceServer(urlStrings: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"),
     ]
 
     func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
@@ -605,9 +605,23 @@ extension WebRTCClient {
                 self.rtcAudioSession.unlockForConfiguration()
             }
             do {
-                try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue)
-                try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
-                try self.rtcAudioSession.overrideOutputAudioPort(enabled ? .speaker : .none)
+                let hasExternalAudioDevice = self.rtcAudioSession.session.hasExternalAudioDevice()
+                if enabled {
+                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat.rawValue)
+                    if hasExternalAudioDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
+                        try self.rtcAudioSession.setPreferredInput(preferred)
+                    } else {
+                        try self.rtcAudioSession.overrideOutputAudioPort(.speaker)
+                    }
+                } else {
+                    try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                    try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+                    try self.rtcAudioSession.overrideOutputAudioPort(.none)
+                }
+                if hasExternalAudioDevice {
+                    logger.debug("WebRTCClient: configuring session with external device available, skip configuring speaker")
+                }
                 try self.rtcAudioSession.setActive(true)
                 logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled) success")
             } catch let error {
@@ -655,6 +669,17 @@ extension WebRTCClient {
         activeCall.wrappedValue?.connection.transceivers
         .compactMap { $0.sender.track as? T }
         .forEach { $0.isEnabled = enabled }
+    }
+}
+
+extension AVAudioSession {
+    func hasExternalAudioDevice() -> Bool {
+        availableInputs?.allSatisfy({ $0.portType == .builtInMic }) != true
+    }
+
+    func preferredInputDevice() -> AVAudioSessionPortDescription? {
+//        logger.debug("Preferred input device: \(String(describing: self.availableInputs?.filter({ $0.portType != .builtInMic })))")
+        return availableInputs?.filter({ $0.portType != .builtInMic }).last
     }
 }
 

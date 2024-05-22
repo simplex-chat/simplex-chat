@@ -46,6 +46,9 @@
   <string name="invalid_message_format">invalid message format</string>
   <string name="live">LIVE</string>
   <string name="moderated_description">moderated</string>
+  <string name="forwarded_description">forwarded</string>
+  <string name="saved_description">saved</string>
+  <string name="saved_from_description">saved from %s</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
   <string name="error_showing_message">error showing message</string>
@@ -267,6 +270,11 @@
   <string name="edit_history">History</string>
   <string name="no_history">No history</string>
   <string name="in_reply_to">In reply to</string>
+  <string name="saved_chat_item_info_tab">Saved</string>
+  <string name="forwarded_chat_item_info_tab">Forwarded</string>
+  <string name="saved_from_chat_item_info_title">Saved from</string>
+  <string name="forwarded_from_chat_item_info_title">Forwarded from</string>
+  <string name="recipients_can_not_see_who_message_from">Recipient(s) can\'t see who this message is from.</string>
   <string name="delivery">Delivery</string>
   <string name="no_info_on_delivery">No delivery information</string>
   <string name="delete_verb">Delete</string>
@@ -294,6 +302,8 @@
   <string name="revoke_file__title">Revoke file?</string>
   <string name="revoke_file__message">File will be deleted from servers.</string>
   <string name="revoke_file__confirm">Revoke</string>
+  <string name="forward_chat_item">Forward</string>
+  <string name="download_file">Download</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
@@ -328,6 +338,7 @@
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
+  <string name="forward_message">Forward message…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -347,6 +358,9 @@
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
   <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
+  <string name="simplex_links_not_allowed">SimpleX links not allowed</string>
+  <string name="files_and_media_not_allowed">Files and media not allowed</string>
+  <string name="voice_messages_not_allowed">Voice messages not allowed</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -822,6 +836,10 @@
   <string name="permissions_grant_in_settings">Grant in settings</string>
   <string name="permissions_find_in_settings_and_grant">Find this permission in Android settings and grant it manually.</string>
   <string name="permissions_open_settings">Open settings</string>
+  <string name="audio_device_earpiece">Earpiece</string>
+  <string name="audio_device_speaker">Speaker</string>
+  <string name="audio_device_wired_headphones">Headphones</string>
+  <string name="audio_device_bluetooth">Bluetooth</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -1015,8 +1033,10 @@
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
+  <string name="settings_section_title_profile_images">Profile images</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
+  <string name="settings_section_title_network_connection">Network connection</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
   <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
   <string name="settings_section_title_use_from_desktop">Use from desktop</string>
@@ -1441,6 +1461,7 @@
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
   <string name="network_option_protocol_timeout">Protocol timeout</string>
   <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
+  <string name="network_option_rcv_concurrency">Receiving concurrency</string>
   <string name="network_option_ping_interval">PING interval</string>
   <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
@@ -1530,6 +1551,7 @@
   <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
   <string name="files_and_media">Files and media</string>
+  <string name="simplex_links">SimpleX links</string>
   <string name="recent_history">Visible history</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
@@ -1587,6 +1609,8 @@
   <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
   <string name="allow_to_send_files">Allow to send files and media.</string>
   <string name="prohibit_sending_files">Prohibit sending files and media.</string>
+  <string name="allow_to_send_simplex_links">Allow to send SimpleX links.</string>
+  <string name="prohibit_sending_simplex_links">Prohibit sending SimpleX links</string>
   <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
   <string name="disable_sending_recent_history">Do not send history to new members.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
@@ -1601,6 +1625,8 @@
   <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
   <string name="group_members_can_send_files">Group members can send files and media.</string>
   <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
+  <string name="group_members_can_send_simplex_links">Group members can send SimpleX links.</string>
+  <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited in this group.</string>
   <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="delete_after">Delete after</string>
@@ -1623,6 +1649,10 @@
   <string name="feature_offered_item">offered %s</string>
   <string name="feature_offered_item_with_param">offered %s: %2s</string>
   <string name="feature_cancelled_item">cancelled %s</string>
+  <string name="feature_roles_all_members">all members</string>
+  <string name="feature_roles_admins">admins</string>
+  <string name="feature_roles_owners">owners</string>
+  <string name="feature_enabled_for">Enabled for</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
@@ -1736,6 +1766,16 @@
   <string name="v5_6_picture_in_picture_calls_descr">Use the app while in the call.</string>
   <string name="v5_6_safer_groups">Safer groups</string>
   <string name="v5_6_safer_groups_descr">Admins can block a member for all.</string>
+  <string name="v5_7_quantum_resistant_encryption_descr">Will be enabled in direct chats!</string>
+  <string name="v5_7_forward">Forward and save messages</string>
+  <string name="v5_7_forward_descr">Message source remains private.</string>
+  <string name="v5_7_call_sounds">In-call sounds</string>
+  <string name="v5_7_call_sounds_descr">When connecting audio and video calls.</string>
+  <string name="v5_7_shape_profile_images">Shape profile images</string>
+  <string name="v5_7_shape_profile_images_descr">Square, circle, or anything in between.</string>
+  <string name="v5_7_network">Network management</string>
+  <string name="v5_7_network_descr">More reliable network connection.</string>
+  <string name="v5_7_new_interface_languages">Lithuanian UI</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
@@ -1925,4 +1965,11 @@
   <string name="migrate_from_device_check_connection_and_try_again">Check your internet connection and try again</string>
   <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Warning</b>: the archive will be deleted.]]></string>
   <string name="migrate_from_device_error_verifying_passphrase">Error verifying passphrase:</string>
+
+<!-- NetworkObserver.kt -->
+  <string name="network_type_no_network_connection">No network connection</string>
+  <string name="network_type_cellular">Cellular</string>
+  <string name="network_type_network_wifi">WiFi</string>
+  <string name="network_type_ethernet">Wired ethernet</string>
+  <string name="network_type_other">Other</string>
 </resources>

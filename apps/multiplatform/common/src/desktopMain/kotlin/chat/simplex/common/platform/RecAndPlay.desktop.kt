@@ -60,7 +60,7 @@ actual object AudioPlayer: AudioPlayerInterface {
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
         fileSource.deleteTmpFile()
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.stackTraceToString())
         return null
       }
     }
@@ -213,7 +213,7 @@ actual object SoundPlayer: SoundPlayerInterface {
   override fun start(scope: CoroutineScope, sound: Boolean) {
     val tmpFile = File(tmpDir, UUID.randomUUID().toString())
     tmpFile.deleteOnExit()
-    SoundPlayer::class.java.getResource("/media/ring_once.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+    SoundPlayer::class.java.getResource("/media/ring_once.mp3")!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
     playing = true
     scope.launch {
       while (playing && sound) {
@@ -225,6 +225,40 @@ actual object SoundPlayer: SoundPlayerInterface {
 
   override fun stop() {
     playing = false
+    AudioPlayer.stop()
+  }
+}
+
+actual object CallSoundsPlayer: CallSoundsPlayerInterface {
+  private var playingJob: Job? = null
+
+  private fun start(soundPath: String, delay: Long, scope: CoroutineScope) {
+    playingJob?.cancel()
+    val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+    tmpFile.deleteOnExit()
+    SoundPlayer::class.java.getResource(soundPath)!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+    playingJob = scope.launch {
+      while (isActive) {
+        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
+        delay(delay)
+      }
+    }
+  }
+
+  override fun startConnectingCallSound(scope: CoroutineScope) {
+    // Taken from https://github.com/TelegramOrg/Telegram-Android
+    // https://github.com/TelegramOrg/Telegram-Android/blob/master/LICENSE
+    start("/media/connecting_call.mp3", 3000, scope)
+  }
+
+  override fun startInCallSound(scope: CoroutineScope) {
+    start("/media/in_call.mp3", 5000, scope)
+  }
+
+  override fun vibrate(times: Int) {}
+
+  override fun stop() {
+    playingJob?.cancel()
     AudioPlayer.stop()
   }
 }

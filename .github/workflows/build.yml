@@ -67,6 +67,11 @@ jobs:
           - os: macos-latest
             ghc: "9.6.3"
             cache_path: ~/.cabal/store
+            asset_name: simplex-chat-macos-aarch64
+            desktop_asset_name: simplex-desktop-macos-aarch64.dmg
+          - os: macos-13
+            ghc: "9.6.3"
+            cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
           - os: windows-latest
@@ -107,18 +112,36 @@ jobs:
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
-          echo "ignore-project: False"                                      >> cabal.project.local
-          echo "package direct-sqlcipher"                                   >> cabal.project.local
-          echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include" >> cabal.project.local
-          echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"         >> cabal.project.local
-          echo "    flags: +openssl"                                        >> cabal.project.local
+          echo "ignore-project: False"                                         >> cabal.project.local
+          echo "package simplexmq"                                             >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include" >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib"         >> cabal.project.local
+          echo ""                                                              >> cabal.project.local
+          echo "package direct-sqlcipher"                                      >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include" >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib"         >> cabal.project.local
+          echo "    flags: +openssl"                                           >> cabal.project.local
+
+      - name: Unix prepare cabal.project.local for Mac
+        if: matrix.os == 'macos-13'
+        shell: bash
+        run: |
+          echo "ignore-project: False"                                         >> cabal.project.local
+          echo "package simplexmq"                                             >> cabal.project.local
+          echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include"    >> cabal.project.local
+          echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"            >> cabal.project.local
+          echo ""                                                              >> cabal.project.local
+          echo "package direct-sqlcipher"                                      >> cabal.project.local
+          echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include"    >> cabal.project.local
+          echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"            >> cabal.project.local
+          echo "    flags: +openssl"                                           >> cabal.project.local
 
       - name: Install AppImage dependencies
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
       - name: Install pkg-config for Mac
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
         run: brew install pkg-config
 
       - name: Unix prepare cabal.project.local for Ubuntu
@@ -190,7 +213,7 @@ jobs:
 
       - name: Mac build desktop
         id: mac_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -241,7 +264,7 @@ jobs:
             ${{ steps.linux_appimage_build.outputs.appimage_hash }}
 
       - name: Mac upload desktop package to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -250,7 +273,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Mac update desktop package hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

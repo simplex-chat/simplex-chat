@@ -156,13 +156,13 @@ actual object AudioPlayer: AudioPlayerInterface {
         }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.stackTraceToString())
         return null
       }
       runCatching { player.prepare() }.onFailure {
         // Can happen when audio file is broken
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.stackTraceToString())
         return null
       }
     }
@@ -296,6 +296,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 }
 
 actual typealias SoundPlayer = chat.simplex.common.helpers.SoundPlayer
+actual typealias CallSoundsPlayer = chat.simplex.common.helpers.CallSoundsPlayer
 
 class CryptoMediaSource(val data: ByteArray) : MediaDataSource() {
   override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {

@@ -15,6 +15,7 @@ struct ContextItemView: View {
     let contextItem: ChatItem
     let contextIcon: String
     let cancelContextItem: () -> Void
+    var showSender: Bool = true
 
     var body: some View {
         HStack {
@@ -23,7 +24,7 @@ struct ContextItemView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
                 .foregroundColor(.secondary)
-            if let sender = contextItem.memberDisplayName {
+            if showSender, let sender = contextItem.memberDisplayName {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(sender).font(.caption).foregroundColor(.secondary)
                     msgContentView(lines: 2)
@@ -48,14 +49,26 @@ struct ContextItemView: View {
     }
 
     private func msgContentView(lines: Int) -> some View {
-        MsgContentView(
-            chat: chat,
-            text: contextItem.text,
-            formattedText: contextItem.formattedText,
-            showSecrets: false
-        )
-        .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
-        .lineLimit(lines)
+        contextMsgPreview()
+            .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
+            .lineLimit(lines)
+    }
+
+    private func contextMsgPreview() -> Text {
+        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false)
+
+        func attachment() -> Text {
+            switch contextItem.content.msgContent {
+            case .file: return image("doc.fill")
+            case .image: return image("photo")
+            case .voice: return image("play.fill")
+            default: return Text("")
+            }
+        }
+
+        func image(_ s: String) -> Text {
+            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ")
+        }
     }
 }
 

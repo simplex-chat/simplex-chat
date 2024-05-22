@@ -59,13 +59,15 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
-import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -75,7 +77,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption, PQSupport (..))
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
@@ -125,7 +127,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    chatVRange :: PQSupport -> VersionRangeChat,
+    chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
@@ -165,7 +167,7 @@ defaultChatHooks =
   ChatHooks
     { preCmdHook = \_ -> pure . Right,
       eventHook = \_ -> pure
-    }      
+    }
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
@@ -208,6 +210,7 @@ data ChatController = ChatController
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
+    entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
@@ -227,9 +230,9 @@ data ChatController = ChatController
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
     tempDirectory :: TVar (Maybe FilePath),
+    assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool,
-    pqExperimentalEnabled :: TVar PQSupport -- TODO v5.7 remove
+    contactMergeEnabled :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -264,11 +267,9 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetRemoteHostsFolder FilePath
+  | APISetAppFilePaths AppFilePathsConfig
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
-  | APISetPQEncryption PQSupport
-  | APISetContactPQ ContactId PQEncryption
-  | SetContactPQ ContactName PQEncryption
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
@@ -290,6 +291,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
@@ -312,6 +314,8 @@ data ChatCommand
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
+  | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
+  | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -344,6 +348,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | APISetNetworkInfo UserNetworkInfo
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
@@ -406,6 +411,9 @@ data ChatCommand
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
+  | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
+  | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
+  | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
   | SendMessage ChatName Text
   | SendMemberContactMessage GroupName ContactName Text
   | SendLiveMessage ChatName Text
@@ -460,7 +468,8 @@ data ChatCommand
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
-  | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
+  | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
+  | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
@@ -485,15 +494,16 @@ data ChatCommand
   | QuitChat
   | ShowVersion
   | DebugLocks
+  | DebugEvent ChatResponse
   | GetAgentStats
   | ResetAgentStats
   | GetAgentSubs
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
-  -- The parser will return this command for strings that start from "//".
-  -- This command should be processed in preCmdHook
-  | CustomChatCommand ByteString
+  | -- The parser will return this command for strings that start from "//".
+    -- This command should be processed in preCmdHook
+    CustomChatCommand ByteString
   deriving (Show)
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
@@ -727,11 +737,10 @@ data ChatResponse
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
-  | CRContactPQAllowed {user :: User, contact :: Contact, pqEncryption :: PQEncryption}
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
-  | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
+  | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
@@ -924,6 +933,14 @@ instance StrEncoding DBEncryptionKey where
 instance FromJSON DBEncryptionKey where
   parseJSON = strParseJSON "DBEncryptionKey"
 
+data AppFilePathsConfig = AppFilePathsConfig
+  { appFilesFolder :: FilePath,
+    appTempFolder :: FilePath,
+    appAssetsFolder :: FilePath,
+    appRemoteHostsFolder :: Maybe FilePath
+  }
+  deriving (Show)
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -1111,6 +1128,8 @@ data ChatErrorType
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
+  | CEInvalidForward
+  | CEForwardNoFile
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall
@@ -1353,7 +1372,7 @@ handleDBErrors =
   [ E.Handler $ \(e :: SQLError) ->
       let se = SQL.sqlError e
           busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
-        in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
+       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
     E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
   ]
 
@@ -1392,6 +1411,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
 $(JQ.deriveJSON defaultJSON ''ContactSubStatus)
 

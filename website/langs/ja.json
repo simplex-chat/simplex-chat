@@ -32,7 +32,7 @@
     "simplex-explained-tab-1-p-2": "ユーザー プロファイル識別子なしで単方向キューをどのように処理できるのでしょうか?",
     "simplex-chat-protocol": "SimpleX チャットプロトコル",
     "terminal-cli": "ターミナル CLI",
-    "terms-and-privacy-policy": "利用規約とプライバシーポリシー",
+    "terms-and-privacy-policy": "プライバシーポリシー",
     "hero-header": "プライバシーの基準を新境地に",
     "hero-subheader": "<br>ユーザーIDを持たない最初のメッセンジャー",
     "hero-overlay-1-textlink": "ユーザー ID がプライバシーに悪影響を与えるのはなぜですか?",
@@ -252,5 +252,8 @@
     "hero-overlay-card-3-p-2": "Trail of Bitsは2022年11月にSimpleXプラットフォームの暗号とネットワークのコンポーネントを検証しました。",
     "docs-dropdown-9": "ダウンロード",
     "please-enable-javascript": "QRコードを表示するためにJavaScriptを有効にしてください。",
-    "please-use-link-in-mobile-app": "このリンクをモバイルアプリで使用してください"
+    "please-use-link-in-mobile-app": "このリンクをモバイルアプリで使用してください",
+    "docs-dropdown-10": "透明性",
+    "docs-dropdown-11": "よくある質問",
+    "docs-dropdown-12": "セキュリティ"
 }

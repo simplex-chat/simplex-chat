@@ -8,7 +8,7 @@ echo "desktop.mac.signing.keychain=/tmp/simplex.keychain" >> apps/multiplatform/
 echo "desktop.mac.notarization.apple_id=$APPLE_SIMPLEX_NOTARIZATION_APPLE_ID" >> apps/multiplatform/local.properties
 echo "desktop.mac.notarization.password=$APPLE_SIMPLEX_NOTARIZATION_PASSWORD" >> apps/multiplatform/local.properties
 echo "desktop.mac.notarization.team_id=5NN7GUYB6T" >> apps/multiplatform/local.properties
-echo "$APPLE_SIMPLEX_SIGNING_KEYCHAIN" | base64 --decode - > /tmp/simplex.keychain
+echo "$APPLE_SIMPLEX_SIGNING_KEYCHAIN" | base64 --decode -o /tmp/simplex.keychain
 
 scripts/desktop/build-lib-mac.sh
 cd apps/multiplatform

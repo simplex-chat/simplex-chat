@@ -30,6 +30,7 @@ import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -86,15 +87,16 @@ ifCI xrun run d t = do
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
 
-versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+-- Bool is pqExpected - see testAddContact
+versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "current" $ testChat2 aliceProfile bobProfile runTest
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 runTest
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg runTest
+  it "current" $ testChat2 aliceProfile bobProfile (runTest True)
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix3 runTest = do
@@ -117,34 +119,6 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest tmp =
     withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg tmp cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
-
-type PQEnabled = Bool
-
-pqMatrix2 :: (HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()) -> SpecWith FilePath
-pqMatrix2 runTest = do
-  it "PQ: off, off" $ test False False
-  it "PQ: on, off" $ test False True
-  it "PQ: off, on" $ test True False
-  it "PQ: on, on" $ test True True
-  where
-    test aPQ bPQ = testChat2 aliceProfile bobProfile $ \a b -> runTest (a, aPQ) (b, bPQ)
-
-pqVersionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()) -> SpecWith FilePath
-pqVersionTestMatrix2 runTest = do
-  it "current" $ testChat2 aliceProfile bobProfile (runTest' True pqEncryptionCompressionVersion)
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest' False (VersionChat 6))
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest' False (VersionChat 6))
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest' False (VersionChat 6))
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest' False (VersionChat 1))
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest' False (VersionChat 1))
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest' False (VersionChat 1))
-  it "next" $ testChatCfg2 testCfgVNext aliceProfile bobProfile (runTest' True pqEncryptionCompressionVersion)
-  it "next to curr" $ runTestCfg2 testCfg testCfgVNext (runTest' True pqEncryptionCompressionVersion)
-  it "curr to next" $ runTestCfg2 testCfgVNext testCfg (runTest' True pqEncryptionCompressionVersion)
-  it "next to prev" $ runTestCfg2 testCfgVPrev testCfgVNext (runTest' False (VersionChat 6))
-  it "prev to next" $ runTestCfg2 testCfgVNext testCfgVPrev (runTest' False (VersionChat 6))
-  where
-    runTest' pqExpected v a b = runTest a b pqExpected v
 
 withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatGroup3Connected tmp dbPrefix action = do
@@ -286,7 +260,7 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' =
-  [ ((0, e2eeInfoNoPQStr), Nothing, Nothing),
+  [ ((0, e2eeInfoPQStr), Nothing, Nothing),
     ((0, "Disappearing messages: allowed"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
@@ -315,6 +289,7 @@ groupFeatures'' =
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
     ((0, "Files and media: on"), Nothing, Nothing),
+    ((0, "SimpleX links: on"), Nothing, Nothing),
     ((0, "Recent history: on"), Nothing, Nothing)
   ]
 
@@ -706,7 +681,7 @@ checkActionDeletesFile file action = do
 
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
-  "peer chat protocol version range: " <> vRangeStr (supportedChatVRange PQSupportOff)
+  "peer chat protocol version range: " <> vRangeStr supportedChatVRange
 
 vRangeStr :: VersionRange v -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"
@@ -721,3 +696,12 @@ linkAnotherSchema link
 
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+
+setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
+setRelativePaths cc filesFolder tempFolder = do
+  cc ##> "/_stop"
+  cc <## "chat stopped"
+  cc #$> ("/_files_folder " <> filesFolder, id, "ok")
+  cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
+  cc ##> "/_start"
+  cc <## "chat started"

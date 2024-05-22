@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -13,7 +14,10 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Types.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -68,6 +72,11 @@ chatProfileTests = do
     it "enable timed messages in group" testEnableTimedMessagesGroup
     xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
     it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
+    describe "group preferences for specific member role" $ do
+      it "direct messages" testGroupPrefsDirectForRole
+      it "files & media" testGroupPrefsFilesForRole
+      it "SimpleX links" testGroupPrefsSimplexLinksForRole
+    it "set user, contact and group UI theme" testSetUITheme
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
@@ -179,10 +188,12 @@ testMultiWordProfileNames =
       alice <# "#'Our Team' 'Bob James'> hi"
       cath <# "#'Our Team' 'Bob James'> hi"
       alice `send` "@'Cath Johnson' hello"
-      alice <## "member #'Our Team' 'Cath Johnson' does not have direct connection, creating"
-      alice <## "contact for member #'Our Team' 'Cath Johnson' is created"
-      alice <## "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'"
-      alice <# "@'Cath Johnson' hello"
+      alice
+        <### [ "member #'Our Team' 'Cath Johnson' does not have direct connection, creating",
+               "contact for member #'Our Team' 'Cath Johnson' is created",
+               "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'",
+               WithTime "@'Cath Johnson' hello"
+             ]
       cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
       cath <# "'Alice Jones'> hello"
       cath <## "'Alice Jones': contact is connected"
@@ -300,6 +311,7 @@ testProfileLink =
       cc <## ("contact address: " <> cLink)
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
+      cc <## "quantum resistant end-to-end encryption"
       cc <## currentChatVRangeInfo
     checkAliceNoProfileLink cc = do
       cc ##> "/info alice"
@@ -308,6 +320,7 @@ testProfileLink =
       cc <##. "sending messages via"
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
+      cc <## "quantum resistant end-to-end encryption"
       cc <## currentChatVRangeInfo
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
@@ -1509,7 +1522,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    let startFeatures = [(0, e2eeInfoNoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
+    let startFeatures = [(0, e2eeInfoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
     let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
@@ -1901,3 +1914,173 @@ testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
 
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi bob"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
     alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "hi cath"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
+
+testGroupPrefsDirectForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danProfile $
+  \alice bob cath dan -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set direct #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Direct messages: on for owners"
+    directForOwners bob
+    directForOwners cath
+    threadDelay 1000000
+    bob ##> "@cath hello again"
+    bob <## "bad chat command: direct messages not allowed"
+    (cath </)
+
+    connectUsers cath dan
+    addMember "team" cath dan GRMember
+    dan ##> "/j #team"
+    concurrentlyN_
+      [ cath <## "#team: dan joined the group",
+        do
+          dan <## "#team: you joined the group"
+          dan
+            <### [ "#team: member alice (Alice) is connected",
+                   "#team: member bob (Bob) is connected"
+                 ],
+        do
+          alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
+          alice <## "#team: new member dan is connected",
+        do
+          bob <## "#team: cath added dan (Daniel) to the group (connecting...)"
+          bob <## "#team: new member dan is connected"
+      ]
+    -- dan cannot send direct messages to alice (owner)
+    dan ##> "@alice hello alice"
+    dan <## "bad chat command: direct messages not allowed"
+    (alice </)
+    -- but alice can
+    alice `send` "@dan hello dan"
+    alice <## "member #team dan does not have direct connection, creating"
+    alice <## "contact for member #team dan is created"
+    alice <## "sent invitation to connect directly to member #team dan"
+    alice <# "@dan hello dan"
+    alice <## "dan (Daniel): contact is connected"
+    dan <## "#team alice is creating direct contact alice with you"
+    dan <# "alice> hello dan"
+    dan <## "alice (Alice): contact is connected"
+    -- and now dan can too
+    dan #> "@alice hi alice"
+    alice <# "dan> hi alice"
+  where
+    directForOwners :: HasCallStack => TestCC -> IO ()
+    directForOwners cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Direct messages: on for owners"
+
+testGroupPrefsFilesForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> withXFTPServer $ do
+    alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
+    bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
+    createDirectoryIfMissing True "./tests/tmp/alice"
+    createDirectoryIfMissing True "./tests/tmp/bob"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test1.txt"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test2.txt"
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set files #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Files and media: on for owners"
+    filesForOwners bob
+    filesForOwners cath
+    threadDelay 1000000
+    bob ##> "/f #team test2.txt"
+    bob <## "bad chat command: feature not allowed Files and media"
+    (alice </)
+    (cath </)
+    alice #> "/f #team test1.txt"
+    alice <## "use /fc 1 to cancel sending"
+    alice <## "completed uploading file 1 (test1.txt) for #team"
+    bob <# "#team alice> sends file test1.txt (11 bytes / 11 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    cath <# "#team alice> sends file test1.txt (11 bytes / 11 bytes)"
+    cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  where
+    filesForOwners :: HasCallStack => TestCC -> IO ()
+    filesForOwners cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Files and media: on for owners"
+
+testGroupPrefsSimplexLinksForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> withXFTPServer $ do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set links #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "SimpleX links: on for owners"
+    linksForOwners bob
+    linksForOwners cath
+    threadDelay 1000000
+    bob ##> "/c"
+    inv <- getInvitation bob
+    bob ##> ("#team " <> inv)
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    (alice </)
+    (cath </)
+    alice #> ("#team " <> inv)
+    bob <# ("#team alice> " <> inv)
+    cath <# ("#team alice> " <> inv)
+  where
+    linksForOwners :: HasCallStack => TestCC -> IO ()
+    linksForOwners cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "SimpleX links: on for owners"
+
+testSetUITheme :: HasCallStack => FilePath -> IO ()
+testSetUITheme =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice #$> ("/_set theme user 1 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme @2 " <> theme UCMDark, id, "ok")
+    alice #$> ("/_set theme #1 " <> theme UCMDark, id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/create user alice2"
+    userInfo alice "alice2"
+    alice ##> "/u alice"
+    userInfo alice "alice (Alice)"
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice ##> "/i #team"
+    groupInfo alice
+    alice <## ("UI themes: " <> theme UCMDark)
+    alice #$> ("/_set theme user 1", id, "ok")
+    alice #$> ("/_set theme @2", id, "ok")
+    alice #$> ("/_set theme #1", id, "ok")
+    alice ##> "/u"
+    userInfo alice "alice (Alice)"
+    alice ##> "/i @bob"
+    contactInfo alice
+    alice ##> "/i #team"
+    groupInfo alice
+  where
+    theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors}
+    userInfo a name = do
+      a <## ("user profile: " <> name)
+      a <## "use /p <display name> to change it"
+      a <## "(the updated profile will be sent to all your contacts)"
+    contactInfo a = do
+      a <## "contact ID: 2"
+      a <## "receiving messages via: localhost"
+      a <## "sending messages via: localhost"
+      a <## "you've shared main profile with this contact"
+      a <## "connection not verified, use /code command to see security code"
+      a <## "quantum resistant end-to-end encryption"
+      a <## "peer chat protocol version range: (Version 1, Version 8)"
+    groupInfo a = do
+      a <## "group ID: 1"
+      a <## "current members: 1"

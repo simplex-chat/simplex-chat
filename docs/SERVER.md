@@ -3,7 +3,7 @@ title: Hosting your own SMP Server
 revision: 31.07.2023
 ---
 
-| Updated 05.06.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
+| Updated 05.06.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 # Hosting your own SMP Server
 

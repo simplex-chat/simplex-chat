@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -22,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -52,9 +50,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = rememberSaveable(saver = ComposeState.saver()) {
+    val draft = chatModel.draft.value
+    val sharedContent = chatModel.sharedContent.value
     mutableStateOf(
-      if (chatModel.draftChatId.value == chatId && chatModel.draft.value != null) {
-        chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
+      if (chatModel.draftChatId.value == chatId && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == chatId)) {
+        draft
       } else {
         ComposeState(useLinkPreviews = useLinkPreviews)
       }
@@ -396,22 +396,41 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           showItemDetails = { cInfo, cItem ->
-            withBGApi {
+            suspend fun loadChatItemInfo(): ChatItemInfo? {
               val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
               if (ciInfo != null) {
                 if (chat.chatInfo is ChatInfo.Group) {
                   setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
                 }
-                ModalManager.end.closeModals()
-                ModalManager.end.showModalCloseable(endButtons = {
-                  ShareButton {
-                    clipboard.shareText(itemInfoShareText(chatModel, cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+              }
+              return ciInfo
+            }
+            withBGApi {
+              var initialCiInfo = loadChatItemInfo() ?: return@withBGApi
+              ModalManager.end.closeModals()
+              ModalManager.end.showModalCloseable(endButtons = {
+                ShareButton {
+                  clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
+                }
+              }) { close ->
+                var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
+                ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+                LaunchedEffect(cItem.id) {
+                  withContext(Dispatchers.Default) {
+                    for (apiResp in controller.messagesChannel) {
+                      val msg = apiResp.resp
+                      if (apiResp.remoteHostId == chatRh &&
+                        msg is CR.ChatItemStatusUpdated &&
+                        msg.chatItem.chatItem.id == cItem.id
+                      ) {
+                        ciInfo = loadChatItemInfo() ?: return@withContext
+                        initialCiInfo = ciInfo
+                      }
+                    }
                   }
-                }) { close ->
-                  ChatItemInfoView(chatModel, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
-                  KeyChangeEffect(chatModel.chatId.value) {
-                    close()
-                  }
+                }
+                KeyChangeEffect(chatModel.chatId.value) {
+                  close()
                 }
               }
             }
@@ -956,13 +975,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools)
+            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools)
           }
         }
 
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
-          val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null
+          val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
           if (chat.chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
               val member = cItem.chatDir.groupMember
@@ -984,20 +1003,15 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Text(
                       memberNames(member, prevMember, memCount),
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
+                      maxLines = 2
                     )
                   }
                   Row(
                     swipeableModifier,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                   ) {
-                    Box(
-                      Modifier
-                        .clip(CircleShape)
-                        .clickable {
-                          showMemberInfo(chat.chatInfo.groupInfo, member)
-                        }
-                    ) {
+                    Box(Modifier.clickable { showMemberInfo(chat.chatInfo.groupInfo, member) }) {
                       MemberImage(member)
                     }
                     ChatItemViewShortHand(cItem, range)
@@ -1090,9 +1104,9 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
       .collect {
         try {
           if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.size)) {
-            listState.animateScrollToItem(0)
+            if (appPlatform.isAndroid) listState.animateScrollToItem(0) else listState.scrollToItem(0)
           } else {
-            listState.animateScrollBy(scrollDistance)
+            if (appPlatform.isAndroid) listState.animateScrollBy(scrollDistance) else listState.scrollBy(scrollDistance)
           }
         } catch (e: CancellationException) {
           /**
