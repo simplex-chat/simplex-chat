@@ -78,7 +78,7 @@ fun HomeView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformL
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(
     topBar = { Box(Modifier.padding(end = endPadding)) { HomeTopBar(homeTab, stopped) } },
-    bottomBar = { HomeBottomBar(scaffoldState.drawerState, userPickerState, homeTab, stopped) },
+    bottomBar = { Box(Modifier.padding(end = endPadding)) { HomeBottomBar(scaffoldState.drawerState, userPickerState, homeTab, stopped) } },
     scaffoldState = scaffoldState,
     drawerContent = {
       tryOrShowError("Settings", error = { ErrorSettingsView() }) {
@@ -222,7 +222,6 @@ private fun HomeTopBar(homeTab: MutableState<HomeTab>, stopped: Boolean) {
   Divider(Modifier.padding(top = AppBarHeight))
 }
 
-// TODO not centered on desktop
 @Composable
 private fun HomeBottomBar(
   drawerState: DrawerState,
