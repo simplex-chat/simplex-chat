@@ -8,8 +8,14 @@ import Directory.Store
 import Simplex.Chat.Core
 import Simplex.Chat.Terminal (terminalChatConfig)
 
+directoryCfg :: ChatConfig
+directoryCfg =
+  terminalChatConfig
+    { agentConfig = (agentConfig terminalChatConfig) {persistErrorInterval = 30}
+    }
+
 main :: IO ()
 main = do
   opts@DirectoryOpts {directoryLog} <- welcomeGetOpts
   st <- restoreDirectoryStore directoryLog
-  simplexChatCore terminalChatConfig (mkChatOpts opts) $ directoryService st opts
+  simplexChatCore directoryCfg (mkChatOpts opts) $ directoryService st opts
