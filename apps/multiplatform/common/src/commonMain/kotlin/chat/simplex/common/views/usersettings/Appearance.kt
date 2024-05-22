@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -728,53 +729,77 @@ object AppearanceScope {
 
       var currentColor by remember { mutableStateOf(initialColor) }
       val togglePicker = remember { mutableStateOf(false) }
-      if (togglePicker.value) {
-        ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
-          currentColor = it
-          onColorChange(currentColor)
-        }
-      } else {
-        ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
-          currentColor = it
-          onColorChange(currentColor)
+      Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+        if (togglePicker.value) {
+          ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
+            currentColor = it
+            onColorChange(currentColor)
+          }
+        } else {
+          ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
+            currentColor = it
+            onColorChange(currentColor)
+          }
         }
       }
+      var allowReloadPicker by remember { mutableStateOf(false) }
+      KeyChangeEffect(backgroundImageType) {
+        allowReloadPicker = true
+      }
       KeyChangeEffect(initialColor) {
-        if (initialColor != currentColor) {
+        if (initialColor != currentColor && allowReloadPicker) {
           currentColor = initialColor
           togglePicker.value = !togglePicker.value
         }
+        allowReloadPicker = false
       }
       val clipboard = LocalClipboardManager.current
-      Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        val hex = currentColor.toReadableHex()
-        val hexTrimmed = hex.trimStart('#')
-        Text(hex, modifier = Modifier.clickable { clipboard.shareText(hex) })
-        val textField = remember { mutableStateOf("") }
-        TextField(textField.value, modifier = Modifier.width(130.dp), onValueChange = { color ->
-          val color = color.trim()
-          textField.value = color
-          if ((color.startsWith("#") && (color.length == 7 || color.length == 9)) || (!color.startsWith("#") && (color.length == 6 || color.length == 8))) {
-            currentColor = if (color.length == 6 || color.length == 7) ("ff$color").colorFromReadableHex() else color.colorFromReadableHex()
-            onColorChange(currentColor)
-            togglePicker.value = !togglePicker.value
-          }
-        })
-        Text("#" + if (hexTrimmed.length == 8) hexTrimmed.substring(2) else hexTrimmed, modifier = Modifier.clickable { clipboard.shareText("#" + if (hexTrimmed.length == 8) hexTrimmed.substring(2) else hexTrimmed) })
-      }
+      val hexTrimmed = currentColor.toReadableHex().replaceFirst("#ff", "#")
       val savedColor by remember(backgroundImageType) { mutableStateOf(initialColor) }
 
-      SectionSpacer()
-      Row(Modifier.align(Alignment.CenterHorizontally)) {
-        Box(Modifier.size(80.dp, 40.dp).background(savedColor).clickable {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(46.dp)) {
+        Box(Modifier.weight(1f).fillMaxHeight().background(savedColor).clickable {
           currentColor = savedColor
           onColorChange(currentColor)
           togglePicker.value = !togglePicker.value
         })
-        IconButton(onColorReset, Modifier.size(30.dp, 40.dp)) {
-          Icon(painterResource(MR.images.ic_refresh), null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+        Box(Modifier.weight(1f).fillMaxHeight().background(currentColor).clickable {
+          clipboard.shareText(hexTrimmed)
+        })
+      }
+      if (appPrefs.developerTools.get()) {
+        Row(Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+          val textFieldState = remember { mutableStateOf(TextFieldValue(hexTrimmed)) }
+          KeyChangeEffect(hexTrimmed) {
+            textFieldState.value = textFieldState.value.copy(hexTrimmed)
+          }
+          DefaultBasicTextField(
+            Modifier.fillMaxWidth(),
+            textFieldState,
+            leadingIcon = {
+              IconButton(onClick = { clipboard.shareText(hexTrimmed) }) {
+                Icon(painterResource(MR.images.ic_content_copy), generalGetString(MR.strings.copy_verb), Modifier.size(26.dp), tint = MaterialTheme.colors.primary)
+              }
+            },
+            onValueChange = { value ->
+              val color = value.text.trim('#', ' ')
+              if (color.length == 6 || color.length == 8) {
+                currentColor = if (color.length == 6) ("ff$color").colorFromReadableHex() else color.colorFromReadableHex()
+                onColorChange(currentColor)
+                textFieldState.value = value.copy(currentColor.toReadableHex().replaceFirst("#ff", "#"))
+                togglePicker.value = !togglePicker.value
+              } else {
+                textFieldState.value = value
+              }
+            }
+          )
         }
-        Box(Modifier.size(80.dp, 40.dp).background(currentColor))
+      }
+      SectionItemView({
+        allowReloadPicker = true
+        onColorReset()
+      }) {
+        Text(generalGetString(MR.strings.reset_single_color), color = colors.primary)
       }
       SectionSpacer()
     }
