@@ -1923,9 +1923,9 @@ Cette opération ne peut être annulée !</target>
         <target>Les accusés de réception sont désactivés !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve">
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
-        <target>Justificatifs de réception!</target>
+        <target state="translated">Justificatifs de réception !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -2773,9 +2773,9 @@ Cette opération ne peut être annulée !</target>
         <target>Réparer la connexion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix connection?" xml:space="preserve">
+      <trans-unit id="Fix connection?" xml:space="preserve" approved="no">
         <source>Fix connection?</source>
-        <target>Réparer la connexion?</target>
+        <target state="translated">Réparer la connexion ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
@@ -4589,9 +4589,9 @@ Erreur : %@</target>
         <target>Reconnecter tous les serveurs connectés pour forcer la livraison des messages. Cette méthode utilise du trafic supplémentaire.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect servers?" xml:space="preserve">
+      <trans-unit id="Reconnect servers?" xml:space="preserve" approved="no">
         <source>Reconnect servers?</source>
-        <target>Reconnecter les serveurs?</target>
+        <target state="translated">Reconnecter les serveurs ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at" xml:space="preserve">
@@ -4664,9 +4664,9 @@ Erreur : %@</target>
         <target>Renégocier le chiffrement</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Renegotiate encryption?" xml:space="preserve">
+      <trans-unit id="Renegotiate encryption?" xml:space="preserve" approved="no">
         <source>Renegotiate encryption?</source>
-        <target>Renégocier le chiffrement?</target>
+        <target state="translated">Renégocier le chiffrement ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat connection request?" xml:space="preserve">
@@ -6210,9 +6210,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>En attente de la vidéo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve">
+      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve" approved="no">
         <source>Warning: starting chat on multiple devices is not supported and will cause message delivery failures</source>
-        <target>Attention: démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages</target>
+        <target state="translated">Attention : démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
