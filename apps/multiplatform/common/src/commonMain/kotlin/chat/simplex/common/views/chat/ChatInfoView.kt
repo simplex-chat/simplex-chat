@@ -36,6 +36,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
@@ -341,9 +342,9 @@ fun ChatInfoLayout(
         MessageButton(openedFromChatView, chat, contact, close)
       }
       Spacer(Modifier.width(10.dp))
-      CallButton(contact)
+      CallButton(chat, contact)
       Spacer(Modifier.width(10.dp))
-      VideoButton(contact)
+      VideoButton(chat, contact)
     }
 
     SectionSpacer()
@@ -632,25 +633,25 @@ private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Cont
 }
 
 @Composable
-private fun CallButton(contact: Contact) {
+private fun CallButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_call_filled),
     title = generalGetString(MR.strings.info_view_call_button),
     disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
     onClick = {
-
+      startChatCall(chat, CallMediaType.Audio)
     }
   )
 }
 
 @Composable
-private fun VideoButton(contact: Contact) {
+private fun VideoButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_videocam_filled),
     title = generalGetString(MR.strings.info_view_video_button),
     disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
     onClick = {
-
+      startChatCall(chat, CallMediaType.Video)
     }
   )
 }
