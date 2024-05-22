@@ -3316,10 +3316,8 @@ deleteGroupLink_ user gInfo conn = do
 agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
-  env <- ask
-  liftIO $
-    forever (logDebug "waiting for agent event" >> atomically (readTBQueue q) >>= \ev -> process ev `runReaderT` env >> logDebug "agent event processed")
-      `E.finally` logDebug "exited agentSubscriber"
+  forever (logDebug "waiting for agent event" >> atomically (readTBQueue q) >>= process >> logDebug "agent event processed")
+    `E.finally` logDebug "exited agentSubscriber"
   where
     process :: (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
     process (corrId, entId, APC e msg) = run $ case e of
@@ -3644,7 +3642,9 @@ processAgentMessage _ connId DEL_CONN =
 processAgentMessage _ "" (ERR e) =
   toView $ CRChatError Nothing $ ChatErrorAgent e Nothing
 processAgentMessage corrId connId msg = do
+  logDebug $ "load entity for:" <> tshow connId
   lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
+  logDebug $ "entity loaded for:" <> tshow connId
   withEntityLock "processAgentMessage" lockEntity $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
