@@ -417,7 +417,7 @@ data class ThemeOverrides (
       perUserTheme?.wallpaper != null -> perUserTheme.wallpaper.toAppWallpaper().type
       else -> wallpaper?.toAppWallpaper()?.type ?: return AppWallpaper()
     }
-    val first: ThemeWallpaper? = if (themeOverridesForType == null && mainType.sameType(perChatTheme?.wallpaper?.toAppWallpaper()?.type)) perChatTheme?.wallpaper else null
+    val first: ThemeWallpaper? = if (mainType.sameType(perChatTheme?.wallpaper?.toAppWallpaper()?.type)) perChatTheme?.wallpaper else null
     val second: ThemeWallpaper? = if (mainType.sameType(perUserTheme?.wallpaper?.toAppWallpaper()?.type)) perUserTheme?.wallpaper else null
     val third: ThemeWallpaper? = if (mainType.sameType(this.wallpaper?.toAppWallpaper()?.type)) this.wallpaper else null
 
@@ -426,8 +426,9 @@ data class ThemeOverrides (
           scale = mainType.scale ?: first?.scale ?: second?.scale ?: third?.scale
         )
         is BackgroundImageType.Static -> mainType.copy(
-          scale = mainType.scale ?: first?.scale ?: second?.scale ?: third?.scale,
-          scaleType = mainType.scaleType ?: first?.scaleType ?: second?.scaleType ?: third?.scaleType,
+          scale = if (themeOverridesForType == null) mainType.scale ?: first?.scale ?: second?.scale ?: third?.scale else second?.scale ?: third?.scale ?: mainType.scale,
+          scaleType = if (themeOverridesForType == null) mainType.scaleType ?: first?.scaleType ?: second?.scaleType ?: third?.scaleType else second?.scaleType ?: third?.scaleType ?: mainType.scaleType,
+          filename = if (themeOverridesForType == null) mainType.filename else first?.imageFile ?: second?.imageFile ?: third?.imageFile ?: mainType.filename,
         )
         is BackgroundImageType.Empty -> mainType
       },
@@ -483,8 +484,8 @@ data class ThemeModeOverrides (
   val light: ThemeModeOverride? = null,
   val dark: ThemeModeOverride? = null
 ) {
-  fun preferredTheme(baseTheme: DefaultTheme = CurrentColors.value.base): ThemeModeOverride? = when (baseTheme) {
-    DefaultTheme.LIGHT -> light
+  fun preferredMode(darkTheme: Boolean): ThemeModeOverride? = when (darkTheme) {
+    false -> light
     else -> dark
   }
 }

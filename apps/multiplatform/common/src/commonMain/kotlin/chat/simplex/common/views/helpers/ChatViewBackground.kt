@@ -302,7 +302,7 @@ sealed class BackgroundImageType {
     val default: BackgroundImageType
       get() = PredefinedBackgroundImage.CATS.toType()
 
-    private var cachedImages: MutableMap<String, ImageBitmap> = mutableMapOf()
+    var cachedImages: MutableMap<String, ImageBitmap> = mutableMapOf()
 
     fun from(wallpaper: ThemeWallpaper?): BackgroundImageType? {
       return if (wallpaper == null) {

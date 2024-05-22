@@ -1072,7 +1072,8 @@
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
-  <string name="settings_section_title_wallpaper">Wallpaper</string>
+  <string name="settings_section_title_chat_theme">Chat theme</string>
+  <string name="settings_section_title_profile_theme">Profile theme</string>
   <string name="settings_section_title_chat_colors">Chat colors</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_private_message_routing">PRIVATE MESSAGE ROUTING</string>
@@ -1581,6 +1582,7 @@
   <string name="color_received_quote">Received reply</string>
   <string name="color_wallpaper_background">Wallpaper background</string>
   <string name="color_wallpaper_tint">Wallpaper accent</string>
+  <string name="theme_remove_image">Remove image</string>
 
   <!-- Backgrounds -->
   <string name="background_cats">Cats</string>
@@ -1599,9 +1601,9 @@
   <string name="chat_theme_reset_to_global_theme">Reset to global theme</string>
   <string name="chat_theme_set_default_theme">Set default theme</string>
   <string name="chat_theme_apply_to_mode">Apply to</string>
-  <string name="chat_theme_apply_to_all_modes">All themes</string>
-  <string name="chat_theme_apply_to_light_mode">Light theme</string>
-  <string name="chat_theme_apply_to_dark_mode">Dark theme</string>
+  <string name="chat_theme_apply_to_all_modes">All color modes</string>
+  <string name="chat_theme_apply_to_light_mode">Light mode</string>
+  <string name="chat_theme_apply_to_dark_mode">Dark mode</string>
 
 
   <!-- Preferences.kt -->

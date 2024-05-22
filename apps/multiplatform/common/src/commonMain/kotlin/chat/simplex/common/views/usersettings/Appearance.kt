@@ -40,7 +40,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
-import java.io.File
 import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
@@ -125,8 +124,7 @@ object AppearanceScope {
     activeBackgroundColor: Color? = null,
     activeTintColor: Color? = null,
     currentColors: (BackgroundImageType?) -> ThemeManager.ActiveTheme,
-    onTypeChange: (BackgroundImageType?) -> Unit,
-    onTypeCopyFromSameTheme: (BackgroundImageType?) -> Boolean
+    onChooseType: (BackgroundImageType?) -> Unit,
   ) {
     val cornerRadius = 22
 
@@ -146,7 +144,7 @@ object AppearanceScope {
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
-            .clickable { onTypeCopyFromSameTheme(background?.toType()) },
+            .clickable { onChooseType(background?.toType()) },
           contentAlignment = Alignment.Center
         ) {
           if (background != null) {
@@ -167,42 +165,28 @@ object AppearanceScope {
 
       @Composable
       fun OwnBackgroundItem(type: BackgroundImageType?) {
-        val selectedIsStatic = type is BackgroundImageType.Static
         val overrides = remember(type, baseTheme) {
-          appPrefs.themeOverrides.get().firstOrNull { it.wallpaper?.imageFile != null && it.base == baseTheme && File(getBackgroundImageFilePath(it.wallpaper.imageFile)).exists() }
+          currentColors(BackgroundImageType.Static("", null, null))
         }
-        val backgroundColor = if (selectedIsStatic) selectedBackground?.defaultBackgroundColor(baseTheme, MaterialTheme.colors.background) else overrides?.wallpaper?.background?.colorFromReadableHex()
-        val tintColor = if (selectedIsStatic) selectedBackground?.defaultTintColor(baseTheme) else overrides?.wallpaper?.tint?.colorFromReadableHex()
-        val appWallpaper = overrides?.wallpaper?.toAppWallpaper()
-        val backgroundImage = if (selectedIsStatic) selectedBackground?.image else appWallpaper?.type?.image
+        val appWallpaper = overrides.wallpaper
+        val backgroundColor = appWallpaper.background
+        val tintColor = appWallpaper.tint
+        val backgroundImage = appWallpaper.type.image
         val checked = type is BackgroundImageType.Static && backgroundImage != null
-        val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
-          if (to != null) {
-            val filename = saveBackgroundImage(to)
-            if (filename != null) {
-              removeBackgroundImage(overrides?.wallpaper?.imageFile)
-              onTypeChange(BackgroundImageType.Static(filename, 1f, BackgroundImageScaleType.FILL))
-            }
-          }
-        }
         Box(
           Modifier
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
-            .clickable {
-              if (checked || overrides == null || backgroundImage == null || !onTypeCopyFromSameTheme(appWallpaper?.type)) {
-                withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
-              }
-            },
+            .clickable { onChooseType(BackgroundImageType.Static("", null, null)) },
           contentAlignment = Alignment.Center
         ) {
 
-          if (checked || overrides != null) {
+          if (checked || backgroundImage != null) {
             ChatThemePreview(
               baseTheme,
               backgroundImage,
-              appWallpaper?.type ?: type,
+              if (checked) type else appWallpaper.type,
               backgroundColor = if (checked) activeBackgroundColor ?: backgroundColor else backgroundColor,
               tintColor = if (checked) activeTintColor ?: tintColor else tintColor,
               withMessages = false
@@ -290,7 +274,7 @@ object AppearanceScope {
         if (currentUser?.uiThemes == null) null else currentUser.userId to currentUser.uiThemes
       )
     }
-    val perUserTheme = remember(themeUserDestination.value, currentTheme.base) { mutableStateOf(chatModel.currentUser.value?.uiThemes?.preferredTheme() ?: ThemeModeOverride()) }
+    val perUserTheme = remember { mutableStateOf(chatModel.currentUser.value?.uiThemes?.preferredMode(darkTheme) ?: ThemeModeOverride()) }
 
     fun updateThemeUserDestination() {
       var (userId, themes) = themeUserDestination.value ?: return
@@ -302,43 +286,93 @@ object AppearanceScope {
       themeUserDestination.value = userId to themes
     }
 
+    val onTypeCopyFromSameTheme = { type: BackgroundImageType? ->
+      if (themeUserDestination.value == null) {
+        ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+      } else {
+        val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
+        ThemeManager.copyFromSameThemeOverrides(type, null, perUserTheme)
+        val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
+        backgroundFilesToDelete.forEach(::removeBackgroundImage)
+        updateThemeUserDestination()
+      }
+      saveThemeToDatabase(themeUserDestination.value)
+      true
+    }
+
+    val onTypeChange = { type: BackgroundImageType? ->
+      if (themeUserDestination.value == null) {
+        ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+      } else {
+        ThemeManager.applyBackgroundImage(type, perUserTheme)
+        updateThemeUserDestination()
+      }
+      saveThemeToDatabase(themeUserDestination.value)
+    }
+
+    val importBackgroundImageLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+      if (to != null) {
+        val filename = saveBackgroundImage(to)
+        if (filename != null) {
+          if (themeUserDestination.value == null) {
+            removeBackgroundImage((currentTheme.wallpaper.type as? BackgroundImageType.Static)?.filename)
+          } else {
+            removeBackgroundImage((perUserTheme.value.type as? BackgroundImageType.Static)?.filename)
+          }
+          onTypeChange(BackgroundImageType.Static(filename, 1f, BackgroundImageScaleType.FILL))
+        }
+      }
+    }
+
+    val currentColors = { type: BackgroundImageType? ->
+      // If applying for :
+      // - all themes: no overrides needed
+      // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
+      val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
+      ThemeManager.currentColors(darkTheme, type, null, perUserOverride, appPrefs.themeOverrides.state.value)
+    }
+
+    val onChooseType: (BackgroundImageType?) -> Unit = { type: BackgroundImageType? ->
+      when {
+        // don't have image in parent or already selected wallpaper with custom image
+        type is BackgroundImageType.Static && ((backgroundImageType is BackgroundImageType.Static && themeUserDestination.value?.second != null) || currentColors(type).wallpaper.type.image == null) -> withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
+        type is BackgroundImageType.Static && themeUserDestination.value == null -> onTypeChange(currentColors(type).wallpaper.type)
+        type is BackgroundImageType.Static -> onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)
+        (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredMode(darkTheme)?.type != type) || currentTheme.wallpaper.type != type -> onTypeCopyFromSameTheme(type)
+        else -> onTypeChange(type)
+      }
+    }
+
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
       ThemeDestinationPicker(themeUserDestination)
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+
       WallpaperPresetSelector(
         selectedBackground = backgroundImageType,
         baseTheme = currentTheme.base,
         currentColors = { type ->
-          // If applying for :
-          // - all themes: no overrides needed
-          // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
-          val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-          ThemeManager.currentColors(darkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
+          currentColors(type)
         },
-        onTypeChange = { type ->
-          if (themeUserDestination.value == null) {
-            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-          } else {
-            ThemeManager.applyBackgroundImage(type, perUserTheme)
-            updateThemeUserDestination()
-          }
-          saveThemeToDatabase(themeUserDestination.value)
-        },
-        onTypeCopyFromSameTheme = { type ->
-          if (themeUserDestination.value == null) {
-            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-          } else {
-            val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
-            ThemeManager.copyFromSameThemeOverrides(type, perUserTheme)
-            val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
-            backgroundFilesToDelete.forEach(::removeBackgroundImage)
-            updateThemeUserDestination()
-          }
-          saveThemeToDatabase(themeUserDestination.value)
-          true
-        }
+        onChooseType = onChooseType,
       )
+      val type = MaterialTheme.wallpaper.type
+      if (type is BackgroundImageType.Static && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
+        SectionItemView(click = {
+          if (themeUserDestination.value == null) {
+            val defaultActiveTheme = ThemeManager.defaultActiveTheme(darkTheme, appPrefs.themeOverrides.get())
+            ThemeManager.saveAndApplyBackgroundImage(baseTheme, null)
+            ThemeManager.removeTheme(defaultActiveTheme?.themeId)
+            removeBackgroundImage(type.filename)
+          } else {
+            removeUserThemeModeOverrides(themeUserDestination, perUserTheme)
+          }
+          saveThemeToDatabase(themeUserDestination.value)
+        }) {
+          Text(stringResource(MR.strings.theme_remove_image))
+        }
+        SectionSpacer()
+      }
 
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
@@ -353,7 +387,7 @@ object AppearanceScope {
     }
     SectionItemView(click = {
       ModalManager.start.showModalCloseable { close ->
-        CustomizeThemeView(perUserTheme, themeUserDestination, close = close, updateThemeUserDestination = { updateThemeUserDestination() }) }
+        CustomizeThemeView(perUserTheme, themeUserDestination, close = close, updateThemeUserDestination = { updateThemeUserDestination() }, onChooseType = onChooseType) }
       }
     ) {
       Text(stringResource(MR.strings.customize_theme_title))
@@ -361,7 +395,7 @@ object AppearanceScope {
   }
 
   @Composable
-  fun CustomizeThemeView(perUserTheme: MutableState<ThemeModeOverride>, themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>, updateThemeUserDestination: () -> Unit, close: () -> Unit) {
+  fun CustomizeThemeView(perUserTheme: MutableState<ThemeModeOverride>, themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>, updateThemeUserDestination: () -> Unit, onChooseType: (BackgroundImageType?) -> Unit, close: () -> Unit) {
     ColumnWithScrollBar(
       Modifier.fillMaxWidth(),
     ) {
@@ -409,30 +443,9 @@ object AppearanceScope {
                   // - all themes: no overrides needed
                   // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
                   val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-                  ThemeManager.currentColors(isInDarkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
+                  ThemeManager.currentColors(isInDarkTheme, type, null, perUserOverride, appPrefs.themeOverrides.state.value)
                 },
-                onTypeChange = { type ->
-                  if (themeUserDestination.value == null) {
-                    ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-                  } else {
-                    ThemeManager.applyBackgroundImage(type, perUserTheme)
-                    updateThemeUserDestination()
-                  }
-                  saveThemeToDatabase(themeUserDestination.value)
-                },
-                onTypeCopyFromSameTheme = { type ->
-                  if (themeUserDestination.value == null) {
-                    ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-                  } else {
-                    val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
-                    ThemeManager.copyFromSameThemeOverrides(type, perUserTheme)
-                    val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
-                    backgroundFilesToDelete.forEach(::removeBackgroundImage)
-                    updateThemeUserDestination()
-                  }
-                  saveThemeToDatabase(themeUserDestination.value)
-                  true
-                }
+                onChooseType = onChooseType,
               )
               // LALAL TO REMOVE
             },
@@ -453,7 +466,8 @@ object AppearanceScope {
                 updateThemeUserDestination()
               }
               saveThemeToDatabase(themeUserDestination.value)
-          })
+            }
+          )
         }
       }
 
@@ -466,41 +480,11 @@ object AppearanceScope {
           // - all themes: no overrides needed
           // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
           val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-          ThemeManager.currentColors(isInDarkTheme, type to false, null, perUserOverride, appPrefs.themeOverrides.state.value)
+          ThemeManager.currentColors(isInDarkTheme, type, null, perUserOverride, appPrefs.themeOverrides.state.value)
         },
-        onTypeChange = { type ->
-          if (themeUserDestination.value == null) {
-            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-          } else {
-            ThemeManager.applyBackgroundImage(type, perUserTheme)
-            updateThemeUserDestination()
-          }
-          saveThemeToDatabase(themeUserDestination.value)
-        },
-        onTypeCopyFromSameTheme = { type ->
-          if (themeUserDestination.value == null) {
-            ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-          } else {
-            val backgroundFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
-            ThemeManager.copyFromSameThemeOverrides(type, perUserTheme)
-            val backgroundFilesToDelete = backgroundFiles - perUserTheme.value.wallpaper?.imageFile
-            backgroundFilesToDelete.forEach(::removeBackgroundImage)
-            updateThemeUserDestination()
-          }
-          saveThemeToDatabase(themeUserDestination.value)
-          true
-        }
+        onChooseType = onChooseType
       )
       // LALAL TO REMOVE
-      val onTypeChange = { type: BackgroundImageType? ->
-        if (themeUserDestination.value == null) {
-          ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
-        } else {
-          ThemeManager.applyBackgroundImage(type, perUserTheme)
-          updateThemeUserDestination()
-        }
-        saveThemeToDatabase(themeUserDestination.value)
-      }
       SectionView(stringResource(MR.strings.settings_section_title_chat_colors).uppercase()) {
         WallpaperSetupView(
           backgroundImageType,
@@ -512,13 +496,19 @@ object AppearanceScope {
           MaterialTheme.appColors.receivedQuote,
           editColor = { name ->
             // If no wallpaper is set, nothing to apply new color to. So if user didn't select any wallpaper yet, do it automatically before choosing color
-            if (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredTheme(baseTheme)?.wallpaper == null) {
-              onTypeChange(currentTheme.wallpaper.type)
+            if (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredMode(isInDarkTheme)?.wallpaper == null) {
+              onChooseType(currentTheme.wallpaper.type)
             }
             editColor(name)
           },
           onTypeChange = { type ->
-            onTypeChange(type)
+            if (themeUserDestination.value == null) {
+              ThemeManager.saveAndApplyBackgroundImage(baseTheme, type)
+            } else {
+              ThemeManager.applyBackgroundImage(type, perUserTheme)
+              updateThemeUserDestination()
+            }
+            saveThemeToDatabase(themeUserDestination.value)
           },
         )
       }
@@ -554,9 +544,7 @@ object AppearanceScope {
       }
       if (canRemoveOverrides) {
         SectionItemView({
-          val dest = themeUserDestination.value ?: return@SectionItemView
-          perUserTheme.value = ThemeModeOverride()
-          themeUserDestination.value = dest.first to null
+          removeUserThemeModeOverrides(themeUserDestination, perUserTheme)
           saveThemeToDatabase(themeUserDestination.value)
           close()
         }) {
@@ -741,12 +729,12 @@ object AppearanceScope {
       var currentColor by remember { mutableStateOf(initialColor) }
       val togglePicker = remember { mutableStateOf(false) }
       if (togglePicker.value) {
-        ColorPicker(currentColor) {
+        ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
           currentColor = it
           onColorChange(currentColor)
         }
       } else {
-        ColorPicker(currentColor) {
+        ColorPicker(currentColor, showAlphaBar = backgroundImageType is BackgroundImageType.Static) {
           currentColor = it
           onColorChange(currentColor)
         }
@@ -759,7 +747,9 @@ object AppearanceScope {
       }
       val clipboard = LocalClipboardManager.current
       Row(Modifier.fillMaxWidth().padding(if (appPlatform.isAndroid) 50.dp else 0.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        Text(currentColor.toReadableHex(), modifier = Modifier.clickable { clipboard.shareText(currentColor.toReadableHex()) })
+        val hex = currentColor.toReadableHex()
+        val hexTrimmed = hex.trimStart('#')
+        Text(hex, modifier = Modifier.clickable { clipboard.shareText(hex) })
         val textField = remember { mutableStateOf("") }
         TextField(textField.value, modifier = Modifier.width(130.dp), onValueChange = { color ->
           val color = color.trim()
@@ -770,7 +760,7 @@ object AppearanceScope {
             togglePicker.value = !togglePicker.value
           }
         })
-        Text("#" + currentColor.toReadableHex().substring(3), modifier = Modifier.clickable { clipboard.shareText("#" + currentColor.toReadableHex().substring(3)) })
+        Text("#" + if (hexTrimmed.length == 8) hexTrimmed.substring(2) else hexTrimmed, modifier = Modifier.clickable { clipboard.shareText("#" + if (hexTrimmed.length == 8) hexTrimmed.substring(2) else hexTrimmed) })
       }
       val savedColor by remember(backgroundImageType) { mutableStateOf(initialColor) }
 
@@ -953,14 +943,25 @@ fun WallpaperSetupView(
 }
 
 @Composable
-private fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
+private fun ColorPicker(initialColor: Color, showAlphaBar: Boolean, onColorChanged: (Color) -> Unit) {
   ClassicColorPicker(modifier = Modifier
     .fillMaxWidth()
     .height(300.dp),
     color = HsvColor.from(color = initialColor),
-    showAlphaBar = false,
+    showAlphaBar = showAlphaBar,
     onColorChanged = { color: HsvColor ->
       onColorChanged(color.toColor())
     }
   )
+}
+
+private fun removeUserThemeModeOverrides(themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>, perUserTheme: MutableState<ThemeModeOverride>) {
+  val dest = themeUserDestination.value ?: return
+  perUserTheme.value = ThemeModeOverride()
+  themeUserDestination.value = dest.first to null
+  val backgroundFilesToDelete = listOf(
+    (chatModel.currentUser.value?.uiThemes?.light?.type as BackgroundImageType.Static?)?.filename,
+    (chatModel.currentUser.value?.uiThemes?.dark?.type as BackgroundImageType.Static?)?.filename
+  )
+  backgroundFilesToDelete.forEach(::removeBackgroundImage)
 }

@@ -310,6 +310,7 @@ fun removeBackgroundImage(fileName: String? = null) {
   File(getBackgroundImageFilePath("_")).parentFile.listFiles()?.forEach {
     if (it.name == fileName) it.delete()
   }
+  BackgroundImageType.cachedImages.remove(fileName)
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
