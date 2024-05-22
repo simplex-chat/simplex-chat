@@ -78,7 +78,7 @@ crDirectoryEvent = \case
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
-  r@CRMessageError {} -> Just $ DELogChatResponse r {user_ = Nothing}
+  r@CRMessageError {} -> Just $ DELogChatResponse r
   r@CRChatCmdError {} -> Just $ DELogChatResponse r {user_ = Nothing}
   r@CRChatError {} -> Just $ DELogChatResponse r {user_ = Nothing}
   r@CRChatErrors {} -> Just $ DELogChatResponse r {user_ = Nothing}
