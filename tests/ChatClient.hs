@@ -431,7 +431,8 @@ serverCfg =
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
-      allowSMPProxy = False
+      allowSMPProxy = False,
+      serverClientConcurrency = 16
     }
 
 withSmpServer :: IO () -> IO ()
