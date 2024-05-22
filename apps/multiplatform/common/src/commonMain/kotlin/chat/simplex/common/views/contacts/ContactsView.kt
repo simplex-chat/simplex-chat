@@ -84,7 +84,7 @@ fun ContactsList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>)
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val allContactChats = remember(chatModel.chats) { contactChats() }
+  val allContactChats = remember(chatModel.chats.toList()) { contactChats(chatModel.chats) }
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
@@ -117,7 +117,7 @@ fun ContactsList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>)
       ContactListNavLinkView(chat, nextChatSelected)
     }
   }
-  if (filteredContactChats.isEmpty() && contactChats().isNotEmpty()) {
+  if (filteredContactChats.isEmpty() && allContactChats.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_contacts), color = MaterialTheme.colors.secondary)
     }

@@ -159,7 +159,6 @@ private fun ChatsView(searchText: MutableState<TextFieldValue>) {
   }
 }
 
-// TODO contacts don't update
 @Composable
 private fun ContactsView(searchText: MutableState<TextFieldValue>) {
   Box(
@@ -169,7 +168,7 @@ private fun ContactsView(searchText: MutableState<TextFieldValue>) {
     if (!chatModel.desktopNoUserNoRemote) {
       ContactsList(chatModel, searchText = searchText)
     }
-    if (contactChats().isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+    if (remember(chatModel.chats.toList()) { contactChats(chatModel.chats) }.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
       Text(stringResource(
         if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.no_contacts),
         Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
@@ -178,8 +177,8 @@ private fun ContactsView(searchText: MutableState<TextFieldValue>) {
   }
 }
 
-fun contactChats(): List<Chat> {
-  return chatModel.chats.filter { it.chatInfo is ChatInfo.Direct }
+fun contactChats(c: List<Chat>): List<Chat> {
+  return c.filter { it.chatInfo is ChatInfo.Direct }
 }
 
 @Composable
