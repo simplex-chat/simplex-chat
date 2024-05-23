@@ -228,6 +228,7 @@ newChatController
     smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
     agentAsync <- newTVarIO Nothing
     random <- liftIO C.newRandom
+    logDebug $ "newChatController newTBQueue size: " <> tshow tbqSize
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
     connNetworkStatuses <- atomically TM.empty
