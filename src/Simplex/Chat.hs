@@ -4485,11 +4485,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
                       else pure []
                   logDebug $ "sendMessagesB group: " <> groupName <> ", member: " <> memberName
-                  logDebug $ "sendMessagesB introducedMembers: " <> tshow (length introducedMembers) <> tshow (length $ nub $ map groupMemberId' introducedMembers)
+                  logDebug $ "sendMessagesB introducedMembers: " <> tshow (length introducedMembers) <> " " <> tshow (length $ nub $ map groupMemberId' introducedMembers)
                   logDebug "MSG event in forwardMsg_: in forM_ 2"
                   -- invited members to which this member was introduced
                   invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
-                  logDebug $ "sendMessagesB invitedMembers: " <> tshow (length invitedMembers) <> tshow (length $ nub $ map groupMemberId' introducedMembers)
+                  logDebug $ "sendMessagesB invitedMembers: " <> tshow (length invitedMembers) <> " " <> tshow (length $ nub $ map groupMemberId' invitedMembers)
                   logDebug "MSG event in forwardMsg_: in forM_ 3"
                   let GroupMember {memberId} = m
                       ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
