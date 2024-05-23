@@ -245,17 +245,7 @@ data class ThemeWallpaper (
     return AppWallpaper(
       background = background?.colorFromReadableHex(),
       tint = tint?.colorFromReadableHex(),
-      type = if (preset != null) {
-        BackgroundImageType.Repeated(filename = preset, scale)
-      } else if (imageFile != null) {
-        BackgroundImageType.Static(
-          filename = imageFile,
-          scale,
-          scaleType
-        )
-      } else {
-        BackgroundImageType.Empty
-      }
+      type = BackgroundImageType.from(this) ?: BackgroundImageType.Empty
     )
   }
 
@@ -483,7 +473,7 @@ fun List<ThemeOverrides>.sameTheme(type: BackgroundImageType?, themeName: String
 fun List<ThemeOverrides>.skipDuplicates(): List<ThemeOverrides> {
   val res = ArrayList<ThemeOverrides>()
   forEach { theme ->
-    val themeType = theme.wallpaper?.toAppWallpaper()?.type
+    val themeType = BackgroundImageType.from(theme.wallpaper)
     if (res.none { it.themeId == theme.themeId || it.isSame(themeType, theme.base.themeName) }) {
       res.add(theme)
     }
