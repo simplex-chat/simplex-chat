@@ -3322,7 +3322,6 @@ agentSubscriber = do
         ev <- atomically (readTBQueue q)
         logDebug "received agent event"
         process ev
-        logDebug "agent event processed"
     )
     `E.finally` logDebug "exited agentSubscriber"
   where
@@ -3333,7 +3332,12 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchChatError'` \e' -> logError (tshow e') >> toView' (CRChatError Nothing e')
+        -- run action =
+        --   E.try (runExceptT action) >>= \case
+        --     Right (Right ()) -> logDebug "agent event processed"
+        --     Right (Left _ae) -> logError "the agent error did happen, whatever"
+        --     Left ioe -> logError (tshow ioe)
+        run action = action `catchChatError'` \e' -> toView' (CRChatError Nothing e') >> logError ("agent event error: " <> tshow e')
 
 type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType ()))
 
@@ -3656,7 +3660,12 @@ processAgentMessage corrId connId msg = do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
-      Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
+      Just user -> do
+        processAgentMessageConn vr user corrId connId msg `catchChatError` \e' -> do
+          logDebug ("chat error after processAgentMessageConn before toView: " <> tshow e')
+          toView $ CRChatError (Just user) e'
+          logDebug ("chat error after processAgentMessageConn after toView: " <> tshow e')
+        logDebug "agent event: after processAgentMessageConn"
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
