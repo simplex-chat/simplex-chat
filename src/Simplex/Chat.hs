@@ -4821,13 +4821,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       tryChatError action >>= \case
         Right withRcpt -> do
           ackMsg msgMeta $ if withRcpt then Just "" else Nothing
-          logDebug $ T.unwords [label, "ack:", label, tshow cId]
+          logDebug $ T.unwords [label, "ack:", tshow cId]
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> do
           ackMsg msgMeta Nothing
-          logDebug $ T.unwords [label, "ack:", label, tshow cId, tshow e]
+          logDebug $ T.unwords [label, "ack:", tshow cId, tshow e]
           throwError e
       where
         ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
