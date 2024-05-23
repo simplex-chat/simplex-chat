@@ -4469,25 +4469,36 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           forwardMsg_ :: CM ()
           forwardMsg_ = do
+            logDebug "MSG event in forwardMsg_"
             let GroupMember {memberRole = membershipMemRole} = membership
             when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
               -- currently only a single message is forwarded
-              [Right (ACMsg _ chatMsg)] ->
+              [Right (ACMsg _ chatMsg)] -> do
+                logDebug "MSG event in forwardMsg_: Right one event"
                 forM_ (forwardedGroupMsg chatMsg) $ \chatMsg' -> do
                   ChatConfig {highlyAvailable} <- asks config
                   -- members introduced to this invited member
+                  logDebug "MSG event in forwardMsg_: in forM_ 1"
                   introducedMembers <-
                     if memberCategory m == GCInviteeMember
                       then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
                       else pure []
+                  logDebug "MSG event in forwardMsg_: in forM_ 2"
                   -- invited members to which this member was introduced
                   invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
+                  logDebug "MSG event in forwardMsg_: in forM_ 3"
                   let GroupMember {memberId} = m
                       ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
                       msg = XGrpMsgForward memberId chatMsg' brokerTs
+                  logDebug "MSG event in forwardMsg_: in forM_ 4"
                   unless (null ms) . void $
                     sendGroupMessage' user gInfo ms msg
-              _ -> pure ()
+                  logDebug "MSG event in forwardMsg_: in forM_ end, after send"
+                logDebug "MSG event in forwardMsg_: Right one event, after forM_"
+              _ -> do
+                logDebug $ "MSG event in forwardMsg_: something else"
+                pure ()
+            logDebug "MSG event forwardMsg_ end"
       RCVD msgMeta msgRcpt -> do
         logDebug $ "group rcvd: " <> tshow agentConnId <> " " <> groupName <> ", member: " <> memberName
         withAckMessage' "group rcvd" agentConnId msgMeta $
