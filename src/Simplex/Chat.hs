@@ -40,7 +40,7 @@ import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, partition, sortOn)
+import Data.List (find, foldl', isSuffixOf, nub, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -4484,9 +4484,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     if memberCategory m == GCInviteeMember
                       then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
                       else pure []
+                  logDebug $ "sendMessagesB group: " <> groupName <> ", member: " <> memberName
+                  logDebug $ "sendMessagesB introducedMembers: " <> tshow (length introducedMembers) <> tshow (length $ nub $ map groupMemberId' introducedMembers)
                   logDebug "MSG event in forwardMsg_: in forM_ 2"
                   -- invited members to which this member was introduced
                   invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
+                  logDebug $ "sendMessagesB invitedMembers: " <> tshow (length invitedMembers) <> tshow (length $ nub $ map groupMemberId' introducedMembers)
                   logDebug "MSG event in forwardMsg_: in forM_ 3"
                   let GroupMember {memberId} = m
                       ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
@@ -6657,6 +6660,8 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
+-- TODO combine profile update and message into one batch
+-- Take into account that it may not fit, and that we currently don't support sending multiple messages to the same connection in one call.
 sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, [GroupMember])
 sendGroupMessage user gInfo members chatMsgEvent = do
   when shouldSendProfileUpdate $
