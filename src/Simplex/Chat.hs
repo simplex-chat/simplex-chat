@@ -6700,7 +6700,7 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
       (toSend, pending) = foldr addMember ([], []) recipientMembers
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
       msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
-  logDebug $ "sendMessagesB toSend: " <> tshow (length recipientMembers) <> " " <> tshow (length $ nub $ map groupMemberId' recipientMembers)
+  logDebug $ "sendMessagesB toSend: " <> tshow (length toSend) <> " " <> tshow (length $ nub $ map groupMemberId' toSend)
   delivered <- maybe (pure []) (fmap L.toList . lift . deliverMessages) $ L.nonEmpty msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
