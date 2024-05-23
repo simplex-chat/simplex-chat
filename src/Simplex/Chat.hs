@@ -6627,9 +6627,11 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM' (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
-  logDebug $ "sendMessagesB deliverMessagesB msgReqs: " <> tshow (length msgReqs) <> " " <> tshow (length $ nub $ map (\(connId, _, _, _) -> connId) msgReqs)
+  logDebug $ "sendMessagesB deliverMessagesB msgReqs: " <> tshow (length msgReqs)
+  logDebug $ "sendMessagesB deliverMessagesB msgReqs rights: " <> tshow (length $ rights $ toList msgReqs) <> " " <> tshow (length $ nub $ map (\(connId, _, _, _) -> connId) $ rights $ toList msgReqs)
   msgReqs' <- liftIO compressBodies
-  logDebug $ "sendMessagesB deliverMessagesB msgReqs': " <> tshow (length msgReqs') <> " " <> tshow (length $ nub $ map (\(connId, _, _, _) -> connId) msgReqs')
+  logDebug $ "sendMessagesB deliverMessagesB msgReqs': " <> tshow (length msgReqs')
+  logDebug $ "sendMessagesB deliverMessagesB msgReqs' rights: " <> tshow (length $ rights $ toList msgReqs') <> " " <> tshow (length $ nub $ map (\(connId, _, _, _) -> connId) $ rights $ toList msgReqs')
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
   logDebug $ "sendMessagesB deliverMessagesB sent!"
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
