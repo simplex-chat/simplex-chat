@@ -4494,6 +4494,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   let GroupMember {memberId} = m
                       ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
                       msg = XGrpMsgForward memberId chatMsg' brokerTs
+                  logDebug $ "sendMessagesB all members: " <> tshow (length $ introducedMembers <> invitedMembers) <> " " <> tshow (length $ nub $ map groupMemberId' $ introducedMembers <> invitedMembers)
+                  logDebug $ "sendMessagesB ms members: " <> tshow (length ms) <> " " <> tshow (length $ nub $ map groupMemberId' ms)
                   logDebug "MSG event in forwardMsg_: in forM_ 4"
                   unless (null ms) . void $
                     sendGroupMessage' user gInfo ms msg
