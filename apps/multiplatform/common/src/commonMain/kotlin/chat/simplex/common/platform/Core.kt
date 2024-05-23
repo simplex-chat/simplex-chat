@@ -43,7 +43,7 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
-fun initChatControllerAndRunMigrations() {
+fun initChatControllerOnStart() {
   withLongRunningApi {
     if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
       initChatController(startChat = ::showStartChatAfterRestartAlert)

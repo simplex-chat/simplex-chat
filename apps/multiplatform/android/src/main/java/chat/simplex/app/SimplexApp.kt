@@ -6,7 +6,6 @@ import android.content.Context
 import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.media.AudioManager
 import android.os.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -75,7 +74,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       // It's important, otherwise, user may be locked in undefined state
       appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
     } else if (DatabaseUtils.ksAppPassword.get() == null || DatabaseUtils.ksSelfDestructPassword.get() == null) {
-      initChatControllerAndRunMigrations()
+      initChatControllerOnStart()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }

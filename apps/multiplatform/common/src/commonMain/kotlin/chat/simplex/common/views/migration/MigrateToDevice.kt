@@ -671,7 +671,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   if (state is MigrationToState.ArchiveImportFailed) {
     // Original database is not exist, nothing is set up correctly for showing to a user yet. Return to clean state
     deleteChatDatabaseFilesAndState()
-    initChatControllerAndRunMigrations()
+    initChatControllerOnStart()
   } else if (state is MigrationToState.DownloadProgress && state.ctrl != null) {
     stopArchiveDownloading(state.fileId, state.ctrl)
   }
