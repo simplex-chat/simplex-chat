@@ -13,6 +13,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-implicit-lift #-}
 
 module Simplex.Chat.Controller where
 

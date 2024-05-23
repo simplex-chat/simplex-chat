@@ -3316,7 +3316,14 @@ deleteGroupLink_ user gInfo conn = do
 agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
-  forever (logDebug "waiting for agent event" >> atomically (readTBQueue q) >>= process >> logDebug "agent event processed")
+  forever
+    ( do
+        logDebug "waiting for agent event"
+        ev <- atomically (readTBQueue q)
+        logDebug "received agent event"
+        process ev
+        logDebug "agent event processed"
+    )
     `E.finally` logDebug "exited agentSubscriber"
   where
     process :: (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
@@ -3326,7 +3333,7 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchChatError'` (toView' . CRChatError Nothing)
+        run action = action `catchChatError'` \e' -> logError (tshow e') >> toView' (CRChatError Nothing e')
 
 type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType ()))
 
@@ -4778,11 +4785,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       tryChatError action >>= \case
         Right withRcpt -> do
           ackMsg msgMeta $ if withRcpt then Just "" else Nothing
-          logDebug $ label <> " ack: " <> label <> " " <> tshow cId
+          logDebug $ T.unwords [label, "ack:", label, tshow cId]
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
-        Left e -> ackMsg msgMeta Nothing >> throwError e
+        Left e -> do
+          ackMsg msgMeta Nothing
+          logDebug $ T.unwords [label, "ack:", label, tshow cId, tshow e]
+          throwError e
       where
         ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
         ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
