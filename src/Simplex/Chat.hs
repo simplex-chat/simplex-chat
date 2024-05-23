@@ -6690,6 +6690,7 @@ sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> Cha
 sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
+  logDebug $ "sendMessagesB recipientMembers: " <> tshow (length recipientMembers) <> " " <> tshow (length $ nub $ map groupMemberId' recipientMembers)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending) = foldr addMember ([], []) recipientMembers
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
