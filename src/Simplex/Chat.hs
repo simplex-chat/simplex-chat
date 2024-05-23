@@ -4406,11 +4406,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage "group msg" agentConnId msgMeta True $ do
           checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
           forM_ aChatMsgs $ \case
-            Right (ACMsg _ chatMsg) ->
-              processEvent chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
+            Right (ACMsg _ chatMsg) -> do
+              processEvent chatMsg `catchChatError` \e -> do
+                logError $ "group MSG process event error, before toView: " <> tshow e
+                toView $ CRChatError (Just user) e
+                logError $ "group MSG process event error, after toView: " <> tshow e
+              logDebug $ "group after MSG process event"
             Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
-          forwardMsg_ `catchChatError` \_ -> pure ()
+          forwardMsg_ `catchChatError` \e -> do
+            logError $ "group MSG event forwardMsg_ error, before toView: " <> tshow e
+            toView $ CRChatError (Just user) e
+            logError $ "group MSG event forwardMsg_ error, after toView: " <> tshow e
+          logDebug $ "group MSG event after forwardMsg_"
           checkSendRcpt $ rights aChatMsgs
+        logDebug "MSG event finished"
         where
           aChatMsgs = parseChatMessages msgBody
           brokerTs = metaBrokerTs msgMeta
