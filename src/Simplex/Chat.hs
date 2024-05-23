@@ -6627,8 +6627,11 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM' (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
+  logDebug $ "sendMessagesB deliverMessagesB msgReqs: " <> tshow (length msgReqs) <> " " <> tshow (length $ nub $ map (\(connId, _, _, _) -> connId) msgReqs)
   msgReqs' <- liftIO compressBodies
+  logDebug $ "sendMessagesB deliverMessagesB msgReqs': " <> tshow (length msgReqs') <> " " <> tshow (length $ nub $ map (\(connId, _, _, _) -> connId) msgReqs')
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
+  logDebug $ "sendMessagesB deliverMessagesB sent!"
   void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
