@@ -479,6 +479,18 @@ fun List<ThemeOverrides>.replace(theme: ThemeOverrides): List<ThemeOverrides> {
 
 fun List<ThemeOverrides>.sameTheme(type: BackgroundImageType?, themeName: String): ThemeOverrides? = firstOrNull { it.isSame(type, themeName) }
 
+/** See [ThemesTest.testSkipDuplicates] */
+fun List<ThemeOverrides>.skipDuplicates(): List<ThemeOverrides> {
+  val res = ArrayList<ThemeOverrides>()
+  forEach { theme ->
+    val themeType = theme.wallpaper?.toAppWallpaper()?.type
+    if (res.none { it.themeId == theme.themeId || it.isSame(themeType, theme.base.themeName) }) {
+      res.add(theme)
+    }
+  }
+  return res
+}
+
 @Serializable
 data class ThemeModeOverrides (
   val light: ThemeModeOverride? = null,

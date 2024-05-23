@@ -2,12 +2,10 @@ package chat.simplex.common.platform
 
 import androidx.compose.runtime.Composable
 import chat.simplex.common.model.*
-import chat.simplex.common.ui.theme.ThemeOverrides
-import chat.simplex.common.ui.theme.ThemesFile
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
-import com.charleskorn.kaml.decodeFromStream
-import com.charleskorn.kaml.encodeToStream
+import com.charleskorn.kaml.*
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -124,7 +122,17 @@ fun readThemeOverrides(): List<ThemeOverrides> {
     if (!file.exists()) return emptyList()
 
     file.inputStream().use {
-      yaml.decodeFromStream<ThemesFile>(it).themes
+      val map = yaml.parseToYamlNode(it).yamlMap
+      val list = map.get<YamlList>("themes")
+      val res = ArrayList<ThemeOverrides>()
+      list?.items?.forEach {
+        try {
+          res.add(yaml.decodeFromYamlNode(ThemeOverrides.serializer(), it))
+        } catch (e: Throwable) {
+          Log.e(TAG, "Error while reading specific theme: ${e.stackTraceToString()}")
+        }
+      }
+      res.skipDuplicates()
     }
   } catch (e: Throwable) {
     Log.e(TAG, "Error while reading themes file: ${e.stackTraceToString()}")

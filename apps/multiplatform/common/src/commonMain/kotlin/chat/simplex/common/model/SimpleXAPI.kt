@@ -5625,7 +5625,7 @@ data class AppSettings(
     uiColorScheme?.let { def.currentTheme.set(it) }
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
-    uiThemes?.let { def.themeOverrides.set(it) }
+    uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
   }
 
   companion object {
