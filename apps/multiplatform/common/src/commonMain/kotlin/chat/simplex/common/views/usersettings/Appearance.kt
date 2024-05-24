@@ -757,7 +757,7 @@ object AppearanceScope {
     ) {
       AppBarTitle(name.text)
 
-      val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
+      val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.SENT_QUOTE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
       if (supportedLiveChange) {
         SimpleXThemeOverride(currentColors()) {
           ChatThemePreview(theme, wallpaperImage, wallpaperType, previewBackgroundColor, previewTintColor)
