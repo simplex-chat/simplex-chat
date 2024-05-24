@@ -312,15 +312,6 @@ fun ChatLockItem(
   }
 }
 
-@Composable fun ChatListAlwaysVisibleItem(pref: SharedPreference<Boolean>, onChange: (Boolean) -> Unit) {
-  SettingsActionItemWithContent(painterResource(MR.images.ic_chat), stringResource(MR.strings.chat_list_always_visible), extraPadding = false) {
-    DefaultSwitch(
-      checked = remember { pref.state }.value,
-      onCheckedChange = onChange,
-    )
-  }
-}
-
 @Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
   SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(

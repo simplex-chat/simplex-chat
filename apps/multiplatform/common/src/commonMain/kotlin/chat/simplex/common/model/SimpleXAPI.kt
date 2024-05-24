@@ -117,7 +117,6 @@ class AppPreferences {
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
-  val chatListAlwaysVisible = mkBoolPreference(SHARED_PREFS_CHAT_LIST_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
@@ -323,7 +322,6 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
-    private const val SHARED_PREFS_CHAT_LIST_ALWAYS_VISIBLE = "ChatListAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
