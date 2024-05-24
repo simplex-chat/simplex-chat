@@ -3981,7 +3981,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
             (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody
             let tag = toCMEventTag event
-            atomically $ writeTVar tags $ [tshow tag]
+            atomically $ writeTVar tags [tshow tag]
             logDebug $ "contact msg=" <> tshow tag <> " " <> eInfo
             let ct'' = ct' {activeConn = Just conn''} :: Contact
             assertDirectAllowed user MDRcv ct'' tag
