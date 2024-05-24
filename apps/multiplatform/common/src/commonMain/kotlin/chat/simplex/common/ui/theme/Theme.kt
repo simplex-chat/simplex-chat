@@ -634,13 +634,13 @@ val BlackColorPalette = darkColors(
   primaryVariant = Color(0xff0077ff),
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
-  //  background = Color.Black,
+  background = Color(0xff000000),
   surface = Color(0xff171716),
   //  background = Color(0xFF121212),
   //  surface = Color(0xFF121212),
   error = Color.Red,
-  onBackground = Color(0xff000000),
-  onSurface = Color(0xff000000),
+  onBackground = Color(0xFFFFFBFA),
+  onSurface = Color(0xFFFFFBFA),
   //  onError: Color = Color.Black,
 )
 val BlackColorPaletteApp = AppColors(
