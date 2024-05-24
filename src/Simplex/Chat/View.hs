@@ -2035,7 +2035,7 @@ viewChatError logLevel testView = \case
              \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
-    AGENT A_PROHIBITED -> [withConnEntity <> "error: AGENT A_PROHIBITED" | logLevel <= CLLWarning]
+    AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning]
     CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
     CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]
     INTERNAL e -> [plain $ "internal error: " <> e]

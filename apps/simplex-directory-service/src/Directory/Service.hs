@@ -102,7 +102,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
         case sUser of
           SDRUser -> deUserCommand env ct ciId cmd
           SDRSuperUser -> deSuperUserCommand ct ciId cmd
-      DELogChatResponse r -> logError $ "chat response error: " <> tshow r
+      DELogChatResponse r -> logError r
   where
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
     notifySuperUsers s = withSuperUsers $ \contactId -> sendMessage' cc contactId s

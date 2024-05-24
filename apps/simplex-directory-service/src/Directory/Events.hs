@@ -36,7 +36,7 @@ import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util (tshow, (<$?>))
 
 data DirectoryEvent
   = DEContactConnected Contact
@@ -53,7 +53,7 @@ data DirectoryEvent
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
   | DEContactCommand Contact ChatItemId ADirectoryCmd
-  | DELogChatResponse ChatResponse
+  | DELogChatResponse Text
   deriving (Show)
 
 crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
@@ -78,10 +78,10 @@ crDirectoryEvent = \case
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
-  r@CRMessageError {} -> Just $ DELogChatResponse r
-  r@CRChatCmdError {} -> Just $ DELogChatResponse r {user_ = Nothing}
-  r@CRChatError {} -> Just $ DELogChatResponse r {user_ = Nothing}
-  r@CRChatErrors {} -> Just $ DELogChatResponse r {user_ = Nothing}
+  CRMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
+  CRChatCmdError {chatError} -> Just $ DELogChatResponse $ "chat cmd error: " <> tshow chatError
+  CRChatError {chatError} -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
+  CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
 
 data DirectoryRole = DRUser | DRSuperUser
