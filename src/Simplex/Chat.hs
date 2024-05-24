@@ -3982,7 +3982,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody
             let tag = toCMEventTag event
             atomically $ writeTVar tags [tshow tag]
-            logDebug $ "contact msg=" <> tshow tag <> " " <> eInfo
+            logInfo $ "contact msg=" <> tshow tag <> " " <> eInfo
             let ct'' = ct' {activeConn = Just conn''} :: Contact
             assertDirectAllowed user MDRcv ct'' tag
             case event of
@@ -4398,7 +4398,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               processEvent tags eInfo chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
-              logDebug $ "group msg=error " <> eInfo <> " " <> tshow e
+              logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
           forwardMsg_ `catchChatError` (toView . CRChatError (Just user))
           checkSendRcpt $ rights aChatMsgs
@@ -4409,7 +4409,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processEvent tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
             let tag = toCMEventTag chatMsgEvent
             atomically $ modifyTVar' tags (tshow tag :)
-            logDebug $ "group msg=" <> tshow tag <> " " <> eInfo
+            logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
             (m', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta msgBody chatMsg
             case event of
               XMsgNew mc -> memberCanSend m' $ newGroupContentMessage gInfo m' mc msg brokerTs False
@@ -4786,7 +4786,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
       eInfo <- eventInfo
-      logDebug $ label <> ": " <> eInfo
+      logInfo $ label <> ": " <> eInfo
       tryChatError (action eInfo) >>= \case
         Right withRcpt ->
           withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
@@ -4803,9 +4803,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           pure $ "conn_id=" <> tshow cId <> " event_id=" <> tshow eId
         withLog eInfo' ack = do
           ts <- showTags
-          logDebug $ T.unwords [label, "ack:", ts, eInfo']
+          logInfo $ T.unwords [label, "ack:", ts, eInfo']
           ack
-          logDebug $ T.unwords [label, "ack=success:", ts, eInfo']
+          logInfo $ T.unwords [label, "ack=success:", ts, eInfo']
         showTags = do
           ts <- maybe (pure []) readTVarIO tags
           pure $ case ts of
