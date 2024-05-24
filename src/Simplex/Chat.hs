@@ -229,7 +229,7 @@ newChatController
     smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
     agentAsync <- newTVarIO Nothing
     random <- liftIO C.newRandom
-    eventId <- newTVarIO 0
+    eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
     connNetworkStatuses <- atomically TM.empty
@@ -267,7 +267,7 @@ newChatController
           chatStore,
           chatStoreChanged,
           random,
-          eventId,
+          eventSeq,
           inputQ,
           outputQ,
           connNetworkStatuses,
@@ -4798,7 +4798,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           throwError e
       where
         eventInfo = do
-          v <- asks eventId
+          v <- asks eventSeq
           eId <- atomically $ stateTVar v $ \i -> (i + 1, i + 1)
           pure $ "conn_id=" <> tshow cId <> " event_id=" <> tshow eId
         withLog eInfo' ack = do
