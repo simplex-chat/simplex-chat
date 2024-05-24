@@ -3647,9 +3647,7 @@ processAgentMessage _ connId DEL_CONN =
 processAgentMessage _ "" (ERR e) =
   toView $ CRChatError Nothing $ ChatErrorAgent e Nothing
 processAgentMessage corrId connId msg = do
-  logDebug $ "load entity for:" <> tshow connId
   lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
-  logDebug $ "entity loaded for:" <> tshow connId
   withEntityLock "processAgentMessage" lockEntity $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
@@ -4401,7 +4399,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage "group msg" agentConnId eInfo msgMeta True (Just tags) $ do
           checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
           forM_ aChatMsgs $ \case
-            Right (ACMsg _ chatMsg) -> processEvent tags eInfo chatMsg `catchChatError` (toView . CRChatError (Just user))
+            Right (ACMsg _ chatMsg) ->
+              processEvent tags eInfo chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logDebug $ "group msg=error " <> tshow e
