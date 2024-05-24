@@ -129,8 +129,8 @@ object AppearanceScope {
     val cornerRadius = 22
 
     @Composable
-    fun Plus() {
-      Icon(painterResource(MR.images.ic_add), null, Modifier.size(25.dp), tint = MaterialTheme.colors.primary)
+    fun Plus(tint: Color = MaterialTheme.colors.primary) {
+      Icon(painterResource(MR.images.ic_add), null, Modifier.size(25.dp), tint = tint)
     }
 
     val backgrounds = PredefinedBackgroundImage.entries.toList()
@@ -173,11 +173,12 @@ object AppearanceScope {
         val tintColor = appWallpaper.tint
         val backgroundImage = appWallpaper.type.image
         val checked = type is BackgroundImageType.Static && backgroundImage != null
+        val remoteHostConnected = chatModel.remoteHostId != null
         Box(
           Modifier
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
-            .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
+            .border(1.dp, if (type is BackgroundImageType.Static) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable { onChooseType(BackgroundImageType.Static("", null, null)) },
           contentAlignment = Alignment.Center
         ) {
@@ -191,6 +192,8 @@ object AppearanceScope {
               tintColor = if (checked) activeTintColor ?: tintColor else tintColor,
               withMessages = false
             )
+          } else if (remoteHostConnected) {
+            Plus(MaterialTheme.colors.error)
           } else {
             Plus()
           }
@@ -251,7 +254,7 @@ object AppearanceScope {
     val themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?> = rememberSaveable(stateSaver = serializableSaver()) {
       val currentUser = chatModel.currentUser.value
       mutableStateOf(
-        if (currentUser?.uiThemes == null) null else currentUser.userId to currentUser.uiThemes
+        if (currentUser?.uiThemes?.preferredMode(!currentTheme.colors.isLight) == null) null else currentUser.userId to currentUser.uiThemes
       )
     }
     val perUserTheme = remember { mutableStateOf(chatModel.currentUser.value?.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) ?: ThemeModeOverride()) }
@@ -315,8 +318,13 @@ object AppearanceScope {
     val onChooseType: (BackgroundImageType?) -> Unit = { type: BackgroundImageType? ->
       when {
         // don't have image in parent or already selected wallpaper with custom image
-        type is BackgroundImageType.Static && ((backgroundImageType is BackgroundImageType.Static && themeUserDestination.value?.second != null) || currentColors(type).wallpaper.type.image == null) -> withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
+        type is BackgroundImageType.Static &&
+            ((backgroundImageType is BackgroundImageType.Static && themeUserDestination.value?.second != null && chatModel.remoteHostId() == null) ||
+                currentColors(type).wallpaper.type.image == null ||
+                (currentColors(type).wallpaper.type.image != null && backgroundImageType is BackgroundImageType.Static && themeUserDestination.value == null)) ->
+          withLongRunningApi { importBackgroundImageLauncher.launch("image/*") }
         type is BackgroundImageType.Static && themeUserDestination.value == null -> onTypeChange(currentColors(type).wallpaper.type)
+        type is BackgroundImageType.Static && chatModel.remoteHostId() != null -> { /* do nothing when remote host connected */ }
         type is BackgroundImageType.Static -> onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)
         (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredMode(!CurrentColors.value.colors.isLight)?.type != type) || currentTheme.wallpaper.type != type -> onTypeCopyFromSameTheme(type)
         else -> onTypeChange(type)
@@ -338,7 +346,7 @@ object AppearanceScope {
       )
       val type = MaterialTheme.wallpaper.type
       if (type is BackgroundImageType.Static && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
-        SectionItemView(click = {
+        SectionItemView(disabled = chatModel.remoteHostId != null && themeUserDestination.value != null, click = {
           if (themeUserDestination.value == null) {
             val defaultActiveTheme = ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get())
             ThemeManager.saveAndApplyBackgroundImage(baseTheme, null)
@@ -349,19 +357,38 @@ object AppearanceScope {
           }
           saveThemeToDatabase(themeUserDestination.value)
         }) {
-          Text(stringResource(MR.strings.theme_remove_image), color = MaterialTheme.colors.primary)
+          Text(
+            stringResource(MR.strings.theme_remove_image),
+            color = if (chatModel.remoteHostId != null && themeUserDestination.value != null) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+          )
         }
         SectionSpacer()
       }
 
-      val state = remember { derivedStateOf { currentTheme.name } }
-      ThemeSelector(state) {
-        ThemeManager.applyTheme(it)
+      val state: State<DefaultThemeMode?> = remember(appPrefs.currentTheme.get()) {
+        derivedStateOf {
+          if (appPrefs.currentTheme.get() == DefaultTheme.SYSTEM_THEME_NAME) null else currentTheme.base.mode
+        }
+      }
+      ColorModeSelector(state) {
+        val newTheme = when (it) {
+          null -> DefaultTheme.SYSTEM_THEME_NAME
+          DefaultThemeMode.LIGHT -> DefaultTheme.LIGHT.themeName
+          DefaultThemeMode.DARK -> appPrefs.systemDarkTheme.get()!!
+        }
+        ThemeManager.applyTheme(newTheme)
         saveThemeToDatabase(null)
       }
 
-      DarkThemeSelector(remember { systemDarkTheme.state }) {
+      // Doesn't work on desktop when specified like remember { systemDarkTheme.state }, this is workaround
+      val darkModeState: State<String?> = remember(systemDarkTheme.get()) { derivedStateOf { systemDarkTheme.get() } }
+      DarkModeThemeSelector(darkModeState) {
         ThemeManager.changeDarkTheme(it)
+        if (appPrefs.currentTheme.get() == DefaultTheme.SYSTEM_THEME_NAME) {
+          ThemeManager.applyTheme(appPrefs.currentTheme.get()!!)
+        } else if (appPrefs.currentTheme.get() != DefaultTheme.LIGHT.themeName) {
+          ThemeManager.applyTheme(appPrefs.systemDarkTheme.get()!!)
+        }
         saveThemeToDatabase(null)
       }
     }
@@ -416,14 +443,17 @@ object AppearanceScope {
 
       val type = MaterialTheme.wallpaper.type
       if (type is BackgroundImageType.Static) {
-        SectionItemView(click = {
+        SectionItemView(disabled = chatModel.remoteHostId != null, click = {
           val defaultActiveTheme = ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get())
           ThemeManager.saveAndApplyBackgroundImage(baseTheme, null)
           ThemeManager.removeTheme(defaultActiveTheme?.themeId)
           removeBackgroundImage(type.filename)
           saveThemeToDatabase(null)
         }) {
-          Text(stringResource(MR.strings.theme_remove_image), color = MaterialTheme.colors.primary)
+          Text(
+            stringResource(MR.strings.theme_remove_image),
+            color = if (chatModel.remoteHostId == null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+          )
         }
         SectionSpacer()
       }
@@ -505,19 +535,20 @@ object AppearanceScope {
 
   private var updateBackendJob: Job = Job()
   private fun saveThemeToDatabase(themeUserDestination: Pair<Long, ThemeModeOverrides?>?) {
+    val remoteHostId = chatModel.remoteHostId()
     val oldThemes = chatModel.currentUser.value?.uiThemes
     if (themeUserDestination != null) {
       // Update before save to make it work seamless
-      chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), themeUserDestination.second)
+      chatModel.updateCurrentUserUiThemes(remoteHostId, themeUserDestination.second)
     }
     updateBackendJob.cancel()
     updateBackendJob = withBGApi {
       delay(300)
       if (themeUserDestination == null) {
         controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
-      } else if (!controller.apiSetUserUIThemes(chatModel.remoteHostId(), themeUserDestination.first, themeUserDestination.second)) {
+      } else if (!controller.apiSetUserUIThemes(remoteHostId, themeUserDestination.first, themeUserDestination.second)) {
         // If failed to apply for some reason return the old themes
-        chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), oldThemes)
+        chatModel.updateCurrentUserUiThemes(remoteHostId, oldThemes)
       }
     }
   }
@@ -857,12 +888,18 @@ object AppearanceScope {
   }
 
   @Composable
-  private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
-    val values by remember(ChatController.appPrefs.appLanguage.state.value) {
-      mutableStateOf(ThemeManager.allThemes().map { it.second to it.third })
+  private fun ColorModeSelector(state: State<DefaultThemeMode?>, onSelected: (DefaultThemeMode?) -> Unit) {
+    val values by remember(appPrefs.appLanguage.state.value) {
+      mutableStateOf(
+        listOf(
+          null to generalGetString(MR.strings.color_mode_system),
+          DefaultThemeMode.LIGHT to generalGetString(MR.strings.color_mode_light),
+          DefaultThemeMode.DARK to generalGetString(MR.strings.color_mode_dark)
+        )
+      )
     }
     ExposedDropDownSettingRow(
-      generalGetString(MR.strings.theme),
+      generalGetString(MR.strings.color_mode),
       values,
       state,
       icon = null,
@@ -872,7 +909,7 @@ object AppearanceScope {
   }
 
   @Composable
-  private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Unit) {
+  private fun DarkModeThemeSelector(state: State<String?>, onSelected: (String) -> Unit) {
     val values by remember {
       val darkThemes = ArrayList<Pair<String, String>>()
       darkThemes.add(DefaultTheme.DARK.themeName to generalGetString(MR.strings.theme_dark))
@@ -881,7 +918,7 @@ object AppearanceScope {
       mutableStateOf(darkThemes.toList())
     }
     ExposedDropDownSettingRow(
-      generalGetString(MR.strings.dark_theme),
+      generalGetString(MR.strings.dark_mode_colors),
       values,
       state,
       icon = null,
