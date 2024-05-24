@@ -1797,4 +1797,11 @@
     <string name="session_code">کد نشست</string>
     <string name="connect_plan_you_are_already_joining_the_group_vName">شما هم اکنون در حال پیوستن به گروه <b>%1$s</b> هستید.</string>
     <string name="linked_mobiles">موبایل‌های متصل</string>
+    <string name="file_not_approved_title">سرورهای ناشناخته!</string>
+    <string name="protect_ip_address">حفاظت از نشانی IP</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">برنامه از شما خواهد خواست تا بارگیری‌ها از سرورهای پرونده ناشناخته را تایید کنید (به جز .onion یا وقتی پروکسی SOCKS فعال است).</string>
+    <string name="settings_section_title_files">پرونده‌ها</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون تور یا VPN، نشانی IP شما برای سرورهای پرونده قابل رویت خواهد بود.</string>
+    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود:
+\n%1$s.</string>
 </resources>
