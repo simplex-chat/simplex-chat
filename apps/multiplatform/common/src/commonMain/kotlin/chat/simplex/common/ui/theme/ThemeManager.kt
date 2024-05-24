@@ -154,22 +154,10 @@ object ThemeManager {
 
   fun saveAndApplyThemeColor(baseTheme: DefaultTheme, name: ThemeColor, color: Color? = null, pref: SharedPreference<List<ThemeOverrides>> = appPrefs.themeOverrides) {
     val nonSystemThemeName = baseTheme.themeName
-    var colorToSet = color
-    if (colorToSet == null) {
-      // Setting default color from a base theme
-      colorToSet = when(nonSystemThemeName) {
-        DefaultTheme.LIGHT.themeName -> name.fromColors(LightColorPalette, LightColorPaletteApp, AppWallpaper())
-        DefaultTheme.DARK.themeName -> name.fromColors(DarkColorPalette, DarkColorPaletteApp, AppWallpaper())
-        DefaultTheme.SIMPLEX.themeName -> name.fromColors(SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper())
-        DefaultTheme.BLACK.themeName -> name.fromColors(BlackColorPalette, BlackColorPaletteApp, AppWallpaper())
-        // Will not be here
-        else -> return
-      }
-    }
     val overrides = pref.get()
     val themeId = appPrefs.currentThemeIds.get()[nonSystemThemeName]
     val prevValue = overrides.getTheme(themeId) ?: ThemeOverrides(base = baseTheme)
-    pref.set(overrides.replace(prevValue.withUpdatedColor(name, colorToSet?.toReadableHex())))
+    pref.set(overrides.replace(prevValue.withUpdatedColor(name, color?.toReadableHex())))
     val themeIds = appPrefs.currentThemeIds.get().toMutableMap()
     themeIds[nonSystemThemeName] = prevValue.themeId
     appPrefs.currentThemeIds.set(themeIds)

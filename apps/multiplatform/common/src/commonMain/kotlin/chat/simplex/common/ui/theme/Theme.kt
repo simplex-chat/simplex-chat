@@ -33,28 +33,10 @@ enum class DefaultTheme {
   val mode: DefaultThemeMode get() = if (this == LIGHT) DefaultThemeMode.LIGHT else DefaultThemeMode.DARK
 
   // Call it only with base theme, not SYSTEM
-  fun hasChangedAnyColor(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Boolean {
-    val palette = when (this) {
-      LIGHT -> LightColorPalette
-      DARK -> DarkColorPalette
-      SIMPLEX -> SimplexColorPalette
-      BLACK -> BlackColorPalette
-    }
-    val appPalette = when (this) {
-      LIGHT -> LightColorPaletteApp
-      DARK -> DarkColorPaletteApp
-      SIMPLEX -> SimplexColorPaletteApp
-      BLACK -> BlackColorPaletteApp
-    }
-    return colors.primary != palette.primary ||
-        colors.primaryVariant != palette.primaryVariant ||
-        colors.secondary != palette.secondary ||
-        colors.secondaryVariant != palette.secondaryVariant ||
-        colors.background != palette.background ||
-        colors.surface != palette.surface ||
-        appColors != appPalette ||
-        appWallpaper.background != null ||
-        appWallpaper.tint != null
+  fun hasChangedAnyColor(overrides: ThemeOverrides?): Boolean {
+    if (overrides == null) return false
+    return overrides.colors != ThemeColors() ||
+        overrides.wallpaper != null && (overrides.wallpaper.background != null || overrides.wallpaper.tint != null)
   }
 }
 

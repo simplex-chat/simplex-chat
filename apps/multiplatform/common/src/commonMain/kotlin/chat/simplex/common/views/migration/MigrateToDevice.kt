@@ -594,8 +594,6 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
         chatInitControllerRemovingDatabases()
       }
       controller.apiDeleteStorage()
-      wallpapersDir.deleteRecursively()
-      wallpapersDir.mkdirs()
       try {
         val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
         val archiveErrors = controller.apiImportArchive(config)

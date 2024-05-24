@@ -1073,7 +1073,7 @@
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
   <string name="settings_section_title_chat_theme">Chat theme</string>
-  <string name="settings_section_title_profile_theme">Profile theme</string>
+  <string name="settings_section_title_user_theme">Profile theme</string>
   <string name="settings_section_title_chat_colors">Chat colors</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_private_message_routing">PRIVATE MESSAGE ROUTING</string>
