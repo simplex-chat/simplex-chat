@@ -328,7 +328,7 @@ object AppearanceScope {
       // - all themes: no overrides needed
       // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
       val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-      ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.state.value)
+      ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
     }
 
     val onChooseType: (BackgroundImageType?) -> Unit = { type: BackgroundImageType? ->
@@ -441,7 +441,7 @@ object AppearanceScope {
                   // - all themes: no overrides needed
                   // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
                   val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-                  ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.state.value)
+                  ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
                 },
                 onChooseType = onChooseType,
               )
@@ -478,7 +478,7 @@ object AppearanceScope {
           // - all themes: no overrides needed
           // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
           val perUserOverride = if (themeUserDestination.value == null) null else if (backgroundImageType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-          ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.state.value)
+          ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
         },
         onChooseType = onChooseType
       )

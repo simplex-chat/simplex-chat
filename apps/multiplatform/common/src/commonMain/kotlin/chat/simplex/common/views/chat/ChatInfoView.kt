@@ -850,7 +850,7 @@ fun ModalData.WallpaperEditor(
     }
 
     val currentColors = { type: BackgroundImageType? ->
-      ThemeManager.currentColors(type, if (type?.sameType(themeModeOverride.value.type) == true) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.state.value)
+      ThemeManager.currentColors(type, if (type?.sameType(themeModeOverride.value.type) == true) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     }
 
     AppearanceScope.WallpaperPresetSelector(

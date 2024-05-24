@@ -239,6 +239,7 @@ sealed class BackgroundImageType {
       is Static -> filename
       else -> return@lazy null
     }
+    if (filename == "") return@lazy null
     if (cachedImages[filename] != null) {
       cachedImages[filename]
     } else {

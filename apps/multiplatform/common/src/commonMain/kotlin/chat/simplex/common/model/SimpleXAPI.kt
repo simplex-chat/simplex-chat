@@ -276,7 +276,6 @@ class AppPreferences {
       set = fun(value) = prefs.putString(prefName, encode(value))
     )
 
-  private var themeOverridesStore: List<ThemeOverrides>? = null
   private fun mkThemeOverridesPreference(): SharedPreference<List<ThemeOverrides>> =
     SharedPreference(
       get = fun() = themeOverridesStore ?: (readThemeOverrides()).also { themeOverridesStore = it },
@@ -378,6 +377,8 @@ class AppPreferences {
 
     private const val SHARED_PREFS_IOS_CALL_KIT_ENABLED = "iOSCallKitEnabled"
     private const val SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS = "iOSCallKitCallsInRecents"
+
+    private var themeOverridesStore: List<ThemeOverrides>? = null
   }
 }
 

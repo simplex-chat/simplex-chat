@@ -148,7 +148,7 @@ fun writeThemeOverrides(overrides: List<ThemeOverrides>): Boolean =
     }
     true
   } catch (e: Throwable) {
-    Log.e(TAG, "Error while reading themes file: ${e.stackTraceToString()}")
+    Log.e(TAG, "Error while writing themes file: ${e.stackTraceToString()}")
     false
   }
 
