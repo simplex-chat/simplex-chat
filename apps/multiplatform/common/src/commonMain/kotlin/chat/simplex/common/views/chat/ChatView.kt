@@ -1275,7 +1275,7 @@ val MEMBER_IMAGE_SIZE: Dp = 38.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image)
+  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable
