@@ -550,7 +550,6 @@ val DarkColorPalette = darkColors(
 //  background = Color.Black,
   surface = Color(0xFF222222),
 //  background = Color(0xFF121212),
-//  surface = Color(0xFF121212),
   error = Color.Red,
   onBackground = Color(0xFFFFFBFA),
   onSurface = Color(0xFFFFFBFA),
@@ -611,12 +610,12 @@ val SimplexColorPaletteApp = AppColors(
 )
 
 val BlackColorPalette = darkColors(
-  primary = Color(0xff0077ff),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff0077ff),
+  primary = Color(0xff0077e0),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = Color(0xff0077e0),
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
-  background = Color(0xff000000),
-  surface = Color(0xff171716),
+  background = Color(0xff070707),
+  surface = Color(0xff161617),
   //  background = Color(0xFF121212),
   //  surface = Color(0xFF121212),
   error = Color.Red,
@@ -625,7 +624,7 @@ val BlackColorPalette = darkColors(
   //  onError: Color = Color.Black,
 )
 val BlackColorPaletteApp = AppColors(
-  title = Color(0xff0077ff),
+  title = Color(0xff0077e0),
   primaryVariant2 = Color(0xff243747),
   sentMessage = Color(0xFF18262E),
   sentQuote = Color(0xFF1D3847),
