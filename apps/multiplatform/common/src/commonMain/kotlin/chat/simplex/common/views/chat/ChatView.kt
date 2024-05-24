@@ -608,7 +608,7 @@ fun ChatLayout(
           val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
           val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
           BoxWithConstraints(Modifier
-            .fillMaxHeight()
+            .fillMaxSize()
             .background(MaterialTheme.colors.background)
             .then(if (wallpaperImage != null)
               Modifier.drawBehind { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
