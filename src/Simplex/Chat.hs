@@ -3938,12 +3938,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processINFOpqSupport conn pqSupport
           _conn' <- saveConnInfo conn connInfo
           pure ()
-        MSG meta _msgFlags msgBody -> do
-          eInfo <- logEventInfo "new contact msg" agentConnId
+        MSG meta _msgFlags msgBody ->
           -- TODO only acknowledge without saving message?
           -- probably this branch is never executed, so there should be no reason
           -- to save message if contact hasn't been created yet - chat item isn't created anyway
-          withAckMessage' "new contact msg" agentConnId eInfo meta $
+          withAckMessage' "new contact msg" agentConnId meta $
             void $
               saveDirectRcvMSG conn meta msgBody
         SENT msgId _proxy ->
@@ -3975,9 +3974,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          eInfo <- logEventInfo "contact msg" agentConnId
           tags <- newTVarIO []
-          withAckMessage "contact msg" agentConnId eInfo msgMeta True (Just tags) $ do
+          withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
@@ -4013,9 +4011,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
             let Contact {chatSettings = ChatSettings {sendRcpts}} = ct''
             pure $ fromMaybe (sendRcptsContacts user) sendRcpts && hasDeliveryReceipt t
-        RCVD msgMeta msgRcpt -> do
-          eInfo <- logEventInfo "contact rcvd" agentConnId
-          withAckMessage' "contact rcvd" agentConnId eInfo msgMeta $
+        RCVD msgMeta msgRcpt ->
+          withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
@@ -4394,16 +4391,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ sendDirectMemberMessage imConn (XGrpMemCon memberId) groupId
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
-        eInfo <- logEventInfo "group msg" agentConnId
         tags <- newTVarIO []
-        withAckMessage "group msg" agentConnId eInfo msgMeta True (Just tags) $ do
+        withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
           checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
               processEvent tags eInfo chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
-              logDebug $ "group msg=error " <> tshow e
+              logDebug $ "group msg=error " <> eInfo <> " " <> tshow e
               toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
           forwardMsg_ `catchChatError` (toView . CRChatError (Just user))
           checkSendRcpt $ rights aChatMsgs
@@ -4479,9 +4475,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   unless (null ms) . void $
                     sendGroupMessage' user gInfo ms msg
               _ -> pure ()
-      RCVD msgMeta msgRcpt -> do
-        eInfo <- logEventInfo "group rcvd" agentConnId
-        withAckMessage' "group rcvd" agentConnId eInfo msgMeta $
+      RCVD msgMeta msgRcpt ->
+        withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId proxy -> do
         sentMsgDeliveryEvent conn msgId
@@ -4605,9 +4600,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 lookupChatItemByFileId db vr user fileId
               toView $ CRSndFileRcvCancelled user ci ft
             _ -> throwChatError $ CEFileSend fileId err
-        MSG meta _ _ -> do
-          eInfo <- logEventInfo "file msg" agentConnId
-          withAckMessage' "file msg" agentConnId eInfo meta $ pure ()
+        MSG meta _ _ ->
+          withAckMessage' "file msg" agentConnId meta $ pure ()
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4683,9 +4677,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           RcvChunkOk ->
             if B.length chunk /= fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
-              else do
-                eInfo <- logEventInfo "file msg" agentConnId
-                withAckMessage' "file msg" agentConnId eInfo meta $ appendFileChunk ft chunkNo chunk False
+              else withAckMessage' "file msg" agentConnId meta $ appendFileChunk ft chunkNo chunk False
           RcvChunkFinal ->
             if B.length chunk > fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
@@ -4699,9 +4691,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   getChatItemByFileId db vr user fileId
                 toView $ CRRcvFileComplete user ci
                 forM_ conn_ $ \conn -> deleteAgentConnectionAsync user (aConnId conn)
-          RcvChunkDuplicate -> do
-            eInfo <- logEventInfo "file msg" agentConnId
-            withAckMessage' "file msg" agentConnId eInfo meta $ pure ()
+          RcvChunkDuplicate -> withAckMessage' "file msg" agentConnId meta $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
@@ -4785,41 +4775,39 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> updateCommandStatus db user cmdId CSError
           throwChatError . CEAgentCommandError $ msg
 
-    logEventInfo :: Text -> ConnId -> CM Text
-    logEventInfo label cId = do
-      v <- asks eventId
-      eId <- atomically $ stateTVar v $ \i -> (i + 1, i + 1)
-      let eInfo = "conn_id=" <> tshow cId <> " event_id=" <> tshow eId
-      logDebug $ label <> ": " <> eInfo
-      pure eInfo
+    withAckMessage' :: Text -> ConnId -> MsgMeta -> CM () -> CM ()
+    withAckMessage' label cId msgMeta action = do
+      withAckMessage label cId msgMeta False Nothing $ \_ -> action $> False
 
-    withAckMessage' :: Text -> ConnId -> Text -> MsgMeta -> CM () -> CM ()
-    withAckMessage' label cId eInfo msgMeta action = do
-      withAckMessage label cId eInfo msgMeta False Nothing $ action $> False
-
-    withAckMessage :: Text -> ConnId -> Text -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> CM Bool -> CM ()
-    withAckMessage label cId eInfo msgMeta showCritical tags action =
+    withAckMessage :: Text -> ConnId -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> (Text -> CM Bool) -> CM ()
+    withAckMessage label cId msgMeta showCritical tags action = do
       -- [async agent commands] command should be asynchronous
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
       -- 1) retry processing several times
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
-      tryChatError action >>= \case
+      eInfo <- eventInfo
+      logDebug $ label <> ": " <> eInfo
+      tryChatError (action eInfo) >>= \case
         Right withRcpt ->
-          withLog "ok" $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
+          withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> do
-          withLog ("error: " <> tshow e) $ ackMsg msgMeta Nothing
+          withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
       where
-        withLog status ack = do
+        eventInfo = do
+          v <- asks eventId
+          eId <- atomically $ stateTVar v $ \i -> (i + 1, i + 1)
+          pure $ "conn_id=" <> tshow cId <> " event_id=" <> tshow eId
+        withLog eInfo' ack = do
           ts <- showTags
-          logDebug $ T.unwords [label, "ack:", ts, eInfo, status]
+          logDebug $ T.unwords [label, "ack:", ts, eInfo']
           ack
-          logDebug $ T.unwords [label, "ack=success:", ts, eInfo, status]
+          logDebug $ T.unwords [label, "ack=success:", ts, eInfo']
         showTags = do
           ts <- maybe (pure []) readTVarIO tags
           pure $ case ts of
