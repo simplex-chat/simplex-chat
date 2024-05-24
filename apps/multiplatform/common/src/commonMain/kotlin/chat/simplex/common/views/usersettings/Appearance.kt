@@ -165,7 +165,7 @@ object AppearanceScope {
 
       @Composable
       fun OwnBackgroundItem(type: WallpaperType?) {
-        val overrides = remember(type, baseTheme, CurrentColors.value.wallpaper) {
+        val overrides = remember(type, baseTheme, CurrentColors.collectAsState().value.wallpaper) {
           currentColors(WallpaperType.Image("", null, null))
         }
         val appWallpaper = overrides.wallpaper
@@ -257,7 +257,11 @@ object AppearanceScope {
         if (currentUser?.uiThemes?.preferredMode(!currentTheme.colors.isLight) == null) null else currentUser.userId to currentUser.uiThemes
       )
     }
-    val perUserTheme = remember { mutableStateOf(chatModel.currentUser.value?.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) ?: ThemeModeOverride()) }
+    val perUserTheme = remember(CurrentColors.collectAsState().value.base, chatModel.currentUser.value) {
+      mutableStateOf(
+        chatModel.currentUser.value?.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) ?: ThemeModeOverride()
+      )
+    }
 
     fun updateThemeUserDestination() {
       var (userId, themes) = themeUserDestination.value ?: return
@@ -418,7 +422,7 @@ object AppearanceScope {
       AppBarTitle(stringResource(MR.strings.customize_theme_title))
       val wallpaperImage = MaterialTheme.wallpaper.type.image
       val wallpaperType = MaterialTheme.wallpaper.type
-      val baseTheme = CurrentColors.value.base
+      val baseTheme = CurrentColors.collectAsState().value.base
 
       val editColor = { name: ThemeColor ->
         editColor(
