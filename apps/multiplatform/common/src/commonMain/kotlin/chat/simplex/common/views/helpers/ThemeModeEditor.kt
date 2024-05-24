@@ -226,7 +226,7 @@ fun ModalData.ChatWallpaperEditor(
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
     val currentTheme by remember(themeModeOverride.value, CurrentColors.collectAsState().value) {
       mutableStateOf(
-        ThemeManager.currentColors(null, themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
+        ThemeManager.currentColors(null, if (themeModeOverride.value == ThemeModeOverride()) null else themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
       )
     }
 
@@ -321,7 +321,7 @@ fun ModalData.ChatWallpaperEditor(
       ThemeManager.currentColors(type, if (type?.sameType(themeModeOverride.value.type) == true) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     }
 
-    AppearanceScope.WallpaperPresetSelector(
+    WallpaperPresetSelector(
       selectedBackground = currentTheme.wallpaper.type,
       activeBackgroundColor = currentTheme.wallpaper.background,
       activeTintColor = currentTheme.wallpaper.tint,
