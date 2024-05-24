@@ -580,8 +580,8 @@ val DarkColorPaletteApp = AppColors(
   primaryVariant2 = Color(0xFF18262E),
   sentMessage = Color(0xFF18262E),
   sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0x20B1B0B5),
-  receivedQuote = Color(0x20B1B0B5), //LALAL
+  receivedMessage = Color(0xff262627),
+  receivedQuote = Color(0xff373739),
 )
 
 val LightColorPalette = lightColors(
@@ -602,8 +602,8 @@ val LightColorPaletteApp = AppColors(
   primaryVariant2 = Color(0xFFE9F7FF),
   sentMessage = Color(0xFFE9F7FF),
   sentQuote = Color(0xFFD6F0FF),
-  receivedMessage = Color(0x20B1B0B5),
-  receivedQuote = Color(0x20B1B0B5),
+  receivedMessage = Color(0xfff5f5f6),
+  receivedQuote = Color(0xffececee),
 )
 
 val SimplexColorPalette = darkColors(
@@ -625,31 +625,31 @@ val SimplexColorPaletteApp = AppColors(
   primaryVariant2 = Color(0xFF172941),
   sentMessage = Color(0xFF172941),
   sentQuote = Color(0xFF1C3A57),
-  receivedMessage = Color(0x20B1B0B5),
-  receivedQuote = Color(0x20B1B0B5),
+  receivedMessage = Color(0xff25283a),
+  receivedQuote = Color(0xff36394a),
 )
 
 val BlackColorPalette = darkColors(
-  primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = SimplexBlue,
+  primary = Color(0xff0077ff),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = Color(0xff0077ff),
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
   //  background = Color.Black,
-  surface = Color(0xFF222222),
+  surface = Color(0xff171716),
   //  background = Color(0xFF121212),
   //  surface = Color(0xFF121212),
   error = Color.Red,
-  onBackground = Color(0xFFFFFBFA),
-  onSurface = Color(0xFFFFFBFA),
+  onBackground = Color(0xff000000),
+  onSurface = Color(0xff000000),
   //  onError: Color = Color.Black,
 )
 val BlackColorPaletteApp = AppColors(
-  title = SimplexBlue,
-  primaryVariant2 = Color(0xFF18262E),
+  title = Color(0xff0077ff),
+  primaryVariant2 = Color(0xff243747),
   sentMessage = Color(0xFF18262E),
   sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0x20B1B0B5),
-  receivedQuote = Color(0x20B1B0B5),
+  receivedMessage = Color(0xff161617),
+  receivedQuote = Color(0xff29292b),
 )
 
 var systemInDarkThemeCurrently: Boolean = isInNightMode()
