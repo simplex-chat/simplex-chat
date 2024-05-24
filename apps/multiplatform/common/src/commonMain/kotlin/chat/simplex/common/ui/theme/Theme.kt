@@ -512,7 +512,7 @@ data class ThemeModeOverride (
       ThemeModeOverride(
         mode = mode,
         colors = ThemeOverrides(base = base).withFilledColors(base, null, null, null, null, null),
-        wallpaper = ThemeWallpaper()
+        wallpaper = ThemeWallpaper(preset = PresetWallpaper.SCHOOL.filename)
       )
   }
 }
