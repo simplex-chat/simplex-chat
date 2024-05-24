@@ -610,7 +610,7 @@ fun ChatLayout(
           BoxWithConstraints(Modifier
             .fillMaxHeight()
             .background(MaterialTheme.colors.background)
-            .then(if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null)
+            .then(if (wallpaperImage != null)
               Modifier.drawBehind { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
             else
               Modifier)

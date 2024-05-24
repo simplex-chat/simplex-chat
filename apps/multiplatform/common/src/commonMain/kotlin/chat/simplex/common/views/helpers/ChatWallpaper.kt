@@ -254,6 +254,7 @@ sealed class WallpaperType {
           null
         }
       }
+      res?.prepareToDraw()
       cachedImages[filename] = res ?: return@lazy null
       res
     }
@@ -317,6 +318,7 @@ sealed class WallpaperType {
 }
 
 fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, background: Color, tint: Color) = clipRect {
+  val quality = FilterQuality.High
   fun repeat(imageScale: Float) {
     val scale = imageScale * density
     for (h in 0..(size.height / image.height / scale).roundToInt()) {
@@ -325,7 +327,8 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, b
           image,
           dstOffset = IntOffset(x = (w * image.width * scale).roundToInt(), y = (h * image.height * scale).roundToInt()),
           dstSize = IntSize((image.width * scale).roundToInt(), (image.height * scale).roundToInt()),
-          colorFilter = ColorFilter.tint(tint, BlendMode.SrcIn)
+          colorFilter = ColorFilter.tint(tint, BlendMode.SrcIn),
+          filterQuality = quality
         )
       }
     }
@@ -340,30 +343,30 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, b
         val scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
         val scaledWidth = (image.width * scale.scaleX).roundToInt()
         val scaledHeight = (image.height * scale.scaleY).roundToInt()
-        drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
+        drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
         if (scaleType == WallpaperScaleType.FIT) {
           if (scaledWidth < size.width) {
             // has black lines at left and right sides
             var x = (size.width - scaledWidth) / 2
             while (x > 0) {
-              drawImage(image, dstOffset = IntOffset(x = (x - scaledWidth).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
+              drawImage(image, dstOffset = IntOffset(x = (x - scaledWidth).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
               x -= scaledWidth
             }
             x = size.width - (size.width - scaledWidth) / 2
             while (x < size.width) {
-              drawImage(image, dstOffset = IntOffset(x = x.roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
+              drawImage(image, dstOffset = IntOffset(x = x.roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
               x += scaledWidth
             }
           } else {
             // has black lines at top and bottom sides
             var y = (size.height - scaledHeight) / 2
             while (y > 0) {
-              drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = (y - scaledHeight).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
+              drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = (y - scaledHeight).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
               y -= scaledHeight
             }
             y = size.height - (size.height - scaledHeight) / 2
             while (y < size.height) {
-              drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = y.roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
+              drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = y.roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
               y += scaledHeight
             }
           }
