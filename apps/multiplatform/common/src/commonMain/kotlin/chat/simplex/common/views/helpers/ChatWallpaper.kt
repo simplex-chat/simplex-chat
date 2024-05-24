@@ -20,7 +20,7 @@ import java.io.File
 import kotlin.math.*
 
 @Serializable
-enum class PredefinedBackgroundImage(
+enum class PresetWallpaper(
   val res: ImageResource,
   val filename: String,
   val text: StringResource,
@@ -29,7 +29,7 @@ enum class PredefinedBackgroundImage(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cats") CATS(MR.images.background_cats, "cats", MR.strings.background_cats, 0.63f,
+  @SerialName("cats") CATS(MR.images.wallpaper_cats, "cats", MR.strings.wallpaper_cats, 0.63f,
     mapOf(DefaultTheme.LIGHT to "#ffF8F6EA".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff000000".colorFromReadableHex()),
 //    mapOf(DefaultTheme.LIGHT to "#ffF8F6EA".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(), DefaultTheme.DARK to "#ff4b3b0e".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff4b3b0e".colorFromReadableHex(), DefaultTheme.BLACK to "#ff4b3b0e".colorFromReadableHex()),
@@ -60,7 +60,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("flowers") FLOWERS(MR.images.background_flowers, "flowers", MR.strings.background_flowers, 0.53f,
+  @SerialName("flowers") FLOWERS(MR.images.wallpaper_flowers, "flowers", MR.strings.wallpaper_flowers, 0.53f,
     mapOf(DefaultTheme.LIGHT to "#ffE2FFE4".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff000000".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(), DefaultTheme.DARK to "#ff31560D".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff31570D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()),
     mapOf(
@@ -90,7 +90,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("hearts") HEARTS(MR.images.background_hearts, "hearts", MR.strings.background_hearts, 0.59f,
+  @SerialName("hearts") HEARTS(MR.images.wallpaper_hearts, "hearts", MR.strings.wallpaper_hearts, 0.59f,
     mapOf(DefaultTheme.LIGHT to "#ffFDECEC".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff000000".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(), DefaultTheme.DARK to "#ff3C0F0F".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff381221".colorFromReadableHex(), DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()),
     mapOf(
@@ -120,7 +120,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("kids") KIDS(MR.images.background_kids, "kids", MR.strings.background_kids, 0.53f,
+  @SerialName("kids") KIDS(MR.images.wallpaper_kids, "kids", MR.strings.wallpaper_kids, 0.53f,
     mapOf(DefaultTheme.LIGHT to "#ffdbfdfb".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff000000".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(), DefaultTheme.DARK to "#ff16404B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff143047".colorFromReadableHex(), DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()),
     mapOf(
@@ -150,7 +150,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("school") SCHOOL(MR.images.background_school, "school",  MR.strings.background_school, 0.53f,
+  @SerialName("school") SCHOOL(MR.images.wallpaper_school, "school",  MR.strings.wallpaper_school, 0.53f,
   mapOf(DefaultTheme.LIGHT to "#ffE7F5FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff000000".colorFromReadableHex()),
   mapOf(DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(), DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff0E2B4D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()),
     mapOf(
@@ -180,7 +180,7 @@ enum class PredefinedBackgroundImage(
       ),
     )
   ),
-  @SerialName("travel") TRAVEL(MR.images.background_travel, "travel", MR.strings.background_travel, 0.68f,
+  @SerialName("travel") TRAVEL(MR.images.wallpaper_travel, "travel", MR.strings.wallpaper_travel, 0.68f,
     mapOf(DefaultTheme.LIGHT to "#fff9eeff".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff000000".colorFromReadableHex()),
     mapOf(DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(), DefaultTheme.DARK to "#ff311E48".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff34225E".colorFromReadableHex(), DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()),
     mapOf(
@@ -211,47 +211,46 @@ enum class PredefinedBackgroundImage(
     )
   );
 
-  fun toType(base: DefaultTheme, scale: Float? = null): BackgroundImageType =
-    BackgroundImageType.Repeated(
+  fun toType(base: DefaultTheme, scale: Float? = null): WallpaperType =
+    WallpaperType.Preset(
       filename,
       scale ?: appPrefs.themeOverrides.get().firstOrNull { it.wallpaper != null && it.wallpaper.preset == filename && it.base == base }?.wallpaper?.scale ?: 1f
     )
 
   companion object {
-    fun from(filename: String): PredefinedBackgroundImage? =
+    fun from(filename: String): PresetWallpaper? =
       entries.firstOrNull { it.filename == filename }
   }
 }
 
 @Serializable
-enum class BackgroundImageScaleType(val contentScale: ContentScale, val text: StringResource) {
-  @SerialName("fill") FILL(ContentScale.Crop, MR.strings.background_image_scale_fill),
-  @SerialName("fit") FIT(ContentScale.Fit, MR.strings.background_image_scale_fit),
-  @SerialName("repeat") REPEAT(ContentScale.Fit, MR.strings.background_image_scale_repeat),
+enum class WallpaperScaleType(val contentScale: ContentScale, val text: StringResource) {
+  @SerialName("fill") FILL(ContentScale.Crop, MR.strings.wallpaper_scale_fill),
+  @SerialName("fit") FIT(ContentScale.Fit, MR.strings.wallpaper_scale_fit),
+  @SerialName("repeat") REPEAT(ContentScale.Fit, MR.strings.wallpaper_scale_repeat),
 }
 
-@Serializable
-sealed class BackgroundImageType {
+sealed class WallpaperType {
   abstract val scale: Float?
 
   val image by lazy {
     val filename = when (this) {
-      is Repeated -> filename
-      is Static -> filename
+      is Preset -> filename
+      is Image -> filename
       else -> return@lazy null
     }
     if (filename == "") return@lazy null
     if (cachedImages[filename] != null) {
       cachedImages[filename]
     } else {
-      val res = if (this is Repeated) {
-        (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).res.toComposeImageBitmap()!!
+      val res = if (this is Preset) {
+        (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).res.toComposeImageBitmap()!!
       } else {
         try {
           // In case of unintentional image deletion don't crash the app
-          File(getBackgroundImageFilePath(filename)).inputStream().use { loadImageBitmap(it) }
+          File(getWallpaperFilePath(filename)).inputStream().use { loadImageBitmap(it) }
         } catch (e: Exception) {
-          Log.e(TAG, "Error while loading background image: ${e.stackTraceToString()}")
+          Log.e(TAG, "Error while loading wallpaper file: ${e.stackTraceToString()}")
           null
         }
       }
@@ -260,41 +259,41 @@ sealed class BackgroundImageType {
     }
   }
 
-  fun sameType(other: BackgroundImageType?): Boolean =
-    if (this is Repeated && other is Repeated) this.filename == other.filename
+  fun sameType(other: WallpaperType?): Boolean =
+    if (this is Preset && other is Preset) this.filename == other.filename
     else this.javaClass == other?.javaClass
 
-  fun samePreset(other: PredefinedBackgroundImage?): Boolean = this is Repeated && filename == other?.filename
+  fun samePreset(other: PresetWallpaper?): Boolean = this is Preset && filename == other?.filename
 
-  @Serializable @SerialName("repeated") data class Repeated(
+  data class Preset(
     val filename: String,
     override val scale: Float?,
-  ): BackgroundImageType() {
-    val predefinedImageScale = PredefinedBackgroundImage.from(filename)?.scale ?: 1f
+  ): WallpaperType() {
+    val predefinedImageScale = PresetWallpaper.from(filename)?.scale ?: 1f
   }
 
-  @Serializable @SerialName("static") data class Static(
+  data class Image(
     val filename: String,
     override val scale: Float?,
-    val scaleType: BackgroundImageScaleType?,
-  ): BackgroundImageType()
+    val scaleType: WallpaperScaleType?,
+  ): WallpaperType()
 
-  @Serializable @SerialName("empty") object Empty: BackgroundImageType() {
+  object Empty: WallpaperType() {
     override val scale: Float?
       get() = null
   }
 
   fun defaultBackgroundColor(theme: DefaultTheme, materialBackground: Color): Color =
-    if (this is Repeated) {
-      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).background[theme]!!
+    if (this is Preset) {
+      (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).background[theme]!!
     } else {
       materialBackground
     }
 
   fun defaultTintColor(theme: DefaultTheme): Color =
-    if (this is Repeated) {
-      (PredefinedBackgroundImage.from(filename) ?: PredefinedBackgroundImage.CATS).tint[theme]!!
-    } else if (this is Static && scaleType == BackgroundImageScaleType.REPEAT) {
+    if (this is Preset) {
+      (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).tint[theme]!!
+    } else if (this is Image && scaleType == WallpaperScaleType.REPEAT) {
       Color.Transparent
     } else {
       Color.Transparent
@@ -303,13 +302,13 @@ sealed class BackgroundImageType {
   companion object {
     var cachedImages: MutableMap<String, ImageBitmap> = mutableMapOf()
 
-    fun from(wallpaper: ThemeWallpaper?): BackgroundImageType? {
+    fun from(wallpaper: ThemeWallpaper?): WallpaperType? {
       return if (wallpaper == null) {
         null
       } else if (wallpaper.preset != null) {
-        Repeated(wallpaper.preset, wallpaper.scale)
+        Preset(wallpaper.preset, wallpaper.scale)
       } else if (wallpaper.imageFile != null) {
-        Static(wallpaper.imageFile, wallpaper.scale, wallpaper.scaleType)
+        Image(wallpaper.imageFile, wallpaper.scale, wallpaper.scaleType)
       } else {
         Empty
       }
@@ -317,7 +316,7 @@ sealed class BackgroundImageType {
   }
 }
 
-fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: BackgroundImageType, background: Color, tint: Color) = clipRect {
+fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, background: Color, tint: Color) = clipRect {
   fun repeat(imageScale: Float) {
     val scale = imageScale * density
     for (h in 0..(size.height / image.height / scale).roundToInt()) {
@@ -334,15 +333,15 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: BackgroundImageT
 
   drawRect(background)
   when (imageType) {
-    is BackgroundImageType.Repeated -> repeat((imageType.scale ?: 1f) * imageType.predefinedImageScale)
-    is BackgroundImageType.Static -> when (val scaleType = imageType.scaleType ?: BackgroundImageScaleType.FILL) {
-      BackgroundImageScaleType.REPEAT -> repeat(imageType.scale ?: 1f)
-      BackgroundImageScaleType.FILL, BackgroundImageScaleType.FIT -> {
+    is WallpaperType.Preset -> repeat((imageType.scale ?: 1f) * imageType.predefinedImageScale)
+    is WallpaperType.Image -> when (val scaleType = imageType.scaleType ?: WallpaperScaleType.FILL) {
+      WallpaperScaleType.REPEAT -> repeat(imageType.scale ?: 1f)
+      WallpaperScaleType.FILL, WallpaperScaleType.FIT -> {
         val scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
         val scaledWidth = (image.width * scale.scaleX).roundToInt()
         val scaledHeight = (image.height * scale.scaleY).roundToInt()
         drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight))
-        if (scaleType == BackgroundImageScaleType.FIT) {
+        if (scaleType == WallpaperScaleType.FIT) {
           if (scaledWidth < size.width) {
             // has black lines at left and right sides
             var x = (size.width - scaledWidth) / 2
@@ -372,6 +371,6 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: BackgroundImageT
         drawRect(tint)
       }
     }
-    is BackgroundImageType.Empty -> {}
+    is WallpaperType.Empty -> {}
   }
 }

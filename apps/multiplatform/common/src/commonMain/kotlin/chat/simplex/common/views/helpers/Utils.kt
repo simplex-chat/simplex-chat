@@ -281,23 +281,23 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
   }
 }
 
-fun saveBackgroundImage(uri: URI): String? {
-  val destFileName = generateNewFileName("background", "jpg", File(getBackgroundImageFilePath("")))
-  val destFile = File(getBackgroundImageFilePath(destFileName))
+fun saveWallpaperFile(uri: URI): String? {
+  val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
+  val destFile = File(getWallpaperFilePath(destFileName))
   try {
     val inputStream = uri.inputStream()
     Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
   } catch (e: Exception) {
-    Log.e(TAG, "Error saving background image: ${e.stackTraceToString()}")
+    Log.e(TAG, "Error saving wallpaper file: ${e.stackTraceToString()}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
     return null
   }
   return destFile.name
 }
 
-fun saveBackgroundImage(image: ImageBitmap): String {
-  val destFileName = generateNewFileName("background", "jpg", File(getBackgroundImageFilePath("")))
-  val destFile = File(getBackgroundImageFilePath(destFileName))
+fun saveWallpaperFile(image: ImageBitmap): String {
+  val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
+  val destFile = File(getWallpaperFilePath(destFileName))
   val dataResized = resizeImageToDataSize(image, false, maxDataSize = 5_000_000)
   val output = FileOutputStream(destFile)
   dataResized.use {
@@ -306,11 +306,11 @@ fun saveBackgroundImage(image: ImageBitmap): String {
   return destFile.name
 }
 
-fun removeBackgroundImage(fileName: String? = null) {
-  File(getBackgroundImageFilePath("_")).parentFile.listFiles()?.forEach {
+fun removeWallpaperFile(fileName: String? = null) {
+  File(getWallpaperFilePath("_")).parentFile.listFiles()?.forEach {
     if (it.name == fileName) it.delete()
   }
-  BackgroundImageType.cachedImages.remove(fileName)
+  WallpaperType.cachedImages.remove(fileName)
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {

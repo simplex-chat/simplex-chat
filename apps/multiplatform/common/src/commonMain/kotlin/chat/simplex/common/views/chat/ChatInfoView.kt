@@ -719,7 +719,7 @@ fun ModalData.WallpaperEditorModal(chat: Chat) {
 
 suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {
   val unchangedThemes: ThemeModeOverrides = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
-  val backgroundFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
+  val wallpaperFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
   var changedThemes: ThemeModeOverrides? = unchangedThemes
   val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
   changedThemes = when (applyToMode) {
@@ -728,8 +728,8 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
     DefaultThemeMode.DARK -> changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
   }
   changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
-  val backgroundFilesToDelete = backgroundFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
-  backgroundFilesToDelete.forEach(::removeBackgroundImage)
+  val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
+  wallpaperFilesToDelete.forEach(::removeWallpaperFile)
 
   if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
     // Remove previous images only after saving

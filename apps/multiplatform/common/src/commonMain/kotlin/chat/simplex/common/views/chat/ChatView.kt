@@ -603,15 +603,15 @@ fun ChatLayout(
           drawerContentColor = LocalContentColor.current,
           backgroundColor = Color.Unspecified
         ) { contentPadding ->
-          val backgroundImage = MaterialTheme.wallpaper.type.image
-          val backgroundImageType = MaterialTheme.wallpaper.type
-          val backgroundColor = MaterialTheme.wallpaper.background ?: backgroundImageType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
-          val tintColor = MaterialTheme.wallpaper.tint ?: backgroundImageType.defaultTintColor(CurrentColors.value.base)
+          val wallpaperImage = MaterialTheme.wallpaper.type.image
+          val wallpaperType = MaterialTheme.wallpaper.type
+          val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
+          val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
           BoxWithConstraints(Modifier
             .fillMaxHeight()
             .background(MaterialTheme.colors.background)
-            .then(if (backgroundImage != null && backgroundImageType != null && backgroundColor != null && tintColor != null)
-              Modifier.drawBehind { chatViewBackground(backgroundImage, backgroundImageType, backgroundColor, tintColor) }
+            .then(if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null)
+              Modifier.drawBehind { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
             else
               Modifier)
             .padding(contentPadding)

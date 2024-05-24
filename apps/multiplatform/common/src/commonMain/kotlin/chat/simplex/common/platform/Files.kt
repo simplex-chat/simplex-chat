@@ -82,7 +82,7 @@ fun getAppFilePath(fileName: String): String {
   }
 }
 
-fun getBackgroundImageFilePath(fileName: String): String {
+fun getWallpaperFilePath(fileName: String): String {
   val rh = chatModel.currentRemoteHost.value
   val s = File.separator
   val path = if (rh == null) {
