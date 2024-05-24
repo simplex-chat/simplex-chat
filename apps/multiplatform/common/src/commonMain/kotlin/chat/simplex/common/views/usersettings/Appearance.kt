@@ -400,7 +400,7 @@ object AppearanceScope {
         }
       } else {
         ModalManager.start.showModalCloseable { close ->
-          UserWallpaperEditorModal(chatModel.remoteHostId(), user.first, onChooseType, close)
+          UserWallpaperEditorModal(chatModel.remoteHostId(), user.first, close)
         }
       }
     }) {
@@ -581,10 +581,10 @@ object AppearanceScope {
   }
 
   @Composable
-  fun ModalData.UserWallpaperEditorModal(remoteHostId: Long?, userId: Long, onChooseType: (WallpaperType?) -> Unit, close: () -> Unit) {
+  fun ModalData.UserWallpaperEditorModal(remoteHostId: Long?, userId: Long, close: () -> Unit) {
     val themes = remember(chatModel.currentUser.value) { chatModel.currentUser.value?.uiThemes ?: ThemeModeOverrides() }
     val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
-    val initialTheme = remember(CurrentColors.value.base) {
+    val initialTheme = remember(CurrentColors.collectAsState().value.base) {
       val preferred = themes.preferredMode(!CurrentColors.value.colors.isLight)
       globalThemeUsed.value = preferred == null
       preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())

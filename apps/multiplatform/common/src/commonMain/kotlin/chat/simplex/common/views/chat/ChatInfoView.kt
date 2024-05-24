@@ -344,7 +344,7 @@ fun ChatInfoLayout(
             val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
             val c = chat.value
             if (c != null) {
-              WallpaperEditorModal(c)
+              ChatWallpaperEditorModal(c)
             }
           }
         }
@@ -696,14 +696,14 @@ fun ShareAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ModalData.WallpaperEditorModal(chat: Chat) {
-  val themes = remember(CurrentColors.value.base) {
+fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
+  val themes = remember(CurrentColors.collectAsState().value.base) {
     (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes
       ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes
       ?: ThemeModeOverrides()
   }
   val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
-  val initialTheme = remember(CurrentColors.value.base) {
+  val initialTheme = remember(CurrentColors.collectAsState().value.base) {
     val preferred = themes.preferredMode(!CurrentColors.value.colors.isLight)
     globalThemeUsed.value = preferred == null
     preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())

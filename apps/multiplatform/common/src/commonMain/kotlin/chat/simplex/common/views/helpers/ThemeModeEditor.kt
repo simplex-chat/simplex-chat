@@ -394,7 +394,7 @@ fun ModalData.ChatWallpaperEditor(
     }
 
     // Applies updated global theme if current one tracks global theme
-    KeyChangeEffect(CurrentColors.value) {
+    KeyChangeEffect(CurrentColors.collectAsState()) {
       if (globalThemeUsed.value) {
         themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
         globalThemeUsed.value = true
