@@ -628,7 +628,7 @@ val BlackColorPaletteApp = AppColors(
   primaryVariant2 = Color(0xff243747),
   sentMessage = Color(0xFF18262E),
   sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0xff161617),
+  receivedMessage = Color(0xff1b1b1b),
   receivedQuote = Color(0xff29292b),
 )
 

@@ -54,7 +54,7 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to ThemeColors(
         sentMessage = "#ff41371b",
         sentQuote = "#ff654f1c",
-        receivedMessage = "#ff181715",
+        receivedMessage = "#ff1f1e1b",
         receivedQuote = "#ff2f2d27",
       ),
     )
@@ -84,7 +84,7 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to ThemeColors(
         sentMessage = "#ff184739",
         sentQuote = "#ff1F6F4B",
-        receivedMessage = "#ff161814",
+        receivedMessage = "#ff1c1f1a",
         receivedQuote = "#ff282b25",
       ),
     )
@@ -114,7 +114,7 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to ThemeColors(
         sentMessage = "#ff491A28",
         sentQuote = "#ff761F29",
-        receivedMessage = "#ff191616",
+        receivedMessage = "#ff1f1b1b",
         receivedQuote = "#ff2e2626",
       ),
     )
@@ -144,7 +144,7 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to ThemeColors(
         sentMessage = "#ff1a4745",
         sentQuote = "#ff1d6b69",
-        receivedMessage = "#ff151616",
+        receivedMessage = "#ff1e1f1f",
         receivedQuote = "#ff262b29",
       ),
     )
@@ -174,7 +174,7 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to ThemeColors(
         sentMessage = "#ff1A3C5D",
         sentQuote = "#ff235b80",
-        receivedMessage = "#ff14151a",
+        receivedMessage = "#ff1d1e22",
         receivedQuote = "#ff292b2f",
       ),
     )
@@ -204,7 +204,7 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to ThemeColors(
         sentMessage = "#ff3C255D",
         sentQuote = "#ff623485",
-        receivedMessage = "#ff1b191b",
+        receivedMessage = "#ff231f23",
         receivedQuote = "#ff2c2931",
       ),
     )
