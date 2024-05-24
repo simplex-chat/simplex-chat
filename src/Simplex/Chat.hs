@@ -3980,12 +3980,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
             (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody
-            let t = toCMEventTag event
-                t' = tshow (acmEventTag t)
-            atomically $ writeTVar tags $ [t']
-            logDebug $ "contact msg=" <> t' <> " " <> eInfo
+            let tag = toCMEventTag event
+            atomically $ writeTVar tags $ [tshow tag]
+            logDebug $ "contact msg=" <> tshow tag <> " " <> eInfo
             let ct'' = ct' {activeConn = Just conn''} :: Contact
-            assertDirectAllowed user MDRcv ct'' t
+            assertDirectAllowed user MDRcv ct'' tag
             case event of
               XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
               XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct'' sharedMsgId fileDescr
@@ -4010,7 +4009,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               BFileChunk sharedMsgId chunk -> bFileChunk ct'' sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
             let Contact {chatSettings = ChatSettings {sendRcpts}} = ct''
-            pure $ fromMaybe (sendRcptsContacts user) sendRcpts && hasDeliveryReceipt t
+            pure $ fromMaybe (sendRcptsContacts user) sendRcpts && hasDeliveryReceipt tag
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
@@ -4408,10 +4407,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           brokerTs = metaBrokerTs msgMeta
           processEvent :: TVar [Text] -> Text -> MsgEncodingI e => ChatMessage e -> CM ()
           processEvent tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
-            let t = toCMEventTag chatMsgEvent
-                t' = tshow (acmEventTag t)
-            atomically $ modifyTVar' tags (t' :)
-            logDebug $ "group msg=" <> t' <> " " <> eInfo
+            let tag = toCMEventTag chatMsgEvent
+            atomically $ modifyTVar' tags (tshow tag :)
+            logDebug $ "group msg=" <> tshow tag <> " " <> eInfo
             (m', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta msgBody chatMsg
             case event of
               XMsgNew mc -> memberCanSend m' $ newGroupContentMessage gInfo m' mc msg brokerTs False
@@ -4442,7 +4440,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
               XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
               BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
-              _ -> messageError $ "unsupported message: " <> T.pack (show event)
+              _ -> messageError $ "unsupported message: " <> tshow event
           checkSendRcpt :: [AChatMessage] -> CM Bool
           checkSendRcpt aMsgs = do
             currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo

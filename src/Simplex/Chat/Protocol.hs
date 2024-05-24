@@ -661,11 +661,6 @@ instance FromField MsgContent where
 
 data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
 
-deriving instance Show ACMEventTag
-
-acmEventTag :: forall e. MsgEncodingI e => CMEventTag e -> ACMEventTag
-acmEventTag t = ACMEventTag (encoding @e) t
-
 data CMEventTag (e :: MsgEncoding) where
   XMsgNew_ :: CMEventTag 'Json
   XMsgFileDescr_ :: CMEventTag 'Json
