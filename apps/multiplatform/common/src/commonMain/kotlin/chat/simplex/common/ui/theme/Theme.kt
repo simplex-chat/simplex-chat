@@ -231,7 +231,6 @@ data class ThemeWallpaper (
     )
   }
 
-  // LALAL
   fun withFilledWallpaperBase64(): ThemeWallpaper {
     val aw = toAppWallpaper()
     val type = aw.type
@@ -296,7 +295,7 @@ data class ThemesFile(
 @Serializable
 data class ThemeOverrides (
   val themeId: String = UUID.randomUUID().toString(),
-  val base: DefaultTheme,// = DefaultTheme.LIGHT,
+  val base: DefaultTheme,
   val colors: ThemeColors = ThemeColors(),
   val wallpaper: ThemeWallpaper? = null,
 ) {
