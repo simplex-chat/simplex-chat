@@ -749,7 +749,6 @@ object AppearanceScope {
     previewBackgroundColor: Color? = MaterialTheme.wallpaper.background,
     previewTintColor: Color? = MaterialTheme.wallpaper.tint,
     currentColors: () -> ThemeManager.ActiveTheme,
-    header: (@Composable () -> Unit)? = null,
     onColorChange: (Color?) -> Unit,
   ) {
     ColumnWithScrollBar(
@@ -759,14 +758,11 @@ object AppearanceScope {
       AppBarTitle(name.text)
 
       val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
-      // LALAL REMOVE HEADER AND ELSE
-      if (supportedLiveChange && header == null) {
+      if (supportedLiveChange) {
         SimpleXThemeOverride(currentColors()) {
           ChatThemePreview(theme, wallpaperImage, wallpaperType, previewBackgroundColor, previewTintColor)
         }
         SectionSpacer()
-      } else {
-        header?.invoke()
       }
 
       var currentColor by remember { mutableStateOf(initialColor) }

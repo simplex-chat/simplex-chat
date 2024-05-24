@@ -18,13 +18,11 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
-import chat.simplex.common.views.chatlist.ChatListView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File

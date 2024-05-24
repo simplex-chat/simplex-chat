@@ -592,7 +592,7 @@ fun KeyChangeEffect(
 }
 
 /**
- * Runs the [block] only after initial value of the [key1] or [key2] changes, not after initial launch
+ * Runs the [block] only after initial value of the [key1], or [key2], or [key3] changes, not after initial launch
  * */
 @Composable
 @NonRestartableComposable
