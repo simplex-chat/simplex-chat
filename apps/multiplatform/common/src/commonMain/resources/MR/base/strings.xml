@@ -1580,7 +1580,7 @@
   <string name="color_background">Background</string>
   <string name="color_surface">Menus &amp; alerts</string>
   <string name="color_title">Title</string>
-  <string name="color_primary_variant2">Additional accent2</string>
+  <string name="color_primary_variant2">Additional accent 2</string>
   <string name="color_sent_message">Sent message</string>
   <string name="color_sent_quote">Sent reply</string>
   <string name="color_received_message">Received message</string>

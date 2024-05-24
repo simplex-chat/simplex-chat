@@ -706,6 +706,11 @@ object AppearanceScope {
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.primaryVariant)
       }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT2) }) {
+        val title = generalGetString(MR.strings.color_primary_variant2)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.primaryVariant2)
+      }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY) }) {
         val title = generalGetString(MR.strings.color_secondary)
         Text(title)
@@ -730,11 +735,6 @@ object AppearanceScope {
         val title = generalGetString(MR.strings.color_title)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
-      }
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT2) }) {
-        val title = generalGetString(MR.strings.color_primary_variant2)
-        Text(title)
-        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.primaryVariant2)
       }
     }
   }
