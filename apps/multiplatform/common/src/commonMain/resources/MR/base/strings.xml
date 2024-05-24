@@ -1594,8 +1594,8 @@
   <string name="wallpaper_kids">Kids</string>
   <string name="wallpaper_school">School</string>
   <string name="wallpaper_travel">Travel</string>
-  <string name="wallpaper_preview_hello_alice">Hello, Alice</string>
-  <string name="wallpaper_preview_hello_bob">Hello, Bob</string>
+  <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
+  <string name="wallpaper_preview_hello_bob">Good morning!</string>
   <string name="wallpaper_scale">Scale</string>
   <string name="wallpaper_scale_repeat">Repeat</string>
   <string name="wallpaper_scale_fill">Fill</string>
