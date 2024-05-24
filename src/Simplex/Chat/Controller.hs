@@ -13,6 +13,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-implicit-lift #-}
 
 module Simplex.Chat.Controller where
 
@@ -205,6 +206,7 @@ data ChatController = ChatController
     chatStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     random :: TVar ChaChaDRG,
+    eventSeq :: TVar Int,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,

@@ -838,7 +838,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            _ -> Just (CIDeleted @CTLocal deletedTs)
+            _ -> Just (CIDeleted @'CTLocal deletedTs)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
@@ -1458,7 +1458,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            _ -> Just (CIDeleted @CTDirect deletedTs)
+            _ -> Just (CIDeleted @'CTDirect deletedTs)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
@@ -1520,7 +1520,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
             DBCINotDeleted -> Nothing
             DBCIBlocked -> Just (CIBlocked deletedTs)
             DBCIBlockedByAdmin -> Just (CIBlockedByAdmin deletedTs)
-            _ -> Just (maybe (CIDeleted @CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
+            _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt
@@ -1919,7 +1919,7 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
   let itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
-        _ -> (Nothing, Just $ CIDeleted @CTGroup (Just deletedTs))
+        _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
   insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db

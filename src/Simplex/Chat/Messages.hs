@@ -14,6 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+{-# OPTIONS_GHC -fno-warn-operator-whitespace #-}
 
 module Simplex.Chat.Messages where
 
@@ -455,10 +456,10 @@ deriving instance Show ACIReaction
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
-  ChatTypeQuotable CTDirect = ()
-  ChatTypeQuotable CTGroup = ()
+  ChatTypeQuotable 'CTDirect = ()
+  ChatTypeQuotable 'CTGroup = ()
   ChatTypeQuotable a =
-    (Int ~ Bool, TypeError (Type.Text "ChatType " :<>: ShowType a :<>: Type.Text " cannot be quoted"))
+    (Int ~ Bool, TypeError ('Type.Text "ChatType " ':<>: 'ShowType a ':<>: 'Type.Text " cannot be quoted"))
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect

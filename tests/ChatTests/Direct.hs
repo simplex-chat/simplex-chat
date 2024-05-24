@@ -2310,12 +2310,12 @@ testAbortSwitchContact tmp = do
     alice <## "bob: you started changing address"
     -- repeat switch is prohibited
     alice ##> "/switch bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, switchConnectionAsync: already switching"
     -- stop switch
     alice #$> ("/abort switch bob", id, "switch aborted")
     -- repeat switch stop is prohibited
     alice ##> "/abort switch bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "alice started changing address for you"
       -- alice changes address again
@@ -2356,12 +2356,12 @@ testAbortSwitchGroupMember tmp = do
     alice <## "#team: you started changing address for bob"
     -- repeat switch is prohibited
     alice ##> "/switch #team bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, switchConnectionAsync: already switching"
     -- stop switch
     alice #$> ("/abort switch #team bob", id, "switch aborted")
     -- repeat switch stop is prohibited
     alice ##> "/abort switch #team bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice started changing address for you"
@@ -2485,7 +2485,7 @@ setupDesynchronizedRatchet tmp alice = do
   withTestChat tmp "bob_old" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob ##> "/sync alice"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "@bob 1"
     bob <## "alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync alice to synchronize"
@@ -2495,7 +2495,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob ##> "/tail @alice 1"
     bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
     bob ##> "@alice 1"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
   where
     copyDb from to = do
