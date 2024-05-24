@@ -3266,7 +3266,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
     bob ##> "/sync #team alice"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
@@ -3294,7 +3294,7 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited" -- silence?
+      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
