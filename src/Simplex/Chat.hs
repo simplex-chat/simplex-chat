@@ -3334,163 +3334,27 @@ subscribeUserConnections vr onlyNeeded user = do
   -- ce <- asks $ subscriptionEvents . config
   conns <-
     if onlyNeeded
-      then do
-        (conns, entities) <- withStore' (`getConnectionsToSubscribe` vr)
-        -- let (cts, ucs, ms, sfts, rfts, pcs) = foldl' addEntity (M.empty, M.empty, M.empty, M.empty, M.empty, M.empty) entities
-        pure conns
+      then withStore' getConnectionsToSubscribe
       else do
         withStore' unsetConnectionToSubscribe
-        (ctConns, cts) <- getContactConns
-        (ucConns, ucs) <- getUserContactLinkConns
-        (gs, mConns, ms) <- getGroupMemberConns
-        (sftConns, sfts) <- getSndFileTransferConns
-        (rftConns, rfts) <- getRcvFileTransferConns
-        (pcConns, pcs) <- getPendingContactConns
+        ctConns <- getContactConns
+        ucConns <- getUserContactLinkConns
+        mConns <- getGroupMemberConns
+        sftConns <- getSndFileTransferConns
+        rftConns <- getRcvFileTransferConns
+        pcConns <- getPendingContactConns
         pure $ concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
   -- subscribe using batched commands
   void $ withAgent (`Agent.subscribeConnections` conns)
-  -- -- send connection events to view
-  -- contactSubsToView rs cts ce
-  -- -- TODO possibly, we could either disable these events or replace with less noisy for API
-  -- contactLinkSubsToView rs ucs
-  -- groupSubsToView rs gs ms ce
-  -- sndFileSubsToView rs sfts
-  -- rcvFileSubsToView rs rfts
-  -- pendingConnSubsToView rs pcs
   where
-    -- addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
-    --   RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
-    --   RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
-    --   RcvGroupMsgConnection c _g m -> let ms' = addConn c m ms in (cts, ucs, ms', sfts, rfts, pcs)
-    --   SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
-    --   RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
-    --   UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
-    -- addConn :: Connection -> a -> Map ConnId a -> Map ConnId a
-    -- addConn = M.insert . aConnId
-    -- toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} =
-    --   PendingContactConnection
-    --     { pccConnId = connId,
-    --       pccAgentConnId = agentConnId,
-    --       pccConnStatus = connStatus,
-    --       viaContactUri = False,
-    --       viaUserContactLink,
-    --       groupLinkId,
-    --       customUserProfileId,
-    --       connReqInv = Nothing,
-    --       localAlias,
-    --       createdAt,
-    --       updatedAt = createdAt
-    --     }
-    getContactConns :: CM ([ConnId], Map ConnId Contact)
-    getContactConns = do
-      cts <- withStore_ (`getUserContacts` vr)
-      let cts' = mapMaybe (\ct -> (,ct) <$> contactConnId ct) $ filter contactActive cts
-      pure (map fst cts', M.fromList cts')
-    getUserContactLinkConns :: CM ([ConnId], Map ConnId UserContact)
-    getUserContactLinkConns = do
-      (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
-      let connIds = map aConnId cs
-      pure (connIds, M.fromList $ zip connIds ucs)
-    getGroupMemberConns :: CM ([Group], [ConnId], Map ConnId GroupMember)
-    getGroupMemberConns = do
-      gs <- withStore_ (`getUserGroups` vr)
-      let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs
-      pure (gs, map fst mPairs, M.fromList mPairs)
-    getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
-    getSndFileTransferConns = do
-      sfts <- withStore_ getLiveSndFileTransfers
-      let connIds = map sndFileTransferConnId sfts
-      pure (connIds, M.fromList $ zip connIds sfts)
-    getRcvFileTransferConns :: CM ([ConnId], Map ConnId RcvFileTransfer)
-    getRcvFileTransferConns = do
-      rfts <- withStore_ getLiveRcvFileTransfers
-      let rftPairs = mapMaybe (\ft -> (,ft) <$> liveRcvFileTransferConnId ft) rfts
-      pure (map fst rftPairs, M.fromList rftPairs)
-    getPendingContactConns :: CM ([ConnId], Map ConnId PendingContactConnection)
-    getPendingContactConns = do
-      pcs <- withStore_ getPendingContactConnections
-      let connIds = map aConnId' pcs
-      pure (connIds, M.fromList $ zip connIds pcs)
-    -- contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> CM ()
-    -- contactSubsToView rs cts ce = do
-    --   chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
-    --   ifM (asks $ coreApi . config) (notifyAPI statuses) notifyCLI
-    --   where
-    --     notifyCLI = do
-    --       let cRs = resultsFor rs cts
-    --           cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
-    --       toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
-    --       when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
-    --     notifyAPI = toView . CRNetworkStatuses (Just user) . map (uncurry ConnNetworkStatus)
-    --     statuses = M.foldrWithKey' addStatus [] cts
-    --       where
-    --         addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
-    --         addStatus _ Contact {activeConn = Nothing} nss = nss
-    --         addStatus connId Contact {activeConn = Just Connection {agentConnId}} nss =
-    --           let ns = (agentConnId, netStatus $ resultErr connId rs)
-    --            in ns : nss
-    --         netStatus :: Maybe ChatError -> NetworkStatus
-    --         netStatus = maybe NSConnected $ NSError . errorNetworkStatus
-    --         errorNetworkStatus :: ChatError -> String
-    --         errorNetworkStatus = \case
-    --           ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
-    --           ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
-    --           e -> show e
-    -- -- TODO possibly below could be replaced with less noisy events for API
-    -- contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> CM ()
-    -- contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
-    -- groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> CM ()
-    -- groupSubsToView rs gs ms ce = do
-    --   mapM_ groupSub $
-    --     sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
-    --   toView . CRMemberSubSummary user $ map (uncurry MemberSubStatus) mRs
-    --   where
-    --     mRs = resultsFor rs ms
-    --     groupSub :: Group -> CM ()
-    --     groupSub (Group g@GroupInfo {membership, groupId = gId} members) = do
-    --       when ce $ mapM_ (toView . uncurry (CRMemberSubError user g)) mErrors
-    --       toView groupEvent
-    --       where
-    --         mErrors :: [(GroupMember, ChatError)]
-    --         mErrors =
-    --           sortOn (\(GroupMember {localDisplayName = n}, _) -> n)
-    --             . filterErrors
-    --             $ filter (\(GroupMember {groupId}, _) -> groupId == gId) mRs
-    --         groupEvent :: ChatResponse
-    --         groupEvent
-    --           | memberStatus membership == GSMemInvited = CRGroupInvitation user g
-    --           | all (\GroupMember {activeConn} -> isNothing activeConn) members =
-    --               if memberActive membership
-    --                 then CRGroupEmpty user g
-    --                 else CRGroupRemoved user g
-    --           | otherwise = CRGroupSubscribed user g
-    -- sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> CM ()
-    -- sndFileSubsToView rs sfts = do
-    --   let sftRs = resultsFor rs sfts
-    --   forM_ sftRs $ \(ft@SndFileTransfer {fileId, fileStatus}, err_) -> do
-    --     forM_ err_ $ toView . CRSndFileSubError user ft
-    --     void . forkIO $ do
-    --       threadDelay 1000000
-    --       when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withChatLock "subscribe sendFileChunk" $
-    --         sendFileChunk user ft
-    -- rcvFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId RcvFileTransfer -> CM ()
-    -- rcvFileSubsToView rs = mapM_ (toView . uncurry (CRRcvFileSubError user)) . filterErrors . resultsFor rs
-    -- pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> CM ()
-    -- pendingConnSubsToView rs = toView . CRPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
+    getContactConns = mapMaybe (\ct -> if contactActive ct then contactConnId ct else Nothing) <$> withStore_ (`getUserContacts` vr)
+    getUserContactLinkConns = map (aConnId . fst) <$> withStore_ (`getUserContactLinks` vr)
+    getGroupMemberConns = concatMap (\(Group _ ms) -> mapMaybe memberConnId (filter (not . memberRemoved) ms)) <$> withStore_ (`getUserGroups` vr)
+    getSndFileTransferConns = map sndFileTransferConnId <$> withStore_ getLiveSndFileTransfers
+    getRcvFileTransferConns = mapMaybe (\ft -> liveRcvFileTransferConnId ft) <$> withStore_ getLiveRcvFileTransfers
+    getPendingContactConns = map aConnId' <$> withStore_ getPendingContactConnections
     withStore_ :: (DB.Connection -> User -> IO [a]) -> CM [a]
     withStore_ a = withStore' (`a` user) `catchChatError` \e -> toView (CRChatError (Just user) e) $> []
-    filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
-    filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
-    resultsFor :: Map ConnId (Either AgentErrorType ()) -> Map ConnId a -> [(a, Maybe ChatError)]
-    resultsFor rs = M.foldrWithKey' addResult []
-      where
-        addResult :: ConnId -> a -> [(a, Maybe ChatError)] -> [(a, Maybe ChatError)]
-        addResult connId = (:) . (,resultErr connId rs)
-    resultErr :: ConnId -> Map ConnId (Either AgentErrorType ()) -> Maybe ChatError
-    resultErr connId rs = case M.lookup connId rs of
-      Just (Left e) -> Just $ ChatErrorAgent e Nothing
-      Just _ -> Nothing
-      _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 cleanupManager :: CM ()
 cleanupManager = do
