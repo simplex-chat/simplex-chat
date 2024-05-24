@@ -35,7 +35,9 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (..))
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Protocol (BrokerErrorType (..))
 import Simplex.Messaging.Util (tshow, (<$?>))
 
 data DirectoryEvent
@@ -80,7 +82,10 @@ crDirectoryEvent = \case
       err = ADC SDRUser DCUnknownCommand
   CRMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
   CRChatCmdError {chatError} -> Just $ DELogChatResponse $ "chat cmd error: " <> tshow chatError
-  CRChatError {chatError} -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
+  CRChatError {chatError} -> case chatError of
+    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
+    ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
+    _ -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
   CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
 
