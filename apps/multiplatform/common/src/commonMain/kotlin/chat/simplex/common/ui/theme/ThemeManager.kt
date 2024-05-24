@@ -58,11 +58,11 @@ object ThemeManager {
     val defaultTheme = defaultActiveTheme(appSettingsTheme)
 
     val baseTheme = when (nonSystemThemeName) {
-      DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
-      DefaultTheme.DARK.themeName -> ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
-      DefaultTheme.SIMPLEX.themeName -> ActiveTheme(DefaultTheme.SIMPLEX.themeName, DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
-      DefaultTheme.BLACK.themeName -> ActiveTheme(DefaultTheme.BLACK.themeName, DefaultTheme.BLACK, BlackColorPalette, BlackColorPaletteApp)
-      else -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
+      DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp, AppWallpaper(type = PredefinedBackgroundImage.SCHOOL.toType(DefaultTheme.LIGHT)))
+      DefaultTheme.DARK.themeName -> ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp, AppWallpaper(type = PredefinedBackgroundImage.SCHOOL.toType(DefaultTheme.DARK)))
+      DefaultTheme.SIMPLEX.themeName -> ActiveTheme(DefaultTheme.SIMPLEX.themeName, DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper(type = PredefinedBackgroundImage.SCHOOL.toType(DefaultTheme.SIMPLEX)))
+      DefaultTheme.BLACK.themeName -> ActiveTheme(DefaultTheme.BLACK.themeName, DefaultTheme.BLACK, BlackColorPalette, BlackColorPaletteApp, AppWallpaper(type = PredefinedBackgroundImage.SCHOOL.toType(DefaultTheme.BLACK)))
+      else -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp, AppWallpaper(type = PredefinedBackgroundImage.SCHOOL.toType(DefaultTheme.LIGHT)))
     }
 
     val perUserTheme = if (baseTheme.colors.isLight) perUserTheme?.light else perUserTheme?.dark
@@ -98,47 +98,6 @@ object ThemeManager {
       colors = ThemeColors.from(current.colors, current.appColors),
       wallpaper = if (wType !is BackgroundImageType.Empty) ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64() else null
     )
-  }
-
-  // colors, default theme enum, localized name of theme
-  fun allThemes(): List<Triple<Colors, String, String>> {
-    val allThemes = ArrayList<Triple<Colors, String, String>>()
-    allThemes.add(
-      Triple(
-        if (systemInDarkThemeCurrently) systemDarkThemeColors().first else LightColorPalette,
-        DefaultTheme.SYSTEM_THEME_NAME,
-        generalGetString(MR.strings.theme_system)
-      )
-    )
-    allThemes.add(
-      Triple(
-        LightColorPalette,
-        DefaultTheme.LIGHT.themeName,
-        generalGetString(MR.strings.theme_light)
-      )
-    )
-    allThemes.add(
-      Triple(
-        DarkColorPalette,
-        DefaultTheme.DARK.themeName,
-        generalGetString(MR.strings.theme_dark)
-      )
-    )
-    allThemes.add(
-      Triple(
-        SimplexColorPalette,
-        DefaultTheme.SIMPLEX.themeName,
-        generalGetString(MR.strings.theme_simplex)
-      )
-    )
-    allThemes.add(
-      Triple(
-        BlackColorPalette,
-        DefaultTheme.BLACK.themeName,
-        generalGetString(MR.strings.theme_black)
-      )
-    )
-    return allThemes
   }
 
   fun applyTheme(theme: String) {

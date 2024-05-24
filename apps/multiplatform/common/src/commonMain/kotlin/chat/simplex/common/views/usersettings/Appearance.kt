@@ -144,11 +144,11 @@ object AppearanceScope {
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
-            .clickable { onChooseType(background?.toType()) },
+            .clickable { onChooseType(background?.toType(baseTheme)) },
           contentAlignment = Alignment.Center
         ) {
           if (background != null) {
-            val type = background.toType(if (checked) selectedBackground?.scale else null)
+            val type = background.toType(baseTheme, if (checked) selectedBackground?.scale else null)
             SimpleXThemeOverride(remember(background, selectedBackground, CurrentColors.collectAsState().value) { currentColors(type) }) {
               ChatThemePreview(
                 baseTheme,

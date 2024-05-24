@@ -211,10 +211,10 @@ enum class PredefinedBackgroundImage(
     )
   );
 
-  fun toType(scale: Float? = null): BackgroundImageType =
+  fun toType(base: DefaultTheme, scale: Float? = null): BackgroundImageType =
     BackgroundImageType.Repeated(
       filename,
-      scale ?: appPrefs.themeOverrides.get().firstOrNull { it.wallpaper != null && it.wallpaper.preset == filename && it.base == CurrentColors.value.base }?.wallpaper?.scale ?: 1f
+      scale ?: appPrefs.themeOverrides.get().firstOrNull { it.wallpaper != null && it.wallpaper.preset == filename && it.base == base }?.wallpaper?.scale ?: 1f
     )
 
   companion object {
@@ -301,9 +301,6 @@ sealed class BackgroundImageType {
     }
 
   companion object {
-    val default: BackgroundImageType
-      get() = PredefinedBackgroundImage.CATS.toType()
-
     var cachedImages: MutableMap<String, ImageBitmap> = mutableMapOf()
 
     fun from(wallpaper: ThemeWallpaper?): BackgroundImageType? {
