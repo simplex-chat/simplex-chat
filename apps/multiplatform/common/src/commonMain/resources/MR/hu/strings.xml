@@ -6,7 +6,7 @@
     <string name="group_info_section_title_num_members">%1$s TAG</string>
     <string name="chat_item_ttl_month">1 hónap</string>
     <string name="chat_item_ttl_week">1 hét</string>
-    <string name="v5_3_new_interface_languages">6 új felületi nyelv</string>
+    <string name="v5_3_new_interface_languages">6 új kezelőfelületi nyelv</string>
     <string name="send_disappearing_message_5_minutes">5 perc</string>
     <string name="send_disappearing_message_1_minute">1 perc</string>
     <string name="learn_more_about_address">A SimpleX azonosítóról</string>
@@ -763,7 +763,7 @@
     <string name="only_stored_on_members_devices">(csak a csoporttagok tárolják)</string>
     <string name="moderate_verb">Moderálás</string>
     <string name="chat_preferences_on">be</string>
-    <string name="v5_1_japanese_portuguese_interface">Japán és Portugál kezelőfelület</string>
+    <string name="v5_1_japanese_portuguese_interface">Japán és portugál kezelőfelület</string>
     <string name="message_deletion_prohibited_in_chat">Az üzenetek végleges törlése le van tiltva ebben a csoportban.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion kiszolgálók nem lesznek használva.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[A(z) <b>%s</b> eszközzel megszakadt a kapcsolat]]></string>
@@ -1097,7 +1097,7 @@
     <string name="simplex_link_invitation">SimpleX egyszer használatos meghívó</string>
     <string name="your_calls">Hívások</string>
     <string name="icon_descr_sent_msg_status_send_failed">nem sikerült elküldeni</string>
-    <string name="theme_colors_section_title">TÉMA SZÍNEK</string>
+    <string name="theme_colors_section_title">KEZELŐFELÜLET SZÍNEI</string>
     <string name="network_options_revert">Visszaállít</string>
     <string name="restore_database_alert_desc">Előző jelszó megadása az adatbázis biztonsági mentésének visszaállítása után. Ez a művelet nem vonható vissza.</string>
     <string name="color_secondary">Másodlagos</string>
@@ -1812,7 +1812,7 @@
     <string name="chat_theme_apply_to_dark_mode">Sötét mód</string>
     <string name="dark_mode_colors">Sötét mód színei</string>
     <string name="wallpaper_scale_fit">Illesztés</string>
-    <string name="wallpaper_preview_hello_alice">Jó napot!</string>
+    <string name="wallpaper_preview_hello_alice">Kellemes délutánt!</string>
     <string name="wallpaper_preview_hello_bob">Jó reggelt!</string>
     <string name="wallpaper_hearts">Szívek</string>
     <string name="wallpaper_advanced_settings">Haladó beállítások</string>
@@ -1821,4 +1821,23 @@
     <string name="settings_section_title_chat_theme">Csevegés témája</string>
     <string name="wallpaper_scale_fill">Kitöltés</string>
     <string name="wallpaper_flowers">Virágok</string>
+    <string name="settings_section_title_user_theme">Profiltéma</string>
+    <string name="chat_list_always_visible">Csevegőlista megjelenítése új ablakban</string>
+    <string name="wallpaper_kids">Gyerekek</string>
+    <string name="color_mode_light">Világos</string>
+    <string name="chat_theme_apply_to_light_mode">Világos mód</string>
+    <string name="color_received_quote">Kapott válasz</string>
+    <string name="theme_remove_image">Kép eltávolítása</string>
+    <string name="wallpaper_scale_repeat">Mozaik</string>
+    <string name="reset_single_color">Szín visszaállítása</string>
+    <string name="chat_theme_reset_to_global_theme">Globális téma visszaállítása</string>
+    <string name="wallpaper_scale">Méretezés</string>
+    <string name="wallpaper_school">Iskola</string>
+    <string name="color_sent_quote">Elküldött válasz</string>
+    <string name="chat_theme_set_default_theme">Alapértelmezett téma beállítása</string>
+    <string name="color_mode_system">Rendszer</string>
+    <string name="wallpaper_travel">Utazás</string>
+    <string name="color_wallpaper_tint">Háttérkép kiemelés</string>
+    <string name="color_wallpaper_background">Háttérkép háttérszíne</string>
+    <string name="color_primary_variant2">További kiemelés 2</string>
 </resources>
