@@ -486,6 +486,8 @@ fun deleteChatDatabaseFilesAndState() {
   tmpDir.deleteRecursively()
   getMigrationTempFilesDirectory().deleteRecursively()
   tmpDir.mkdir()
+  wallpapersDir.deleteRecursively()
+  wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null

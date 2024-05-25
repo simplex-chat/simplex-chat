@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -337,6 +338,16 @@ fun ChatInfoLayout(
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncContactConnection)
         }
+
+        WallpaperButton {
+          ModalManager.end.showModal {
+            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val c = chat.value
+            if (c != null) {
+              ChatWallpaperEditorModal(c)
+            }
+          }
+        }
         //      } else if (developerTools) {
         //        SynchronizeConnectionButtonForce(syncContactConnectionForce)
         //      }
@@ -643,6 +654,15 @@ private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, on
 }
 
 @Composable
+fun WallpaperButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_image),
+    stringResource(MR.strings.settings_section_title_chat_theme),
+    click = onClick
+  )
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_settings_backup_restore),
@@ -673,6 +693,51 @@ fun ShareAddressButton(onClick: () -> Unit) {
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
   )
+}
+
+@Composable
+fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
+  val themes = remember(CurrentColors.collectAsState().value.base) {
+    (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes
+      ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes
+      ?: ThemeModeOverrides()
+  }
+  val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
+  val initialTheme = remember(CurrentColors.collectAsState().value.base) {
+    val preferred = themes.preferredMode(!CurrentColors.value.colors.isLight)
+    globalThemeUsed.value = preferred == null
+    preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+  }
+  ChatWallpaperEditor(
+    initialTheme,
+    applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+    globalThemeUsed = globalThemeUsed,
+    save = { applyToMode, newTheme ->
+      save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
+    })
+}
+
+suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {
+  val unchangedThemes: ThemeModeOverrides = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
+  val wallpaperFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
+  var changedThemes: ThemeModeOverrides? = unchangedThemes
+  val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
+  changedThemes = when (applyToMode) {
+    null -> changedThemes?.copy(light = changed?.copy(mode = DefaultThemeMode.LIGHT), dark = changed?.copy(mode = DefaultThemeMode.DARK))
+    DefaultThemeMode.LIGHT -> changedThemes?.copy(light = changed?.copy(mode = applyToMode))
+    DefaultThemeMode.DARK -> changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
+  }
+  changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
+  val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
+  wallpaperFilesToDelete.forEach(::removeWallpaperFile)
+
+  if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
+    if (chat.chatInfo is ChatInfo.Direct) {
+      chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+    } else if (chat.chatInfo is ChatInfo.Group) {
+      chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+    }
+  }
 }
 
 private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {

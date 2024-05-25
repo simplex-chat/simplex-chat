@@ -831,7 +831,6 @@
     <string name="network_option_seconds_label">秒</string>
     <string name="network_options_revert">恢复</string>
     <string name="reset_color">重置颜色</string>
-    <string name="save_color">保存颜色</string>
     <string name="v4_5_reduced_battery_usage">减少电池使用量</string>
     <string name="v4_5_private_filenames_descr">为了保护时区，图像/语音文件使用 UTC。</string>
     <string name="use_chat">使用聊天</string>

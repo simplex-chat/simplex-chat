@@ -607,7 +607,6 @@
     <string name="secret_text">secreto</string>
     <string name="open_simplex_chat_to_accept_call">Abrir SimpleX Chat para aceptar llamada</string>
     <string name="network_options_reset_to_defaults">Restablecer valores por defecto</string>
-    <string name="save_color">Guardar color</string>
     <string name="icon_descr_server_status_pending">Pendiente</string>
     <string name="periodic_notifications">Notificaciones periódicas</string>
     <string name="store_passphrase_securely">Guarda la contraseña de forma segura, NO podrás cambiarla si la pierdes.</string>

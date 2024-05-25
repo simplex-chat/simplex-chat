@@ -873,7 +873,6 @@
     <string name="v4_6_chinese_spanish_interface_descr">Kiitos käyttäjille – osallistu Weblaten kautta!</string>
     <string name="profile_password">Profiilin salasana</string>
     <string name="reset_color">Oletusvärit</string>
-    <string name="save_color">Tallenna väri</string>
     <string name="prohibit_sending_voice_messages">Estä ääniviestien lähettäminen.</string>
     <string name="v4_4_disappearing_messages_desc">Lähetetyt viestit poistetaan asetetun ajan kuluttua.</string>
     <string name="add_contact_or_create_group">Aloita uusi keskustelu</string>

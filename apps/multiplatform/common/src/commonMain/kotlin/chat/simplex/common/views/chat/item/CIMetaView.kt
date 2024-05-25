@@ -12,7 +12,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
@@ -86,7 +85,7 @@ private fun CIMetaText(
     Spacer(Modifier.width(4.dp))
   }
   if (showViaProxy && meta.sentViaProxy == true) {
-    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = CurrentColors.value.colors.secondary)
+    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
@@ -115,6 +114,7 @@ fun reserveSpaceForMeta(
   meta: CIMeta,
   chatTTL: Int?,
   encrypted: Boolean?,
+  secondaryColor: Color,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
   showViaProxy: Boolean = false
@@ -132,7 +132,7 @@ fun reserveSpaceForMeta(
   if (showViaProxy && meta.sentViaProxy == true) {
     res += iconSpace
   }
-  if (showStatus && (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing)) {
+  if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
     res += iconSpace
   }
   if (encrypted != null) {

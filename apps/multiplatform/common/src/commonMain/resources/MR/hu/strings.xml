@@ -1196,7 +1196,6 @@
     <string name="scan_code">Kód beolvasása</string>
     <string name="open_port_in_firewall_title">Port megnyitása a tűzfalon</string>
     <string name="callstate_starting">indítás…</string>
-    <string name="save_color">Szín mentése</string>
     <string name="settings_shutdown">Leállítás</string>
     <string name="icon_descr_sent_msg_status_sent">elküldve</string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKS proxy használata</string>

@@ -450,7 +450,6 @@
     <string name="change_member_role_question">Змінити роль у групі\?</string>
     <string name="error_removing_member">Помилка при вилученні учасника</string>
     <string name="group_main_profile_sent">Ваш профіль чату буде відправлений учасникам групи</string>
-    <string name="save_color">Зберегти колір</string>
     <string name="full_deletion">Видалення для всіх</string>
     <string name="voice_messages">Голосові повідомлення</string>
     <string name="voice_prohibited_in_this_chat">Голосові повідомлення заборонені в цьому чаті.</string>
