@@ -214,7 +214,7 @@ enum class PresetWallpaper(
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#fffcf6ff",
-        sentQuote = "#fffbf4ff",
+        sentQuote = "#fff2e0fc",
         receivedMessage = "#ffF6F4F7",
         receivedQuote = "#ffede9ee",
       ),
