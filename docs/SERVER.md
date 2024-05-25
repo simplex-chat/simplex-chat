@@ -85,86 +85,6 @@ Manual installation requires some preliminary actions:
 
    And execute `sudo systemctl daemon-reload`.
 
-## Tor installation
-
-smp-server can also be deployed to serve from [tor](https://www.torproject.org) network. Run the following commands as `root` user.
-
-1. Install tor:
-
-   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
-
-   - Configure offical Tor PPA repository:
-
-     ```sh
-     CODENAME="$(lsb_release -c | awk '{print $2}')"
-     echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
-     deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main" > /etc/apt/sources.list.d/tor.list
-     ```
-
-   - Import repository key:
-
-     ```sh
-     curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
-     ```
-
-   - Update repository index:
-
-     ```sh
-     apt update
-     ```
-
-   - Install `tor` package:
-
-     ```sh
-     apt install -y tor deb.torproject.org-keyring
-     ```
-
-2. Configure tor:
-
-   - File configuration:
-  
-     Open tor configuration with your editor of choice (`nano`,`vim`,`emacs`,etc.):
-
-     ```sh
-     vim /etc/tor/torrc
-     ```
-
-     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
-
-     ```sh
-     # Enable log (otherwise, tor doesn't seemd to deploy onion address)
-     Log notice file /var/log/tor/notices.log
-     # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside smp-server and onion address will be displayed in clients, this is totally fine)
-     SOCKSPort 0
-     HiddenServiceNonAnonymousMode 1
-     HiddenServiceSingleHopMode 1
-     # smp-server hidden service host directory and port mappings
-     HiddenServiceDir /var/lib/tor/simplex-smp/
-     HiddenServicePort 5223 localhost:5223
-     ```
-
-   - Create directories:
-
-     ```sh
-     mkdir /var/lib/tor/simplex-smp/ && chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ && chmod 700 /var/lib/tor/simplex-smp/
-     ```
-
-3. Start tor:
-
-   Enable `systemd` service and start tor. Offical `tor` is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.
-
-   ```sh
-   systemctl enable tor && systemctl start tor && systemctl restart tor
-   ```
-
-4. Display onion host:
-
-   Execute the following command to display your onion host address:
-
-   ```sh
-   cat /var/lib/tor/simplex-smp/hostname
-   ```
-
 ## Configuration
 
 To see which options are available, execute `smp-server` without flags:
@@ -278,6 +198,328 @@ Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZ
 ```
 
 The server address above should be used in your client configuration and if you added server password it should only be shared with the other people when you want to allow them to use your server to receive the messages (all your contacts will be able to send messages, as it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server addresses.
+
+## Server security
+
+### Initialization
+
+Although it's convenient to initialize smp-server configuration directly on the server, operators **ARE ADVISED** to initialize smp-server fully offline to mitigate risks of exposing your smp CA private key to server providers.
+
+Follow the steps to quickly initialize the server offline:
+
+1. Install Docker on your system.
+
+2. Deploy [smp-server](https://github.com/simplex-chat/simplexmq#using-docker) locally.
+
+3. Destroy the container. All relevant configuration files and keys will be available at `$HOME/simplex/smp/config`.
+
+4. Move your `CA` private key (`ca.key`) to the safe place. For further explanation, see the next section: [Server security: Private keys](#private-keys).
+
+5. Copy all configuration files **except** the CA key to the server:
+
+   ```sh
+   rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
+   ```
+
+### Private keys
+
+Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators **ARE ADVISED** to move CA private key to a safe place. That could be:
+
+- [Tails](https://tails.net/) live usb drive with [persistent and encrypted storage](https://tails.net/doc/persistent_storage/create/index.en.html)
+- Offline Linux laptop
+- Bitwarden
+
+Follow the steps to secure your CA keys:
+
+1. Login to your server via SSH.
+
+2. Display the content of the CA key:
+
+   ```sh
+   cat /etc/opt/simplex/ca.key
+   ```
+
+3. Write/store the content of the CA key in a safe place.
+
+4. Delete the CA key from the server. **Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to [rotate the online certificate](#online-certificate-rotation)**:
+
+   ```sh
+   rm /etc/opt/simplex/ca.key
+   ```
+
+### Online certificate rotation
+
+Operators of smp servers **ARE ADVISED** to rotate online certificate regularly (every 3 months). In order to do this, follow the steps:
+
+1. Create relevant folders:
+
+   ```sh
+   mkdir -p $HOME/simplex/smp/config
+   ```
+
+1. Copy the configuration files from the server to the local machine (if not yet):
+
+   ```sh
+   rsync -hzasP <server_user>@<server_address>:/etc/opt/simplex/ $HOME/simplex/smp/config/
+   ```
+
+2. **Copy** your CA private key from a safe place to the local machine and name it `ca.key`.
+
+3. Download latest `smp-server` binary [from Github releases](https://github.com/simplex-chat/simplexmq/releases):
+
+   ```sh
+   curl -L 'https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64' -o smp-server
+   ```
+
+4. Put the `smp-server` binary to your `$PATH` and make it executable:
+
+   ```sh
+   sudo mv smp-server /usr/local/bin/ && chmod +x /usr/local/bin/smp-server
+   ```
+
+5. Export a variable to configure your path to smp-server configuration:
+
+   ```sh
+   export SMP_SERVER_CFG_PATH=$HOME/simplex/smp/config
+   ```
+
+6. Execute the following command:
+
+   ```sh
+   smp-server cert
+   ```
+
+   This command should print:
+
+   ```sh
+   Certificate request self-signature ok
+   subject=CN = <your domain or IP>
+   Generated new server credentials
+   ----------
+   You should store CA private key securely and delete it from the server.
+   If server TLS credential is compromised this key can be used to sign a new one, keeping the same server identity and established connections.
+   CA private key location:
+   $HOME/simplex/smp/config/ca.key
+   ----------
+   ```
+
+7. Remove the CA key from the config folder (make sure you have a backup!):
+
+   ```sh
+   rm $HOME/simplex/smp/config/ca.key
+   ```
+
+8. Upload new certificates to the server:
+
+   ```sh
+   rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
+   ```
+
+9. Connect to the server via SSH and restart the service:
+
+   ```sh
+   ssh <server_user>@<server_address> "systemctl restart smp-server"
+   ```
+
+10. Done!
+
+## Further configuration
+
+All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
+
+```ini
+[STORE_LOG]
+# The server uses STM memory for persistence,
+# that will be lost on restart (e.g., as with redis).
+# This option enables saving memory to append only log,
+# and restoring it when the server is started.
+# Log is compacted on start (deleted objects are removed).
+enable: on
+
+# Undelivered messages are optionally saved and restored when the server restarts,
+# they are preserved in the .bak file until the next restart.
+restore_messages: on
+expire_messages_days: 21
+
+# Log daily server statistics to CSV file
+log_stats: on
+
+[AUTH]
+# Set new_queues option to off to completely prohibit creating new messaging queues.
+# This can be useful when you want to decommission the server, but not all connections are switched yet.
+new_queues: on
+
+# Use create_password option to enable basic auth to create new messaging queues.
+# The password should be used as part of server address in client configuration:
+# smp://fingerprint:password@host1,host2
+# The password will not be shared with the connecting contacts, you must share it only
+# with the users who you want to allow creating messaging queues on your server.
+# create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
+
+[TRANSPORT]
+# host is only used to print server address on start
+host: <your server domain/ip>
+port: 5223
+log_tls_errors: off
+websockets: off
+# control_port: 5224
+
+[PROXY]
+# Network configuration for SMP proxy client.
+# `host_mode` can be 'public' (default) or 'onion'.
+# It defines prefferred hostname for destination servers with multiple hostnames.
+# host_mode: public
+# required_host_mode: off
+
+# The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
+#own_server_domains: <your domain suffixes>
+
+# SOCKS proxy port for forwarding messages to destination servers.
+# You may need a separate instance of SOCKS proxy for incoming single-hop requests.
+#socks_proxy: localhost:9050
+
+# `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
+# or 'always' to be used for all destination hosts (can be used if it is an .onion server).
+# socks_mode: onion
+
+# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# client_concurrency: 16
+
+[INACTIVE_CLIENTS]
+# TTL and interval to check inactive clients
+disconnect: off
+# ttl: 43200
+# check_interval: 3600
+```
+
+## Tor: installation and configuration
+
+### Installation for onion address
+
+smp-server can also be deployed to serve from [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
+
+1. Install tor:
+
+   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
+
+   - Configure offical Tor PPA repository:
+
+     ```sh
+     CODENAME="$(lsb_release -c | awk '{print $2}')"
+     echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+     deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main" > /etc/apt/sources.list.d/tor.list
+     ```
+
+   - Import repository key:
+
+     ```sh
+     curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
+     ```
+
+   - Update repository index:
+
+     ```sh
+     apt update
+     ```
+
+   - Install `tor` package:
+
+     ```sh
+     apt install -y tor deb.torproject.org-keyring
+     ```
+
+2. Configure tor:
+
+   - File configuration:
+  
+     Open tor configuration with your editor of choice (`nano`,`vim`,`emacs`,etc.):
+
+     ```sh
+     vim /etc/tor/torrc
+     ```
+
+     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
+
+     ```sh
+     # Enable log (otherwise, tor doesn't seemd to deploy onion address)
+     Log notice file /var/log/tor/notices.log
+     # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside smp-server and onion address will be displayed in clients, this is totally fine)
+     SOCKSPort 0
+     HiddenServiceNonAnonymousMode 1
+     HiddenServiceSingleHopMode 1
+     # smp-server hidden service host directory and port mappings
+     HiddenServiceDir /var/lib/tor/simplex-smp/
+     HiddenServicePort 5223 localhost:5223
+     ```
+
+   - Create directories:
+
+     ```sh
+     mkdir /var/lib/tor/simplex-smp/ && chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ && chmod 700 /var/lib/tor/simplex-smp/
+     ```
+
+3. Start tor:
+
+   Enable `systemd` service and start tor. Offical `tor` is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.
+
+   ```sh
+   systemctl enable --now tor && systemctl restart tor
+   ```
+
+4. Display onion host:
+
+   Execute the following command to display your onion host address:
+
+   ```sh
+   cat /var/lib/tor/simplex-smp/hostname
+   ```
+
+### SOCKS port for PROXY server directive
+
+smp-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp servers available exclusively through [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
+
+1. Install tor as described in the [previous section](#installation-for-onion-address).
+
+2. Execute the following command to creatae a new Tor daemon instance:
+
+   ```sh
+   tor-instance-create tor2
+   ```
+
+3. Open the `tor2` configuration and replace its content with the following lines:
+
+   ```sh
+   vim /etc/tor/instances/tor2/torrc
+   ```
+
+   ```sh
+   # Log tor to systemd daemon
+   Log notice syslog
+   # Listen to local 9050 port for socks proxy
+   SocksPort 9050
+   ```
+
+3. Enable service at startup and start the daemon:
+
+   ```sh
+   systemctl enable --now tor@tor2
+   ```
+
+   You can check `tor2` logs with the following command:
+
+   ```sh
+   journalctl -u tor@tor2
+   ```
+
+4. After [server initialization](#configuration), configure the `PROXY` section like so:
+
+   ```ini
+   ...
+   [PROXY]
+   socks_proxy: 127.0.0.1:9050
+   own_server_domains: <your domain suffixes if using `log_stats: on`>
+   ...
+   ```
 
 ## Documentation
 
