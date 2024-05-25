@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -46,6 +47,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -1681,7 +1683,7 @@ processChatCommand' vr = \case
           sndMsgs <- lift $ createSndMessages idsEvts
           let msgReqs_ :: NonEmpty (Either ChatError MsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
-            lift $ partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
+            partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
           lift . void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
@@ -2378,7 +2380,7 @@ processChatCommand' vr = \case
               Just changedCts -> do
                 let idsEvts = L.map ctSndEvent changedCts
                 msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
-                (errs, cts) <- lift $ partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+                (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
                 lift $ createContactsSndFeatureItems user' changedCts'
@@ -6471,21 +6473,21 @@ deliverMessage conn cmEventTag msgBody msgId = do
 
 deliverMessage' :: Connection -> MsgFlags -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage' conn msgFlags msgBody msgId =
-  lift (deliverMessages ((conn, msgFlags, msgBody, msgId) :| [])) >>= \case
+  deliverMessages ((conn, msgFlags, msgBody, msgId) :| []) >>= \case
     r :| [] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
 type MsgReq = (Connection, MsgFlags, MsgBody, MessageId)
 
-deliverMessages :: NonEmpty MsgReq -> CM' (NonEmpty (Either ChatError (Int64, PQEncryption)))
+deliverMessages :: NonEmpty MsgReq -> CM (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
-deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM' (NonEmpty (Either ChatError (Int64, PQEncryption)))
+deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM (NonEmpty (Either ChatError (Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
-  sent <- L.zipWith prepareBatch msgReqs' <$> withAgent' (`sendMessagesB` L.map toAgent msgReqs')
-  void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
-  withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
+  sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` L.map toAgent msgReqs')
+  lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
+  lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
     compressBodies =
       forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
@@ -6544,10 +6546,11 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
-      (toSend, pending) = foldr addMember ([], []) recipientMembers
+      (toSend, pending, _, dups) = foldr addMember ([], [], S.empty, 0 :: Int) recipientMembers
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
       msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
-  delivered <- maybe (pure []) (fmap L.toList . lift . deliverMessages) $ L.nonEmpty msgReqs
+  when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
+  delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
   stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
@@ -6560,10 +6563,16 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m (toSend, pending) = case memberSendAction chatMsgEvent members m of
-      Just (MSASend conn) -> ((m, conn) : toSend, pending)
-      Just MSAPending -> (toSend, m : pending)
-      Nothing -> (toSend, pending)
+    addMember m acc@(toSend, pending, !mIds, !dups) = case memberSendAction chatMsgEvent members m of
+      Just a
+        | mId `S.member` mIds -> (toSend, pending, mIds, dups + 1)
+        | otherwise -> case a of
+            MSASend conn -> ((m, conn) : toSend, pending, mIds', dups)
+            MSAPending -> (toSend, m : pending, mIds', dups)
+      Nothing -> acc
+      where
+        mId = groupMemberId' m
+        mIds' = S.insert mId mIds
     filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
     filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
 
