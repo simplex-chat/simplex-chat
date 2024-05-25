@@ -3331,28 +3331,21 @@ agentSubscriber = do
 subscribeUserConnections :: VersionRangeChat -> Bool -> User -> CM ()
 subscribeUserConnections vr onlyNeeded user = do
   -- get user connections
-  -- ce <- asks $ subscriptionEvents . config
   conns <-
     if onlyNeeded
       then withStore' getConnectionsToSubscribe
       else do
         withStore' unsetConnectionToSubscribe
-        ctConns <- getContactConns
-        ucConns <- getUserContactLinkConns
-        mConns <- getGroupMemberConns
-        sftConns <- getSndFileTransferConns
-        rftConns <- getRcvFileTransferConns
-        pcConns <- getPendingContactConns
+        ctConns <- mapMaybe (\ct -> if contactActive ct then contactConnId ct else Nothing) <$> withStore_ (`getUserContacts` vr)
+        ucConns <- map (aConnId . fst) <$> withStore_ (`getUserContactLinks` vr)
+        mConns <- concatMap (\(Group _ ms) -> mapMaybe memberConnId (filter (not . memberRemoved) ms)) <$> withStore_ (`getUserGroups` vr)
+        sftConns <- map sndFileTransferConnId <$> withStore_ getLiveSndFileTransfers
+        rftConns <- mapMaybe liveRcvFileTransferConnId <$> withStore_ getLiveRcvFileTransfers
+        pcConns <- map aConnId' <$> withStore_ getPendingContactConnections
         pure $ concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
   -- subscribe using batched commands
   void $ withAgent (`Agent.subscribeConnections` conns)
   where
-    getContactConns = mapMaybe (\ct -> if contactActive ct then contactConnId ct else Nothing) <$> withStore_ (`getUserContacts` vr)
-    getUserContactLinkConns = map (aConnId . fst) <$> withStore_ (`getUserContactLinks` vr)
-    getGroupMemberConns = concatMap (\(Group _ ms) -> mapMaybe memberConnId (filter (not . memberRemoved) ms)) <$> withStore_ (`getUserGroups` vr)
-    getSndFileTransferConns = map sndFileTransferConnId <$> withStore_ getLiveSndFileTransfers
-    getRcvFileTransferConns = mapMaybe (\ft -> liveRcvFileTransferConnId ft) <$> withStore_ getLiveRcvFileTransfers
-    getPendingContactConns = map aConnId' <$> withStore_ getPendingContactConnections
     withStore_ :: (DB.Connection -> User -> IO [a]) -> CM [a]
     withStore_ a = withStore' (`a` user) `catchChatError` \e -> toView (CRChatError (Just user) e) $> []
 
