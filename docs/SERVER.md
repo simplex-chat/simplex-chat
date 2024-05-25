@@ -5,6 +5,29 @@ revision: 31.07.2023
 
 | Updated 05.06.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
+### Table of Contents
+
+- [Hosting your own SMP server](#hosting-your-own-smp-server)
+  - [Overview](#overview)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+    - [Interactively](#interactively)
+    - [Via command line options](#via-command-line-options)
+  - [Further configuration](#further-configuration)
+  - [Server security](#server-security)
+    - [Initialization](#initialization)
+    - [Private keys](#private-keys)
+    - [Online certificate rotation](#online-certificate-rotation)
+  - [Tor: installation and configuration](#tor-installation-and-configuration)
+    - [Installation for onion address](#installation-for-onion-address)
+    - [SOCKS port for PROXY server directive](#socks-port-for-proxy-server-directive)
+  - [Documentation](#documentation)
+    - [SMP server address](#smp-server-address)
+    - [Systemd commands](#systemd-commands)
+    - [Monitoring](#monitoring)
+  - [Updating your SMP server](#updating-your-smp-server)
+  - [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
+
 # Hosting your own SMP Server
 
 ## Overview
@@ -199,6 +222,75 @@ Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZ
 
 The server address above should be used in your client configuration and if you added server password it should only be shared with the other people when you want to allow them to use your server to receive the messages (all your contacts will be able to send messages, as it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server addresses.
 
+## Further configuration
+
+All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
+
+```ini
+[STORE_LOG]
+# The server uses STM memory for persistence,
+# that will be lost on restart (e.g., as with redis).
+# This option enables saving memory to append only log,
+# and restoring it when the server is started.
+# Log is compacted on start (deleted objects are removed).
+enable: on
+
+# Undelivered messages are optionally saved and restored when the server restarts,
+# they are preserved in the .bak file until the next restart.
+restore_messages: on
+expire_messages_days: 21
+
+# Log daily server statistics to CSV file
+log_stats: on
+
+[AUTH]
+# Set new_queues option to off to completely prohibit creating new messaging queues.
+# This can be useful when you want to decommission the server, but not all connections are switched yet.
+new_queues: on
+
+# Use create_password option to enable basic auth to create new messaging queues.
+# The password should be used as part of server address in client configuration:
+# smp://fingerprint:password@host1,host2
+# The password will not be shared with the connecting contacts, you must share it only
+# with the users who you want to allow creating messaging queues on your server.
+# create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
+
+[TRANSPORT]
+# host is only used to print server address on start
+host: <your server domain/ip>
+port: 5223
+log_tls_errors: off
+websockets: off
+# control_port: 5224
+
+[PROXY]
+# Network configuration for SMP proxy client.
+# `host_mode` can be 'public' (default) or 'onion'.
+# It defines prefferred hostname for destination servers with multiple hostnames.
+# host_mode: public
+# required_host_mode: off
+
+# The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
+#own_server_domains: <your domain suffixes>
+
+# SOCKS proxy port for forwarding messages to destination servers.
+# You may need a separate instance of SOCKS proxy for incoming single-hop requests.
+#socks_proxy: localhost:9050
+
+# `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
+# or 'always' to be used for all destination hosts (can be used if it is an .onion server).
+# socks_mode: onion
+
+# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# client_concurrency: 16
+
+[INACTIVE_CLIENTS]
+# TTL and interval to check inactive clients
+disconnect: off
+# ttl: 43200
+# check_interval: 3600
+```
+
 ## Server security
 
 ### Initialization
@@ -322,75 +414,6 @@ Operators of smp servers **ARE ADVISED** to rotate online certificate regularly 
    ```
 
 10. Done!
-
-## Further configuration
-
-All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
-
-```ini
-[STORE_LOG]
-# The server uses STM memory for persistence,
-# that will be lost on restart (e.g., as with redis).
-# This option enables saving memory to append only log,
-# and restoring it when the server is started.
-# Log is compacted on start (deleted objects are removed).
-enable: on
-
-# Undelivered messages are optionally saved and restored when the server restarts,
-# they are preserved in the .bak file until the next restart.
-restore_messages: on
-expire_messages_days: 21
-
-# Log daily server statistics to CSV file
-log_stats: on
-
-[AUTH]
-# Set new_queues option to off to completely prohibit creating new messaging queues.
-# This can be useful when you want to decommission the server, but not all connections are switched yet.
-new_queues: on
-
-# Use create_password option to enable basic auth to create new messaging queues.
-# The password should be used as part of server address in client configuration:
-# smp://fingerprint:password@host1,host2
-# The password will not be shared with the connecting contacts, you must share it only
-# with the users who you want to allow creating messaging queues on your server.
-# create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
-
-[TRANSPORT]
-# host is only used to print server address on start
-host: <your server domain/ip>
-port: 5223
-log_tls_errors: off
-websockets: off
-# control_port: 5224
-
-[PROXY]
-# Network configuration for SMP proxy client.
-# `host_mode` can be 'public' (default) or 'onion'.
-# It defines prefferred hostname for destination servers with multiple hostnames.
-# host_mode: public
-# required_host_mode: off
-
-# The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
-#own_server_domains: <your domain suffixes>
-
-# SOCKS proxy port for forwarding messages to destination servers.
-# You may need a separate instance of SOCKS proxy for incoming single-hop requests.
-#socks_proxy: localhost:9050
-
-# `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
-# or 'always' to be used for all destination hosts (can be used if it is an .onion server).
-# socks_mode: onion
-
-# Limit number of threads a client can spawn to process proxy commands in parrallel.
-# client_concurrency: 16
-
-[INACTIVE_CLIENTS]
-# TTL and interval to check inactive clients
-disconnect: off
-# ttl: 43200
-# check_interval: 3600
-```
 
 ## Tor: installation and configuration
 
@@ -659,7 +682,7 @@ To import `csv` to `Grafana` one should:
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
-# Updating your SMP server
+## Updating your SMP server
 
 To update your smp-server to latest version, choose your installation method and follow the steps:
 
@@ -716,7 +739,7 @@ To update your smp-server to latest version, choose your installation method and
         docker image prune
         ```
 
-### Configuring the app to use the server
+## Configuring the app to use the server
 
 To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
 
