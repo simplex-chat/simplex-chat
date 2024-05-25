@@ -1803,4 +1803,22 @@
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
     <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe látható lesz az XFTP átjátszók számára:
 \n%1$s.</string>
+    <string name="theme_destination_all_profiles">Minden csevegési profil</string>
+    <string name="chat_theme_apply_to_all_modes">Minden színmód</string>
+    <string name="theme_black">Fekete</string>
+    <string name="wallpaper_cats">Cicák</string>
+    <string name="color_mode">Színmód</string>
+    <string name="color_mode_dark">Sötét</string>
+    <string name="chat_theme_apply_to_dark_mode">Sötét mód</string>
+    <string name="dark_mode_colors">Sötét mód színei</string>
+    <string name="wallpaper_scale_fit">Illesztés</string>
+    <string name="wallpaper_preview_hello_alice">Jó napot!</string>
+    <string name="wallpaper_preview_hello_bob">Jó reggelt!</string>
+    <string name="wallpaper_hearts">Szívek</string>
+    <string name="wallpaper_advanced_settings">Haladó beállítások</string>
+    <string name="chat_theme_apply_to_mode">Alkalmazás erre</string>
+    <string name="settings_section_title_chat_colors">Csevegés színei</string>
+    <string name="settings_section_title_chat_theme">Csevegés témája</string>
+    <string name="wallpaper_scale_fill">Kitöltés</string>
+    <string name="wallpaper_flowers">Virágok</string>
 </resources>
