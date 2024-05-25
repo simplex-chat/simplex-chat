@@ -143,7 +143,7 @@ object AppearanceScope {
           Modifier
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
-            .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
+            .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(if (isInDarkTheme()) 0.2f else 0.1f), RoundedCornerShape(percent = cornerRadius))
             .clickable { onChooseType(background?.toType(baseTheme)) },
           contentAlignment = Alignment.Center
         ) {

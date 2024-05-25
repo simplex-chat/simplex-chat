@@ -19,7 +19,6 @@ import kotlinx.serialization.Serializable
 import java.io.File
 import kotlin.math.*
 
-@Serializable
 enum class PresetWallpaper(
   val res: ImageResource,
   val filename: String,
@@ -29,9 +28,14 @@ enum class PresetWallpaper(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  @SerialName("cats") CATS(MR.images.wallpaper_cats, "cats", MR.strings.wallpaper_cats, 0.63f,
-    mapOf(DefaultTheme.LIGHT to "#ffF8F6EA".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()),
-    mapOf(DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(), DefaultTheme.DARK to "#ff4b3b0e".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff4b3b0e".colorFromReadableHex(), DefaultTheme.BLACK to "#ff4b3b0e".colorFromReadableHex()),
+  CATS(MR.images.wallpaper_cats, "cats", MR.strings.wallpaper_cats, 0.63f,
+    wallpaperBackgrounds(light = "#ffF8F6EA"),
+    tint = mapOf(
+      DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(),
+      DefaultTheme.DARK to "#ff4b3b0e".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to "#ff51400f".colorFromReadableHex(),
+      DefaultTheme.BLACK to "#ff4b3b0e".colorFromReadableHex()
+    ),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#fffffaed",
@@ -59,9 +63,14 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  @SerialName("flowers") FLOWERS(MR.images.wallpaper_flowers, "flowers", MR.strings.wallpaper_flowers, 0.53f,
-    mapOf(DefaultTheme.LIGHT to "#ffE2FFE4".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()),
-    mapOf(DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(), DefaultTheme.DARK to "#ff31560D".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff31570D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()),
+  FLOWERS(MR.images.wallpaper_flowers, "flowers", MR.strings.wallpaper_flowers, 0.53f,
+    wallpaperBackgrounds(light = "#ffE2FFE4"),
+    tint = mapOf(
+      DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(),
+      DefaultTheme.DARK to "#ff31560D".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to "#ff36600f".colorFromReadableHex(),
+      DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()
+    ),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#fff1ffe5",
@@ -89,9 +98,14 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  @SerialName("hearts") HEARTS(MR.images.wallpaper_hearts, "hearts", MR.strings.wallpaper_hearts, 0.59f,
-    mapOf(DefaultTheme.LIGHT to "#ffFDECEC".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()),
-    mapOf(DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(), DefaultTheme.DARK to "#ff3C0F0F".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff381221".colorFromReadableHex(), DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()),
+  HEARTS(MR.images.wallpaper_hearts, "hearts", MR.strings.wallpaper_hearts, 0.59f,
+    wallpaperBackgrounds(light = "#ffFDECEC"),
+    tint = mapOf(
+      DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(),
+      DefaultTheme.DARK to "#ff3c0f0f".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to "#ff411010".colorFromReadableHex(),
+      DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()
+    ),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#fffff4f4",
@@ -119,9 +133,14 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  @SerialName("kids") KIDS(MR.images.wallpaper_kids, "kids", MR.strings.wallpaper_kids, 0.53f,
-    mapOf(DefaultTheme.LIGHT to "#ffdbfdfb".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()),
-    mapOf(DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(), DefaultTheme.DARK to "#ff16404B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff143047".colorFromReadableHex(), DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()),
+  KIDS(MR.images.wallpaper_kids, "kids", MR.strings.wallpaper_kids, 0.53f,
+    wallpaperBackgrounds(light = "#ffdbfdfb"),
+    tint = mapOf(
+      DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(),
+      DefaultTheme.DARK to "#ff16404B".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to "#ff184753".colorFromReadableHex(),
+      DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()
+    ),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#ffeafeff",
@@ -149,9 +168,14 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  @SerialName("school") SCHOOL(MR.images.wallpaper_school, "school",  MR.strings.wallpaper_school, 0.53f,
-  mapOf(DefaultTheme.LIGHT to "#ffE7F5FF".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()),
-  mapOf(DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(), DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff0E2B4D".colorFromReadableHex(), DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()),
+  SCHOOL(MR.images.wallpaper_school, "school",  MR.strings.wallpaper_school, 0.53f,
+    wallpaperBackgrounds(light = "#ffE7F5FF"),
+    tint = mapOf(
+      DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(),
+      DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to "#ff112f43".colorFromReadableHex(),
+      DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()
+    ),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#ffeef9ff",
@@ -179,9 +203,14 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  @SerialName("travel") TRAVEL(MR.images.wallpaper_travel, "travel", MR.strings.wallpaper_travel, 0.68f,
-    mapOf(DefaultTheme.LIGHT to "#fff9eeff".colorFromReadableHex(), DefaultTheme.DARK to "#ff121212".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(), DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()),
-    mapOf(DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(), DefaultTheme.DARK to "#ff311E48".colorFromReadableHex(), DefaultTheme.SIMPLEX to "#ff34225E".colorFromReadableHex(), DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()),
+  TRAVEL(MR.images.wallpaper_travel, "travel", MR.strings.wallpaper_travel, 0.68f,
+    wallpaperBackgrounds(light = "#fff9eeff"),
+    tint = mapOf(
+      DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(),
+      DefaultTheme.DARK to "#ff311E48".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to "#ff35204e".colorFromReadableHex(),
+      DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()
+    ),
     mapOf(
       DefaultTheme.LIGHT to ThemeColors(
         sentMessage = "#fffcf6ff",
@@ -221,6 +250,14 @@ enum class PresetWallpaper(
       entries.firstOrNull { it.filename == filename }
   }
 }
+
+fun wallpaperBackgrounds(light: String): Map<DefaultTheme, Color> =
+  mapOf(
+    DefaultTheme.LIGHT to light.colorFromReadableHex(),
+    DefaultTheme.DARK to "#ff121212".colorFromReadableHex(),
+    DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(),
+    DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()
+  )
 
 @Serializable
 enum class WallpaperScaleType(val contentScale: ContentScale, val text: StringResource) {
