@@ -1838,4 +1838,12 @@
     <string name="wallpaper_scale_repeat">Tekrarla</string>
     <string name="reset_single_color">Rengi sıfırla</string>
     <string name="chat_list_always_visible">Sohbet listesini yeni pencerede göster</string>
+    <string name="file_not_approved_title">Bilinmeyen sunucular!</string>
+    <string name="file_not_approved_descr">Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir:
+\n%1$s.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.</string>
+    <string name="wallpaper_travel">Seyahat</string>
+    <string name="color_wallpaper_tint">Duvar kağıdı vurgusu</string>
+    <string name="color_wallpaper_background">Duvar kağıdı arkaplanı</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Uygulama, bilinmeyen dosya sunucularından indirmeleri onaylamanızı isteyecektir (.onion veya SOCKS vekilleri etkin değilse).</string>
 </resources>
