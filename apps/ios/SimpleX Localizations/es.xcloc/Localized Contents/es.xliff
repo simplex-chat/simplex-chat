@@ -1038,9 +1038,9 @@
         <target>Búlgaro, Finlandés, Tailandés y Ucraniano - gracias a los usuarios y [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target>Mediante perfil (por defecto) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
+        <target state="translated">Mediante perfil (predeterminado) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -2203,9 +2203,9 @@ This cannot be undone!</source>
         <target>Activar código de autodestrucción</target>
         <note>set passcode view</note>
       </trans-unit>
-      <trans-unit id="Enabled for" xml:space="preserve">
+      <trans-unit id="Enabled for" xml:space="preserve" approved="no">
         <source>Enabled for</source>
-        <target>Activar para</target>
+        <target state="translated">Activado para</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -4374,9 +4374,9 @@ Error: %@</target>
         <target>Imagen del perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile images" xml:space="preserve">
+      <trans-unit id="Profile images" xml:space="preserve" approved="no">
         <source>Profile images</source>
-        <target>Imágenes del perfil</target>
+        <target state="translated">Forma de los perfiles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
@@ -4714,9 +4714,9 @@ Error: %@</target>
         <target>Restablecer colores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset to defaults" xml:space="preserve">
+      <trans-unit id="Reset to defaults" xml:space="preserve" approved="no">
         <source>Reset to defaults</source>
-        <target>Restablecer valores por defecto</target>
+        <target state="translated">Restablecer valores predetarminados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
@@ -6984,19 +6984,19 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>días</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="default (%@)" xml:space="preserve">
+      <trans-unit id="default (%@)" xml:space="preserve" approved="no">
         <source>default (%@)</source>
-        <target>por defecto (%@)</target>
+        <target state="translated">predeterminado (%@)</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="default (no)" xml:space="preserve">
+      <trans-unit id="default (no)" xml:space="preserve" approved="no">
         <source>default (no)</source>
-        <target>por defecto (no)</target>
+        <target state="translated">predeterminado (no)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="default (yes)" xml:space="preserve">
+      <trans-unit id="default (yes)" xml:space="preserve" approved="no">
         <source>default (yes)</source>
-        <target>por defecto (sí)</target>
+        <target state="translated">predeterminado (sí)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
