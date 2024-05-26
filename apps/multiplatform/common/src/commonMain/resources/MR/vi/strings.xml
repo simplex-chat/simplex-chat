@@ -185,4 +185,19 @@
     <string name="icon_descr_call_ended">Cuộc gọi kết thúc</string>
     <string name="callstatus_ended">cuộc gọi kết thúc %1$s</string>
     <string name="callstatus_error">lỗi cuộc gọi</string>
+    <string name="settings_section_title_calls">CUỘC GỌI</string>
+    <string name="icon_descr_cancel_image_preview">Hủy xem trước ảnh</string>
+    <string name="icon_descr_cancel_file_preview">Hủy xem trước tệp</string>
+    <string name="cancel_verb">Hủy</string>
+    <string name="use_camera_button">Camera</string>
+    <string name="camera_not_available">Camera hiện đang bận</string>
+    <string name="permissions_camera">Camera</string>
+    <string name="call_on_lock_screen">Cuộc gọi trên màn hình khóa:</string>
+    <string name="theme_destination_all_profiles">Tất cả hồ sơ trò chuyện</string>
+    <string name="theme_black">Đen</string>
+    <string name="chat_theme_apply_to_mode">Áp dụng cho</string>
+    <string name="color_primary_variant2">Biến thể của màu sơ cấp 2</string>
+    <string name="wallpaper_advanced_settings">Cài đặt nâng cao</string>
+    <string name="chat_theme_apply_to_all_modes">Tất cả chế độ màu</string>
+    <string name="permissions_camera_and_record_audio">Camera và mic</string>
 </resources>
