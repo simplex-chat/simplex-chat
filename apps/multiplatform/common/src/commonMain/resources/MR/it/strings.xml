@@ -1147,7 +1147,7 @@
     <string name="color_secondary">Secondario</string>
     <string name="color_received_message">Messaggio ricevuto</string>
     <string name="color_sent_message">Messaggio inviato</string>
-    <string name="color_title">Titolo</string>
+    <string name="color_title">Titoli</string>
     <string name="one_time_link_short">Link una tantum</string>
     <string name="learn_more_about_address">Info sull\'indirizzo SimpleX</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Tutti i tuoi contatti resteranno connessi. L\'aggiornamento del profilo verrà inviato ai tuoi contatti.</string>
@@ -1815,7 +1815,7 @@
     <string name="color_mode">Modalità di colore</string>
     <string name="color_mode_dark">Scura</string>
     <string name="chat_theme_apply_to_dark_mode">Modalità scura</string>
-    <string name="color_primary_variant2">Colore secondario 2</string>
+    <string name="color_primary_variant2">Principale aggiuntivo 2</string>
     <string name="chat_theme_apply_to_all_modes">Tutte le modalità di colore</string>
     <string name="chat_theme_apply_to_mode">Applica a</string>
     <string name="dark_mode_colors">Colori modalità scura</string>
