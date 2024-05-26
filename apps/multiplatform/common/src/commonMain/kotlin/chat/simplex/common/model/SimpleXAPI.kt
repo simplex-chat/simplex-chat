@@ -66,6 +66,7 @@ class AppPreferences {
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
+  val notificationLEDEnabled = mkBoolPreference(SHARED_PREFS_NOTIFICATION_LED_ENABLED, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -287,6 +288,7 @@ class AppPreferences {
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
+    private const val SHARED_PREFS_NOTIFICATION_LED_ENABLED = "NotificationLEDEnabled"
     private const val SHARED_PREFS_NOTIFICATION_PREVIEW_MODE = "NotificationPreviewMode"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
