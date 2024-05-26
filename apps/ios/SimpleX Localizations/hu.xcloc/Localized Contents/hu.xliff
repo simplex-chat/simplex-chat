@@ -7198,9 +7198,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>meghívta, hogy csatlakozzon</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="invited via your group link" xml:space="preserve">
+      <trans-unit id="invited via your group link" xml:space="preserve" approved="no">
         <source>invited via your group link</source>
-        <target>meghívta a csoport hivatkozásán keresztül</target>
+        <target state="translated">meghíva az ön csoport hivatkozásán keresztül</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
@@ -7460,9 +7460,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>ismeretlen státusz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve">
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
         <source>updated group profile</source>
-        <target>módosított csoport profil</target>
+        <target state="translated">frissítette a csoport profilját</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="updated profile" xml:space="preserve">
