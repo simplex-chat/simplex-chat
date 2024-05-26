@@ -754,7 +754,7 @@
     <string name="notification_new_contact_request">Új kapcsolattartási kérelem</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Összekapcsolt számítógép beállítások</string>
-    <string name="rcv_group_event_invited_via_your_group_link">meghívta a csoport hivatkozásán keresztül</string>
+    <string name="rcv_group_event_invited_via_your_group_link">meghíva az ön csoport hivatkozásán keresztül</string>
     <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
     <string name="linked_desktops">Összekapcsolt számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
@@ -1047,7 +1047,7 @@
     <string name="paste_the_link_you_received">Fogadott hivatkozás beillesztése</string>
     <string name="smp_save_servers_question">Kiszolgálók mentése?</string>
     <string name="v4_2_security_assessment_desc">A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.</string>
-    <string name="rcv_group_event_updated_group_profile">módosított csoport profil</string>
+    <string name="rcv_group_event_updated_group_profile">frissítette a csoport profilját</string>
     <string name="settings_section_title_support">TÁMOGASSA A SIMPLEX CHATET</string>
     <string name="simplex_service_notification_title">SimpleX Chat szolgáltatás</string>
     <string name="observer_cant_send_message_title">Nem lehet üzeneteket küldeni!</string>
@@ -1812,7 +1812,7 @@
     <string name="chat_theme_apply_to_dark_mode">Sötét mód</string>
     <string name="dark_mode_colors">Sötét mód színei</string>
     <string name="wallpaper_scale_fit">Illesztés</string>
-    <string name="wallpaper_preview_hello_alice">Kellemes délutánt!</string>
+    <string name="wallpaper_preview_hello_alice">Jó napot!</string>
     <string name="wallpaper_preview_hello_bob">Jó reggelt!</string>
     <string name="wallpaper_hearts">Szívek</string>
     <string name="wallpaper_advanced_settings">Haladó beállítások</string>
