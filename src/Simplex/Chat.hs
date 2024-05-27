@@ -1550,8 +1550,8 @@ processChatCommand' vr = \case
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
         connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-        conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
-        void . withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq dm pqSup' subMode
+        conn@PendingContactConnection {pccConnId} <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
+        joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
         pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
@@ -1806,12 +1806,20 @@ processChatCommand' vr = \case
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
           let chatV = vr `peerConnChatVersion` peerChatVRange
-          withStore' $ \db -> do
-            createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
+          cId <- withStore' $ \db -> do
+            Connection {connId = cId} <- createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-          void . withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode
-          updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` \_ -> pure ()
+            pure cId
+          void (withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode)
+            `catchChatError` \e -> do
+              withStore' $ \db -> do
+                deleteConnectionRecord db user cId
+                updateGroupMemberStatus db userId fromMember GSMemInvited
+                updateGroupMemberStatus db userId membership GSMemInvited
+              withAgent $ \a -> deleteConnectionAsync a False agentConnId
+              throwError e
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
@@ -2338,8 +2346,8 @@ processChatCommand' vr = \case
           -- [incognito] generate profile to send
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           subMode <- chatReadVar subscriptionMode
-          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup
-          joinContact user connId cReq incognitoProfile xContactId inGroup pqSup chatV
+          conn@PendingContactConnection {pccConnId} <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          joinContact user pccConnId connId cReq incognitoProfile xContactId inGroup pqSup chatV
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> CM ChatResponse
     connectContactViaAddress user incognito ct cReq =
@@ -2351,8 +2359,8 @@ processChatCommand' vr = \case
         -- [incognito] generate profile to send
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         subMode <- chatReadVar subscriptionMode
-        ct' <- withStore $ \db -> createAddressContactConnection db vr user ct connId cReqHash newXContactId incognitoProfile subMode chatV pqSup
-        joinContact user connId cReq incognitoProfile newXContactId False pqSup chatV
+        (pccConnId, ct') <- withStore $ \db -> createAddressContactConnection db vr user ct connId cReqHash newXContactId incognitoProfile subMode chatV pqSup
+        joinContact user pccConnId connId cReq incognitoProfile newXContactId False pqSup chatV
         pure $ CRSentInvitationToContact user ct' incognitoProfile
     prepareContact :: User -> ConnectionRequestUri 'CMContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
@@ -2365,12 +2373,19 @@ processChatCommand' vr = \case
           let chatV = agentToChatVersion agentV
           connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
           pure (connId, chatV)
-    joinContact :: User -> ConnId -> ConnectionRequestUri 'CMContact -> Maybe Profile -> XContactId -> Bool -> PQSupport -> VersionChat -> CM ()
-    joinContact user connId cReq incognitoProfile xContactId inGroup pqSup chatV = do
+    joinContact :: User -> Int64 -> ConnId -> ConnectionRequestUri 'CMContact -> Maybe Profile -> XContactId -> Bool -> PQSupport -> VersionChat -> CM ()
+    joinContact user pccConnId connId cReq incognitoProfile xContactId inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
       dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
-      void . withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq dm pqSup subMode
+      joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
+    joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
+    joinPreparedAgentConnection user pccConnId connId cReq connInfo pqSup subMode = do
+      void (withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq connInfo pqSup subMode)
+        `catchChatError` \e -> do
+          withStore' $ \db -> deleteConnectionRecord db user pccConnId
+          withAgent $ \a -> deleteConnectionAsync a False connId
+          throwError e
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
