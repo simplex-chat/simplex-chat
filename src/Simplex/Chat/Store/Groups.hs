@@ -1096,7 +1096,7 @@ createIntroductions db chatV members toMember = do
     createIntro_ ts reMember =
       -- when members connect concurrently, host would try to create introductions between them in both directions;
       -- this check avoids creating second (redundant) introduction
-      getInverseIntro >>= \case
+      checkInverseIntro >>= \case
         Just _ -> pure Nothing
         Nothing -> do
           DB.execute
@@ -1110,8 +1110,8 @@ createIntroductions db chatV members toMember = do
           introId <- insertedRowId db
           pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
       where
-        getInverseIntro :: IO (Maybe Int64)
-        getInverseIntro =
+        checkInverseIntro :: IO (Maybe Int64)
+        checkInverseIntro =
           maybeFirstRow fromOnly $
             DB.query
               db
