@@ -218,10 +218,6 @@
   <string name="notification_new_contact_request">New contact request</string>
   <string name="notification_contact_connected">Connected</string>
   <string name="error_showing_desktop_notification">Error showing notification, contact developers.</string>
-  <string name="notification_led_disabled">Disabled</string>
-  <string name="notification_led_enabled">Enabled</string>
-  <string name="notification_led_enabled_desc">If your device has Notification LED it will indicate when you receive a message</string>
-  <string name="notification_led_disabled_desc">Notification LED will be disabled</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>

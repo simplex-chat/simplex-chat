@@ -32,13 +32,11 @@ fun NotificationsSettingsView(
   NotificationsSettingsLayout(
     notificationsMode = remember { chatModel.controller.appPrefs.notificationsMode.state },
     notificationPreviewMode = chatModel.notificationPreviewMode,
-    notificationLedEnabled = chatModel.controller.appPrefs.notificationLEDEnabled.state,
     showPage = { page ->
       ModalManager.start.showModalCloseable(true) {
         when (page) {
           CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.controller.appPrefs.notificationsMode.state) { changeNotificationsMode(it, chatModel) }
           CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)
-          CurrentPage.NOTIFICATION_LED -> NotificationLedModeView(chatModel.controller.appPrefs.notificationLEDEnabled.state) { changeNotificationsLedMode(it, chatModel) }
         }
       }
     },
@@ -46,18 +44,16 @@ fun NotificationsSettingsView(
 }
 
 enum class CurrentPage {
-  NOTIFICATIONS_MODE, NOTIFICATION_PREVIEW_MODE, NOTIFICATION_LED
+  NOTIFICATIONS_MODE, NOTIFICATION_PREVIEW_MODE
 }
 
 @Composable
 fun NotificationsSettingsLayout(
   notificationsMode: State<NotificationsMode>,
   notificationPreviewMode: State<NotificationPreviewMode>,
-  notificationLedEnabled: State<Boolean>,
   showPage: (CurrentPage) -> Unit,
 ) {
   val modes = remember { notificationModes() }
-  val notificationLedModes = remember { notificationLedModes() }
   val previewModes = remember { notificationPreviewModes() }
 
   ColumnWithScrollBar(
@@ -74,14 +70,6 @@ fun NotificationsSettingsLayout(
             color = MaterialTheme.colors.secondary
           )
         }
-        SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notification_led_title), { showPage(CurrentPage.NOTIFICATION_LED) }) {
-          Text(
-            notificationLedModes.first { it.value == notificationLedEnabled.value }.title,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colors.secondary
-          )
-        }
       }
       SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
         Text(
@@ -91,6 +79,7 @@ fun NotificationsSettingsLayout(
           color = MaterialTheme.colors.secondary
         )
       }
+      SettingsPreferenceItem(null, stringResource(MR.strings.settings_notification_led_title), chatModel.controller.appPrefs.notificationLEDEnabled)
     }
     SectionBottomSpacer()
   }
@@ -121,20 +110,6 @@ fun NotificationPreviewView(
   ) {
     AppBarTitle(stringResource(MR.strings.settings_notification_preview_title))
     SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
-  }
-}
-
-@Composable
-fun NotificationLedModeView(
-  notificationLedEnabled: State<Boolean>,
-  onNotificationLedModeChange: (Boolean) -> Unit,
-) {
-  val notificationLedModes = remember { notificationLedModes() }
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
-    AppBarTitle(stringResource(MR.strings.settings_notification_led_title))
-    SectionViewSelectable(null, notificationLedEnabled, notificationLedModes, onNotificationLedModeChange)
   }
 }
 
@@ -192,24 +167,7 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
   return res
 }
 
-fun notificationLedModes(): List<ValueTitleDesc<Boolean>> = listOf(
-  ValueTitleDesc(
-    true,
-    generalGetString(MR.strings.notification_led_enabled),
-    AnnotatedString(generalGetString(MR.strings.notification_led_enabled_desc)),
-  ),
-  ValueTitleDesc(
-    false,
-    generalGetString(MR.strings.notification_led_disabled),
-    AnnotatedString(generalGetString(MR.strings.notification_led_disabled_desc)),
-  ),
-)
-
 fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
   chatModel.controller.appPrefs.notificationsMode.set(mode)
   platform.androidNotificationsModeChanged(mode)
-}
-
-fun changeNotificationsLedMode(enabled: Boolean, chatModel: ChatModel) {
-  chatModel.controller.appPrefs.notificationLEDEnabled.set(enabled)
 }

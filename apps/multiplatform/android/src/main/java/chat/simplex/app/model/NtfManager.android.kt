@@ -229,6 +229,7 @@ object NtfManager {
       .setVibrate(null)
       .setContentIntent(chatPendingIntent(ShowChatsAction, null, null))
       .setSilent(false)
+
     val summary = NotificationCompat.Builder(context, MessageChannel)
       .setSmallIcon(R.drawable.ntf_icon)
       .setColor(0x88FFFF)
