@@ -4468,7 +4468,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   -- invited members to which this member was introduced
                   invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
                   let GroupMember {memberId} = m
-                      ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
+                      ms = forwardedToGroupMembers (S.toList $ S.fromList $ introducedMembers <> invitedMembers) chatMsg'
                       msg = XGrpMsgForward memberId chatMsg' brokerTs
                   unless (null ms) . void $
                     sendGroupMessage' user gInfo ms msg
