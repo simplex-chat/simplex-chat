@@ -3,13 +3,16 @@ package chat.simplex.common.views.helpers
 import SectionBottomSpacer
 import SectionItemView
 import SectionSpacer
+import SectionView
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.yaml
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.usersettings.*
@@ -18,6 +21,7 @@ import chat.simplex.common.views.usersettings.AppearanceScope.editColor
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.serialization.encodeToString
 import java.net.URI
 
 @Composable
@@ -134,7 +138,7 @@ fun ModalData.UserWallpaperEditor(
     SectionSpacer()
 
     if (!globalThemeUsed.value) {
-      ResetToGlobalThemeButton {
+      ResetToGlobalThemeButton(true) {
         themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
         globalThemeUsed.value = true
         withBGApi { save(applyToMode.value, null) }
@@ -202,6 +206,14 @@ fun ModalData.UserWallpaperEditor(
       SectionSpacer()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
+
+      SectionSpacer()
+      ImportExportThemeSection(null, remember { chatModel.currentUser }.value?.uiThemes) {
+        withBGApi {
+          themeModeOverride.value = it
+          save(applyToMode.value, it)
+        }
+      }
     } else {
       AdvancedSettingsButton { showMore = true }
     }
@@ -226,7 +238,7 @@ fun ModalData.ChatWallpaperEditor(
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
     val currentTheme by remember(themeModeOverride.value, CurrentColors.collectAsState().value) {
       mutableStateOf(
-        ThemeManager.currentColors(null, if (themeModeOverride.value == ThemeModeOverride()) null else themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
+        ThemeManager.currentColors(null, if (globalThemeUsed.value) null else themeModeOverride.value, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get())
       )
     }
 
@@ -363,7 +375,7 @@ fun ModalData.ChatWallpaperEditor(
     SectionSpacer()
 
     if (!globalThemeUsed.value) {
-      ResetToGlobalThemeButton {
+      ResetToGlobalThemeButton(remember { chatModel.currentUser }.value?.uiThemes?.preferredMode(isInDarkTheme()) == null) {
         themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
         globalThemeUsed.value = true
         withBGApi { save(applyToMode.value, null) }
@@ -431,6 +443,14 @@ fun ModalData.ChatWallpaperEditor(
       SectionSpacer()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
+
+      SectionSpacer()
+      ImportExportThemeSection(themeModeOverride.value, remember { chatModel.currentUser }.value?.uiThemes) {
+        withBGApi {
+          themeModeOverride.value = it
+          save(applyToMode.value, it)
+        }
+      }
     } else {
       AdvancedSettingsButton { showMore = true }
     }
@@ -440,9 +460,46 @@ fun ModalData.ChatWallpaperEditor(
 }
 
 @Composable
-private fun ResetToGlobalThemeButton(onClick: () -> Unit) {
+private fun ImportExportThemeSection(perChat: ThemeModeOverride?, perUser: ThemeModeOverrides?, save: (ThemeModeOverride) -> Unit) {
+  SectionView {
+    val theme = remember { mutableStateOf(null as String?) }
+    val exportThemeLauncher = rememberFileChooserLauncher(false) { to: URI? ->
+      val themeValue = theme.value
+      if (themeValue != null && to != null) {
+        copyBytesToFile(themeValue.byteInputStream(), to) {
+          theme.value = null
+        }
+      }
+    }
+    SectionItemView({
+      val overrides = ThemeManager.currentThemeOverridesForExport(perChat, perUser)
+      val lines = yaml.encodeToString<ThemeOverrides>(overrides).lines()
+      // Removing theme id without using custom serializer or data class
+      theme.value = lines.subList(1, lines.size).joinToString("\n")
+      withLongRunningApi { exportThemeLauncher.launch("simplex.theme") }
+    }) {
+      Text(generalGetString(MR.strings.export_theme), color = colors.primary)
+    }
+    val importThemeLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+      if (to != null) {
+        val theme = getThemeFromUri(to)
+        if (theme != null) {
+          val res = ThemeModeOverride(mode = theme.base.mode, colors = theme.colors, wallpaper = theme.wallpaper?.importFromString()).removeSameColors(theme.base)
+          save(res)
+        }
+      }
+    }
+    // Can not limit to YAML mime type since it's unsupported by Android
+    SectionItemView({ withLongRunningApi { importThemeLauncher.launch("*/*") } }) {
+      Text(generalGetString(MR.strings.import_theme), color = colors.primary)
+    }
+  }
+}
+
+@Composable
+private fun ResetToGlobalThemeButton(app: Boolean, onClick: () -> Unit) {
   SectionItemView(onClick) {
-    Text(stringResource(MR.strings.chat_theme_reset_to_global_theme), color = MaterialTheme.colors.primary)
+    Text(stringResource(if (app) MR.strings.chat_theme_reset_to_app_theme else MR.strings.chat_theme_reset_to_user_theme), color = MaterialTheme.colors.primary)
   }
 }
 

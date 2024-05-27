@@ -506,6 +506,76 @@ data class ThemeModeOverride (
     }
     )
   }
+
+  fun removeSameColors(base: DefaultTheme): ThemeModeOverride {
+    val c = when (base) {
+      DefaultTheme.LIGHT -> LightColorPalette
+      DefaultTheme.DARK -> DarkColorPalette
+      DefaultTheme.SIMPLEX -> SimplexColorPalette
+      DefaultTheme.BLACK -> BlackColorPalette
+    }
+    val ac = when (base) {
+      DefaultTheme.LIGHT -> LightColorPaletteApp
+      DefaultTheme.DARK -> DarkColorPaletteApp
+      DefaultTheme.SIMPLEX -> SimplexColorPaletteApp
+      DefaultTheme.BLACK -> BlackColorPaletteApp
+    }
+    val w = when (val wallpaperType = WallpaperType.from(wallpaper)) {
+      is WallpaperType.Preset -> {
+        val p = PresetWallpaper.from(wallpaperType.filename)
+        ThemeWallpaper(
+          preset = wallpaperType.filename,
+          scale = p?.scale ?: wallpaper?.scale,
+          scaleType = null,
+          background = p?.background?.get(base)?.toReadableHex(),
+          tint = p?.tint?.get(base)?.toReadableHex(),
+          image = null,
+          imageFile = null,
+        )
+      }
+      is WallpaperType.Image -> {
+        ThemeWallpaper(
+          preset = null,
+          scale = null,
+          scaleType = WallpaperScaleType.FILL,
+          background = Color.Transparent.toReadableHex(),
+          tint = Color.Transparent.toReadableHex(),
+          image = null,
+          imageFile = null,
+        )
+      }
+      else -> {
+        ThemeWallpaper()
+      }
+    }
+
+    return copy(
+      colors = ThemeColors(
+        primary = if (colors.primary?.colorFromReadableHex() != c.primary) colors.primary else null,
+        primaryVariant = if (colors.primaryVariant?.colorFromReadableHex() != c.primaryVariant) colors.primaryVariant else null,
+        secondary = if (colors.secondary?.colorFromReadableHex() != c.secondary) colors.secondary else null,
+        secondaryVariant = if (colors.secondaryVariant?.colorFromReadableHex() != c.secondaryVariant) colors.secondaryVariant else null,
+        background = if (colors.background?.colorFromReadableHex() != c.background) colors.background else null,
+        surface = if (colors.surface?.colorFromReadableHex() != c.surface) colors.surface else null,
+        title = if (colors.title?.colorFromReadableHex() != ac.title) colors.title else null,
+        primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primary else null,
+        sentMessage = if (colors.sentMessage?.colorFromReadableHex() != ac.sentMessage) colors.sentMessage else null,
+        sentQuote = if (colors.sentQuote?.colorFromReadableHex() != ac.sentQuote) colors.sentQuote else null,
+        receivedMessage = if (colors.receivedMessage?.colorFromReadableHex() != ac.receivedMessage) colors.receivedMessage else null,
+        receivedQuote = if (colors.receivedQuote?.colorFromReadableHex() != ac.receivedQuote) colors.receivedQuote else null,
+      ),
+      wallpaper = wallpaper?.copy(
+        preset = wallpaper.preset,
+        scale = if (wallpaper.scale != w.scale) wallpaper.scale else null,
+        scaleType = if (wallpaper.scaleType != w.scaleType) wallpaper.scaleType else null,
+        background = if (wallpaper.background != w.background) wallpaper.background else null,
+        tint = if (wallpaper.tint != w.tint) wallpaper.tint else null,
+        image = wallpaper.image,
+        imageFile = wallpaper.imageFile,
+      )
+    )
+  }
+
   companion object {
     fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride =
       ThemeModeOverride(
