@@ -668,8 +668,8 @@ data ChatResponse
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
-  | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
+  | CRConnectionSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+  | CRContactSubError {user :: User, contactName :: ContactName, chatError :: ChatError}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
   | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}

@@ -229,15 +229,14 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
      in ttyUser u [sShow connId <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CRContactSubError u c e -> ttyUser u [ttyContact' c <> ": contact error " <> sShow e]
-  CRContactSubSummary u summary ->
-    ttyUser u $ [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
-    where
-      (errors, subscribed) = partition (isJust . contactError) summary
+  CRContactSubError u c e -> ttyUser u [ttyContact c <> ": contact error " <> sShow e]
+  CRConnectionSubSummary {user, okSubs, errSubs} ->
+  -- CRContactSubSummary u summary ->
+    ttyUser user $ [sShow okSubs <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | okSubs > 0] <> viewErrorsSummary errSubs " contact errors"
   CRUserContactSubSummary u summary ->
     ttyUser u $
       map addressSS addresses
-        <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary groupLinkErrors " group link errors")
+        <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary (length groupLinkErrors) " group link errors")
     where
       (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
       addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
@@ -276,7 +275,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
-  CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
+  CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (length $ filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
   CRPendingSubSummary u _ -> ttyUser u []
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
@@ -444,8 +443,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
       let deleted_ = maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_)
        in itemText <> deleted_
-    viewErrorsSummary :: [a] -> StyledString -> [StyledString]
-    viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
+    viewErrorsSummary :: Int -> StyledString -> [StyledString]
+    viewErrorsSummary numErrors s = [ttyError (tshow numErrors) <> s <> " (run with -c option to show each error)" | numErrors > 0]
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
