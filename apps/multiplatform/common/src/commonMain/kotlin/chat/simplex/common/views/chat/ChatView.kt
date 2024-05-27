@@ -339,6 +339,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
+            forwardItem = { cItem, cInfo ->
+              chatModel.chatId.value = null
+              chatModel.sharedContent.value = SharedContent.Forward(cInfo, cItem)
+            },
             updateContactStats = { contact ->
               withBGApi {
                 val r = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
@@ -537,6 +541,7 @@ fun ChatLayout(
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
+  forwardItem: (ChatInfo, ChatItem) -> Unit,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -619,7 +624,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, searchValue,
               useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
-              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy,
             )
@@ -888,6 +893,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
+  forwardItem: (ChatInfo, ChatItem) -> Unit,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -991,7 +997,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
+            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
           }
         }
 
@@ -1544,6 +1550,7 @@ fun PreviewChatLayout() {
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
+      forwardItem = { _, _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },
@@ -1617,6 +1624,7 @@ fun PreviewGroupChatLayout() {
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
+      forwardItem = { _, _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },

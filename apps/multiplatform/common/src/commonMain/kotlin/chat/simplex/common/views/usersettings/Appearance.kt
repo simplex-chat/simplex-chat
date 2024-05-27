@@ -298,17 +298,15 @@ object AppearanceScope {
       saveThemeToDatabase(themeUserDestination.value)
     }
 
-    val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
-      if (to != null) {
-        val filename = saveWallpaperFile(to)
-        if (filename != null) {
-          if (themeUserDestination.value == null) {
-            removeWallpaperFile((currentTheme.wallpaper.type as? WallpaperType.Image)?.filename)
-          } else {
-            removeWallpaperFile((perUserTheme.value.type as? WallpaperType.Image)?.filename)
-          }
-          onTypeChange(WallpaperType.Image(filename, 1f, WallpaperScaleType.FILL))
+    val onImport = { to: URI ->
+      val filename = saveWallpaperFile(to)
+      if (filename != null) {
+        if (themeUserDestination.value == null) {
+          removeWallpaperFile((currentTheme.wallpaper.type as? WallpaperType.Image)?.filename)
+        } else {
+          removeWallpaperFile((perUserTheme.value.type as? WallpaperType.Image)?.filename)
         }
+        onTypeChange(WallpaperType.Image(filename, 1f, WallpaperScaleType.FILL))
       }
     }
 
@@ -320,7 +318,7 @@ object AppearanceScope {
       ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
     }
 
-    val onChooseType: (WallpaperType?) -> Unit = { type: WallpaperType? ->
+    val onChooseType: (WallpaperType?, FileChooserLauncher) -> Unit = { type: WallpaperType?, importWallpaperLauncher: FileChooserLauncher ->
       when {
         // don't have image in parent or already selected wallpaper with custom image
         type is WallpaperType.Image &&
@@ -341,13 +339,17 @@ object AppearanceScope {
       ThemeDestinationPicker(themeUserDestination)
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
 
+      val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+        if (to != null) onImport(to)
+      }
+
       WallpaperPresetSelector(
         selectedWallpaper = wallpaperType,
         baseTheme = currentTheme.base,
         currentColors = { type ->
           currentColors(type)
         },
-        onChooseType = onChooseType,
+        onChooseType = { onChooseType(it, importWallpaperLauncher) },
       )
       val type = MaterialTheme.wallpaper.type
       if (type is WallpaperType.Image && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
@@ -401,7 +403,10 @@ object AppearanceScope {
       val user = themeUserDestination.value
       if (user == null) {
         ModalManager.start.showModal {
-          CustomizeThemeView(onChooseType)
+          val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+            if (to != null) onImport(to)
+          }
+          CustomizeThemeView { onChooseType(it, importWallpaperLauncher) }
         }
       } else {
         ModalManager.start.showModalCloseable { close ->
