@@ -130,11 +130,11 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO Contact
+createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
 createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode chatV pqSup = do
   PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode chatV pqSup
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
-  getContact db vr user contactId
+  (pccConnId,) <$> getContact db vr user contactId
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
