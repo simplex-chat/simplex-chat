@@ -21,17 +21,12 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
-import java.io.File
-import java.net.URI
 
 @Composable
 fun CIImageView(
   image: String,
   file: CIFile?,
-  metaColor: Color,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit
@@ -51,7 +46,7 @@ fun CIImageView(
       icon,
       stringResource(stringId),
       Modifier.fillMaxSize(),
-      tint = metaColor
+      tint = Color.White
     )
   }
 
@@ -78,6 +73,7 @@ fun CIImageView(
           is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
           is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
+          is CIFileStatus.RcvAborted -> fileIcon(painterResource(MR.images.ic_sync_problem), MR.strings.icon_descr_file)
           is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)
@@ -206,7 +202,7 @@ fun CIImageView(
       imageView(base64ToBitmap(image), onClick = {
         if (file != null) {
           when (file.fileStatus) {
-            CIFileStatus.RcvInvitation ->
+            CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
               if (fileSizeValid()) {
                 receiveFile(file.fileId)
               } else {

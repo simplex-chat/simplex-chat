@@ -799,7 +799,6 @@
     <string name="prohibit_sending_disappearing_messages">Zabroń wysyłania znikających wiadomości.</string>
     <string name="feature_received_prohibited">otrzymane, zabronione</string>
     <string name="reset_color">Resetuj kolory</string>
-    <string name="save_color">Zapisz kolor</string>
     <string name="accept_feature_set_1_day">Ustaw 1 dzień</string>
     <string name="theme_system">System</string>
     <string name="language_system">System</string>

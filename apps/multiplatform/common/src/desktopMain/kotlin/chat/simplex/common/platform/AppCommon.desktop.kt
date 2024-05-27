@@ -26,7 +26,7 @@ fun initApp() {
   }
   applyAppLocale()
   if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
-    initChatControllerAndRunMigrations()
+    initChatControllerOnStart()
   }
   // LALAL
   //testCrypto()

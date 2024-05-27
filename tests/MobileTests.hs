@@ -294,7 +294,7 @@ testFileCApi fileName tmp = do
   let sz' = fromIntegral sz
   contents <- create sz' $ \toPtr -> copyBytes toPtr (ptr' `plusPtr` 5) sz'
   contents `shouldBe` src
-  sz' `shouldBe` fromIntegral len
+  sz' `shouldBe` len
 
 testMissingFileCApi :: FilePath -> IO ()
 testMissingFileCApi tmp = do

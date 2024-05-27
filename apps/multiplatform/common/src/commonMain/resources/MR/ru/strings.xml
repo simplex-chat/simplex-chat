@@ -848,7 +848,6 @@
     <string name="theme_dark">Темная</string>
     <!-- Appearance.kt -->
     <string name="theme">Тема</string>
-    <string name="save_color">Сохранить цвет</string>
     <string name="reset_color">Сбросить цвета</string>
     <string name="color_primary">Акцент</string>
     <!-- Preferences.kt -->

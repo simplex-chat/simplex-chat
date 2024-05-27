@@ -842,7 +842,6 @@
     <string name="theme_dark">Dunkel</string>
     <!-- Appearance.kt -->
     <string name="theme">Design</string>
-    <string name="save_color">Farbe speichern</string>
     <string name="reset_color">Farben zurücksetzen</string>
     <string name="color_primary">Akzent</string>
     <!-- Preferences.kt -->

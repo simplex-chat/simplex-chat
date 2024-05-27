@@ -944,10 +944,10 @@ getMemberInvitation db User {userId} groupMemberId =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?" (groupMemberId, userId)
 
-createMemberConnection :: DB.Connection -> UserId -> GroupMember -> ConnId -> VersionChat -> VersionRangeChat -> SubscriptionMode -> IO ()
+createMemberConnection :: DB.Connection -> UserId -> GroupMember -> ConnId -> VersionChat -> VersionRangeChat -> SubscriptionMode -> IO Connection
 createMemberConnection db userId GroupMember {groupMemberId} agentConnId chatV peerChatVRange subMode = do
   currentTs <- getCurrentTime
-  void $ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 currentTs subMode
+  createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 currentTs subMode
 
 createMemberConnectionAsync :: DB.Connection -> User -> GroupMemberId -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> IO ()
 createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentConnId) chatV peerChatVRange subMode = do
@@ -1090,20 +1090,33 @@ createIntroductions db chatV members toMember = do
     then pure []
     else do
       currentTs <- getCurrentTime
-      mapM (insertIntro_ currentTs) reMembers
+      catMaybes <$> mapM (createIntro_ currentTs) reMembers
   where
-    insertIntro_ :: UTCTime -> GroupMember -> IO GroupMemberIntro
-    insertIntro_ ts reMember = do
-      DB.execute
-        db
-        [sql|
-          INSERT INTO group_member_intros
-            (re_group_member_id, to_group_member_id, intro_status, intro_chat_protocol_version, created_at, updated_at)
-          VALUES (?,?,?,?,?,?)
-        |]
-        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
-      introId <- insertedRowId db
-      pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
+    createIntro_ :: UTCTime -> GroupMember -> IO (Maybe GroupMemberIntro)
+    createIntro_ ts reMember =
+      -- when members connect concurrently, host would try to create introductions between them in both directions;
+      -- this check avoids creating second (redundant) introduction
+      checkInverseIntro >>= \case
+        Just _ -> pure Nothing
+        Nothing -> do
+          DB.execute
+            db
+            [sql|
+              INSERT INTO group_member_intros
+                (re_group_member_id, to_group_member_id, intro_status, intro_chat_protocol_version, created_at, updated_at)
+              VALUES (?,?,?,?,?,?)
+            |]
+            (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
+          introId <- insertedRowId db
+          pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
+      where
+        checkInverseIntro :: IO (Maybe Int64)
+        checkInverseIntro =
+          maybeFirstRow fromOnly $
+            DB.query
+              db
+              "SELECT 1 FROM group_member_intros WHERE re_group_member_id = ? AND to_group_member_id = ? LIMIT 1"
+              (groupMemberId' toMember, groupMemberId' reMember)
 
 updateIntroStatus :: DB.Connection -> Int64 -> GroupMemberIntroStatus -> IO ()
 updateIntroStatus db introId introStatus = do

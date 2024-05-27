@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
@@ -63,10 +64,6 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
-        withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
-      })
-      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SettingsPreferenceItem(
         painterResource(MR.images.ic_chat_bubble),
@@ -90,6 +87,22 @@ fun PrivacySettingsView(
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
+    }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.settings_section_title_files)) {
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
+        withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
+      })
+      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
+    }
+    SectionCustomFooter {
+      if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {
+        Text(stringResource(MR.strings.app_will_ask_to_confirm_unknown_file_servers))
+      } else {
+        Text(stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers))
+      }
     }
 
     val currentUser = chatModel.currentUser.value
@@ -141,7 +154,7 @@ fun PrivacySettingsView(
       }
 
       if (!chatModel.desktopNoUserNoRemote) {
-        SectionDividerSpaced()
+        SectionDividerSpaced(maxTopPadding = true)
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->

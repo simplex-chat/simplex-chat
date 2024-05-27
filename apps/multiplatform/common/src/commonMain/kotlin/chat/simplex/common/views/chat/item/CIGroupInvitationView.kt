@@ -83,8 +83,8 @@ fun CIGroupInvitationView(
     }
   }
 
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
       inProgress.value = true
@@ -110,6 +110,7 @@ fun CIGroupInvitationView(
             .padding(bottom = 4.dp),
         ) {
           groupInfoView()
+          val secondaryColor = MaterialTheme.colors.secondary
           Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
             Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
             if (action) {
@@ -117,7 +118,7 @@ fun CIGroupInvitationView(
               Text(
                 buildAnnotatedString {
                   append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false)) }
+                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor)) }
                 },
                 color = if (inProgress.value)
                   MaterialTheme.colors.secondary
@@ -128,7 +129,7 @@ fun CIGroupInvitationView(
               Text(
                 buildAnnotatedString {
                   append(groupInvitationStr())
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false)) }
+                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor)) }
                 }
               )
             }

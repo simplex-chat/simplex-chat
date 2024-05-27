@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.group.toggleShowMemberMessages
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -25,8 +26,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.builtins.*
 import kotlinx.serialization.json.*
 import java.util.Date
 
@@ -106,6 +106,7 @@ class AppPreferences {
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
+  val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -166,13 +167,20 @@ class AppPreferences {
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
 
-  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
-  val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
+  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
+  val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
+    json.encodeToString(MapSerializer(String.serializer(), String.serializer()), it)
+  }, decode = {
+    json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), it)
+  })
+  // Deprecated. Remove key from preferences in 2025
+  val themeOverridesOld = mkMapPreference(SHARED_PREFS_THEMES_OLD, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, decode = {
-    json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+    jsonCoerceInputValues.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, settingsThemes)
+  val themeOverrides = mkThemeOverridesPreference()
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
@@ -267,6 +275,12 @@ class AppPreferences {
       set = fun(value) = prefs.putString(prefName, encode(value))
     )
 
+  private fun mkThemeOverridesPreference(): SharedPreference<List<ThemeOverrides>> =
+    SharedPreference(
+      get = fun() = themeOverridesStore ?: (readThemeOverrides()).also { themeOverridesStore = it },
+      set = fun(value) { if (writeThemeOverrides(value)) { themeOverridesStore = value } }
+    )
+
   companion object {
     const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     internal const val SHARED_PREFS_THEMES_ID = "chat.simplex.app.THEMES"
@@ -292,6 +306,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
+    private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -342,8 +357,10 @@ class AppPreferences {
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
+    private const val SHARED_PREFS_CURRENT_THEME_IDs = "CurrentThemeIds"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
-    private const val SHARED_PREFS_THEMES = "Themes"
+    private const val SHARED_PREFS_THEMES_OLD = "Themes"
+    private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
@@ -358,6 +375,8 @@ class AppPreferences {
 
     private const val SHARED_PREFS_IOS_CALL_KIT_ENABLED = "iOSCallKitEnabled"
     private const val SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS = "iOSCallKitCallsInRecents"
+
+    private var themeOverridesStore: List<ThemeOverrides>? = null
   }
 }
 
@@ -442,8 +461,13 @@ object ChatController {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
     apiSetNetworkConfig(netCfg, ctrl)
-    apiSetTempFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
-    apiSetFilesFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
+    apiSetAppFilePaths(
+      getMigrationTempFilesDirectory().absolutePath,
+      getMigrationTempFilesDirectory().absolutePath,
+      wallpapersDir.parentFile.absolutePath,
+      remoteHostsDir.absolutePath,
+      ctrl
+    )
     apiStartChat(ctrl)
     return migrationActiveUser
   }
@@ -662,22 +686,10 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetTempFolder(tempFolder: String, ctrl: ChatCtrl? = null) {
-    val r = sendCmd(null, CC.SetTempFolder(tempFolder), ctrl)
+  suspend fun apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, remoteHostsFolder: String, ctrl: ChatCtrl? = null) {
+    val r = sendCmd(null, CC.ApiSetAppFilePaths(filesFolder, tempFolder, assetsFolder, remoteHostsFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Exception("failed to set temp folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetFilesFolder(filesFolder: String, ctrl: ChatCtrl? = null) {
-    val r = sendCmd(null, CC.SetFilesFolder(filesFolder), ctrl)
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set files folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
-    val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set remote hosts folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set app file paths: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
@@ -1163,6 +1175,20 @@ object ChatController {
     return null
   }
 
+  suspend fun apiSetUserUIThemes(rh: Long?, userId: Long, themes: ThemeModeOverrides?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetUserUIThemes(userId, themes))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiSetUserUIThemes bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun apiSetChatUIThemes(rh: Long?, chatId: ChatId, themes: ThemeModeOverrides?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetChatUIThemes(chatId, themes))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiSetChatUIThemes bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiCreateUserAddress(rh: Long?): String? {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
     val r = sendCmd(rh, CC.ApiCreateMyAddress(userId))
@@ -1337,9 +1363,9 @@ object ChatController {
     }
   }
 
-  suspend fun apiReceiveFile(rh: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
+  suspend fun apiReceiveFile(rh: Long?, fileId: Long, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
-    val r = sendCmd(rh, CC.ReceiveFile(fileId, encrypted, inline))
+    val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1358,7 +1384,23 @@ object ChatController {
           val maybeChatError = chatError(r)
           if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
             Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
-          } else {
+          } else if (maybeChatError is ChatErrorType.FileNotApproved) {
+            Log.d(TAG, "apiReceiveFile FileNotApproved error")
+            if (!auto) {
+              val srvs = maybeChatError.unknownServers.map{ serverHostname(it) }
+              AlertManager.shared.showAlertDialog(
+                title = generalGetString(MR.strings.file_not_approved_title),
+                text = generalGetString(MR.strings.file_not_approved_descr).format(srvs.sorted().joinToString(separator = ", ")),
+                confirmText = generalGetString(MR.strings.download_file),
+                onConfirm = {
+                  val user = chatModel.currentUser.value
+                  if (user != null) {
+                    withBGApi { chatModel.controller.receiveFile(rh, user, fileId, userApprovedRelays = true) }
+                  }
+                },
+              )
+            }
+          } else if (!auto) {
             apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
         }
@@ -2216,9 +2258,14 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, auto: Boolean = false) {
-    val encrypted = appPrefs.privacyEncryptLocalFiles.get()
-    val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    val chatItem = apiReceiveFile(
+      rhId,
+      fileId,
+      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
+      encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+      auto = auto
+    )
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
     }
@@ -2413,9 +2460,8 @@ sealed class CC {
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val mainApp: Boolean): CC()
   class ApiStopChat: CC()
-  class SetTempFolder(val tempFolder: String): CC()
-  class SetFilesFolder(val filesFolder: String): CC()
-  class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
+  @Serializable
+  class ApiSetAppFilePaths(val appFilesFolder: String, val appTempFolder: String, val appAssetsFolder: String, val appRemoteHostsFolder: String): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
@@ -2483,6 +2529,8 @@ sealed class CC {
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
+  class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
+  class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
@@ -2501,7 +2549,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val encrypt: Boolean, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val userApprovedRelays: Boolean, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
   // Remote control
   class SetLocalDeviceName(val displayName: String): CC()
@@ -2550,9 +2598,7 @@ sealed class CC {
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start main=${onOff(mainApp)}"
     is ApiStopChat -> "/_stop"
-    is SetTempFolder -> "/_temp_folder $tempFolder"
-    is SetFilesFolder -> "/_files_folder $filesFolder"
-    is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
+    is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
@@ -2632,6 +2678,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
+    is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
+    is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
@@ -2652,6 +2700,7 @@ sealed class CC {
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile ->
       "/freceive $fileId" +
+          (" approved_relays=${onOff(userApprovedRelays)}") +
           (if (encrypt == null) "" else " encrypt=${onOff(encrypt)}") +
           (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
@@ -2695,9 +2744,7 @@ sealed class CC {
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
-    is SetTempFolder -> "setTempFolder"
-    is SetFilesFolder -> "setFilesFolder"
-    is SetRemoteHostsFolder -> "setRemoteHostsFolder"
+    is ApiSetAppFilePaths -> "apiSetAppFilePaths"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
@@ -2765,6 +2812,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
+    is ApiSetUserUIThemes -> "apiSetUserUIThemes"
+    is ApiSetChatUIThemes -> "apiSetChatUIThemes"
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
@@ -4036,6 +4085,15 @@ val json = Json {
   explicitNulls = false
 }
 
+// Can decode unknown enum to default value specified for this field
+val jsonCoerceInputValues = Json {
+  prettyPrint = true
+  ignoreUnknownKeys = true
+  encodeDefaults = true
+  explicitNulls = false
+  coerceInputValues = true
+}
+
 val jsonShort = Json {
   prettyPrint = false
   ignoreUnknownKeys = true
@@ -4892,13 +4950,14 @@ sealed class ChatErrorType {
       is FileCancel -> "fileCancel"
       is FileAlreadyExists -> "fileAlreadyExists"
       is FileRead -> "fileRead"
-      is FileWrite -> "fileWrite"
+      is FileWrite -> "fileWrite $message"
       is FileSend -> "fileSend"
       is FileRcvChunk -> "fileRcvChunk"
       is FileInternal -> "fileInternal"
       is FileImageType -> "fileImageType"
       is FileImageSize -> "fileImageSize"
       is FileNotReceived -> "fileNotReceived"
+      is FileNotApproved -> "fileNotApproved"
       // is XFTPRcvFile -> "xftpRcvFile"
       // is XFTPSndFile -> "xftpSndFile"
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
@@ -4978,6 +5037,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileImageType") class FileImageType(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileImageSize") class FileImageSize(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileNotReceived") class FileNotReceived(val fileId: Long): ChatErrorType()
+  @Serializable @SerialName("fileNotApproved") class FileNotApproved(val fileId: Long, val unknownServers: List<String>): ChatErrorType()
   // @Serializable @SerialName("xFTPRcvFile") object XFTPRcvFile: ChatErrorType()
   // @Serializable @SerialName("xFTPSndFile") object XFTPSndFile: ChatErrorType()
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
@@ -5476,6 +5536,7 @@ enum class NotificationsMode() {
 data class AppSettings(
   var networkConfig: NetCfg? = null,
   var privacyEncryptLocalFiles: Boolean? = null,
+  var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
   var privacyShowChatPreviews: Boolean? = null,
@@ -5493,12 +5554,18 @@ data class AppSettings(
   var androidCallOnLockScreen: AppSettingsLockScreenCalls? = null,
   var iosCallKitEnabled: Boolean? = null,
   var iosCallKitCallsInRecents: Boolean? = null,
+  var uiProfileImageCornerRadius: Float? = null,
+  var uiColorScheme: String? = null,
+  var uiDarkColorScheme: String? = null,
+  var uiCurrentThemeIds: Map<String, String>? = null,
+  var uiThemes: List<ThemeOverrides>? = null,
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
     val def = defaults
     if (networkConfig != def.networkConfig) { empty.networkConfig = networkConfig }
     if (privacyEncryptLocalFiles != def.privacyEncryptLocalFiles) { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+    if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -5516,6 +5583,11 @@ data class AppSettings(
     if (androidCallOnLockScreen != def.androidCallOnLockScreen) { empty.androidCallOnLockScreen = androidCallOnLockScreen }
     if (iosCallKitEnabled != def.iosCallKitEnabled) { empty.iosCallKitEnabled = iosCallKitEnabled }
     if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+    if (uiProfileImageCornerRadius != def.uiProfileImageCornerRadius) { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
+    if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
+    if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
+    if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
+    if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     return empty
   }
 
@@ -5530,6 +5602,7 @@ data class AppSettings(
       setNetCfg(net)
     }
     privacyEncryptLocalFiles?.let { def.privacyEncryptLocalFiles.set(it) }
+    privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
@@ -5547,6 +5620,11 @@ data class AppSettings(
     androidCallOnLockScreen?.let { def.callOnLockScreen.set(it.toCallOnLockScreen()) }
     iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
+    uiProfileImageCornerRadius?.let { def.profileImageCornerRadius.set(it) }
+    uiColorScheme?.let { def.currentTheme.set(it) }
+    uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
+    uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
+    uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
   }
 
   companion object {
@@ -5554,6 +5632,7 @@ data class AppSettings(
       get() = AppSettings(
         networkConfig = NetCfg.defaults,
         privacyEncryptLocalFiles = true,
+        privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
         privacyShowChatPreviews = true,
@@ -5570,7 +5649,12 @@ data class AppSettings(
         confirmDBUpgrades = false,
         androidCallOnLockScreen = AppSettingsLockScreenCalls.SHOW,
         iosCallKitEnabled = true,
-        iosCallKitCallsInRecents = false
+        iosCallKitCallsInRecents = false,
+        uiProfileImageCornerRadius = 22.5f,
+        uiColorScheme = DefaultTheme.SYSTEM_THEME_NAME,
+        uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
+        uiCurrentThemeIds = null,
+        uiThemes = null,
       )
 
     val current: AppSettings
@@ -5579,6 +5663,7 @@ data class AppSettings(
         return defaults.copy(
           networkConfig = getNetCfg(),
           privacyEncryptLocalFiles = def.privacyEncryptLocalFiles.get(),
+          privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
@@ -5596,6 +5681,11 @@ data class AppSettings(
           androidCallOnLockScreen = AppSettingsLockScreenCalls.from(def.callOnLockScreen.get()),
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
+          uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
+          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM_THEME_NAME,
+          uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
+          uiCurrentThemeIds = def.currentThemeIds.get(),
+          uiThemes = def.themeOverrides.get(),
         )
     }
   }

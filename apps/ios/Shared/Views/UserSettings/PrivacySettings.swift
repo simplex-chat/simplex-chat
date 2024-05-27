@@ -16,6 +16,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -64,18 +65,6 @@ struct PrivacySettings: View {
                 }
 
                 Section {
-                    settingsRow("lock.doc") {
-                        Toggle("Encrypt local files", isOn: $encryptLocalFiles)
-                            .onChange(of: encryptLocalFiles) {
-                                setEncryptLocalFiles($0)
-                            }
-                    }
-                    settingsRow("photo") {
-                        Toggle("Auto-accept images", isOn: $autoAcceptImages)
-                            .onChange(of: autoAcceptImages) {
-                                privacyAcceptImagesGroupDefault.set($0)
-                            }
-                    }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
                     }
@@ -106,6 +95,32 @@ struct PrivacySettings: View {
                     }
                 } header: {
                     Text("Chats")
+                }
+
+                Section {
+                    settingsRow("lock.doc") {
+                        Toggle("Encrypt local files", isOn: $encryptLocalFiles)
+                            .onChange(of: encryptLocalFiles) {
+                                setEncryptLocalFiles($0)
+                            }
+                    }
+                    settingsRow("photo") {
+                        Toggle("Auto-accept images", isOn: $autoAcceptImages)
+                            .onChange(of: autoAcceptImages) {
+                                privacyAcceptImagesGroupDefault.set($0)
+                            }
+                    }
+                    settingsRow("network.badge.shield.half.filled") {
+                        Toggle("Protect IP address", isOn: $askToApproveRelays)
+                    }
+                } header: {
+                    Text("Files")
+                } footer: {
+                    if askToApproveRelays {
+                        Text("The app will ask to confirm downloads from unknown file servers (except .onion).")
+                    } else {
+                        Text("Without Tor or VPN, your IP address will be visible to file servers.")
+                    }
                 }
 
                 Section {
