@@ -410,8 +410,13 @@ startChatController mainApp = do
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
+  let (us, us') = partition activeUser users
   vr <- chatVersionRange'
-  forM_ users $ runExceptT . subscribeUserConnections vr onlyNeeded
+  subscribe vr us
+  subscribe vr us'
+  where
+    subscribe :: VersionRangeChat -> [User] -> CM' ()
+    subscribe vr = mapM_ $ runExceptT . subscribeUserConnections vr onlyNeeded
 
 startFilesToReceive :: [User] -> CM' ()
 startFilesToReceive users = do
