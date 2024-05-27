@@ -821,7 +821,7 @@ expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 @Preview
 @Composable
 fun PreviewChatItemView(
-  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello"), liveState: Boolean = false
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
   ChatItemView(
     rhId = null,
