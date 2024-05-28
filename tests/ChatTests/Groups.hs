@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Groups where
@@ -6103,6 +6104,10 @@ testGroupMemberInactive tmp = do
       alice #> "#team 4"
       alice #> "#team 5"
 
+      pgmCount <- withCCTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM pending_group_messages" :: IO [[Int]]
+      pgmCount `shouldBe` [[2]]
+
       threadDelay 1500000
 
       withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
@@ -6115,6 +6120,10 @@ testGroupMemberInactive tmp = do
 
         bob <# "#team alice> 4"
         bob <# "#team alice> 5"
+
+        pgmCount' <- withCCTransaction alice $ \db ->
+          DB.query_ db "SELECT count(1) FROM pending_group_messages" :: IO [[Int]]
+        pgmCount' `shouldBe` [[0]]
 
         -- delivery works
         alice #> "#team hi"
