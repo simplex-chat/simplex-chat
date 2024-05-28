@@ -4942,7 +4942,6 @@ sealed class ChatErrorType {
       is GroupMemberNotActive -> "groupMemberNotActive"
       is GroupMemberUserRemoved -> "groupMemberUserRemoved"
       is GroupMemberNotFound -> "groupMemberNotFound"
-      is GroupMemberIntroNotFound -> "groupMemberIntroNotFound"
       is GroupCantResendInvitation -> "groupCantResendInvitation"
       is GroupInternal -> "groupInternal"
       is FileNotFound -> "fileNotFound"
@@ -5022,7 +5021,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("groupMemberNotActive") object GroupMemberNotActive: ChatErrorType()
   @Serializable @SerialName("groupMemberUserRemoved") object GroupMemberUserRemoved: ChatErrorType()
   @Serializable @SerialName("groupMemberNotFound") object GroupMemberNotFound: ChatErrorType()
-  @Serializable @SerialName("groupMemberIntroNotFound") class GroupMemberIntroNotFound(val contactName: String): ChatErrorType()
   @Serializable @SerialName("groupCantResendInvitation") class GroupCantResendInvitation(val groupInfo: GroupInfo, val contactName: String): ChatErrorType()
   @Serializable @SerialName("groupInternal") class GroupInternal(val message: String): ChatErrorType()
   @Serializable @SerialName("fileNotFound") class FileNotFound(val message: String): ChatErrorType()

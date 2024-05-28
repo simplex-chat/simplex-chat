@@ -1954,7 +1954,6 @@ viewChatError isCmd logLevel testView = \case
       ]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound -> ["group doesn't have this member"]
-    CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
