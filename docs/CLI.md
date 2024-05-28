@@ -3,7 +3,7 @@ title: Terminal CLI
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md) |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
 
 # SimpleX Chat terminal (console) app for Linux/MacOS/Windows
 
@@ -98,7 +98,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.7-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
+> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.7-stretch` base image (change it in your local [Dockerfile](/Dockerfile)).
 
 #### In any OS
 

@@ -20,6 +20,7 @@ struct SendMessageView: View {
     var nextSendGrpInv: Bool = false
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
+    var disableSendButton = false
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
@@ -53,13 +54,11 @@ struct SendMessageView: View {
                             .padding(.vertical, 8)
                             .frame(maxWidth: .infinity)
                     } else {
-                        let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
                         NativeTextEditor(
                             text: $composeState.message,
                             disableEditing: $composeState.inProgress,
                             height: $teHeight,
                             focused: $keyboardVisible,
-                            alignment: alignment,
                             onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
@@ -109,6 +108,7 @@ struct SendMessageView: View {
         } else if showVoiceMessageButton
             && composeState.message.isEmpty
             && !composeState.editing
+            && !composeState.forwarding
             && composeState.liveMessage == nil
             && ((composeState.noPreview && vmrs == .noRecording)
                 || (vmrs == .recording && holdingVMR)) {
@@ -184,7 +184,8 @@ struct SendMessageView: View {
             !composeState.sendEnabled ||
             composeState.inProgress ||
             (!voiceMessageAllowed && composeState.voicePreview) ||
-            composeState.endLiveDisabled
+            composeState.endLiveDisabled ||
+            disableSendButton
         )
         .frame(width: 29, height: 29)
         .contextMenu{

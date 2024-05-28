@@ -20,7 +20,6 @@ data class Call(
   val sharedKey: String? = null,
   val audioEnabled: Boolean = true,
   val videoEnabled: Boolean = localMedia == CallMediaType.Video,
-  val soundSpeaker: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
   var connectedAt: Instant? = null,
@@ -187,10 +186,11 @@ data class ConnectionState(
 )
 
 // the servers are expected in this format:
-// stun:stun.simplex.im:443?transport=tcp
-// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443?transport=tcp
+// stuns:stun.simplex.im:443?transport=tcp
+// turns:private2:Hxuq2QxUjnhj96Zq2r4HjqHRj@turn.simplex.im:443?transport=tcp
 fun parseRTCIceServer(str: String): RTCIceServer? {
   var s = replaceScheme(str, "stun:")
+  s = replaceScheme(s, "stuns:")
   s = replaceScheme(s, "turn:")
   s = replaceScheme(s, "turns:")
   val u = runCatching { URI(s) }.getOrNull()
@@ -198,7 +198,7 @@ fun parseRTCIceServer(str: String): RTCIceServer? {
     val scheme = u.scheme
     val host = u.host
     val port = u.port
-    if (u.path == "" && (scheme == "stun" || scheme == "turn" || scheme == "turns")) {
+    if (u.path == "" && (scheme == "stun" || scheme == "stuns" || scheme == "turn" || scheme == "turns")) {
       val userInfo = u.userInfo?.split(":")
       val query = if (u.query == null || u.query == "") "" else "?${u.query}"
       return RTCIceServer(

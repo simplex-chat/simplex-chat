@@ -105,7 +105,11 @@ import Simplex.Chat.Migrations.M20240228_pq
 import Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
 import Simplex.Chat.Migrations.M20240324_custom_data
 import Simplex.Chat.Migrations.M20240402_item_forwarded
-import Simplex.Chat.Migrations.M20240410_conn_inactive
+import Simplex.Chat.Migrations.M20240430_ui_theme
+import Simplex.Chat.Migrations.M20240501_chat_deleted
+import Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
+import Simplex.Chat.Migrations.M20240515_rcv_files_user_approved_relays
+import Simplex.Chat.Migrations.M20240528_conn_inactive
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -211,7 +215,11 @@ schemaMigrations =
     ("20240313_drop_agent_ack_cmd_id", m20240313_drop_agent_ack_cmd_id, Just down_m20240313_drop_agent_ack_cmd_id),
     ("20240324_custom_data", m20240324_custom_data, Just down_m20240324_custom_data),
     ("20240402_item_forwarded", m20240402_item_forwarded, Just down_m20240402_item_forwarded),
-    ("20240410_conn_inactive", m20240410_conn_inactive, Just down_m20240410_conn_inactive)
+    ("20240430_ui_theme", m20240430_ui_theme, Just down_m20240430_ui_theme),
+    ("20240501_chat_deleted", m20240501_chat_deleted, Just down_m20240501_chat_deleted),
+    ("20240510_chat_items_via_proxy", m20240510_chat_items_via_proxy, Just down_m20240510_chat_items_via_proxy),
+    ("20240515_rcv_files_user_approved_relays", m20240515_rcv_files_user_approved_relays, Just down_m20240515_rcv_files_user_approved_relays),
+    ("20240528_conn_inactive", m20240528_conn_inactive, Just down_m20240528_conn_inactive)
   ]
 
 -- | The list of migrations in ascending order by date

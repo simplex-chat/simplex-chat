@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -58,7 +59,6 @@ fun ChatInfoView(
   val currentUser = remember { chatModel.currentUser }.value
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-  val pqExperimentalEnabled = chatModel.controller.appPrefs.pqExperimentalEnabled.get()
   if (chat != null && currentUser != null) {
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
@@ -81,7 +81,6 @@ fun ChatInfoView(
       localAlias,
       connectionCode,
       developerTools,
-      pqExperimentalEnabled,
       onLocalAliasChanged = {
         setContactAlias(chat, it, chatModel)
       },
@@ -139,17 +138,6 @@ fun ChatInfoView(
             close.invoke()
           }
         })
-      },
-      allowContactPQ = {
-         showAllowContactPQAlert(allowContactPQ = {
-           withBGApi {
-             val ct = chatModel.controller.apiSetContactPQ(chatRh, contact.contactId, true)
-             if (ct != null) {
-               chatModel.updateContact(chatRh, ct)
-             }
-             close.invoke()
-           }
-         })
       },
       verifyClicked = {
         ModalManager.end.showModalCloseable { close ->
@@ -301,7 +289,6 @@ fun ChatInfoLayout(
   localAlias: String,
   connectionCode: String?,
   developerTools: Boolean,
-  pqExperimentalEnabled: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   openPreferences: () -> Unit,
   deleteContact: () -> Unit,
@@ -310,7 +297,6 @@ fun ChatInfoLayout(
   abortSwitchContactAddress: () -> Unit,
   syncContactConnection: () -> Unit,
   syncContactConnectionForce: () -> Unit,
-  allowContactPQ: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
@@ -352,6 +338,16 @@ fun ChatInfoLayout(
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncContactConnection)
         }
+
+        WallpaperButton {
+          ModalManager.end.showModal {
+            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val c = chat.value
+            if (c != null) {
+              ChatWallpaperEditorModal(c)
+            }
+          }
+        }
         //      } else if (developerTools) {
         //        SynchronizeConnectionButtonForce(syncContactConnectionForce)
         //      }
@@ -360,13 +356,9 @@ fun ChatInfoLayout(
     }
 
     val conn = contact.activeConn
-    if (pqExperimentalEnabled && conn != null) {
-      SectionView("Quantum resistant E2E encryption") {
+    if (conn != null) {
+      SectionView {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        if (!conn.pqEncryption) {
-          AllowContactPQButton(allowContactPQ)
-          SectionTextFooter("After allowing quantum resistant e2e encryption, it will be enabled after several messages if your contact also allows it.")
-        }
         SectionDividerSpaced()
       }
     }
@@ -628,17 +620,6 @@ fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
 }
 
 @Composable
-fun AllowContactPQButton(allowContactPQ: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_warning),
-    "Allow PQ encryption",
-    click = allowContactPQ,
-    textColor = WarningOrange,
-    iconColor = WarningOrange
-  )
-}
-
-@Composable
 fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
     if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
@@ -673,6 +654,15 @@ private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, on
 }
 
 @Composable
+fun WallpaperButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_image),
+    stringResource(MR.strings.settings_section_title_chat_theme),
+    click = onClick
+  )
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_settings_backup_restore),
@@ -703,6 +693,51 @@ fun ShareAddressButton(onClick: () -> Unit) {
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
   )
+}
+
+@Composable
+fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
+  val themes = remember(CurrentColors.collectAsState().value.base) {
+    (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes
+      ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes
+      ?: ThemeModeOverrides()
+  }
+  val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
+  val initialTheme = remember(CurrentColors.collectAsState().value.base) {
+    val preferred = themes.preferredMode(!CurrentColors.value.colors.isLight)
+    globalThemeUsed.value = preferred == null
+    preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+  }
+  ChatWallpaperEditor(
+    initialTheme,
+    applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+    globalThemeUsed = globalThemeUsed,
+    save = { applyToMode, newTheme ->
+      save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
+    })
+}
+
+suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {
+  val unchangedThemes: ThemeModeOverrides = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
+  val wallpaperFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
+  var changedThemes: ThemeModeOverrides? = unchangedThemes
+  val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
+  changedThemes = when (applyToMode) {
+    null -> changedThemes?.copy(light = changed?.copy(mode = DefaultThemeMode.LIGHT), dark = changed?.copy(mode = DefaultThemeMode.DARK))
+    DefaultThemeMode.LIGHT -> changedThemes?.copy(light = changed?.copy(mode = applyToMode))
+    DefaultThemeMode.DARK -> changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
+  }
+  changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
+  val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
+  wallpaperFilesToDelete.forEach(::removeWallpaperFile)
+
+  if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
+    if (chat.chatInfo is ChatInfo.Direct) {
+      chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+    } else if (chat.chatInfo is ChatInfo.Group) {
+      chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+    }
+  }
 }
 
 private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
@@ -741,16 +776,6 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
   )
 }
 
-fun showAllowContactPQAlert(allowContactPQ: () -> Unit) {
-  AlertManager.shared.showAlertDialog(
-    title = "Allow quantum resistant encryption?",
-    text = "This is an experimental feature, it is not recommended to enable it for important chats.",
-    confirmText = "Allow",
-    onConfirm = allowContactPQ,
-    destructive = true,
-  )
-}
-
 @Preview
 @Composable
 fun PreviewChatInfoLayout() {
@@ -768,7 +793,6 @@ fun PreviewChatInfoLayout() {
       localAlias = "",
       connectionCode = "123",
       developerTools = false,
-      pqExperimentalEnabled = false,
       connStats = remember { mutableStateOf(null) },
       contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
@@ -780,7 +804,6 @@ fun PreviewChatInfoLayout() {
       abortSwitchContactAddress = {},
       syncContactConnection = {},
       syncContactConnectionForce = {},
-      allowContactPQ = {},
       verifyClicked = {},
     )
   }

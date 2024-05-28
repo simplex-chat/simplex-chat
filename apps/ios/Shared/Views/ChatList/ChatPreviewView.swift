@@ -23,8 +23,7 @@ struct ChatPreviewView: View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat)
-                    .frame(width: 63, height: 63)
+                ChatInfoImage(chat: chat, size: 63)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
             }
@@ -241,14 +240,14 @@ struct ChatPreviewView: View {
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {
         switch cItem.meta.itemStatus {
-        case .sndErrorAuth:
+        case .sndErrorAuth, .sndError:
             return Text(Image(systemName: "multiply"))
                 .font(.caption)
                 .foregroundColor(.red) + Text(" ")
-        case .sndError:
+        case .sndWarning:
             return Text(Image(systemName: "exclamationmark.triangle.fill"))
                 .font(.caption)
-                .foregroundColor(.yellow) + Text(" ")
+                .foregroundColor(.orange) + Text(" ")
         default: return Text("")
         }
     }

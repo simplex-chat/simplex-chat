@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionCustomFooter
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
 import SectionView
@@ -21,12 +22,12 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
 import chat.simplex.common.views.helpers.*
@@ -42,6 +43,8 @@ fun NetworkAndServersView() {
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
+  val smpProxyMode = remember { mutableStateOf(netCfg.smpProxyMode) }
+  val smpProxyFallback = remember { mutableStateOf(netCfg.smpProxyFallback) }
 
   val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
   NetworkAndServersLayout(
@@ -50,6 +53,8 @@ fun NetworkAndServersView() {
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
     sessionMode = sessionMode,
+    smpProxyMode = smpProxyMode,
+    smpProxyFallback = smpProxyFallback,
     proxyPort = proxyPort,
     toggleSocksProxy = { enable ->
       if (enable) {
@@ -136,6 +141,59 @@ fun NetworkAndServersView() {
           }
         }
       }
+    },
+    updateSMPProxyMode = {
+      if (smpProxyMode.value == it) return@NetworkAndServersLayout
+      val prevValue = smpProxyMode.value
+      smpProxyMode.value = it
+      val startsWith = when (it) {
+        SMPProxyMode.Always -> generalGetString(MR.strings.network_smp_proxy_mode_always_description)
+        SMPProxyMode.Unknown -> generalGetString(MR.strings.network_smp_proxy_mode_unknown_description)
+        SMPProxyMode.Unprotected -> generalGetString(MR.strings.network_smp_proxy_mode_unprotected_description)
+        SMPProxyMode.Never -> generalGetString(MR.strings.network_smp_proxy_mode_never_description)
+      }
+      showUpdateNetworkSettingsDialog(
+        title = generalGetString(MR.strings.update_network_smp_proxy_mode_question),
+        startsWith,
+        onDismiss = { smpProxyMode.value = prevValue }
+      ) {
+        withBGApi {
+          val newCfg = chatModel.controller.getNetCfg().copy(smpProxyMode = it)
+          val res = chatModel.controller.apiSetNetworkConfig(newCfg)
+          if (res) {
+            chatModel.controller.setNetCfg(newCfg)
+            smpProxyMode.value = it
+          } else {
+            smpProxyMode.value = prevValue
+          }
+        }
+      }
+    },
+    updateSMPProxyFallback = {
+      if (smpProxyFallback.value == it) return@NetworkAndServersLayout
+      val prevValue = smpProxyFallback.value
+      smpProxyFallback.value = it
+      val startsWith = when (it) {
+        SMPProxyFallback.Allow -> generalGetString(MR.strings.network_smp_proxy_fallback_allow_description)
+        SMPProxyFallback.AllowProtected -> generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected_description)
+        SMPProxyFallback.Prohibit -> generalGetString(MR.strings.network_smp_proxy_fallback_prohibit_description)
+      }
+      showUpdateNetworkSettingsDialog(
+        title = generalGetString(MR.strings.update_network_smp_proxy_fallback_question),
+        startsWith,
+        onDismiss = { smpProxyFallback.value = prevValue }
+      ) {
+        withBGApi {
+          val newCfg = chatModel.controller.getNetCfg().copy(smpProxyFallback = it)
+          val res = chatModel.controller.apiSetNetworkConfig(newCfg)
+          if (res) {
+            chatModel.controller.setNetCfg(newCfg)
+            smpProxyFallback.value = it
+          } else {
+            smpProxyFallback.value = prevValue
+          }
+        }
+      }
     }
   )
 }
@@ -146,16 +204,22 @@ fun NetworkAndServersView() {
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   sessionMode: MutableState<TransportSessionMode>,
+  smpProxyMode: MutableState<SMPProxyMode>,
+  smpProxyFallback: MutableState<SMPProxyFallback>,
   proxyPort: State<Int>,
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
+  updateSMPProxyMode: (SMPProxyMode) -> Unit,
+  updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
 ) {
   val m = chatModel
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
+
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     if (!chatModel.desktopNoUserNoRemote) {
       SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
@@ -164,7 +228,6 @@ fun NetworkAndServersView() {
         SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
 
         if (currentRemoteHost == null) {
-          val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
           UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, false)
           UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
           if (developerTools) {
@@ -187,8 +250,30 @@ fun NetworkAndServersView() {
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
 
+    if (currentRemoteHost == null) {
+      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
+        SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
+        SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { mutableStateOf(smpProxyMode.value != SMPProxyMode.Never) })
+        SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
+      }
+      SectionCustomFooter {
+        Text(stringResource(MR.strings.private_routing_explanation))
+      }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    }
+
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
+    }
+
+    if (appPlatform.isAndroid) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection).uppercase()) {
+        val info = remember { chatModel.networkInfo }.value
+        SettingsActionItemWithContent(icon = null, info.networkType.text) {
+          Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
+        }
+      }
     }
     SectionBottomSpacer()
   }
@@ -442,6 +527,79 @@ private fun SessionModePicker(
 }
 
 @Composable
+private fun SMPProxyModePicker(
+  smpProxyMode: MutableState<SMPProxyMode>,
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
+  updateSMPProxyMode: (SMPProxyMode) -> Unit,
+) {
+  val density = LocalDensity.current
+  val values = remember {
+    SMPProxyMode.values().map {
+      when (it) {
+        SMPProxyMode.Always -> ValueTitleDesc(SMPProxyMode.Always, generalGetString(MR.strings.network_smp_proxy_mode_always), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_always_description), density))
+        SMPProxyMode.Unknown -> ValueTitleDesc(SMPProxyMode.Unknown, generalGetString(MR.strings.network_smp_proxy_mode_unknown), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_unknown_description), density))
+        SMPProxyMode.Unprotected -> ValueTitleDesc(SMPProxyMode.Unprotected, generalGetString(MR.strings.network_smp_proxy_mode_unprotected), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_unprotected_description), density))
+        SMPProxyMode.Never -> ValueTitleDesc(SMPProxyMode.Never, generalGetString(MR.strings.network_smp_proxy_mode_never), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_never_description), density))
+      }
+    }
+  }
+
+  SectionItemWithValue(
+    generalGetString(MR.strings.network_smp_proxy_mode_private_routing),
+    smpProxyMode,
+    values,
+    icon = painterResource(MR.images.ic_settings_ethernet),
+    onSelected = {
+      showModal {
+        ColumnWithScrollBar(
+          Modifier.fillMaxWidth(),
+        ) {
+          AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
+          SectionViewSelectable(null, smpProxyMode, values, updateSMPProxyMode)
+        }
+      }
+    }
+  )
+}
+
+@Composable
+private fun SMPProxyFallbackPicker(
+  smpProxyFallback: MutableState<SMPProxyFallback>,
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
+  updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
+  enabled: State<Boolean>,
+) {
+  val density = LocalDensity.current
+  val values = remember {
+    SMPProxyFallback.values().map {
+      when (it) {
+        SMPProxyFallback.Allow -> ValueTitleDesc(SMPProxyFallback.Allow, generalGetString(MR.strings.network_smp_proxy_fallback_allow), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_description), density))
+        SMPProxyFallback.AllowProtected -> ValueTitleDesc(SMPProxyFallback.AllowProtected, generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected_description), density))
+        SMPProxyFallback.Prohibit -> ValueTitleDesc(SMPProxyFallback.Prohibit, generalGetString(MR.strings.network_smp_proxy_fallback_prohibit), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_prohibit_description), density))
+      }
+    }
+  }
+
+  SectionItemWithValue(
+    generalGetString(MR.strings.network_smp_proxy_fallback_allow_downgrade),
+    smpProxyFallback,
+    values,
+    icon = painterResource(MR.images.ic_arrows_left_right),
+    enabled = enabled,
+    onSelected = {
+      showModal {
+        ColumnWithScrollBar(
+          Modifier.fillMaxWidth(),
+        ) {
+          AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
+          SectionViewSelectable(null, smpProxyFallback, values, updateSMPProxyFallback)
+        }
+      }
+    }
+  )
+}
+
+@Composable
 private fun NetworkSectionFooter(revert: () -> Unit, save: () -> Unit, revertDisabled: Boolean, saveDisabled: Boolean) {
   Row(
     Modifier.fillMaxWidth(),
@@ -495,8 +653,12 @@ fun PreviewNetworkAndServersLayout() {
       toggleSocksProxy = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
+      smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
+      smpProxyFallback = remember { mutableStateOf(SMPProxyFallback.Allow) },
       useOnion = {},
       updateSessionMode = {},
+      updateSMPProxyMode = {},
+      updateSMPProxyFallback = {},
     )
   }
 }

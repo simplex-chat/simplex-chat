@@ -158,7 +158,7 @@ fun AddGroupLayout(
           )
 
           LaunchedEffect(Unit) {
-            delay(300)
+            delay(1000)
             focusRequester.requestFocus()
           }
         }

@@ -728,6 +728,10 @@
         <target>允许不可撤回地删除已发送消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
+        <source>Allow to send SimpleX links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve">
         <source>Allow to send files and media.</source>
         <target>允许发送文件和媒体。</target>
@@ -1061,6 +1065,10 @@
       <trans-unit id="Cannot receive file" xml:space="preserve">
         <source>Cannot receive file</source>
         <target>无法接收文件</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cellular" xml:space="preserve">
+        <source>Cellular</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve">
@@ -2039,6 +2047,10 @@ This cannot be undone!</source>
         <target>降级并打开聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Download" xml:space="preserve">
+        <source>Download</source>
+        <note>chat item action</note>
+      </trans-unit>
       <trans-unit id="Download failed" xml:space="preserve">
         <source>Download failed</source>
         <note>No comment provided by engineer.</note>
@@ -2144,6 +2156,10 @@ This cannot be undone!</source>
         <source>Enable self-destruct passcode</source>
         <target>启用自毁密码</target>
         <note>set passcode view</note>
+      </trans-unit>
+      <trans-unit id="Enabled for" xml:space="preserve">
+        <source>Enabled for</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
         <source>Encrypt</source>
@@ -2289,10 +2305,6 @@ This cannot be undone!</source>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>添加成员错误</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve">
-        <source>Error allowing contact PQ encryption</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -2658,6 +2670,10 @@ This cannot be undone!</source>
         <target>此群组中禁止文件和媒体。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Files and media not allowed" xml:space="preserve">
+        <source>Files and media not allowed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Files and media prohibited!" xml:space="preserve">
         <source>Files and media prohibited!</source>
         <target>禁止文件和媒体！</target>
@@ -2719,6 +2735,22 @@ This cannot be undone!</source>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>用于控制台</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forward" xml:space="preserve">
+        <source>Forward</source>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Forward and save messages" xml:space="preserve">
+        <source>Forward and save messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarded" xml:space="preserve">
+        <source>Forwarded</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarded from" xml:space="preserve">
+        <source>Forwarded from</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
@@ -2828,6 +2860,10 @@ This cannot be undone!</source>
       <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Group members can irreversibly delete sent messages. (24 hours)</source>
         <target>群组成员可以不可撤回地删除已发送的消息。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
+        <source>Group members can send SimpleX links.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send direct messages." xml:space="preserve">
@@ -3064,6 +3100,10 @@ This cannot be undone!</source>
       <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
         <target>答复</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In-call sounds" xml:space="preserve">
+        <source>In-call sounds</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3534,6 +3574,10 @@ This is your link for group %@!</source>
         <target>该群组禁用了消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message source remains private." xml:space="preserve">
+        <source>Message source remains private.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>消息正文</target>
@@ -3638,6 +3682,10 @@ This is your link for group %@!</source>
         <target>更多改进即将推出！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="More reliable network connection." xml:space="preserve">
+        <source>More reliable network connection.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
         <source>Most likely this connection is deleted.</source>
         <target>此连接很可能已被删除。</target>
@@ -3671,6 +3719,14 @@ This is your link for group %@!</source>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>网络和服务器</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network connection" xml:space="preserve">
+        <source>Network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network management" xml:space="preserve">
+        <source>Network management</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -3781,6 +3837,10 @@ This is your link for group %@!</source>
       <trans-unit id="No history" xml:space="preserve">
         <source>No history</source>
         <target>无历史记录</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No network connection" xml:space="preserve">
+        <source>No network connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -3993,6 +4053,10 @@ This is your link for group %@!</source>
         <target>或者显示此码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Other" xml:space="preserve">
+        <source>Other</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
         <target>PING 次数</target>
@@ -4155,10 +4219,6 @@ Error: %@</source>
         <target>服务器地址中的证书指纹可能不正确</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Post-quantum E2EE" xml:space="preserve">
-        <source>Post-quantum E2EE</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
         <target>保留最后的消息草稿及其附件。</target>
@@ -4209,6 +4269,10 @@ Error: %@</source>
         <target>资料图片</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Profile images" xml:space="preserve">
+        <source>Profile images</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
         <source>Profile name</source>
         <note>No comment provided by engineer.</note>
@@ -4246,6 +4310,10 @@ Error: %@</source>
       <trans-unit id="Prohibit messages reactions." xml:space="preserve">
         <source>Prohibit messages reactions.</source>
         <target>禁止消息回应。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
+        <source>Prohibit sending SimpleX links.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
@@ -4376,6 +4444,10 @@ Error: %@</source>
         <target>接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Receiving concurrency" xml:space="preserve">
+        <source>Receiving concurrency</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
         <target>即将停止接收文件。</target>
@@ -4388,6 +4460,10 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." xml:space="preserve">
         <source>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Recipient(s) can't see who this message is from." xml:space="preserve">
+        <source>Recipient(s) can't see who this message is from.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
@@ -4686,9 +4762,17 @@ Error: %@</source>
         <target>保存欢迎信息？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved" xml:space="preserve">
+        <source>Saved</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
         <source>Saved WebRTC ICE servers will be removed</source>
         <target>已保存的WebRTC ICE服务器将被删除</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Saved from" xml:space="preserve">
+        <source>Saved from</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved message" xml:space="preserve">
@@ -4995,6 +5079,10 @@ Error: %@</source>
         <target>设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Shape profile images" xml:space="preserve">
+        <source>Shape profile images</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
         <target>分享</target>
@@ -5112,6 +5200,14 @@ Error: %@</source>
       <trans-unit id="SimpleX links" xml:space="preserve">
         <source>SimpleX links</source>
         <target>SimpleX 链接</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
+        <source>SimpleX links are prohibited in this group.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links not allowed" xml:space="preserve">
+        <source>SimpleX links not allowed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -5148,6 +5244,10 @@ Error: %@</source>
         <source>Somebody</source>
         <target>某人</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
+        <source>Square, circle, or anything in between.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
@@ -5939,6 +6039,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>语音信息在该群组中被禁用。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Voice messages not allowed" xml:space="preserve">
+        <source>Voice messages not allowed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
         <source>Voice messages prohibited!</source>
         <target>语音消息禁止发送！</target>
@@ -6006,6 +6110,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>当可用时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
+        <source>When connecting audio and video calls.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
         <source>When people request to connect, you can accept or reject it.</source>
         <target>当人们请求连接时，您可以接受或拒绝它。</target>
@@ -6014,6 +6122,18 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
         <target>当您与某人共享隐身聊天资料时，该资料将用于他们邀请您加入的群组。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="WiFi" xml:space="preserve">
+        <source>WiFi</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
+        <source>Will be enabled in direct chats!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wired ethernet" xml:space="preserve">
+        <source>Wired ethernet</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With encrypted files and media." xml:space="preserve">
@@ -6487,6 +6607,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>管理员</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="admins" xml:space="preserve">
+        <source>admins</source>
+        <note>feature role</note>
+      </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
         <target>正在协商将加密应用于 %@…</target>
@@ -6496,6 +6620,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>agreeing encryption…</source>
         <target>同意加密…</target>
         <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="all members" xml:space="preserve">
+        <source>all members</source>
+        <note>feature role</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
         <source>always</source>
@@ -6825,6 +6953,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>发生的事</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="forwarded" xml:space="preserve">
+        <source>forwarded</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
         <target>群组已删除</target>
@@ -7031,6 +7163,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>群主</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="owners" xml:space="preserve">
+        <source>owners</source>
+        <note>feature role</note>
+      </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
         <source>peer-to-peer</source>
         <target>点对点</target>
@@ -7079,6 +7215,14 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>removed you</source>
         <target>已将您移除</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="saved" xml:space="preserve">
+        <source>saved</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="saved from %@" xml:space="preserve">
+        <source>saved from %@</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve">
         <source>sec</source>
@@ -7216,6 +7360,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>yes</source>
         <target>是</target>
         <note>pref value</note>
+      </trans-unit>
+      <trans-unit id="you" xml:space="preserve">
+        <source>you</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
         <source>you are invited to group</source>

@@ -19,6 +19,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -40,6 +41,7 @@ fun chatEventText(eventText: String, ts: String): AnnotatedString =
 
 @Composable
 fun ChatItemView(
+  rhId: Long?,
   cInfo: ChatInfo,
   cItem: ChatItem,
   composeState: MutableState<ComposeState>,
@@ -66,6 +68,7 @@ fun ChatItemView(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   developerTools: Boolean,
+  showViaProxy: Boolean
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -81,17 +84,15 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    val onClick = {
-      when (cItem.meta.itemStatus) {
-        is CIStatus.SndErrorAuth -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.message_delivery_error_desc))
-        }
-        is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
-        }
-        else -> {}
+    val info = cItem.meta.itemStatus.statusInto
+    val onClick = if (info != null) {
+      {
+        AlertManager.shared.showAlertMsg(
+          title = info.first,
+          text = info.second,
+        )
       }
-    }
+    } else { {} }
 
     @Composable
     fun ChatItemReactions() {
@@ -128,7 +129,7 @@ fun ChatItemView(
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -174,6 +175,13 @@ fun ChatItemView(
         }
 
         @Composable
+        fun DeleteItemMenu() {
+          DefaultDropdownMenu(showMenu) {
+            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+          }
+        }
+
+        @Composable
         fun MsgContentItemDropdownMenu() {
           val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
           when {
@@ -195,10 +203,10 @@ fun ChatItemView(
                 }
                 val clipboard = LocalClipboardManager.current
                 val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
+
                 val copyAndShareAllowed = when {
                   cItem.content.text.isNotEmpty() -> true
-                  cItem.file != null && chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded -> true
-                  getLoadedFilePath(cItem.file) != null -> true
+                  cItem.file?.forwardingAllowed() == true -> true
                   else -> false
                 }
 
@@ -227,12 +235,33 @@ fun ChatItemView(
                     showMenu.value = false
                   })
                 }
-                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file?.fileSource] != false && cItem.file?.loaded == true))) {
+                if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                   SaveContentItemAction(cItem, saveFileLauncher, showMenu)
+                } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
+                  ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
+                    withBGApi {
+                      Log.d(TAG, "ChatItemView downloadFileAction")
+                      val user = chatModel.currentUser.value
+                      if (user != null) {
+                        controller.receiveFile(rhId, user, cItem.file.fileId)
+                      }
+                    }
+                    showMenu.value = false
+                  })
                 }
                 if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
                   ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
                     composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
+                    showMenu.value = false
+                  })
+                }
+                if (cItem.meta.itemDeleted == null &&
+                  (cItem.file == null || cItem.file.forwardingAllowed()) &&
+                  !cItem.isLiveDummy && !live
+                  ) {
+                  ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
+                    chatModel.chatId.value = null
+                    chatModel.sharedContent.value = SharedContent.Forward(cItem, cInfo)
                     showMenu.value = false
                   })
                 }
@@ -278,10 +307,13 @@ fun ChatItemView(
                 } else {
                   ExpandItemAction(revealed, showMenu)
                 }
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
               }
             }
             else -> {
-              showMenu.value = false
+              DefaultDropdownMenu(showMenu) {
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+              }
             }
           }
         }
@@ -301,14 +333,14 @@ fun ChatItemView(
         fun ContentItem() {
           val mc = cItem.content.msgContent
           if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
-            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
+            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
             MarkedDeletedItemDropdownMenu()
           } else {
-            if (cItem.quotedItem == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
+            if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
               if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
-                EmojiItemView(cItem, cInfo.timedMessagesTTL)
+                EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
               } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, longClick = { onLinkLongClick("") }, receiveFile)
+                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile)
               } else {
                 framedItemView()
               }
@@ -320,7 +352,7 @@ fun ChatItemView(
         }
 
         @Composable fun LegacyDeletedItem() {
-          DeletedItemView(cItem, cInfo.timedMessagesTTL)
+          DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -328,7 +360,8 @@ fun ChatItemView(
         }
 
         @Composable fun CallItem(status: CICallStatus, duration: Int) {
-          CICallItemView(cInfo, cItem, status, duration, acceptCall)
+          CICallItemView(cInfo, cItem, status, duration, acceptCall, cInfo.timedMessagesTTL)
+          DeleteItemMenu()
         }
 
         fun mergedGroupEventText(chatItem: ChatItem): String? {
@@ -372,7 +405,7 @@ fun ChatItemView(
 
         @Composable
         fun DeletedItem() {
-          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
@@ -412,12 +445,22 @@ fun ChatItemView(
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
           is CIContent.RcvIntegrityError -> if (developerTools) {
             IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+            DeleteItemMenu()
           } else {
             Box(Modifier.size(0.dp)) {}
           }
-          is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
-          is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
-          is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+          is CIContent.RcvDecryptionError -> {
+            CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
+            DeleteItemMenu()
+          }
+          is CIContent.RcvGroupInvitation -> {
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
+            DeleteItemMenu()
+          }
+          is CIContent.SndGroupInvitation -> {
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
+            DeleteItemMenu()
+          }
           is CIContent.RcvDirectEventContent -> {
             EventItemView()
             MsgContentItemDropdownMenu()
@@ -442,35 +485,36 @@ fun ChatItemView(
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatFeature -> {
-            CIChatFeatureView(cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndChatFeature -> {
-            CIChatFeatureView(cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatPreference -> {
             val ct = if (cInfo is ChatInfo.Direct) cInfo.contact else null
             CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
+            DeleteItemMenu()
           }
           is CIContent.SndChatPreference -> {
-            CIChatFeatureView(cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvGroupFeature -> {
-            CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndGroupFeature -> {
-            CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvChatFeatureRejected -> {
-            CIChatFeatureView(cItem, c.feature, Color.Red, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.feature, Color.Red, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.RcvGroupFeatureRejected -> {
-            CIChatFeatureView(cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
+            CIChatFeatureView(cInfo, cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
             MsgContentItemDropdownMenu()
           }
           is CIContent.SndModerated -> DeletedItem()
@@ -480,7 +524,10 @@ fun ChatItemView(
           is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
           is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
           is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
-          is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
+          is CIContent.InvalidJSON -> {
+            CIInvalidJSONView(c.json)
+            DeleteItemMenu()
+          }
         }
       }
 
@@ -547,7 +594,7 @@ fun DeleteItemAction(
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
-      if (!revealed.value && cItem.meta.itemDeleted != null) {
+      if (!revealed.value) {
         val currIndex = chatModel.getChatItemIndexOrNull(cItem)
         val ciCategory = cItem.mergeCategory
         if (currIndex != null && ciCategory != null) {
@@ -724,7 +771,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
         }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
-        if (chatItem.meta.editable && !chatItem.localNote) {
+        if (chatItem.meta.deletable && !chatItem.localNote) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
@@ -768,49 +815,42 @@ fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteM
   )
 }
 
-private fun showMsgDeliveryErrorAlert(description: String) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.message_delivery_error_title),
-    text = description,
-  )
-}
-
 expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 
 @Preview
 @Composable
-fun PreviewChatItemView() {
-  SimpleXTheme {
-    ChatItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      ),
-      useLinkPreviews = true,
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      revealed = remember { mutableStateOf(false) },
-      range = 0..1,
-      deleteMessage = { _, _ -> },
-      deleteMessages = { _ -> },
-      receiveFile = { _ -> },
-      cancelFile = {},
-      joinGroup = { _, _ -> },
-      acceptCall = { _ -> },
-      scrollToItem = {},
-      acceptFeature = { _, _, _ -> },
-      openDirectChat = { _ -> },
-      updateContactStats = { },
-      updateMemberStats = { _, _ -> },
-      syncContactConnection = { },
-      syncMemberConnection = { _, _ -> },
-      findModelChat = { null },
-      findModelMember = { null },
-      setReaction = { _, _, _, _ -> },
-      showItemDetails = { _, _ -> },
-      developerTools = false,
-    )
-  }
+fun PreviewChatItemView(
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
+) {
+  ChatItemView(
+    rhId = null,
+    ChatInfo.Direct.sampleData,
+    chatItem,
+    useLinkPreviews = true,
+    linkMode = SimplexLinkMode.DESCRIPTION,
+    composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+    revealed = remember { mutableStateOf(false) },
+    range = 0..1,
+    deleteMessage = { _, _ -> },
+    deleteMessages = { _ -> },
+    receiveFile = { _ -> },
+    cancelFile = {},
+    joinGroup = { _, _ -> },
+    acceptCall = { _ -> },
+    scrollToItem = {},
+    acceptFeature = { _, _, _ -> },
+    openDirectChat = { _ -> },
+    updateContactStats = { },
+    updateMemberStats = { _, _ -> },
+    syncContactConnection = { },
+    syncMemberConnection = { _, _ -> },
+    findModelChat = { null },
+    findModelMember = { null },
+    setReaction = { _, _, _, _ -> },
+    showItemDetails = { _, _ -> },
+    developerTools = false,
+    showViaProxy = false,
+  )
 }
 
 @Preview
@@ -818,6 +858,7 @@ fun PreviewChatItemView() {
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
+      rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
       useLinkPreviews = true,
@@ -843,6 +884,7 @@ fun PreviewChatItemViewDeletedContent() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       developerTools = false,
+      showViaProxy = false
     )
   }
 }

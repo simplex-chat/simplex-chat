@@ -27,7 +27,6 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import Data.Int (Int64)
@@ -45,6 +44,7 @@ import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
@@ -117,7 +117,8 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    userMemberProfileUpdatedAt :: Maybe UTCTime
+    userMemberProfileUpdatedAt :: Maybe UTCTime,
+    uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
@@ -175,6 +176,8 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
+    uiThemes :: Maybe UIThemeEntityOverrides,
+    chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -224,7 +227,7 @@ contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
 contactDeleted :: Contact -> Bool
-contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
@@ -234,7 +237,8 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
-  | CSDeleted -- contact deleted by contact
+  | CSDeleted
+  | CSDeletedByUser
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
@@ -252,10 +256,12 @@ instance TextEncoding ContactStatus where
   textDecode = \case
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
+    "deletedByUser" -> Just CSDeletedByUser
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
+    CSDeletedByUser -> "deletedByUser"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -372,6 +378,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -1065,7 +1072,8 @@ data RcvFileTransfer = RcvFileTransfer
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    userApprovedRelays :: Bool
   }
   deriving (Eq, Show)
 
@@ -1479,9 +1487,6 @@ serializeIntroStatus = \case
   GMIntroReConnected -> "re-con"
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
-
-textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
-textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
 
 data NetworkStatus
   = NSUnknown

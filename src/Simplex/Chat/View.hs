@@ -50,7 +50,8 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import qualified Simplex.FileTransfer.Transport as XFTPTransport
+import Simplex.Chat.Types.UITheme
+import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
@@ -83,7 +84,7 @@ serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . response
 
 responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
-  CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
+  CRActiveUser User {profile, uiThemes} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -342,7 +343,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
   CRRemoteCtrlStopped {} -> ["remote controller stopped"]
-  CRContactPQAllowed u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": enable " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption"]
   CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -375,6 +375,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
+  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", plain . LB.unpack $ J.encode msgCounts]
+  CRContactDisabled u c -> ttyUser u ["[" <> ttyContact' c <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRConnectionInactive entity inactive -> viewConnectionEntityInactive entity inactive
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
@@ -387,9 +389,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAgentConnDeleted acId -> ["completed deleting connection, agent connection id: " <> sShow acId | logLevel <= CLLInfo]
   CRAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
-  CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
-  CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
+  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
+  CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
+  CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
@@ -1180,8 +1182,8 @@ viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [St
 viewServerTestResult (AProtoServerWithAuth p _) = \case
   Just ProtocolTestFailure {testStep, testError} ->
     result
-      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTPTransport.AUTH]
+      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && (case testError of SMP _ SMP.AUTH -> True; _ -> False)]
+      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
       <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
@@ -1211,7 +1213,7 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
@@ -1223,14 +1225,19 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> [viewConnectionVerified (contactSecurityCode ct)]
     <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
+    <> viewUITheme uiThemes
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
-viewGroupInfo GroupInfo {groupId, customData} s =
+viewGroupInfo GroupInfo {groupId, uiThemes, customData} s =
   [ "group ID: " <> sShow groupId,
     "current members: " <> sShow (currentMembers s)
   ]
+    <> viewUITheme uiThemes
     <> viewCustomData customData
+
+viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
+viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> plain (LB.toStrict $ J.encode uiThemes)])
 
 viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> plain (LB.toStrict . J.encode $ J.Object v)])
@@ -1760,6 +1767,7 @@ viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId
     CIFSRcvInvitation -> ["receiving " <> fstr <> " not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvAccepted -> ["receiving " <> fstr <> " just started"]
     CIFSRcvTransfer progress total -> ["receiving " <> fstr <> " progress " <> fileProgressXFTP progress total fileSize]
+    CIFSRcvAborted -> ["receiving " <> fstr <> " aborted, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\(CryptoFile fp _) -> ", path: " <> plain fp) fileSource]
     CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
     CIFSRcvError -> ["receiving " <> fstr <> " error"]
@@ -1887,8 +1895,8 @@ viewRemoteCtrl CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (App
       | otherwise = ""
     showCompatible = if compatible then "" else ", " <> bold' "not compatible"
 
-viewChatError :: ChatLogLevel -> Bool -> ChatError -> [StyledString]
-viewChatError logLevel testView = \case
+viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
+viewChatError isCmd logLevel testView = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
@@ -1963,12 +1971,14 @@ viewChatError logLevel testView = \case
     CEFileImageType _ -> ["image type must be jpg, send as a file using " <> highlight' "/f"]
     CEFileImageSize _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
     CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
+    CEFileNotApproved fileId unknownSrvs -> ["file " <> sShow fileId <> " aborted, unknwon XFTP servers:"] <> map (plain . show) unknownSrvs
     CEXFTPRcvFile fileId aFileId e -> ["error receiving XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidForward -> ["cannot forward this message"]
+    CEForwardNoFile -> ["cannot forward this message, file not found"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]
@@ -2019,18 +2029,20 @@ viewChatError logLevel testView = \case
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
-    CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
-    SMP SMP.AUTH ->
+    CMD PROHIBITED cxt -> [withConnEntity <> plain ("error: command is prohibited, " <> cxt)]
+    SMP _ SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
-    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
-    AGENT A_PROHIBITED -> [withConnEntity <> "error: AGENT A_PROHIBITED" | logLevel <= CLLWarning]
-    CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
+    BROKER _ NETWORK | not isCmd -> []
+    BROKER _ TIMEOUT | not isCmd -> []
+    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
+    AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]
+    CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning || isCmd]
     CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]
     INTERNAL e -> [plain $ "internal error: " <> e]
-    e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning]
+    e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning || isCmd]
     where
       withConnEntity = case entity_ of
         Just entity@(RcvDirectMsgConnection conn contact_) -> case contact_ of

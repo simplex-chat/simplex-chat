@@ -9,7 +9,6 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -62,7 +61,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       },
       members = chatModel.groupMembers
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
-        .sortedBy { it.displayName.lowercase() },
+        .sortedByDescending { it.memberRole },
       developerTools,
       groupLink,
       addMembers = {
@@ -232,6 +231,16 @@ fun GroupChatInfoLayout(
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
           SendReceiptsOptionDisabled()
+        }
+
+        WallpaperButton {
+          ModalManager.end.showModal {
+            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val c = chat.value
+            if (c != null) {
+              ChatWallpaperEditorModal(c)
+            }
+          }
         }
       }
       SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))

@@ -16,6 +16,7 @@ import chat.simplex.common.platform.onRightClick
 
 @Composable
 fun CIChatFeatureView(
+  chatInfo: ChatInfo,
   chatItem: ChatItem,
   feature: Feature,
   iconColor: Color,
@@ -23,7 +24,7 @@ fun CIChatFeatureView(
   revealed: MutableState<Boolean>,
   showMenu: MutableState<Boolean>,
 ) {
-  val merged = if (!revealed.value) mergedFeatures(chatItem) else emptyList()
+  val merged = if (!revealed.value) mergedFeatures(chatItem, chatInfo) else emptyList()
   Box(
     Modifier
       .combinedClickable(
@@ -70,7 +71,7 @@ private fun Feature.toFeatureInfo(color: Color, param: Int?, type: String): Feat
   )
 
 @Composable
-private fun mergedFeatures(chatItem: ChatItem): List<FeatureInfo>? {
+private fun mergedFeatures(chatItem: ChatItem, chatInfo: ChatInfo): List<FeatureInfo>? {
   val m = ChatModel
   val fs: ArrayList<FeatureInfo> = arrayListOf()
   val icons: MutableSet<PainterBox> = mutableSetOf()
@@ -78,7 +79,7 @@ private fun mergedFeatures(chatItem: ChatItem): List<FeatureInfo>? {
   if (i != null) {
     val reversedChatItems = m.chatItems.asReversed()
     while (i < reversedChatItems.size) {
-      val f = featureInfo(reversedChatItems[i]) ?: break
+      val f = featureInfo(reversedChatItems[i], chatInfo) ?: break
       if (!icons.contains(f.icon)) {
         fs.add(0, f)
         icons.add(f.icon)
@@ -90,12 +91,12 @@ private fun mergedFeatures(chatItem: ChatItem): List<FeatureInfo>? {
 }
 
 @Composable
-private fun featureInfo(ci: ChatItem): FeatureInfo? =
+private fun featureInfo(ci: ChatItem, chatInfo: ChatInfo): FeatureInfo? =
   when (ci.content) {
     is CIContent.RcvChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param, ci.content.feature.name)
     is CIContent.SndChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param, ci.content.feature.name)
-    is CIContent.RcvGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enable.iconColor, ci.content.param, ci.content.groupFeature.name)
-    is CIContent.SndGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enable.iconColor, ci.content.param, ci.content.groupFeature.name)
+    is CIContent.RcvGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enabled(ci.content.memberRole_, (chatInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, ci.content.param, ci.content.groupFeature.name)
+    is CIContent.SndGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enabled(ci.content.memberRole_, (chatInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, ci.content.param, ci.content.groupFeature.name)
     else -> null
   }
 

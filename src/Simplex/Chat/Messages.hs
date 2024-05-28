@@ -14,6 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+{-# OPTIONS_GHC -fno-warn-operator-whitespace #-}
 
 module Simplex.Chat.Messages where
 
@@ -29,6 +30,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -45,6 +47,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -277,6 +280,12 @@ toChatInfo = \case
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
 
+contactChatDeleted :: ChatDirection c d -> Bool
+contactChatDeleted = \case
+  CDDirectSnd Contact {chatDeleted} -> chatDeleted
+  CDDirectRcv Contact {chatDeleted} -> chatDeleted
+  _ -> False
+
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
     itemSent :: SMsgDirection d,
@@ -338,12 +347,14 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    sentViaProxy :: Maybe Bool,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemForwarded :: Maybe CIForwardedFrom,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
+    deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
@@ -351,15 +362,16 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let editable = case itemContent of
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
+  let deletable = case itemContent of
         CISndMsgContent _ ->
           case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted && isNothing itemForwarded
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted && isNothing itemForwarded
+            SCTLocal -> isNothing itemDeleted
+            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
+      editable = deletable && isNothing itemForwarded
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -368,12 +380,14 @@ dummyMeta itemId ts itemText =
       itemTs = ts,
       itemText,
       itemStatus = CISSndNew,
+      sentViaProxy = Nothing,
       itemSharedMsgId = Nothing,
       itemForwarded = Nothing,
       itemDeleted = Nothing,
       itemEdited = False,
       itemTimed = Nothing,
       itemLive = Nothing,
+      deletable = False,
       editable = False,
       forwardedByMember = Nothing,
       createdAt = ts,
@@ -442,10 +456,10 @@ deriving instance Show ACIReaction
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
-  ChatTypeQuotable CTDirect = ()
-  ChatTypeQuotable CTGroup = ()
+  ChatTypeQuotable 'CTDirect = ()
+  ChatTypeQuotable 'CTGroup = ()
   ChatTypeQuotable a =
-    (Int ~ Bool, TypeError (Type.Text "ChatType " :<>: ShowType a :<>: Type.Text " cannot be quoted"))
+    (Int ~ Bool, TypeError ('Type.Text "ChatType " ':<>: 'ShowType a ':<>: 'Type.Text " cannot be quoted"))
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
@@ -526,6 +540,7 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
+  CIFSRcvAborted :: CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
   CIFSRcvError :: CIFileStatus 'MDRcv
@@ -545,6 +560,7 @@ ciFileEnded = \case
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
+  CIFSRcvAborted -> True
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
   CIFSRcvError -> True
@@ -560,6 +576,7 @@ ciFileLoaded = \case
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
+  CIFSRcvAborted -> False
   CIFSRcvCancelled -> False
   CIFSRcvComplete -> True
   CIFSRcvError -> False
@@ -579,6 +596,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
+    CIFSRcvAborted -> "rcv_aborted"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
     CIFSRcvError -> "rcv_error"
@@ -601,6 +619,7 @@ instance StrEncoding ACIFileStatus where
           "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
           "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
           "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
+          "rcv_aborted" -> pure $ AFS SMDRcv CIFSRcvAborted
           "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
           "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
           "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
@@ -618,6 +637,7 @@ data JSONCIFileStatus
   | JCIFSRcvInvitation
   | JCIFSRcvAccepted
   | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
+  | JCIFSRcvAborted
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
   | JCIFSRcvError
@@ -633,6 +653,7 @@ jsonCIFileStatus = \case
   CIFSRcvInvitation -> JCIFSRcvInvitation
   CIFSRcvAccepted -> JCIFSRcvAccepted
   CIFSRcvTransfer rcvd total -> JCIFSRcvTransfer rcvd total
+  CIFSRcvAborted -> JCIFSRcvAborted
   CIFSRcvComplete -> JCIFSRcvComplete
   CIFSRcvCancelled -> JCIFSRcvCancelled
   CIFSRcvError -> JCIFSRcvError
@@ -648,6 +669,7 @@ aciFileStatusJSON = \case
   JCIFSRcvInvitation -> AFS SMDRcv CIFSRcvInvitation
   JCIFSRcvAccepted -> AFS SMDRcv CIFSRcvAccepted
   JCIFSRcvTransfer rcvd total -> AFS SMDRcv $ CIFSRcvTransfer rcvd total
+  JCIFSRcvAborted -> AFS SMDRcv CIFSRcvAborted
   JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
   JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
   JCIFSRcvError -> AFS SMDRcv CIFSRcvError
@@ -673,8 +695,9 @@ data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: SndCIStatusProgress -> CIStatus 'MDSnd
   CISSndRcvd :: MsgReceiptStatus -> SndCIStatusProgress -> CIStatus 'MDSnd
-  CISSndErrorAuth :: CIStatus 'MDSnd
-  CISSndError :: String -> CIStatus 'MDSnd
+  CISSndErrorAuth :: CIStatus 'MDSnd -- deprecated
+  CISSndError :: SndError -> CIStatus 'MDSnd
+  CISSndWarning :: SndError -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
   CISInvalid :: Text -> CIStatus 'MDSnd
@@ -693,7 +716,8 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndSent sndProgress -> "snd_sent " <> strEncode sndProgress
     CISSndRcvd msgRcptStatus sndProgress -> "snd_rcvd " <> strEncode msgRcptStatus <> " " <> strEncode sndProgress
     CISSndErrorAuth -> "snd_error_auth"
-    CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
+    CISSndError sndErr -> "snd_error " <> strEncode sndErr
+    CISSndWarning sndErr -> "snd_warning " <> strEncode sndErr
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
     CISInvalid {} -> "invalid"
@@ -711,17 +735,68 @@ instance StrEncoding ACIStatus where
           "snd_sent" -> ACIStatus SMDSnd . CISSndSent <$> ((A.space *> strP) <|> pure SSPComplete)
           "snd_rcvd" -> ACIStatus SMDSnd <$> (CISSndRcvd <$> (A.space *> strP) <*> ((A.space *> strP) <|> pure SSPComplete))
           "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-          "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+          "snd_error" -> ACIStatus SMDSnd . CISSndError <$> (A.space *> strP)
+          "snd_warning" -> ACIStatus SMDSnd . CISSndWarning <$> (A.space *> strP)
           "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
           "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
           _ -> fail "bad status"
+
+-- see serverHostError in agent
+data SndError
+  = SndErrAuth
+  | SndErrQuota
+  | SndErrExpired -- TIMEOUT/NETWORK errors
+  | SndErrRelay {srvError :: SrvError} -- BROKER errors (other than TIMEOUT/NETWORK)
+  | SndErrProxy {proxyServer :: String, srvError :: SrvError} -- SMP PROXY errors
+  | SndErrProxyRelay {proxyServer :: String, srvError :: SrvError} -- PROXY BROKER errors
+  | SndErrOther {sndError :: Text} -- other errors
+  deriving (Eq, Show)
+
+data SrvError
+  = SrvErrHost
+  | SrvErrVersion
+  | SrvErrOther {srvError :: Text}
+  deriving (Eq, Show)
+
+instance StrEncoding SndError where
+  strEncode = \case
+    SndErrAuth -> "auth"
+    SndErrQuota -> "quota"
+    SndErrExpired -> "expired"
+    SndErrRelay srvErr -> "relay " <> strEncode srvErr
+    SndErrProxy proxy srvErr -> "proxy " <> encodeUtf8 (T.pack proxy) <> " " <> strEncode srvErr
+    SndErrProxyRelay proxy srvErr -> "proxy_relay " <> encodeUtf8 (T.pack proxy) <> " " <> strEncode srvErr
+    SndErrOther e -> "other " <> encodeUtf8 e
+  strP =
+    A.takeWhile1 (/= ' ') >>= \case
+      "auth" -> pure SndErrAuth
+      "quota" -> pure SndErrQuota
+      "expired" -> pure SndErrExpired
+      "relay" -> SndErrRelay <$> (A.space *> strP)
+      "proxy" -> SndErrProxy . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
+      "proxy_relay" -> SndErrProxyRelay . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeWhile1 (/= ' ') <* A.space) <*> strP
+      "other" -> SndErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      s -> SndErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString -- for backward compatibility with `CISSndError String`
+
+instance StrEncoding SrvError where
+  strEncode = \case
+    SrvErrHost -> "host"
+    SrvErrVersion -> "version"
+    SrvErrOther e -> "other " <> encodeUtf8 e
+  strP =
+    A.takeWhile1 (/= ' ') >>= \case
+      "host" -> pure SrvErrHost
+      "version" -> pure SrvErrVersion
+      "other" -> SrvErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      _ -> fail "bad SrvError"
 
 data JSONCIStatus
   = JCISSndNew
   | JCISSndSent {sndProgress :: SndCIStatusProgress}
   | JCISSndRcvd {msgRcptStatus :: MsgReceiptStatus, sndProgress :: SndCIStatusProgress}
-  | JCISSndErrorAuth
-  | JCISSndError {agentError :: String}
+  | JCISSndErrorAuth -- deprecated
+  | JCISSndError {agentError :: SndError}
+  | JCISSndWarning {agentError :: SndError}
   | JCISRcvNew
   | JCISRcvRead
   | JCISInvalid {text :: Text}
@@ -733,7 +808,8 @@ jsonCIStatus = \case
   CISSndSent sndProgress -> JCISSndSent sndProgress
   CISSndRcvd msgRcptStatus sndProgress -> JCISSndRcvd msgRcptStatus sndProgress
   CISSndErrorAuth -> JCISSndErrorAuth
-  CISSndError e -> JCISSndError e
+  CISSndError sndErr -> JCISSndError sndErr
+  CISSndWarning sndErr -> JCISSndWarning sndErr
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
   CISInvalid text -> JCISInvalid text
@@ -744,7 +820,8 @@ jsonACIStatus = \case
   JCISSndSent sndProgress -> ACIStatus SMDSnd $ CISSndSent sndProgress
   JCISSndRcvd msgRcptStatus sndProgress -> ACIStatus SMDSnd $ CISSndRcvd msgRcptStatus sndProgress
   JCISSndErrorAuth -> ACIStatus SMDSnd CISSndErrorAuth
-  JCISSndError e -> ACIStatus SMDSnd $ CISSndError e
+  JCISSndError sndErr -> ACIStatus SMDSnd $ CISSndError sndErr
+  JCISSndWarning sndErr -> ACIStatus SMDSnd $ CISSndWarning sndErr
   JCISRcvNew -> ACIStatus SMDRcv CISRcvNew
   JCISRcvRead -> ACIStatus SMDRcv CISRcvRead
   JCISInvalid text -> ACIStatus SMDSnd $ CISInvalid text
@@ -1031,7 +1108,7 @@ instance TextEncoding CIForwardedFromTag where
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
-    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus],
+    memberDeliveryStatuses :: Maybe (NonEmpty MemberDeliveryStatus),
     forwardedFromChatItem :: Maybe AChatItem
   }
   deriving (Show)
@@ -1060,7 +1137,8 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    memberDeliveryStatus :: CIStatus 'MDSnd
+    memberDeliveryStatus :: CIStatus 'MDSnd,
+    sentViaProxy :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -1097,6 +1175,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CIFF") ''CIForwardedFrom)
 $(JQ.deriveJSON defaultJSON ''CITimed)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "SSP") ''SndCIStatusProgress)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SrvErr") ''SrvError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SndErr") ''SndError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCIS") ''JSONCIStatus)
 

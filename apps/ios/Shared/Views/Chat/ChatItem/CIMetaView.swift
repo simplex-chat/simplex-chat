@@ -14,6 +14,10 @@ struct CIMetaView: View {
     var chatItem: ChatItem
     var metaColor = Color.secondary
     var paleMetaColor = Color(UIColor.tertiaryLabel)
+    var showStatus = true
+    var showEdited = true
+
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
     var body: some View {
         if chatItem.isDeletedContent {
@@ -25,24 +29,24 @@ struct CIMetaView: View {
             switch meta.itemStatus {
             case let .sndSent(sndProgress):
                 switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent)
-                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent)
+                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
                 }
             case let .sndRcvd(_, sndProgress):
                 switch sndProgress {
                 case .complete:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
                     }
                 case .partial:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
                     }
                 }
             default:
-                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor)
+                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
             }
         }
     }
@@ -54,9 +58,19 @@ enum SentCheckmark {
     case rcvd2
 }
 
-func ciMetaText(_ meta: CIMeta, chatTTL: Int?, encrypted: Bool?,  color: Color = .clear, transparent: Bool = false, sent: SentCheckmark? = nil) -> Text {
+func ciMetaText(
+    _ meta: CIMeta,
+    chatTTL: Int?,
+    encrypted: Bool?,
+    color: Color = .clear,
+    transparent: Bool = false,
+    sent: SentCheckmark? = nil,
+    showStatus: Bool = true,
+    showEdited: Bool = true,
+    showViaProxy: Bool
+) -> Text {
     var r = Text("")
-    if meta.itemEdited {
+    if showEdited, meta.itemEdited {
         r = r + statusIconText("pencil", color)
     }
     if meta.disappearing {
@@ -67,19 +81,24 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, encrypted: Bool?,  color: Color =
         }
         r = r + Text(" ")
     }
-    if let (icon, statusColor) = meta.statusIcon(color) {
-        let t = Text(Image(systemName: icon)).font(.caption2)
-        let gap = Text("  ").kerning(-1.25)
-        let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
-        switch sent {
-        case nil: r = r + t1
-        case .sent: r = r + t1 + gap
-        case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
-        case .rcvd2: r = r + gap + t1
+    if showViaProxy, meta.sentViaProxy == true {
+        r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
+    }
+    if showStatus {
+        if let (icon, statusColor) = meta.statusIcon(color) {
+            let t = Text(Image(systemName: icon)).font(.caption2)
+            let gap = Text("  ").kerning(-1.25)
+            let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
+            switch sent {
+            case nil: r = r + t1
+            case .sent: r = r + t1 + gap
+            case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
+            case .rcvd2: r = r + gap + t1
+            }
+            r = r + Text(" ")
+        } else if !meta.disappearing {
+            r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
         }
-        r = r + Text(" ")
-    } else if !meta.disappearing {
-        r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
     }
     if let enc = encrypted {
         r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")

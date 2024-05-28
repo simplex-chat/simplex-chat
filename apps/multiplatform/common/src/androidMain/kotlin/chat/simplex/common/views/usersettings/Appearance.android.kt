@@ -12,19 +12,17 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import chat.simplex.common.R
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -32,19 +30,19 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
-import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay
 
-enum class AppIcon(val resId: Int) {
-  DEFAULT(R.drawable.icon_round_common),
-  DARK_BLUE(R.drawable.icon_dark_blue_round_common),
+enum class AppIcon(val image: ImageResource) {
+  DEFAULT(MR.images.ic_simplex_light),
+  DARK_BLUE(MR.images.ic_simplex_dark),
 }
 
 @Composable
-actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+actual fun AppearanceView(m: ChatModel) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
-
   fun setAppIcon(newIcon: AppIcon) {
     if (appIcon.value == newIcon) return
     val newComponent = ComponentName(APPLICATION_ID, "chat.simplex.app.MainActivity_${newIcon.name.lowercase()}")
@@ -61,18 +59,11 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 
     appIcon.value = newIcon
   }
-
   AppearanceScope.AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
-    showSettingsModal = showSettingsModal,
-    editColor = { name, initialColor ->
-      ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, close)
-      }
-    },
   )
 }
 
@@ -82,8 +73,6 @@ fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  editColor: (ThemeColor, Color) -> Unit,
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
@@ -116,15 +105,21 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
     }
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ThemesSection(systemDarkTheme)
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ProfileImageSection()
+
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
-          val mipmap = ContextCompat.getDrawable(LocalContext.current, item.resId)!!
           Image(
-            bitmap = mipmap.toBitmap().asImageBitmap(),
+            painterResource(item.image),
             contentDescription = "",
             contentScale = ContentScale.Fit,
             modifier = Modifier
@@ -132,6 +127,7 @@ fun AppearanceScope.AppearanceLayout(
               .size(70.dp)
               .clickable { changeIcon(item) }
               .padding(10.dp)
+              .clip(CircleShape)
           )
 
           if (index + 1 != AppIcon.values().size) {
@@ -141,8 +137,6 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
     SectionBottomSpacer()
   }
 }
@@ -162,8 +156,6 @@ fun PreviewAppearanceSettings() {
       languagePref = SharedPreference({ null }, {}),
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
-      showSettingsModal = { {} },
-      editColor = { _, _ -> },
     )
   }
 }

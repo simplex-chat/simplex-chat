@@ -17,11 +17,14 @@ let interfaceStyleNames: [LocalizedStringKey] = ["System", "Light", "Dark"]
 let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
 
 struct AppearanceSettings: View {
+    @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @State private var iconLightTapped = false
     @State private var iconDarkTapped = false
     @State private var userInterfaceStyle = getUserInterfaceStyleDefault()
     @State private var uiTintColor = getUIAccentColorDefault()
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
 
     var body: some View {
         VStack{
@@ -42,6 +45,23 @@ struct AppearanceSettings: View {
                         Spacer().frame(width: 16)
                         updateAppIcon(image: "icon-dark", icon: "DarkAppIcon", tapped: $iconDarkTapped)
                     }
+                }
+
+                Section("Profile images") {
+                    HStack(spacing: 16) {
+                        if let img = m.currentUser?.image, img != "" {
+                            ProfileImage(imageStr: img, size: 60)
+                        } else {
+                            clipProfileImage(Image(colorScheme == .light ? "icon-dark" : "icon-light"), size: 60, radius: profileImageCornerRadius)
+                        }
+
+                        Slider(
+                            value: $profileImageCornerRadius,
+                            in: 0...50,
+                            step: 2.5
+                        )
+                    }
+                    .foregroundColor(.secondary)
                 }
 
                 Section {
@@ -93,7 +113,7 @@ struct AppearanceSettings: View {
             }
             ._onButtonGesture { tapped.wrappedValue = $0 } perform: {}
             .overlay(tapped.wrappedValue ? Color.secondary : Color.clear)
-            .cornerRadius(20)
+            .cornerRadius(13.5)
     }
 }
 

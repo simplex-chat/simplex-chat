@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIGroupInvitationView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
@@ -19,6 +20,8 @@ struct CIGroupInvitationView: View {
     @State private var frameWidth: CGFloat = 0
     @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
@@ -37,16 +40,22 @@ struct CIGroupInvitationView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             groupInvitationText()
                                 .overlay(DetermineWidth())
-                            Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                                .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
-                                .font(.callout)
-                                .padding(.trailing, 60)
-                                .overlay(DetermineWidth())
+                            (
+                                Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
+                                    .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
+                                    .font(.callout)
+                                + Text("   ")
+                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
+                            )
+                            .overlay(DetermineWidth())
                         }
                     } else {
-                        groupInvitationText()
-                            .padding(.trailing, 60)
-                            .overlay(DetermineWidth())
+                        (
+                            groupInvitationText()
+                            + Text("   ")
+                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
+                        )
+                        .overlay(DetermineWidth())
                     }
                 }
                 .padding(.bottom, 2)
@@ -56,9 +65,7 @@ struct CIGroupInvitationView: View {
                 }
             }
 
-            chatItem.timestampText
-                .font(.caption)
-                .foregroundColor(.secondary)
+            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false, showEdited: false)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -100,9 +107,9 @@ struct CIGroupInvitationView: View {
             ProfileImage(
                 imageStr: groupInvitation.groupProfile.image,
                 iconName: "person.2.circle.fill",
+                size: 44,
                 color: color
             )
-            .frame(width: 44, height: 44)
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
                 let p = groupInvitation.groupProfile
@@ -115,7 +122,7 @@ struct CIGroupInvitationView: View {
         }
     }
 
-    private func groupInvitationText() -> some View {
+    private func groupInvitationText() -> Text {
         Text(groupInvitationStr())
             .font(.callout)
     }
@@ -137,8 +144,8 @@ struct CIGroupInvitationView: View {
 struct CIGroupInvitationView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            CIGroupInvitationView(chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin)
-            CIGroupInvitationView(chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin)
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin)
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin)
         }
     }
 }

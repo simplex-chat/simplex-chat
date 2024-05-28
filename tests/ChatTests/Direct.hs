@@ -10,7 +10,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, when)
+import Control.Monad (forM_)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -21,11 +21,10 @@ import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion, supportedChatVRange)
+import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, VersionChat, pattern VersionChat)
+import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -38,6 +37,8 @@ chatDirectTests = do
     describe "add contact and send/receive messages" testAddContact
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
+    it "delete contact keeping conversation" testDeleteContactKeepConversation
+    it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
@@ -47,6 +48,7 @@ chatDirectTests = do
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
+    it "send large message" testLargeMessage
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -116,25 +118,18 @@ chatDirectTests = do
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "negotiate connection peer chat protocol version range" $ do
     describe "peer version range correctly set for new connection via invitation" $ do
-      testInvVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
-      testInvVRange (supportedChatVRange PQSupportOff) vr11
-      testInvVRange vr11 (supportedChatVRange PQSupportOff)
+      testInvVRange supportedChatVRange supportedChatVRange
+      testInvVRange supportedChatVRange vr11
+      testInvVRange vr11 supportedChatVRange
       testInvVRange vr11 vr11
     describe "peer version range correctly set for new connection via contact request" $ do
-      testReqVRange (supportedChatVRange PQSupportOff) (supportedChatVRange PQSupportOff)
-      testReqVRange (supportedChatVRange PQSupportOff) vr11
-      testReqVRange vr11 (supportedChatVRange PQSupportOff)
+      testReqVRange supportedChatVRange supportedChatVRange
+      testReqVRange supportedChatVRange vr11
+      testReqVRange vr11 supportedChatVRange
       testReqVRange vr11 vr11
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
-  describe "PQ tests" $ do
-    describe "enable PQ before connection, connect via invitation link" $ pqMatrix2 runTestPQConnectViaLink
-    describe "enable PQ before connection, connect via contact address" $ pqMatrix2 runTestPQConnectViaAddress
-    describe "connect via invitation link with PQ encryption enabled" $ pqVersionTestMatrix2 runTestPQVersionsViaLink
-    describe "connect via contact address with PQ encryption enabled" $ pqVersionTestMatrix2 runTestPQVersionsViaAddress
-    it "should enable PQ after several messages in connection without PQ" testPQEnableContact
-    it "should enable PQ, reduce envelope size and enable compression" testPQEnableContactCompression
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -142,7 +137,7 @@ chatDirectTests = do
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
   where
-    runTestAddContact alice bob = do
+    runTestAddContact pqExpected alice bob = do
       alice ##> "/_connect 1"
       inv <- getInvitation alice
       bob ##> ("/_connect 1 " <> inv)
@@ -151,46 +146,51 @@ testAddContact = versionTestMatrix2 runTestAddContact
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      chatsEmpty alice bob
+      chatsEmpty
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
       alice ##> "/_unread chat @2 on"
       alice <## "ok"
       alice ##> "/_unread chat @2 off"
       alice <## "ok"
-      chatsOneMessage alice bob
+      chatsOneMessage
       bob #> "@alice hello there"
       alice <# "bob> hello there"
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
-      chatsManyMessages alice bob
-    chatsEmpty alice bob = do
-      alice @@@ [("@bob", lastChatFeature)]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
-      bob @@@ [("@alice", lastChatFeature)]
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
-    chatsOneMessage alice bob = do
-      alice @@@ [("@bob", "hello there 🙂")]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
-      bob @@@ [("@alice", "hello there 🙂")]
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂")])
-    chatsManyMessages alice bob = do
-      alice @@@ [("@bob", "how are you?")]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
-      bob @@@ [("@alice", "how are you?")]
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
-      -- pagination
-      alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
-      alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
-      -- search
-      alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
-      -- read messages
-      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      alice #$> ("/_read chat @2", id, "ok")
-      bob #$> ("/_read chat @2", id, "ok")
-      alice #$> ("/read user", id, "ok")
-      alice #$> ("/_read user 1", id, "ok")
+      chatsManyMessages
+      where
+        chatsEmpty = do
+          alice @@@ [("@bob", lastChatFeature)]
+          alice #$> ("/_get chat @2 count=100", chat, features)
+          bob @@@ [("@alice", lastChatFeature)]
+          bob #$> ("/_get chat @2 count=100", chat, features)
+        chatsOneMessage = do
+          alice @@@ [("@bob", "hello there 🙂")]
+          alice #$> ("/_get chat @2 count=100", chat, features <> [(1, "hello there 🙂")])
+          bob @@@ [("@alice", "hello there 🙂")]
+          bob #$> ("/_get chat @2 count=100", chat, features <> [(0, "hello there 🙂")])
+        chatsManyMessages = do
+          alice @@@ [("@bob", "how are you?")]
+          alice #$> ("/_get chat @2 count=100", chat, features <> [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
+          bob @@@ [("@alice", "how are you?")]
+          bob #$> ("/_get chat @2 count=100", chat, features <> [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
+          -- pagination
+          alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
+          alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, features <> [(1, "hello there 🙂")])
+          -- search
+          alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
+          -- read messages
+          alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
+          bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
+          alice #$> ("/_read chat @2", id, "ok")
+          bob #$> ("/_read chat @2", id, "ok")
+          alice #$> ("/read user", id, "ok")
+          alice #$> ("/_read user 1", id, "ok")
+        features =
+          if pqExpected
+            then chatFeatures
+            else (0, e2eeInfoNoPQStr) : tail chatFeatures
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -298,6 +298,7 @@ testPlanInvitationLinkOwn tmp =
 
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+    threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
@@ -346,7 +347,7 @@ testDeleteContactDeletesProfile =
       connectUsers alice bob
       alice <##> bob
       -- alice deletes contact, profile is deleted
-      alice ##> "/d bob"
+      alice ##> "/_delete @2 full notify=on"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
@@ -358,6 +359,43 @@ testDeleteContactDeletesProfile =
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
+
+testDeleteContactKeepConversation :: HasCallStack => FilePath -> IO ()
+testDeleteContactKeepConversation =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/_delete @2 entity notify=on"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice @@@ [("@bob", "hey")]
+      alice ##> "@bob hi"
+      alice <## "bob: not ready"
+      bob @@@ [("@alice", "contact deleted")]
+      bob ##> "@alice hey"
+      bob <## "alice: not ready"
+
+testDeleteConversationKeepContact :: HasCallStack => FilePath -> IO ()
+testDeleteConversationKeepContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice @@@ [("@bob", "hey")]
+
+      alice ##> "/_delete @2 messages"
+      alice <## "bob: contact is deleted"
+
+      alice @@@ [("@bob", "")] -- UI would filter
+      bob @@@ [("@alice", "hey")]
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      alice @@@ [("@bob", "hi")]
+      alice <##> bob
 
 testDeleteUnusedContactSilent :: HasCallStack => FilePath -> IO ()
 testDeleteUnusedContactSilent =
@@ -728,6 +766,20 @@ testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bo
   cath <# "alice> hello"
   cath <## "there"
 
+testLargeMessage :: HasCallStack => FilePath -> IO ()
+testLargeMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      img <- genProfileImg
+      let profileImage = "data:image/png;base64," <> B.unpack img
+      alice `send` ("/_profile 1 {\"displayName\": \"alice2\", \"fullName\": \"\", \"image\": \"" <> profileImage <> "\"}")
+      _trimmedCmd1 <- getTermLine alice
+      alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
+      bob <## "contact alice changed to alice2"
+      bob <## "use @alice2 <message> to send messages"
+
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
@@ -1017,20 +1069,25 @@ testNegotiateCall =
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
     alice <## "ok"
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: connecting...")])
     bob <## "alice continued the WebRTC call"
     repeatM_ 3 $ getTermLine bob
+    threadDelay 100000
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"
     alice <## "ok"
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: in progress (00:00)")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
+    threadDelay 100000
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: in progress (00:00)")])
     -- either party can end the call
     bob ##> "/_call end @2"
     bob <## "ok"
+    threadDelay 100000
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: ended (00:00)")])
     alice <## "call with bob ended"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
@@ -1649,17 +1706,17 @@ testUsersDifferentCIExpirationTTL tmp = do
       -- set ttl for first user
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_ttl 1 1", id, "ok")
+      alice #$> ("/_ttl 1 2", id, "ok")
 
       -- set ttl for second user
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 3", id, "ok")
+      alice #$> ("/_ttl 2 4", id, "ok")
 
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -1671,7 +1728,7 @@ testUsersDifferentCIExpirationTTL tmp = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 3 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 4 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -1680,7 +1737,7 @@ testUsersDifferentCIExpirationTTL tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 3000000
 
       -- messages both before and after setting chat item ttl are deleted
       -- first user messages
@@ -1916,13 +1973,13 @@ testUsersTimedMessages tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChat tmp "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
-      configureTimedMessages alice bob "2" "1"
+      configureTimedMessages alice bob "2" "2"
 
       -- create second user and configure timed messages for contact
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       connectUsers alice bob
-      configureTimedMessages alice bob "4" "2"
+      configureTimedMessages alice bob "4" "3"
 
       -- first user messages
       alice ##> "/user alice"
@@ -1943,7 +2000,7 @@ testUsersTimedMessages tmp = do
       alice <# "bob> alisa 2"
 
       -- messages are deleted after ttl
-      threadDelay 500000
+      threadDelay 1500000
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2094,7 +2151,7 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items before=13 count=10"
       alice
-        <##? [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+        <##? [ ConsoleString ("bob> " <> e2eeInfoPQStr),
                "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
@@ -2165,7 +2222,7 @@ testUserPrivacy =
       alice <## "messages are shown"
       alice <## "profile is visible"
     chatHistory =
-      [ ConsoleString ("bob> " <> e2eeInfoNoPQStr),
+      [ ConsoleString ("bob> " <> e2eeInfoPQStr),
         "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
@@ -2239,6 +2296,7 @@ testSwitchContact =
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
+      threadDelay 100000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "you changed address")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
@@ -2252,12 +2310,12 @@ testAbortSwitchContact tmp = do
     alice <## "bob: you started changing address"
     -- repeat switch is prohibited
     alice ##> "/switch bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, switchConnectionAsync: already switching"
     -- stop switch
     alice #$> ("/abort switch bob", id, "switch aborted")
     -- repeat switch stop is prohibited
     alice ##> "/abort switch bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "alice started changing address for you"
       -- alice changes address again
@@ -2266,6 +2324,7 @@ testAbortSwitchContact tmp = do
       bob <## "alice started changing address for you"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
+      threadDelay 100000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
@@ -2280,6 +2339,7 @@ testSwitchGroupMember =
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
@@ -2296,12 +2356,12 @@ testAbortSwitchGroupMember tmp = do
     alice <## "#team: you started changing address for bob"
     -- repeat switch is prohibited
     alice ##> "/switch #team bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, switchConnectionAsync: already switching"
     -- stop switch
     alice #$> ("/abort switch #team bob", id, "switch aborted")
     -- repeat switch stop is prohibited
     alice ##> "/abort switch #team bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice started changing address for you"
@@ -2311,6 +2371,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
@@ -2347,6 +2408,7 @@ testMarkContactVerified =
       alice <## "sending messages via: localhost"
       alice <## "you've shared main profile with this contact"
       alice <## connVerified
+      alice <## "quantum resistant end-to-end encryption"
       alice <## currentChatVRangeInfo
       where
         connVerified
@@ -2423,7 +2485,7 @@ setupDesynchronizedRatchet tmp alice = do
   withTestChat tmp "bob_old" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob ##> "/sync alice"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "@bob 1"
     bob <## "alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync alice to synchronize"
@@ -2433,7 +2495,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob ##> "/tail @alice 1"
     bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
     bob ##> "@alice 1"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
   where
     copyDb from to = do
@@ -2459,6 +2521,7 @@ testSyncRatchet tmp =
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -2498,6 +2561,7 @@ testSyncRatchetCodeReset tmp =
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat @2 count=4", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
       alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -2517,6 +2581,7 @@ testSyncRatchetCodeReset tmp =
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
       bob <## connVerified
+      bob <## "quantum resistant end-to-end encryption"
       bob <## currentChatVRangeInfo
       where
         connVerified
@@ -2667,8 +2732,8 @@ testConfigureDeliveryReceipts tmp =
 
 testConnInvChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnInvChatVRange ct1VRange ct2VRange tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = const ct1VRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = const ct2VRange} "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
       connectUsers alice bob
 
       alice ##> "/i bob"
@@ -2679,8 +2744,8 @@ testConnInvChatVRange ct1VRange ct2VRange tmp =
 
 testConnReqChatVRange :: HasCallStack => VersionRangeChat -> VersionRangeChat -> FilePath -> IO ()
 testConnReqChatVRange ct1VRange ct2VRange tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = const ct1VRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = const ct2VRange} "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
       alice ##> "/ad"
       cLink <- getContactLink alice True
       bob ##> ("/c " <> cLink)
@@ -2707,7 +2772,7 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange bob supportedChatVRange
 
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2716,10 +2781,10 @@ testUpdatePeerChatVRange tmp =
       alice <# "bob> hello 1"
 
       alice ##> "/i bob"
-      contactInfoChatVRange alice (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange alice supportedChatVRange
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange bob supportedChatVRange
 
     withTestChatCfg tmp cfg11 "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2731,9 +2796,9 @@ testUpdatePeerChatVRange tmp =
       contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfoChatVRange bob (supportedChatVRange PQSupportOff)
+      contactInfoChatVRange bob supportedChatVRange
   where
-    cfg11 = testCfg {chatVRange = const vr11} :: ChatConfig
+    cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
 
 testGetNetworkStatuses :: HasCallStack => FilePath -> IO ()
 testGetNetworkStatuses tmp = do
@@ -2759,259 +2824,5 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "sending messages via: localhost"
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
+  cc <## "quantum resistant end-to-end encryption"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
-
-runTestPQConnectViaLink :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
-runTestPQConnectViaLink (alice, aPQ) (bob, bPQ) = do
-  when aPQ $ pqOn alice
-  when bPQ $ pqOn bob
-
-  connectUsers alice bob
-
-  (alice, "hi") `pqSend` bob
-  (bob, "hey") `pqSend` alice
-
-  alice ##> "/_get chat @2 count=100"
-  ra <- chat <$> getTermLine alice
-  ra `shouldContain` [(0, e2eeInfo)]
-  alice `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
-
-  bob ##> "/_get chat @2 count=100"
-  rb <- chat <$> getTermLine bob
-  rb `shouldContain` [(0, e2eeInfo)]
-  bob `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
-  where
-    pqEnabled = aPQ && bPQ
-    pqSend = if pqEnabled then (+#>) else (\#>)
-    e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
-
-pqOn :: TestCC -> IO ()
-pqOn cc = do
-  cc ##> "/pq on"
-  cc <## "ok"
-
-runTestPQConnectViaAddress :: HasCallStack => (TestCC, PQEnabled) -> (TestCC, PQEnabled) -> IO ()
-runTestPQConnectViaAddress (alice, aPQ) (bob, bPQ) = do
-  when aPQ $ pqOn alice
-  when bPQ $ pqOn bob
-
-  alice ##> "/ad"
-  cLink <- getContactLink alice True
-  bob ##> ("/c " <> cLink)
-  alice <#? bob
-  alice @@@ [("<@bob", "")]
-  alice ##> "/ac bob"
-  alice <## "bob (Bob): accepting contact request..."
-  concurrently_
-    (bob <## "alice (Alice): contact is connected")
-    (alice <## "bob (Bob): contact is connected")
-
-  (alice, "hi") `pqSend` bob
-  (bob, "hey") `pqSend` alice
-
-  alice ##> "/_get chat @2 count=100"
-  ra <- chat <$> getTermLine alice
-  ra `shouldContain` [(0, e2eeInfo)]
-  alice `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
-
-  bob ##> "/_get chat @2 count=100"
-  rb <- chat <$> getTermLine bob
-  rb `shouldContain` [(0, e2eeInfo)]
-  bob `pqForContact` 2 `shouldReturn` PQEncryption pqEnabled
-  where
-    pqEnabled = aPQ && bPQ
-    pqSend = if pqEnabled then (+#>) else (\#>)
-    e2eeInfo = if pqEnabled then e2eeInfoPQStr else e2eeInfoNoPQStr
-
-runTestPQVersionsViaLink :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
-runTestPQVersionsViaLink alice bob pqExpected vExpected = do
-  img <- genProfileImg
-  let profileImage = "data:image/png;base64," <> B.unpack img
-  alice `send` ("/set profile image " <> profileImage)
-  _trimmedCmd1 <- getTermLine alice
-  alice <## "profile image updated"
-  bob `send` ("/set profile image " <> profileImage)
-  _trimmedCmd2 <- getTermLine bob
-  bob <## "profile image updated"
-
-  pqOn alice
-  pqOn bob
-
-  connectUsers alice bob
-
-  (alice, "hi", vExpected) `pqSend` (bob, vExpected)
-  (bob, "hey", vExpected) `pqSend` (alice, vExpected)
-
-  alice ##> "/_get chat @2 count=100"
-  ra <- chat <$> getTermLine alice
-  ra `shouldContain` [(0, e2eeInfo)]
-  alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-
-  bob ##> "/_get chat @2 count=100"
-  rb <- chat <$> getTermLine bob
-  rb `shouldContain` [(0, e2eeInfo)]
-  bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-  where
-    pqSend = if pqExpected then (+:#>) else (\:#>)
-    e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
-
-runTestPQVersionsViaAddress :: HasCallStack => TestCC -> TestCC -> Bool -> VersionChat -> IO ()
-runTestPQVersionsViaAddress alice bob pqExpected vExpected = do
-  img <- genProfileImg
-  let profileImage = "data:image/png;base64," <> B.unpack img
-  alice `send` ("/set profile image " <> profileImage)
-  _trimmedCmd1 <- getTermLine alice
-  alice <## "profile image updated"
-  bob `send` ("/set profile image " <> profileImage)
-  _trimmedCmd2 <- getTermLine bob
-  bob <## "profile image updated"
-
-  pqOn alice
-  pqOn bob
-
-  alice ##> "/ad"
-  cLink <- getContactLink alice True
-  bob ##> ("/c " <> cLink)
-  alice <#? bob
-  alice @@@ [("<@bob", "")]
-  alice ##> "/ac bob"
-  alice <## "bob (Bob): accepting contact request..."
-  concurrently_
-    (bob <## "alice (Alice): contact is connected")
-    (alice <## "bob (Bob): contact is connected")
-
-  (alice, "hi", vExpected) `pqSend` (bob, vExpected)
-  (bob, "hey", vExpected) `pqSend` (alice, vExpected)
-
-  alice ##> "/_get chat @2 count=100"
-  ra <- chat <$> getTermLine alice
-  ra `shouldContain` [(0, e2eeInfo)]
-  alice `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-
-  bob ##> "/_get chat @2 count=100"
-  rb <- chat <$> getTermLine bob
-  rb `shouldContain` [(0, e2eeInfo)]
-  bob `pqForContact` 2 `shouldReturn` PQEncryption pqExpected
-  where
-    pqSend = if pqExpected then (+:#>) else (\:#>)
-    e2eeInfo = if pqExpected then e2eeInfoPQStr else e2eeInfoNoPQStr
-
-testPQEnableContact :: HasCallStack => FilePath -> IO ()
-testPQEnableContact =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    (alice, "hi") \#> bob
-    (bob, "hey") \#> alice
-
-    alice ##> "/_get chat @2 count=100"
-    ra <- chat <$> getTermLine alice
-    ra `shouldContain` [(0, e2eeInfoNoPQStr)]
-    PQEncOff <- alice `pqForContact` 2
-
-    bob ##> "/_get chat @2 count=100"
-    rb <- chat <$> getTermLine bob
-    rb `shouldContain` [(0, e2eeInfoNoPQStr)]
-    PQEncOff <- bob `pqForContact` 2
-
-    sendMany PQEncOff alice bob
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-
-    -- enabling experimental flags doesn't enable PQ in previously created connection
-    pqOn alice
-    sendMany PQEncOff alice bob
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-
-    pqOn bob
-    sendMany PQEncOff alice bob
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-
-    -- if only one contact allows PQ, it's not enabled
-    alice ##> "/pq @bob on"
-    alice <## "bob: enable quantum resistant end-to-end encryption"
-    sendMany PQEncOff alice bob
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-
-    -- both contacts have to allow PQ to enable it
-    bob ##> "/pq @alice on"
-    bob <## "alice: enable quantum resistant end-to-end encryption"
-
-    (alice, "1") \#> bob
-    (bob, "2") \#> alice
-    (alice, "3") \#> bob
-    (bob, "4") \#> alice
-    (alice, "5") +#> bob
-
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-
-    (bob, "6") ++#> alice
-    -- equivalent to:
-    -- bob `send` "@alice 6"
-    -- bob <## "alice: quantum resistant end-to-end encryption enabled"
-    -- bob <# "@alice 6"
-    -- alice <## "bob: quantum resistant end-to-end encryption enabled"
-    -- alice <# "bob> 6"
-
-    PQEncOn <- alice `pqForContact` 2
-    alice #$> ("/_get chat @2 count=2", chat, [(0, e2eeInfoPQStr), (0, "6")])
-
-    PQEncOn <- bob `pqForContact` 2
-    bob #$> ("/_get chat @2 count=2", chat, [(1, e2eeInfoPQStr), (1, "6")])
-
-    (alice, "6") +#> bob
-    (bob, "7") +#> alice
-
-    sendMany PQEncOn alice bob
-
-    PQEncOn <- alice `pqForContact` 2
-    PQEncOn <- bob `pqForContact` 2
-    pure ()
-
-sendMany :: PQEncryption -> TestCC -> TestCC -> IO ()
-sendMany pqEnc alice bob =
-  forM_ [(1 :: Int) .. 10] $ \i -> do
-    sndRcv pqEnc False (alice, show i) bob
-    sndRcv pqEnc False (bob, show i) alice
-
-testPQEnableContactCompression :: HasCallStack => FilePath -> IO ()
-testPQEnableContactCompression =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    (alice, "hi") \#> bob
-    (bob, "hey") \#> alice
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-    (alice, "lrg 1", v) \:#> (bob, v)
-    (bob, "lrg 2", v) \:#> (alice, v)
-    PQSupportOff <- alice `pqSupportForCt` 2
-    alice ##> "/pq @bob on"
-    alice <## "bob: enable quantum resistant end-to-end encryption"
-    PQSupportOn <- alice `pqSupportForCt` 2
-    (alice, "lrg 3", v) \:#> (bob, v)
-    (bob, "lrg 4", v) \:#> (alice, v)
-    PQSupportOff <- bob `pqSupportForCt` 2
-    bob ##> "/pq @alice on"
-    bob <## "alice: enable quantum resistant end-to-end encryption"
-    PQSupportOn <- bob `pqSupportForCt` 2
-    threadDelay 300000
-    (alice, "lrg 1", v) \:#> (bob, v')
-    threadDelay 300000
-    (bob, "lrg 2", v') \:#> (alice, v')
-    threadDelay 300000
-    (alice, "lrg 3", v') \:#> (bob, v')
-    threadDelay 300000
-    (bob, "lrg 4", v') \:#> (alice, v')
-    threadDelay 300000
-    (alice, "lrg 5", v') +:#> (bob, v')
-    PQEncOff <- alice `pqForContact` 2
-    PQEncOff <- bob `pqForContact` 2
-    (bob, "lrg 6", v') ++:#> (alice, v')
-    (alice, "lrg 7", v') +:#> (bob, v')
-    (bob, "lrg 8", v') +:#> (alice, v')
-  where
-    v = currentChatVersion
-    v' = pqEncryptionCompressionVersion

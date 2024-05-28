@@ -1,6 +1,7 @@
 @file:UseSerializers(UriSerializer::class)
 package chat.simplex.common.views.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -11,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -18,8 +21,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.Indigo
-import chat.simplex.common.ui.theme.isSystemInDarkTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -44,6 +46,7 @@ sealed class ComposeContextItem {
   @Serializable object NoContextItem: ComposeContextItem()
   @Serializable class QuotedItem(val chatItem: ChatItem): ComposeContextItem()
   @Serializable class EditingItem(val chatItem: ChatItem): ComposeContextItem()
+  @Serializable class ForwardingItem(val chatItem: ChatItem, val fromChatInfo: ChatInfo): ComposeContextItem()
 }
 
 @Serializable
@@ -77,13 +80,18 @@ data class ComposeState(
         is ComposeContextItem.EditingItem -> true
         else -> false
       }
+  val forwarding: Boolean
+    get() = when (contextItem) {
+      is ComposeContextItem.ForwardingItem -> true
+      else -> false
+    }
   val sendEnabled: () -> Boolean
     get() = {
       val hasContent = when (preview) {
         is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
-        else -> message.isNotEmpty() || liveMessage != null
+        else -> message.isNotEmpty() || forwarding || liveMessage != null
       }
       hasContent && !inProgress
     }
@@ -107,12 +115,21 @@ data class ComposeState(
 
   val attachmentDisabled: Boolean
     get() {
-      if (editing || liveMessage != null || inProgress) return true
+      if (editing || forwarding || liveMessage != null || inProgress) return true
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
         else -> true
       }
+    }
+
+  val attachmentPreview: Boolean
+    get() = when (preview) {
+      ComposePreview.NoPreview -> false
+      is ComposePreview.CLinkPreview -> false
+      is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
+      is ComposePreview.VoicePreview -> false
+      is ComposePreview.FilePreview -> true
     }
 
   val empty: Boolean
@@ -243,10 +260,23 @@ fun ComposeView(
   attachmentOption: MutableState<AttachmentOption?>,
   showChooseAttachment: () -> Unit
 ) {
+  val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
+  fun isSimplexLink(link: String): Boolean =
+    link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
+
+  fun parseMessage(msg: String): Pair<String?, Boolean> {
+    if (msg.isBlank()) return null to false
+    val parsedMsg = parseToMarkdown(msg) ?: return null to false
+    val link = parsedMsg.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
+    val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
+    return link?.text to simplexLink
+  }
+
   val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
+  // default value parsed because of draft
+  val hasSimplexLink = rememberSaveable { mutableStateOf(parseMessage(composeState.value.message).second) }
   val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
-  val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
@@ -254,15 +284,6 @@ fun ComposeView(
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
-
-  fun isSimplexLink(link: String): Boolean =
-    link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
-
-  fun parseMessage(msg: String): String? {
-    val parsedMsg = parseToMarkdown(msg)
-    val link = parsedMsg?.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
-    return link?.text
-  }
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
@@ -283,7 +304,9 @@ fun ComposeView(
 
   fun showLinkPreview(s: String) {
     prevLinkUrl.value = linkUrl.value
-    linkUrl.value = parseMessage(s)
+    val parsed = parseMessage(s)
+    linkUrl.value = parsed.first
+    hasSimplexLink.value = parsed.second
     val url = linkUrl.value
     if (url != null) {
       if (url != composeState.value.linkPreview?.uri && url != pendingLinkUrl.value) {
@@ -338,6 +361,7 @@ fun ComposeView(
         is SharedContent.Media -> shared.uris.map { it.toString() }
         is SharedContent.File -> listOf(shared.uri.toString())
         is SharedContent.Text -> emptyList()
+        is SharedContent.Forward -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -384,10 +408,26 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = true)
     }
 
+    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
+      val chatItem = controller.apiForwardChatItem(
+        rh = rhId,
+        toChatType = chat.chatInfo.chatType,
+        toChatId = chat.chatInfo.apiId,
+        fromChatType = fromChatInfo.chatType,
+        fromChatId = fromChatInfo.apiId,
+        itemId = forwardedItem.id,
+        ttl = ttl
+      )
+      if (chatItem != null) {
+        chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
+      }
+      return chatItem
+    }
+
     fun checkLinkPreview(): MsgContent {
       return when (val composePreview = cs.preview) {
         is ComposePreview.CLinkPreview -> {
-          val url = parseMessage(msgText)
+          val url = parseMessage(msgText).first
           val lp = composePreview.linkPreview
           if (lp != null && url == lp.uri) {
             MsgContent.MCLink(msgText, preview = lp)
@@ -443,11 +483,18 @@ fun ComposeView(
       if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)
       sending()
     }
-    clearCurrentDraft()
+    if (!cs.forwarding || chatModel.draft.value?.forwarding == true) {
+      clearCurrentDraft()
+    }
 
     if (chat.nextSendGrpInv) {
       sendMemberContactInvitation()
       sent = null
+    } else if (cs.contextItem is ComposeContextItem.ForwardingItem) {
+      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo, ttl = ttl)
+      if (cs.message.isNotEmpty()) {
+        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = ttl)
+      }
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
       sent = updateMessage(ei, chat, live)
@@ -488,23 +535,34 @@ fun ComposeView(
           AudioPlayer.stop(tmpFile.absolutePath)
           if (remoteHost == null) {
             val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
-            files.add(withContext(Dispatchers.IO) {
+            val file = withContext(Dispatchers.IO) {
               if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
-                val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
-                tmpFile.delete()
+                val args = try {
+                  encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
+                } catch (e: Exception) {
+                  Log.e(TAG, "Unable to encrypt plain file: " + e.stackTraceToString())
+                  AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+                  return@withContext null
+                } finally {
+                  tmpFile.delete()
+                }
                 CryptoFile(actualFile.name, args)
               } else {
                 Files.move(tmpFile.toPath(), actualFile.toPath())
                 CryptoFile.plain(actualFile.name)
               }
-            })
+            }
+            if (file != null) {
+              files.add(file)
+              msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
+            }
             deleteUnusedFiles()
           } else {
             files.add(CryptoFile.plain(tmpFile.absolutePath))
             // It will be deleted on JVM shutdown or next start (if the app crashes unexpectedly)
             filesToDelete.remove(tmpFile)
+            msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
           }
-          msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
@@ -546,7 +604,15 @@ fun ComposeView(
         sent = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
       }
     }
+    val wasForwarding = cs.forwarding
+    val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItem)?.fromChatInfo?.id
     clearState(live)
+    val draft = chatModel.draft.value
+    if (wasForwarding && chatModel.draftChatId.value == chat.chatInfo.id && forwardingFromChatId != chat.chatInfo.id && draft != null) {
+      composeState.value = draft
+    } else {
+      clearCurrentDraft()
+    }
     return sent
   }
 
@@ -563,8 +629,16 @@ fun ComposeView(
     } else {
       textStyle.value = smallFont
       if (composeState.value.linkPreviewAllowed) {
-        if (s.isNotEmpty()) showLinkPreview(s)
-        else resetLinkPreview()
+        if (s.isNotEmpty()) {
+          showLinkPreview(s)
+        } else {
+          resetLinkPreview()
+          hasSimplexLink.value = false
+        }
+      } else if (s.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)) {
+        hasSimplexLink.value = parseMessage(s).second
+      } else {
+        hasSimplexLink.value = false
       }
     }
   }
@@ -701,6 +775,16 @@ fun ComposeView(
   }
 
   @Composable
+  fun MsgNotAllowedView(reason: String, icon: Painter) {
+    val color = MaterialTheme.appColors.receivedMessage
+    Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+      Icon(icon, null, tint = MaterialTheme.colors.secondary)
+      Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+      Text(reason, fontStyle = FontStyle.Italic)
+    }
+  }
+
+  @Composable
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
@@ -709,6 +793,9 @@ fun ComposeView(
       }
       is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_edit_filled)) {
         clearState()
+      }
+      is ComposeContextItem.ForwardingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_forward), showSender = false) {
+        composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
     }
   }
@@ -729,6 +816,10 @@ fun ComposeView(
       is SharedContent.Text -> onMessageChange(shared.text)
       is SharedContent.Media -> composeState.processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> composeState.processPickedFile(shared.uri, shared.text)
+      is SharedContent.Forward -> composeState.value = composeState.value.copy(
+        contextItem = ComposeContextItem.ForwardingItem(shared.chatItem, shared.fromChatInfo),
+        preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
+      )
       null -> {}
     }
     chatModel.sharedContent.value = null
@@ -743,7 +834,17 @@ fun ComposeView(
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }
+    val simplexLinkProhibited = hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
+    val fileProhibited = composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
+    val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
     if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
+      if (simplexLinkProhibited) {
+        MsgNotAllowedView(generalGetString(MR.strings.simplex_links_not_allowed), icon = painterResource(MR.images.ic_link))
+      } else if (fileProhibited) {
+        MsgNotAllowedView(generalGetString(MR.strings.files_and_media_not_allowed), icon = painterResource(MR.images.ic_draft))
+      } else if (voiceProhibited) {
+        MsgNotAllowedView(generalGetString(MR.strings.voice_messages_not_allowed), icon = painterResource(MR.images.ic_mic))
+      }
       contextItemView()
       when {
         composeState.value.editing && composeState.value.preview is ComposePreview.VoicePreview -> {}
@@ -761,10 +862,10 @@ fun ComposeView(
       }
     }
     Row(
-      modifier = Modifier.padding(end = 8.dp),
+      modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on
+      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
       val attachmentClicked = if (isGroupAndProhibitedFiles) {
         {
           AlertManager.shared.showAlertMsg(
@@ -858,11 +959,22 @@ fun ComposeView(
         chatModel.removeLiveDummy()
         CIFile.cachedRemoteFileRequests.clear()
       }
+      if (appPlatform.isDesktop) {
+        // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
+        DisposableEffect(Unit) {
+          onDispose {
+            if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
+              chatModel.draft.value = composeState.value
+              chatModel.draftChatId.value = chat.id
+            }
+          }
+        }
+      }
 
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
       val sendButtonColor =
         if (chat.chatInfo.incognito)
-          if (isSystemInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+          if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
         else MaterialTheme.colors.primary
       SendMsgView(
         composeState,
@@ -871,6 +983,7 @@ fun ComposeView(
         chat.chatInfo is ChatInfo.Direct,
         liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
         sendMsgEnabled = sendMsgEnabled.value,
+        sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
         nextSendGrpInv = nextSendGrpInv.value,
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,

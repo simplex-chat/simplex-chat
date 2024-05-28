@@ -2,7 +2,7 @@
 title: SimpleX Chat terminálová
 revision: 31.01.2023
 ---
-| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md) |
+| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md), [PL](/docs/lang/pl/CLI.md) |
 
 # SimpleX Chat terminálová (konzolová) aplikace pro Linux/MacOS/Windows
 
@@ -97,7 +97,7 @@ git checkout stable
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Upozornění:** Pokud narazíte na chybu `` verze `GLIBC_2.28' nenalezena ``, obnovte jej pomocí základního obrazu `haskell:8.10.7-stretch` (změňte jej ve svém lokálním [Dockerfile](Dockerfile)).
+> **Upozornění:** Pokud narazíte na chybu `` verze `GLIBC_2.28' nenalezena ``, obnovte jej pomocí základního obrazu `haskell:8.10.7-stretch` (změňte jej ve svém lokálním [Dockerfile](/Dockerfile)).
 
 #### V libovolném operačním systému
 

@@ -25,7 +25,7 @@
     "chat-protocol": "Chat Protokoll",
     "simplex-chat-protocol": "SimpleX Chat Protokoll",
     "terminal-cli": "Terminal Kommandozeilen-Schnittstelle",
-    "terms-and-privacy-policy": "Bedingungen & Datenschutzbestimmungen",
+    "terms-and-privacy-policy": "Datenschutzrichtlinie",
     "hero-header": "Privatsphäre neu definiert",
     "hero-overlay-2-textlink": "Wie funktioniert SimpleX?",
     "hero-subheader": "Der erste Messenger<br>ohne Nutzerkennungen",
@@ -252,5 +252,8 @@
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> ist eine führende Security- und Technologie-Unternehmensberatung, deren Kunden aus den Bereichen Big-Tech, Regierungsbehörden und großen Blockchain-Projekten stammen.",
     "docs-dropdown-9": "Downloads",
     "please-enable-javascript": "Bitte aktivieren Sie JavaScript, um den QR-Code zu sehen.",
-    "please-use-link-in-mobile-app": "Bitte nutzen Sie den Link in der Mobiltelefon-App"
+    "please-use-link-in-mobile-app": "Bitte nutzen Sie den Link in der Mobiltelefon-App",
+    "docs-dropdown-10": "Transparent",
+    "docs-dropdown-11": "FAQ",
+    "docs-dropdown-12": "Sicherheit"
 }

@@ -13,6 +13,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-implicit-lift #-}
 
 module Simplex.Chat.Controller where
 
@@ -63,6 +64,7 @@ import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserCont
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
@@ -76,11 +78,11 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption, PQSupport (..))
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, XFTPServerWithAuth, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -126,7 +128,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    chatVRange :: PQSupport -> VersionRangeChat,
+    chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
@@ -204,6 +206,7 @@ data ChatController = ChatController
     chatStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     random :: TVar ChaChaDRG,
+    eventSeq :: TVar Int,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
@@ -229,9 +232,9 @@ data ChatController = ChatController
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
     tempDirectory :: TVar (Maybe FilePath),
+    assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool,
-    pqExperimentalEnabled :: TVar PQSupport -- TODO v5.7 remove
+    contactMergeEnabled :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -266,11 +269,9 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetRemoteHostsFolder FilePath
+  | APISetAppFilePaths AppFilePathsConfig
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
-  | APISetPQEncryption PQSupport
-  | APISetContactPQ ContactId PQEncryption
-  | SetContactPQ ContactName PQEncryption
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
@@ -292,12 +293,12 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId}
+  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
+  | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -315,6 +316,8 @@ data ChatCommand
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
+  | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
+  | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -394,7 +397,7 @@ data ChatCommand
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
-  | DeleteContact ContactName
+  | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
@@ -457,8 +460,8 @@ data ChatCommand
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
-  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
-  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Maybe Bool}
+  | ReceiveFile {fileId :: FileTransferId, userApprovedRelays :: Bool, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive {fileId :: FileTransferId, userApprovedRelays :: Bool, storeEncrypted :: Maybe Bool}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -500,6 +503,7 @@ data ChatCommand
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
+  | GetAgentMsgCounts
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -736,7 +740,6 @@ data ChatResponse
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
-  | CRContactPQAllowed {user :: User, contact :: Contact, pqEncryption :: PQEncryption}
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
@@ -746,6 +749,8 @@ data ChatResponse
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
+  | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
@@ -824,6 +829,12 @@ data ChatListQuery
 
 clqNoFilters :: ChatListQuery
 clqNoFilters = CLQFilters {favorite = False, unread = False}
+
+data ChatDeleteMode
+  = CDMFull {notify :: Bool} -- delete both contact and conversation
+  | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
+  | CDMMessages -- delete conversation, keep contact - can be re-opened from Contacts view
+  deriving (Show)
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
@@ -933,6 +944,14 @@ instance StrEncoding DBEncryptionKey where
 
 instance FromJSON DBEncryptionKey where
   parseJSON = strParseJSON "DBEncryptionKey"
+
+data AppFilePathsConfig = AppFilePathsConfig
+  { appFilesFolder :: FilePath,
+    appTempFolder :: FilePath,
+    appAssetsFolder :: FilePath,
+    appRemoteHostsFolder :: Maybe FilePath
+  }
+  deriving (Show)
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
@@ -1116,12 +1135,14 @@ data ChatErrorType
   | CEFileImageType {filePath :: FilePath}
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
+  | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
   | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
   | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidForward
+  | CEForwardNoFile
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall
@@ -1403,6 +1424,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
 $(JQ.deriveJSON defaultJSON ''ContactSubStatus)
 

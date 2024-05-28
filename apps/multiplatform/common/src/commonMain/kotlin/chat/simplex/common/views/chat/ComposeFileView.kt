@@ -16,7 +16,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boolean) {
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
   Row(
     Modifier
       .height(60.dp)

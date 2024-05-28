@@ -34,6 +34,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
   val networkTCPTimeoutPerKb = remember { mutableStateOf(currentCfgVal.tcpTimeoutPerKb) }
+  var networkRcvConcurrency = remember { mutableStateOf(currentCfgVal.rcvConcurrency) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
   val networkSMPPingCount = remember { mutableStateOf(currentCfgVal.smpPingCount) }
   val networkEnableKeepAlive = remember { mutableStateOf(currentCfgVal.enableKeepAlive) }
@@ -65,9 +66,12 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       hostMode = currentCfg.value.hostMode,
       requiredHostMode = currentCfg.value.requiredHostMode,
       sessionMode = currentCfg.value.sessionMode,
+      smpProxyMode = currentCfg.value.smpProxyMode,
+      smpProxyFallback = currentCfg.value.smpProxyFallback,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
       tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
+      rcvConcurrency = networkRcvConcurrency.value,
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = networkSMPPingInterval.value,
       smpPingCount = networkSMPPingCount.value
@@ -78,6 +82,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
     networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
+    networkRcvConcurrency.value = cfg.rcvConcurrency
     networkSMPPingInterval.value = cfg.smpPingInterval
     networkSMPPingCount.value = cfg.smpPingCount
     networkEnableKeepAlive.value = cfg.enableKeepAlive
@@ -110,6 +115,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPConnectTimeout,
     networkTCPTimeout,
     networkTCPTimeoutPerKb,
+    networkRcvConcurrency,
     networkSMPPingInterval,
     networkSMPPingCount,
     networkEnableKeepAlive,
@@ -128,6 +134,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
   networkTCPTimeoutPerKb: MutableState<Long>,
+  networkRcvConcurrency: MutableState<Int>,
   networkSMPPingInterval: MutableState<Long>,
   networkSMPPingCount: MutableState<Int>,
   networkEnableKeepAlive: MutableState<Boolean>,
@@ -154,7 +161,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-          listOf(7_500000, 10_000000, 15_000000, 20_000000, 30_000_000, 45_000_000), secondsLabel
+          listOf(10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
         )
       }
       SectionItemView {
@@ -167,9 +174,15 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
         // can't be higher than 130ms to avoid overflow on 32bit systems
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
-          listOf(15_000, 30_000, 45_000, 60_000, 90_000, 120_000), secondsLabel
+          listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel
         )
       }
+      // SectionItemView {
+      //   IntSettingRow(
+      //     stringResource(MR.strings.network_option_rcv_concurrency), networkRcvConcurrency,
+      //     listOf(1, 2, 4, 8, 12, 16, 24), ""
+      //   )
+      // }
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
@@ -418,6 +431,7 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
+      networkRcvConcurrency = remember { mutableStateOf(8) },
       networkSMPPingInterval = remember { mutableStateOf(10_000000) },
       networkSMPPingCount = remember { mutableStateOf(3) },
       networkEnableKeepAlive = remember { mutableStateOf(true) },

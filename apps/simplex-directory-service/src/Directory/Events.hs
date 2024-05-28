@@ -14,6 +14,7 @@ module Directory.Events
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
+    directoryCmdTag,
     viewName,
   )
 where
@@ -21,6 +22,8 @@ where
 import Control.Applicative ((<|>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import Data.Char (isSpace)
+import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,15 +35,15 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util ((<$?>))
-import Data.Char (isSpace)
-import Data.Either (fromRight)
+import Simplex.Messaging.Protocol (BrokerErrorType (..))
+import Simplex.Messaging.Util (tshow, (<$?>))
 
 data DirectoryEvent
   = DEContactConnected Contact
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
-  | DEServiceJoinedGroup {contactId :: ContactId, groupInfo ::  GroupInfo, hostMember :: GroupMember}
+  | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
   | DEServiceRoleChanged GroupInfo GroupMemberRole
@@ -52,6 +55,7 @@ data DirectoryEvent
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
   | DEContactCommand Contact ChatItemId ADirectoryCmd
+  | DELogChatResponse Text
   deriving (Show)
 
 crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
@@ -76,6 +80,13 @@ crDirectoryEvent = \case
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
+  CRMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
+  CRChatCmdError {chatError} -> Just $ DELogChatResponse $ "chat cmd error: " <> tshow chatError
+  CRChatError {chatError} -> case chatError of
+    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
+    ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
+    _ -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
+  CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
 
 data DirectoryRole = DRUser | DRSuperUser
@@ -140,25 +151,26 @@ directoryCmdP =
     cmdStrP =
       (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
         <|> pure (ADC SDRUser DCUnknownCommand)
-    tagP = A.takeTill (== ' ') >>= \case
-      "help" -> u DCHelp_
-      "h" -> u DCHelp_
-      "next" -> u DCSearchNext_
-      "all" -> u DCAllGroups_
-      "new" -> u DCRecentGroups_
-      "submit" -> u DCSubmitGroup_
-      "confirm" -> u DCConfirmDuplicateGroup_
-      "list" -> u DCListUserGroups_
-      "ls" -> u DCListUserGroups_
-      "delete" -> u DCDeleteGroup_
-      "approve" -> su DCApproveGroup_
-      "reject" -> su DCRejectGroup_
-      "suspend" -> su DCSuspendGroup_
-      "resume" -> su DCResumeGroup_
-      "last" -> su DCListLastGroups_
-      "exec" -> su DCExecuteCommand_
-      "x" -> su DCExecuteCommand_
-      _ -> fail "bad command tag"
+    tagP =
+      A.takeTill (== ' ') >>= \case
+        "help" -> u DCHelp_
+        "h" -> u DCHelp_
+        "next" -> u DCSearchNext_
+        "all" -> u DCAllGroups_
+        "new" -> u DCRecentGroups_
+        "submit" -> u DCSubmitGroup_
+        "confirm" -> u DCConfirmDuplicateGroup_
+        "list" -> u DCListUserGroups_
+        "ls" -> u DCListUserGroups_
+        "delete" -> u DCDeleteGroup_
+        "approve" -> su DCApproveGroup_
+        "reject" -> su DCRejectGroup_
+        "suspend" -> su DCSuspendGroup_
+        "resume" -> su DCResumeGroup_
+        "last" -> su DCListLastGroups_
+        "exec" -> su DCExecuteCommand_
+        "x" -> su DCExecuteCommand_
+        _ -> fail "bad command tag"
       where
         u = pure . ADCT SDRUser
         su = pure . ADCT SDRSuperUser
@@ -192,3 +204,23 @@ directoryCmdP =
 
 viewName :: String -> String
 viewName n = if ' ' `elem` n then "'" <> n <> "'" else n
+
+directoryCmdTag :: DirectoryCmd r -> Text
+directoryCmdTag = \case
+  DCHelp -> "help"
+  DCSearchGroup _ -> "search"
+  DCSearchNext -> "next"
+  DCAllGroups -> "all"
+  DCRecentGroups -> "new"
+  DCSubmitGroup _ -> "submit"
+  DCConfirmDuplicateGroup {} -> "confirm"
+  DCListUserGroups -> "list"
+  DCDeleteGroup {} -> "delete"
+  DCApproveGroup {} -> "approve"
+  DCRejectGroup {} -> "reject"
+  DCSuspendGroup {} -> "suspend"
+  DCResumeGroup {} -> "resume"
+  DCListLastGroups _ -> "last"
+  DCExecuteCommand _ -> "exec"
+  DCUnknownCommand -> "unknown"
+  DCCommandError _ -> "error"

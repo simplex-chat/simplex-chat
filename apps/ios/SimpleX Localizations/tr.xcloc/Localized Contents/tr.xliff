@@ -743,6 +743,11 @@
         <target>Gönderilen mesajların kalıcı olarak silinmesine izin ver. (24 saat içinde)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
+        <source>Allow to send SimpleX links.</source>
+        <target>SimpleX bağlantıları göndilmesine izin ver.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve">
         <source>Allow to send files and media.</source>
         <target>Dosya ve medya göndermeye izin ver.</target>
@@ -1081,6 +1086,11 @@
       <trans-unit id="Cannot receive file" xml:space="preserve">
         <source>Cannot receive file</source>
         <target>Dosya alınamıyor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cellular" xml:space="preserve">
+        <source>Cellular</source>
+        <target>Hücresel Veri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve">
@@ -2078,6 +2088,11 @@ Bu geri alınamaz!</target>
         <target>Sürüm düşür ve sohbeti aç</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Download" xml:space="preserve">
+        <source>Download</source>
+        <target>İndir</target>
+        <note>chat item action</note>
+      </trans-unit>
       <trans-unit id="Download failed" xml:space="preserve">
         <source>Download failed</source>
         <target>Yükleme başarısız oldu</target>
@@ -2187,6 +2202,11 @@ Bu geri alınamaz!</target>
         <source>Enable self-destruct passcode</source>
         <target>Kendini imha şifresini etkinleştir</target>
         <note>set passcode view</note>
+      </trans-unit>
+      <trans-unit id="Enabled for" xml:space="preserve">
+        <source>Enabled for</source>
+        <target>Şunlar için etkinleştirildi</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
         <source>Encrypt</source>
@@ -2336,11 +2356,6 @@ Bu geri alınamaz!</target>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Üye(ler) eklenirken hata oluştu</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error allowing contact PQ encryption" xml:space="preserve">
-        <source>Error allowing contact PQ encryption</source>
-        <target>İletişim PQ şifrelemesine izin verirken hata oluştu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -2713,6 +2728,11 @@ Bu geri alınamaz!</target>
         <target>Dosyalar ve medya bu grupta yasaklandı.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Files and media not allowed" xml:space="preserve">
+        <source>Files and media not allowed</source>
+        <target>Dosyalar ve medyaya izin verilmiyor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Files and media prohibited!" xml:space="preserve">
         <source>Files and media prohibited!</source>
         <target>Dosyalar ve medya yasaklandı!</target>
@@ -2776,6 +2796,26 @@ Bu geri alınamaz!</target>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>Konsol için</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forward" xml:space="preserve">
+        <source>Forward</source>
+        <target>İlet</target>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Forward and save messages" xml:space="preserve">
+        <source>Forward and save messages</source>
+        <target>Mesajları ilet ve kaydet</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarded" xml:space="preserve">
+        <source>Forwarded</source>
+        <target>İletildi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarded from" xml:space="preserve">
+        <source>Forwarded from</source>
+        <target>Şuradan iletildi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
@@ -2886,6 +2926,11 @@ Bu geri alınamaz!</target>
       <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Group members can irreversibly delete sent messages. (24 hours)</source>
         <target>Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
+        <source>Group members can send SimpleX links.</source>
+        <target>Grup üyeleri SimpleX bağlantıları gönderebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send direct messages." xml:space="preserve">
@@ -3126,6 +3171,11 @@ Bu geri alınamaz!</target>
       <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
         <target>Cevap olarak</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In-call sounds" xml:space="preserve">
+        <source>In-call sounds</source>
+        <target>Arama içi sesler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3603,6 +3653,11 @@ Bu senin grup için bağlantın %@!</target>
         <target>Mesaj tepkileri bu grupta yasaklandı.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message source remains private." xml:space="preserve">
+        <source>Message source remains private.</source>
+        <target>Mesaj kaynağı gizli kalır.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>Mesaj yazısı</target>
@@ -3718,6 +3773,11 @@ Bu senin grup için bağlantın %@!</target>
         <target>Daha fazla geliştirmeler yakında geliyor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="More reliable network connection." xml:space="preserve">
+        <source>More reliable network connection.</source>
+        <target>Daha güvenilir ağ bağlantısı.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
         <source>Most likely this connection is deleted.</source>
         <target>Büyük ihtimalle bu bağlantı silinmiş.</target>
@@ -3751,6 +3811,16 @@ Bu senin grup için bağlantın %@!</target>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Ağ &amp; sunucular</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network connection" xml:space="preserve">
+        <source>Network connection</source>
+        <target>Ağ bağlantısı</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network management" xml:space="preserve">
+        <source>Network management</source>
+        <target>Ağ yönetimi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -3861,6 +3931,11 @@ Bu senin grup için bağlantın %@!</target>
       <trans-unit id="No history" xml:space="preserve">
         <source>No history</source>
         <target>Geçmiş yok</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No network connection" xml:space="preserve">
+        <source>No network connection</source>
+        <target>Ağ bağlantısı yok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -4077,6 +4152,11 @@ Bu senin grup için bağlantın %@!</target>
         <target>Veya bu kodu göster</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Other" xml:space="preserve">
+        <source>Other</source>
+        <target>Diğer</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
         <target>PING sayısı</target>
@@ -4244,11 +4324,6 @@ Hata: %@</target>
         <target>Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Post-quantum E2EE" xml:space="preserve">
-        <source>Post-quantum E2EE</source>
-        <target>Kuantum sonrası E2EE</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
         <target>Son mesaj taslağını ekleriyle birlikte koru.</target>
@@ -4299,6 +4374,11 @@ Hata: %@</target>
         <target>Profil fotoğrafı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Profile images" xml:space="preserve">
+        <source>Profile images</source>
+        <target>Profil resimleri</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
         <source>Profile name</source>
         <target>Profil ismi</target>
@@ -4337,6 +4417,11 @@ Hata: %@</target>
       <trans-unit id="Prohibit messages reactions." xml:space="preserve">
         <source>Prohibit messages reactions.</source>
         <target>Mesajlarda tepkileri yasakla.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
+        <source>Prohibit sending SimpleX links.</source>
+        <target>SimpleX bağlantısı gönderimini yasakla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
@@ -4441,7 +4526,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
-        <target>Makbuzlar devre dışı bırakıldı</target>
+        <target>Gönderildi bilgisi devre dışı bırakıldı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
@@ -4469,6 +4554,11 @@ Hata: %@</target>
         <target>Alıcı adresi farklı bir sunucuya değiştirilecektir. Gönderici çevrimiçi olduktan sonra adres değişikliği tamamlanacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Receiving concurrency" xml:space="preserve">
+        <source>Receiving concurrency</source>
+        <target>Eşzamanlılık alınıyor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
         <target>Dosya alımı durdurulacaktır.</target>
@@ -4482,6 +4572,11 @@ Hata: %@</target>
       <trans-unit id="Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." xml:space="preserve">
         <source>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</source>
         <target>Yakın geçmiş ve geliştirilmiş [dizin botu](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex. im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Recipient(s) can't see who this message is from." xml:space="preserve">
+        <source>Recipient(s) can't see who this message is from.</source>
+        <target>Alıcı(lar) bu mesajın kimden geldiğini göremez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
@@ -4784,9 +4879,19 @@ Hata: %@</target>
         <target>Hoşgeldin mesajı kaydedilsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved" xml:space="preserve">
+        <source>Saved</source>
+        <target>Kaydedildi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
         <source>Saved WebRTC ICE servers will be removed</source>
         <target>Kaydedilmiş WebRTC ICE sunucuları silinecek</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Saved from" xml:space="preserve">
+        <source>Saved from</source>
+        <target>Tarafından kaydedildi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved message" xml:space="preserve">
@@ -4961,7 +5066,7 @@ Hata: %@</target>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target>Teslimat makbuzlarının gönderilmesi tüm kişiler için etkinleştirilecektir.</target>
+        <target>Gönderildi bilgisi tüm kişiler için etkinleştirilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -5094,6 +5199,11 @@ Hata: %@</target>
         <target>Ayarlar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Shape profile images" xml:space="preserve">
+        <source>Shape profile images</source>
+        <target>Profil resimlerini şekillendir</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
         <target>Paylaş</target>
@@ -5212,6 +5322,16 @@ Hata: %@</target>
       <trans-unit id="SimpleX links" xml:space="preserve">
         <source>SimpleX links</source>
         <target>SimpleX bağlantıları</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
+        <source>SimpleX links are prohibited in this group.</source>
+        <target>SimpleX bağlantıları bu grupta yasaklandı.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links not allowed" xml:space="preserve">
+        <source>SimpleX links not allowed</source>
+        <target>SimpleX bağlantılarına izin verilmiyor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -5248,6 +5368,11 @@ Hata: %@</target>
         <source>Somebody</source>
         <target>Biri</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
+        <source>Square, circle, or anything in between.</source>
+        <target>Kare,daire, veya aralarında herhangi bir şey.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
@@ -6050,6 +6175,11 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target>Bu grupta sesli mesajlar yasaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Voice messages not allowed" xml:space="preserve">
+        <source>Voice messages not allowed</source>
+        <target>Sesli mesajlara izin verilmiyor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
         <source>Voice messages prohibited!</source>
         <target>Sesli mesajlar yasaktır!</target>
@@ -6120,6 +6250,11 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target>Mevcut olduğunda</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="When connecting audio and video calls." xml:space="preserve">
+        <source>When connecting audio and video calls.</source>
+        <target>Sesli ve görüntülü aramalara bağlanırken.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
         <source>When people request to connect, you can accept or reject it.</source>
         <target>İnsanlar bağlantı talebinde bulunduğunda, kabul edebilir veya reddedebilirsiniz.</target>
@@ -6128,6 +6263,21 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
         <target>Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="WiFi" xml:space="preserve">
+        <source>WiFi</source>
+        <target>WiFi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Will be enabled in direct chats!" xml:space="preserve">
+        <source>Will be enabled in direct chats!</source>
+        <target>Doğrudan sohbetlerde etkinleştirilecektir!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wired ethernet" xml:space="preserve">
+        <source>Wired ethernet</source>
+        <target>Kablolu ethernet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With encrypted files and media." xml:space="preserve">
@@ -6613,6 +6763,11 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>yönetici</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="admins" xml:space="preserve">
+        <source>admins</source>
+        <target>yöneticiler</target>
+        <note>feature role</note>
+      </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
         <target>%@ için şifreleme kabul ediliyor…</target>
@@ -6622,6 +6777,11 @@ SimpleX sunucuları profilinizi göremez.</target>
         <source>agreeing encryption…</source>
         <target>şifreleme kabul ediliyor…</target>
         <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="all members" xml:space="preserve">
+        <source>all members</source>
+        <target>bütün üyeler</target>
+        <note>feature role</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
         <source>always</source>
@@ -6953,6 +7113,11 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>etkinlik yaşandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="forwarded" xml:space="preserve">
+        <source>forwarded</source>
+        <target>iletildi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
         <target>grup silindi</target>
@@ -7160,6 +7325,11 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>sahip</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="owners" xml:space="preserve">
+        <source>owners</source>
+        <target>sahipler</target>
+        <note>feature role</note>
+      </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
         <source>peer-to-peer</source>
         <target>eşler arası</target>
@@ -7209,6 +7379,16 @@ SimpleX sunucuları profilinizi göremez.</target>
         <source>removed you</source>
         <target>sen kaldırıldın</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="saved" xml:space="preserve">
+        <source>saved</source>
+        <target>kaydedildi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="saved from %@" xml:space="preserve">
+        <source>saved from %@</source>
+        <target>%@ tarafından kaydedildi</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve">
         <source>sec</source>
@@ -7349,6 +7529,11 @@ SimpleX sunucuları profilinizi göremez.</target>
         <source>yes</source>
         <target>evet</target>
         <note>pref value</note>
+      </trans-unit>
+      <trans-unit id="you" xml:space="preserve">
+        <source>you</source>
+        <target>sen</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
         <source>you are invited to group</source>

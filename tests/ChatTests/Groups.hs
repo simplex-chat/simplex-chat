@@ -11,7 +11,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (void, when)
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
@@ -23,7 +23,6 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import System.Directory (copyFile)
@@ -36,6 +35,7 @@ chatGroupTests = do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
     it "v1: add contacts, create group and send/receive messages" testGroup
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
+    it "send large message" testGroupLargeMessage
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -127,6 +127,7 @@ chatGroupTests = do
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
+    it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -159,19 +160,19 @@ chatGroupTests = do
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   where
-    _0 = supportedChatVRange PQSupportOff -- don't create direct connections
+    _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
     -- having host configured with older version doesn't have effect in tests
     -- because host uses current code and sends version in MemberInfo
     testNoDirect vrMem2 vrMem3 noConns =
       it
         ( "host "
-            <> vRangeStr (supportedChatVRange PQSupportOff)
+            <> vRangeStr supportedChatVRange
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
-        $ testNoGroupDirectConns (supportedChatVRange PQSupportOff) vrMem2 vrMem3 noConns
+        $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
@@ -365,6 +366,20 @@ testGroupShared alice bob cath checkMessages directConnections = do
       cath #$> ("/_read chat #1", id, "ok")
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
+
+testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
+testGroupLargeMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      img <- genProfileImg
+      let profileImage = "data:image/png;base64," <> B.unpack img
+      alice `send` ("/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"image\": \"" <> profileImage <> "\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}")
+      _trimmedCmd1 <- getTermLine alice
+      alice <## "profile image updated"
+      bob <## "alice updated group #team:"
+      bob <## "profile image updated"
 
 testNewGroupIncognito :: HasCallStack => FilePath -> IO ()
 testNewGroupIncognito =
@@ -2572,13 +2587,15 @@ testPlanGroupLinkOwn tmp =
 
 testPlanGroupLinkConnecting :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkConnecting tmp = do
-  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+  -- gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
-  withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  -- withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -2592,13 +2609,15 @@ testPlanGroupLinkConnecting tmp = do
     bob <## "group link: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChatCfg tmp cfg "alice" $ \alice -> do
+  -- withTestChatCfg tmp cfg "alice" $ \alice -> do
+  withTestChatCfg tmp cfg "alice" $ \a -> withTestOutput a $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
-  withTestChatCfg tmp cfg "bob" $ \bob -> do
+  -- withTestChatCfg tmp cfg "bob" $ \bob -> do
+  withTestChatCfg tmp cfg "bob" $ \b -> withTestOutput b $ \bob -> do
     threadDelay 500000
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting"
@@ -2615,7 +2634,8 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
+    -- \alice bob -> do
+    \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2635,6 +2655,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "#team: you joined the group"
         ]
 
+      threadDelay 100000
+
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
@@ -2643,6 +2665,8 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
+      threadDelay 100000
+
       bob ##> "/leave #team"
       concurrentlyN_
         [ do
@@ -2650,6 +2674,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "use /d #team to delete the group",
           alice <## "#team: bob left the group"
         ]
+
+      threadDelay 100000
 
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
@@ -3249,7 +3275,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
     bob ##> "/sync #team alice"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
@@ -3277,7 +3303,7 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited" -- silence?
+      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
@@ -3288,6 +3314,7 @@ testGroupSyncRatchet tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -3328,6 +3355,7 @@ testGroupSyncRatchetCodeReset tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -3603,9 +3631,9 @@ testConfigureGroupDeliveryReceipts tmp =
 
 testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> FilePath -> IO ()
 testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = const hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = const mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp testCfg {chatVRange = const mem3VRange} "cath" cathProfile $ \cath -> do
+  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
         if noDirectConns
           then contactsDontExist bob cath
@@ -3894,6 +3922,20 @@ testMemberContactMessage =
         (bob <## "alice (Alice): contact is connected")
 
       bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+
+      -- exchanging messages will enable PQ (see Chat "TODO PQ" - perhaps connection should be negotiated with PQ on)
+      alice <##> bob
+      alice <##> bob
+
+      alice `send` "@bob hi"
+      alice <## "bob: quantum resistant end-to-end encryption enabled"
+      alice <# "@bob hi"
+      bob <## "alice: quantum resistant end-to-end encryption enabled"
+      bob <# "alice> hi"
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+
       alice <##> bob
 
       -- bob and cath connect
@@ -4417,6 +4459,18 @@ testGroupMsgForwardNewMember =
                "cath (Catherine): admin, connected",
                "dan (Daniel): member"
              ]
+
+testGroupMsgForwardLeave :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardLeave =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob ##> "/leave #team"
+      bob <## "#team: you left the group"
+      bob <## "use /d #team to delete the group"
+      alice <## "#team: bob left the group"
+      cath <## "#team: bob left the group"
 
 testGroupHistory :: HasCallStack => FilePath -> IO ()
 testGroupHistory =

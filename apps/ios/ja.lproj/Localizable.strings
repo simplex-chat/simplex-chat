@@ -41,6 +41,12 @@
 "(" = "(";
 
 /* No comment provided by engineer. */
+"(new)" = "(新規)";
+
+/* No comment provided by engineer. */
+"(this device v%@)" = "(このデバイス v%@)";
+
+/* No comment provided by engineer. */
 ")" = ")";
 
 /* No comment provided by engineer. */
@@ -53,19 +59,28 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[GitHub でスターを付ける](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
+"**Add contact**: to create a new invitation link, or connect via a link you received." = "**コンタクトの追加**: 新しい招待リンクを作成するか、受け取ったリンクから接続します。";
+
+/* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**新しい連絡先を追加**: 連絡先のワンタイム QR コードまたはリンクを作成します。";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** audio call" = "**e2e 暗号化**音声通話";
+"**Create group**: to create a new group." = "**グループ作成**: 新しいグループを作成する。";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** video call" = "**e2e暗号化**ビデオ通話";
+"**e2e encrypted** audio call" = "**エンドツーエンド暗号化済み**の音声通話";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** video call" = "**エンドツーエンド暗号化済み**の テレビ電話 通話";
 
 /* No comment provided by engineer. */
 "**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**よりプライベート**: 20 分ごとに新しいメッセージを確認します。 デバイス トークンは SimpleX Chat サーバーと共有されますが、連絡先やメッセージの数は共有されません。";
 
 /* No comment provided by engineer. */
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**最もプライベート**: SimpleX Chat 通知サーバーを使用せず、バックグラウンドで定期的にメッセージをチェックします (アプリの使用頻度によって異なります)。";
+
+/* No comment provided by engineer. */
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**注意**: 2つの端末で同じデータベースを使用すると、セキュリティ保護として、あなたが接続しているメッセージの復号化が解除されます。";
 
 /* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**注意**: パスフレーズを紛失すると、パスフレーズを復元または変更できなくなります。";
@@ -75,6 +90,9 @@
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**警告**: 即時の プッシュ通知には、キーチェーンに保存されたパスフレーズが必要です。";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**警告**: アーカイブデータは削除されます。";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*太字*";
@@ -118,6 +136,9 @@
 /* No comment provided by engineer. */
 "%@ connected" = "%@ 接続中";
 
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ ダウンロード済";
+
 /* notification title */
 "%@ is connected!" = "%@ 接続中!";
 
@@ -130,8 +151,14 @@
 /* No comment provided by engineer. */
 "%@ servers" = "%@ サーバー";
 
+/* No comment provided by engineer. */
+"%@ uploaded" = "%@ アップロード済";
+
 /* notification title */
 "%@ wants to connect!" = "%@ が接続を希望しています!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld members" = "%@や%@など%lld人のメンバー";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld other members connected" = "%@, %@ および %lld 人のメンバーが接続中";
@@ -173,7 +200,16 @@
 "%lld file(s) with total size of %@" = "%lld 個のファイル（合計サイズ: %@）";
 
 /* No comment provided by engineer. */
+"%lld group events" = "%lld件のグループイベント";
+
+/* No comment provided by engineer. */
 "%lld members" = "%lld 人のメンバー";
+
+/* No comment provided by engineer. */
+"%lld messages blocked" = "%lld件のメッセージをブロック";
+
+/* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lldのメッセージが管理者によりブロック済";
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld 件のメッセージが削除されました";
@@ -228,6 +264,9 @@
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~取り消し線~";
+
+/* time to disappear */
+"0 sec" = "0 秒";
 
 /* No comment provided by engineer. */
 "0s" = "0秒";
@@ -375,6 +414,9 @@
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "すべての連絡先は維持されます。連絡先に更新されたプロフィールを送信します。";
 
 /* No comment provided by engineer. */
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "すべての連絡先、会話、ファイルは安全に暗号化され、設定されたXFTPリレーに分割でアップロードされます。";
+
+/* No comment provided by engineer. */
 "Allow" = "許可";
 
 /* No comment provided by engineer. */
@@ -399,10 +441,13 @@
 "Allow sending disappearing messages." = "消えるメッセージの送信を許可する。";
 
 /* No comment provided by engineer. */
-"Allow to irreversibly delete sent messages. (24 hours)" = "送信済みメッセージの永久削除を許可する。";
+"Allow to irreversibly delete sent messages. (24 hours)" = "送信済みメッセージの永久削除を許可する。(24時間)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "ファイルやメディアの送信を許可する。";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "SimpleXリンクの送信を許可。";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "音声メッセージの送信を許可する。";
@@ -420,7 +465,7 @@
 "Allow your contacts to call you." = "連絡先からの通話を許可する。";
 
 /* No comment provided by engineer. */
-"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "送信相手が永久メッセージ削除するのを許可する。";
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "送信相手が永久メッセージ削除するのを許可する。(24時間)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "送信相手が消えるメッセージを送るのを許可する。";
@@ -430,6 +475,12 @@
 
 /* No comment provided by engineer. */
 "Already connected?" = "すでに接続済みですか？";
+
+/* No comment provided by engineer. */
+"Already connecting!" = "既に接続中です！";
+
+/* No comment provided by engineer. */
+"Already joining the group!" = "すでにグループに参加しています！";
 
 /* pref value */
 "always" = "常に";
@@ -445,6 +496,9 @@
 
 /* No comment provided by engineer. */
 "App build: %@" = "アプリのビルド: %@";
+
+/* No comment provided by engineer. */
+"App data migration" = "アプリデータの移行";
 
 /* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "アプリは新しいローカルファイル（ビデオを除く）を暗号化します。";
@@ -531,7 +585,7 @@
 "Both you and your contact can add message reactions." = "自分も相手もメッセージへのリアクションを追加できます。";
 
 /* No comment provided by engineer. */
-"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "あなたと連絡相手が送信済みメッセージを永久削除できます。";
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "あなたと連絡相手が送信済みメッセージを永久削除できます。(24時間)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "あなたからも連絡先からも通話ができます。";
@@ -1603,7 +1657,7 @@
 "Group members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。";
+"Group members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
 
 /* No comment provided by engineer. */
 "Group members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
@@ -2244,7 +2298,7 @@
 "Only you can add message reactions." = "メッセージへのリアクションを追加できるのは、あなただけです。";
 
 /* No comment provided by engineer. */
-"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。";
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。(24時間)";
 
 /* No comment provided by engineer. */
 "Only you can make calls." = "自分からのみ通話ができます。";
@@ -2259,7 +2313,7 @@
 "Only your contact can add message reactions." = "メッセージへのリアクションを追加できるのは連絡先だけです。";
 
 /* No comment provided by engineer. */
-"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。";
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。(24時間)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "連絡先からのみ通話ができます。";
@@ -2867,7 +2921,7 @@
 /* simplex link type */
 "SimpleX group link" = "SimpleXグループリンク";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "SimpleX links" = "SimpleXリンク";
 
 /* No comment provided by engineer. */

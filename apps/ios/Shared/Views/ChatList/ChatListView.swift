@@ -92,8 +92,7 @@ struct ChatListView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
                 ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
-                        .frame(width: 32, height: 32)
+                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
                         .padding(.trailing, 4)
                     let allRead = chatModel.users
                         .filter { u in !u.user.activeUser && !u.user.hidden }

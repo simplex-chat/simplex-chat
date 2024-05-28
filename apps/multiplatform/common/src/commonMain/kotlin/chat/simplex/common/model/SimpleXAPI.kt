@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.group.toggleShowMemberMessages
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -20,12 +21,12 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.builtins.*
 import kotlinx.serialization.json.*
 import java.util.Date
 
@@ -105,6 +106,7 @@ class AppPreferences {
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
+  val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -129,11 +131,14 @@ class AppPreferences {
     },
     set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
   )
+  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.Never.name)
+  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.Allow.name)
   val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
+  val networkRcvConcurrency = mkIntPreference(SHARED_PREFS_NETWORK_RCV_CONCURRENCY, NetCfg.defaults.rcvConcurrency)
   val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults.smpPingInterval)
   val networkSMPPingCount = mkIntPreference(SHARED_PREFS_NETWORK_SMP_PING_COUNT, NetCfg.defaults.smpPingCount)
   val networkEnableKeepAlive = mkBoolPreference(SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE, NetCfg.defaults.enableKeepAlive)
@@ -161,15 +166,22 @@ class AppPreferences {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
-  val pqExperimentalEnabled = mkBoolPreference(SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED, false)
 
-  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
-  val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
+  val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
+  val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
+    json.encodeToString(MapSerializer(String.serializer(), String.serializer()), it)
+  }, decode = {
+    json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), it)
+  })
+  // Deprecated. Remove key from preferences in 2025
+  val themeOverridesOld = mkMapPreference(SHARED_PREFS_THEMES_OLD, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, decode = {
-    json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+    jsonCoerceInputValues.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, settingsThemes)
+  val themeOverrides = mkThemeOverridesPreference()
+  val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
   val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
@@ -182,6 +194,8 @@ class AppPreferences {
   val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
   val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
+
+  val showSentViaProxy = mkBoolPreference(SHARED_PREFS_SHOW_SENT_VIA_RPOXY, false)
 
 
   val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
@@ -198,6 +212,12 @@ class AppPreferences {
     SharedPreference(
       get = fun() = settings.getLong(prefName, default),
       set = fun(value) = settings.putLong(prefName, value)
+    )
+
+  private fun mkFloatPreference(prefName: String, default: Float) =
+    SharedPreference(
+      get = fun() = settings.getFloat(prefName, default),
+      set = fun(value) = settings.putFloat(prefName, value)
     )
 
   private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): SharedPreference<Long> {
@@ -255,6 +275,12 @@ class AppPreferences {
       set = fun(value) = prefs.putString(prefName, encode(value))
     )
 
+  private fun mkThemeOverridesPreference(): SharedPreference<List<ThemeOverrides>> =
+    SharedPreference(
+      get = fun() = themeOverridesStore ?: (readThemeOverrides()).also { themeOverridesStore = it },
+      set = fun(value) { if (writeThemeOverrides(value)) { themeOverridesStore = value } }
+    )
+
   companion object {
     const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     internal const val SHARED_PREFS_THEMES_ID = "chat.simplex.app.THEMES"
@@ -280,6 +306,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
+    private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -298,11 +325,14 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
+    private const val SHARED_PREFS_NETWORK_SMP_PROXY_MODE = "NetworkSMPProxyMode"
+    private const val SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK = "NetworkSMPProxyFallback"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
+    private const val SHARED_PREFS_NETWORK_RCV_CONCURRENCY = "networkRcvConcurrency"
     private const val SHARED_PREFS_NETWORK_SMP_PING_INTERVAL = "NetworkSMPPingInterval"
     private const val SHARED_PREFS_NETWORK_SMP_PING_COUNT = "NetworkSMPPingCount"
     private const val SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE = "NetworkEnableKeepAlive"
@@ -325,10 +355,13 @@ class AppPreferences {
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
-    private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled"
+    private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
+    private const val SHARED_PREFS_CURRENT_THEME_IDs = "CurrentThemeIds"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
-    private const val SHARED_PREFS_THEMES = "Themes"
+    private const val SHARED_PREFS_THEMES_OLD = "Themes"
+    private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
+    private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
     private const val SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME = "CustomDisappearingMessageTime"
@@ -338,9 +371,12 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 
     private const val SHARED_PREFS_IOS_CALL_KIT_ENABLED = "iOSCallKitEnabled"
     private const val SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS = "iOSCallKitCallsInRecents"
+
+    private var themeOverridesStore: List<ThemeOverrides>? = null
   }
 }
 
@@ -350,10 +386,14 @@ object ChatController {
   var ctrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
+  val messagesChannel: Channel<APIResponse> = Channel()
+
   val chatModel = ChatModel
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
+
+  fun hasChatCtrl() = ctrl != -1L && ctrl != null
 
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
@@ -421,8 +461,13 @@ object ChatController {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
     apiSetNetworkConfig(netCfg, ctrl)
-    apiSetTempFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
-    apiSetFilesFolder(getMigrationTempFilesDirectory().absolutePath, ctrl)
+    apiSetAppFilePaths(
+      getMigrationTempFilesDirectory().absolutePath,
+      getMigrationTempFilesDirectory().absolutePath,
+      wallpapersDir.parentFile.absolutePath,
+      remoteHostsDir.absolutePath,
+      ctrl
+    )
     apiStartChat(ctrl)
     return migrationActiveUser
   }
@@ -481,6 +526,7 @@ object ChatController {
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
+              messagesChannel.trySend(msg)
             }
             if (finishedWithoutTimeout == null) {
               Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
@@ -640,22 +686,10 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetTempFolder(tempFolder: String, ctrl: ChatCtrl? = null) {
-    val r = sendCmd(null, CC.SetTempFolder(tempFolder), ctrl)
+  suspend fun apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, remoteHostsFolder: String, ctrl: ChatCtrl? = null) {
+    val r = sendCmd(null, CC.ApiSetAppFilePaths(filesFolder, tempFolder, assetsFolder, remoteHostsFolder), ctrl)
     if (r is CR.CmdOk) return
-    throw Exception("failed to set temp folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetFilesFolder(filesFolder: String, ctrl: ChatCtrl? = null) {
-    val r = sendCmd(null, CC.SetFilesFolder(filesFolder), ctrl)
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set files folder: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
-    val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set remote hosts folder: ${r.responseType} ${r.details}")
+    throw Exception("failed to set app file paths: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetEncryptLocalFiles(enable))
@@ -670,15 +704,6 @@ object ChatController {
     val r = sendCmd(null, CC.ApiGetSettings(settings))
     if (r is CR.AppSettingsR) return r.appSettings
     throw Exception("failed to get app settings: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetPQEncryption(enable: Boolean) = sendCommandOkResp(null, CC.ApiSetPQEncryption(enable))
-
-  suspend fun apiSetContactPQ(rh: Long?, contactId: Long, enable: Boolean): Contact? {
-    val r = sendCmd(rh, CC.ApiSetContactPQ(contactId, enable))
-    if (r is CR.ContactPQAllowed) return r.contact
-    apiErrorAlert("apiSetContactPQ", "Error allowing contact PQ", r)
-    return null
   }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
@@ -732,12 +757,16 @@ object ChatController {
 
   suspend fun apiSendMessage(rh: Long?, type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
     val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live, ttl)
+    return processSendMessageCmd(rh, cmd)
+  }
+
+  private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): AChatItem? {
     val r = sendCmd(rh, cmd)
     return when (r) {
       is CR.NewChatItem -> r.chatItem
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiSendMessage", generalGetString(MR.strings.error_sending_message), r)
+          apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)
         }
         null
       }
@@ -764,6 +793,13 @@ object ChatController {
       }
     }
   }
+
+  suspend fun apiForwardChatItem(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemId: Long, ttl: Int?): ChatItem? {
+    val cmd = CC.ApiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl)
+    return processSendMessageCmd(rh, cmd)?.chatItem
+  }
+
+
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
@@ -874,6 +910,9 @@ object ChatController {
       }
     }
   }
+
+  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
+    sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
@@ -1136,6 +1175,20 @@ object ChatController {
     return null
   }
 
+  suspend fun apiSetUserUIThemes(rh: Long?, userId: Long, themes: ThemeModeOverrides?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetUserUIThemes(userId, themes))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiSetUserUIThemes bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun apiSetChatUIThemes(rh: Long?, chatId: ChatId, themes: ThemeModeOverrides?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetChatUIThemes(chatId, themes))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiSetChatUIThemes bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiCreateUserAddress(rh: Long?): String? {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
     val r = sendCmd(rh, CC.ApiCreateMyAddress(userId))
@@ -1310,9 +1363,9 @@ object ChatController {
     }
   }
 
-  suspend fun apiReceiveFile(rh: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
+  suspend fun apiReceiveFile(rh: Long?, fileId: Long, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
-    val r = sendCmd(rh, CC.ReceiveFile(fileId, encrypted, inline))
+    val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1331,7 +1384,23 @@ object ChatController {
           val maybeChatError = chatError(r)
           if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
             Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
-          } else {
+          } else if (maybeChatError is ChatErrorType.FileNotApproved) {
+            Log.d(TAG, "apiReceiveFile FileNotApproved error")
+            if (!auto) {
+              val srvs = maybeChatError.unknownServers.map{ serverHostname(it) }
+              AlertManager.shared.showAlertDialog(
+                title = generalGetString(MR.strings.file_not_approved_title),
+                text = generalGetString(MR.strings.file_not_approved_descr).format(srvs.sorted().joinToString(separator = ", ")),
+                confirmText = generalGetString(MR.strings.download_file),
+                onConfirm = {
+                  val user = chatModel.currentUser.value
+                  if (user != null) {
+                    withBGApi { chatModel.controller.receiveFile(rh, user, fileId, userApprovedRelays = true) }
+                  }
+                },
+              )
+            }
+          } else if (!auto) {
             apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
         }
@@ -1962,7 +2031,6 @@ object ChatController {
       }
       is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
-        cleanupFile(r.chatItem)
       }
       is CR.SndFileError -> {
         if (r.chatItem_ != null) {
@@ -2012,13 +2080,21 @@ object ChatController {
         }
       }
       is CR.ContactSwitch ->
-        chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+        }
       is CR.GroupMemberSwitch ->
-        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+        }
       is CR.ContactRatchetSync ->
-        chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+        }
       is CR.GroupMemberRatchetSync ->
-        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        if (active(r.user)) {
+          chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        }
       is CR.RemoteHostSessionCode -> {
         chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
@@ -2026,6 +2102,11 @@ object ChatController {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
         switchUIRemoteHost(r.remoteHost.remoteHostId)
+      }
+      is CR.ContactDisabled -> {
+        if (active(r.user)) {
+          chatModel.updateContact(rhId, r.contact)
+        }
       }
       is CR.RemoteHostStopped -> {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
@@ -2177,9 +2258,14 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, auto: Boolean = false) {
-    val encrypted = appPrefs.privacyEncryptLocalFiles.get()
-    val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    val chatItem = apiReceiveFile(
+      rhId,
+      fileId,
+      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
+      encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+      auto = auto
+    )
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
     }
@@ -2283,9 +2369,12 @@ object ChatController {
     val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
     val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val sessionMode = appPrefs.networkSessionMode.get()
+    val smpProxyMode = SMPProxyMode.valueOf(appPrefs.networkSMPProxyMode.get()!!)
+    val smpProxyFallback = SMPProxyFallback.valueOf(appPrefs.networkSMPProxyFallback.get()!!)
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val tcpTimeoutPerKb = appPrefs.networkTCPTimeoutPerKb.get()
+    val rcvConcurrency = appPrefs.networkRcvConcurrency.get()
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
     val smpPingCount = appPrefs.networkSMPPingCount.get()
     val enableKeepAlive = appPrefs.networkEnableKeepAlive.get()
@@ -2302,9 +2391,12 @@ object ChatController {
       hostMode = hostMode,
       requiredHostMode = requiredHostMode,
       sessionMode = sessionMode,
+      smpProxyMode = smpProxyMode,
+      smpProxyFallback = smpProxyFallback,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpTimeoutPerKb = tcpTimeoutPerKb,
+      rcvConcurrency = rcvConcurrency,
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = smpPingInterval,
       smpPingCount = smpPingCount
@@ -2319,9 +2411,12 @@ object ChatController {
     appPrefs.networkHostMode.set(cfg.hostMode.name)
     appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
     appPrefs.networkSessionMode.set(cfg.sessionMode)
+    appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode.name)
+    appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback.name)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkTCPTimeoutPerKb.set(cfg.tcpTimeoutPerKb)
+    appPrefs.networkRcvConcurrency.set(cfg.rcvConcurrency)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
     appPrefs.networkSMPPingCount.set(cfg.smpPingCount)
     if (cfg.tcpKeepAlive != null) {
@@ -2365,12 +2460,9 @@ sealed class CC {
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val mainApp: Boolean): CC()
   class ApiStopChat: CC()
-  class SetTempFolder(val tempFolder: String): CC()
-  class SetFilesFolder(val filesFolder: String): CC()
-  class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
+  @Serializable
+  class ApiSetAppFilePaths(val appFilesFolder: String, val appTempFolder: String, val appAssetsFolder: String, val appRemoteHostsFolder: String): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
-  class ApiSetPQEncryption(val enable: Boolean): CC()
-  class ApiSetContactPQ(val contactId: Long, val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -2387,6 +2479,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
+  class ApiForwardChatItem(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemId: Long, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
@@ -2409,6 +2502,7 @@ sealed class CC {
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
+  class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2435,6 +2529,8 @@ sealed class CC {
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
+  class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
+  class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
@@ -2453,7 +2549,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val encrypt: Boolean, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val userApprovedRelays: Boolean, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
   // Remote control
   class SetLocalDeviceName(val displayName: String): CC()
@@ -2502,12 +2598,8 @@ sealed class CC {
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start main=${onOff(mainApp)}"
     is ApiStopChat -> "/_stop"
-    is SetTempFolder -> "/_temp_folder $tempFolder"
-    is SetFilesFolder -> "/_files_folder $filesFolder"
-    is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
+    is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
-    is ApiSetPQEncryption -> "/pq ${onOff(enable)}"
-    is ApiSetContactPQ -> "/_pq @$contactId ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -2529,6 +2621,10 @@ sealed class CC {
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
+    is ApiForwardChatItem -> {
+      val ttlStr = if (ttl != null) "$ttl" else "default"
+      "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} $itemId ttl=${ttlStr}"
+    }
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -2551,6 +2647,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
+    is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
@@ -2581,6 +2678,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
+    is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
+    is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
@@ -2601,6 +2700,7 @@ sealed class CC {
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile ->
       "/freceive $fileId" +
+          (" approved_relays=${onOff(userApprovedRelays)}") +
           (if (encrypt == null) "" else " encrypt=${onOff(encrypt)}") +
           (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
@@ -2644,12 +2744,8 @@ sealed class CC {
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
-    is SetTempFolder -> "setTempFolder"
-    is SetFilesFolder -> "setFilesFolder"
-    is SetRemoteHostsFolder -> "setRemoteHostsFolder"
+    is ApiSetAppFilePaths -> "apiSetAppFilePaths"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
-    is ApiSetPQEncryption -> "apiSetPQEncryption"
-    is ApiSetContactPQ -> "apiSetContactPQ"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -2666,6 +2762,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
     is ApiChatItemReaction -> "apiChatItemReaction"
+    is ApiForwardChatItem -> "apiForwardChatItem"
     is ApiNewGroup -> "apiNewGroup"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
@@ -2688,6 +2785,7 @@ sealed class CC {
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
+    is APISetNetworkInfo -> "apiSetNetworkInfo"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
@@ -2714,6 +2812,8 @@ sealed class CC {
     is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
+    is ApiSetUserUIThemes -> "apiSetUserUIThemes"
+    is ApiSetChatUIThemes -> "apiSetChatUIThemes"
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
@@ -3003,12 +3103,16 @@ data class ParsedServerAddress (
 @Serializable
 data class NetCfg(
   val socksProxy: String?,
+  val socksMode: SocksMode = SocksMode.Always,
   val hostMode: HostMode,
   val requiredHostMode: Boolean,
   val sessionMode: TransportSessionMode,
+  val smpProxyMode: SMPProxyMode,
+  val smpProxyFallback: SMPProxyFallback,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds
+  val rcvConcurrency: Int, // pool size
   val tcpKeepAlive: KeepAliveOpts?,
   val smpPingInterval: Long, // microseconds
   val smpPingCount: Int,
@@ -3033,9 +3137,12 @@ data class NetCfg(
         hostMode = HostMode.OnionViaSocks,
         requiredHostMode = false,
         sessionMode = TransportSessionMode.User,
-        tcpConnectTimeout = 20_000_000,
+        smpProxyMode = SMPProxyMode.Never,
+        smpProxyFallback = SMPProxyFallback.Allow,
+        tcpConnectTimeout = 25_000_000,
         tcpTimeout = 15_000_000,
-        tcpTimeoutPerKb = 45_000,
+        tcpTimeoutPerKb = 10_000,
+        rcvConcurrency = 12,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -3047,9 +3154,12 @@ data class NetCfg(
         hostMode = HostMode.OnionViaSocks,
         requiredHostMode = false,
         sessionMode = TransportSessionMode.User,
-        tcpConnectTimeout = 30_000_000,
+        smpProxyMode = SMPProxyMode.Never,
+        smpProxyFallback = SMPProxyFallback.Allow,
+        tcpConnectTimeout = 35_000_000,
         tcpTimeout = 20_000_000,
-        tcpTimeoutPerKb = 60_000,
+        tcpTimeoutPerKb = 15_000,
+        rcvConcurrency = 8,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -3082,6 +3192,35 @@ enum class HostMode {
   @SerialName("onionViaSocks") OnionViaSocks,
   @SerialName("onion") Onion,
   @SerialName("public") Public;
+}
+
+@Serializable
+enum class SocksMode {
+  @SerialName("always") Always,
+  @SerialName("onion") Onion;
+}
+
+@Serializable
+enum class SMPProxyMode {
+  @SerialName("always") Always,
+  @SerialName("unknown") Unknown,
+  @SerialName("unprotected") Unprotected,
+  @SerialName("never") Never;
+
+  companion object {
+    val default = Never
+  }
+}
+
+@Serializable
+enum class SMPProxyFallback {
+  @SerialName("allow") Allow,
+  @SerialName("allowProtected") AllowProtected,
+  @SerialName("prohibit") Prohibit;
+
+  companion object {
+    val default = Allow
+  }
 }
 
 @Serializable
@@ -3418,6 +3557,7 @@ interface Feature {
   @Composable
   fun iconFilled(): Painter
   val hasParam: Boolean
+  val hasRole: Boolean
 }
 
 @Serializable
@@ -3437,6 +3577,7 @@ enum class ChatFeature: Feature {
       TimedMessages -> true
       else -> false
     }
+  override val hasRole: Boolean = false
 
   override val text: String
     get() = when(this) {
@@ -3537,12 +3678,25 @@ enum class GroupFeature: Feature {
   @SerialName("reactions") Reactions,
   @SerialName("voice") Voice,
   @SerialName("files") Files,
+  @SerialName("simplexLinks") SimplexLinks,
   @SerialName("history") History;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
     else -> false
   }
+
+  override val hasRole: Boolean
+    get() = when (this) {
+      TimedMessages -> false
+      DirectMessages -> true
+      FullDelete -> false
+      Reactions -> false
+      Voice -> true
+      Files -> true
+      SimplexLinks -> true
+      History -> false
+    }
 
   override val text: String
     get() = when(this) {
@@ -3552,6 +3706,7 @@ enum class GroupFeature: Feature {
       Reactions -> generalGetString(MR.strings.message_reactions)
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
+      SimplexLinks -> generalGetString(MR.strings.simplex_links)
       History -> generalGetString(MR.strings.recent_history)
     }
 
@@ -3563,6 +3718,7 @@ enum class GroupFeature: Feature {
       Reactions -> painterResource(MR.images.ic_add_reaction)
       Voice -> painterResource(MR.images.ic_keyboard_voice)
       Files -> painterResource(MR.images.ic_draft)
+      SimplexLinks -> painterResource(MR.images.ic_link)
       History -> painterResource(MR.images.ic_schedule)
     }
 
@@ -3574,6 +3730,7 @@ enum class GroupFeature: Feature {
     Reactions -> painterResource(MR.images.ic_add_reaction_filled)
     Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
     Files -> painterResource(MR.images.ic_draft_filled)
+    SimplexLinks -> painterResource(MR.images.ic_link)
     History -> painterResource(MR.images.ic_schedule_filled)
   }
 
@@ -3603,6 +3760,10 @@ enum class GroupFeature: Feature {
         Files -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_files)
+        }
+        SimplexLinks -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_simplex_links)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_simplex_links)
         }
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
@@ -3634,6 +3795,10 @@ enum class GroupFeature: Feature {
         Files -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
+        }
+        SimplexLinks -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_simplex_links)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.simplex_links_are_prohibited_in_group)
         }
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
@@ -3748,11 +3913,12 @@ enum class FeatureAllowed {
 @Serializable
 data class FullGroupPreferences(
   val timedMessages: TimedMessagesGroupPreference,
-  val directMessages: GroupPreference,
+  val directMessages: RoleGroupPreference,
   val fullDelete: GroupPreference,
   val reactions: GroupPreference,
-  val voice: GroupPreference,
-  val files: GroupPreference,
+  val voice: RoleGroupPreference,
+  val files: RoleGroupPreference,
+  val simplexLinks: RoleGroupPreference,
   val history: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -3763,17 +3929,19 @@ data class FullGroupPreferences(
       reactions = reactions,
       voice = voice,
       files = files,
+      simplexLinks = simplexLinks,
       history = history
     )
 
   companion object {
     val sampleData = FullGroupPreferences(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
-      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = RoleGroupPreference(GroupFeatureEnabled.OFF, role = null),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       reactions = GroupPreference(GroupFeatureEnabled.ON),
-      voice = GroupPreference(GroupFeatureEnabled.ON),
-      files = GroupPreference(GroupFeatureEnabled.ON),
+      voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
@@ -3782,21 +3950,23 @@ data class FullGroupPreferences(
 @Serializable
 data class GroupPreferences(
   val timedMessages: TimedMessagesGroupPreference? = null,
-  val directMessages: GroupPreference? = null,
+  val directMessages: RoleGroupPreference? = null,
   val fullDelete: GroupPreference? = null,
   val reactions: GroupPreference? = null,
-  val voice: GroupPreference? = null,
-  val files: GroupPreference? = null,
+  val voice: RoleGroupPreference? = null,
+  val files: RoleGroupPreference? = null,
+  val simplexLinks: RoleGroupPreference? = null,
   val history: GroupPreference? = null,
 ) {
   companion object {
     val sampleData = GroupPreferences(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
-      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = RoleGroupPreference(GroupFeatureEnabled.OFF, role = null),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       reactions = GroupPreference(GroupFeatureEnabled.ON),
-      voice = GroupPreference(GroupFeatureEnabled.ON),
-      files = GroupPreference(GroupFeatureEnabled.ON),
+      voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
@@ -3807,6 +3977,26 @@ data class GroupPreference(
   val enable: GroupFeatureEnabled
 ) {
   val on: Boolean get() = enable == GroupFeatureEnabled.ON
+
+  fun enabled(role: GroupMemberRole?, m: GroupMember?): GroupFeatureEnabled =
+    when (enable) {
+      GroupFeatureEnabled.OFF -> GroupFeatureEnabled.OFF
+      GroupFeatureEnabled.ON ->
+        if (role != null && m != null) {
+          if (m.memberRole >= role) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF
+        } else {
+          GroupFeatureEnabled.ON
+        }
+    }
+}
+
+@Serializable
+data class RoleGroupPreference(
+  val enable: GroupFeatureEnabled,
+  val role: GroupMemberRole? = null,
+) {
+  fun on(m: GroupMember): Boolean =
+    enable == GroupFeatureEnabled.ON && m.memberRole >= (role ?: GroupMemberRole.Observer)
 }
 
 @Serializable
@@ -3893,6 +4083,15 @@ val json = Json {
   ignoreUnknownKeys = true
   encodeDefaults = true
   explicitNulls = false
+}
+
+// Can decode unknown enum to default value specified for this field
+val jsonCoerceInputValues = Json {
+  prettyPrint = true
+  ignoreUnknownKeys = true
+  encodeDefaults = true
+  explicitNulls = false
+  coerceInputValues = true
 }
 
 val jsonShort = Json {
@@ -4099,7 +4298,7 @@ sealed class CR {
   @Serializable @SerialName("rcvStandaloneFileComplete") class RcvStandaloneFileComplete(val user: UserRef, val targetPath: String, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem_: AChatItem?, val agentError: AgentErrorType, val rcvFileTransfer: RcvFileTransfer): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
@@ -4121,6 +4320,7 @@ sealed class CR {
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
   @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactDisabled") class ContactDisabled(val user: UserRef, val contact: Contact): CR()
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
@@ -4285,6 +4485,7 @@ sealed class CR {
     is CallExtraInfo -> "callExtraInfo"
     is CallEnded -> "callEnded"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is ContactDisabled -> "contactDisabled"
     is RemoteHostList -> "remoteHostList"
     is CurrentRemoteHost -> "currentRemoteHost"
     is RemoteHostStarted -> "remoteHostStarted"
@@ -4425,7 +4626,7 @@ sealed class CR {
     is RcvFileSndCancelled -> withUser(user, json.encodeToString(chatItem))
     is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem_)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
     is RcvStandaloneFileComplete -> withUser(user, targetPath)
-    is RcvFileError -> withUser(user, json.encodeToString(chatItem_))
+    is RcvFileError -> withUser(user, "chatItem_: ${json.encodeToString(chatItem_)}\nagentError: ${agentError.string}\nrcvFileTransfer: $rcvFileTransfer")
     is SndFileCancelled -> json.encodeToString(chatItem_)
     is SndStandaloneFileCreated -> noDetails()
     is SndFileStartXFTP -> withUser(user, json.encodeToString(chatItem))
@@ -4445,6 +4646,7 @@ sealed class CR {
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
+    is ContactDisabled -> withUser(user, json.encodeToString(contact))
     // remote events (mobile)
     is RemoteHostList -> json.encodeToString(remoteHosts)
     is CurrentRemoteHost -> if (remoteHost_ == null) "local" else json.encodeToString(remoteHost_)
@@ -4748,18 +4950,20 @@ sealed class ChatErrorType {
       is FileCancel -> "fileCancel"
       is FileAlreadyExists -> "fileAlreadyExists"
       is FileRead -> "fileRead"
-      is FileWrite -> "fileWrite"
+      is FileWrite -> "fileWrite $message"
       is FileSend -> "fileSend"
       is FileRcvChunk -> "fileRcvChunk"
       is FileInternal -> "fileInternal"
       is FileImageType -> "fileImageType"
       is FileImageSize -> "fileImageSize"
       is FileNotReceived -> "fileNotReceived"
+      is FileNotApproved -> "fileNotApproved"
       // is XFTPRcvFile -> "xftpRcvFile"
       // is XFTPSndFile -> "xftpSndFile"
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
+      is InvalidForward -> "invalidForward"
       is InvalidChatItemUpdate -> "invalidChatItemUpdate"
       is InvalidChatItemDelete -> "invalidChatItemDelete"
       is HasCurrentCall -> "hasCurrentCall"
@@ -4833,11 +5037,13 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileImageType") class FileImageType(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileImageSize") class FileImageSize(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileNotReceived") class FileNotReceived(val fileId: Long): ChatErrorType()
+  @Serializable @SerialName("fileNotApproved") class FileNotApproved(val fileId: Long, val unknownServers: List<String>): ChatErrorType()
   // @Serializable @SerialName("xFTPRcvFile") object XFTPRcvFile: ChatErrorType()
   // @Serializable @SerialName("xFTPSndFile") object XFTPSndFile: ChatErrorType()
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
+  @Serializable @SerialName("invalidForward") object InvalidForward: ChatErrorType()
   @Serializable @SerialName("invalidChatItemUpdate") object InvalidChatItemUpdate: ChatErrorType()
   @Serializable @SerialName("invalidChatItemDelete") object InvalidChatItemDelete: ChatErrorType()
   @Serializable @SerialName("hasCurrentCall") object HasCurrentCall: ChatErrorType()
@@ -5330,6 +5536,7 @@ enum class NotificationsMode() {
 data class AppSettings(
   var networkConfig: NetCfg? = null,
   var privacyEncryptLocalFiles: Boolean? = null,
+  var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
   var privacyShowChatPreviews: Boolean? = null,
@@ -5347,12 +5554,18 @@ data class AppSettings(
   var androidCallOnLockScreen: AppSettingsLockScreenCalls? = null,
   var iosCallKitEnabled: Boolean? = null,
   var iosCallKitCallsInRecents: Boolean? = null,
+  var uiProfileImageCornerRadius: Float? = null,
+  var uiColorScheme: String? = null,
+  var uiDarkColorScheme: String? = null,
+  var uiCurrentThemeIds: Map<String, String>? = null,
+  var uiThemes: List<ThemeOverrides>? = null,
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
     val def = defaults
     if (networkConfig != def.networkConfig) { empty.networkConfig = networkConfig }
     if (privacyEncryptLocalFiles != def.privacyEncryptLocalFiles) { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+    if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -5370,6 +5583,11 @@ data class AppSettings(
     if (androidCallOnLockScreen != def.androidCallOnLockScreen) { empty.androidCallOnLockScreen = androidCallOnLockScreen }
     if (iosCallKitEnabled != def.iosCallKitEnabled) { empty.iosCallKitEnabled = iosCallKitEnabled }
     if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+    if (uiProfileImageCornerRadius != def.uiProfileImageCornerRadius) { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
+    if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
+    if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
+    if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
+    if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     return empty
   }
 
@@ -5384,6 +5602,7 @@ data class AppSettings(
       setNetCfg(net)
     }
     privacyEncryptLocalFiles?.let { def.privacyEncryptLocalFiles.set(it) }
+    privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
@@ -5401,6 +5620,11 @@ data class AppSettings(
     androidCallOnLockScreen?.let { def.callOnLockScreen.set(it.toCallOnLockScreen()) }
     iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
+    uiProfileImageCornerRadius?.let { def.profileImageCornerRadius.set(it) }
+    uiColorScheme?.let { def.currentTheme.set(it) }
+    uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
+    uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
+    uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
   }
 
   companion object {
@@ -5408,6 +5632,7 @@ data class AppSettings(
       get() = AppSettings(
         networkConfig = NetCfg.defaults,
         privacyEncryptLocalFiles = true,
+        privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
         privacyShowChatPreviews = true,
@@ -5424,7 +5649,12 @@ data class AppSettings(
         confirmDBUpgrades = false,
         androidCallOnLockScreen = AppSettingsLockScreenCalls.SHOW,
         iosCallKitEnabled = true,
-        iosCallKitCallsInRecents = false
+        iosCallKitCallsInRecents = false,
+        uiProfileImageCornerRadius = 22.5f,
+        uiColorScheme = DefaultTheme.SYSTEM_THEME_NAME,
+        uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
+        uiCurrentThemeIds = null,
+        uiThemes = null,
       )
 
     val current: AppSettings
@@ -5433,6 +5663,7 @@ data class AppSettings(
         return defaults.copy(
           networkConfig = getNetCfg(),
           privacyEncryptLocalFiles = def.privacyEncryptLocalFiles.get(),
+          privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
@@ -5450,6 +5681,11 @@ data class AppSettings(
           androidCallOnLockScreen = AppSettingsLockScreenCalls.from(def.callOnLockScreen.get()),
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
+          uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
+          uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM_THEME_NAME,
+          uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
+          uiCurrentThemeIds = def.currentThemeIds.get(),
+          uiThemes = def.themeOverrides.get(),
         )
     }
   }
@@ -5526,4 +5762,27 @@ enum class AppSettingsLockScreenCalls {
         CallOnLockScreen.ACCEPT -> ACCEPT
       }
   }
+}
+
+@Serializable
+data class UserNetworkInfo(
+  val networkType: UserNetworkType,
+  val online: Boolean,
+)
+
+enum class UserNetworkType {
+  @SerialName("none") NONE,
+  @SerialName("cellular") CELLULAR,
+  @SerialName("wifi") WIFI,
+  @SerialName("ethernet") ETHERNET,
+  @SerialName("other") OTHER;
+
+  val text: String
+    get() = when (this) {
+      NONE -> generalGetString(MR.strings.network_type_no_network_connection)
+      CELLULAR -> generalGetString(MR.strings.network_type_cellular)
+      WIFI -> generalGetString(MR.strings.network_type_network_wifi)
+      ETHERNET -> generalGetString(MR.strings.network_type_ethernet)
+      OTHER -> generalGetString(MR.strings.network_type_other)
+    }
 }

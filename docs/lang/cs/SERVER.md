@@ -2,7 +2,7 @@
 title: Hostování vlastního serveru SMP
 revision: 05.06.2023
 ---
-| Aktualizováno 05.06.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
+| Aktualizováno 05.06.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 # Hostování vlastního serveru SMP
 
@@ -12,7 +12,7 @@ SMP server je relay server používaný k předávání zpráv v síti SimpleX. 
 
 Klienti SimpleX pouze určují, který server bude použit pro příjem zpráv, a to pro každý kontakt (nebo spojení skupiny s členem skupiny) zvlášť, přičemž tyto servery jsou pouze dočasné, protože adresa pro doručování se může změnit.
 
-_Upozornění_: když změníte servery v konfiguraci aplikace, ovlivní to pouze to, který server bude použit pro nové kontakty, stávající kontakty se na nové servery automaticky nepřesunou, ale můžete je přesunout ručně pomocí tlačítka ["Změnit adresu příjmu"](../blog/20221108-simplex-chat-v4.2-bezpecnostni-audit-novy-website.md#zmeny-dorucovani-adresy-beta) na stránkách s informacemi o kontaktech/členech - brzy bude automatizováno.
+_Upozornění_: když změníte servery v konfiguraci aplikace, ovlivní to pouze to, který server bude použit pro nové kontakty, stávající kontakty se na nové servery automaticky nepřesunou, ale můžete je přesunout ručně pomocí tlačítka ["Změnit adresu příjmu"](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) na stránkách s informacemi o kontaktech/členech - brzy bude automatizováno.
 
 ## Instalace
 

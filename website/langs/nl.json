@@ -20,7 +20,7 @@
     "copyright-label": "© 2020-2023 SimpleX | Open-sourceproject",
     "simplex-chat-protocol": "SimpleX Chat protocol",
     "terminal-cli": "Terminal CLI",
-    "terms-and-privacy-policy": "Voorwaarden & Privacybeleid",
+    "terms-and-privacy-policy": "Privacybeleid",
     "hero-subheader": "De eerste messenger<br>zonder gebruikers-ID's",
     "hero-overlay-1-textlink": "Waarom zijn gebruikers-ID's slecht voor de privacy?",
     "hero-overlay-2-textlink": "Hoe werkt SimpleX?",
@@ -252,5 +252,8 @@
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> is een toonaangevend beveiligings- en technologieadviesbureau met klanten onder meer grote technologiebedrijven, overheidsinstanties en grote blockchain-projecten.",
     "docs-dropdown-9": "Downloads",
     "please-enable-javascript": "Schakel JavaScript in om de QR-code te zien.",
-    "please-use-link-in-mobile-app": "Gebruik de link in de mobiele app"
+    "please-use-link-in-mobile-app": "Gebruik de link in de mobiele app",
+    "docs-dropdown-10": "Transparantie",
+    "docs-dropdown-11": "FAQ",
+    "docs-dropdown-12": "Beveiliging"
 }

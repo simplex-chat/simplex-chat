@@ -22,6 +22,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.flow.*
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
@@ -35,6 +36,7 @@ fun CIVoiceView(
   hasText: Boolean,
   ci: ChatItem,
   timedMessagesTTL: Int?,
+  showViaProxy: Boolean,
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
@@ -76,7 +78,7 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, play, pause, longClick, receiveFile) {
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
     } else {
@@ -102,6 +104,7 @@ private fun VoiceLayout(
   sent: Boolean,
   hasText: Boolean,
   timedMessagesTTL: Int?,
+  showViaProxy: Boolean,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
@@ -151,8 +154,8 @@ private fun VoiceLayout(
   }
   when {
     hasText -> {
-      val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-      val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+      val sentColor = MaterialTheme.appColors.sentMessage
+      val receivedColor = MaterialTheme.appColors.receivedMessage
       Spacer(Modifier.width(6.dp))
       VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
       Row(verticalAlignment = Alignment.CenterVertically) {
@@ -171,7 +174,7 @@ private fun VoiceLayout(
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
         }
         Box(Modifier.padding(top = 6.dp, end = 6.dp)) {
-          CIMetaView(ci, timedMessagesTTL)
+          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
     }
@@ -186,7 +189,7 @@ private fun VoiceLayout(
           }
         }
         Box(Modifier.padding(top = 6.dp)) {
-          CIMetaView(ci, timedMessagesTTL)
+          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
     }
@@ -218,10 +221,11 @@ private fun PlayPauseButton(
   error: Boolean,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  icon: ImageResource = MR.images.ic_play_arrow_filled,
 ) {
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,
@@ -239,7 +243,7 @@ private fun PlayPauseButton(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
+        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(icon),
         contentDescription = null,
         Modifier.size(36.dp),
         tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -292,6 +296,8 @@ private fun VoiceMsgIndicator(
       ) {
         ProgressIndicator()
       }
+    } else if (file?.fileStatus is CIFileStatus.RcvAborted) {
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick, icon = MR.images.ic_sync_problem)
     } else {
       PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
     }

@@ -83,7 +83,7 @@ struct GroupMemberInfoView: View {
                         Section {
                             if let contactId = member.memberContactId, let chat = knownDirectChat(contactId) {
                                 knownDirectChatButton(chat)
-                            } else if groupInfo.fullGroupPreferences.directMessages.on {
+                            } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                                 if let contactId = member.memberContactId {
                                     newDirectChatButton(contactId)
                                 } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
@@ -110,7 +110,7 @@ struct GroupMemberInfoView: View {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
                             if let contactId = member.memberContactId {
-                                if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on {
+                                if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                                     connectViaAddressButton(contactLink)
                                 }
                             } else {
@@ -305,8 +305,7 @@ struct GroupMemberInfoView: View {
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {
         VStack {
-            ProfileImage(imageStr: mem.image, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 192, height: 192)
+            ProfileImage(imageStr: mem.image, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
             if mem.verified {

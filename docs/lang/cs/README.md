@@ -1,4 +1,4 @@
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
@@ -26,7 +26,7 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) s novými funkcemi o 1-2 týdny dříve - **omezeno na 10 000 uživatelů**!
 - 🖥 K dispozici jako terminálová (konzolová) [aplikace / CLI](#zap-quick-installation-of-a-terminal-app) v systémech Linux, MacOS, Windows.
 
-**NOVINKA**: Bezpečnostní audit od [Trail of Bits](https://www.trailofbits.com/about), [nové webové stránky](https://simplex.chat) a vydána verze 4.2! [Viz oznámení](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+**NOVINKA**: Bezpečnostní audit od [Trail of Bits](https://www.trailofbits.com/about), [nové webové stránky](https://simplex.chat) a vydána verze 4.2! [Viz oznámení](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 ## Obsah
 
@@ -62,23 +62,23 @@ Nestačí používat end-to-end šifrovaný messenger, všichni bychom měli pou
 
 ### Úplné soukromí vaší identity, profilu, kontaktů a metadat.
 
-**Na rozdíl od všech ostatních existujících platforem pro zasílání zpráv nemá SimpleX přiřazeny žádné identifikátory uživatelů** - dokonce ani náhodná čísla. To chrání soukromí toho, s kým komunikujete, a skrývá to před servery platformy SimpleX i před jakýmikoli pozorovateli. [Více informací](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
+**Na rozdíl od všech ostatních existujících platforem pro zasílání zpráv nemá SimpleX přiřazeny žádné identifikátory uživatelů** - dokonce ani náhodná čísla. To chrání soukromí toho, s kým komunikujete, a skrývá to před servery platformy SimpleX i před jakýmikoli pozorovateli. [Více informací](./SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
 ### Nejlepší ochrana proti spamu a zneužití
 
-Protože na platformě SimpleX nemáte žádný identifikátor, nelze vás kontaktovat, pokud nesdílíte odkaz na jednorázovou pozvánku nebo volitelnou dočasnou uživatelskou adresu. [Více informací](./docs/SIMPLEX.md#nejlepší-ochrana-před-spamem-a-zneužitím).
+Protože na platformě SimpleX nemáte žádný identifikátor, nelze vás kontaktovat, pokud nesdílíte odkaz na jednorázovou pozvánku nebo volitelnou dočasnou uživatelskou adresu. [Více informací](./SIMPLEX.md#nejlepší-ochrana-proti-spamu-a-zneužití).
 
 ### Úplné vlastnictví, kontrola a zabezpečení vašich dat
 
-SimpleX ukládá všechna uživatelská data na klientských zařízeních, zprávy jsou pouze dočasně uchovávány na relay serverech SimpleX, dokud nejsou přijaty. [Více informací](./docs/SIMPLEX.md#complete-ownership-control-and-security-of-your-data).
+SimpleX ukládá všechna uživatelská data na klientských zařízeních, zprávy jsou pouze dočasně uchovávány na relay serverech SimpleX, dokud nejsou přijaty. [Více informací](./SIMPLEX.md#complete-ownership-control-and-security-of-your-data).
 
 ### Uživatelé vlastní síť SimpleX
 
-Můžete používat SimpleX s vlastními servery a přitom komunikovat s lidmi, kteří používají servery předkonfigurované v aplikacích nebo jakékoli jiné servery SimpleX. [Více informací](./docs/SIMPLEX.md#users-own-simplex-network).
+Můžete používat SimpleX s vlastními servery a přitom komunikovat s lidmi, kteří používají servery předkonfigurované v aplikacích nebo jakékoli jiné servery SimpleX. [Více informací](./SIMPLEX.md#users-own-simplex-network).
 
 ## Často kladené otázky
 
-1. _Jak může SimpleX doručovat zprávy bez identifikátorů uživatelů?_ Viz [oznámení o vydání v2](./blog/20220511-simplex-chat-v2-images-files.md#prvni-platforma-zasilani-zpráv-bez-identifikátoru-uživatele), kde je vysvětleno, jak SimpleX funguje.
+1. _Jak může SimpleX doručovat zprávy bez identifikátorů uživatelů?_ Viz [oznámení o vydání v2](../../../blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers), kde je vysvětleno, jak SimpleX funguje.
 
 2. _Proč bych neměl používat jen Signal?_ Signal je centralizovaná platforma, která k identifikaci svých uživatelů a jejich kontaktů používá telefonní čísla. To znamená, že zatímco obsah vašich zpráv na službě Signal je chráněn robustním šifrováním end-to-end, pro službu Signal je viditelné velké množství metadat - s kým a kdy hovoříte.
 
@@ -88,17 +88,17 @@ Můžete používat SimpleX s vlastními servery a přitom komunikovat s lidmi, 
 
 Poslední aktualizace: V současné době je k dispozici několik nových aplikací, např:
 
-[Vydání verze 4.5 - s více uživatelskými profily, návrhem zpráv, izolací transportu a italským rozhraním](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
+[Vydání verze 4.5 - s více uživatelskými profily, návrhem zpráv, izolací transportu a italským rozhraním](../../../blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
 
-[03. 01. 2023. v4.4 vydána - s mizejícími zprávami, "živými" zprávami, bezpečnostním ověřováním spojení, GIFy a nálepkami a s francouzským jazykem rozhraní](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
+[03. 01. 2023. v4.4 vydána - s mizejícími zprávami, "živými" zprávami, bezpečnostním ověřováním spojení, GIFy a nálepkami a s francouzským jazykem rozhraní](../../../blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
 
-[prosinec 06, 2022. Listopadové recenze a vydána verze 4.3 - s okamžitými hlasovými zprávami, nevratným mazáním odeslaných zpráv a vylepšenou konfigurací serveru](./blog/20221206-simplex-chat-v4.3-hlasove-zpravy.md).
+[prosinec 06, 2022. Listopadové recenze a vydána verze 4.3 - s okamžitými hlasovými zprávami, nevratným mazáním odeslaných zpráv a vylepšenou konfigurací serveru](../../../blog/20221206-simplex-chat-v4.3-voice-messages.md).
 
-[Nov 08, 2022. Bezpečnostní audit Trail of Bits, vydány nové webové stránky a verze 4.2](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+[Nov 08, 2022. Bezpečnostní audit Trail of Bits, vydány nové webové stránky a verze 4.2](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
-[28. 9. 2022. v4.0: šifrovaná lokální databáze chatu a mnoho dalších změn](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+[28. 9. 2022. v4.0: šifrovaná lokální databáze chatu a mnoho dalších změn](../../../blog/20220928-simplex-chat-v4-encrypted-database.md).
 
-[Všechny aktualizace](./blog)
+[Všechny aktualizace](../../../blog)
 
 ## Vytvoření soukromého připojení
 
@@ -118,13 +118,13 @@ Po instalaci chatovacího klienta jednoduše spusťte `simplex-chat` z terminál
 
 ![simplex-chat](./images/connection.gif)
 
-Více informací o [instalaci a používání terminálové aplikace](./docs/CLI.md).
+Více informací o [instalaci a používání terminálové aplikace](./CLI.md).
 
 ## Návrh platformy SimpleX
 
 SimpleX je síť klient-server s unikátní topologií sítě, která využívá redundantní, jednorázové uzly pro předávání zpráv (relay nodes) k asynchronnímu předávání zpráv prostřednictvím jednosměrných (simplexních) front zpráv, což zajišťuje anonymitu příjemce i odesílatele.
 
-Na rozdíl od sítí P2P jsou všechny zprávy předávány přes jeden nebo několik serverových uzlů, které ani nemusí mít perzistenci. Současná implementace [SMP serveru](https://github.com/simplex-chat/simplexmq#smp-server) ve skutečnosti používá ukládání zpráv v paměti a uchovává pouze záznamy o frontách. SimpleX poskytuje lepší ochranu metadat než návrhy P2P, protože k doručování zpráv se nepoužívají globální identifikátory účastníků, a vyhýbá se [problémům sítí P2P](./docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols).
+Na rozdíl od sítí P2P jsou všechny zprávy předávány přes jeden nebo několik serverových uzlů, které ani nemusí mít perzistenci. Současná implementace [SMP serveru](https://github.com/simplex-chat/simplexmq#smp-server) ve skutečnosti používá ukládání zpráv v paměti a uchovává pouze záznamy o frontách. SimpleX poskytuje lepší ochranu metadat než návrhy P2P, protože k doručování zpráv se nepoužívají globální identifikátory účastníků, a vyhýbá se [problémům sítí P2P](./SIMPLEX.md#comparison-with-p2p-messaging-protocols).
 
 Na rozdíl od federativních sítí nemají uzly serveru **záznamy o uživatelích**, **nekomunikují mezi sebou** a **neukládají zprávy** po jejich doručení příjemcům. Neexistuje způsob, jak zjistit úplný seznam serverů účastnících se sítě SimpleX. Tato konstrukce se vyhýbá problému viditelnosti metadat, který mají všechny federované sítě, a lépe chrání před útoky na celou síť.
 
@@ -132,7 +132,7 @@ Informace o uživatelích, jejich kontaktech a skupinách mají pouze klientská
 
 Další informace o cílech a technickém návrhu platformy naleznete v dokumentu [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md).
 
-Formát zpráv zasílaných mezi klienty chatu prostřednictvím [SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md) viz [SimpleX Chat Protocol](./docs/protocol/simplex-chat.md).
+Formát zpráv zasílaných mezi klienty chatu prostřednictvím [SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md) viz [SimpleX Chat Protocol](../../protocol/simplex-chat.md).
 
 ## Soukromí: technické podrobnosti a omezení
 
@@ -149,7 +149,7 @@ Co je již implementováno:
 6. Počínaje verzí v2 protokolu SMP (současná verze je v4) jsou všechna metadata zprávy včetně času, kdy byla zpráva přijata serverem (zaokrouhleno na sekundy), odesílána příjemcům uvnitř šifrované obálky, takže ani v případě kompromitace TLS je nelze pozorovat.
 7. Pro spojení klient-server je povoleno pouze TLS 1.2/1.3, omezené na kryptografické algoritmy: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
 8. Na ochranu proti útokům typu replay vyžadují servery SimpleX [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) jako ID relace v každém klientském příkazu podepsaném efemérním klíčem per-queue.
-9. Pro ochranu vaší IP adresy podporují všichni klienti SimpleX Chat přístup k serverům pro zasílání zpráv přes Tor - více informací najdete v [oznámení o vydání v3.1](./blog/20220808-simplex-chat-v3.1-chat-groups.md).
+9. Pro ochranu vaší IP adresy podporují všichni klienti SimpleX Chat přístup k serverům pro zasílání zpráv přes Tor - více informací najdete v [oznámení o vydání v3.1](../../../blog/20220808-simplex-chat-v3.1-chat-groups.md).
 10. Šifrování místní databáze s přístupovou frází - kontakty, skupiny a všechny odeslané a přijaté zprávy jsou uloženy šifrovaně. Pokud jste používali SimpleX Chat před verzí 4.0, musíte šifrování povolit prostřednictvím nastavení aplikace.
 11. Izolace transportu - pro provoz různých uživatelských profilů se používají různá spojení TCP a okruhy Tor, volitelně - pro různá spojení kontaktů a členů skupin.
 
@@ -166,7 +166,7 @@ Můžete:
 - použít knihovnu SimpleX Chat k integraci funkcí chatu do svých mobilních aplikací.
 - vytvářet chatovací boty a služby v jazyce Haskell - viz [simple](./apps/simplex-bot/) a více [advanced chat bot example](./apps/simplex-bot-advanced/).
 - vytvářet chatovací boty a služby v libovolném jazyce se spuštěným terminálem SimpleX Chat CLI jako lokálním serverem WebSocket. Viz [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) a [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
-- spustit [simplex-chat terminal CLI](./docs/CLI.md) pro provádění jednotlivých příkazů chatu, např. pro odesílání zpráv v rámci provádění shellových skriptů.
+- spustit [simplex-chat terminal CLI](./CLI.md) pro provádění jednotlivých příkazů chatu, např. pro odesílání zpráv v rámci provádění shellových skriptů.
 
 Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro případné rady a podporu.
 
@@ -228,7 +228,7 @@ Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro přípa
 
 ## Připojte se ke skupině uživatelů
 
-Pokud se chcete na něco zeptat, můžete se připojit k anglicky mluvící skupině: [#SimpleX-Group-2](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FQP8zaGjjmlXV-ix_Er4JgJ0lNPYGS1KX%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEApAgBkRZ3x12ayZ7sHrjHQWNMvqzZpWUgM_fFCUdLXwo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xWpPXEZZsQp_F7vwAcAYDw%3D%3D%22%7D)
+Pokud se chcete na něco zeptat, můžete se připojit k anglicky mluvící skupině: [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
 
 Existuje také několik skupin v jiných jazycích než v angličtině, do kterých jsme nechali přeložit rozhraní aplikací. Tyto skupiny slouží k testování a pokládání otázek ostatním uživatelům SimpleX Chat. Ne vždy v nich odpovídáme na dotazy, proto je prosím pokládejte v některé z anglicky mluvících skupin.
 
@@ -253,7 +253,7 @@ Aktuální jazyky rozhraní:
 - Italština: [@unbranched](https://github.com/unbranched)
 - Ruština: projektový tým
 
-Jazyky ve vývoji: Čínština, hindština, čeština, japonština, holandština a [mnoho dalších](https://hosted.weblate.org/projects/simplex-chat/#languages). Další jazyky budeme přidávat, jakmile budou některé z již přidaných jazyků dokončeny - navrhněte prosím nové jazyky, projděte si [průvodce překladem](./docs/TRANSLATIONS.md) a kontaktujte nás!
+Jazyky ve vývoji: Čínština, hindština, čeština, japonština, holandština a [mnoho dalších](https://hosted.weblate.org/projects/simplex-chat/#languages). Další jazyky budeme přidávat, jakmile budou některé z již přidaných jazyků dokončeny - navrhněte prosím nové jazyky, projděte si [průvodce překladem](./TRANSLATIONS.md) a kontaktujte nás!
 
 ## Přispívejte
 
@@ -294,7 +294,7 @@ Zakladatel SimpleX Chat
 
 Protokoly a bezpečnostní model [SimpleX](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) byly revidovány a ve verzi 1.0.0 došlo k mnoha zlomovým změnám a vylepšením.
 
-Bezpečnostní audit provedla v říjnu 2022 společnost [Trail of Bits](https://www.trailofbits.com/about) a většina oprav byla vydána ve verzi 4.2.0 - viz [oznámení](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+Bezpečnostní audit provedla v říjnu 2022 společnost [Trail of Bits](https://www.trailofbits.com/about) a většina oprav byla vydána ve verzi 4.2.0 - viz [oznámení](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 SimpleX Chat je stále relativně ranou fází platformy (mobilní aplikace byly vydány v březnu 2022), takže můžete objevit některé chyby a chybějící funkce. Velmi oceníme, pokud nám dáte vědět o všem, co je třeba opravit nebo vylepšit.
 

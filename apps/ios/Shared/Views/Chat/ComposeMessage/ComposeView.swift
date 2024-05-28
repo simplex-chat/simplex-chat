@@ -23,6 +23,7 @@ enum ComposeContextItem {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
+    case forwardingItem(chatItem: ChatItem, fromChatInfo: ChatInfo)
 }
 
 enum VoiceMessageRecordingState {
@@ -72,6 +73,13 @@ struct ComposeState {
         }
     }
 
+    init(forwardingItem: ChatItem, fromChatInfo: ChatInfo) {
+        self.message = ""
+        self.preview = .noPreview
+        self.contextItem = .forwardingItem(chatItem: forwardingItem, fromChatInfo: fromChatInfo)
+        self.voiceMessageRecordingState = .noRecording
+    }
+
     func copy(
         message: String? = nil,
         liveMessage: LiveMessage? = nil,
@@ -102,12 +110,19 @@ struct ComposeState {
         }
     }
 
+    var forwarding: Bool {
+        switch contextItem {
+        case .forwardingItem: return true
+        default: return false
+        }
+    }
+
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || liveMessage != nil
+        default: return !message.isEmpty || forwarding || liveMessage != nil
         }
     }
 
@@ -153,11 +168,21 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || liveMessage != nil || inProgress { return true }
+        if editing || forwarding || liveMessage != nil || inProgress { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
         default: return true
+        }
+    }
+
+    var attachmentPreview: Bool {
+        switch preview {
+        case .noPreview: false
+        case .linkPreview: false
+        case let .mediaPreviews(mediaPreviews): !mediaPreviews.isEmpty
+        case .voicePreview: false
+        case .filePreview: true
         }
     }
 
@@ -234,6 +259,7 @@ struct ComposeView: View {
     @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
+    @State var hasSimplexLink: Bool = false
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
@@ -260,6 +286,16 @@ struct ComposeView: View {
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
             }
+            let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
+            let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
+            let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
+            if simplexLinkProhibited {
+                msgNotAllowedView("SimpleX links not allowed", icon: "link")
+            } else if fileProhibited {
+                msgNotAllowedView("Files and media not allowed", icon: "doc")
+            } else if voiceProhibited {
+                msgNotAllowedView("Voice messages not allowed", icon: "mic")
+            }
             contextItemView()
             switch (composeState.editing, composeState.preview) {
             case (true, .filePreview): EmptyView()
@@ -278,7 +314,7 @@ struct ComposeView: View {
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
                 if case let .group(g) = chat.chatInfo,
-                   !g.fullGroupPreferences.files.on {
+                   !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
                         AlertManager.shared.showAlertMsg(
                             title: "Files and media prohibited!",
@@ -303,6 +339,7 @@ struct ComposeView: View {
                         },
                         nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
                         voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                        disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
                         showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                         startVoiceMessageRecording: {
                             Task {
@@ -337,13 +374,18 @@ struct ComposeView: View {
                 }
             }
         }
-        .onChange(of: composeState.message) { _ in
+        .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
-                if composeState.message.count > 0 {
-                    showLinkPreview(composeState.message)
+                if msg.count > 0 {
+                    showLinkPreview(msg)
                 } else {
                     resetLinkPreview()
+                    hasSimplexLink = false
                 }
+            } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
+                (_, hasSimplexLink) = parseMessage(msg)
+            } else {
+                hasSimplexLink = false
             }
         }
         .onChange(of: chat.userCanSend) { canSend in
@@ -610,6 +652,18 @@ struct ComposeView: View {
         }
     }
 
+    private func msgNotAllowedView(_ reason: LocalizedStringKey, icon: String) -> some View {
+        HStack {
+            Image(systemName: icon).foregroundColor(.secondary)
+            Text(reason).italic()
+        }
+        .padding(12)
+        .frame(minHeight: 50)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .padding(.top, 8)
+    }
+
     @ViewBuilder private func contextItemView() -> some View {
         switch composeState.contextItem {
         case .noContextItem:
@@ -627,6 +681,14 @@ struct ComposeView: View {
                 contextItem: editingItem,
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
+            )
+        case let .forwardingItem(chatItem: forwardedItem, _):
+            ContextItemView(
+                chat: chat,
+                contextItem: forwardedItem,
+                contextIcon: "arrowshape.turn.up.forward",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                showSender: false
             )
         }
     }
@@ -649,6 +711,11 @@ struct ComposeView: View {
         }
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
+        } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
+            sent = await forwardItem(ci, fromChatInfo, ttl)
+            if !composeState.message.isEmpty {
+                sent = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
+            }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
@@ -694,7 +761,15 @@ struct ComposeView: View {
                 }
             }
         }
-        await MainActor.run { clearState(live: live) }
+        await MainActor.run {
+            let wasForwarding = composeState.forwarding
+            clearState(live: live)
+            if wasForwarding,
+               chatModel.draftChatId == chat.chatInfo.id,
+               let draft = chatModel.draft {
+                composeState = draft
+            }
+        }
         return sent
 
         func sending() async {
@@ -815,10 +890,27 @@ struct ComposeView: View {
             return nil
         }
 
+        func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> ChatItem? {
+            if let chatItem = await apiForwardChatItem(
+                toChatType: chat.chatInfo.chatType,
+                toChatId: chat.chatInfo.apiId,
+                fromChatType: fromChatInfo.chatType,
+                fromChatId: fromChatInfo.apiId,
+                itemId: forwardedItem.id,
+                ttl: ttl
+            ) {
+                await MainActor.run {
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                }
+                return chatItem
+            }
+            return nil
+        }
+
         func checkLinkPreview() -> MsgContent {
             switch (composeState.preview) {
             case let .linkPreview(linkPreview: linkPreview):
-                if let url = parseMessage(msgText),
+                if let url = parseMessage(msgText).url,
                    let linkPreview = linkPreview,
                    url == linkPreview.uri {
                     return .link(text: msgText, preview: linkPreview)
@@ -947,7 +1039,7 @@ struct ComposeView: View {
 
     private func showLinkPreview(_ s: String) {
         prevLinkUrl = linkUrl
-        linkUrl = parseMessage(s)
+        (linkUrl, hasSimplexLink) = parseMessage(s)
         if let url = linkUrl {
             if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -964,13 +1056,17 @@ struct ComposeView: View {
         }
     }
 
-    private func parseMessage(_ msg: String) -> URL? {
-        let parsedMsg = parseSimpleXMarkdown(msg)
-        let uri = parsedMsg?.first(where: { ft in
+    private func parseMessage(_ msg: String) -> (url: URL?, hasSimplexLink: Bool) {
+        guard let parsedMsg = parseSimpleXMarkdown(msg) else { return (nil, false) }
+        let url: URL? = if let uri = parsedMsg.first(where: { ft in
             ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
-        })
-        if let uri = uri { return URL(string: uri.text) }
-        else { return nil }
+        }) {
+            URL(string: uri.text)
+        } else {
+            nil
+        }
+        let simplexLink = parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
+        return (url, simplexLink)
     }
 
     private func isSimplexLink(_ link: String) -> Bool {

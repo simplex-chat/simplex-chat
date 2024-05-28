@@ -45,6 +45,7 @@ let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -59,6 +60,7 @@ let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
@@ -87,6 +89,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
+    DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -97,6 +100,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
+    DEFAULT_SHOW_SENT_VIA_RPOXY: false,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue
 ]
 
@@ -425,8 +429,7 @@ struct ProfilePreview: View {
 
     var body: some View {
         HStack {
-            ProfileImage(imageStr: profileOf.image, color: color)
-                .frame(width: 44, height: 44)
+            ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
                 .padding(.vertical, 6)
             VStack(alignment: .leading) {

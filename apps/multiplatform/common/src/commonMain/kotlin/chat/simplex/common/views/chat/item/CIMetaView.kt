@@ -12,7 +12,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
@@ -33,7 +32,10 @@ fun CIMetaView(
       red = minOf(metaColor.red * 1.33F, 1F),
       green = minOf(metaColor.green * 1.33F, 1F),
       blue = minOf(metaColor.red * 1.33F, 1F))
-  }
+  },
+  showStatus: Boolean = true,
+  showEdited: Boolean = true,
+  showViaProxy: Boolean
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
@@ -44,15 +46,33 @@ fun CIMetaView(
         modifier = Modifier.padding(start = 3.dp)
       )
     } else {
-      CIMetaText(chatItem.meta, timedMessagesTTL, encrypted = chatItem.encryptedFile, metaColor, paleMetaColor)
+      CIMetaText(
+        chatItem.meta,
+        timedMessagesTTL,
+        encrypted = chatItem.encryptedFile,
+        metaColor,
+        paleMetaColor,
+        showStatus = showStatus,
+        showEdited = showEdited,
+        showViaProxy = showViaProxy
+      )
     }
   }
 }
 
 @Composable
 // changing this function requires updating reserveSpaceForMeta
-private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: Color, paleColor: Color) {
-  if (meta.itemEdited) {
+private fun CIMetaText(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  color: Color,
+  paleColor: Color,
+  showStatus: Boolean = true,
+  showEdited: Boolean = true,
+  showViaProxy: Boolean
+) {
+  if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
     Spacer(Modifier.width(3.dp))
   }
@@ -64,18 +84,23 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: 
     }
     Spacer(Modifier.width(4.dp))
   }
-  val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
-  if (statusIcon != null) {
-    val (icon, statusColor) = statusIcon
-    if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
-      Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
-    } else {
-      StatusIconText(painterResource(icon), statusColor)
+  if (showViaProxy && meta.sentViaProxy == true) {
+    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
+  }
+  if (showStatus) {
+    val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
+    if (statusIcon != null) {
+      val (icon, statusColor) = statusIcon
+      if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
+        Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
+      } else {
+        StatusIconText(painterResource(icon), statusColor)
+      }
+      Spacer(Modifier.width(4.dp))
+    } else if (!meta.disappearing) {
+      StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
+      Spacer(Modifier.width(4.dp))
     }
-    Spacer(Modifier.width(4.dp))
-  } else if (!meta.disappearing) {
-    StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
-    Spacer(Modifier.width(4.dp))
   }
   if (encrypted != null) {
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
@@ -85,10 +110,18 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: 
 }
 
 // the conditions in this function should match CIMetaText
-fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?): String {
+fun reserveSpaceForMeta(
+  meta: CIMeta,
+  chatTTL: Int?,
+  encrypted: Boolean?,
+  secondaryColor: Color,
+  showStatus: Boolean = true,
+  showEdited: Boolean = true,
+  showViaProxy: Boolean = false
+): String {
   val iconSpace = "    "
   var res = ""
-  if (meta.itemEdited) res += iconSpace
+  if (showEdited && meta.itemEdited) res += iconSpace
   if (meta.itemTimed != null) {
     res += iconSpace
     val ttl = meta.itemTimed.ttl
@@ -96,7 +129,10 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?): Strin
       res += shortTimeText(ttl)
     }
   }
-  if (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing) {
+  if (showViaProxy && meta.sentViaProxy == true) {
+    res += iconSpace
+  }
+  if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
     res += iconSpace
   }
   if (encrypted != null) {
@@ -117,7 +153,8 @@ fun PreviewCIMetaView() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -129,7 +166,8 @@ fun PreviewCIMetaViewUnread() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       status = CIStatus.RcvNew()
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -139,9 +177,10 @@ fun PreviewCIMetaViewSendFailed() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
-      status = CIStatus.SndError("CMD SYNTAX")
+      status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -152,7 +191,8 @@ fun PreviewCIMetaViewSendNoAuth() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -163,7 +203,8 @@ fun PreviewCIMetaViewSendSent() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -175,7 +216,8 @@ fun PreviewCIMetaViewEdited() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -188,7 +230,8 @@ fun PreviewCIMetaViewEditedUnread() {
       itemEdited = true,
       status= CIStatus.RcvNew()
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -201,7 +244,8 @@ fun PreviewCIMetaViewEditedSent() {
       itemEdited = true,
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
-    null
+    null,
+    showViaProxy = false
   )
 }
 
@@ -210,6 +254,7 @@ fun PreviewCIMetaViewEditedSent() {
 fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
     chatItem = ChatItem.getDeletedContentSampleData(),
-    null
+    null,
+    showViaProxy = false
   )
 }

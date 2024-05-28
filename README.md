@@ -4,7 +4,7 @@
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 <a rel="me" href="https://mastodon.social/@simplex">![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)</a>
 
-| 30/03/2023 | EN, [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md) |
+| 30/03/2023 | EN, [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md), [PL](/docs/lang/pl/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
@@ -74,7 +74,7 @@ Messages not following these rules will be deleted, the right to send messages m
 
 You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
 
-There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F6eHqy7uAbZPOcA6qBtrQgQquVlt4Ll91%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAqV_pg3FF00L98aCXp4D3bOs4Sxv_UmSd-gb0juVoQVs%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22XonlixcHBIb2ijCehbZoiw%3D%3D%22%7D) for developers who build on SimpleX platform:
+There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) for developers who build on SimpleX platform:
 
 - chat bots and automations
 - integrations with other apps
@@ -233,6 +233,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent and important updates:
+
+[Apr 26, 2024. SimpleX network: legally binding transparency, v5.7 released with better calls and messages.](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
 
 [Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
 
@@ -412,13 +414,13 @@ We have never provided or have been requested access to our servers or any infor
 
 We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network to access messaging servers. We will be improving the client applications to reduce the opportunities for traffic correlation.
 
-Please read more in [Terms & privacy policy](./PRIVACY.md).
+Please read more in [Privacy Policy](./PRIVACY.md).
 
 ## Security contact
 
-To report a security vulnerability, please send us email to chat@simplex.chat. We will coordinate the fix and disclosure. Please do NOT report security vulnerabilities via GitHub issues.
+Please see our [Security Policy](./docs/SECURITY.md) on how to report security vulnerabilities to us. We will coordinate the fix and disclosure.
 
-Please treat any findings of possible traffic correlation attacks allowing to correlate two different conversations to the same user, other than covered in [the threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#threat-model), as security vulnerabilities, and follow this disclosure process.
+Please do NOT report security vulnerabilities via GitHub issues.
 
 ## License
 
