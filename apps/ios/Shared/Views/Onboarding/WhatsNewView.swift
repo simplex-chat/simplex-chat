@@ -406,7 +406,28 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "More reliable network connection."
             )
         ]
-    )
+    ),
+    VersionDescription(
+        version: "v5.8",
+        post: URL(string: "https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html"),
+        features: [
+            FeatureDescription(
+                icon: "arrow.forward",
+                title: "Private message routing",
+                description: "Enable in *Network & servers*."
+            ),
+            FeatureDescription(
+                icon: "network.badge.shield.half.filled",
+                title: "Safely receive files",
+                description: "Confirm files from unknown servers."
+            ),
+            FeatureDescription(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "With reduced battery usage."
+            )
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
