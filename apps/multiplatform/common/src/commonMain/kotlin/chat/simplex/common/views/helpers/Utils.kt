@@ -146,6 +146,7 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
     runCatching {
       return yaml.decodeFromStream<ThemeOverrides>(it!!)
     }.onFailure {
+      Log.e(TAG, "Error while decoding theme: ${it.stackTraceToString()}")
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.import_theme_error),

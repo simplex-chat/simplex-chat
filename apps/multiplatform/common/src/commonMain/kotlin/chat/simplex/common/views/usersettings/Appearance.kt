@@ -40,6 +40,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
+import java.io.File
 import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
@@ -277,7 +278,7 @@ object AppearanceScope {
       if (themeUserDestination.value == null) {
         ThemeManager.saveAndApplyWallpaper(baseTheme, type)
       } else {
-        val wallpaperFiles = listOf(perUserTheme.value.wallpaper?.imageFile)
+        val wallpaperFiles = setOf(perUserTheme.value.wallpaper?.imageFile)
         ThemeManager.copyFromSameThemeOverrides(type, null, perUserTheme)
         val wallpaperFilesToDelete = wallpaperFiles - perUserTheme.value.wallpaper?.imageFile
         wallpaperFilesToDelete.forEach(::removeWallpaperFile)
@@ -297,17 +298,15 @@ object AppearanceScope {
       saveThemeToDatabase(themeUserDestination.value)
     }
 
-    val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
-      if (to != null) {
-        val filename = saveWallpaperFile(to)
-        if (filename != null) {
-          if (themeUserDestination.value == null) {
-            removeWallpaperFile((currentTheme.wallpaper.type as? WallpaperType.Image)?.filename)
-          } else {
-            removeWallpaperFile((perUserTheme.value.type as? WallpaperType.Image)?.filename)
-          }
-          onTypeChange(WallpaperType.Image(filename, 1f, WallpaperScaleType.FILL))
+    val onImport = { to: URI ->
+      val filename = saveWallpaperFile(to)
+      if (filename != null) {
+        if (themeUserDestination.value == null) {
+          removeWallpaperFile((currentTheme.wallpaper.type as? WallpaperType.Image)?.filename)
+        } else {
+          removeWallpaperFile((perUserTheme.value.type as? WallpaperType.Image)?.filename)
         }
+        onTypeChange(WallpaperType.Image(filename, 1f, WallpaperScaleType.FILL))
       }
     }
 
@@ -319,18 +318,18 @@ object AppearanceScope {
       ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
     }
 
-    val onChooseType: (WallpaperType?) -> Unit = { type: WallpaperType? ->
+    val onChooseType: (WallpaperType?, FileChooserLauncher) -> Unit = { type: WallpaperType?, importWallpaperLauncher: FileChooserLauncher ->
       when {
         // don't have image in parent or already selected wallpaper with custom image
         type is WallpaperType.Image &&
             ((wallpaperType is WallpaperType.Image && themeUserDestination.value?.second != null && chatModel.remoteHostId() == null) ||
                 currentColors(type).wallpaper.type.image == null ||
-                (currentColors(type).wallpaper.type.image != null && wallpaperType is WallpaperType.Image && themeUserDestination.value == null)) ->
+                (currentColors(type).wallpaper.type.image != null && CurrentColors.value.wallpaper.type is WallpaperType.Image && themeUserDestination.value == null)) ->
           withLongRunningApi { importWallpaperLauncher.launch("image/*") }
         type is WallpaperType.Image && themeUserDestination.value == null -> onTypeChange(currentColors(type).wallpaper.type)
         type is WallpaperType.Image && chatModel.remoteHostId() != null -> { /* do nothing when remote host connected */ }
         type is WallpaperType.Image -> onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)
-        (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredMode(!CurrentColors.value.colors.isLight)?.type != type) || currentTheme.wallpaper.type != type -> onTypeCopyFromSameTheme(type)
+        (themeUserDestination.value != null && themeUserDestination.value?.second?.preferredMode(!CurrentColors.value.colors.isLight)?.type != type) || CurrentColors.value.wallpaper.type != type -> onTypeCopyFromSameTheme(type)
         else -> onTypeChange(type)
       }
     }
@@ -340,13 +339,17 @@ object AppearanceScope {
       ThemeDestinationPicker(themeUserDestination)
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
 
+      val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+        if (to != null) onImport(to)
+      }
+
       WallpaperPresetSelector(
         selectedWallpaper = wallpaperType,
         baseTheme = currentTheme.base,
         currentColors = { type ->
           currentColors(type)
         },
-        onChooseType = onChooseType,
+        onChooseType = { onChooseType(it, importWallpaperLauncher) },
       )
       val type = MaterialTheme.wallpaper.type
       if (type is WallpaperType.Image && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
@@ -400,7 +403,10 @@ object AppearanceScope {
       val user = themeUserDestination.value
       if (user == null) {
         ModalManager.start.showModal {
-          CustomizeThemeView(onChooseType)
+          val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+            if (to != null) onImport(to)
+          }
+          CustomizeThemeView { onChooseType(it, importWallpaperLauncher) }
         }
       } else {
         ModalManager.start.showModalCloseable { close ->
@@ -586,19 +592,19 @@ object AppearanceScope {
 
   @Composable
   fun ModalData.UserWallpaperEditorModal(remoteHostId: Long?, userId: Long, close: () -> Unit) {
-    val themes = remember(chatModel.currentUser.value) { chatModel.currentUser.value?.uiThemes ?: ThemeModeOverrides() }
+    val themes = remember(chatModel.currentUser.value) { mutableStateOf(chatModel.currentUser.value?.uiThemes ?: ThemeModeOverrides()) }
     val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
     val initialTheme = remember(CurrentColors.collectAsState().value.base) {
-      val preferred = themes.preferredMode(!CurrentColors.value.colors.isLight)
+      val preferred = themes.value.preferredMode(!CurrentColors.value.colors.isLight)
       globalThemeUsed.value = preferred == null
       preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     }
     UserWallpaperEditor(
       initialTheme,
-      applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+      applyToMode = if (themes.value.light == themes.value.dark) null else initialTheme.mode,
       globalThemeUsed = globalThemeUsed,
       save = { applyToMode, newTheme ->
-        save(applyToMode, newTheme, themes, userId, remoteHostId)
+        save(applyToMode, newTheme, themes.value, userId, remoteHostId)
       })
     KeyChangeEffect(chatModel.currentUser.value?.userId, chatModel.remoteHostId) {
       close()
@@ -613,7 +619,7 @@ object AppearanceScope {
     remoteHostId: Long?
   ) {
     val unchangedThemes: ThemeModeOverrides = themes ?: ThemeModeOverrides()
-    val wallpaperFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
+    val wallpaperFiles = setOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
     var changedThemes: ThemeModeOverrides? = unchangedThemes
     val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
     changedThemes = when (applyToMode) {
@@ -621,7 +627,28 @@ object AppearanceScope {
       DefaultThemeMode.LIGHT -> changedThemes?.copy(light = changed?.copy(mode = applyToMode))
       DefaultThemeMode.DARK -> changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
     }
-    changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
+    changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) {
+      val light = changedThemes.light
+      val dark = changedThemes.dark
+      val currentMode = CurrentColors.value.base.mode
+      // same image file for both modes, copy image to make them as different files
+      if (light?.wallpaper?.imageFile != null && dark?.wallpaper?.imageFile != null && light.wallpaper.imageFile == dark.wallpaper.imageFile) {
+        val imageFile = if (currentMode == DefaultThemeMode.LIGHT) {
+          dark.wallpaper.imageFile
+        } else {
+          light.wallpaper.imageFile
+        }
+        val filePath = saveWallpaperFile(File(getWallpaperFilePath(imageFile)).toURI())
+        changedThemes = if (currentMode == DefaultThemeMode.LIGHT) {
+          changedThemes.copy(dark = dark.copy(wallpaper = dark.wallpaper.copy(imageFile = filePath)))
+        } else {
+          changedThemes.copy(light = light.copy(wallpaper = light.wallpaper.copy(imageFile = filePath)))
+        }
+      }
+      changedThemes
+    } else {
+      null
+    }
 
     val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
     wallpaperFilesToDelete.forEach(::removeWallpaperFile)
@@ -662,9 +689,9 @@ object AppearanceScope {
     }
 
     val values by remember(chatModel.users.toList()) { mutableStateOf(
-      listOf(null as Long? to generalGetString(MR.strings.theme_destination_all_profiles))
+      listOf(null as Long? to generalGetString(MR.strings.theme_destination_app_theme))
           +
-        chatModel.users.filter { it.user.activeUser || it.user.viewPwdHash == null }.map {
+        chatModel.users.filter { it.user.activeUser }.map {
           it.user.userId to it.user.chatViewName
         },
       )

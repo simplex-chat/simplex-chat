@@ -379,6 +379,9 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, b
         val scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
         val scaledWidth = (image.width * scale.scaleX).roundToInt()
         val scaledHeight = (image.height * scale.scaleY).roundToInt()
+        // Large image will cause freeze
+        if (image.width > 4320 || image.height > 4320) return@clipRect
+
         drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
         if (scaleType == WallpaperScaleType.FIT) {
           if (scaledWidth < size.width) {

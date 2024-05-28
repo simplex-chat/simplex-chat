@@ -4104,6 +4104,8 @@ val jsonShort = Json {
 val yaml = Yaml(configuration = YamlConfiguration(
   strictMode = false,
   encodeDefaults = false,
+  /** ~5.5 MB limitation since wallpaper is limited by 5 MB, see [saveWallpaperFile] */
+  codePointLimit = 5500000,
 ))
 
 @Serializable
