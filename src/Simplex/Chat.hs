@@ -3966,7 +3966,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
-          processConnQCONT connEntity conn
+          void $ processConnQCONT connEntity conn
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
@@ -4141,7 +4141,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
-          processConnQCONT connEntity conn
+          void $ processConnQCONT connEntity conn
         MWARN msgId err ->
           updateDirectItemStatus ct conn msgId (CISSndWarning $ agentSndError err)
         MERR msgId err -> do
@@ -4536,11 +4536,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       QCONT -> do
-        processConnQCONT connEntity conn
-        lastSharedMsgId <- withStore' $ \db -> getLastItemSharedMsgId db m
-        forM_ lastSharedMsgId $ \lastMsgId -> do
-          let conn' = conn {inactive = False} :: Connection
-          void $ sendDirectMemberMessage conn' (XGrpMsgSkipped lastMsgId) groupId
+        enabled <- processConnQCONT connEntity conn
+        when enabled $ sendPendingGroupMessages user m conn
+        -- lastSharedMsgId <- withStore' $ \db -> getLastItemSharedMsgId db m
+        -- forM_ lastSharedMsgId $ \lastMsgId -> do
+        --   let conn' = conn {inactive = False} :: Connection
+        --   void $ sendDirectMemberMessage conn' (XGrpMsgSkipped lastMsgId) groupId
       MWARN msgId err ->
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
       MERR msgId err -> do
@@ -4676,7 +4677,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
-          processConnQCONT connEntity conn
+          void $ processConnQCONT connEntity conn
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
@@ -4730,7 +4731,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       QCONT ->
-        processConnQCONT connEntity conn
+        void $ processConnQCONT connEntity conn
       MERR _ err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
@@ -4788,11 +4789,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CRConnectionInactive connEntity True
         _ -> pure ()
 
-    processConnQCONT :: ConnectionEntity -> Connection -> CM ()
+    processConnQCONT :: ConnectionEntity -> Connection -> CM Bool
     processConnQCONT connEntity conn =
-      when (connInactive conn) $ do
-        withStore' $ \db -> setConnectionInactive db user conn False
-        toView $ CRConnectionInactive connEntity False
+      if connInactive conn
+        then do
+          withStore' $ \db -> setConnectionInactive db user conn False
+          toView $ CRConnectionInactive connEntity False
+          pure True
+        else pure False
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
@@ -6755,7 +6759,8 @@ memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe Memb
 memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
-    | connDisabled conn || connInactive conn || connStatus == ConnDeleted -> Nothing
+    | connDisabled conn || connStatus == ConnDeleted -> Nothing
+    | connInactive conn -> Just MSAPending
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where

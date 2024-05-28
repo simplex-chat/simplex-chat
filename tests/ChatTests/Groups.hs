@@ -158,7 +158,7 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   describe "group member inactivity" $ do
-    it "mark member inactive on reaching quota" testGroupMemberInactive
+    fit "mark member inactive on reaching quota" testGroupMemberInactive
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6099,7 +6099,7 @@ testGroupMemberInactive tmp = do
       alice #> "#team 2"
       alice #> "#team 3"
       alice <## "[#team bob] connection is marked as inactive"
-      -- 4 and 5 shouldn't be attempted to be sent to bob
+      -- 4 and 5 will be sent to bob as pending messages
       alice #> "#team 4"
       alice #> "#team 5"
 
@@ -6110,6 +6110,9 @@ testGroupMemberInactive tmp = do
         bob <# "#team alice> 2"
         bob <#. "#team alice> skipped message ID"
         alice <## "[#team bob] inactive connection is marked as active"
+
+        bob <# "#team alice> 4"
+        bob <# "#team alice> 5"
 
         -- delivery works
         alice #> "#team hi"

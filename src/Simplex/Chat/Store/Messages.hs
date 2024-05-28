@@ -296,7 +296,7 @@ getPendingGroupMessages db groupMemberId =
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
-        ORDER BY pgm.message_id ASC
+        ORDER BY pgm.created_at ASC, pgm.message_id ASC
       |]
       (Only groupMemberId)
   where
