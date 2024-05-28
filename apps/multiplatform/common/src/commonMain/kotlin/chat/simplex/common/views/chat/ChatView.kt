@@ -200,6 +200,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                       link = it
                       preloadedLink = it
                     }, close)
+                  } else {
+                    LaunchedEffect(Unit) {
+                      close()
+                    }
                   }
                 }
               }
