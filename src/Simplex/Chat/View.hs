@@ -274,8 +274,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
-  CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
-  CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (length $ filter (isJust . memberError) summary) " group member errors"
+  CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyContact m <> " error: " <> sShow e]
+  CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (length $ filter (isJust . memberError) summary) " group member errors" -- TODO: use generic summary? trim to counter?
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
   CRPendingSubSummary u _ -> ttyUser u []
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->

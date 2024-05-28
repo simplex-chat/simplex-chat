@@ -3336,31 +3336,37 @@ agentSubscriber = do
 subscribeUserConnections :: VersionRangeChat -> Bool -> User -> CM ()
 subscribeUserConnections vr onlyNeeded user = do
   -- get user connections
-  (ctConns, ucConns, mConns, sftConns, rftConns, pcConns) <-
+  ((ctConns, ucConns, mConns, sftConns, rftConns, pcConns), gs) <-
     if onlyNeeded
-      then
+      then do
         -- XXX: can be streamed from DB without collecting everything, needs DB.fold wrapper in mq
-        foldl' addEntity ([], [], [], [], [], []) <$> withStore' (\db -> getConnectionsToSubscribe db vr user)
+        conns <- withStore' (\db -> getConnectionsToSubscribe db vr user)
+        pure (foldl' addEntity ([], [], [], [], [], []) conns, [])
       else do
         withStore' unsetConnectionToSubscribe
         ctConns <- getContactConns
         ucConns <- getUserContactLinkConns
         -- (gs, mConns, ms) <- getGroupMemberConns
-        mConns <- getGroupMemberConns
+        (gs, mConns) <- getGroupMemberConns
         sftConns <- getSndFileTransferConns
         rftConns <- getRcvFileTransferConns
         pcConns <- getPendingContactConns
-        pure (ctConns, ucConns, mConns, sftConns, rftConns, pcConns)
-  let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
-  void . lift . forkIO . void . runExceptT $ do -- detach subscription and result processing
-    rs <- withAgent (`Agent.subscribeConnections` conns) -- subscribe using batched commands
+        pure ((ctConns, ucConns, mConns, sftConns, rftConns, pcConns), gs)
+  let userConns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
+  void . lift . forkIO . void . runExceptT $ do
+    -- detach subscription and result processing
+    rs <- withAgent (`Agent.subscribeConnections` userConns) -- subscribe using batched commands
     let (errs, _oks) = M.mapEither id rs
-    -- api <- asks $ coreApi . config
-    -- refs <- withStore' $ \db -> getConnectionsContacts db (if api then M.keys errs else M.keys rs)
-    -- let connRefs = M.fromList $ map (\ref@ContactRef {agentConnId} -> (agentConnId, ref)) refs
+    api <- asks $ coreApi . config
+    refs <- withStore' $ \db -> getConnectionsContacts db (if api then M.keys errs else M.keys rs)
+    let connRefs = M.fromList $ map (\ref@ContactRef {agentConnId = AgentConnId acId} -> (acId, ref)) refs
     ce <- asks $ subscriptionEvents . config
-    contactSubsToView errs ctConns ce
-    -- TODO: others
+    contactSubsToView errs ctConns connRefs ce
+    contactLinkSubsToView errs ucConns
+    groupSubsToView errs gs mConns connRefs ce
+    -- TODO: sndFileSubsToView rs sfts
+    -- TODO: rcvFileSubsToView rs rfts
+    -- TODO: pendingConnSubsToView rs pcs
   where
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
       RcvDirectMsgConnection c (Just _ct) -> let cts' = aConnId c : cts in (cts', ucs, ms, sfts, rfts, pcs)
@@ -3381,12 +3387,12 @@ subscribeUserConnections vr onlyNeeded user = do
       (cs, _ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
       let connIds = map aConnId cs
       pure connIds
-    getGroupMemberConns :: CM [ConnId] -- ([Group], [ConnId], Map ConnId GroupMember)
+    getGroupMemberConns :: CM ([Group], [ConnId]) -- ([Group], [ConnId], Map ConnId GroupMember)
     getGroupMemberConns = do
       gs <- withStore_ (`getUserGroups` vr)
       let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs
       -- pure (gs, map fst mPairs, M.fromList mPairs)
-      pure $ map fst mPairs
+      pure (gs, map fst mPairs)
     getSndFileTransferConns :: CM [ConnId]
     getSndFileTransferConns = do
       sfts <- withStore_ getLiveSndFileTransfers
@@ -3402,29 +3408,56 @@ subscribeUserConnections vr onlyNeeded user = do
       pcs <- withStore_ getPendingContactConnections
       let connIds = map aConnId' pcs
       pure connIds
-    contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Bool -> CM ()
-    contactSubsToView errs cts ce = do
-      -- chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses) -- via UP
-      ifM (asks $ coreApi . config) notifyAPI notifyCLI
+    contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
+    contactSubsToView errs cts connRefs ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
         notifyCLI = do
-          let (okSubs, errSubs) = foldl' (\(os, es) acId -> if M.member acId errs then (os, es + 1) else (os + 1, es)) (0, 0) cts
-          toView $ CRConnectionSubSummary {user, okSubs, errSubs}
-          when (ce && errSubs > 0) $ toView $ error "TODO: CRContactSubError {user, contactName :: Text, chatError :: ChatError}"
-        notifyAPI = toView . CRNetworkStatuses (Just user) $ map (uncurry ConnNetworkStatus) statuses
-        statuses = foldr addStatus [] cts
+          let errConns = M.restrictKeys errs (S.fromList cts)
+          toView CRConnectionSubSummary {user, okSubs = M.size errs - M.size errConns, errSubs = M.size errConns}
+          when (ce && not (M.null errConns)) $ forM_ (M.assocs errConns) $ \(acId, err) ->
+            forM_ (M.lookup acId connRefs) $ \ContactRef {localDisplayName} ->
+              toView CRContactSubError {user, contactName = localDisplayName, chatError = ChatErrorAgent err Nothing}
+        notifyAPI = unless (null statuses) $ toView $ CRNetworkStatuses (Just user) statuses
           where
-            addStatus :: ConnId -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
-            addStatus connId nss =
-              case M.lookup connId errs of
-                Nothing -> nss
-                Just err -> (AgentConnId connId, NSError $ errorNetworkStatus err) : nss
-            errorNetworkStatus :: AgentErrorType -> String
-            errorNetworkStatus = \case
+            statuses = mapMaybe status cts
+            status connId = ConnNetworkStatus (AgentConnId connId) . errorNetworkStatus <$> M.lookup connId errs
+            errorNetworkStatus :: AgentErrorType -> NetworkStatus
+            errorNetworkStatus = NSError . \case
               BROKER _ NETWORK -> "network"
               SMP _ SMP.AUTH -> "contact deleted"
               e -> show e
-
+    contactLinkSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> CM ()
+    contactLinkSubsToView errs ucConns = do
+      let errConns = M.restrictKeys errs (S.fromList ucConns)
+      toView CRConnectionSubSummary {user, okSubs = M.size errs - M.size errConns, errSubs = M.size errConns}
+    groupSubsToView :: Map ConnId AgentErrorType -> [Group] -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
+    groupSubsToView errs gs ms connRefs ce = do
+      mapM_ groupSub $
+        sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
+      toView CRConnectionSubSummary {user, okSubs = M.size errs - M.size errConns, errSubs = M.size errConns} -- XXX: add label?
+      where
+        errConns = M.restrictKeys errs (S.fromList ms)
+        groupSub :: Group -> CM ()
+        groupSub (Group g@GroupInfo {membership} members) = do
+          when ce $ mapM_ (toView . uncurry (CRMemberSubError user g) ) mErrors
+          toView groupEvent
+          where
+            mErrors :: [(ContactName, ChatError)]
+            mErrors = sortOn fst $ mapMaybe mError members
+            mError :: GroupMember -> Maybe (ContactName, ChatError)
+            mError gm = do
+              mConnId <- memberConnId gm
+              mErr <- M.lookup mConnId errConns
+              ContactRef {localDisplayName} <- M.lookup mConnId connRefs
+              Just (localDisplayName, ChatErrorAgent mErr Nothing)
+            groupEvent :: ChatResponse
+            groupEvent
+              | memberStatus membership == GSMemInvited = CRGroupInvitation user g
+              | all (\GroupMember {activeConn} -> isNothing activeConn) members =
+                  if memberActive membership
+                    then CRGroupEmpty user g
+                    else CRGroupRemoved user g
+              | otherwise = CRGroupSubscribed user g
 cleanupManager :: CM ()
 cleanupManager = do
   interval <- asks (cleanupManagerInterval . config)
