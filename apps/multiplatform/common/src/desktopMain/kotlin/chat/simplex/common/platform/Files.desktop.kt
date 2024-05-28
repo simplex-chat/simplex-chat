@@ -39,20 +39,6 @@ actual fun desktopOpenDatabaseDir() {
   }
 }
 
-actual fun desktopOpenDir(dir: File) {
-  if (Desktop.isDesktopSupported()) {
-    try {
-      Desktop.getDesktop().open(dir);
-    } catch (e: IOException) {
-      Log.e(TAG, e.stackTraceToString())
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.unknown_error),
-        text = e.stackTraceToString()
-      )
-    }
-  }
-}
-
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher =
   remember(rememberedValue) { FileChooserLauncher(getContent, onResult) }

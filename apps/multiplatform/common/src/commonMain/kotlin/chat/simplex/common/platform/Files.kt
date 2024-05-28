@@ -34,8 +34,6 @@ expect val remoteHostsDir: File
 
 expect fun desktopOpenDatabaseDir()
 
-expect fun desktopOpenDir(dir: File)
-
 fun createURIFromPath(absolutePath: String): URI = URI.create(URLEncoder.encode(absolutePath, "UTF-8"))
 
 fun URI.toFile(): File = File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
