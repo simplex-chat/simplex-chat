@@ -1,18 +1,29 @@
 package chat.simplex.common.platform
 
+import SectionItemView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.simplexWindowState
-import chat.simplex.common.ui.theme.reactOnDarkThemeChanges
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.connectViaUri
+import chat.simplex.common.views.newchat.openKnownGroup
+import chat.simplex.res.MR
 import com.jthemedetecor.OsThemeDetector
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.desc.desc
 import java.io.File
 import java.util.*
@@ -39,15 +50,69 @@ private val settingsFile =
 private val settingsThemesFile =
   File(desktopPlatform.configPath + File.separator + "themes.properties")
     .also { it.parentFile.mkdirs() }
+
+private var readOnlySettings = false
 private val settingsProps =
   Properties()
-    .also { try { it.load(settingsFile.reader()) } catch (e: Exception) { Properties() } }
+    .also { props ->
+      try {
+        settingsFile.reader().use {
+          // Force exception to happen
+          //it.close()
+          props.load(it)
+        }
+      } catch (e: Exception) {
+        // Making backup just in case
+        try {
+          settingsFile.copyTo(File(settingsFile.absolutePath + ".bak"), overwrite = false)
+        } catch (e: Exception) {
+          if (e !is FileAlreadyExistsException) {
+            Log.e(TAG, "Error making a backup of settings file: ${e.stackTraceToString()}")
+          }
+        }
+        readOnlySettings = true
+        Log.e(TAG, "Error reading settings file: ${e.stackTraceToString()}")
+        AlertManager.shared.showAlertDialogButtonsColumn(
+          title = generalGetString(MR.strings.error_reading_settings_title),
+          text = generalGetString(MR.strings.error_reading_settings_desc).format(settingsFile.absolutePath, e.stackTraceToString()),
+          buttons = {
+            Column {
+              if (appPlatform.isDesktop) {
+                // Open directory
+                SectionItemView({
+                  desktopOpenDir(settingsFile.parentFile)
+                }) {
+                  Text(generalGetString(MR.strings.error_reading_settings_open_directory), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                }
+              }
+              // Store settings in memory-only
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(
+                  generalGetString(MR.strings.error_reading_settings_store_in_memory),
+                  Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
+                )
+              }
+              // Overwrite
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                readOnlySettings = false
+              }) {
+                Text(stringResource(MR.strings.error_reading_settings_overwrite), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+              }
+            }
+          },
+        )
+        Properties()
+      }
+    }
 private val settingsThemesProps =
   Properties()
-    .also { try { it.load(settingsThemesFile.reader()) } catch (e: Exception) { Properties() } }
+    .also { props -> try { settingsThemesFile.reader().use { props.load(it) } } catch (e: Exception) { Properties() } }
 
-actual val settings: Settings = PropertiesSettings(settingsProps) { settingsProps.store(settingsFile.writer(), "") }
-actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { settingsThemesProps.store(settingsThemesFile.writer(), "") }
+actual val settings: Settings = PropertiesSettings(settingsProps) { withApi { if (!readOnlySettings) settingsFile.writer().use { settingsProps.store(it, "") } } }
+actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { withApi { settingsThemesFile.writer().use { settingsThemesProps.store(it, "") } } }
 
 actual fun windowOrientation(): WindowOrientation =
   if (simplexWindowState.windowState.size.width > simplexWindowState.windowState.size.height) {

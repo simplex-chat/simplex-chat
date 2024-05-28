@@ -761,6 +761,11 @@
   <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
+  <string name="error_reading_settings_title">Error reading settings</string>
+  <string name="error_reading_settings_desc">Error occurred while reading settings file. \nPlease, take a look at the file and fix it manually or report to the developers. \n\nThe app will not write to it until you fix the file or choose to overwrite it with loosing all settings. \n\nPath: %1$s\n\nError: %2$s.</string>
+  <string name="error_reading_settings_open_directory">Open directory</string>
+  <string name="error_reading_settings_store_in_memory">Store in memory</string>
+  <string name="error_reading_settings_overwrite">Overwrite</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
