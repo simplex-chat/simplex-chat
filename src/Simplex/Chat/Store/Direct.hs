@@ -51,10 +51,10 @@ module Simplex.Chat.Store.Direct
     updateContactStatus,
     updateGroupUnreadChat,
     setConnectionVerified,
-    incConnectionAuthErrCounter,
-    setConnectionAuthErrCounter,
-    incConnectionQuotaErrCounter,
-    setConnectionQuotaErrCounter,
+    incAuthErrCounter,
+    setAuthErrCounter,
+    incQuotaErrCounter,
+    setQuotaErrCounter,
     getUserContacts,
     createOrUpdateContactRequest,
     getContactRequest',
@@ -475,29 +475,29 @@ setConnectionVerified db User {userId} connId code = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET security_code = ?, security_code_verified_at = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (code, code $> updatedAt, updatedAt, userId, connId)
 
-incConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
-incConnectionAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
+incAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
+incAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
   updatedAt <- getCurrentTime
   (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
   let counter' = fromMaybe authErrCounter counter_ + 1
   DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
   pure counter'
 
-setConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
-setConnectionAuthErrCounter db User {userId} Connection {connId} counter = do
+setAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
+setAuthErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 
-incConnectionQuotaErrCounter :: DB.Connection -> User -> Connection -> IO Int
-incConnectionQuotaErrCounter db User {userId} Connection {connId, quotaErrCounter} = do
+incQuotaErrCounter :: DB.Connection -> User -> Connection -> IO Int
+incQuotaErrCounter db User {userId} Connection {connId, quotaErrCounter} = do
   updatedAt <- getCurrentTime
   (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
   let counter' = fromMaybe quotaErrCounter counter_ + 1
   DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
   pure counter'
 
-setConnectionQuotaErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
-setConnectionQuotaErrCounter db User {userId} Connection {connId} counter = do
+setQuotaErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
+setQuotaErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 

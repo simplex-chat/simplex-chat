@@ -1472,14 +1472,14 @@ processChatCommand' vr = \case
     ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
+        withStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       Nothing -> throwChatError $ CEContactNotActive ct
   APIEnableGroupMember gId gMemberId -> withUser $ \user -> do
     GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user gId gMemberId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
+        withStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       _ -> throwChatError CEGroupMemberNotActive
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
@@ -4777,14 +4777,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processConnMERR connEntity conn err = do
       case err of
         SMP _ SMP.AUTH -> do
-          authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
+          authErrCounter' <- withStore' $ \db -> incAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ case connEntity of
             RcvDirectMsgConnection ctConn (Just ct) -> do
               toView $ CRContactDisabled user ct {activeConn = Just ctConn {authErrCounter = authErrCounter'}}
             _ -> toView $ CRConnectionDisabled connEntity
         SMP _ SMP.QUOTA ->
           unless (connInactive conn) $ do
-            withStore' $ \db -> setConnectionQuotaErrCounter db user conn quotaErrSetOnMERR
+            withStore' $ \db -> setQuotaErrCounter db user conn quotaErrSetOnMERR
             toView $ CRConnectionInactive connEntity True
         _ -> pure ()
 
@@ -4793,7 +4793,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case err of
         SMP _ SMP.QUOTA ->
           unless (connInactive conn) $ do
-            quotaErrCounter' <- withStore' $ \db -> incConnectionQuotaErrCounter db user conn
+            quotaErrCounter' <- withStore' $ \db -> incQuotaErrCounter db user conn
             when (quotaErrCounter' >= quotaErrInactiveCount) $
               toView $ CRConnectionInactive connEntity True
         _ -> pure ()
@@ -4802,7 +4802,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     continueSending connEntity conn =
       if connInactive conn
         then do
-          withStore' $ \db -> setConnectionQuotaErrCounter db user conn 0
+          withStore' $ \db -> setQuotaErrCounter db user conn 0
           toView $ CRConnectionInactive connEntity False
           pure True
         else pure False
