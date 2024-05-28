@@ -289,7 +289,7 @@ CREATE TABLE connections(
   pq_encryption INTEGER NOT NULL DEFAULT 0,
   pq_snd_enabled INTEGER,
   pq_rcv_enabled INTEGER,
-  inactive INTEGER NOT NULL DEFAULT 0,
+  quota_err_counter INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
