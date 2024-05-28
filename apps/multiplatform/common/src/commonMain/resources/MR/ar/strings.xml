@@ -1820,7 +1820,6 @@
     <string name="color_wallpaper_tint">لون تمييز خلفية الشاشة</string>
     <string name="color_primary_variant2">لون إضافي ثانوي 2</string>
     <string name="wallpaper_advanced_settings">الإعدادات المتقدمة</string>
-    <string name="theme_destination_all_profiles">جميع ملفات تعريف الدردشة</string>
     <string name="chat_theme_apply_to_all_modes">جميع أوضاع الألوان</string>
     <string name="theme_black">أسود</string>
     <string name="wallpaper_cats">قطط</string>
@@ -1838,7 +1837,6 @@
     <string name="chat_theme_apply_to_light_mode">الوضع الفاتح</string>
     <string name="settings_section_title_user_theme">السمة الملف الشخصي</string>
     <string name="color_mode_light">فاتح</string>
-    <string name="chat_theme_reset_to_global_theme">إعادة التعيين إلى الموضوع العالمي</string>
     <string name="chat_theme_apply_to_mode">طبّق لِ</string>
     <string name="wallpaper_scale_fill">ملء</string>
     <string name="wallpaper_scale">المقياس</string>

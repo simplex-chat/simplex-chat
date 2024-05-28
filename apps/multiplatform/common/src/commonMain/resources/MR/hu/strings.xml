@@ -1803,7 +1803,6 @@
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
     <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe látható lesz az XFTP átjátszók számára:
 \n%1$s.</string>
-    <string name="theme_destination_all_profiles">Minden csevegési profil</string>
     <string name="chat_theme_apply_to_all_modes">Minden színmód</string>
     <string name="theme_black">Fekete</string>
     <string name="wallpaper_cats">Cicák</string>
@@ -1830,7 +1829,6 @@
     <string name="theme_remove_image">Kép eltávolítása</string>
     <string name="wallpaper_scale_repeat">Mozaik</string>
     <string name="reset_single_color">Szín visszaállítása</string>
-    <string name="chat_theme_reset_to_global_theme">Globális téma visszaállítása</string>
     <string name="wallpaper_scale">Méretezés</string>
     <string name="wallpaper_school">Iskola</string>
     <string name="color_sent_quote">Elküldött válasz</string>

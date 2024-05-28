@@ -1905,7 +1905,6 @@
     <string name="color_received_quote">Empfangene Antwort</string>
     <string name="theme_remove_image">Bild entfernen</string>
     <string name="wallpaper_scale_repeat">Wiederholen</string>
-    <string name="chat_theme_reset_to_global_theme">Auf globales Design zurücksetzen</string>
     <string name="wallpaper_scale">Skalieren</string>
     <string name="wallpaper_school">Schule</string>
     <string name="chat_theme_set_default_theme">Default-Design einstellen</string>
@@ -1915,7 +1914,6 @@
     <string name="chat_theme_apply_to_mode">Anwenden auf</string>
     <string name="color_primary_variant2">Zusätzlicher Akzent 2</string>
     <string name="wallpaper_advanced_settings">Erweiterte Einstellungen</string>
-    <string name="theme_destination_all_profiles">Alle Chat-Profile</string>
     <string name="chat_theme_apply_to_all_modes">Alle Farbvarianten</string>
     <string name="settings_section_title_chat_colors">Chat-Farben</string>
     <string name="settings_section_title_chat_theme">Chat-Design</string>

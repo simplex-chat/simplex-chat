@@ -1837,12 +1837,10 @@
     <string name="color_wallpaper_background">壁纸背景色</string>
     <string name="color_primary_variant2">额外的强调色2</string>
     <string name="wallpaper_advanced_settings">高级设置</string>
-    <string name="theme_destination_all_profiles">所有聊天配置文件</string>
     <string name="wallpaper_cats">猫</string>
     <string name="settings_section_title_chat_colors">聊天颜色</string>
     <string name="wallpaper_scale_repeat">重复</string>
     <string name="settings_section_title_chat_theme">聊天主题</string>
     <string name="reset_single_color">重置颜色</string>
-    <string name="chat_theme_reset_to_global_theme">重置为全局主题</string>
     <string name="wallpaper_scale">缩放</string>
 </resources>

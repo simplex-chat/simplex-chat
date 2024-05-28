@@ -1825,10 +1825,8 @@
     <string name="chat_theme_apply_to_light_mode">Jasny tryb</string>
     <string name="wallpaper_scale_repeat">Powtórz</string>
     <string name="color_primary_variant2">Dodatkowy akcent 2</string>
-    <string name="theme_destination_all_profiles">Wszystkie profile czatu</string>
     <string name="chat_theme_apply_to_all_modes">Wszystkie tryby kolorów</string>
     <string name="chat_theme_apply_to_dark_mode">Ciemny tryb</string>
-    <string name="chat_theme_reset_to_global_theme">Zresetuj do motywu globalnego</string>
     <string name="chat_theme_set_default_theme">Ustaw domyślny motyw</string>
     <string name="color_mode_system">Systemowy</string>
     <string name="color_wallpaper_background">Tło tapety</string>

@@ -1811,7 +1811,6 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">La aplicación pedirá confirmar las descargas de servidores de archivos desconocidos (excepto .onion o cuando se active SOCKS proxy).</string>
     <string name="settings_section_title_chat_colors">Colores del chat</string>
     <string name="settings_section_title_chat_theme">Tema del chat</string>
-    <string name="theme_destination_all_profiles">Todos los perfiles</string>
     <string name="chat_theme_apply_to_mode">Aplicar a</string>
     <string name="theme_black">Negro</string>
     <string name="chat_theme_apply_to_all_modes">Todos los modos</string>
@@ -1830,7 +1829,6 @@
     <string name="wallpaper_scale_repeat">Mosaico</string>
     <string name="theme_remove_image">Quitar imagen</string>
     <string name="reset_single_color">Restablecer color</string>
-    <string name="chat_theme_reset_to_global_theme">Restablecer a tema global</string>
     <string name="wallpaper_scale">Escala</string>
     <string name="wallpaper_school">Escuela</string>
     <string name="color_sent_quote">Respuesta enviada</string>

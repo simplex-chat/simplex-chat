@@ -193,7 +193,6 @@
     <string name="camera_not_available">Camera hiện đang bận</string>
     <string name="permissions_camera">Camera</string>
     <string name="call_on_lock_screen">Cuộc gọi trên màn hình khóa:</string>
-    <string name="theme_destination_all_profiles">Tất cả hồ sơ trò chuyện</string>
     <string name="theme_black">Đen</string>
     <string name="chat_theme_apply_to_mode">Áp dụng cho</string>
     <string name="color_primary_variant2">Biến thể của màu sơ cấp 2</string>

@@ -1809,7 +1809,6 @@
     <string name="file_not_approved_descr">Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP:
 \n%1$s.</string>
     <string name="settings_section_title_chat_theme">Tema della chat</string>
-    <string name="theme_destination_all_profiles">Tutti i profili di chat</string>
     <string name="theme_black">Nero</string>
     <string name="wallpaper_cats">Gatti</string>
     <string name="color_mode">Modalità di colore</string>
@@ -1830,7 +1829,6 @@
     <string name="wallpaper_advanced_settings">Impostazioni avanzate</string>
     <string name="theme_remove_image">Rimuovi immagine</string>
     <string name="wallpaper_scale_repeat">Ripeti</string>
-    <string name="chat_theme_reset_to_global_theme">Ripristina al tema globale</string>
     <string name="wallpaper_scale">Scala</string>
     <string name="wallpaper_school">Scuola</string>
     <string name="wallpaper_scale_fit">Adatta</string>

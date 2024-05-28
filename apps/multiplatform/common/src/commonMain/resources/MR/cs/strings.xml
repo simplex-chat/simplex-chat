@@ -1770,6 +1770,5 @@
     <string name="simplex_links_are_prohibited_in_group">SimpleX odkazy jsou v této skupině zakázány.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.]]></string>
     <string name="wallpaper_advanced_settings">Pokročilé nastavení</string>
-    <string name="theme_destination_all_profiles">Všechny chat profily</string>
     <string name="chat_theme_apply_to_all_modes">Všechny barevné režimy</string>
 </resources>

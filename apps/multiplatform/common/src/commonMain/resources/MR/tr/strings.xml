@@ -1816,14 +1816,12 @@
     <string name="chat_theme_apply_to_dark_mode">Karanlık mod</string>
     <string name="wallpaper_scale_fill">Doldur</string>
     <string name="wallpaper_hearts">Kalpler</string>
-    <string name="chat_theme_reset_to_global_theme">Genel temaya sıfırla</string>
     <string name="wallpaper_scale">Ölçeklendir</string>
     <string name="wallpaper_school">Okul</string>
     <string name="color_sent_quote">Gönderilen cevap</string>
     <string name="chat_theme_set_default_theme">Varsayılan temaya ayarla</string>
     <string name="wallpaper_advanced_settings">Gelişmiş ayarlar</string>
     <string name="wallpaper_preview_hello_bob">Günaydın!</string>
-    <string name="theme_destination_all_profiles">Bütün sohbet profilleri</string>
     <string name="color_mode_dark">Karanlık</string>
     <string name="wallpaper_kids">Çocuklar</string>
     <string name="chat_theme_apply_to_light_mode">Aydınlık mod</string>
