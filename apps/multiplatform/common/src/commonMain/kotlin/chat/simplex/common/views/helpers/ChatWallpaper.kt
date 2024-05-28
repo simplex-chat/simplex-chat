@@ -22,13 +22,12 @@ import kotlin.math.*
 enum class PresetWallpaper(
   val res: ImageResource,
   val filename: String,
-  val text: StringResource,
   val scale: Float,
   val background: Map<DefaultTheme, Color>,
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  CATS(MR.images.wallpaper_cats, "cats", MR.strings.wallpaper_cats, 0.63f,
+  CATS(MR.images.wallpaper_cats, "cats", 0.63f,
     wallpaperBackgrounds(light = "#ffF8F6EA"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(),
@@ -63,7 +62,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  FLOWERS(MR.images.wallpaper_flowers, "flowers", MR.strings.wallpaper_flowers, 0.53f,
+  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
     wallpaperBackgrounds(light = "#ffE2FFE4"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(),
@@ -98,7 +97,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  HEARTS(MR.images.wallpaper_hearts, "hearts", MR.strings.wallpaper_hearts, 0.59f,
+  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
     wallpaperBackgrounds(light = "#ffFDECEC"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(),
@@ -133,7 +132,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  KIDS(MR.images.wallpaper_kids, "kids", MR.strings.wallpaper_kids, 0.53f,
+  KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
     wallpaperBackgrounds(light = "#ffdbfdfb"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(),
@@ -168,7 +167,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  SCHOOL(MR.images.wallpaper_school, "school",  MR.strings.wallpaper_school, 0.53f,
+  SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
     wallpaperBackgrounds(light = "#ffE7F5FF"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(),
@@ -203,7 +202,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  TRAVEL(MR.images.wallpaper_travel, "travel", MR.strings.wallpaper_travel, 0.68f,
+  TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
     wallpaperBackgrounds(light = "#fff9eeff"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(),

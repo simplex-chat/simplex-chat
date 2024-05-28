@@ -1587,13 +1587,7 @@
   <string name="color_wallpaper_tint">Wallpaper accent</string>
   <string name="theme_remove_image">Remove image</string>
 
-  <!-- Backgrounds -->
-  <string name="wallpaper_cats">Cats</string>
-  <string name="wallpaper_flowers">Flowers</string>
-  <string name="wallpaper_hearts">Hearts</string>
-  <string name="wallpaper_kids">Kids</string>
-  <string name="wallpaper_school">School</string>
-  <string name="wallpaper_travel">Travel</string>
+  <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
   <string name="wallpaper_preview_hello_bob">Good morning!</string>
   <string name="wallpaper_scale">Scale</string>

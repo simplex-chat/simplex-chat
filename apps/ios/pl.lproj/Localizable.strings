@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Błąd: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Błąd: %@";
 
 /* No comment provided by engineer. */
@@ -2569,9 +2569,6 @@
 "Most likely this connection is deleted." = "Najprawdopodobniej to połączenie jest usunięte.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Najprawdopodobniej ten kontakt usunął połączenie z Tobą.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Wiele profili czatu";
 
 /* No comment provided by engineer. */
@@ -3076,9 +3073,6 @@
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Adres odbiorczy zostanie zmieniony na inny serwer. Zmiana adresu zostanie zakończona gdy nadawca będzie online.";
-
-/* No comment provided by engineer. */
-"Receiving concurrency" = "Konkurencyjne odbieranie";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Odbieranie pliku zostanie przerwane.";
@@ -3919,9 +3913,6 @@
 
 /* rcv group event chat item */
 "unblocked %@" = "odblokowano %@";
-
-/* item status description */
-"Unexpected error: %@" = "Nieoczekiwany błąd: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Nieoczekiwany stan migracji";

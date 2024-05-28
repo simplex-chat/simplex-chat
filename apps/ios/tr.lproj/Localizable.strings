@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Hata: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Hata: %@";
 
 /* No comment provided by engineer. */
@@ -2569,9 +2569,6 @@
 "Most likely this connection is deleted." = "Büyük ihtimalle bu bağlantı silinmiş.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Büyük ihtimalle bu kişi seninle bağlantını sildi.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Çoklu sohbet profili";
 
 /* No comment provided by engineer. */
@@ -3076,9 +3073,6 @@
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Alıcı adresi farklı bir sunucuya değiştirilecektir. Gönderici çevrimiçi olduktan sonra adres değişikliği tamamlanacaktır.";
-
-/* No comment provided by engineer. */
-"Receiving concurrency" = "Eşzamanlılık alınıyor";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Dosya alımı durdurulacaktır.";
@@ -3919,9 +3913,6 @@
 
 /* rcv group event chat item */
 "unblocked %@" = "engeli kaldırıldı %@";
-
-/* item status description */
-"Unexpected error: %@" = "Beklenmeyen hata: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Beklenmeyen geçiş durumu";

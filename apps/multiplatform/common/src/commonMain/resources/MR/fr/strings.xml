@@ -1768,4 +1768,44 @@
     <string name="v5_7_shape_profile_images_descr">Carré, circulaire, ou toute autre forme intermédiaire.</string>
     <string name="v5_7_call_sounds_descr">Lors des appels audio et vidéo.</string>
     <string name="v5_7_new_interface_languages">Interface utilisateur en lituanien</string>
+    <string name="message_delivery_warning_title">Avertissement sur la distribution des messages</string>
+    <string name="srv_error_host">L\'adresse du serveur est incompatible avec les paramètres du réseau.</string>
+    <string name="srv_error_version">La version du serveur est incompatible avec les paramètres du réseau.</string>
+    <string name="network_smp_proxy_mode_always_description">Toujours utiliser le routage privé.</string>
+    <string name="network_smp_proxy_mode_never_description">Ne pas utiliser de routage privé.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Utiliser le routage privé avec des serveurs inconnus lorsque l\'adresse IP n\'est pas protégée.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Envoyez les messages de manière directe lorsque votre serveur ou le serveur de destination ne prend pas en charge le routage privé.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Envoyer les messages de manière directe lorsque l\'adresse IP est protégée et que votre serveur ou le serveur de destination ne prend pas en charge le routage privé.</string>
+    <string name="snd_error_expired">Problèmes de réseau - le message a expiré après plusieurs tentatives d\'envoi.</string>
+    <string name="snd_error_auth">Clé erronée ou connexion non identifiée - il est très probable que cette connexion soit supprimée.</string>
+    <string name="snd_error_proxy_relay">Serveur de transfert : %1$s
+\nErreur au niveau du serveur de destination : %2$s</string>
+    <string name="snd_error_proxy">Serveur de transfert : %1$s
+\nErreur : %2$s</string>
+    <string name="network_smp_proxy_mode_always">Toujours</string>
+    <string name="network_smp_proxy_mode_private_routing">Routage privé</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Autoriser la rétrogradation</string>
+    <string name="update_network_smp_proxy_mode_question">Mode de routage des messages</string>
+    <string name="network_smp_proxy_mode_never">Jamais</string>
+    <string name="network_smp_proxy_mode_unknown">Relais inconnus</string>
+    <string name="network_smp_proxy_fallback_prohibit">Non</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Lorsque l\'IP est masquée</string>
+    <string name="network_smp_proxy_fallback_allow">Oui</string>
+    <string name="update_network_smp_proxy_fallback_question">Rabattement du routage des messages</string>
+    <string name="private_routing_show_message_status">Afficher le statut du message</string>
+    <string name="protect_ip_address">Protection de l\'adresse IP</string>
+    <string name="settings_section_title_files">FICHIERS</string>
+    <string name="settings_section_title_private_message_routing">ROUTAGE PRIVÉ DES MESSAGES</string>
+    <string name="snd_error_relay">Erreur au niveau du serveur de destination : %1$s</string>
+    <string name="ci_status_other_error">Erreur : %1$s</string>
+    <string name="snd_error_quota">Capacité dépassée - le destinataire n\'a pas pu recevoir les messages envoyés précédemment.</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">L\'app demandera une confirmation pour les téléchargements depuis des serveurs de fichiers inconnus (sauf .onion ou lorsque le proxy SOCKS est activé).</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Ne pas envoyer de messages directement, même si votre serveur ou le serveur de destination ne prend pas en charge le routage privé.</string>
+    <string name="private_routing_explanation">Pour protéger votre adresse IP, le routage privé utilise vos serveurs SMP pour délivrer les messages.</string>
+    <string name="network_smp_proxy_mode_unprotected">Non protégé</string>
+    <string name="file_not_approved_title">Serveurs inconnus !</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sans Tor ou un VPN, votre adresse IP sera visible par les serveurs de fichiers.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Utiliser le routage privé avec des serveurs inconnus.</string>
+    <string name="file_not_approved_descr">Sans Tor ou un VPN, votre adresse IP sera visible par ces relais XFTP :
+\n%1$s.</string>
 </resources>
