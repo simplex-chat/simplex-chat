@@ -1897,18 +1897,14 @@
     <string name="reset_single_color">Farbe zurücksetzen</string>
     <string name="color_sent_quote">Gesendete Antwort</string>
     <string name="color_mode_system">System</string>
-    <string name="wallpaper_cats">Katzen</string>
     <string name="chat_theme_apply_to_dark_mode">Dunkle Variante</string>
     <string name="wallpaper_scale_fill">Füllen</string>
-    <string name="wallpaper_kids">Kinder</string>
     <string name="chat_theme_apply_to_light_mode">Helle Variante</string>
     <string name="color_received_quote">Empfangene Antwort</string>
     <string name="theme_remove_image">Bild entfernen</string>
     <string name="wallpaper_scale_repeat">Wiederholen</string>
     <string name="wallpaper_scale">Skalieren</string>
-    <string name="wallpaper_school">Schule</string>
     <string name="chat_theme_set_default_theme">Default-Design einstellen</string>
-    <string name="wallpaper_travel">Reisen</string>
     <string name="color_wallpaper_tint">Wallpaper-Akzent</string>
     <string name="color_wallpaper_background">Wallpaper-Hintergrund</string>
     <string name="chat_theme_apply_to_mode">Anwenden auf</string>
@@ -1919,9 +1915,7 @@
     <string name="settings_section_title_chat_theme">Chat-Design</string>
     <string name="wallpaper_scale_fit">Passend</string>
     <string name="chat_list_always_visible">Chat-Liste in einem neuen Fenster anzeigen</string>
-    <string name="wallpaper_flowers">Blumen</string>
     <string name="wallpaper_preview_hello_alice">Guten Nachmittag!</string>
     <string name="wallpaper_preview_hello_bob">Guten Morgen!</string>
-    <string name="wallpaper_hearts">Herzen</string>
     <string name="dark_mode_colors">Farben für die dunkle Variante</string>
 </resources>

@@ -1777,7 +1777,6 @@
     <string name="settings_section_title_chat_theme">Тема чату</string>
     <string name="settings_section_title_user_theme">Тема профілю</string>
     <string name="theme_black">Темна</string>
-    <string name="wallpaper_cats">Коти</string>
     <string name="color_primary_variant2">Додатковий акцент 2</string>
     <string name="wallpaper_advanced_settings">Розширені налаштування</string>
     <string name="chat_theme_apply_to_all_modes">Усі кольорові режими</string>
@@ -1787,10 +1786,7 @@
     <string name="dark_mode_colors">Кольори темного режиму</string>
     <string name="wallpaper_scale_fill">Заповнити</string>
     <string name="wallpaper_scale_fit">Підходить</string>
-    <string name="wallpaper_flowers">Квіти</string>
     <string name="wallpaper_preview_hello_alice">Доброго дня!</string>
     <string name="wallpaper_preview_hello_bob">Доброго ранку!</string>
-    <string name="wallpaper_hearts">Серця</string>
-    <string name="wallpaper_kids">Діти</string>
     <string name="color_mode_light">Світлий</string>
 </resources>

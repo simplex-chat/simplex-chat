@@ -1805,7 +1805,6 @@
 \n%1$s.</string>
     <string name="chat_theme_apply_to_all_modes">Minden színmód</string>
     <string name="theme_black">Fekete</string>
-    <string name="wallpaper_cats">Cicák</string>
     <string name="color_mode">Színmód</string>
     <string name="color_mode_dark">Sötét</string>
     <string name="chat_theme_apply_to_dark_mode">Sötét mód</string>
@@ -1813,16 +1812,13 @@
     <string name="wallpaper_scale_fit">Illesztés</string>
     <string name="wallpaper_preview_hello_alice">Jó napot!</string>
     <string name="wallpaper_preview_hello_bob">Jó reggelt!</string>
-    <string name="wallpaper_hearts">Szívek</string>
     <string name="wallpaper_advanced_settings">Haladó beállítások</string>
     <string name="chat_theme_apply_to_mode">Alkalmazás erre</string>
     <string name="settings_section_title_chat_colors">Csevegés színei</string>
     <string name="settings_section_title_chat_theme">Csevegés témája</string>
     <string name="wallpaper_scale_fill">Kitöltés</string>
-    <string name="wallpaper_flowers">Virágok</string>
     <string name="settings_section_title_user_theme">Profiltéma</string>
     <string name="chat_list_always_visible">Csevegőlista megjelenítése új ablakban</string>
-    <string name="wallpaper_kids">Gyerekek</string>
     <string name="color_mode_light">Világos</string>
     <string name="chat_theme_apply_to_light_mode">Világos mód</string>
     <string name="color_received_quote">Kapott válasz</string>
@@ -1830,11 +1826,9 @@
     <string name="wallpaper_scale_repeat">Mozaik</string>
     <string name="reset_single_color">Szín visszaállítása</string>
     <string name="wallpaper_scale">Méretezés</string>
-    <string name="wallpaper_school">Iskola</string>
     <string name="color_sent_quote">Elküldött válasz</string>
     <string name="chat_theme_set_default_theme">Alapértelmezett téma beállítása</string>
     <string name="color_mode_system">Rendszer</string>
-    <string name="wallpaper_travel">Utazás</string>
     <string name="color_wallpaper_tint">Háttérkép kiemelés</string>
     <string name="color_wallpaper_background">Háttérkép háttérszíne</string>
     <string name="color_primary_variant2">További kiemelés 2</string>

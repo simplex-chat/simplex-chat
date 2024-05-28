@@ -1811,8 +1811,6 @@
     <string name="settings_section_title_user_theme">Motyw profilu</string>
     <string name="chat_list_always_visible">Pokaż listę czatów w nowym oknie</string>
     <string name="dark_mode_colors">Kolory ciemnego trybu</string>
-    <string name="wallpaper_flowers">Kwiaty</string>
-    <string name="wallpaper_hearts">Serca</string>
     <string name="color_mode_light">Jasny</string>
     <string name="color_received_quote">Otrzymano odpowiedź</string>
     <string name="theme_remove_image">Usuń obraz</string>
@@ -1821,7 +1819,6 @@
     <string name="wallpaper_scale_fit">Dopasuj</string>
     <string name="wallpaper_preview_hello_alice">Dzień dobry!</string>
     <string name="wallpaper_preview_hello_bob">Dzień dobry!</string>
-    <string name="wallpaper_kids">Dzieci</string>
     <string name="chat_theme_apply_to_light_mode">Jasny tryb</string>
     <string name="wallpaper_scale_repeat">Powtórz</string>
     <string name="color_primary_variant2">Dodatkowy akcent 2</string>
@@ -1833,11 +1830,8 @@
     <string name="wallpaper_advanced_settings">Zaawansowane ustawienia</string>
     <string name="chat_theme_apply_to_mode">Zastosuj dla</string>
     <string name="wallpaper_scale">Skaluj</string>
-    <string name="wallpaper_travel">Podróż</string>
     <string name="theme_black">Czarny</string>
-    <string name="wallpaper_school">Szkoła</string>
     <string name="color_wallpaper_tint">Akcent tapety</string>
-    <string name="wallpaper_cats">Koty</string>
     <string name="color_sent_quote">Wyślij odpowiedź</string>
     <string name="settings_section_title_chat_colors">Kolory czatu</string>
     <string name="settings_section_title_chat_theme">Motyw czatu</string>

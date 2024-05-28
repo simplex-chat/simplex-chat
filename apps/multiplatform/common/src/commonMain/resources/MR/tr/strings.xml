@@ -1812,25 +1812,20 @@
     <string name="color_primary_variant2">Ek vurgu 2</string>
     <string name="chat_theme_apply_to_all_modes">Bütün renk modları</string>
     <string name="chat_theme_apply_to_mode">Şuna uygula</string>
-    <string name="wallpaper_cats">Kediler</string>
     <string name="chat_theme_apply_to_dark_mode">Karanlık mod</string>
     <string name="wallpaper_scale_fill">Doldur</string>
-    <string name="wallpaper_hearts">Kalpler</string>
     <string name="wallpaper_scale">Ölçeklendir</string>
-    <string name="wallpaper_school">Okul</string>
     <string name="color_sent_quote">Gönderilen cevap</string>
     <string name="chat_theme_set_default_theme">Varsayılan temaya ayarla</string>
     <string name="wallpaper_advanced_settings">Gelişmiş ayarlar</string>
     <string name="wallpaper_preview_hello_bob">Günaydın!</string>
     <string name="color_mode_dark">Karanlık</string>
-    <string name="wallpaper_kids">Çocuklar</string>
     <string name="chat_theme_apply_to_light_mode">Aydınlık mod</string>
     <string name="protect_ip_address">IP adresini koru</string>
     <string name="settings_section_title_files">DOSYALAR</string>
     <string name="settings_section_title_chat_colors">Sohbet renkleri</string>
     <string name="wallpaper_scale_fit">Sığdır</string>
     <string name="color_received_quote">Alınan cevap</string>
-    <string name="wallpaper_flowers">Çiçekler</string>
     <string name="wallpaper_preview_hello_alice">İyi öğlenler!</string>
     <string name="theme_remove_image">Resmi kaldır</string>
     <string name="wallpaper_scale_repeat">Tekrarla</string>
@@ -1840,7 +1835,6 @@
     <string name="file_not_approved_descr">Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir:
 \n%1$s.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.</string>
-    <string name="wallpaper_travel">Seyahat</string>
     <string name="color_wallpaper_tint">Duvar kağıdı vurgusu</string>
     <string name="color_wallpaper_background">Duvar kağıdı arkaplanı</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Uygulama, bilinmeyen dosya sunucularından indirmeleri onaylamanızı isteyecektir (.onion veya SOCKS vekilleri etkin değilse).</string>
