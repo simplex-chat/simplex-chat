@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import java.io.File
 
 @Composable
 fun ChatInfoView(
@@ -719,7 +720,7 @@ fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
 
 suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {
   val unchangedThemes: ThemeModeOverrides = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
-  val wallpaperFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
+  val wallpaperFiles = setOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
   var changedThemes: ThemeModeOverrides? = unchangedThemes
   val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
   changedThemes = when (applyToMode) {
@@ -727,7 +728,28 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
     DefaultThemeMode.LIGHT -> changedThemes?.copy(light = changed?.copy(mode = applyToMode))
     DefaultThemeMode.DARK -> changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
   }
-  changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
+  changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) {
+    val light = changedThemes.light
+    val dark = changedThemes.dark
+    val currentMode = CurrentColors.value.base.mode
+    // same image file for both modes, copy image to make them as different files
+    if (light?.wallpaper?.imageFile != null && dark?.wallpaper?.imageFile != null && light.wallpaper.imageFile == dark.wallpaper.imageFile) {
+      val imageFile = if (currentMode == DefaultThemeMode.LIGHT) {
+        dark.wallpaper.imageFile
+      } else {
+        light.wallpaper.imageFile
+      }
+      val filePath = saveWallpaperFile(File(getWallpaperFilePath(imageFile)).toURI())
+      changedThemes = if (currentMode == DefaultThemeMode.LIGHT) {
+        changedThemes.copy(dark = dark.copy(wallpaper = dark.wallpaper.copy(imageFile = filePath)))
+      } else {
+        changedThemes.copy(light = light.copy(wallpaper = light.wallpaper.copy(imageFile = filePath)))
+      }
+    }
+    changedThemes
+  } else {
+    null
+  }
   val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
   wallpaperFilesToDelete.forEach(::removeWallpaperFile)
 
