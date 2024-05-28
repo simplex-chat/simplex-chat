@@ -499,8 +499,7 @@ data ChatCommand
   | DebugEvent ChatResponse
   | GetAgentStats
   | ResetAgentStats
-  | GetAgentSubs
-  | GetAgentSubsDetails
+  | GetAgentSubs {diffOnly :: Bool}
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | GetAgentMsgCounts
@@ -747,8 +746,7 @@ data ChatResponse
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
-  | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
-  | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
+  | CRAgentSubs {agentSubs :: SubscriptionsInfo}
   | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
