@@ -413,8 +413,8 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             FeatureDescription(
                 icon: "arrow.forward",
-                title: "Private message routing",
-                description: "Enable in *Network & servers*."
+                title: "Private message routing 🚀",
+                description: "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings."
             ),
             FeatureDescription(
                 icon: "network.badge.shield.half.filled",
