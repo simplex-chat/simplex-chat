@@ -8,6 +8,8 @@ import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.sshtools.twoslices.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.awt.*
 import java.awt.TrayIcon.MessageType
 import java.io.File
@@ -15,6 +17,7 @@ import javax.imageio.ImageIO
 
 object NtfManager {
   private val prevNtfs = arrayListOf<Pair<ChatId, Slice>>()
+  private val prevNtfsMutex: Mutex = Mutex()
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     if (simplexWindowState.windowFocused.value) return false
@@ -55,21 +58,29 @@ object NtfManager {
   fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
 
   fun cancelNotificationsForChat(chatId: ChatId) {
-    val ntf = prevNtfs.firstOrNull { it.first == chatId }
-    if (ntf != null) {
-      prevNtfs.remove(ntf)
-      /*try {
-        ntf.second.close()
-      } catch (e: Exception) {
-        // Can be java.lang.UnsupportedOperationException, for example. May do nothing
-        println("Failed to close notification: ${e.stackTraceToString()}")
-      }*/
+    withBGApi {
+      prevNtfsMutex.withLock {
+        val ntf = prevNtfs.firstOrNull { it.first == chatId }
+        if (ntf != null) {
+          prevNtfs.remove(ntf)
+          /*try {
+            ntf.second.close()
+          } catch (e: Exception) {
+            // Can be java.lang.UnsupportedOperationException, for example. May do nothing
+            println("Failed to close notification: ${e.stackTraceToString()}")
+          }*/
+        }
+      }
     }
   }
 
   fun cancelAllNotifications() {
 //    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { println("Failed to close notification: ${e.stackTraceToString()}") } }
-    prevNtfs.clear()
+    withBGApi {
+      prevNtfsMutex.withLock {
+        prevNtfs.clear()
+      }
+    }
   }
 
   fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
@@ -110,7 +121,11 @@ object NtfManager {
       builder.action(it.first, it.second)
     }
     try {
-      prevNtfs.add(chatId to builder.toast())
+      withBGApi {
+        prevNtfsMutex.withLock {
+          prevNtfs.add(chatId to builder.toast())
+        }
+      }
     } catch (e: Throwable) {
       Log.e(TAG, e.stackTraceToString())
       if (e !is Exception) {
