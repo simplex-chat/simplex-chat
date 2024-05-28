@@ -858,12 +858,50 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| Updated 05.06.2023 | Languages: EN, <a href="/docs/lang/fr/server.html">FR</a>, <a href="/docs/lang/cs/server.html">CZ</a>, <a href="/docs/lang/pl/server.html">PL</a> |</p>
+                    <div><p>| Updated 28.05.2024 | Languages: EN, <a href="/docs/lang/fr/server.html">FR</a>, <a href="/docs/lang/cs/server.html">CZ</a>, <a href="/docs/lang/pl/server.html">PL</a> |</p>
+<h3 id="table-of-contents" tabindex="-1">Table of Contents</h3>
+<ul>
+<li><a href="#hosting-your-own-smp-server">Hosting your own SMP server</a>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#configuration">Configuration</a>
+<ul>
+<li><a href="#interactively">Interactively</a></li>
+<li><a href="#via-command-line-options">Via command line options</a></li>
+</ul>
+</li>
+<li><a href="#further-configuration">Further configuration</a></li>
+<li><a href="#server-security">Server security</a>
+<ul>
+<li><a href="#initialization">Initialization</a></li>
+<li><a href="#private-keys">Private keys</a></li>
+<li><a href="#online-certificate-rotation">Online certificate rotation</a></li>
+</ul>
+</li>
+<li><a href="#tor-installation-and-configuration">Tor: installation and configuration</a>
+<ul>
+<li><a href="#installation-for-onion-address">Installation for onion address</a></li>
+<li><a href="#socks-port-for-smp-proxy">SOCKS port for SMP PROXY</a></li>
+</ul>
+</li>
+<li><a href="#documentation">Documentation</a>
+<ul>
+<li><a href="#smp-server-address">SMP server address</a></li>
+<li><a href="#systemd-commands">Systemd commands</a></li>
+<li><a href="#monitoring">Monitoring</a></li>
+</ul>
+</li>
+<li><a href="#updating-your-smp-server">Updating your SMP server</a></li>
+<li><a href="#configuring-the-app-to-use-the-server">Configuring the app to use the server</a></li>
+</ul>
+</li>
+</ul>
 <h1 id="hosting-your-own-smp-server" tabindex="-1">Hosting your own SMP Server</h1>
 <h2 id="overview" tabindex="-1">Overview</h2>
 <p>SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and <a href="http://smp14.simplex.im">smp14.simplex.im</a>), but you can easily change app configuration to use other servers.</p>
 <p>SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.</p>
-<p><em>Please note</em>: when you change the servers in the app configuration, it only affects which server will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html#change-your-delivery-address-beta">&quot;Change receiving address&quot;</a> button in contact/member information pages – it will be automated soon.</p>
+<p><em>Please note</em>: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html#change-your-delivery-address-beta">&quot;Change receiving address&quot;</a> button in contact/member information pages – it will be automated in the future.</p>
 <h2 id="installation" tabindex="-1">Installation</h2>
 <ol>
 <li>
@@ -875,7 +913,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li>
 <p>Semi-automatic deployment:</p>
 <ul>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
+<li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Installation script</a></li>
 <li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
 <li><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></li>
 </ul>
@@ -889,7 +927,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>Install binary:</p>
 <ul>
 <li>
-<p>Using offical binaries:</p>
+<p>Using pre-compiled binaries:</p>
 <pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server &amp;&amp; chmod +x /usr/local/bin/smp-server
 </code></pre>
 </li>
@@ -940,77 +978,6 @@ WantedBy=multi-user.target
 <p>And execute <code>sudo systemctl daemon-reload</code>.</p>
 </li>
 </ol>
-<h2 id="tor-installation" tabindex="-1">Tor installation</h2>
-<p>smp-server can also be deployed to serve from <a href="https://www.torproject.org">tor</a> network. Run the following commands as <code>root</code> user.</p>
-<ol>
-<li>
-<p>Install tor:</p>
-<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
-<ul>
-<li>
-<p>Configure offical Tor PPA repository:</p>
-<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
-echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
-deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
-</code></pre>
-</li>
-<li>
-<p>Import repository key:</p>
-<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null
-</code></pre>
-</li>
-<li>
-<p>Update repository index:</p>
-<pre><code class="language-sh">apt update
-</code></pre>
-</li>
-<li>
-<p>Install <code>tor</code> package:</p>
-<pre><code class="language-sh">apt install -y tor deb.torproject.org-keyring
-</code></pre>
-</li>
-</ul>
-</li>
-<li>
-<p>Configure tor:</p>
-<ul>
-<li>
-<p>File configuration:</p>
-<p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
-<pre><code class="language-sh">vim /etc/tor/torrc
-</code></pre>
-<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
-<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seemd to deploy onion address)
-Log notice file /var/log/tor/notices.log
-# Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside smp-server and onion address will be displayed in clients, this is totally fine)
-SOCKSPort 0
-HiddenServiceNonAnonymousMode 1
-HiddenServiceSingleHopMode 1
-# smp-server hidden service host directory and port mappings
-HiddenServiceDir /var/lib/tor/simplex-smp/
-HiddenServicePort 5223 localhost:5223
-</code></pre>
-</li>
-<li>
-<p>Create directories:</p>
-<pre><code class="language-sh">mkdir /var/lib/tor/simplex-smp/ &amp;&amp; chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ &amp;&amp; chmod 700 /var/lib/tor/simplex-smp/
-</code></pre>
-</li>
-</ul>
-</li>
-<li>
-<p>Start tor:</p>
-<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.</p>
-<pre><code class="language-sh">systemctl enable tor &amp;&amp; systemctl start tor &amp;&amp; systemctl restart tor
-</code></pre>
-</li>
-<li>
-<p>Display onion host:</p>
-<p>Execute the following command to display your onion host address:</p>
-<pre><code class="language-sh">cat /var/lib/tor/simplex-smp/hostname
-</code></pre>
-</li>
-</ol>
 <h2 id="configuration" tabindex="-1">Configuration</h2>
 <p>To see which options are available, execute <code>smp-server</code> without flags:</p>
 <pre><code class="language-sh">sudo su smp -c smp-server
@@ -1041,11 +1008,11 @@ Available commands:
 <p>Enter <code>y</code> to enable logging statistics in CSV format, e.g. they can be used to show aggregate usage charts in <code>Grafana</code>.</p>
 </li>
 </ul>
-<p>These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please let us know, confidentially, if you believe that this can be exploited in any way.</p>
+<p>These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please <a href="/security/index.html">let us know</a>, confidentially, if you believe that this can be exploited in any way.</p>
 <ul>
 <li>
 <p><code>Require a password to create new messaging queues?</code></p>
-<p>Enter <code>r</code> or your arbitrary password to password-protect <code>smp-server</code>, or <code>n</code> to disable password protection.</p>
+<p>Press <code>Enter</code> or enter your arbitrary password to password-protect <code>smp-server</code>, or <code>n</code> to disable password protection.</p>
 </li>
 <li>
 <p><code>Enter server FQDN or IP address for certificate (127.0.0.1):</code></p>
@@ -1100,7 +1067,296 @@ SMP server v3.4.0
 Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
 Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@&lt;hostnames&gt;
 </code></pre>
-<p>The server address above should be used in your client configuration and if you added server password it should only be shared with the other people when you want to allow them to use your server to receive the messages (all your contacts will be able to send messages, as it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace <code>&lt;hostnames&gt;</code> with the actual server addresses.</p>
+<p>The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace <code>&lt;hostnames&gt;</code> with the actual server hostnames.</p>
+<h2 id="further-configuration" tabindex="-1">Further configuration</h2>
+<p>All generated configuration, along with a description for each parameter, is available inside configuration file in <code>/etc/opt/simplex/smp-server.ini</code> for further customization. Depending on the smp-server version, the configuration file looks something like this:</p>
+<pre><code class="language-ini">[STORE_LOG]
+# The server uses STM memory for persistence,
+# that will be lost on restart (e.g., as with redis).
+# This option enables saving memory to append only log,
+# and restoring it when the server is started.
+# Log is compacted on start (deleted objects are removed).
+enable: on
+
+# Undelivered messages are optionally saved and restored when the server restarts,
+# they are preserved in the .bak file until the next restart.
+restore_messages: on
+expire_messages_days: 21
+
+# Log daily server statistics to CSV file
+log_stats: on
+
+[AUTH]
+# Set new_queues option to off to completely prohibit creating new messaging queues.
+# This can be useful when you want to decommission the server, but not all connections are switched yet.
+new_queues: on
+
+# Use create_password option to enable basic auth to create new messaging queues.
+# The password should be used as part of server address in client configuration:
+# smp://fingerprint:password@host1,host2
+# The password will not be shared with the connecting contacts, you must share it only
+# with the users who you want to allow creating messaging queues on your server.
+# create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
+
+[TRANSPORT]
+# host is only used to print server address on start
+host: &lt;your server domain/ip&gt;
+port: 5223
+log_tls_errors: off
+websockets: off
+# control_port: 5224
+
+[PROXY]
+# Network configuration for SMP proxy client.
+# `host_mode` can be 'public' (default) or 'onion'.
+# It defines prefferred hostname for destination servers with multiple hostnames.
+# host_mode: public
+# required_host_mode: off
+
+# The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
+# own_server_domains: &lt;your domain suffixes&gt;
+
+# SOCKS proxy port for forwarding messages to destination servers.
+# You may need a separate instance of SOCKS proxy for incoming single-hop requests.
+# socks_proxy: localhost:9050
+
+# `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
+# or 'always' to be used for all destination hosts (can be used if it is an .onion server).
+# socks_mode: onion
+
+# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# client_concurrency: 32
+
+[INACTIVE_CLIENTS]
+# TTL and interval to check inactive clients
+disconnect: off
+# ttl: 43200
+# check_interval: 3600
+</code></pre>
+<h2 id="server-security" tabindex="-1">Server security</h2>
+<h3 id="initialization" tabindex="-1">Initialization</h3>
+<p>Although it's convenient to initialize smp-server configuration directly on the server, operators <strong>ARE ADVISED</strong> to initialize smp-server fully offline to protect your SMP server CA private key.</p>
+<p>Follow the steps to quickly initialize the server offline:</p>
+<ol>
+<li>
+<p>Install Docker on your system.</p>
+</li>
+<li>
+<p>Deploy <a href="https://github.com/simplex-chat/simplexmq#using-docker">smp-server</a> locally.</p>
+</li>
+<li>
+<p>Destroy the container. All relevant configuration files and keys will be available at <code>$HOME/simplex/smp/config</code>.</p>
+</li>
+<li>
+<p>Move your <code>CA</code> private key (<code>ca.key</code>) to the safe place. For further explanation, see the next section: <a href="#private-keys">Server security: Private keys</a>.</p>
+</li>
+<li>
+<p>Copy all other configuration files <strong>except</strong> the CA key to the server:</p>
+<pre><code class="language-sh">rsync -hzasP $HOME/simplex/smp/config/ &lt;server_user&gt;@&lt;server_address&gt;:/etc/opt/simplex/
+</code></pre>
+</li>
+</ol>
+<h3 id="private-keys" tabindex="-1">Private keys</h3>
+<p>Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates by comparing its fingerprint with the one included in server address. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators <strong>ARE ADVISED</strong> to move CA private key to a safe place. That could be:</p>
+<ul>
+<li><a href="https://tails.net/">Tails</a> live usb drive with <a href="https://tails.net/doc/persistent_storage/create/index.en.html">persistent and encrypted storage</a>.</li>
+<li>Offline Linux laptop.</li>
+<li>Bitwarden.</li>
+<li>Any other safe storage that satisfy your security requirements.</li>
+</ul>
+<p>Follow the steps to secure your CA keys:</p>
+<ol>
+<li>
+<p>Login to your server via SSH.</p>
+</li>
+<li>
+<p>Copy the CA key to a safe place from this file:</p>
+<pre><code class="language-sh">/etc/opt/simplex/ca.key
+</code></pre>
+</li>
+<li>
+<p>Delete the CA key from the server. <strong>Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to <a href="#online-certificate-rotation">rotate the online certificate</a></strong>:</p>
+<pre><code class="language-sh">rm /etc/opt/simplex/ca.key
+</code></pre>
+</li>
+</ol>
+<h3 id="online-certificate-rotation" tabindex="-1">Online certificate rotation</h3>
+<p>Operators of smp servers <strong>ARE ADVISED</strong> to rotate online certificate regularly (e.g., every 3 months). In order to do this, follow the steps:</p>
+<ol>
+<li>
+<p>Create relevant folders:</p>
+<pre><code class="language-sh">mkdir -p $HOME/simplex/smp/config
+</code></pre>
+</li>
+<li>
+<p>Copy the configuration files from the server to the local machine (if not yet):</p>
+<pre><code class="language-sh">rsync -hzasP &lt;server_user&gt;@&lt;server_address&gt;:/etc/opt/simplex/ $HOME/simplex/smp/config/
+</code></pre>
+</li>
+<li>
+<p><strong>Copy</strong> your CA private key from a safe place to the local machine and name it <code>ca.key</code>.</p>
+</li>
+<li>
+<p>Download latest <code>smp-server</code> binary <a href="https://github.com/simplex-chat/simplexmq/releases">from Github releases</a>:</p>
+<pre><code class="language-sh">curl -L 'https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64' -o smp-server
+</code></pre>
+</li>
+<li>
+<p>Put the <code>smp-server</code> binary to your <code>$PATH</code> and make it executable:</p>
+<pre><code class="language-sh">sudo mv smp-server /usr/local/bin/ &amp;&amp; chmod +x /usr/local/bin/smp-server
+</code></pre>
+</li>
+<li>
+<p>Export a variable to configure your path to smp-server configuration:</p>
+<pre><code class="language-sh">export SMP_SERVER_CFG_PATH=$HOME/simplex/smp/config
+</code></pre>
+</li>
+<li>
+<p>Execute the following command:</p>
+<pre><code class="language-sh">smp-server cert
+</code></pre>
+<p>This command should print:</p>
+<pre><code class="language-sh">Certificate request self-signature ok
+subject=CN = &lt;your domain or IP&gt;
+Generated new server credentials
+----------
+You should store CA private key securely and delete it from the server.
+If server TLS credential is compromised this key can be used to sign a new one, keeping the same server identity and established connections.
+CA private key location:
+$HOME/simplex/smp/config/ca.key
+----------
+</code></pre>
+</li>
+<li>
+<p>Remove the CA key from the config folder (make sure you have a backup!):</p>
+<pre><code class="language-sh">rm $HOME/simplex/smp/config/ca.key
+</code></pre>
+</li>
+<li>
+<p>Upload new certificates to the server:</p>
+<pre><code class="language-sh">rsync -hzasP $HOME/simplex/smp/config/ &lt;server_user&gt;@&lt;server_address&gt;:/etc/opt/simplex/
+</code></pre>
+</li>
+<li>
+<p>Connect to the server via SSH and restart the service:</p>
+<pre><code class="language-sh">ssh &lt;server_user&gt;@&lt;server_address&gt; &quot;systemctl restart smp-server&quot;
+</code></pre>
+</li>
+<li>
+<p>Done!</p>
+</li>
+</ol>
+<h2 id="tor-installation-and-configuration" tabindex="-1">Tor: installation and configuration</h2>
+<h3 id="installation-for-onion-address" tabindex="-1">Installation for onion address</h3>
+<p>SMP-server can also be deployed to be available via <a href="https://www.torproject.org">Tor</a> network. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Install tor:</p>
+<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<ul>
+<li>
+<p>Configure offical Tor PPA repository:</p>
+<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
+echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
+</code></pre>
+</li>
+<li>
+<p>Import repository key:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null
+</code></pre>
+</li>
+<li>
+<p>Update repository index:</p>
+<pre><code class="language-sh">apt update
+</code></pre>
+</li>
+<li>
+<p>Install <code>tor</code> package:</p>
+<pre><code class="language-sh">apt install -y tor deb.torproject.org-keyring
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Configure tor:</p>
+<ul>
+<li>
+<p>File configuration:</p>
+<p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
+<pre><code class="language-sh">vim /etc/tor/torrc
+</code></pre>
+<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
+<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seem to deploy onion address)
+Log notice file /var/log/tor/notices.log
+# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
+SOCKSPort 0
+HiddenServiceNonAnonymousMode 1
+HiddenServiceSingleHopMode 1
+# smp-server hidden service host directory and port mappings
+HiddenServiceDir /var/lib/tor/simplex-smp/
+HiddenServicePort 5223 localhost:5223
+</code></pre>
+</li>
+<li>
+<p>Create directories:</p>
+<pre><code class="language-sh">mkdir /var/lib/tor/simplex-smp/ &amp;&amp; chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ &amp;&amp; chmod 700 /var/lib/tor/simplex-smp/
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Start tor:</p>
+<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.</p>
+<pre><code class="language-sh">systemctl enable --now tor &amp;&amp; systemctl restart tor
+</code></pre>
+</li>
+<li>
+<p>Display onion host:</p>
+<p>Execute the following command to display your onion host address:</p>
+<pre><code class="language-sh">cat /var/lib/tor/simplex-smp/hostname
+</code></pre>
+</li>
+</ol>
+<h3 id="socks-port-for-smp-proxy" tabindex="-1">SOCKS port for SMP PROXY</h3>
+<p>SMP-server versions starting from <code>v5.8.0-beta.0</code> can be configured to PROXY smp servers available exclusively through <a href="https://www.torproject.org">Tor</a> network to be accessible to the clients that do not use Tor. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Install tor as described in the <a href="#installation-for-onion-address">previous section</a>.</p>
+</li>
+<li>
+<p>Execute the following command to creatae a new Tor daemon instance:</p>
+<pre><code class="language-sh">tor-instance-create tor2
+</code></pre>
+</li>
+<li>
+<p>Open the <code>tor2</code> configuration and replace its content with the following lines:</p>
+<pre><code class="language-sh">vim /etc/tor/instances/tor2/torrc
+</code></pre>
+<pre><code class="language-sh"># Log tor to systemd daemon
+Log notice syslog
+# Listen to local 9050 port for socks proxy
+SocksPort 9050
+</code></pre>
+</li>
+<li>
+<p>Enable service at startup and start the daemon:</p>
+<pre><code class="language-sh">systemctl enable --now tor@tor2
+</code></pre>
+<p>You can check <code>tor2</code> logs with the following command:</p>
+<pre><code class="language-sh">journalctl -u tor@tor2
+</code></pre>
+</li>
+<li>
+<p>After <a href="#configuration">server initialization</a>, configure the <code>PROXY</code> section like so:</p>
+<pre><code class="language-ini">...
+[PROXY]
+socks_proxy: 127.0.0.1:9050
+own_server_domains: &lt;your domain suffixes if using `log_stats: on`&gt;
+...
+</code></pre>
+</li>
+</ol>
 <h2 id="documentation" tabindex="-1">Documentation</h2>
 <p>All necessary files for <code>smp-server</code> are located in <code>/etc/opt/simplex/</code> folder.</p>
 <p>Stored messages, connections, statistics and server log are located in <code>/var/opt/simplex/</code> folder.</p>
@@ -1226,7 +1482,7 @@ allow_local_mode = true
 <li>You're done! You should be able to create your own dashboard with statistics.</li>
 </ol>
 <p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
-<h1 id="updating-your-smp-server" tabindex="-1">Updating your SMP server</h1>
+<h2 id="updating-your-smp-server" tabindex="-1">Updating your SMP server</h2>
 <p>To update your smp-server to latest version, choose your installation method and follow the steps:</p>
 <ul>
 <li>
@@ -1285,7 +1541,7 @@ allow_local_mode = true
 </ol>
 </li>
 </ul>
-<h3 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h3>
+<h2 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h2>
 <p>To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.</p>
 <p>It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.</p>
 <p><em>Please note</em>: you need SMP server version 4.0 to have password support. If you already have a deployed server, you can add password by adding it to server INI file.</p>
