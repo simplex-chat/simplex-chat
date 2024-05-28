@@ -1510,7 +1510,12 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
-        (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false))
+        (
+            ready
+            && active
+            && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
+            && !(activeConn?.connDisabled ?? true)
+        )
         || nextSendGrpInv
     } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
@@ -1601,14 +1606,19 @@ public struct Connection: Decodable {
     public var pqEncryption: Bool
     public var pqSndEnabled: Bool?
     public var pqRcvEnabled: Bool?
+    public var authErrCounter: Int
 
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter
     }
 
     public var id: ChatId { get { ":\(connId)" } }
+
+    public var connDisabled: Bool {
+        authErrCounter >= 10 // authErrDisableCount in core
+    }
 
     public var connPQEnabled: Bool {
         pqSndEnabled == true && pqRcvEnabled == true
@@ -1622,7 +1632,8 @@ public struct Connection: Decodable {
         connLevel: 0,
         viaGroupLink: false,
         pqSupport: false,
-        pqEncryption: false
+        pqEncryption: false,
+        authErrCounter: 0
     )
 }
 
@@ -2621,6 +2632,7 @@ public struct CIMeta: Decodable {
     public var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
+    public var sentViaProxy: Bool?
     public var createdAt: Date
     public var updatedAt: Date
     public var itemForwarded: CIForwardedFrom?
@@ -2710,7 +2722,8 @@ public enum CIStatus: Decodable {
     case sndSent(sndProgress: SndCIStatusProgress)
     case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
     case sndErrorAuth
-    case sndError(agentError: String)
+    case sndError(agentError: SndError)
+    case sndWarning(agentError: SndError)
     case rcvNew
     case rcvRead
     case invalid(text: String)
@@ -2722,6 +2735,7 @@ public enum CIStatus: Decodable {
         case .sndRcvd: return "sndRcvd"
         case .sndErrorAuth: return "sndErrorAuth"
         case .sndError: return "sndError"
+        case .sndWarning: return "sndWarning"
         case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
         case .invalid: return "invalid"
@@ -2738,7 +2752,8 @@ public enum CIStatus: Decodable {
             case .badMsgHash: return ("checkmark", .red)
             }
         case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("exclamationmark.triangle.fill", .yellow)
+        case .sndError: return ("multiply", .red)
+        case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
         case .rcvRead: return nil
         case .invalid: return ("questionmark", metaColor)
@@ -2756,7 +2771,11 @@ public enum CIStatus: Decodable {
             )
         case let .sndError(agentError): return (
                 NSLocalizedString("Message delivery error", comment: "item status text"),
-                String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "item status description"), agentError)
+                agentError.errorInfo
+            )
+        case let .sndWarning(agentError): return (
+                NSLocalizedString("Message delivery warning", comment: "item status text"),
+                agentError.errorInfo
             )
         case .rcvNew: return nil
         case .rcvRead: return nil
@@ -2764,6 +2783,42 @@ public enum CIStatus: Decodable {
                 NSLocalizedString("Invalid status", comment: "item status text"),
                 text
             )
+        }
+    }
+}
+
+public enum SndError: Decodable {
+    case auth
+    case quota
+    case expired
+    case relay(srvError: SrvError)
+    case proxy(proxyServer: String, srvError: SrvError)
+    case proxyRelay(proxyServer: String, srvError: SrvError)
+    case other(sndError: String)
+
+    public var errorInfo: String {
+        switch self {
+        case .auth: NSLocalizedString("Wrong key or unknown connection - most likely this connection is deleted.", comment: "snd error text")
+        case .quota: NSLocalizedString("Capacity exceeded - recipient did not receive previously sent messages.", comment: "snd error text")
+        case .expired: NSLocalizedString("Network issues - message expired after many attempts to send it.", comment: "snd error text")
+        case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("Destination server error: %@", comment: "snd error text"), srvError.errorInfo)
+        case let .proxy(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Forwarding server: %@\nError: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .proxyRelay(proxyServer, srvError): String.localizedStringWithFormat(NSLocalizedString("Forwarding server: %@\nDestination server error: %@", comment: "snd error text"), proxyServer, srvError.errorInfo)
+        case let .other(sndError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "snd error text"), sndError)
+        }
+    }
+}
+
+public enum SrvError: Decodable {
+    case host
+    case version
+    case other(srvError: String)
+
+    public var errorInfo: String {
+        switch self {
+        case .host: NSLocalizedString("Server address is incompatible with network settings.", comment: "srv error text.")
+        case .version: NSLocalizedString("Server version is incompatible with network settings.", comment: "srv error text")
+        case let .other(srvError): srvError
         }
     }
 }
@@ -3119,6 +3174,7 @@ public struct CIFile: Decodable {
             case .rcvInvitation: return false
             case .rcvAccepted: return false
             case .rcvTransfer: return false
+            case .rcvAborted: return false
             case .rcvCancelled: return false
             case .rcvComplete: return true
             case .rcvError: return false
@@ -3143,6 +3199,7 @@ public struct CIFile: Decodable {
             case .rcvInvitation: return nil
             case .rcvAccepted: return rcvCancelAction
             case .rcvTransfer: return rcvCancelAction
+            case .rcvAborted: return nil
             case .rcvCancelled: return nil
             case .rcvComplete: return nil
             case .rcvError: return nil
@@ -3257,6 +3314,7 @@ public enum CIFileStatus: Decodable, Equatable {
     case rcvInvitation
     case rcvAccepted
     case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
+    case rcvAborted
     case rcvComplete
     case rcvCancelled
     case rcvError
@@ -3272,6 +3330,7 @@ public enum CIFileStatus: Decodable, Equatable {
         case .rcvInvitation: return "rcvInvitation"
         case .rcvAccepted: return "rcvAccepted"
         case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
+        case .rcvAborted: return "rcvAborted"
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
         case .rcvError: return "rcvError"
@@ -3886,4 +3945,5 @@ public struct ChatItemVersion: Decodable {
 public struct MemberDeliveryStatus: Decodable {
     public var groupMemberId: Int64
     public var memberDeliveryStatus: CIStatus
+    public var sentViaProxy: Bool?
 }

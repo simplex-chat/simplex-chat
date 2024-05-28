@@ -37,6 +37,7 @@ import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Transport (supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
@@ -44,6 +45,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Server (runSMPServerBlocking)
@@ -427,7 +429,10 @@ serverCfg =
       smpServerVRange = supportedServerSMPRelayVRange,
       transportConfig = defaultTransportServerConfig,
       smpHandshakeTimeout = 1000000,
-      controlPort = Nothing
+      controlPort = Nothing,
+      smpAgentCfg = defaultSMPClientAgentConfig,
+      allowSMPProxy = False,
+      serverClientConcurrency = 16
     }
 
 withSmpServer :: IO () -> IO ()
@@ -458,6 +463,7 @@ xftpServerConfig =
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt",
+      xftpServerVRange = supportedFileServerVRange,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",

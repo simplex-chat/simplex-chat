@@ -1,6 +1,6 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +28,7 @@ import java.net.URI
 fun CIFileView(
   file: CIFile?,
   edited: Boolean,
+  showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
@@ -62,7 +63,7 @@ fun CIFileView(
   fun fileAction() {
     if (file != null) {
       when {
-        file.fileStatus is CIFileStatus.RcvInvitation -> {
+        file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted -> {
           if (fileSizeValid(file)) {
             receiveFile(file.fileId)
           } else {
@@ -86,7 +87,7 @@ fun CIFileView(
               )
             FileProtocol.LOCAL -> {}
           }
-        file.fileStatus is CIFileStatus.RcvComplete || (file.fileStatus is CIFileStatus.SndStored && file.fileProtocol == FileProtocol.LOCAL) -> {
+        file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
             if (chatModel.connectedToRemote() && filePath == null) {
@@ -136,8 +137,7 @@ fun CIFileView(
     Box(
       Modifier
         .size(42.dp)
-        .clip(RoundedCornerShape(4.dp))
-        .clickable(onClick = { fileAction() }),
+        .clip(RoundedCornerShape(4.dp)),
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
@@ -154,7 +154,13 @@ fun CIFileView(
               FileProtocol.SMP -> progressIndicator()
               FileProtocol.LOCAL -> {}
             }
-          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
+          is CIFileStatus.SndComplete -> {
+            if ((file.forwardingAllowed() || (chatModel.connectedToRemote() && CIFile.cachedRemoteFileRequests[file.fileSource] == true))) {
+              fileIcon()
+            } else {
+              fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
+            }
+          }
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvInvitation ->
@@ -169,6 +175,8 @@ fun CIFileView(
             } else {
               progressIndicator()
             }
+          is CIFileStatus.RcvAborted ->
+            fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
           is CIFileStatus.RcvComplete -> fileIcon()
           is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
@@ -181,7 +189,12 @@ fun CIFileView(
   }
 
   Row(
-    Modifier.clickable(onClick = { fileAction() }).padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+    Modifier
+      .combinedClickable(
+        onClick = { fileAction() },
+        onLongClick = { showMenu.value = true }
+      )
+      .padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.dp)

@@ -42,7 +42,7 @@ sealed class CIInfoTab {
 @Composable
 fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
-  val appColors = CurrentColors.collectAsState().value.appColors
+  val appColors = MaterialTheme.appColors
   val uriHandler = LocalUriHandler.current
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
@@ -304,7 +304,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 
   @Composable
-  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus) {
+  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus, sentViaProxy: Boolean?) {
     SectionItemView(
       padding = PaddingValues(horizontal = 0.dp)
     ) {
@@ -317,6 +317,18 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         overflow = TextOverflow.Ellipsis
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
+      if (sentViaProxy == true) {
+        Box(
+          Modifier.size(36.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            painterResource(MR.images.ic_arrow_forward),
+            contentDescription = null,
+            tint = CurrentColors.value.colors.secondary
+          )
+        }
+      }
       val statusIcon = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
       var modifier = Modifier.size(36.dp).clip(RoundedCornerShape(20.dp))
       val info = status.statusInto
@@ -357,8 +369,8 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (mss.isNotEmpty()) {
         SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
-          mss.forEach { (member, status) ->
-            MemberDeliveryStatusView(member, status)
+          mss.forEach { (member, status, sentViaProxy) ->
+            MemberDeliveryStatusView(member, status, sentViaProxy)
           }
         }
       } else {
@@ -482,10 +494,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 }
 
-private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Pair<GroupMember, CIStatus>> {
+private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, CIStatus, Boolean?>> {
   return memberDeliveryStatuses.mapNotNull { mds ->
     chatModel.getGroupMember(mds.groupMemberId)?.let { mem ->
-      mem to mds.memberDeliveryStatus
+      Triple(mem, mds.memberDeliveryStatus, mds.sentViaProxy)
     }
   }
 }

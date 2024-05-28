@@ -139,9 +139,10 @@ struct VoiceMessagePlayer: View {
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
                 case .sndError: playbackButton()
-                case .rcvInvitation: downloadButton(recordingFile)
+                case .rcvInvitation: downloadButton(recordingFile, "play.fill")
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
+                case .rcvAborted: downloadButton(recordingFile, "exclamationmark.arrow.circlepath")
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
@@ -217,7 +218,7 @@ struct VoiceMessagePlayer: View {
         }
     }
 
-    private func downloadButton(_ recordingFile: CIFile) -> some View {
+    private func downloadButton(_ recordingFile: CIFile, _ icon: String) -> some View {
         Button {
             Task {
                 if let user = chatModel.currentUser {
@@ -225,7 +226,7 @@ struct VoiceMessagePlayer: View {
                 }
             }
         } label: {
-            playPauseIcon("play.fill")
+            playPauseIcon(icon)
         }
     }
 

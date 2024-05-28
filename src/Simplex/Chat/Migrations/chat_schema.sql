@@ -229,7 +229,8 @@ CREATE TABLE rcv_files(
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   agent_rcv_file_id BLOB NULL,
   agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL),
-  to_receive INTEGER
+  to_receive INTEGER,
+  user_approved_relays INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -392,7 +393,8 @@ CREATE TABLE chat_items(
   fwd_from_msg_dir INTEGER,
   fwd_from_contact_id INTEGER REFERENCES contacts ON DELETE SET NULL,
   fwd_from_group_id INTEGER REFERENCES groups ON DELETE SET NULL,
-  fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL
+  fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
+  via_proxy INTEGER
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -503,6 +505,8 @@ CREATE TABLE group_snd_item_statuses(
   group_snd_item_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  via_proxy INTEGER
 );
 CREATE TABLE IF NOT EXISTS "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,

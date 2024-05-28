@@ -155,4 +155,20 @@
     <string name="v5_3_new_interface_languages_descr">Arabă, Bulgară, Finlandeză, Ebraică, Thailandeză și Ucraineană - mulțumită utilizatorilor și Weblate.</string>
     <string name="calls_prohibited_with_this_contact">Apelurile audio/video sunt interzise.</string>
     <string name="item_info_current">(prezent)</string>
+    <string name="profile_update_event_removed_picture">Poză de profil eliminată</string>
+    <string name="dark_theme">Temă întunecată</string>
+    <string name="group_member_status_removed">eliminat</string>
+    <string name="theme_dark">Întunecată</string>
+    <string name="profile_update_event_removed_address">Adresă de contact eliminată</string>
+    <string name="v5_1_custom_themes_descr">Personalizează și distribuie teme colorate.</string>
+    <string name="v5_1_custom_themes">Teme personalizate</string>
+    <string name="migrate_to_device_repeat_download">Repetă descărcarea</string>
+    <string name="send_disappearing_message_custom_time">Timp personalizat</string>
+    <string name="remove_member_button">Elimină membru</string>
+    <string name="migrate_to_device_repeat_import">Repetă importarea</string>
+    <string name="customize_theme_title">Personalizează tema</string>
+    <string name="remove_passphrase">Elimină</string>
+    <string name="remove_member_confirmation">Elimină</string>
+    <string name="button_remove_member">Elimină membru</string>
+    <string name="button_remove_member_question">Elimini membrul?</string>
 </resources>

@@ -1461,7 +1461,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Chyba: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -2081,9 +2081,6 @@
 
 /* item status description */
 "Most likely this connection is deleted." = "Pravděpodobně je toto spojení smazáno.";
-
-/* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Tento kontakt s největší pravděpodobností smazal spojení s vámi.";
 
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Více chatovacích profilů";
@@ -3178,9 +3175,6 @@
 
 /* No comment provided by engineer. */
 "Unable to record voice message" = "Nelze nahrát hlasovou zprávu";
-
-/* item status description */
-"Unexpected error: %@" = "Neočekávaná chyba: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Neočekávaný stav přenášení";

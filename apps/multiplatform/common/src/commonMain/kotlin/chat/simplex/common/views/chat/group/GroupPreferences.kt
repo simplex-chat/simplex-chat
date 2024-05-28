@@ -123,13 +123,12 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(files = RoleGroupPreference(enable = enable, role)))
     }
 
-    // TODO enable simplexLinks preference in 5.8
-//    SectionDividerSpaced(true, maxBottomPadding = false)
-//    val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
-//    val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
-//    FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
-//      applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
-//    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
+    val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
+    FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
+    }
 
     SectionDividerSpaced(true, maxBottomPadding = false)
     val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
@@ -189,8 +188,6 @@ private fun FeatureSection(
           generalGetString(MR.strings.feature_enabled_for),
           featureRoles,
           enableForRole,
-          // remove in v5.8
-          enabled = remember { mutableStateOf(false) },
           onSelected = { value ->
             onSelected(enableFeature.value, value)
           }

@@ -34,8 +34,7 @@ struct GroupPreferencesView: View {
                 featureSection(.reactions, $preferences.reactions.enable)
                 featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
                 featureSection(.files, $preferences.files.enable, $preferences.files.role)
-                // TODO enable simplexLinks preference in 5.8
-                // featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
+                featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
                 featureSection(.history, $preferences.history.enable)
 
                 if groupInfo.canEdit {
@@ -102,8 +101,6 @@ struct GroupPreferencesView: View {
                         }
                     }
                     .frame(height: 36)
-                    // remove in v5.8
-                    .disabled(true)
                 }
             } else {
                 settingsRow(icon, color: color) {

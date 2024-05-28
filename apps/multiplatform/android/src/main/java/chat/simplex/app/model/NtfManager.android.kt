@@ -77,7 +77,7 @@ object NtfManager {
     val msgNtfs = manager.activeNotifications.filter { ntf ->
       ntf.notification.channelId == MessageChannel
     }
-    if (msgNtfs.count() == 1) {
+    if (msgNtfs.size <= 1) {
       // Have a group notification with no children so cancel it
       manager.cancel(0)
     }

@@ -4,7 +4,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -399,6 +399,18 @@ object ChatModel {
     currentUser.value = updated
   }
 
+  fun updateCurrentUserUiThemes(rhId: Long?, uiThemes: ThemeModeOverrides?) {
+    val current = currentUser.value ?: return
+    val updated = current.copy(
+      uiThemes = uiThemes
+    )
+    val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
+    if (i != -1) {
+      users[i] = users[i].copy(user = updated)
+    }
+    currentUser.value = updated
+  }
+
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
@@ -682,7 +694,8 @@ data class User(
   override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
-  val viewPwdHash: UserPwdHash?
+  val viewPwdHash: UserPwdHash?,
+  val uiThemes: ThemeModeOverrides? = null,
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
@@ -709,6 +722,7 @@ data class User(
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
       viewPwdHash = null,
+      uiThemes = null,
     )
   }
 }
@@ -1041,16 +1055,21 @@ data class Contact(
   override val updatedAt: Instant,
   val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
-  val contactGrpInvSent: Boolean
+  val contactGrpInvSent: Boolean,
+  val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn?.connStatus == ConnStatus.Ready
   val active get() = contactStatus == ContactStatus.Active
-  override val sendMsgEnabled get() =
-    (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false))
-        || nextSendGrpInv
+  override val sendMsgEnabled get() = (
+      ready
+          && active
+          && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false)
+          && !(activeConn?.connDisabled ?: true)
+      )
+      || nextSendGrpInv
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = contactConnIncognito
@@ -1109,7 +1128,8 @@ data class Contact(
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
-      contactGrpInvSent = false
+      contactGrpInvSent = false,
+      uiThemes = null,
     )
   }
 }
@@ -1150,15 +1170,19 @@ data class Connection(
   val pqEncryption: Boolean,
   val pqSndEnabled: Boolean? = null,
   val pqRcvEnabled: Boolean? = null,
-  val connectionStats: ConnectionStats? = null
+  val connectionStats: ConnectionStats? = null,
+  val authErrCounter: Int
 ) {
   val id: ChatId get() = ":$connId"
+
+  val connDisabled: Boolean
+    get() = authErrCounter >= 10 // authErrDisableCount in core
 
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
 
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false, authErrCounter = 0)
   }
 }
 
@@ -1245,7 +1269,8 @@ data class GroupInfo (
   val chatSettings: ChatSettings,
   override val createdAt: Instant,
   override val updatedAt: Instant,
-  val chatTs: Instant?
+  val chatTs: Instant?,
+  val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1287,7 +1312,8 @@ data class GroupInfo (
       chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
-      chatTs = Clock.System.now()
+      chatTs = Clock.System.now(),
+      uiThemes = null,
     )
   }
 }
@@ -1900,18 +1926,20 @@ data class ChatItem (
       ts: Instant = Clock.System.now(),
       text: String = "hello\nthere",
       status: CIStatus = CIStatus.SndNew(),
+      sentViaProxy: Boolean? = null,
       quotedItem: CIQuote? = null,
       file: CIFile? = null,
       itemForwarded: CIForwardedFrom? = null,
       itemDeleted: CIDeleted? = null,
       itemEdited: Boolean = false,
       itemTimed: CITimed? = null,
+      itemLive: Boolean = false,
       deletable: Boolean = true,
       editable: Boolean = true
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, itemForwarded, itemDeleted, itemEdited, itemTimed, deletable, editable),
+        meta = CIMeta.getSample(id, ts, text, status, sentViaProxy, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
         reactions = listOf(),
@@ -1993,6 +2021,7 @@ data class ChatItem (
           itemTs = Clock.System.now(),
           itemText = generalGetString(MR.strings.deleted_description),
           itemStatus = CIStatus.RcvRead(),
+          sentViaProxy = null,
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
           itemForwarded = null,
@@ -2016,6 +2045,7 @@ data class ChatItem (
           itemTs = Clock.System.now(),
           itemText = "",
           itemStatus = CIStatus.RcvRead(),
+          sentViaProxy = null,
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
           itemForwarded = null,
@@ -2118,6 +2148,7 @@ data class CIMeta (
   val itemTs: Instant,
   val itemText: String,
   val itemStatus: CIStatus,
+  val sentViaProxy: Boolean?,
   val createdAt: Instant,
   val updatedAt: Instant,
   val itemForwarded: CIForwardedFrom?,
@@ -2144,7 +2175,7 @@ data class CIMeta (
 
   companion object {
     fun getSample(
-      id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
+      id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(), sentViaProxy: Boolean? = null,
       itemForwarded: CIForwardedFrom? = null, itemDeleted: CIDeleted? = null, itemEdited: Boolean = false,
       itemTimed: CITimed? = null, itemLive: Boolean = false, deletable: Boolean = true, editable: Boolean = true
     ): CIMeta =
@@ -2153,6 +2184,7 @@ data class CIMeta (
         itemTs = ts,
         itemText = text,
         itemStatus = status,
+        sentViaProxy = sentViaProxy,
         createdAt = ts,
         updatedAt = ts,
         itemForwarded = itemForwarded,
@@ -2171,6 +2203,7 @@ data class CIMeta (
         itemTs = Clock.System.now(),
         itemText = "invalid JSON",
         itemStatus = CIStatus.SndNew(),
+        sentViaProxy = null,
         createdAt = Clock.System.now(),
         updatedAt = Clock.System.now(),
         itemForwarded = null,
@@ -2227,7 +2260,8 @@ sealed class CIStatus {
   @Serializable @SerialName("sndSent") class SndSent(val sndProgress: SndCIStatusProgress): CIStatus()
   @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus, val sndProgress: SndCIStatusProgress): CIStatus()
   @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
-  @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
+  @Serializable @SerialName("sndError") class CISSndError(val agentError: SndError): CIStatus()
+  @Serializable @SerialName("sndWarning") class SndWarning(val agentError: SndError): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
@@ -2251,7 +2285,8 @@ sealed class CIStatus {
         MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
       }
       is SndErrorAuth -> MR.images.ic_close to Color.Red
-      is SndError -> MR.images.ic_warning_filled to WarningYellow
+      is CISSndError -> MR.images.ic_close to Color.Red
+      is SndWarning -> MR.images.ic_warning_filled to WarningOrange
       is RcvNew -> MR.images.ic_circle_filled to primaryColor
       is RcvRead -> null
       is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
@@ -2262,10 +2297,45 @@ sealed class CIStatus {
     is SndSent -> null
     is SndRcvd -> null
     is SndErrorAuth -> generalGetString(MR.strings.message_delivery_error_title) to generalGetString(MR.strings.message_delivery_error_desc)
-    is SndError -> generalGetString(MR.strings.message_delivery_error_title) to (generalGetString(MR.strings.unknown_error) + ": $agentError")
+    is CISSndError -> generalGetString(MR.strings.message_delivery_error_title) to agentError.errorInfo
+    is SndWarning -> generalGetString(MR.strings.message_delivery_warning_title) to agentError.errorInfo
     is RcvNew -> null
     is RcvRead -> null
     is Invalid -> "Invalid status" to this.text
+  }
+}
+
+@Serializable
+sealed class SndError {
+  @Serializable @SerialName("auth") class Auth: SndError()
+  @Serializable @SerialName("quota") class Quota: SndError()
+  @Serializable @SerialName("expired") class Expired: SndError()
+  @Serializable @SerialName("relay") class Relay(val srvError: SrvError): SndError()
+  @Serializable @SerialName("proxy") class Proxy(val proxyServer: String, val srvError: SrvError): SndError()
+  @Serializable @SerialName("proxyRelay") class ProxyRelay(val proxyServer: String, val srvError: SrvError): SndError()
+  @Serializable @SerialName("other") class Other(val sndError: String): SndError()
+
+  val errorInfo: String get() = when (this) {
+    is SndError.Auth -> generalGetString(MR.strings.snd_error_auth)
+    is SndError.Quota -> generalGetString(MR.strings.snd_error_quota)
+    is SndError.Expired -> generalGetString(MR.strings.snd_error_expired)
+    is SndError.Relay -> generalGetString(MR.strings.snd_error_relay).format(srvError.errorInfo)
+    is SndError.Proxy -> generalGetString(MR.strings.snd_error_proxy).format(proxyServer, srvError.errorInfo)
+    is SndError.ProxyRelay -> generalGetString(MR.strings.snd_error_proxy_relay).format(proxyServer, srvError.errorInfo)
+    is SndError.Other -> generalGetString(MR.strings.ci_status_other_error).format(sndError)
+  }
+}
+
+@Serializable
+sealed class SrvError {
+  @Serializable @SerialName("host") class Host: SrvError()
+  @Serializable @SerialName("version") class Version: SrvError()
+  @Serializable @SerialName("other") class Other(val srvError: String): SrvError()
+
+  val errorInfo: String get() = when (this) {
+    is SrvError.Host -> generalGetString(MR.strings.srv_error_host)
+    is SrvError.Version -> generalGetString(MR.strings.srv_error_version)
+    is SrvError.Other -> srvError
   }
 }
 
@@ -2593,6 +2663,7 @@ data class CIFile(
     is CIFileStatus.RcvInvitation -> false
     is CIFileStatus.RcvAccepted -> false
     is CIFileStatus.RcvTransfer -> false
+    is CIFileStatus.RcvAborted -> false
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
     is CIFileStatus.RcvError -> false
@@ -2614,6 +2685,7 @@ data class CIFile(
     is CIFileStatus.RcvInvitation -> null
     is CIFileStatus.RcvAccepted -> rcvCancelAction
     is CIFileStatus.RcvTransfer -> rcvCancelAction
+    is CIFileStatus.RcvAborted -> null
     is CIFileStatus.RcvCancelled -> null
     is CIFileStatus.RcvComplete -> null
     is CIFileStatus.RcvError -> null
@@ -2651,6 +2723,12 @@ data class CIFile(
       AlertManager.shared.hideAlert()
     }
     return res
+  }
+
+  fun forwardingAllowed(): Boolean = when {
+    chatModel.connectedToRemote() && cachedRemoteFileRequests[fileSource] != false && loaded -> true
+    getLoadedFilePath(this) != null -> true
+    else -> false
   }
 
   companion object {
@@ -2788,6 +2866,7 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvInvitation") object RcvInvitation: CIFileStatus()
   @Serializable @SerialName("rcvAccepted") object RcvAccepted: CIFileStatus()
   @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Long, val rcvTotal: Long): CIFileStatus()
+  @Serializable @SerialName("rcvAborted") object RcvAborted: CIFileStatus()
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
@@ -2802,6 +2881,7 @@ sealed class CIFileStatus {
     is RcvInvitation -> false
     is RcvAccepted -> false
     is RcvTransfer -> false
+    is RcvAborted -> false
     is RcvComplete -> false
     is RcvCancelled -> false
     is RcvError -> false
@@ -3348,7 +3428,8 @@ data class ChatItemVersion(
 @Serializable
 data class MemberDeliveryStatus(
   val groupMemberId: Long,
-  val memberDeliveryStatus: CIStatus
+  val memberDeliveryStatus: CIStatus,
+  val sentViaProxy: Boolean?
 )
 
 enum class NotificationPreviewMode {

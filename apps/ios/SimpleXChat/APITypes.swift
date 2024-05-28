@@ -48,7 +48,7 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
-    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64)
+    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -123,8 +123,8 @@ public enum ChatCommand {
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
-    case setFileToReceive(fileId: Int64, encrypted: Bool?)
+    case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
+    case setFileToReceive(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?)
     case cancelFile(fileId: Int64)
     // remote desktop commands
     case setLocalDeviceName(displayName: String)
@@ -192,7 +192,9 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
-            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId): return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId)"
+            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
+                let ttlStr = ttl != nil ? "\(ttl!)" : "default"
+                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId) ttl=\(ttlStr)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -280,8 +282,8 @@ public enum ChatCommand {
             case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
-            case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
+            case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
             case let .connectRemoteCtrl(xrcpInv): return "/connect remote ctrl \(xrcpInv)"
@@ -639,6 +641,7 @@ public enum ChatResponse: Decodable, Error {
     case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
+    case contactDisabled(user: UserRef, contact: Contact)
     // remote desktop responses/events
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
     case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
@@ -796,6 +799,7 @@ public enum ChatResponse: Decodable, Error {
             case .ntfMessages: return "ntfMessages"
             case .ntfMessage: return "ntfMessage"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
+            case .contactDisabled: return "contactDisabled"
             case .remoteCtrlList: return "remoteCtrlList"
             case .remoteCtrlFound: return "remoteCtrlFound"
             case .remoteCtrlConnecting: return "remoteCtrlConnecting"
@@ -953,6 +957,7 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
+            case let .contactDisabled(u, contact): return withUser(u, String(describing: contact))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
             case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
             case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
@@ -1242,9 +1247,12 @@ public struct ServerAddress: Decodable {
 
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
+    var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
     public var sessionMode: TransportSessionMode
+    public var smpProxyMode: SMPProxyMode = .never
+    public var smpProxyFallback: SMPProxyFallback = .allow
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
@@ -1287,6 +1295,49 @@ public enum HostMode: String, Codable {
     case onionViaSocks
     case onionHost = "onion"
     case publicHost = "public"
+}
+
+public enum SocksMode: String, Codable {
+    case always = "always"
+    case onion = "onion"
+}
+
+public enum SMPProxyMode: String, Codable {
+    case always = "always"
+    case unknown = "unknown"
+    case unprotected = "unprotected"
+    case never = "never"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .always: return "always"
+        case .unknown: return "unknown relays"
+        case .unprotected: return "unprotected"
+        case .never: return "never"
+        }
+    }
+
+    public var id: SMPProxyMode { self }
+
+    public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
+}
+
+public enum SMPProxyFallback: String, Codable {
+    case allow = "allow"
+    case allowProtected = "allowProtected"
+    case prohibit = "prohibit"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .allow: return "yes"
+        case .allowProtected: return "when IP hidden"
+        case .prohibit: return "no"
+        }
+    }
+
+    public var id: SMPProxyFallback { self }
+
+    public static let values: [SMPProxyFallback] = [.allow, .allowProtected, .prohibit]
 }
 
 public enum OnionHosts: String, Identifiable {
@@ -1709,6 +1760,7 @@ public enum ChatErrorType: Decodable {
     case fileImageType(filePath: String)
     case fileImageSize(filePath: String)
     case fileNotReceived(fileId: Int64)
+    case fileNotApproved(fileId: Int64, unknownServers: [String])
     // case xFTPRcvFile
     // case xFTPSndFile
     case fallbackToSMPProhibited(fileId: Int64)
@@ -1987,6 +2039,7 @@ public struct MigrationFileLinkData: Codable {
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
+    public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
     public var privacyLinkPreviews: Bool? = nil
     public var privacyShowChatPreviews: Bool? = nil
@@ -2010,6 +2063,7 @@ public struct AppSettings: Codable, Equatable {
         let def = AppSettings.defaults
         if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
         if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+        if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -2034,6 +2088,7 @@ public struct AppSettings: Codable, Equatable {
         AppSettings (
             networkConfig: NetCfg.defaults,
             privacyEncryptLocalFiles: true,
+            privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
             privacyShowChatPreviews: true,
