@@ -1459,7 +1459,7 @@
     <string name="open_database_folder">Datenbank-Ordner öffnen</string>
     <string name="passphrase_will_be_saved_in_settings">Das Passwort wird in Klartext in den Einstellungen gespeichert, nachdem Sie es geändert oder die App neu gestartet haben.</string>
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
-    <string name="socks_proxy_setting_limitations"><b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
     <string name="rcv_group_event_open_chat">Öffnen</string>
     <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>

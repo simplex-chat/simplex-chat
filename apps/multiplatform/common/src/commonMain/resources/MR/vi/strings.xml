@@ -176,8 +176,8 @@
     <string name="callstatus_calling">đang gọi…</string>
     <string name="v4_5_transport_isolation_descr">Theo hồ sơ trò chuyện (mặc định) hoặc theo kết nối (BETA).</string>
     <string name="callstatus_in_progress">cuộc gọi đang chờ</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Sử dụng nhiều pin hơn</b>! Dịch vụ chạy nền luôn luôn chạy - thông báo sẽ được hiển thị ngay khi nhận được tin nhắn.</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Cảnh báo</b>: kho lưu trữ sẽ bị xóa.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Sử dụng nhiều pin hơn</b>! Dịch vụ chạy nền luôn luôn chạy - thông báo sẽ được hiển thị ngay khi nhận được tin nhắn.]]></string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Cảnh báo</b>: kho lưu trữ sẽ bị xóa.]]></string>
     <string name="icon_descr_call_progress">Cuộc gọi đang chờ</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Cho phép hạ cấp</string>
     <string name="call_already_ended">Cuộc gọi đã kết thúc!</string>

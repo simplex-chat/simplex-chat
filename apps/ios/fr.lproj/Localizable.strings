@@ -1306,7 +1306,7 @@
 "Delivery receipts are disabled!" = "Les accusés de réception sont désactivés !";
 
 /* No comment provided by engineer. */
-"Delivery receipts!" = "Justificatifs de réception!";
+"Delivery receipts!" = "Justificatifs de réception !";
 
 /* No comment provided by engineer. */
 "Description" = "Description";
@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Erreur : ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Erreur : %@";
 
 /* No comment provided by engineer. */
@@ -1876,7 +1876,7 @@
 "Fix connection" = "Réparer la connexion";
 
 /* No comment provided by engineer. */
-"Fix connection?" = "Réparer la connexion?";
+"Fix connection?" = "Réparer la connexion ?";
 
 /* No comment provided by engineer. */
 "Fix encryption after restoring backups." = "Réparer le chiffrement après la restauration des sauvegardes.";
@@ -2569,9 +2569,6 @@
 "Most likely this connection is deleted." = "Connexion probablement supprimée.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Il est fort probable que ce contact ait supprimé la connexion avec vous.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Différents profils de chat";
 
 /* No comment provided by engineer. */
@@ -3078,9 +3075,6 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "L'adresse de réception sera changée pour un autre serveur. Le changement d'adresse sera terminé lorsque l'expéditeur sera en ligne.";
 
 /* No comment provided by engineer. */
-"Receiving concurrency" = "Réception simultanée";
-
-/* No comment provided by engineer. */
 "Receiving file will be stopped." = "La réception du fichier sera interrompue.";
 
 /* No comment provided by engineer. */
@@ -3099,7 +3093,7 @@
 "Reconnect all connected servers to force message delivery. It uses additional traffic." = "Reconnecter tous les serveurs connectés pour forcer la livraison des messages. Cette méthode utilise du trafic supplémentaire.";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Reconnecter les serveurs?";
+"Reconnect servers?" = "Reconnecter les serveurs ?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Enregistrement mis à jour le";
@@ -3162,7 +3156,7 @@
 "Renegotiate encryption" = "Renégocier le chiffrement";
 
 /* No comment provided by engineer. */
-"Renegotiate encryption?" = "Renégocier le chiffrement?";
+"Renegotiate encryption?" = "Renégocier le chiffrement ?";
 
 /* No comment provided by engineer. */
 "Repeat connection request?" = "Répéter la demande de connexion ?";
@@ -3920,9 +3914,6 @@
 /* rcv group event chat item */
 "unblocked %@" = "%@ débloqué";
 
-/* item status description */
-"Unexpected error: %@" = "Erreur inattendue : %@";
-
 /* No comment provided by engineer. */
 "Unexpected migration state" = "État de la migration inattendu";
 
@@ -4170,7 +4161,7 @@
 "wants to connect to you!" = "veut établir une connexion !";
 
 /* No comment provided by engineer. */
-"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Attention: démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages";
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Attention : démarrer une session de chat sur plusieurs appareils n'est pas pris en charge et entraînera des dysfonctionnements au niveau de la transmission des messages";
 
 /* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Attention : vous risquez de perdre des données !";

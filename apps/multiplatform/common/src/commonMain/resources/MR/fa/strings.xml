@@ -323,7 +323,7 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">مخاطب و تمام پیام‌ها حذف خواهند شد - این عمل قابل برگشت نیست!</string>
     <string name="allow_voice_messages_question">پیام‌های صوتی مجازند؟</string>
     <string name="voice_messages_prohibited">پیام‌های صوتی ممنوع هستند!</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 کامپیوتر: از برنامه کد QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن کد QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 کامپیوتر: از برنامه کد QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن کد QR</b>.]]></string>
     <string name="share_file">اشتراک‌گذاری پرونده…</string>
     <string name="images_limit_title">تعداد تصویر بیش از اندازه!</string>
     <string name="tap_to_scan">برای اسکن لمس کنید</string>
@@ -532,7 +532,7 @@
     <string name="configure_ICE_servers">تنظیم سرورهای ICE</string>
     <string name="contact_wants_to_connect_with_you">می‌خواهد به شما متصل شود!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">وقتی دستگاه مخاطبتان آنلاین شد، متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>کد QR را در تماس تصویری اسکن کنید</b>، یا مخاطبتان می‌تواند یک لینک دعوت به اشتراک بگذارد.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>کد QR را در تماس تصویری اسکن کنید</b>، یا مخاطبتان می‌تواند یک لینک دعوت به اشتراک بگذارد.]]></string>
     <string name="keep_unused_invitation_question">دعوت استعمال نشده نگه داشته شود؟</string>
     <string name="your_simplex_contact_address">نشانی‌ SimpleX شما</string>
     <string name="markdown_in_messages">مارکداون در پیام‌ها</string>
@@ -577,7 +577,7 @@
     <string name="show_QR_code">نمایش کد QR</string>
     <string name="invalid_QR_code">کد QR نامعتبر</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">وقتی درخواست اتصال شما پذیرفته شد، متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>کد QR را در تماس تصویری نمایش دهید</b>، یا لینک را به اشتراک بگذارید.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>کد QR را در تماس تصویری نمایش دهید</b>، یا لینک را به اشتراک بگذارید.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">نمایه گپ شما ارسال خواهد شد
 \nبه مخاطبتان</string>
     <string name="learn_more">اطلاعات بیشتر</string>
@@ -737,11 +737,11 @@
     <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">نمایه خود را ایجاد کنید</string>
     <string name="how_simplex_works">SimpleX چگونه کار می‌کند</string>
-    <string name="many_people_asked_how_can_it_deliver">اشخاص زیادی پرسیده‌اند: <i>اگر SimpleX هیچ شناسه کاربری ندارد، چگونه می‌تواند پیام‌ها را تحویل دهد؟</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[اشخاص زیادی پرسیده‌اند: <i>اگر SimpleX هیچ شناسه کاربری ندارد، چگونه می‌تواند پیام‌ها را تحویل دهد؟</i>]]></string>
     <string name="read_more_in_github">مطالعه بیشتر در مخزن GitHub ما.</string>
-    <string name="read_more_in_github_with_link">مطالعه بیشتر در &lt;font color=#0088ff&gt;مخزن GitHub&lt;/font&gt; ما.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
     <string name="use_chat">استفاده از گپ</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>
     <string name="call_on_lock_screen">تماس‌ها روی صفحه قفل:</string>
     <string name="accept_call_on_lock_screen">پذیرفتن</string>
     <string name="relay_server_protects_ip">سرور واسط از نشانی IP شما محافظت می‌کند، اما سرور می‌تواند مدت تماس را مشاهده کند.</string>
@@ -776,12 +776,12 @@
     <string name="delete_database">حذف پایگاه داده</string>
     <string name="chat_database_imported">پایگاه داده گپ وارد شد</string>
     <string name="total_files_count_and_size">%d پرونده با اندازه کل %s</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">فقط دستگاه‌های کلاینت نمایه‌های کاربر، مخاطبان، گروه‌ها و پیام‌های ارسالی با <b>رمزگذاری سرتاسر دو لایه</b> را ذخیره می‌کنند.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[فقط دستگاه‌های کلاینت نمایه‌های کاربر، مخاطبان، گروه‌ها و پیام‌های ارسالی با <b>رمزگذاری سرتاسر دو لایه</b> را ذخیره می‌کنند.]]></string>
     <string name="ignore">نادیده گرفتن</string>
     <string name="audio_device_bluetooth">بلوتوث</string>
     <string name="import_database">وارد کردن پایگاه داده</string>
     <string name="people_can_connect_only_via_links_you_share">اشخاص فقط از طریق لینک‌هایی که به اشتراک می‌گذارید می‌توانند به شما متصل شوند.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">شما کنترل می‌کنید پیام‌ها از طریق چه سرورهایی <b>دریافت شوند</b> و از چه سرورهایی به مخاطبان خود پیام می‌فرستید.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[شما کنترل می‌کنید پیام‌ها از طریق چه سرورهایی <b>دریافت شوند</b> و از چه سرورهایی به مخاطبان خود پیام می‌فرستید.]]></string>
     <string name="call_already_ended">تماس از پیش پایان یافته!</string>
     <string name="integrity_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="auto_accept_images">پذیرفتن خودکار تصاویر</string>
@@ -889,7 +889,7 @@
     <string name="settings_section_title_icon">آیکون برنامه</string>
     <string name="chat_database_section">پایگاه داده گپ</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">بن‌سازه پیام‌رسانی و کاربردی که از حریم خصوصی و امنیت شما محافظت می‌کند.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>گزینه خوب برای باتری</b>. سرویس پس‌زمینه هر ۱۰ دقیقه پیام‌ها را بررسی می‌کند. ممکن است تماس‌ها یا پیام‌های ضروری را از دست دهید.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>گزینه خوب برای باتری</b>. سرویس پس‌زمینه هر ۱۰ دقیقه پیام‌ها را بررسی می‌کند. ممکن است تماس‌ها یا پیام‌های ضروری را از دست دهید.]]></string>
     <string name="alert_title_skipped_messages">پیام‌ها از قلم افتادند</string>
     <string name="unable_to_open_browser_desc">مرورگر وب پیش‌فرض برای تماس‌ها لازم است. لطفا مرورگر پیش‌فرض را در سیستم تنظیم کنید، و اطلاعات بیشتر را با توسعه‌دهندگان به اشتراک بگذارید.</string>
     <string name="relay_server_if_necessary">سرور واسط فقط در زمان نیاز مورد استفاده قرار می‌گیرد. طرف دیگری قادر به مشاهده نشانی IP شما خواهد بود.</string>
@@ -935,7 +935,7 @@
     <string name="permissions_grant">اعطای اجازه‌ها برای برقراری تماس‌ها</string>
     <string name="privacy_redefined">حریم خصوصی باز تعریف شده</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">برای حفاظت از حریم خصوصی، به جای شناسه‌های کاربری مورد استفاده در بن‌سازه‌های دیگر، SimpleX شناسه‌هایی برای صفوف پیام دارد، جدا برای هر کدام از مخاطبان شما.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که:
 \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند.
 \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید.
@@ -992,7 +992,7 @@
     <string name="group_member_status_removed">حذف شد</string>
     <string name="new_member_role">نقش عضو جدید</string>
     <string name="remove_passphrase_from_settings">عبارت عبور از تنظیمات پاک شود؟</string>
-    <string name="impossible_to_recover_passphrase"><b>لطفا توجه داشته باشید</b>: اگر عبارت عبور را از دست بدهید، قادر نخواهید بود آن را بازیابی کنید یا تغییر دهید.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>لطفا توجه داشته باشید</b>: اگر عبارت عبور را از دست بدهید، قادر نخواهید بود آن را بازیابی کنید یا تغییر دهید.]]></string>
     <string name="wrong_passphrase">عبارت عبور پایگاه داده اشتباه</string>
     <string name="file_with_path">پرونده: %s</string>
     <string name="database_passphrase_is_required">عبارت عبور پایگاه داده برای گشودن گپ الزامی است.</string>
@@ -1472,11 +1472,11 @@
     <string name="connect_to_desktop">اتصال به کامپیوتر</string>
     <string name="linked_desktops">کامپیوترهای متصل</string>
     <string name="remote_ctrl_error_disconnected">اتصال کامپیوتر قطع شد</string>
-    <string name="remote_host_error_bad_state">اتصال به موبایل <b>%s</b> در وضع بدی است</string>
+    <string name="remote_host_error_bad_state"><![CDATA[اتصال به موبایل <b>%s</b> در وضع بدی است]]></string>
     <string name="connect_plan_connect_to_yourself">به خودتان متصل می‌شوید؟</string>
     <string name="migrate_to_device_error_downloading_archive">خطا در بارگیری آرشیو</string>
     <string name="migrate_from_device_cancel_migration">لغو جابه‌جایی</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>هشدار</b>: آرشیو حذف خواهد شد.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>هشدار</b>: آرشیو حذف خواهد شد.]]></string>
     <string name="connect_plan_already_connecting">هم اکنون در حال اتصال هستید!</string>
     <string name="network_smp_proxy_mode_always">همیشه</string>
     <string name="network_smp_proxy_mode_always_description">همیشه از مسیریابی خصوصی استفاده شود.</string>
@@ -1486,8 +1486,8 @@
     <string name="v4_3_improved_server_configuration_desc">سرورها را به وسیله اسکن کد QR اضافه کنید.</string>
     <string name="v5_6_safer_groups_descr">مدیران می‌توانند یک عضو را برای همه مسدود کنند.</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">اجازه تنزل</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>لطفا توجه داشته باشید</b>: به منظور حفاظت امنیت، استفاده از پایگاه داده یکسان در دو دستگاه، رمزگشایی پیام‌های اتصال‌های شما را از کار خواهد انداخت.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">از دستگاه جدید <i>جابه‌جایی از دستگاهی دیگر</i> را انتخاب و کد QR را اسکن کنید.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>لطفا توجه داشته باشید</b>: به منظور حفاظت امنیت، استفاده از پایگاه داده یکسان در دو دستگاه، رمزگشایی پیام‌های اتصال‌های شما را از کار خواهد انداخت.]]></string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[از دستگاه جدید <i>جابه‌جایی از دستگاهی دیگر</i> را انتخاب و کد QR را اسکن کنید.]]></string>
     <string name="migrate_to_device_confirm_network_settings">تایید تنظیمات شبکه</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">تایید کنید که عبارت عبور پایگاه داده رای برای جابه‌جایی آن به خاطر دارید.</string>
     <string name="connected_desktop">کامپیوتر متصل شد</string>
@@ -1513,7 +1513,7 @@
     <string name="v5_4_link_mobile_desktop_descr">به وسیله پروتکل امن مقاوم در برابر کوانتوم.</string>
     <string name="v5_4_block_group_members">مسدودسازی اعضای گروه</string>
     <string name="error">خطا</string>
-    <string name="remote_host_disconnected_from">اتصال از موبایل <b>%s</b> قطع شد، به دلیل: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[اتصال از موبایل <b>%s</b> قطع شد، به دلیل: %s]]></string>
     <string name="desktop_device">کامپیوتر</string>
     <string name="v4_6_chinese_spanish_interface">رابط چینی و اسپانیایی</string>
     <string name="v4_5_transport_isolation_descr">به وسیله نمایه گپ (پیش‌فرض) یا به وسیله اتصال (آزمایشی).</string>
@@ -1561,7 +1561,7 @@
     <string name="v5_3_discover_join_groups">یافتن و پیوستن به گروه‌ها</string>
     <string name="v5_4_incognito_groups_descr">ایجاد یک گروه با استفاده از یک نمایه تصادفی.</string>
     <string name="v5_6_app_data_migration">جابه‌جایی اطلاعات برنامه</string>
-    <string name="open_on_mobile_and_scan_qr_code"><i>استفاده از کامپیوتر</i> را در برنامه موبایل باز و کد QR را اسکن کنید.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[<i>استفاده از کامپیوتر</i> را در برنامه موبایل باز و کد QR را اسکن کنید.]]></string>
     <string name="migrate_to_device_downloading_archive">در حال بارگیری آرشیو</string>
     <string name="migrate_from_device_error_exporting_archive">خطا در صدور پایگاه داده گپ</string>
     <string name="migrate_from_device_error_saving_settings">خطا در ذخیره تنظیمات</string>
@@ -1571,7 +1571,7 @@
     <string name="disconnect_remote_hosts">قطع اتصال موبایل‌ها</string>
     <string name="connected_to_mobile">به موبایل متصل شد</string>
     <string name="enter_this_device_name">نام این دستگاه را وارد کنید…</string>
-    <string name="new_desktop"><i>(جدید)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(جدید)</i>]]></string>
     <string name="v4_2_auto_accept_contact_requests">پذیرفتن خودکار درخواست‌های مخاطب</string>
     <string name="bad_desktop_address">نشانی کامپیوتر ناصحیح</string>
     <string name="desktop_incompatible_version">نسخه ناسازگار</string>
@@ -1623,16 +1623,16 @@
     <string name="you_can_enable_delivery_receipts_later">می‌توانید بعدا از طریق تنظیمات آن را فعال کنید</string>
     <string name="this_device_name">نام این دستگاه</string>
     <string name="verify_code_on_mobile">تایید کد در موبایل</string>
-    <string name="remote_host_was_disconnected_toast">موبایل <b>%s</b> قطع شد</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[موبایل <b>%s</b> قطع شد]]></string>
     <string name="this_device">این دستگاه</string>
     <string name="waiting_for_mobile_to_connect">در انتظار متصل شدن موبایل:</string>
-    <string name="remote_host_error_busy">موبایل <b>%s</b> مشغول است</string>
+    <string name="remote_host_error_busy"><![CDATA[موبایل <b>%s</b> مشغول است]]></string>
     <string name="random_port">تصادفی</string>
     <string name="refresh_qr_code">تجدید</string>
-    <string name="remote_host_error_bad_version">موبایل <b>%s</b> نسخه پشتیبانی نشده دارد. لطفا، اطمینان حاصل کنید که از نسخه یکسان روی هر دو دستگاه استفاده می‌کنید</string>
-    <string name="remote_host_error_disconnected">اتصال موبایل <b>%s</b> قطع شد</string>
+    <string name="remote_host_error_bad_version"><![CDATA[موبایل <b>%s</b> نسخه پشتیبانی نشده دارد. لطفا، اطمینان حاصل کنید که از نسخه یکسان روی هر دو دستگاه استفاده می‌کنید]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[اتصال موبایل <b>%s</b> قطع شد]]></string>
     <string name="in_developing_desc">این ویژگی هنوز پشتیبانی نمی‌شود. انتشار بعدی را امتحان کنید.</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">شما هم اکنون در حال اتصال به <b>%1$s</b> هستید.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[شما هم اکنون در حال اتصال به <b>%1$s</b> هستید.]]></string>
     <string name="connect_plan_group_already_exists">گروه از قبل وجود دارد!</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">شما هم اکنون در حال پیوستن به گروه از طریق این لینک هستید.</string>
     <string name="migrate_to_device_importing_archive">در حال وارد کردن آرشیو</string>
@@ -1649,7 +1649,7 @@
     <string name="v4_5_reduced_battery_usage_descr">بهبودهای بیشتر به زودی!</string>
     <string name="not_compatible">سازگار نیست!</string>
     <string name="verify_connections">تایید اتصال‌ها</string>
-    <string name="remote_host_error_inactive">موبایل <b>%s</b> غیرفعال است</string>
+    <string name="remote_host_error_inactive"><![CDATA[موبایل <b>%s</b> غیرفعال است]]></string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">شما از پیش اتصال به وسیله این نشانی را درخواست کرده‌اید!</string>
     <string name="restart_chat_button">شروع مجدد گپ</string>
     <string name="v5_2_disappear_one_message_descr">حتی وقتی در مکالمه غیرفعال باشند.</string>
@@ -1677,7 +1677,7 @@
     <string name="network_smp_proxy_fallback_allow_protected">وقتی IP پنهان است</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">شما هم اکنون در حال اتصال از طریق لینک یک‌بارمصرف هستید!</string>
     <string name="v4_6_hidden_chat_profiles">نمایه‌های گپ پنهان</string>
-    <string name="this_device_version"><i>(این دستگاه v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(این دستگاه v%s)</i>]]></string>
     <string name="link_a_mobile">متصل کردن یک موبایل</string>
     <string name="v4_5_message_draft">پیش‌نویس پیام</string>
     <string name="v4_3_voice_messages_desc">حداکثر ۴۰ ثانیه، دریافت فوری.</string>
@@ -1688,7 +1688,7 @@
     <string name="v4_6_reduced_battery_usage_descr">بهبودهای بیشتر به زودی!</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
     <string name="v5_2_message_delivery_receipts">رسیدهای تحویل پیام!</string>
-    <string name="remote_host_error_timeout">مهلت زمانی هنگام اتصال به موبایل <b>%s</b> به پایان رسید</string>
+    <string name="remote_host_error_timeout"><![CDATA[مهلت زمانی هنگام اتصال به موبایل <b>%s</b> به پایان رسید]]></string>
     <string name="agent_critical_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
 \n%s
 \n
@@ -1719,7 +1719,7 @@
     <string name="v4_4_verify_connection_security">تایید امنیت اتصال</string>
     <string name="migrate_to_device_database_init">در حال آماده‌سازی بارگیری</string>
     <string name="migrate_from_device_migration_complete">جابه‌جایی کامل شد</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device">شما <b>نباید</b> از یک پایگاه داده روی دو دستگاه استفاده کنید.</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[شما <b>نباید</b> از یک پایگاه داده روی دو دستگاه استفاده کنید.]]></string>
     <string name="v4_6_group_welcome_message">پیام خوشامدگویی گروه</string>
     <string name="v5_4_more_things_descr">- مطلع کردن اختیاری مخاطبان حذف شده.
 \n- نام‌های نمایه شامل فاصله.
@@ -1731,7 +1731,7 @@
     <string name="v5_6_picture_in_picture_calls">تماس‌های تصویر در تصویر</string>
     <string name="v5_6_picture_in_picture_calls_descr">استفاده از برنامه در حین مکالمه.</string>
     <string name="migrate_to_device_migrating">در حال جابه‌جایی</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">این لینک شما است برای گروه <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[این لینک شما است برای گروه <b>%1$s</b>!]]></string>
     <string name="v4_3_improved_privacy_and_security">امنیت و حریم خصوصی بهبودیافته</string>
     <string name="v4_3_improved_privacy_and_security_desc">پنهان کردن صفحه برنامه در برنامه‌های اخیر.</string>
     <string name="v4_4_live_messages">پیام‌های زنده</string>
@@ -1752,11 +1752,11 @@
     <string name="custom_time_unit_hours">ساعت</string>
     <string name="you_can_enable_delivery_receipts_later_alert">می‌توانید بعدا از طریق تنظیمات حریم خصوصی و امنیت برنامه آن‌ها را فعال کنید.</string>
     <string name="open_port_in_firewall_title">گشودن پورت در فایروال</string>
-    <string name="remote_host_error_missing">موبایل <b>%s</b> مفقود است</string>
+    <string name="remote_host_error_missing"><![CDATA[موبایل <b>%s</b> مفقود است]]></string>
     <string name="open_port_in_firewall_desc">برای اجازه دادن به برنامه موبایل به کامپیوتر متصل شوید، این پورت را در فایروال خود باز کنید، اگر فعال است</string>
     <string name="agent_internal_error_title">خطای داخلی</string>
     <string name="migrate_to_device_title">جابه‌جایی به اینجا</string>
-    <string name="connect_plan_you_are_already_in_group_vName">شما هم اکنون در گروه <b>%1$s</b> هستید.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[شما هم اکنون در گروه <b>%1$s</b> هستید.]]></string>
     <string name="migrate_to_device_repeat_download">تکرار بارگیری</string>
     <string name="migrate_to_device_import_failed">وارد کردن ناموفق بود</string>
     <string name="migrate_to_device_repeat_import">تکرار وارد کردن</string>
@@ -1794,7 +1794,7 @@
     <string name="v4_2_security_assessment_desc">امنیت SimpleX Chat به وسیله Tails of Bits مورد سنجش قرار گرفت.</string>
     <string name="v4_5_transport_isolation">انزوای ترابری</string>
     <string name="session_code">کد نشست</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">شما هم اکنون در حال پیوستن به گروه <b>%1$s</b> هستید.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[شما هم اکنون در حال پیوستن به گروه <b>%1$s</b> هستید.]]></string>
     <string name="linked_mobiles">موبایل‌های متصل</string>
     <string name="file_not_approved_title">سرورهای ناشناخته!</string>
     <string name="protect_ip_address">حفاظت از نشانی IP</string>

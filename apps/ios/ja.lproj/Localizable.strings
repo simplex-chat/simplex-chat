@@ -1509,7 +1509,7 @@
 /* No comment provided by engineer. */
 "Error: " = "エラー : ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "エラー : %@";
 
 /* No comment provided by engineer. */
@@ -2129,9 +2129,6 @@
 
 /* item status description */
 "Most likely this connection is deleted." = "おそらく、この接続は削除されています。";
-
-/* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "恐らくこの連絡先があなたとの接続を削除しました。";
 
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "複数チャットのプロフィール";
@@ -3190,9 +3187,6 @@
 
 /* No comment provided by engineer. */
 "Unable to record voice message" = "音声メッセージを録音できません";
-
-/* item status description */
-"Unexpected error: %@" = "予期しないエラー: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "予期しない移行状態";

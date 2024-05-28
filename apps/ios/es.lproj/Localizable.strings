@@ -675,7 +675,7 @@
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Búlgaro, Finlandés, Tailandés y Ucraniano - gracias a los usuarios y [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
-"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Mediante perfil (por defecto) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Mediante perfil (predeterminado) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
 "Call already ended!" = "¡La llamada ha terminado!";
@@ -1162,13 +1162,13 @@
 "Decryption error" = "Error descifrado";
 
 /* pref value */
-"default (%@)" = "por defecto (%@)";
+"default (%@)" = "predeterminado (%@)";
 
 /* No comment provided by engineer. */
-"default (no)" = "por defecto (no)";
+"default (no)" = "predeterminado (no)";
 
 /* No comment provided by engineer. */
-"default (yes)" = "por defecto (sí)";
+"default (yes)" = "predeterminado (sí)";
 
 /* chat item action */
 "Delete" = "Eliminar";
@@ -1492,7 +1492,7 @@
 "enabled" = "activado";
 
 /* No comment provided by engineer. */
-"Enabled for" = "Activar para";
+"Enabled for" = "Activado para";
 
 /* enabled status */
 "enabled for contact" = "activado para el contacto";
@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Error: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Error: %@";
 
 /* No comment provided by engineer. */
@@ -2569,9 +2569,6 @@
 "Most likely this connection is deleted." = "Probablemente la conexión ha sido eliminada.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Lo más probable es que este contacto haya eliminado la conexión contigo.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Múltiples perfiles";
 
 /* No comment provided by engineer. */
@@ -2961,7 +2958,7 @@
 "Profile image" = "Imagen del perfil";
 
 /* No comment provided by engineer. */
-"Profile images" = "Imágenes del perfil";
+"Profile images" = "Forma de los perfiles";
 
 /* No comment provided by engineer. */
 "Profile name" = "Nombre del perfil";
@@ -3078,9 +3075,6 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "La dirección de recepción pasará a otro servidor. El cambio se completará cuando el remitente esté en línea.";
 
 /* No comment provided by engineer. */
-"Receiving concurrency" = "Concurrencia en la recepción";
-
-/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Se detendrá la recepción del archivo.";
 
 /* No comment provided by engineer. */
@@ -3192,7 +3186,7 @@
 "Reset colors" = "Restablecer colores";
 
 /* No comment provided by engineer. */
-"Reset to defaults" = "Restablecer valores por defecto";
+"Reset to defaults" = "Restablecer valores predetarminados";
 
 /* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Reinicia la aplicación para crear un perfil nuevo";
@@ -3919,9 +3913,6 @@
 
 /* rcv group event chat item */
 "unblocked %@" = "ha desbloqueado a %@";
-
-/* item status description */
-"Unexpected error: %@" = "Error inesperado: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Estado de migración inesperado";
