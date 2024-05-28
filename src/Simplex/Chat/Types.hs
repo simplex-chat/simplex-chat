@@ -1303,6 +1303,9 @@ data Connection = Connection
     pqSndEnabled :: Maybe PQEncryption,
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
+    -- set on QUOTA error (connection recipient stopped retrieving messages);
+    -- this only affects sending to group members - messages are created as pending;
+    -- sending to contacts is not blocked by this flag
     inactive :: Bool,
     createdAt :: UTCTime
   }
