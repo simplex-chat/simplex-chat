@@ -6597,16 +6597,20 @@ sendGroupMemberMessages user conn events groupId = do
   let idsEvts = L.map (GroupId groupId,) events
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
-  forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    -- TODO v5.7 based on version (?)
-    -- let shouldCompress = False
-    -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
-    let batched = batchSndMessagesJSON msgs'
-    let (errs', msgBatches) = partitionEithers batched
-    -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
-    unless (null errs') $ toView $ CRChatErrors (Just user) errs'
-    forM_ msgBatches $ \batch ->
-      processSndMessageBatch conn batch `catchChatError` (toView . CRChatError (Just user))
+  forM_ (L.nonEmpty msgs) $ \msgs' ->
+    batchSendGroupMemberMessages user conn msgs'
+
+batchSendGroupMemberMessages :: User -> Connection -> NonEmpty SndMessage -> CM ()
+batchSendGroupMemberMessages user conn msgs = do
+  -- TODO v5.7 based on version (?)
+  -- let shouldCompress = False
+  -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
+  let batched = batchSndMessagesJSON msgs
+  let (errs', msgBatches) = partitionEithers batched
+  -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
+  unless (null errs') $ toView $ CRChatErrors (Just user) errs'
+  forM_ msgBatches $ \batch ->
+    processSndMessageBatch conn batch `catchChatError` (toView . CRChatError (Just user))
 
 processSndMessageBatch :: Connection -> MsgBatch -> CM ()
 processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = do
@@ -6795,21 +6799,20 @@ sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId i
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
 
+-- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupMember -> Connection -> CM ()
-sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do
-  pendingMessages <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
-  -- TODO ensure order - pending messages interleave with user input messages
-  forM_ pendingMessages $ \pgm ->
-    processPendingMessage pgm `catchChatError` (toView . CRChatError (Just user))
+sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
+  pgms <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
+  forM_ (L.nonEmpty pgms) $ \pgms' -> do
+    let msgs = L.map (\(sndMsg, _, _) -> sndMsg) pgms'
+    batchSendGroupMemberMessages user conn msgs
+    lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs
+    lift . void . withStoreBatch' $ \db -> L.map (\(_, tag, introId_) -> updateIntro_ db tag introId_) pgms'
   where
-    processPendingMessage PendingGroupMessage {msgId, cmEventTag = ACMEventTag _ tag, msgBody, introId_} = do
-      void $ deliverMessage conn tag msgBody msgId
-      withStore' $ \db -> deletePendingGroupMessage db groupMemberId msgId
-      case tag of
-        XGrpMemFwd_ -> case introId_ of
-          Just introId -> withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
-          _ -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
-        _ -> pure ()
+    updateIntro_ :: DB.Connection -> ACMEventTag -> Maybe Int64 -> IO ()
+    updateIntro_ db tag introId_ = case (tag, introId_) of
+      (ACMEventTag _ XGrpMemFwd_, Just introId) -> updateIntroStatus db introId GMIntroInvForwarded
+      _ -> pure ()
 
 -- TODO [batch send] refactor direct message processing same as groups (e.g. checkIntegrity before processing)
 saveDirectRcvMSG :: Connection -> MsgMeta -> MsgBody -> CM (Connection, RcvMessage)
