@@ -1,9 +1,9 @@
 ---
 title: Hosting your own SMP Server
-revision: 31.07.2023
+revision: 28.05.2024
 ---
 
-| Updated 05.06.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
+| Updated 28.05.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 ### Table of Contents
 
@@ -20,7 +20,7 @@ revision: 31.07.2023
     - [Online certificate rotation](#online-certificate-rotation)
   - [Tor: installation and configuration](#tor-installation-and-configuration)
     - [Installation for onion address](#installation-for-onion-address)
-    - [SOCKS port for PROXY server directive](#socks-port-for-proxy-server-directive)
+    - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
   - [Documentation](#documentation)
     - [SMP server address](#smp-server-address)
     - [Systemd commands](#systemd-commands)
@@ -36,7 +36,7 @@ SMP server is the relay server used to pass messages in SimpleX network. SimpleX
 
 SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
 
-_Please note_: when you change the servers in the app configuration, it only affects which server will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated soon.
+_Please note_: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated in the future.
 
 ## Installation
 
@@ -45,7 +45,7 @@ _Please note_: when you change the servers in the app configuration, it only aff
    - Manual deployment (see below)
 
    - Semi-automatic deployment:
-     - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+     - [Installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
      - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
      - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
@@ -53,7 +53,7 @@ Manual installation requires some preliminary actions:
 
 1. Install binary:
 
-   - Using offical binaries:
+   - Using pre-compiled binaries:
 
      ```sh
      curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
@@ -148,11 +148,11 @@ There are several options to consider:
 
   Enter `y` to enable logging statistics in CSV format, e.g. they can be used to show aggregate usage charts in `Grafana`.
 
-These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please let us know, confidentially, if you believe that this can be exploited in any way.
+These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please [let us know](./SECURITY.md), confidentially, if you believe that this can be exploited in any way.
 
 - `Require a password to create new messaging queues?`
 
-  Enter `r` or your arbitrary password to password-protect `smp-server`, or `n` to disable password protection.
+  Press `Enter` or enter your arbitrary password to password-protect `smp-server`, or `n` to disable password protection.
 
 - `Enter server FQDN or IP address for certificate (127.0.0.1):`
 
@@ -220,7 +220,7 @@ Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
 Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@<hostnames>
 ```
 
-The server address above should be used in your client configuration and if you added server password it should only be shared with the other people when you want to allow them to use your server to receive the messages (all your contacts will be able to send messages, as it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server addresses.
+The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server hostnames.
 
 ## Further configuration
 
@@ -271,18 +271,18 @@ websockets: off
 # required_host_mode: off
 
 # The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
-#own_server_domains: <your domain suffixes>
+# own_server_domains: <your domain suffixes>
 
 # SOCKS proxy port for forwarding messages to destination servers.
 # You may need a separate instance of SOCKS proxy for incoming single-hop requests.
-#socks_proxy: localhost:9050
+# socks_proxy: localhost:9050
 
 # `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
 # or 'always' to be used for all destination hosts (can be used if it is an .onion server).
 # socks_mode: onion
 
 # Limit number of threads a client can spawn to process proxy commands in parrallel.
-# client_concurrency: 16
+# client_concurrency: 32
 
 [INACTIVE_CLIENTS]
 # TTL and interval to check inactive clients
@@ -295,7 +295,7 @@ disconnect: off
 
 ### Initialization
 
-Although it's convenient to initialize smp-server configuration directly on the server, operators **ARE ADVISED** to initialize smp-server fully offline to mitigate risks of exposing your smp CA private key to server providers.
+Although it's convenient to initialize smp-server configuration directly on the server, operators **ARE ADVISED** to initialize smp-server fully offline to protect your SMP server CA private key.
 
 Follow the steps to quickly initialize the server offline:
 
@@ -307,7 +307,7 @@ Follow the steps to quickly initialize the server offline:
 
 4. Move your `CA` private key (`ca.key`) to the safe place. For further explanation, see the next section: [Server security: Private keys](#private-keys).
 
-5. Copy all configuration files **except** the CA key to the server:
+5. Copy all other configuration files **except** the CA key to the server:
 
    ```sh
    rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
@@ -315,25 +315,24 @@ Follow the steps to quickly initialize the server offline:
 
 ### Private keys
 
-Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators **ARE ADVISED** to move CA private key to a safe place. That could be:
+Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates by comparing its fingerprint with the one included in server address. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators **ARE ADVISED** to move CA private key to a safe place. That could be:
 
-- [Tails](https://tails.net/) live usb drive with [persistent and encrypted storage](https://tails.net/doc/persistent_storage/create/index.en.html)
-- Offline Linux laptop
-- Bitwarden
+- [Tails](https://tails.net/) live usb drive with [persistent and encrypted storage](https://tails.net/doc/persistent_storage/create/index.en.html).
+- Offline Linux laptop.
+- Bitwarden.
+- Any other safe storage that satisfy your security requirements.
 
 Follow the steps to secure your CA keys:
 
 1. Login to your server via SSH.
 
-2. Display the content of the CA key:
+2. Copy the CA key to a safe place from this file:
 
    ```sh
-   cat /etc/opt/simplex/ca.key
+   /etc/opt/simplex/ca.key
    ```
 
-3. Write/store the content of the CA key in a safe place.
-
-4. Delete the CA key from the server. **Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to [rotate the online certificate](#online-certificate-rotation)**:
+3. Delete the CA key from the server. **Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to [rotate the online certificate](#online-certificate-rotation)**:
 
    ```sh
    rm /etc/opt/simplex/ca.key
@@ -341,7 +340,7 @@ Follow the steps to secure your CA keys:
 
 ### Online certificate rotation
 
-Operators of smp servers **ARE ADVISED** to rotate online certificate regularly (every 3 months). In order to do this, follow the steps:
+Operators of smp servers **ARE ADVISED** to rotate online certificate regularly (e.g., every 3 months). In order to do this, follow the steps:
 
 1. Create relevant folders:
 
@@ -419,7 +418,7 @@ Operators of smp servers **ARE ADVISED** to rotate online certificate regularly 
 
 ### Installation for onion address
 
-smp-server can also be deployed to serve from [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
+SMP-server can also be deployed to be available via [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
 
 1. Install tor:
 
@@ -464,9 +463,9 @@ smp-server can also be deployed to serve from [Tor](https://www.torproject.org) 
      And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
 
      ```sh
-     # Enable log (otherwise, tor doesn't seemd to deploy onion address)
+     # Enable log (otherwise, tor doesn't seem to deploy onion address)
      Log notice file /var/log/tor/notices.log
-     # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside smp-server and onion address will be displayed in clients, this is totally fine)
+     # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
      SOCKSPort 0
      HiddenServiceNonAnonymousMode 1
      HiddenServiceSingleHopMode 1
@@ -497,9 +496,9 @@ smp-server can also be deployed to serve from [Tor](https://www.torproject.org) 
    cat /var/lib/tor/simplex-smp/hostname
    ```
 
-### SOCKS port for PROXY server directive
+### SOCKS port for SMP PROXY
 
-smp-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp servers available exclusively through [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
+SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp servers available exclusively through [Tor](https://www.torproject.org) network to be accessible to the clients that do not use Tor. Run the following commands as `root` user.
 
 1. Install tor as described in the [previous section](#installation-for-onion-address).
 
