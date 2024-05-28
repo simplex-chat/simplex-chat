@@ -4455,7 +4455,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpInfo p' -> xGrpInfo gInfo m' p' msg brokerTs
               XGrpDirectInv connReq mContent_ -> memberCanSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward memberId msg' msgTs -> xGrpMsgForward gInfo m' memberId msg' msgTs
-              XGrpMsgSkipped sharedMsgId -> xGrpMsgSkipped gInfo m' sharedMsgId msg brokerTs
               XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
               XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
@@ -4538,10 +4537,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       QCONT -> do
         enabled <- processConnQCONT connEntity conn
         when enabled $ sendPendingGroupMessages user m conn
-        -- lastSharedMsgId <- withStore' $ \db -> getLastItemSharedMsgId db m
-        -- forM_ lastSharedMsgId $ \lastMsgId -> do
-        --   let conn' = conn {inactive = False} :: Connection
-        --   void $ sendDirectMemberMessage conn' (XGrpMsgSkipped lastMsgId) groupId
       MWARN msgId err ->
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
       MERR msgId err -> do
@@ -6184,11 +6179,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
-
-    xGrpMsgSkipped :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> UTCTime -> CM ()
-    xGrpMsgSkipped _gInfo _m _sharedMsgId _msg _brokerTs = do
-      -- TODO can request delivery starting with _sharedMsgId here
-      pure ()
 
     createUnknownMember :: GroupInfo -> MemberId -> CM GroupMember
     createUnknownMember gInfo memberId = do
