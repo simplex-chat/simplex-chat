@@ -3968,6 +3968,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
           void $ continueSending connEntity conn
+        MWARN _ err ->
+          processConnMWARN connEntity conn err
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
@@ -4144,8 +4146,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
           void $ continueSending connEntity conn
-        MWARN msgId err ->
+        MWARN msgId err -> do
           updateDirectItemStatus ct conn msgId (CISSndWarning $ agentSndError err)
+          processConnMWARN connEntity conn err
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId (CISSndError $ agentSndError err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4541,8 +4544,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
-      MWARN msgId err ->
+      MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
+        processConnMWARN connEntity conn err
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
@@ -4780,15 +4784,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> toView $ CRConnectionDisabled connEntity
         SMP _ SMP.QUOTA ->
           unless (connInactive conn) $ do
-            withStore' $ \db -> setConnectionInactive db user conn True
+            withStore' $ \db -> setConnectionQuotaErrCounter db user conn quotaErrSetOnMERR
             toView $ CRConnectionInactive connEntity True
+        _ -> pure ()
+
+    processConnMWARN :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
+    processConnMWARN connEntity conn err = do
+      case err of
+        SMP _ SMP.QUOTA ->
+          unless (connInactive conn) $ do
+            quotaErrCounter' <- withStore' $ \db -> incConnectionQuotaErrCounter db user conn
+            when (quotaErrCounter' >= quotaErrInactiveCount) $
+              toView $ CRConnectionInactive connEntity True
         _ -> pure ()
 
     continueSending :: ConnectionEntity -> Connection -> CM Bool
     continueSending connEntity conn =
       if connInactive conn
         then do
-          withStore' $ \db -> setConnectionInactive db user conn False
+          withStore' $ \db -> setConnectionQuotaErrCounter db user conn 0
           toView $ CRConnectionInactive connEntity False
           pure True
         else pure False

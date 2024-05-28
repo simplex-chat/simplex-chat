@@ -6103,6 +6103,8 @@ testGroupMemberInactive tmp = do
       alice #> "#team 4"
       alice #> "#team 5"
 
+      threadDelay 1500000
+
       withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
         bob <## "1 contacts connected (use /cs for the list)"
         bob <## "#team: connected to server(s)"
