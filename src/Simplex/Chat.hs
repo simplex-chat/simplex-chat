@@ -3960,13 +3960,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withAckMessage' "new contact msg" agentConnId meta $
             void $
               saveDirectRcvMSG conn meta msgBody
-        SENT msgId _proxy ->
+        SENT msgId _proxy -> do
+          void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
-          void $ processConnQCONT connEntity conn
+          void $ continueSending connEntity conn
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
@@ -4100,6 +4101,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
         SENT msgId proxy -> do
+          void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           ci_ <- withStore $ \db -> do
@@ -4141,7 +4143,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
-          void $ processConnQCONT connEntity conn
+          void $ continueSending connEntity conn
         MWARN msgId err ->
           updateDirectItemStatus ct conn msgId (CISSndWarning $ agentSndError err)
         MERR msgId err -> do
@@ -4496,6 +4498,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId proxy -> do
+        void $ continueSending connEntity conn
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemStatus gInfo m conn msgId (CISSndSent SSPComplete) (Just $ isJust proxy)
@@ -4535,7 +4538,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       QCONT -> do
-        enabled <- processConnQCONT connEntity conn
+        enabled <- continueSending connEntity conn
         when enabled $ sendPendingGroupMessages user m conn
       MWARN msgId err ->
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
@@ -4671,8 +4674,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        QCONT ->
-          void $ processConnQCONT connEntity conn
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
@@ -4725,8 +4726,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XInfo p -> profileContactRequest invId chatVRange p Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      QCONT ->
-        void $ processConnQCONT connEntity conn
       MERR _ err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
@@ -4784,8 +4783,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CRConnectionInactive connEntity True
         _ -> pure ()
 
-    processConnQCONT :: ConnectionEntity -> Connection -> CM Bool
-    processConnQCONT connEntity conn =
+    continueSending :: ConnectionEntity -> Connection -> CM Bool
+    continueSending connEntity conn =
       if connInactive conn
         then do
           withStore' $ \db -> setConnectionInactive db user conn False
