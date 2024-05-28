@@ -84,20 +84,25 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
     position = WindowPosition(state.x.dp, state.y.dp)
   )
 
+  val storingJob: MutableState<Job> = remember { mutableStateOf(Job()) }
   LaunchedEffect(
     windowState.position.x.value,
     windowState.position.y.value,
     windowState.size.width.value,
     windowState.size.height.value
   ) {
-    storeWindowState(
-      WindowPositionSize(
-        x = windowState.position.x.value.toInt(),
-        y = windowState.position.y.value.toInt(),
-        width = windowState.size.width.value.toInt(),
-        height = windowState.size.height.value.toInt()
+    storingJob.value.cancel()
+    storingJob.value = launch {
+      delay(1000L)
+      storeWindowState(
+        WindowPositionSize(
+          x = windowState.position.x.value.toInt(),
+          y = windowState.position.y.value.toInt(),
+          width = windowState.size.width.value.toInt(),
+          height = windowState.size.height.value.toInt()
+        )
       )
-    )
+    }
   }
 
   simplexWindowState.windowState = windowState
