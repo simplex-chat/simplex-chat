@@ -874,7 +874,7 @@
   <string name="audio_device_speaker">Speaker</string>
   <string name="audio_device_wired_headphones">Headphones</string>
   <string name="audio_device_bluetooth">Bluetooth</string>
-  <string name="error_initializing_web_view">Error while initializing WebView. Make sure it\'s the newest version. Contact developers for assistance: \n%s</string>
+  <string name="error_initializing_web_view">Error initializing WebView. Update your system to the new version. Please contact developers.\nError: %s</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
