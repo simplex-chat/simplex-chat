@@ -3411,9 +3411,10 @@ subscribeUserConnections vr onlyNeeded user = do
     contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
     contactSubsToView errs cts connRefs ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
+        conns = S.fromList cts
+        errConns = M.restrictKeys errs conns
         notifyCLI = do
-          let errConns = M.restrictKeys errs (S.fromList cts)
-          toView CRConnectionSubSummary {user, okSubs = M.size errs - M.size errConns, errSubs = M.size errConns}
+          toView CRConnectionSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
           when (ce && not (M.null errConns)) $ forM_ (M.assocs errConns) $ \(acId, err) ->
             forM_ (M.lookup acId connRefs) $ \ContactRef {localDisplayName} ->
               toView CRContactSubError {user, contactName = localDisplayName, chatError = ChatErrorAgent err Nothing}
@@ -3428,15 +3429,18 @@ subscribeUserConnections vr onlyNeeded user = do
               e -> show e
     contactLinkSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> CM ()
     contactLinkSubsToView errs ucConns = do
-      let errConns = M.restrictKeys errs (S.fromList ucConns)
-      toView CRConnectionSubSummary {user, okSubs = M.size errs - M.size errConns, errSubs = M.size errConns}
+      toView CRConnectionSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
+      where
+        conns = S.fromList ucConns
+        errConns = M.restrictKeys errs conns
     groupSubsToView :: Map ConnId AgentErrorType -> [Group] -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
     groupSubsToView errs gs ms connRefs ce = do
       mapM_ groupSub $
         sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
-      toView CRConnectionSubSummary {user, okSubs = M.size errs - M.size errConns, errSubs = M.size errConns} -- XXX: add label?
+      toView CRConnectionSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns} -- XXX: add label?
       where
-        errConns = M.restrictKeys errs (S.fromList ms)
+        conns = S.fromList ms
+        errConns = M.restrictKeys errs conns
         groupSub :: Group -> CM ()
         groupSub (Group g@GroupInfo {membership} members) = do
           when ce $ mapM_ (toView . uncurry (CRMemberSubError user g) ) mErrors
