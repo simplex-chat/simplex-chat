@@ -55,6 +55,8 @@ private var readOnlySettings = false
 private val settingsProps =
   Properties()
     .also { props ->
+      if (!settingsFile.exists()) return@also
+
       try {
         settingsFile.reader().use {
           // Force exception to happen
