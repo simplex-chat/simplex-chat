@@ -752,6 +752,7 @@ data ChatResponse
   | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
+  | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
   | CRAgentUserDeleted {agentUserId :: Int64}

@@ -378,6 +378,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", plain . LB.unpack $ J.encode msgCounts]
   CRContactDisabled u c -> ttyUser u ["[" <> ttyContact' c <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
+  CRConnectionInactive entity inactive -> viewConnectionEntityInactive entity inactive
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
         <> (", server: " <> sShow srv)
@@ -2076,6 +2077,11 @@ viewConnectionEntityDisabled entity = case entity of
   _ -> ["[" <> entityLabel <> "] connection is disabled"]
   where
     entityLabel = connEntityLabel entity
+
+viewConnectionEntityInactive :: ConnectionEntity -> Bool -> [StyledString]
+viewConnectionEntityInactive entity inactive
+  | inactive = ["[" <> connEntityLabel entity <> "] connection is marked as inactive"]
+  | otherwise = ["[" <> connEntityLabel entity <> "] inactive connection is marked as active"]
 
 connEntityLabel :: ConnectionEntity -> StyledString
 connEntityLabel = \case
