@@ -752,6 +752,7 @@ data ChatResponse
   | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
+  | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
   | CRAgentUserDeleted {agentUserId :: Int64}
@@ -1117,7 +1118,6 @@ data ChatErrorType
   | CECantBlockMemberForSelf {groupInfo :: GroupInfo, member :: GroupMember, setShowMessages :: Bool}
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound
-  | CEGroupMemberIntroNotFound {contactName :: ContactName}
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}

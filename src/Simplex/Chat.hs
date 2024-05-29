@@ -1472,14 +1472,14 @@ processChatCommand' vr = \case
     ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
+        withStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       Nothing -> throwChatError $ CEContactNotActive ct
   APIEnableGroupMember gId gMemberId -> withUser $ \user -> do
     GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user gId gMemberId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
+        withStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       _ -> throwChatError CEGroupMemberNotActive
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
@@ -3960,14 +3960,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withAckMessage' "new contact msg" agentConnId meta $
             void $
               saveDirectRcvMSG conn meta msgBody
-        SENT msgId _proxy ->
+        SENT msgId _proxy -> do
+          void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        QCONT ->
+          void $ continueSending connEntity conn
+        MWARN _ err ->
+          processConnMWARN connEntity conn err
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-          incAuthErrCounter connEntity conn err
+          processConnMERR connEntity conn err
         MERRS _ err -> do
           -- error cannot be AUTH error here
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4098,6 +4103,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
         SENT msgId proxy -> do
+          void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           ci_ <- withStore $ \db -> do
@@ -4138,12 +4144,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MWARN msgId err ->
+        QCONT ->
+          void $ continueSending connEntity conn
+        MWARN msgId err -> do
           updateDirectItemStatus ct conn msgId (CISSndWarning $ agentSndError err)
+          processConnMWARN connEntity conn err
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId (CISSndError $ agentSndError err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-          incAuthErrCounter connEntity conn err
+          processConnMERR connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
           updateDirectItemsStatus ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
@@ -4492,9 +4501,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId proxy -> do
+        continued <- continueSending connEntity conn
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemStatus gInfo m conn msgId (CISSndSent SSPComplete) (Just $ isJust proxy)
+        when continued $ sendPendingGroupMessages user m conn
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -4530,13 +4541,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      MWARN msgId err ->
+      QCONT -> do
+        continued <- continueSending connEntity conn
+        when continued $ sendPendingGroupMessages user m conn
+      MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
+        processConnMWARN connEntity conn err
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-        incAuthErrCounter connEntity conn err
+        processConnMERR connEntity conn err
       MERRS msgIds err -> do
         let newStatus = CISSndError $ agentSndError err
         -- error cannot be AUTH error here
@@ -4666,7 +4681,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-          incAuthErrCounter connEntity conn err
+          processConnMERR connEntity conn err
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4718,7 +4733,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> pure ()
       MERR _ err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
-        incAuthErrCounter connEntity conn err
+        processConnMERR connEntity conn err
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4758,16 +4773,39 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | memberRole <= GRObserver = messageError "member is not allowed to send messages"
       | otherwise = a
 
-    incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
-    incAuthErrCounter connEntity conn err = do
+    processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
+    processConnMERR connEntity conn err = do
       case err of
         SMP _ SMP.AUTH -> do
-          authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
+          authErrCounter' <- withStore' $ \db -> incAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ case connEntity of
             RcvDirectMsgConnection ctConn (Just ct) -> do
               toView $ CRContactDisabled user ct {activeConn = Just ctConn {authErrCounter = authErrCounter'}}
             _ -> toView $ CRConnectionDisabled connEntity
+        SMP _ SMP.QUOTA ->
+          unless (connInactive conn) $ do
+            withStore' $ \db -> setQuotaErrCounter db user conn quotaErrSetOnMERR
+            toView $ CRConnectionInactive connEntity True
         _ -> pure ()
+
+    processConnMWARN :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
+    processConnMWARN connEntity conn err = do
+      case err of
+        SMP _ SMP.QUOTA ->
+          unless (connInactive conn) $ do
+            quotaErrCounter' <- withStore' $ \db -> incQuotaErrCounter db user conn
+            when (quotaErrCounter' >= quotaErrInactiveCount) $
+              toView $ CRConnectionInactive connEntity True
+        _ -> pure ()
+
+    continueSending :: ConnectionEntity -> Connection -> CM Bool
+    continueSending connEntity conn =
+      if connInactive conn
+        then do
+          withStore' $ \db -> setQuotaErrCounter db user conn 0
+          toView $ CRConnectionInactive connEntity False
+          pure True
+        else pure False
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
@@ -6559,16 +6597,20 @@ sendGroupMemberMessages user conn events groupId = do
   let idsEvts = L.map (GroupId groupId,) events
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
-  forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    -- TODO v5.7 based on version (?)
-    -- let shouldCompress = False
-    -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
-    let batched = batchSndMessagesJSON msgs'
-    let (errs', msgBatches) = partitionEithers batched
-    -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
-    unless (null errs') $ toView $ CRChatErrors (Just user) errs'
-    forM_ msgBatches $ \batch ->
-      processSndMessageBatch conn batch `catchChatError` (toView . CRChatError (Just user))
+  forM_ (L.nonEmpty msgs) $ \msgs' ->
+    batchSendGroupMemberMessages user conn msgs'
+
+batchSendGroupMemberMessages :: User -> Connection -> NonEmpty SndMessage -> CM ()
+batchSendGroupMemberMessages user conn msgs = do
+  -- TODO v5.7 based on version (?)
+  -- let shouldCompress = False
+  -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
+  let batched = batchSndMessagesJSON msgs
+  let (errs', msgBatches) = partitionEithers batched
+  -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
+  unless (null errs') $ toView $ CRChatErrors (Just user) errs'
+  forM_ msgBatches $ \batch ->
+    processSndMessageBatch conn batch `catchChatError` (toView . CRChatError (Just user))
 
 processSndMessageBatch :: Connection -> MsgBatch -> CM ()
 processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = do
@@ -6726,6 +6768,7 @@ memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = c
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
+    | connInactive conn -> Just MSAPending
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where
@@ -6756,21 +6799,20 @@ sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId i
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
 
+-- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupMember -> Connection -> CM ()
-sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do
-  pendingMessages <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
-  -- TODO ensure order - pending messages interleave with user input messages
-  forM_ pendingMessages $ \pgm ->
-    processPendingMessage pgm `catchChatError` (toView . CRChatError (Just user))
+sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
+  pgms <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
+  forM_ (L.nonEmpty pgms) $ \pgms' -> do
+    let msgs = L.map (\(sndMsg, _, _) -> sndMsg) pgms'
+    batchSendGroupMemberMessages user conn msgs
+    lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs
+    lift . void . withStoreBatch' $ \db -> L.map (\(_, tag, introId_) -> updateIntro_ db tag introId_) pgms'
   where
-    processPendingMessage PendingGroupMessage {msgId, cmEventTag = ACMEventTag _ tag, msgBody, introId_} = do
-      void $ deliverMessage conn tag msgBody msgId
-      withStore' $ \db -> deletePendingGroupMessage db groupMemberId msgId
-      case tag of
-        XGrpMemFwd_ -> case introId_ of
-          Just introId -> withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
-          _ -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
-        _ -> pure ()
+    updateIntro_ :: DB.Connection -> ACMEventTag -> Maybe Int64 -> IO ()
+    updateIntro_ db tag introId_ = case (tag, introId_) of
+      (ACMEventTag _ XGrpMemFwd_, Just introId) -> updateIntroStatus db introId GMIntroInvForwarded
+      _ -> pure ()
 
 -- TODO [batch send] refactor direct message processing same as groups (e.g. checkIntegrity before processing)
 saveDirectRcvMSG :: Connection -> MsgMeta -> MsgBody -> CM (Connection, RcvMessage)
