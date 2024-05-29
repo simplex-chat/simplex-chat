@@ -23,7 +23,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import org.jetbrains.skiko.GraphicsApi
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
