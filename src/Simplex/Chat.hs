@@ -3402,10 +3402,7 @@ subscribeUserConnections vr onlyNeeded user = do
       let rftPairs = mapMaybe (\ft -> (,ft) <$> liveRcvFileTransferConnId ft) rfts
       pure (map fst rftPairs, M.fromList rftPairs)
     getPendingContactConns :: CM [ConnId]
-    getPendingContactConns = do
-      pcs <- withStore_ getPendingContactConnections
-      let connIds = map aConnId' pcs
-      pure connIds
+    getPendingContactConns = withStore_ getPendingContactConnections
     contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
     contactSubsToView errs cts connRefs ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
