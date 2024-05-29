@@ -21,7 +21,8 @@ Successful results are communicated with a new `UP srv conns` message emitted fr
 Sending results with UP allows to reduce summary responses to a generic structure with counters so no entity data would be needed for CLI here:
 
 ```haskell
-| CRConnectionSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+| CRConnectionSubSummary {user :: User, okSubs :: Int, errSubs :: Int} -- XXX: add label :: Text ?
+| CRGroupSubSummary {user :: User, groupName :: GroupName, okSubs :: Int, errSubs :: Int} -- XXX: needs group name as group reports
 ```
 
 Subscription errors are reported to API as `CRNetworkStatuses` as ususal, but the active subs are removed from the list as they are already handled by `UP`.
@@ -30,7 +31,7 @@ Subscription errors for CLI (when connection error reporting is enabled) are rep
 
 ```haskell
 | CRContactSubError {user :: User, contactName :: ContactName, chatError :: ChatError}
-| CRMemberSubError {user :: User, groupInfo :: GroupName, member :: ContactName, chatError :: ChatError}
+| CRMemberSubError {user :: User, groupName :: GroupName, contactName :: ContactName, chatError :: ChatError}
 | CRSndFileSubError {user :: User, sndFileTransfer :: Text, chatError :: ChatError}
 | CRRcvFileSubError {user :: User, rcvFileTransfer :: Text, chatError :: ChatError}
 ```

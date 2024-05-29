@@ -668,9 +668,11 @@ data ChatResponse
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRConnectionSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+  | CRContactSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRContactSubError {user :: User, contactName :: ContactName, chatError :: ChatError}
-  | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  -- | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]} -- XXX: weirs status/subSummary/subError hybrid
+  | CRUserAddrSubStatus {user :: User, userContactError :: Maybe ChatError}
+  | CRUserGroupLinksSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
@@ -708,9 +710,9 @@ data ChatResponse
   | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError}
-  | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
+  | CRMemberSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
-  | CRPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
+  | CRPendingSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRCallInvitation {callInvitation :: RcvCallInvitation}

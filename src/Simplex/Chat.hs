@@ -3414,7 +3414,7 @@ subscribeUserConnections vr onlyNeeded user = do
         conns = S.fromList cts
         errConns = M.restrictKeys errs conns
         notifyCLI = do
-          toView CRConnectionSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
+          toView CRContactSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
           when (ce && not (M.null errConns)) $ forM_ (M.assocs errConns) $ \(acId, err) ->
             forM_ (M.lookup acId connRefs) $ \ContactRef {localDisplayName} ->
               toView CRContactSubError {user, contactName = localDisplayName, chatError = ChatErrorAgent err Nothing}
@@ -3429,15 +3429,22 @@ subscribeUserConnections vr onlyNeeded user = do
               e -> show e
     contactLinkSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> CM ()
     contactLinkSubsToView errs ucConns = do
-      toView CRConnectionSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
-      where
-        conns = S.fromList ucConns
-        errConns = M.restrictKeys errs conns
+      let conns = S.fromList ucConns
+      links <- withStore_ (`getUserContactLinks` vr)
+      let (addresses, groupLinks) = partition (\(_, uc) -> isNothing $ userContactGroupId uc) $ filter (\(c, _) -> S.member (aConnId c) conns) links -- TODO: move into query
+      forM_ addresses $ \(conn, _uc) -> toView $ CRUserAddrSubStatus {user, userContactError = (`ChatErrorAgent` Nothing) <$> M.lookup (aConnId conn) errs}
+      let groups = S.fromList $ map (aConnId . fst) groupLinks
+          errGroups = M.restrictKeys errs groups
+      unless (S.null groups) $ toView CRUserGroupLinksSubSummary
+        { user,
+          okSubs = S.size groups - M.size errGroups,
+          errSubs = M.size errGroups
+        }
     groupSubsToView :: Map ConnId AgentErrorType -> [Group] -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
     groupSubsToView errs gs ms connRefs ce = do
       mapM_ groupSub $
         sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
-      toView CRConnectionSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns} -- XXX: add label?
+      toView CRMemberSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns} -- XXX: add label?
       where
         conns = S.fromList ms
         errConns = M.restrictKeys errs conns

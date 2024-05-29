@@ -230,17 +230,12 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError u c e -> ttyUser u [ttyContact c <> ": contact error " <> sShow e]
-  CRConnectionSubSummary {user, okSubs, errSubs} ->
-  -- CRContactSubSummary u summary ->
-    ttyUser user $ [sShow okSubs <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | okSubs > 0] <> viewErrorsSummary errSubs " contact errors"
-  CRUserContactSubSummary u summary ->
-    ttyUser u $
-      map addressSS addresses
-        <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary (length groupLinkErrors) " group link errors")
-    where
-      (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
-      addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
-      (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
+  CRContactSubSummary {user, okSubs, errSubs} -> ttyUser user $ [sShow okSubs <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | okSubs > 0] <> viewErrorsSummary errSubs " contact errors"
+  CRUserAddrSubStatus {user, userContactError} -> ttyUser user [maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError]
+  CRUserGroupLinksSubSummary {user, okSubs, errSubs} ->
+    ttyUser user $
+      [sShow okSubs <> " group links active" | okSubs > 0]
+        <> viewErrorsSummary errSubs " group link errors"
   CRNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
@@ -275,9 +270,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyContact m <> " error: " <> sShow e]
-  CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (length $ filter (isJust . memberError) summary) " group member errors" -- TODO: use generic summary? trim to counter?
+  CRMemberSubSummary {user, errSubs} -> ttyUser user $ viewErrorsSummary errSubs " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
-  CRPendingSubSummary u _ -> ttyUser u []
+  CRPendingSubSummary {user} -> ttyUser user [] -- XXX: ???
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
     ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
