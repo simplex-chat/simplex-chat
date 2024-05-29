@@ -105,6 +105,9 @@ kotlin {
         implementation("uk.co.caprica:vlcj:4.8.2")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
+
+        // WebP support
+        implementation("com.twelvemonkeys.imageio:imageio-webp:3.10.1")
       }
     }
     val desktopTest by getting
