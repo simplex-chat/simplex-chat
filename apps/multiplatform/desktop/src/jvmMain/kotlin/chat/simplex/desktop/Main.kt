@@ -18,6 +18,7 @@ import java.io.File
 
 fun main() {
   initHaskell()
+  runMigrations()
   initApp()
   tmpDir.deleteRecursively()
   tmpDir.mkdir()

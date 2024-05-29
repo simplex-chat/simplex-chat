@@ -378,6 +378,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", plain . LB.unpack $ J.encode msgCounts]
   CRContactDisabled u c -> ttyUser u ["[" <> ttyContact' c <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
+  CRConnectionInactive entity inactive -> viewConnectionEntityInactive entity inactive
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
         <> (", server: " <> sShow srv)
@@ -388,9 +389,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAgentConnDeleted acId -> ["completed deleting connection, agent connection id: " <> sShow acId | logLevel <= CLLInfo]
   CRAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
-  CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
-  CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
+  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
+  CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
+  CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
   CRTimedAction _ _ -> []
@@ -1894,8 +1895,8 @@ viewRemoteCtrl CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (App
       | otherwise = ""
     showCompatible = if compatible then "" else ", " <> bold' "not compatible"
 
-viewChatError :: ChatLogLevel -> Bool -> ChatError -> [StyledString]
-viewChatError logLevel testView = \case
+viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
+viewChatError isCmd logLevel testView = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
@@ -1953,7 +1954,6 @@ viewChatError logLevel testView = \case
       ]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound -> ["group doesn't have this member"]
-    CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
@@ -2034,14 +2034,14 @@ viewChatError logLevel testView = \case
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
-    BROKER _ NETWORK -> []
-    BROKER _ TIMEOUT -> []
-    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
-    AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning]
-    CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
+    BROKER _ NETWORK | not isCmd -> []
+    BROKER _ TIMEOUT | not isCmd -> []
+    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
+    AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]
+    CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning || isCmd]
     CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]
     INTERNAL e -> [plain $ "internal error: " <> e]
-    e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning]
+    e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning || isCmd]
     where
       withConnEntity = case entity_ of
         Just entity@(RcvDirectMsgConnection conn contact_) -> case contact_ of
@@ -2076,6 +2076,11 @@ viewConnectionEntityDisabled entity = case entity of
   _ -> ["[" <> entityLabel <> "] connection is disabled"]
   where
     entityLabel = connEntityLabel entity
+
+viewConnectionEntityInactive :: ConnectionEntity -> Bool -> [StyledString]
+viewConnectionEntityInactive entity inactive
+  | inactive = ["[" <> connEntityLabel entity <> "] connection is marked as inactive"]
+  | otherwise = ["[" <> connEntityLabel entity <> "] inactive connection is marked as active"]
 
 connEntityLabel :: ConnectionEntity -> StyledString
 connEntityLabel = \case

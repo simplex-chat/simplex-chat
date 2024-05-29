@@ -1761,7 +1761,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Помилка: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Помилка: %@";
 
 /* No comment provided by engineer. */
@@ -2519,9 +2519,6 @@
 
 /* item status description */
 "Most likely this connection is deleted." = "Швидше за все, це з'єднання видалено.";
-
-/* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Швидше за все, цей контакт видалив зв'язок з вами.";
 
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Кілька профілів чату";
@@ -3820,9 +3817,6 @@
 
 /* rcv group event chat item */
 "unblocked %@" = "розблоковано %@";
-
-/* item status description */
-"Unexpected error: %@" = "Неочікувана помилка: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Неочікуваний стан міграції";

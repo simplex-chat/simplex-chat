@@ -1303,6 +1303,7 @@ data Connection = Connection
     pqSndEnabled :: Maybe PQEncryption,
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
+    quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -1315,6 +1316,15 @@ authErrDisableCount = 10
 
 connDisabled :: Connection -> Bool
 connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
+
+quotaErrInactiveCount :: Int
+quotaErrInactiveCount = 5
+
+quotaErrSetOnMERR :: Int
+quotaErrSetOnMERR = 999
+
+connInactive :: Connection -> Bool
+connInactive Connection {quotaErrCounter} = quotaErrCounter >= quotaErrInactiveCount
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
   deriving (Eq, Show)

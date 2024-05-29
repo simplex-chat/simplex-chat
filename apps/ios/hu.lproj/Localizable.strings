@@ -345,7 +345,7 @@
 "Accept" = "Elfogadás";
 
 /* No comment provided by engineer. */
-"Accept connection request?" = "Kapcsolatfelvétel elfogadása?";
+"Accept connection request?" = "Kapcsolódási kérelem elfogadása?";
 
 /* notification body */
 "Accept contact request from %@?" = "Elfogadja %@ kapcsolat kérését?";
@@ -444,16 +444,16 @@
 "Allow" = "Engedélyezés";
 
 /* No comment provided by engineer. */
-"Allow calls only if your contact allows them." = "Hívások engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.";
+"Allow calls only if your contact allows them." = "A hívások kezdeményezése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.";
 
 /* No comment provided by engineer. */
-"Allow disappearing messages only if your contact allows it to you." = "Eltűnő üzenetek engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi az ön számára.";
+"Allow disappearing messages only if your contact allows it to you." = "Az eltűnő üzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi az ön számára.";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Üzenet végleges törlésének engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi. (24 óra)";
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Az üzenetek végleges törlése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)";
 
 /* No comment provided by engineer. */
-"Allow message reactions only if your contact allows them." = "Üzenetreakciók engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.";
+"Allow message reactions only if your contact allows them." = "Az üzenetreakciók küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.";
 
 /* No comment provided by engineer. */
 "Allow message reactions." = "Üzenetreakciók engedélyezése.";
@@ -462,7 +462,7 @@
 "Allow sending direct messages to members." = "Közvetlen üzenetek küldésének engedélyezése a tagok számára.";
 
 /* No comment provided by engineer. */
-"Allow sending disappearing messages." = "Eltűnő üzenetek küldésének engedélyezése.";
+"Allow sending disappearing messages." = "Az eltűnő üzenetek küldése engedélyezve van.";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Elküldött üzenetek végleges törlésének engedélyezése. (24 óra)";
@@ -477,25 +477,25 @@
 "Allow to send voice messages." = "Hangüzenetek küldésének engedélyezése.";
 
 /* No comment provided by engineer. */
-"Allow voice messages only if your contact allows them." = "Hangüzenetek küldésének engedélyezése kizárólag abban az esetben, ha ismerőse is engedélyezi.";
+"Allow voice messages only if your contact allows them." = "A hangüzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.";
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "Hangüzenetek engedélyezése?";
 
 /* No comment provided by engineer. */
-"Allow your contacts adding message reactions." = "Ismerősök általi üzenetreakciók hozzáadásának engedélyezése.";
+"Allow your contacts adding message reactions." = "Az üzenetreakciók küldése engedélyezve van az ismerősei számára.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to call you." = "Hívások engedélyezése ismerősök számára.";
+"Allow your contacts to call you." = "A hívások kezdeményezése engedélyezve van az ismerősei számára.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Elküldött üzenetek végleges törlésének engedélyezése az ismerősök számára. (24 óra)";
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Az elküldött üzenetek végleges törlése engedélyezve van az ismerősei számára. (24 óra)";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send disappearing messages." = "Eltűnő üzenetek engedélyezése ismerősök számára.";
+"Allow your contacts to send disappearing messages." = "Az eltűnő üzenetek küldésének engedélyezése az ismerősei számára.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send voice messages." = "Hangüzenetek küldésének engedélyezése ismerősök számára.";
+"Allow your contacts to send voice messages." = "A hangüzenetek küldése engedélyezve van az ismerősei számára.";
 
 /* No comment provided by engineer. */
 "Already connected?" = "Már kapcsolódott?";
@@ -573,10 +573,10 @@
 "Audio/video calls" = "Hang-/videóhívások";
 
 /* No comment provided by engineer. */
-"Audio/video calls are prohibited." = "A hang- és videóhívások le vannak tiltva.";
+"Audio/video calls are prohibited." = "A hívások kezdeményezése le van tiltva ebben a csevegésben.";
 
 /* PIN entry */
-"Authentication cancelled" = "Hitelesítés megszakítva";
+"Authentication cancelled" = "Hitelesítés visszavonva";
 
 /* No comment provided by engineer. */
 "Authentication failed" = "Sikertelen hitelesítés";
@@ -594,7 +594,7 @@
 "Auto-accept" = "Automatikus elfogadás";
 
 /* No comment provided by engineer. */
-"Auto-accept contact requests" = "Ismerős jelölések automatikus elfogadása";
+"Auto-accept contact requests" = "Kapcsolódási kérelmek automatikus elfogadása";
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Fotók automatikus elfogadása";
@@ -636,7 +636,7 @@
 "Block member" = "Tag blokkolása";
 
 /* No comment provided by engineer. */
-"Block member for all?" = "Tag letiltása mindenki számára?";
+"Block member for all?" = "Mindenki számára letiltja ezt a tagot?";
 
 /* No comment provided by engineer. */
 "Block member?" = "Tag blokkolása?";
@@ -663,7 +663,7 @@
 "Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Mindkét fél törölheti véglegesen az elküldött üzeneteket. (24 óra)";
 
 /* No comment provided by engineer. */
-"Both you and your contact can make calls." = "Mindkét fél tud hívásokat indítani.";
+"Both you and your contact can make calls." = "Mindkét fél tud hívásokat kezdeményezni.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Mindkét fél küldhet eltűnő üzeneteket.";
@@ -708,7 +708,7 @@
 "Cancel migration" = "Átköltöztetés visszavonása";
 
 /* feature offered item */
-"cancelled %@" = "%@ törölve";
+"cancelled %@" = "%@ visszavonva";
 
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Nem lehet hozzáférni a kulcstartóhoz az adatbázis jelszavának mentéséhez";
@@ -1006,7 +1006,7 @@
 "Contacts" = "Ismerősök";
 
 /* No comment provided by engineer. */
-"Contacts can mark messages for deletion; you will be able to view them." = "Az ismerősök törlésre jelölhetnek üzeneteket ; megtekintheti őket.";
+"Contacts can mark messages for deletion; you will be able to view them." = "Az ismerősei törlésre jelölhetnek üzeneteket; ön majd meg tudja nézni azokat.";
 
 /* No comment provided by engineer. */
 "Continue" = "Folytatás";
@@ -1075,7 +1075,7 @@
 "Creating link…" = "Hivatkozás létrehozása…";
 
 /* No comment provided by engineer. */
-"creator" = "szerző";
+"creator" = "készítő";
 
 /* No comment provided by engineer. */
 "Current Passcode" = "Jelenlegi jelkód";
@@ -1183,7 +1183,7 @@
 "Delete address?" = "Azonosító törlése?";
 
 /* No comment provided by engineer. */
-"Delete after" = "Törlés miután";
+"Delete after" = "Törlés ennyi idő után";
 
 /* No comment provided by engineer. */
 "Delete all files" = "Minden fájl törlése";
@@ -1261,7 +1261,7 @@
 "Delete messages" = "Üzenetek törlése";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Üzenetek törlése miután";
+"Delete messages after" = "Üzenetek törlése ennyi idő után";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Régi adatbázis törlése";
@@ -1348,7 +1348,7 @@
 "Direct messages" = "Közvetlen üzenetek";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Ebben a csoportban tiltott a tagok közötti közvetlen üzenetek küldése.";
+"Direct messages between members are prohibited in this group." = "A közvetlen üzenetek küldése a tagok között le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Letiltás (felülírások megtartásával)";
@@ -1369,7 +1369,7 @@
 "Disappearing messages" = "Eltűnő üzenetek";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this chat." = "Az eltűnő üzenetek le vannak tiltva ebben a csevegésben.";
+"Disappearing messages are prohibited in this chat." = "Az eltűnő üzenetek küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
 "Disappearing messages are prohibited in this group." = "Az eltűnő üzenetek küldése le van tiltva ebben a csoportban.";
@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Hiba: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Hiba: %@";
 
 /* No comment provided by engineer. */
@@ -2077,7 +2077,7 @@
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen törlődik!";
 
 /* No comment provided by engineer. */
-"If you enter your self-destruct passcode while opening the app:" = "Ha az alkalmazás megnyitásakor az önmegsemmisítő jelkódot megadásra kerül:";
+"If you enter your self-destruct passcode while opening the app:" = "Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:";
 
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Ha most kell használnia a csevegést, koppintson a ** Csináld később** elemre (az alkalmazás újraindításakor felajánlásra kerül az adatbázis áttelepítése).";
@@ -2245,16 +2245,16 @@
 "Invite to group" = "Meghívás a csoportba";
 
 /* No comment provided by engineer. */
-"invited" = "meghívta";
+"invited" = "meghíva";
 
 /* rcv group event chat item */
-"invited %@" = "meghívta %@-t";
+"invited %@" = "meghívta őt: %@";
 
 /* chat list item title */
 "invited to connect" = "meghívta, hogy csatlakozzon";
 
 /* rcv group event chat item */
-"invited via your group link" = "meghívta a csoport hivatkozásán keresztül";
+"invited via your group link" = "meghíva az ön csoport hivatkozásán keresztül";
 
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Az iOS kulcstár a jelmondat biztonságos tárolására szolgál - lehetővé teszi a push-értesítések fogadását.";
@@ -2266,10 +2266,10 @@
 "Irreversible message deletion" = "Végleges üzenettörlés";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this chat." = "Ebben a csevegésben az üzenetek végleges törlése le van tiltva.";
+"Irreversible message deletion is prohibited in this chat." = "Az üzenetek végleges törlése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Ebben a csoportban az üzenetek végleges törlése le van tiltva.";
+"Irreversible message deletion is prohibited in this group." = "Az üzenetek végleges törlése le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Lehetővé teszi, hogy egyetlen csevegőprofilon belül több anonim kapcsolat legyen, anélkül, hogy megosztott adatok lennének közöttük.";
@@ -2344,7 +2344,7 @@
 "Learn more" = "Tudjon meg többet";
 
 /* No comment provided by engineer. */
-"Leave" = "Elhagy";
+"Leave" = "Elhagyás";
 
 /* No comment provided by engineer. */
 "Leave group" = "Csoport elhagyása";
@@ -2419,10 +2419,10 @@
 "Mark deleted for everyone" = "Jelölje meg mindenki számára töröltként";
 
 /* No comment provided by engineer. */
-"Mark read" = "Megjelölés olvasottként";
+"Mark read" = "Olvasottként jelölés";
 
 /* No comment provided by engineer. */
-"Mark verified" = "Ellenőrzöttként jelölve";
+"Mark verified" = "Hitelesítés";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Markdown az üzenetekben";
@@ -2467,10 +2467,10 @@
 "Message reactions" = "Üzenetreakciók";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this chat." = "Az üzenetreakciók ebben a csevegésben le vannak tiltva.";
+"Message reactions are prohibited in this chat." = "Az üzenetreakciók küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Ebben a csoportban az üzenetreakciók le vannak tiltva.";
+"Message reactions are prohibited in this group." = "Az üzenetreakciók küldése le van tiltva ebben a csoportban.";
 
 /* notification */
 "message received" = "üzenet érkezett";
@@ -2567,9 +2567,6 @@
 
 /* item status description */
 "Most likely this connection is deleted." = "Valószínűleg ez a kapcsolat törlésre került.";
-
-/* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Valószínűleg ez az ismerős törölte önnel a kapcsolatot.";
 
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Több csevegőprofil";
@@ -2775,7 +2772,7 @@
 "Only your contact can make calls." = "Csak az ismerős tud hívást indítani.";
 
 /* No comment provided by engineer. */
-"Only your contact can send disappearing messages." = "Csak az ismerős tud eltűnő üzeneteket küldeni.";
+"Only your contact can send disappearing messages." = "Csak az ismerőse tud eltűnő üzeneteket küldeni.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Csak az ismerős tud hangüzeneteket küldeni.";
@@ -2976,22 +2973,22 @@
 "Profile update will be sent to your contacts." = "A profilfrissítés elküldésre került az ismerősök számára.";
 
 /* No comment provided by engineer. */
-"Prohibit audio/video calls." = "Hang- és videóhívások tiltása.";
+"Prohibit audio/video calls." = "A hívások kezdeményezése le van tiltva.";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Az üzenetek véglegesen való törlése le van tiltva.";
 
 /* No comment provided by engineer. */
-"Prohibit message reactions." = "Üzenetreakciók tiltása.";
+"Prohibit message reactions." = "Az üzenetreakciók küldése le van tiltva.";
 
 /* No comment provided by engineer. */
 "Prohibit messages reactions." = "Az üzenetreakciók tiltása.";
 
 /* No comment provided by engineer. */
-"Prohibit sending direct messages to members." = "Közvetlen üzenetek küldésének letiltása a tagok számára.";
+"Prohibit sending direct messages to members." = "A közvetlen üzenetek küldése le van tiltva a tagok között.";
 
 /* No comment provided by engineer. */
-"Prohibit sending disappearing messages." = "Eltűnő üzenetek küldésének letiltása.";
+"Prohibit sending disappearing messages." = "Az eltűnő üzenetek küldése le van tiltva.";
 
 /* No comment provided by engineer. */
 "Prohibit sending files and media." = "Fájlok- és a médiatartalom küldés letiltása.";
@@ -3000,7 +2997,7 @@
 "Prohibit sending SimpleX links." = "A SimpleX hivatkozások küldése le van tiltva.";
 
 /* No comment provided by engineer. */
-"Prohibit sending voice messages." = "Hangüzenetek küldésének letiltása.";
+"Prohibit sending voice messages." = "A hangüzenetek küldése le van tiltva.";
 
 /* No comment provided by engineer. */
 "Protect app screen" = "Alkalmazás képernyőjének védelme";
@@ -3078,9 +3075,6 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.";
 
 /* No comment provided by engineer. */
-"Receiving concurrency" = "Egyidejű fogadás";
-
-/* No comment provided by engineer. */
 "Receiving file will be stopped." = "A fájl fogadása leállt.";
 
 /* No comment provided by engineer. */
@@ -3132,10 +3126,10 @@
 "Remove" = "Eltávolítás";
 
 /* No comment provided by engineer. */
-"Remove member" = "Tag eltávolítása";
+"Remove member" = "Eltávolítás";
 
 /* No comment provided by engineer. */
-"Remove member?" = "Tag eltávolítása?";
+"Remove member?" = "Biztosan eltávolítja?";
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "Jelmondat eltávolítása a kulcstárolóból?";
@@ -3306,7 +3300,7 @@
 "Saved WebRTC ICE servers will be removed" = "A mentett WebRTC ICE kiszolgálók eltávolításra kerülnek";
 
 /* No comment provided by engineer. */
-"Scan code" = "Kód beolvasása";
+"Scan code" = "Beolvasás";
 
 /* No comment provided by engineer. */
 "Scan QR code" = "QR-kód beolvasása";
@@ -3411,7 +3405,7 @@
 "Send up to 100 last messages to new members." = "Az utolsó 100 üzenet elküldése az új tagoknak.";
 
 /* No comment provided by engineer. */
-"Sender cancelled file transfer." = "A küldő megszakította a fájl átvitelt.";
+"Sender cancelled file transfer." = "A fájl küldője visszavonta az átvitelt.";
 
 /* No comment provided by engineer. */
 "Sender may have deleted the connection request." = "A küldő törölhette a kapcsolódási kérelmet.";
@@ -3570,7 +3564,7 @@
 "SimpleX links" = "SimpleX hivatkozások";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "A SimpleX hivatkozások küldése ebben a csoportban le van tiltva.";
+"SimpleX links are prohibited in this group." = "A SimpleX hivatkozások küldése le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "A SimpleX hivatkozások küldése le van tiltva";
@@ -3753,7 +3747,7 @@
 "The code you scanned is not a SimpleX link QR code." = "A beolvasott kód nem egy SimpleX hivatkozás QR-kód.";
 
 /* No comment provided by engineer. */
-"The connection you accepted will be cancelled!" = "Az ön által elfogadott kapcsolat megszakad!";
+"The connection you accepted will be cancelled!" = "Az ön által elfogadott kapcsolat vissza lesz vonva!";
 
 /* No comment provided by engineer. */
 "The contact you shared this link with will NOT be able to connect!" = "Ismerőse, akivel megosztotta ezt a hivatkozást, NEM fog tudni kapcsolódni!";
@@ -3920,9 +3914,6 @@
 /* rcv group event chat item */
 "unblocked %@" = "%@ feloldva";
 
-/* item status description */
-"Unexpected error: %@" = "Váratlan hiba: %@";
-
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Váratlan átköltöztetési állapot";
 
@@ -3999,7 +3990,7 @@
 "Update transport isolation mode?" = "Kapcsolat izolációs mód frissítése?";
 
 /* rcv group event chat item */
-"updated group profile" = "módosított csoport profil";
+"updated group profile" = "frissítette a csoport profilját";
 
 /* profile update event chat item */
 "updated profile" = "frissített profil";
@@ -4137,7 +4128,7 @@
 "Voice messages" = "Hangüzenetek";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this chat." = "A hangüzenetek le vannak tiltva ebben a csevegésben.";
+"Voice messages are prohibited in this chat." = "A hangüzenetek küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
 "Voice messages are prohibited in this group." = "A hangüzenetek küldése le van tiltva ebben a csoportban.";
@@ -4149,7 +4140,7 @@
 "Voice messages prohibited!" = "A hangüzenetek le vannak tilva!";
 
 /* No comment provided by engineer. */
-"waiting for answer…" = "várakozás válaszra…";
+"waiting for answer…" = "várakozás a válaszra…";
 
 /* No comment provided by engineer. */
 "waiting for confirmation…" = "várakozás a visszaigazolásra…";
@@ -4461,7 +4452,7 @@
 "Your chat profiles" = "Csevegési profiljai";
 
 /* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Az ismerősnek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nMegszakíthatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).";
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ismerőse olyan fájlt küldött, amely meghaladja a jelenleg támogatott maximális méretet (%@).";

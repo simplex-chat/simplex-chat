@@ -746,7 +746,7 @@
   <string name="private_routing_explanation">To protect your IP address, private routing uses your SMP servers to deliver messages.</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
-  <string name="theme_colors_section_title">THEME COLORS</string>
+  <string name="theme_colors_section_title">INTERFACE COLORS</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>
@@ -874,6 +874,7 @@
   <string name="audio_device_speaker">Speaker</string>
   <string name="audio_device_wired_headphones">Headphones</string>
   <string name="audio_device_bluetooth">Bluetooth</string>
+  <string name="error_initializing_web_view">Error initializing WebView. Update your system to the new version. Please contact developers.\nError: %s</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -1072,6 +1073,9 @@
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
+  <string name="settings_section_title_chat_theme">Chat theme</string>
+  <string name="settings_section_title_user_theme">Profile theme</string>
+  <string name="settings_section_title_chat_colors">Chat colors</string>
   <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_private_message_routing">PRIVATE MESSAGE ROUTING</string>
   <string name="settings_section_title_calls">CALLS</string>
@@ -1201,6 +1205,7 @@
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="terminal_always_visible">Show console in new window</string>
+  <string name="chat_list_always_visible">Show chat list in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
   <string name="upgrade_and_open_chat">Upgrade and open chat</string>
   <string name="downgrade_and_open_chat">Downgrade and open chat</string>
@@ -1543,23 +1548,30 @@
   <string name="incognito_info_share">When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</string>
 
   <!-- Default themes -->
+  <string name="color_mode_system">System</string>
+  <string name="color_mode_light">Light</string>
+  <string name="color_mode_dark">Dark</string>
   <string name="theme_system">System</string>
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
   <string name="theme_simplex">SimpleX</string>
+  <string name="theme_black">Black</string>
 
   <!-- Languages -->
   <string name="language_system">System</string>
 
   <!-- Appearance.kt -->
   <string name="theme">Theme</string>
+  <string name="color_mode">Color mode</string>
   <string name="dark_theme">Dark theme</string>
-  <string name="save_color">Save color</string>
+  <string name="dark_mode_colors">Dark mode colors</string>
   <string name="import_theme">Import theme</string>
   <string name="import_theme_error">Import theme error</string>
   <string name="import_theme_error_desc">Make sure the file has correct YAML syntax. Export theme to have an example of the theme file structure.</string>
   <string name="export_theme">Export theme</string>
   <string name="reset_color">Reset colors</string>
+  <string name="reset_single_color">Reset color</string>
+  <string name="theme_destination_app_theme">App theme</string>
   <string name="color_primary">Accent</string>
   <string name="color_primary_variant">Additional accent</string>
   <string name="color_secondary">Secondary</string>
@@ -1567,8 +1579,31 @@
   <string name="color_background">Background</string>
   <string name="color_surface">Menus &amp; alerts</string>
   <string name="color_title">Title</string>
+  <string name="color_primary_variant2">Additional accent 2</string>
   <string name="color_sent_message">Sent message</string>
+  <string name="color_sent_quote">Sent reply</string>
   <string name="color_received_message">Received message</string>
+  <string name="color_received_quote">Received reply</string>
+  <string name="color_wallpaper_background">Wallpaper background</string>
+  <string name="color_wallpaper_tint">Wallpaper accent</string>
+  <string name="theme_remove_image">Remove image</string>
+
+  <!-- Wallpapers -->
+  <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
+  <string name="wallpaper_preview_hello_bob">Good morning!</string>
+  <string name="wallpaper_scale">Scale</string>
+  <string name="wallpaper_scale_repeat">Repeat</string>
+  <string name="wallpaper_scale_fill">Fill</string>
+  <string name="wallpaper_scale_fit">Fit</string>
+  <string name="wallpaper_advanced_settings">Advanced settings</string>
+  <string name="chat_theme_reset_to_app_theme">Reset to app theme</string>
+  <string name="chat_theme_reset_to_user_theme">Reset to user theme</string>
+  <string name="chat_theme_set_default_theme">Set default theme</string>
+  <string name="chat_theme_apply_to_mode">Apply to</string>
+  <string name="chat_theme_apply_to_all_modes">All color modes</string>
+  <string name="chat_theme_apply_to_light_mode">Light mode</string>
+  <string name="chat_theme_apply_to_dark_mode">Dark mode</string>
+
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>

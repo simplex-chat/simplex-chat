@@ -776,7 +776,7 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val color = MaterialTheme.appColors.receivedMessage
     Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
@@ -862,7 +862,7 @@ fun ComposeView(
       }
     }
     Row(
-      modifier = Modifier.padding(end = 8.dp),
+      modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
@@ -974,7 +974,7 @@ fun ComposeView(
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
       val sendButtonColor =
         if (chat.chatInfo.incognito)
-          if (isSystemInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+          if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
         else MaterialTheme.colors.primary
       SendMsgView(
         composeState,
