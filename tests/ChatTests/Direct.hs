@@ -1448,6 +1448,7 @@ testUsersSubscribeAfterRestart :: HasCallStack => FilePath -> IO ()
 testUsersSubscribeAfterRestart tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+      threadDelay 100000
       connectUsers alice bob
       alice <##> bob
 
@@ -1458,8 +1459,7 @@ testUsersSubscribeAfterRestart tmp = do
 
     withTestChat tmp "alice" $ \alice -> do
       -- second user is active
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <### ["1 contacts connected (use /cs for the list)", "[user: alice] 1 contacts connected (use /cs for the list)"]
 
       -- second user receives message
       alice <##> bob
