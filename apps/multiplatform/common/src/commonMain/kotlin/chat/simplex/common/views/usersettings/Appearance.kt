@@ -887,6 +887,7 @@ object AppearanceScope {
       "cs" to "Čeština",
       "de" to "Deutsch",
       "es" to "Español",
+      "fa" to "فارسی",
       "fi" to "Suomi",
       "fr" to "Français",
       "hu" to "Magyar",
