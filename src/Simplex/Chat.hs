@@ -3352,7 +3352,7 @@ subscribeUserConnections vr onlyNeeded user = do
         pcConns <- getPendingContactConns
         let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
         pure (conns, ctConns, ucs, gs, mConns, sfts, rfts, pcConns)
-  void . lift . forkIO . void . runExceptT $ do
+  void . lift . forkIO . runSubscriber $ do
     -- detach subscription and result processing
     rs <- withAgent (`Agent.subscribeConnections` conns) -- subscribe using batched commands
     let (errs, _oks) = M.mapEither id rs
@@ -3367,6 +3367,8 @@ subscribeUserConnections vr onlyNeeded user = do
     rcvFileSubsToView errs rfts
     pendingConnSubsToView errs pcConns
   where
+    runSubscriber :: CM () -> CM' ()
+    runSubscriber action = tryAllErrors' mkChatError action >>= either (logError . tshow) pure
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
       RcvDirectMsgConnection c (Just _ct) -> let cts' = addSub c cts in (cts', ucs, ms, sfts, rfts, pcs)
       RcvDirectMsgConnection c Nothing -> let pcs' = addSub c pcs in (cts, ucs, ms, sfts, rfts, pcs')
