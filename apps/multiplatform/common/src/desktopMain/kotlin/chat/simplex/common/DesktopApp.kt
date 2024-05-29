@@ -23,6 +23,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import org.jetbrains.skiko.GraphicsApi
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
@@ -115,6 +116,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         false
       }
     }, title = "SimpleX") {
+      chatModel.hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
       AppScreen()
       if (simplexWindowState.openDialog.isAwaiting) {

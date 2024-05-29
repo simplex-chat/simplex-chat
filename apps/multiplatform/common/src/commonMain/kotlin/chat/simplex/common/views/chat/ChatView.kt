@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -620,7 +621,7 @@ fun ChatLayout(
             .fillMaxSize()
             .background(MaterialTheme.colors.background)
             .then(if (wallpaperImage != null)
-              Modifier.drawBehind { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
+              Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
             else
               Modifier)
             .padding(contentPadding)

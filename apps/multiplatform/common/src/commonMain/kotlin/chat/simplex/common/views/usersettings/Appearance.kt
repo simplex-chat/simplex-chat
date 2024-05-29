@@ -95,11 +95,13 @@ object AppearanceScope {
     val backgroundColor =  backgroundColor ?: wallpaperType?.defaultBackgroundColor(theme, MaterialTheme.colors.background)
     val tintColor = tintColor ?: wallpaperType?.defaultTintColor(theme)
     Column(Modifier
-      .drawBehind {
+      .drawWithCache {
         if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
           chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor)
         } else {
-          drawRect(themeBackgroundColor)
+          onDrawBehind {
+            drawRect(themeBackgroundColor)
+          }
         }
       }
       .padding(DEFAULT_PADDING_HALF)

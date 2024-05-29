@@ -1,12 +1,13 @@
 package chat.simplex.common.views.helpers
 
+import androidx.compose.ui.draw.CacheDrawScope
+import androidx.compose.ui.draw.DrawResult
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -352,9 +353,17 @@ sealed class WallpaperType {
   }
 }
 
-fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, background: Color, tint: Color) = clipRect {
+private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, size: Size, density: Float, layoutDirection: LayoutDirection): ImageBitmap {
   val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
-  fun repeat(imageScale: Float) {
+  val drawScope = CanvasDrawScope()
+  val bitmap = ImageBitmap(size.width.toInt(), size.height.toInt())
+  val canvas = Canvas(bitmap)
+  drawScope.draw(
+    density = Density(density),
+    layoutDirection = layoutDirection,
+    canvas = canvas,
+    size = size,
+  ) {
     val scale = imageScale * density
     for (h in 0..(size.height / image.height / scale).roundToInt()) {
       for (w in 0..(size.width / image.width / scale).roundToInt()) {
@@ -368,50 +377,71 @@ fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, b
       }
     }
   }
+  return bitmap
+}
 
-  drawRect(background)
-  when (imageType) {
-    is WallpaperType.Preset -> repeat((imageType.scale ?: 1f) * imageType.predefinedImageScale)
-    is WallpaperType.Image -> when (val scaleType = imageType.scaleType ?: WallpaperScaleType.FILL) {
-      WallpaperScaleType.REPEAT -> repeat(imageType.scale ?: 1f)
-      WallpaperScaleType.FILL, WallpaperScaleType.FIT -> {
-        val scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
-        val scaledWidth = (image.width * scale.scaleX).roundToInt()
-        val scaledHeight = (image.height * scale.scaleY).roundToInt()
-        // Large image will cause freeze
-        if (image.width > 4320 || image.height > 4320) return@clipRect
+fun CacheDrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, background: Color, tint: Color): DrawResult {
+  val imageScale = if (imageType is WallpaperType.Preset) {
+    (imageType.scale ?: 1f) * imageType.predefinedImageScale
+  } else if (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT) {
+    imageType.scale ?: 1f
+  } else {
+    1f
+  }
+  val image = if (imageType is WallpaperType.Preset || (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT)) {
+    drawToBitmap(image, imageScale, tint, size, density, layoutDirection)
+  } else {
+    image
+  }
 
-        drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
-        if (scaleType == WallpaperScaleType.FIT) {
-          if (scaledWidth < size.width) {
-            // has black lines at left and right sides
-            var x = (size.width - scaledWidth) / 2
-            while (x > 0) {
-              drawImage(image, dstOffset = IntOffset(x = (x - scaledWidth).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
-              x -= scaledWidth
-            }
-            x = size.width - (size.width - scaledWidth) / 2
-            while (x < size.width) {
-              drawImage(image, dstOffset = IntOffset(x = x.roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
-              x += scaledWidth
-            }
-          } else {
-            // has black lines at top and bottom sides
-            var y = (size.height - scaledHeight) / 2
-            while (y > 0) {
-              drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = (y - scaledHeight).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
-              y -= scaledHeight
-            }
-            y = size.height - (size.height - scaledHeight) / 2
-            while (y < size.height) {
-              drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = y.roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
-              y += scaledHeight
+  return onDrawBehind {
+    val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
+    drawRect(background)
+    when (imageType) {
+      is WallpaperType.Preset -> drawImage(image)
+      is WallpaperType.Image -> when (val scaleType = imageType.scaleType ?: WallpaperScaleType.FILL) {
+        WallpaperScaleType.REPEAT -> drawImage(image)
+        WallpaperScaleType.FILL, WallpaperScaleType.FIT -> {
+          clipRect {
+            val scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
+            val scaledWidth = (image.width * scale.scaleX).roundToInt()
+            val scaledHeight = (image.height * scale.scaleY).roundToInt()
+            // Large image will cause freeze
+            if (image.width > 4320 || image.height > 4320) return@clipRect
+
+            drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+            if (scaleType == WallpaperScaleType.FIT) {
+              if (scaledWidth < size.width) {
+                // has black lines at left and right sides
+                var x = (size.width - scaledWidth) / 2
+                while (x > 0) {
+                  drawImage(image, dstOffset = IntOffset(x = (x - scaledWidth).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+                  x -= scaledWidth
+                }
+                x = size.width - (size.width - scaledWidth) / 2
+                while (x < size.width) {
+                  drawImage(image, dstOffset = IntOffset(x = x.roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+                  x += scaledWidth
+                }
+              } else {
+                // has black lines at top and bottom sides
+                var y = (size.height - scaledHeight) / 2
+                while (y > 0) {
+                  drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = (y - scaledHeight).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+                  y -= scaledHeight
+                }
+                y = size.height - (size.height - scaledHeight) / 2
+                while (y < size.height) {
+                  drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = y.roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+                  y += scaledHeight
+                }
+              }
             }
           }
+          drawRect(tint)
         }
-        drawRect(tint)
       }
+      is WallpaperType.Empty -> {}
     }
-    is WallpaperType.Empty -> {}
   }
 }

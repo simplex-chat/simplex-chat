@@ -17,6 +17,8 @@ import kotlinx.coroutines.*
 import java.io.File
 
 fun main() {
+  // Disable hardware acceleration
+  System.setProperty("skiko.renderApi", "SOFTWARE")
   initHaskell()
   runMigrations()
   initApp()

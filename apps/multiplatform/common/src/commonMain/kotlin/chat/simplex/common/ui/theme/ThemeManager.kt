@@ -56,12 +56,18 @@ object ThemeManager {
     val nonSystemThemeName = nonSystemThemeName()
     val defaultTheme = defaultActiveTheme(appSettingsTheme)
 
+    val hasGpu = !chatModel.hardwareAccelerationDisabled
     val baseTheme = when (nonSystemThemeName) {
-      DefaultTheme.LIGHT.themeName -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp, AppWallpaper(type = PresetWallpaper.SCHOOL.toType(DefaultTheme.LIGHT)))
-      DefaultTheme.DARK.themeName -> ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp, AppWallpaper(type = PresetWallpaper.SCHOOL.toType(DefaultTheme.DARK)))
-      DefaultTheme.SIMPLEX.themeName -> ActiveTheme(DefaultTheme.SIMPLEX.themeName, DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper(type = PresetWallpaper.SCHOOL.toType(DefaultTheme.SIMPLEX)))
-      DefaultTheme.BLACK.themeName -> ActiveTheme(DefaultTheme.BLACK.themeName, DefaultTheme.BLACK, BlackColorPalette, BlackColorPaletteApp, AppWallpaper(type = PresetWallpaper.SCHOOL.toType(DefaultTheme.BLACK)))
-      else -> ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp, AppWallpaper(type = PresetWallpaper.SCHOOL.toType(DefaultTheme.LIGHT)))
+      DefaultTheme.LIGHT.themeName ->
+        ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp, AppWallpaper(type = if (hasGpu) PresetWallpaper.SCHOOL.toType(DefaultTheme.LIGHT) else WallpaperType.Empty))
+      DefaultTheme.DARK.themeName ->
+        ActiveTheme(DefaultTheme.DARK.themeName, DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp, AppWallpaper(type = if (hasGpu) PresetWallpaper.SCHOOL.toType(DefaultTheme.DARK) else WallpaperType.Empty))
+      DefaultTheme.SIMPLEX.themeName ->
+        ActiveTheme(DefaultTheme.SIMPLEX.themeName, DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp, AppWallpaper(type = if (hasGpu) PresetWallpaper.SCHOOL.toType(DefaultTheme.SIMPLEX) else WallpaperType.Empty))
+      DefaultTheme.BLACK.themeName ->
+        ActiveTheme(DefaultTheme.BLACK.themeName, DefaultTheme.BLACK, BlackColorPalette, BlackColorPaletteApp, AppWallpaper(type = if (hasGpu) PresetWallpaper.SCHOOL.toType(DefaultTheme.BLACK) else WallpaperType.Empty))
+      else ->
+        ActiveTheme(DefaultTheme.LIGHT.themeName, DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp, AppWallpaper(type = if (hasGpu) PresetWallpaper.SCHOOL.toType(DefaultTheme.LIGHT) else WallpaperType.Empty))
     }
 
     val perUserTheme = if (baseTheme.colors.isLight) perUserTheme?.light else perUserTheme?.dark
