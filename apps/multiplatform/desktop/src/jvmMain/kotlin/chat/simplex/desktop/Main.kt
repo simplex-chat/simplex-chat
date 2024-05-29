@@ -3,7 +3,6 @@ package chat.simplex.desktop
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -18,7 +17,7 @@ import java.io.File
 
 fun main() {
   // Disable hardware acceleration
-  System.setProperty("skiko.renderApi", "SOFTWARE")
+  //System.setProperty("skiko.renderApi", "SOFTWARE")
   initHaskell()
   runMigrations()
   initApp()
