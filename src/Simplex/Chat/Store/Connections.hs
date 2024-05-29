@@ -213,12 +213,10 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
 
 getConnectionsToSubscribe :: DB.Connection -> VersionRangeChat -> User -> IO ([ConnId], [ConnectionEntity])
 getConnectionsToSubscribe db vr user@User {userId} = do
-  aConnIds <- map fromOnly <$> DB.query db "SELECT agent_conn_id FROM connections WHERE c.user_id = ? AND to_subscribe = 1" (Only userId)
-  unsetConnectionToSubscribe db
-  entities <- forM aConnIds $ \acId -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId)
-  unsetConnectionToSubscribe db
-  let connIds = map (\(AgentConnId connId) -> connId) aConnIds
+  connIds <- map fromOnly <$> DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND to_subscribe = 1" (Only userId)
+  unsetConnectionToSubscribe db user
+  entities <- forM connIds $ fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user . AgentConnId
   pure (connIds, catMaybes entities)
 
-unsetConnectionToSubscribe :: DB.Connection -> IO ()
-unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
+unsetConnectionToSubscribe :: DB.Connection -> User -> IO ()
+unsetConnectionToSubscribe db User {userId} = DB.execute db "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1" (Only userId)

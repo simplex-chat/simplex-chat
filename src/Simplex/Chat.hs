@@ -3343,7 +3343,7 @@ subscribeUserConnections vr onlyNeeded user = do
         let (ctConns, ucs, mConns, sfts, rfts, pcConns) = foldl' addEntity ([], M.empty, [], M.empty, M.empty, []) entities
         pure (conns, ctConns, ucs, [], mConns, sfts, rfts, pcConns)
       else do
-        withStore' unsetConnectionToSubscribe
+        withStore' (`unsetConnectionToSubscribe` user)
         ctConns <- getContactConns
         (ucConns, ucs) <- getUserContactLinkConns
         (gs, mConns) <- getGroupMemberConns
