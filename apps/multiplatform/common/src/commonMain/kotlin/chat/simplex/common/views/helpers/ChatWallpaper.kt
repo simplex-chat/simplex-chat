@@ -353,7 +353,7 @@ sealed class WallpaperType {
 }
 
 fun DrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, background: Color, tint: Color) = clipRect {
-  val quality = FilterQuality.High
+  val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
   fun repeat(imageScale: Float) {
     val scale = imageScale * density
     for (h in 0..(size.height / image.height / scale).roundToInt()) {
