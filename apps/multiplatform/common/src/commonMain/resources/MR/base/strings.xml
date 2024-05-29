@@ -1850,6 +1850,15 @@
   <string name="v5_7_network">Network management</string>
   <string name="v5_7_network_descr">More reliable network connection.</string>
   <string name="v5_7_new_interface_languages">Lithuanian UI</string>
+  <string name="v5_8_private_routing">Private message routing 🚀</string>
+  <string name="v5_8_private_routing_descr">Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network &amp; servers* settings.</string>
+  <string name="v5_8_chat_themes">New chat themes</string>
+  <string name="v5_8_chat_themes_descr">Make your chats look different!</string>
+  <string name="v5_8_safe_files">Safely receive files</string>
+  <string name="v5_8_safe_files_descr">Confirm files from unknown servers.</string>
+  <string name="v5_8_message_delivery">Improved message delivery</string>
+  <string name="v5_8_message_delivery_descr">With reduced battery usage.</string>
+  <string name="v5_8_persian_ui">Persian UI</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
