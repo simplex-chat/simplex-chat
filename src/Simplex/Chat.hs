@@ -3426,10 +3426,9 @@ subscribeUserConnections vr onlyNeeded user = do
           when (ce && not (M.null errConns)) $ forM_ (M.assocs errConns) $ \(acId, err) ->
             forM_ (M.lookup acId connRefs) $ \ContactRef {localDisplayName} ->
               toView CRContactSubError {user, contactName = localDisplayName, chatError = ChatErrorAgent err Nothing}
-        notifyAPI = unless (null statuses) $ toView $ CRNetworkStatuses (Just user) statuses
+        notifyAPI = toView $ CRNetworkStatuses (Just user) $ map status cts
           where
-            statuses = mapMaybe status cts
-            status connId = ConnNetworkStatus (AgentConnId connId) . errorNetworkStatus <$> M.lookup connId errs
+            status connId = ConnNetworkStatus (AgentConnId connId) $ maybe NSConnected errorNetworkStatus (M.lookup connId errs)
             errorNetworkStatus :: AgentErrorType -> NetworkStatus
             errorNetworkStatus = NSError . \case
               BROKER _ NETWORK -> "network"
