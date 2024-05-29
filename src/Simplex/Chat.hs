@@ -1379,6 +1379,9 @@ processChatCommand' vr = \case
         forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- mapM (withAgent . flip getConnectionServers) (contactConnId ct)
     pure $ CRContactInfo user ct connectionStats (fmap fromLocalProfile incognitoProfile)
+  APIContactQueueInfo contactId -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db vr user contactId
+    CRQueueInfo user <$> mapM (withAgent . flip getConnectionQueueInfo) (contactConnId ct)
   APIGroupInfo gId -> withUser $ \user -> do
     (g, s) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> liftIO (getGroupSummary db user gId)
     pure $ CRGroupInfo user g s
@@ -1386,6 +1389,9 @@ processChatCommand' vr = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo user g m connectionStats
+  APIGroupMemberQueueInfo gId gMemberId -> withUser $ \user -> do
+    m <- withStore $ \db -> getGroupMember db vr user gId gMemberId
+    CRQueueInfo user <$> mapM (withAgent . flip getConnectionQueueInfo) (memberConnId m)
   APISwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db vr user contactId
     case contactConnId ct of
@@ -1497,6 +1503,8 @@ processChatCommand' vr = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGroupInfo groupId
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
+  ContactQueueInfo cName -> withContactName cName APIContactQueueInfo
+  GroupMemberQueueInfo gName mName -> withMemberName gName mName APIGroupMemberQueueInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   AbortSwitchContact cName -> withContactName cName APIAbortSwitchContact
@@ -7360,6 +7368,10 @@ chatCommandP =
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayName),
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
+      "/_qinfo #" *> (APIGroupMemberQueueInfo <$> A.decimal <* A.space <*> A.decimal),
+      "/_qinfo @" *> (APIContactQueueInfo <$> A.decimal),
+      ("/info #" <|> "/i #") *> (GroupMemberQueueInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
+      ("/info " <|> "/i ") *> char_ '@' *> (ContactQueueInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
