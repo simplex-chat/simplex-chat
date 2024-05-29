@@ -853,14 +853,28 @@ getUserContactConnIds :: DB.Connection -> User -> IO [ConnId]
 getUserContactConnIds db User {userId} =
   map fromOnly
     <$> DB.query
-      db
-      [sql|
-      SELECT c.agent_conn_id
-      FROM connections c
-      JOIN contacts ct ON ct.contact_id = c.contact_id
-      WHERE c.user_id = ? AND ct.user_id = ? AND ct.deleted = 0
-    |]
-      (userId, userId)
+        db
+        [sql|
+          SELECT c.agent_conn_id
+          FROM contacts ct
+          LEFT JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE ct.user_id = ?
+            AND ct.contact_status = ?
+            AND ct.deleted = 0
+            AND
+              c.connection_id = (
+                SELECT cc_connection_id FROM (
+                  SELECT
+                    cc.connection_id AS cc_connection_id,
+                    cc.created_at AS cc_created_at
+                  FROM connections cc
+                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                  ORDER BY cc_created_at DESC
+                  LIMIT 1
+                )
+              )
+        |]
+        (userId, CSActive)
 
 getConnectionById :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Connection
 getConnectionById db vr User {userId} connId = ExceptT $ do

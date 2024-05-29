@@ -3381,7 +3381,12 @@ subscribeUserConnections vr onlyNeeded user = do
     addSub :: Connection -> [ConnId] -> [ConnId]
     addSub c = (aConnId c :)
     getContactConns :: CM [ConnId]
-    getContactConns = withStore_ getUserContactConnIds
+    getContactConns = do
+      ctConns <- withStore_ getUserContactConnIds
+      ctConns' <- mapMaybe contactConnId . filter contactActive <$> withStore_ (`getUserContacts` vr)
+      unless (S.fromList ctConns == S.fromList ctConns') $
+        logError $ "getContactConns differ: " <> tshow (ctConns, ctConns')
+      pure ctConns -- (map fst cts', M.fromList cts')
     getUserContactLinkConns :: CM ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
       (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
@@ -3390,6 +3395,12 @@ subscribeUserConnections vr onlyNeeded user = do
     getGroupMemberConns :: CM ([(GroupInfo, [ConnId])], [ConnId])
     getGroupMemberConns = do
       gs <- withStore_ (`getUserGroupMemberConnIds` vr)
+      let mConns = S.fromList (concatMap snd gs)
+      gs' <- withStore_ (`getUserGroups` vr)
+      let mPairs = concatMap (\(Group _ ms) -> mapMaybe memberConnId (filter (not . memberRemoved) ms)) gs'
+      let mConns' = S.fromList mPairs
+      unless (mConns == mConns') $
+        logError $ "getGroupMemberConns differ: " <> tshow (mConns, mConns')
       pure (gs, concatMap snd gs)
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
