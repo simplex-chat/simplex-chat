@@ -68,7 +68,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -504,6 +504,7 @@ data ChatCommand
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | GetAgentMsgCounts
+  | GetAgentQueuesInfo
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -750,6 +751,7 @@ data ChatResponse
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
+  | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
