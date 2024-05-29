@@ -54,6 +54,7 @@ module Simplex.Chat.Store.Direct
     incConnectionAuthErrCounter,
     setConnectionAuthErrCounter,
     getUserContacts,
+    getUserContactConnIds,
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -857,6 +858,19 @@ getContactConnections db vr userId Contact {contactId} =
         (userId, userId, contactId)
     connections [] = pure []
     connections rows = pure $ map (toConnection vr) rows
+
+getUserContactConnIds :: DB.Connection -> User -> IO [ConnId]
+getUserContactConnIds db User {userId} =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+      SELECT c.agent_conn_id
+      FROM connections c
+      JOIN contacts ct ON ct.contact_id = c.contact_id
+      WHERE c.user_id = ? AND ct.user_id = ? AND ct.deleted = 0
+    |]
+      (userId, userId)
 
 getConnectionById :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Connection
 getConnectionById db vr User {userId} connId = ExceptT $ do

@@ -3379,20 +3379,16 @@ subscribeUserConnections vr onlyNeeded user = do
     addSub :: Connection -> [ConnId] -> [ConnId]
     addSub c = (aConnId c :)
     getContactConns :: CM [ConnId]
-    getContactConns = do
-      cts <- withStore_ (`getUserContacts` vr) -- TODO: lightweight query
-      let cts' = mapMaybe (\ct -> (,ct) <$> contactConnId ct) $ filter contactActive cts
-      pure (map fst cts')
+    getContactConns = withStore_ getUserContactConnIds
     getUserContactLinkConns :: CM ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
       (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
       let connIds = map aConnId cs
       pure (connIds, M.fromList $ zip connIds ucs)
-    getGroupMemberConns :: CM ([Group], [ConnId])
+    getGroupMemberConns :: CM ([(GroupInfo, [ConnId])], [ConnId])
     getGroupMemberConns = do
-      gs <- withStore_ (`getUserGroups` vr) -- TODO: lightweight query
-      let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs
-      pure (gs, map fst mPairs)
+      gs <- withStore_ (`getUserGroupMemberConnIds` vr)
+      pure (gs, concatMap snd gs)
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
       sfts <- withStore_ getLiveSndFileTransfers
@@ -3438,31 +3434,29 @@ subscribeUserConnections vr onlyNeeded user = do
           okSubs = S.size groups - M.size errGroups,
           errSubs = M.size errGroups
         }
-    groupSubsToView :: Map ConnId AgentErrorType -> [Group] -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
-    groupSubsToView errs gs ms connRefs ce = do
-      mapM_ groupSub $
-        sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
+    groupSubsToView :: Map ConnId AgentErrorType -> [(GroupInfo, [ConnId])] -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
+    groupSubsToView errs gs allMembers connRefs ce = do
+      mapM_ (uncurry groupSub) gs
       toView CRMemberSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
       where
-        conns = S.fromList ms
+        conns = S.fromList allMembers
         errConns = M.restrictKeys errs conns
-        groupSub :: Group -> CM ()
-        groupSub (Group g@GroupInfo {membership} members) = do
+        groupSub :: GroupInfo -> [ConnId] -> CM ()
+        groupSub g@GroupInfo {membership} groupMembers = do
           when ce $ mapM_ (toView . uncurry (CRMemberSubError user g) ) mErrors
           toView groupEvent
           where
             mErrors :: [(ContactName, ChatError)]
-            mErrors = sortOn fst $ mapMaybe mError members
-            mError :: GroupMember -> Maybe (ContactName, ChatError)
-            mError gm = do
-              mConnId <- memberConnId gm
+            mErrors = sortOn fst $ mapMaybe mError groupMembers
+            mError :: ConnId -> Maybe (ContactName, ChatError)
+            mError mConnId = do
               mErr <- M.lookup mConnId errConns
               ContactRef {localDisplayName} <- M.lookup mConnId connRefs
               Just (localDisplayName, ChatErrorAgent mErr Nothing)
             groupEvent :: ChatResponse
             groupEvent
               | memberStatus membership == GSMemInvited = CRGroupInvitation user g
-              | all (\GroupMember {activeConn} -> isNothing activeConn) members =
+              | null groupMembers =
                   if memberActive membership
                     then CRGroupEmpty user g
                     else CRGroupRemoved user g
