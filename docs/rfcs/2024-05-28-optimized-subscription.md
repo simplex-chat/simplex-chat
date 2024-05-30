@@ -18,11 +18,13 @@ Successful results are communicated with a new `UP srv conns` message emitted fr
 
 `reconnectSMPClient` should stop sending UPs to prevent double processing of the same result. The `okConns` membership test it currently uses is the same "did not belong to an active connection" that the batch result would use.
 
-Sending results with UP allows to reduce summary responses to a generic structure with counters so no entity data would be needed for CLI here:
+Sending results with UP allows to reduce summary responses to a bunch of counters so no entity data would be needed for CLI here:
 
 ```haskell
-| CRConnectionSubSummary {user :: User, okSubs :: Int, errSubs :: Int} -- XXX: add label :: Text ?
-| CRGroupSubSummary {user :: User, groupName :: GroupName, okSubs :: Int, errSubs :: Int} -- XXX: needs group name as group reports
+| CRContactSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+| CRUserGroupLinksSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+| CRMemberSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+| CRPendingSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
 ```
 
 Subscription errors are reported to API as `CRNetworkStatuses` as ususal, but the active subs are removed from the list as they are already handled by `UP`.

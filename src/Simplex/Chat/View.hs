@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import Data.List (groupBy, intercalate, intersperse, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)

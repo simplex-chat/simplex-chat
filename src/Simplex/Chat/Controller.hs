@@ -671,7 +671,6 @@ data ChatResponse
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRContactSubError {user :: User, contactName :: ContactName, chatError :: ChatError}
-  -- | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]} -- XXX: weirs status/subSummary/subError hybrid
   | CRUserAddrSubStatus {user :: User, userContactError :: Maybe ChatError}
   | CRUserGroupLinksSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
