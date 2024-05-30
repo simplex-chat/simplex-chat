@@ -139,18 +139,16 @@ coreChatOptsP appDir defaultDbFileName = do
     optional $
       option
         textJsonParse
-        ( short 'y'
+        ( long "smp-proxy"
             <> metavar "SMP_PROXY_MODE"
-            <> long "smp-proxy"
             <> help "Use private message routing: always, unknown, unprotected, never (default)"
         ) 
   smpProxyFallback_ <-
     optional $
       option
         textJsonParse
-        ( short 'b'
+        ( long "smp-proxy-fallback"
             <> metavar "SMP_PROXY_FALLBACK_MODE"
-            <> long "smp-proxy-fallback"
             <> help "Allow downgrade and connect directly: allow (default), allowProtected, prohibit"
         )
   t <-
