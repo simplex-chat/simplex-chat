@@ -3356,7 +3356,7 @@ subscribeUserConnections vr onlyNeeded user = do
     if onlyNeeded
       then do
         (conns, entities) <- withStore' $ \a -> getConnectionsToSubscribe a vr user
-        let (ctConns, ucs, mConns, sfts, rfts, pcConns) = foldl' addEntity ([], M.empty, [], M.empty, M.empty, []) entities
+        let (ctConns, ucs, mConns, sfts, rfts, pcConns) = foldl' addEntity ([], [], [], M.empty, M.empty, []) entities
         pure (conns, ctConns, ucs, [], mConns, sfts, rfts, pcConns)
       else do
         withStore' (`unsetConnectionToSubscribe` user)
@@ -3386,16 +3386,12 @@ subscribeUserConnections vr onlyNeeded user = do
     runSubscriber :: CM () -> CM' ()
     runSubscriber action = tryAllErrors' mkChatError action >>= either (logError . tshow) pure
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
-      RcvDirectMsgConnection c (Just _ct) -> let cts' = addSub c cts in (cts', ucs, ms, sfts, rfts, pcs)
-      RcvDirectMsgConnection c Nothing -> let pcs' = addSub c pcs in (cts, ucs, ms, sfts, rfts, pcs')
-      RcvGroupMsgConnection c _g _m -> let ms' = addSub c ms in (cts, ucs, ms', sfts, rfts, pcs)
-      SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
-      RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
-      UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
-    addConn :: Connection -> a -> Map ConnId a -> Map ConnId a
-    addConn = M.insert . aConnId
-    addSub :: Connection -> [ConnId] -> [ConnId]
-    addSub c = (aConnId c :)
+      RcvDirectMsgConnection c (Just _ct) -> let cts' = aConnId c : cts in (cts', ucs, ms, sfts, rfts, pcs)
+      RcvDirectMsgConnection c Nothing -> let pcs' = aConnId c : pcs in (cts, ucs, ms, sfts, rfts, pcs')
+      RcvGroupMsgConnection c _g _m -> let ms' = aConnId c : ms in (cts, ucs, ms', sfts, rfts, pcs)
+      SndFileConnection c sft -> let sfts' = M.insert (aConnId c) sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
+      RcvFileConnection c rft -> let rfts' = M.insert (aConnId c) rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
+      UserContactConnection c uc -> let ucs' = (aConnId c, isNothing $ userContactGroupId uc) : ucs in (cts, ucs', ms, sfts, rfts, pcs)
     getContactConns :: CM [ConnId]
     getContactConns = do
       ctConns <- withStore_ getUserContactConnIds
@@ -3404,11 +3400,10 @@ subscribeUserConnections vr onlyNeeded user = do
         logError $ "getContactConns differ: " <> tshow (ctConns, ctConns')
         fail "abandon ship!"
       pure ctConns -- (map fst cts', M.fromList cts')
-    getUserContactLinkConns :: CM ([ConnId], Map ConnId UserContact)
+    getUserContactLinkConns :: CM ([ConnId], [(ConnId, Bool)])
     getUserContactLinkConns = do
-      (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
-      let connIds = map aConnId cs
-      pure (connIds, M.fromList $ zip connIds ucs)
+      ucs <- withStore_ getUserContactLinks
+      pure (map fst ucs, ucs)
     getGroupMemberConns :: CM ([(GroupInfo, [ConnId])], [ConnId])
     getGroupMemberConns = do
       gs <- withStore_ (`getUserGroupMemberConnIds` vr)
@@ -3450,9 +3445,9 @@ subscribeUserConnections vr onlyNeeded user = do
               BROKER _ NETWORK -> "network"
               SMP _ SMP.AUTH -> "contact deleted"
               e -> show e
-    contactLinkSubsToView :: Map ConnId AgentErrorType -> Map ConnId UserContact -> CM ()
+    contactLinkSubsToView :: Map ConnId AgentErrorType -> [(ConnId, Bool)] -> CM ()
     contactLinkSubsToView errs ucs = do
-      let (addresses, groupLinks) = partition (\(_, uc) -> isNothing $ userContactGroupId uc) (M.assocs ucs) -- TODO: move into query
+      let (addresses, groupLinks) = partition snd ucs
       forM_ addresses $ \(acId, _uc) -> toView $ CRUserAddrSubStatus {user, userContactError = (`ChatErrorAgent` Nothing) <$> M.lookup acId errs}
       let groups = S.fromList $ map fst groupLinks
           errGroups = M.restrictKeys errs groups

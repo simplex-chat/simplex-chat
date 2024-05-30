@@ -350,25 +350,17 @@ getUserAddressConnections db vr User {userId} = do
           |]
           (userId, userId)
 
-getUserContactLinks :: DB.Connection -> VersionRangeChat -> User -> IO [(Connection, UserContact)]
-getUserContactLinks db vr User {userId} =
-  map toUserContactConnection
-    <$> DB.query
-      db
-      [sql|
-        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-          c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
-          uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
-        FROM connections c
-        JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
-        WHERE c.user_id = ? AND uc.user_id = ?
-      |]
-      (userId, userId)
-  where
-    toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
-    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection vr connRow, UserContact {userContactLinkId, connReqContact, groupId})
+getUserContactLinks :: DB.Connection -> User -> IO [(ConnId, Bool)]
+getUserContactLinks db User {userId} =
+  DB.query
+    db
+    [sql|
+      SELECT c.agent_conn_id, uc.group_id IS NULL
+      FROM connections c
+      JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
+      WHERE c.user_id = ? AND uc.user_id = ?
+    |]
+    (userId, userId)
 
 deleteUserAddress :: DB.Connection -> User -> IO ()
 deleteUserAddress db user@User {userId} = do
