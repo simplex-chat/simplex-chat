@@ -3685,7 +3685,7 @@ processAgentMessageNoConn = \case
       where
         connIds = map AgentConnId conns
         notifyAPI = toView . CRNetworkStatus nsStatus
-        notifyCLI = do
+        notifyCLI = whenM (asks $ subscriptionEvents . config) $ do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
 
