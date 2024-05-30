@@ -14,6 +14,7 @@ module Simplex.Chat.Store.Connections
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
+    deleteConnectionRecord,
   )
 where
 
@@ -83,7 +84,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
               conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
-              created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
+              created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
@@ -220,3 +221,7 @@ getConnectionsToSubscribe db vr user@User {userId} = do
 
 unsetConnectionToSubscribe :: DB.Connection -> User -> IO ()
 unsetConnectionToSubscribe db User {userId} = DB.execute db "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1" (Only userId)
+
+deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
+deleteConnectionRecord db User {userId} cId = do
+  DB.execute db "DELETE FROM connections WHERE user_id = ? AND connection_id = ?" (userId, cId)

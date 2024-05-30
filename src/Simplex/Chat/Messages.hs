@@ -945,13 +945,6 @@ data RcvMessage = RcvMessage
     forwardedByMember :: Maybe GroupMemberId
   }
 
-data PendingGroupMessage = PendingGroupMessage
-  { msgId :: MessageId,
-    cmEventTag :: ACMEventTag,
-    msgBody :: MsgBody,
-    introId_ :: Maybe Int64
-  }
-
 type MessageId = Int64
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64

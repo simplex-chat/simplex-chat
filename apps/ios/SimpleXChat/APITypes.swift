@@ -1743,7 +1743,6 @@ public enum ChatErrorType: Decodable {
     case groupMemberNotActive
     case groupMemberUserRemoved
     case groupMemberNotFound
-    case groupMemberIntroNotFound(contactName: ContactName)
     case groupCantResendInvitation(groupInfo: GroupInfo, contactName: ContactName)
     case groupInternal(message: String)
     case fileNotFound(message: String)

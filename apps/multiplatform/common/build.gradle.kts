@@ -37,7 +37,7 @@ kotlin {
         api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
         api("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
         api("com.russhwolf:multiplatform-settings:1.1.1")
-        api("com.charleskorn.kaml:kaml:0.58.0")
+        api("com.charleskorn.kaml:kaml:0.59.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
@@ -53,6 +53,9 @@ kotlin {
     val commonTest by getting {
       dependencies {
         implementation(kotlin("test"))
+        implementation(kotlin("test-junit"))
+        implementation(kotlin("test-common"))
+        implementation(kotlin("test-annotations-common"))
       }
     }
     val androidMain by getting {

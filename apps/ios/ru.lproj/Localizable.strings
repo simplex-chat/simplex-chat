@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Ошибка: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Ошибка: %@";
 
 /* No comment provided by engineer. */
@@ -2569,9 +2569,6 @@
 "Most likely this connection is deleted." = "Скорее всего, соединение удалено.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с Вами.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Много профилей чата";
 
 /* No comment provided by engineer. */
@@ -3076,9 +3073,6 @@
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Адрес получения сообщений будет перемещён на другой сервер. Изменение адреса завершится после того как отправитель будет онлайн.";
-
-/* No comment provided by engineer. */
-"Receiving concurrency" = "Одновременный приём";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Приём файла будет прекращён.";
@@ -3919,9 +3913,6 @@
 
 /* rcv group event chat item */
 "unblocked %@" = "%@ разблокирован";
-
-/* item status description */
-"Unexpected error: %@" = "Неожиданная ошибка: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Неожиданная ошибка при перемещении данных чата";
