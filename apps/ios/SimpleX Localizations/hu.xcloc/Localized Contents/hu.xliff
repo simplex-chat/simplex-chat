@@ -713,8 +713,9 @@
         <target>Az eltűnő üzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi az ön számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow downgrade" xml:space="preserve">
+      <trans-unit id="Allow downgrade" xml:space="preserve" approved="no">
         <source>Allow downgrade</source>
+        <target state="translated">Korábbi verzióra történő visszatérés engedélyezése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -812,8 +813,9 @@
         <target>A csatlakozás folyamatban van a csoporthoz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use private routing." xml:space="preserve">
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
         <source>Always use private routing.</source>
+        <target state="translated">Mindig használjon privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -1096,8 +1098,9 @@
         <target>Nem lehet fogadni a fájlt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
+      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve" approved="no">
         <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
+        <target state="translated">Kapacitás túllépés - a címzett nem kapta meg a korábban elküldött üzeneteket.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Cellular" xml:space="preserve">
@@ -1296,8 +1299,9 @@
         <target>Adatbázis frissítés megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm files from unknown servers." xml:space="preserve">
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
         <source>Confirm files from unknown servers.</source>
+        <target state="translated">Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm network settings" xml:space="preserve">
@@ -1964,8 +1968,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Számítógépek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server error: %@" xml:space="preserve">
+      <trans-unit id="Destination server error: %@" xml:space="preserve" approved="no">
         <source>Destination server error: %@</source>
+        <target state="translated">Célkiszolgáló hiba: %@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -2073,8 +2078,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Felfedezés helyi hálózaton keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Do NOT send messages directly, even if your or destination server does not support private routing.</source>
+        <target state="translated">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2082,8 +2088,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>NE használja a SimpleX-et segélyhívásokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use private routing." xml:space="preserve">
+      <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
         <source>Do NOT use private routing.</source>
+        <target state="translated">Ne használjon privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -2741,8 +2748,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Fájl: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files" xml:space="preserve">
+      <trans-unit id="Files" xml:space="preserve" approved="no">
         <source>Files</source>
+        <target state="translated">Fájlok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files &amp; media" xml:space="preserve">
@@ -2850,14 +2858,18 @@ Ez a művelet nem vonható vissza!</target>
         <target>Továbbítva innen:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve">
+      <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Destination server error: %2$@</source>
+        <target state="translated">Továbbító kiszolgáló: %1$@
+Célkiszolgáló hiba:%2$@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve">
+      <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Error: %2$@</source>
+        <target state="translated">Továbbító kiszolgáló: %1$@
+Hiba: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
@@ -3675,8 +3687,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Üzenetkézbesítési bizonylatok!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message delivery warning" xml:space="preserve">
+      <trans-unit id="Message delivery warning" xml:space="preserve" approved="no">
         <source>Message delivery warning</source>
+        <target state="translated">Üzenet kézbesítési figyelmeztetés</target>
         <note>item status text</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -3699,12 +3712,14 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzenetreakciók küldése le van tiltva ebben a csoportban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message routing fallback" xml:space="preserve">
+      <trans-unit id="Message routing fallback" xml:space="preserve" approved="no">
         <source>Message routing fallback</source>
+        <target state="translated">Üzenet útválasztási tartalék</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message routing mode" xml:space="preserve">
+      <trans-unit id="Message routing mode" xml:space="preserve" approved="no">
         <source>Message routing mode</source>
+        <target state="translated">Üzenet útválasztási mód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -3867,8 +3882,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Internetkapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve">
+      <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve" approved="no">
         <source>Network issues - message expired after many attempts to send it.</source>
+        <target state="translated">Hálózati problémák - az üzenet többszöri elküldési kísérlet után lejárt.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Network management" xml:space="preserve">
@@ -4412,12 +4428,14 @@ Hiba: %@</target>
         <target>Privát fájl nevek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing" xml:space="preserve">
+      <trans-unit id="Private message routing" xml:space="preserve" approved="no">
         <source>Private message routing</source>
+        <target state="translated">Privát üzenet útválasztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing 🚀" xml:space="preserve">
+      <trans-unit id="Private message routing 🚀" xml:space="preserve" approved="no">
         <source>Private message routing 🚀</source>
+        <target state="translated">Privát üzenet útválasztás 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private notes" xml:space="preserve">
@@ -4425,8 +4443,9 @@ Hiba: %@</target>
         <target>Privát jegyzetek</target>
         <note>name of notes to self</note>
       </trans-unit>
-      <trans-unit id="Private routing" xml:space="preserve">
+      <trans-unit id="Private routing" xml:space="preserve" approved="no">
         <source>Private routing</source>
+        <target state="translated">Privát útválasztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -4509,8 +4528,9 @@ Hiba: %@</target>
         <target>A hangüzenetek küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect IP address" xml:space="preserve">
+      <trans-unit id="Protect IP address" xml:space="preserve" approved="no">
         <source>Protect IP address</source>
+        <target state="translated">Az IP-cím védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -4518,9 +4538,11 @@ Hiba: %@</target>
         <target>Alkalmazás képernyőjének védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
+        <target state="translated">Védje IP-címét az ismerősei által kiválasztott üzenetküldő relékkel szemben.
+Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
@@ -4863,8 +4885,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Üzenetküldő (SMP) kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Safely receive files" xml:space="preserve">
+      <trans-unit id="Safely receive files" xml:space="preserve" approved="no">
         <source>Safely receive files</source>
+        <target state="translated">Fájlok biztonságos fogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safer groups" xml:space="preserve">
@@ -5092,12 +5115,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Élő üzenet küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Send messages directly when IP address is protected and your or destination server does not support private routing.</source>
+        <target state="translated">Közvetlen üzenetküldés, ha az IP-cím védett és az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Send messages directly when your or destination server does not support private routing.</source>
+        <target state="translated">Közvetlen üzenetküldés, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send notifications" xml:space="preserve">
@@ -5205,8 +5230,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Az elküldött üzenetek törlésre kerülnek a beállított idő után.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve">
+      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve" approved="no">
         <source>Server address is incompatible with network settings.</source>
+        <target state="translated">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal.</target>
         <note>srv error text.</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
@@ -5224,8 +5250,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Sikertelen kiszolgáló-teszt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve" approved="no">
         <source>Server version is incompatible with network settings.</source>
+        <target state="translated">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</target>
         <note>srv error text</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
@@ -5348,8 +5375,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Utolsó üzenetek megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show message status" xml:space="preserve">
+      <trans-unit id="Show message status" xml:space="preserve" approved="no">
         <source>Show message status</source>
+        <target state="translated">Üzenet állapot megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -5357,8 +5385,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Előnézet megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">
+      <trans-unit id="Show → on messages sent via private routing." xml:space="preserve" approved="no">
         <source>Show → on messages sent via private routing.</source>
+        <target state="translated">Egy „→” jel megjelenítése a privát útválasztáson keresztül küldött üzeneteknél.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
@@ -5683,8 +5712,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Az alkalmazás értesíteni fogja, amikor üzeneteket vagy kapcsolatfelvételi kéréseket kap – beállítások megnyitása az engedélyezéshez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve">
+      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve" approved="no">
         <source>The app will ask to confirm downloads from unknown file servers (except .onion).</source>
+        <target state="translated">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról (kivéve .onion) történő letöltések megerősítését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
@@ -5872,8 +5902,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Az időzóna védelme érdekében a kép-/hangfájlok UTC-t használnak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve">
+      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve" approved="no">
         <source>To protect your IP address, private routing uses your SMP servers to deliver messages.</source>
+        <target state="translated">Az IP-címe védelme érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
@@ -6013,8 +6044,9 @@ A funkció engedélyezése előtt a rendszer felszólítja a hitelesítés befej
         <target>Ismeretlen hiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unknown servers!" xml:space="preserve">
+      <trans-unit id="Unknown servers!" xml:space="preserve" approved="no">
         <source>Unknown servers!</source>
+        <target state="translated">Ismeretlen kiszolgálók!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
@@ -6164,12 +6196,14 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Csak helyi értesítések használata?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
+        <target state="translated">Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers.</source>
+        <target state="translated">Használjon privát útválasztást ismeretlen kiszolgálókkal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -6407,12 +6441,14 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Csökkentett akkumulátorhasználattal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to file servers.</source>
+        <target state="translated">Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
+        <target state="translated">Tor vagy VPN nélkül az IP-címe látható lesz ezen XFTP átjátszók számára: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -6420,8 +6456,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Téves adatbázis jelmondat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve">
+      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve" approved="no">
         <source>Wrong key or unknown connection - most likely this connection is deleted.</source>
+        <target state="translated">Rossz kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
@@ -7579,8 +7616,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>ismeretlen</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown relays" xml:space="preserve">
+      <trans-unit id="unknown relays" xml:space="preserve" approved="no">
         <source>unknown relays</source>
+        <target state="translated">ismeretlen átjátszók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">
@@ -7588,8 +7626,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>ismeretlen státusz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="unprotected" xml:space="preserve">
+      <trans-unit id="unprotected" xml:space="preserve" approved="no">
         <source>unprotected</source>
+        <target state="translated">nem védett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
@@ -7657,8 +7696,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>hét</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="when IP hidden" xml:space="preserve">
+      <trans-unit id="when IP hidden" xml:space="preserve" approved="no">
         <source>when IP hidden</source>
+        <target state="translated">ha az IP-cím rejtett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="yes" xml:space="preserve">
