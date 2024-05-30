@@ -2178,7 +2178,7 @@ public enum UserNetworkType: String, Codable {
     }
 }
 
-public struct RcvMsgInfo: Decodable {
+public struct RcvMsgInfo: Codable {
     var msgId: Int64
     var msgDeliveryId: Int64
     var msgDeliveryStatus: String
@@ -2186,7 +2186,7 @@ public struct RcvMsgInfo: Decodable {
     var agentMsgMeta: String
 }
 
-public struct QueueInfo: Decodable {
+public struct QueueInfo: Codable {
     var qiSnd: Bool
     var qiNtf: Bool
     var qiSub: QSub?
@@ -2194,25 +2194,25 @@ public struct QueueInfo: Decodable {
     var qiMsg: MsgInfo?
 }
 
-public struct QSub: Decodable {
+public struct QSub: Codable {
     var qSubThread: QSubThread
     var qDelivered: String?
 }
 
-public enum QSubThread: String, Decodable {
+public enum QSubThread: String, Codable {
     case noSub
     case subPending
     case subThread
     case prohibitSub
 }
 
-public struct MsgInfo: Decodable {
+public struct MsgInfo: Codable {
     var msgId: String
     var msgTs: Date
     var msgType: MsgType
 }
 
-public enum MsgType: String, Decodable {
+public enum MsgType: String, Codable {
     case message
     case quota
 }

@@ -236,7 +236,7 @@ getLastRcvMsgInfo db connId =
         SELECT message_id, msg_delivery_id, delivery_status, agent_msg_id, agent_msg_meta
         FROM msg_deliveries
         WHERE connection_id = ? AND delivery_status IN (?, ?)
-        ORDER BY created_at, msg_delivery_id DESC
+        ORDER BY created_at DESC, msg_delivery_id DESC
         LIMIT 1
       |]
       (connId, MDSRcvAgent, MDSRcvAcknowledged)

@@ -110,6 +110,7 @@ struct ChatInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
+        case queueInfo(info: String)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -119,6 +120,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
+            case let .queueInfo(info): return "queueInfo \(info)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -224,6 +226,15 @@ struct ChatInfoView: View {
                     Section(header: Text("For console")) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                        Button ("Debug delivery") {
+                            Task {
+                                do {
+                                    let (rcvMsgInfo, qInfo) = try await apiContactQueueInfo(chat.chatInfo.apiId)
+                                    let msgInfo = if let info = rcvMsgInfo { encodeJSON(info) } else { "none" }
+                                    alert = .queueInfo(info: "last received msg: \(msgInfo)\nserver queue info: \(encodeJSON(qInfo))")
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -243,6 +254,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
+            case let .queueInfo(info): return mkAlert(title: "Message queue info", message: info)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
