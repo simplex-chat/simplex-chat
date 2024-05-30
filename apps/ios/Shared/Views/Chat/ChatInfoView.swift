@@ -236,8 +236,8 @@ struct ChatInfoView: View {
                                         alert = .queueInfo(info: "last received msg: \(msgInfo)\nserver queue info: \(encodeJSON(qInfo))")
                                     }
                                 } catch let e {
-                                    logger.error("deleteContactAlert apiDeleteChat error: \(responseError(e))")
-                                    let a = getErrorAlert(e, "Error deleting contact")
+                                    logger.error("apiContactQueueInfo error: \(responseError(e))")
+                                    let a = getErrorAlert(e, "Error")
                                     await MainActor.run {
                                         alert = .error(title: a.title, error: a.message)
                                     }

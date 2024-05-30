@@ -2186,7 +2186,7 @@ public struct RcvMsgInfo: Codable {
     var msgId: Int64
     var msgDeliveryId: Int64
     var msgDeliveryStatus: String
-    var agentMsgId: String
+    var agentMsgId: Int64
     var agentMsgMeta: String
 }
 
