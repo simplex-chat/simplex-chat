@@ -3437,11 +3437,11 @@ subscribeUserConnections vr onlyNeeded user = do
           when (ce && not (M.null errConns)) $ forM_ (M.assocs errConns) $ \(acId, err) ->
             forM_ (M.lookup acId connRefs) $ \ContactRef {localDisplayName} ->
               toView CRContactSubError {user, contactName = localDisplayName, chatError = ChatErrorAgent err Nothing}
-        notifyAPI = toView $ CRNetworkStatuses (Just user) $ map status cts
+        notifyAPI = unless (M.null errConns) $ toView $ CRNetworkStatuses (Just user) $ map status (M.assocs errConns)
           where
-            status connId = ConnNetworkStatus (AgentConnId connId) $ maybe NSConnected errorNetworkStatus (M.lookup connId errs)
-            errorNetworkStatus :: AgentErrorType -> NetworkStatus
-            errorNetworkStatus = NSError . \case
+            status (connId, err) = ConnNetworkStatus (AgentConnId connId) $ NSError (errorNetworkStatus err)
+            errorNetworkStatus :: AgentErrorType -> String
+            errorNetworkStatus = \case
               BROKER _ NETWORK -> "network"
               SMP _ SMP.AUTH -> "contact deleted"
               e -> show e
