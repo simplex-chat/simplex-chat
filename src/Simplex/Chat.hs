@@ -3372,9 +3372,8 @@ subscribeUserConnections vr onlyNeeded user = do
     -- detach subscription and result processing
     rs <- withAgent (`Agent.subscribeConnections` conns) -- subscribe using batched commands
     let (errs, _oks) = M.mapEither id rs
-    api <- asks $ coreApi . config
-    refs <- withStore' $ \db -> getConnectionsContacts db (if api then M.keys errs else M.keys rs)
-    let connRefs = M.fromList $ map (\ref@ContactRef {agentConnId = AgentConnId acId} -> (acId, ref)) refs
+    refs <- withStore' $ \db -> getConnectionsContacts db (M.keys errs)
+    let connRefs = M.fromList $ map (\ContactRef {agentConnId = AgentConnId acId, localDisplayName} -> (acId, localDisplayName)) refs
     ce <- asks $ subscriptionEvents . config
     contactSubsToView errs ctConns connRefs ce
     contactLinkSubsToView errs ucs
@@ -3427,16 +3426,16 @@ subscribeUserConnections vr onlyNeeded user = do
       pure (map fst rftPairs, M.fromList rftPairs)
     getPendingContactConns :: CM [ConnId]
     getPendingContactConns = withStore_ getPendingContactConnections
-    contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
+    contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Map ConnId ContactName -> Bool -> CM ()
     contactSubsToView errs cts connRefs ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
         conns = S.fromList cts
         errConns = M.restrictKeys errs conns
         notifyCLI = do
           toView CRContactSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
-          when (ce && not (M.null errConns)) $ forM_ (M.assocs errConns) $ \(acId, err) ->
-            forM_ (M.lookup acId connRefs) $ \ContactRef {localDisplayName} ->
-              toView CRContactSubError {user, contactName = localDisplayName, chatError = ChatErrorAgent err Nothing}
+          when ce $ forM_ (M.assocs errConns) $ \(acId, err) ->
+            forM_ (M.lookup acId connRefs) $ \contactName ->
+              toView CRContactSubError {user, contactName, chatError = ChatErrorAgent err Nothing}
         notifyAPI = unless (M.null errConns) $ toView $ CRNetworkStatuses (Just user) $ map status (M.assocs errConns)
           where
             status (connId, err) = ConnNetworkStatus (AgentConnId connId) $ NSError (errorNetworkStatus err)
@@ -3456,7 +3455,7 @@ subscribeUserConnections vr onlyNeeded user = do
           okSubs = S.size groups - M.size errGroups,
           errSubs = M.size errGroups
         }
-    groupSubsToView :: Map ConnId AgentErrorType -> [(GroupInfo, [ConnId])] -> [ConnId] -> Map ConnId ContactRef -> Bool -> CM ()
+    groupSubsToView :: Map ConnId AgentErrorType -> [(GroupInfo, [ConnId])] -> [ConnId] -> Map ConnId ContactName -> Bool -> CM ()
     groupSubsToView errs gs allMembers connRefs ce = do
       mapM_ (uncurry groupSub) gs
       toView CRMemberSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
@@ -3473,8 +3472,8 @@ subscribeUserConnections vr onlyNeeded user = do
             mError :: ConnId -> Maybe (ContactName, ChatError)
             mError mConnId = do
               mErr <- M.lookup mConnId errConns
-              ContactRef {localDisplayName} <- M.lookup mConnId connRefs
-              Just (localDisplayName, ChatErrorAgent mErr Nothing)
+              name <- M.lookup mConnId connRefs
+              Just (name, ChatErrorAgent mErr Nothing)
             groupEvent :: ChatResponse
             groupEvent
               | memberStatus membership == GSMemInvited = CRGroupInvitation user g

@@ -2052,8 +2052,10 @@ testUsersTimedMessages tmp = do
       alice <# "bob> alisa 4"
 
     withTestChat tmp "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice
+        <### [ "1 contacts connected (use /cs for the list)",
+               "[user: alice] 1 contacts connected (use /cs for the list)"
+             ]
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
