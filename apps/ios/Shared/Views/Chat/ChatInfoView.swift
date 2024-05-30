@@ -233,7 +233,7 @@ struct ChatInfoView: View {
                                     var msgInfo: String
                                     if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
                                     await MainActor.run {
-                                        alert = .queueInfo(info: "last received msg: \(msgInfo)\nserver queue info: \(encodeJSON(qInfo))")
+                                        alert = .queueInfo(info: "server queue info: \(encodeJSON(qInfo))\n\nlast received msg: \(msgInfo)")
                                     }
                                 } catch let e {
                                     logger.error("apiContactQueueInfo error: \(responseError(e))")
