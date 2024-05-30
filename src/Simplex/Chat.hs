@@ -3372,9 +3372,9 @@ subscribeUserConnections vr onlyNeeded user = do
     -- detach subscription and result processing
     rs <- withAgent (`Agent.subscribeConnections` conns) -- subscribe using batched commands
     let (errs, _oks) = M.mapEither id rs
-    refs <- withStore' $ \db -> getConnectionsContacts db (M.keys errs)
-    let connRefs = M.fromList $ map (\ContactRef {agentConnId = AgentConnId acId, localDisplayName} -> (acId, localDisplayName)) refs
     ce <- asks $ subscriptionEvents . config
+    refs <- if ce then withStore' $ \db -> getConnectionsContacts db (M.keys errs) else pure []
+    let connRefs = M.fromList $ map (\ContactRef {agentConnId = AgentConnId acId, localDisplayName} -> (acId, localDisplayName)) refs
     contactSubsToView errs ctConns connRefs ce
     contactLinkSubsToView errs ucs
     groupSubsToView errs gs mConns connRefs ce
@@ -3427,14 +3427,14 @@ subscribeUserConnections vr onlyNeeded user = do
     getPendingContactConns :: CM [ConnId]
     getPendingContactConns = withStore_ getPendingContactConnections
     contactSubsToView :: Map ConnId AgentErrorType -> [ConnId] -> Map ConnId ContactName -> Bool -> CM ()
-    contactSubsToView errs cts connRefs ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
+    contactSubsToView errs cts names ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
         conns = S.fromList cts
         errConns = M.restrictKeys errs conns
         notifyCLI = do
           toView CRContactSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
           when ce $ forM_ (M.assocs errConns) $ \(acId, err) ->
-            forM_ (M.lookup acId connRefs) $ \contactName ->
+            forM_ (M.lookup acId names) $ \contactName ->
               toView CRContactSubError {user, contactName, chatError = ChatErrorAgent err Nothing}
         notifyAPI = unless (M.null errConns) $ toView $ CRNetworkStatuses (Just user) $ map status (M.assocs errConns)
           where
@@ -3456,7 +3456,7 @@ subscribeUserConnections vr onlyNeeded user = do
           errSubs = M.size errGroups
         }
     groupSubsToView :: Map ConnId AgentErrorType -> [(GroupInfo, [ConnId])] -> [ConnId] -> Map ConnId ContactName -> Bool -> CM ()
-    groupSubsToView errs gs allMembers connRefs ce = do
+    groupSubsToView errs gs allMembers names ce = do
       mapM_ (uncurry groupSub) gs
       toView CRMemberSubSummary {user, okSubs = S.size conns - M.size errConns, errSubs = M.size errConns}
       where
@@ -3472,7 +3472,7 @@ subscribeUserConnections vr onlyNeeded user = do
             mError :: ConnId -> Maybe (ContactName, ChatError)
             mError mConnId = do
               mErr <- M.lookup mConnId errConns
-              name <- M.lookup mConnId connRefs
+              name <- M.lookup mConnId names
               Just (name, ChatErrorAgent mErr Nothing)
             groupEvent :: ChatResponse
             groupEvent
