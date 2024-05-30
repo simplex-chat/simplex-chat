@@ -229,18 +229,12 @@ struct ChatInfoView: View {
                         Button ("Debug delivery") {
                             Task {
                                 do {
-                                    let (rcvMsgInfo, qInfo) = try await apiContactQueueInfo(chat.chatInfo.apiId)
-                                    var msgInfo: String
-                                    if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
-                                    await MainActor.run {
-                                        alert = .queueInfo(info: "server queue info: \(encodeJSON(qInfo))\n\nlast received msg: \(msgInfo)")
-                                    }
+                                    let info = queueInfoText(try await apiContactQueueInfo(chat.chatInfo.apiId))
+                                    await MainActor.run { alert = .queueInfo(info: info) }
                                 } catch let e {
                                     logger.error("apiContactQueueInfo error: \(responseError(e))")
                                     let a = getErrorAlert(e, "Error")
-                                    await MainActor.run {
-                                        alert = .error(title: a.title, error: a.message)
-                                    }
+                                    await MainActor.run { alert = .error(title: a.title, error: a.message) }
                                 }
                             }
                         }
@@ -596,6 +590,13 @@ func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Al
         primaryButton: .destructive(Text("Renegotiate"), action: syncConnectionForce),
         secondaryButton: .cancel()
     )
+}
+
+func queueInfoText(_ info: (RcvMsgInfo?, QueueInfo)) -> String {
+    let (rcvMsgInfo, qInfo) = info
+    var msgInfo: String
+    if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
+    return String.localizedStringWithFormat(NSLocalizedString("server queue info: %@\n\nlast received msg: %@", comment: "queue info"), encodeJSON(qInfo), msgInfo)
 }
 
 struct ChatInfoView_Previews: PreviewProvider {
