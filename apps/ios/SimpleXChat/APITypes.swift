@@ -685,6 +685,7 @@ public enum ChatResponse: Decodable, Error {
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
             case .groupMemberInfo: return "groupMemberInfo"
+            case .queueInfo: return "queueInfo"
             case .contactSwitchStarted: return "contactSwitchStarted"
             case .groupMemberSwitchStarted: return "groupMemberSwitchStarted"
             case .contactSwitchAborted: return "contactSwitchAborted"
@@ -843,6 +844,9 @@ public enum ChatResponse: Decodable, Error {
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
             case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
+            case let .queueInfo(u, rcvMsgInfo, queueInfo):
+                let msgInfo = if let info = rcvMsgInfo { encodeJSON(rcvMsgInfo) } else { "none" }
+                return withUser(u, "rcvMsgInfo: \(msgInfo)\nqueueInfo: \(encodeJSON(queueInfo))")
             case let .contactSwitchStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactSwitchAborted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
