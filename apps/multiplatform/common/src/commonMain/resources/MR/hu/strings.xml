@@ -1832,4 +1832,19 @@
     <string name="color_wallpaper_tint">Háttérkép kiemelés</string>
     <string name="color_wallpaper_background">Háttérkép háttérszíne</string>
     <string name="color_primary_variant2">További kiemelés 2</string>
+    <string name="theme_destination_app_theme">Alkalmazás téma</string>
+    <string name="v5_8_persian_ui">Perzsa kezelőfelület</string>
+    <string name="v5_8_private_routing_descr">Védje IP-címét az ismerősei által kiválasztott üzenetküldő relékkel szemben.
+\nEngedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</string>
+    <string name="v5_8_safe_files_descr">Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</string>
+    <string name="v5_8_message_delivery">Javított üzenetkézbesítés</string>
+    <string name="chat_theme_reset_to_app_theme">Alkalmazás témájának visszaállítása</string>
+    <string name="v5_8_chat_themes_descr">Tegye egyedivé a csevegéseit!</string>
+    <string name="v5_8_chat_themes">Új csevegési témák</string>
+    <string name="v5_8_private_routing">Privát üzenet útválasztás 🚀</string>
+    <string name="v5_8_safe_files">Fájlok biztonságos fogadása</string>
+    <string name="v5_8_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
+    <string name="error_initializing_web_view">Hiba a WebView inicializálásában. Frissítse rendszerét az új verzióra. Kérjük, lépjen kapcsolatba a fejlesztőkkel.
+\nHiba: %s</string>
+    <string name="chat_theme_reset_to_user_theme">Felhasználó által létrehozott téma visszaállítása</string>
 </resources>
