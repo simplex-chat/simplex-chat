@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Messages
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
+    getLastRcvMsgInfo,
     createNewRcvMessage,
     updateSndMsgDeliveryStatus,
     createPendingGroupMessage,
@@ -225,6 +226,23 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
       |]
       (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
   pure msg
+
+getLastRcvMsgInfo :: DB.Connection -> Int64 -> IO (Maybe RcvMsgInfo)
+getLastRcvMsgInfo db connId =
+  maybeFirstRow rcvMsgInfo $
+    DB.query
+      db
+      [sql|
+        SELECT message_id, msg_delivery_id, delivery_status, agent_msg_id, agent_msg_meta
+        FROM msg_deliveries
+        WHERE connection_id = ? AND delivery_status IN (?, ?)
+        ORDER BY created_at, msg_delivery_id DESC
+        LIMIT 1
+      |]
+      (connId, MDSRcvAgent, MDSRcvAcknowledged)
+  where
+    rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
+      RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =

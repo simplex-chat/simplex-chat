@@ -561,6 +561,18 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (Gro
     throw r
 }
 
+func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = await chatSendCmd(.apiContactQueueInfo(contactId: contactId))
+    if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
+    throw r
+}
+
+func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = chatSendCmdSync(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
+    throw r
+}
+
 func apiSwitchContact(contactId: Int64) throws -> ConnectionStats {
     let r = chatSendCmdSync(.apiSwitchContact(contactId: contactId))
     if case let .contactSwitchStarted(_, _, connectionStats) = r { return connectionStats }

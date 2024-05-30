@@ -82,6 +82,8 @@ public enum ChatCommand {
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
+    case apiContactQueueInfo(contactId: Int64)
+    case apiGroupMemberQueueInfo(groupId: Int64, groupMemberId: Int64)
     case apiSwitchContact(contactId: Int64)
     case apiSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
     case apiAbortSwitchContact(contactId: Int64)
@@ -228,6 +230,8 @@ public enum ChatCommand {
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
+            case let .apiContactQueueInfo(contactId): return "/_queue info @\(contactId)"
+            case let .apiGroupMemberQueueInfo(groupId, groupMemberId): return "/_queue info #\(groupId) \(groupMemberId)"
             case let .apiSwitchContact(contactId): return "/_switch @\(contactId)"
             case let .apiSwitchGroupMember(groupId, groupMemberId): return "/_switch #\(groupId) \(groupMemberId)"
             case let .apiAbortSwitchContact(contactId): return "/_abort switch @\(contactId)"
@@ -375,6 +379,8 @@ public enum ChatCommand {
             case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
+            case .apiContactQueueInfo: return "apiContactInfo"
+            case .apiGroupMemberQueueInfo: return "apiGroupMemberInfo"
             case .apiSwitchContact: return "apiSwitchContact"
             case .apiSwitchGroupMember: return "apiSwitchGroupMember"
             case .apiAbortSwitchContact: return "apiAbortSwitchContact"
@@ -516,6 +522,7 @@ public enum ChatResponse: Decodable, Error {
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
     case groupMemberInfo(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
+    case queueInfo(user: UserRef, rcvMsgInfo: RcvMsgInfo?, queueInfo: QueueInfo)
     case contactSwitchStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchStarted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactSwitchAborted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
@@ -2169,4 +2176,43 @@ public enum UserNetworkType: String, Codable {
         case .other: "Other"
         }
     }
+}
+
+public struct RcvMsgInfo: Decodable {
+    var msgId: Int64
+    var msgDeliveryId: Int64
+    var msgDeliveryStatus: String
+    var agentMsgId: String
+    var agentMsgMeta: String
+}
+
+public struct QueueInfo: Decodable {
+    var qiSnd: Bool
+    var qiNtf: Bool
+    var qiSub: QSub?
+    var qiSize: Int
+    var qiMsg: MsgInfo?
+}
+
+public struct QSub: Decodable {
+    var qSubThread: QSubThread
+    var qDelivered: String?
+}
+
+public enum QSubThread: String, Decodable {
+    case noSub
+    case subPending
+    case subThread
+    case prohibitSub
+}
+
+public struct MsgInfo: Decodable {
+    var msgId: String
+    var msgTs: Date
+    var msgType: MsgType
+}
+
+public enum MsgType: String, Decodable {
+    case message
+    case quota
 }

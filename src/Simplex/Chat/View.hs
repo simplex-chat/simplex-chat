@@ -13,7 +13,6 @@ module Simplex.Chat.View where
 
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
@@ -65,7 +64,7 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtoServerWithAuth, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (bshow, tshow)
+import Simplex.Messaging.Util (tshow)
 import Simplex.Messaging.Version hiding (version)
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Console.ANSI.Types
@@ -90,10 +89,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
   CRChatSuspended -> ["chat suspended"]
-  CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
+  CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
-  CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
-  CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
+  CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRApiParsedMarkdown ft -> [viewJSON ft]
   CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
@@ -101,7 +100,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
-  CRQueueInfo {} -> []
+  CRQueueInfo _ msgInfo qInfo ->
+    [ "last received msg: " <> maybe "none" viewJSON msgInfo,
+      "server queue info: " <> viewJSON qInfo
+    ]
   CRContactSwitchStarted {} -> ["switch started"]
   CRGroupMemberSwitchStarted {} -> ["switch started"]
   CRContactSwitchAborted {} -> ["switch aborted"]
@@ -221,7 +223,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileError u (Just ci) _ e -> ttyUser u $ uploadingFile "error" ci <> [plain e]
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
-  CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [plain . LB.toStrict $ J.encode j]) info_
+  CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
@@ -323,7 +325,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
-      <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
+      <> maybe [] ((: []) . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
   CRRemoteCtrlFound {remoteCtrl = RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName}, ctrlAppInfo_, appVersion, compatible} ->
     [ ("remote controller " <> sShow remoteCtrlId <> " found: ")
@@ -355,8 +357,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
   CRDebugLocks {chatLockName, chatEntityLocks, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
-      plain $ "chat entity locks: " <> LB.unpack (J.encode chatEntityLocks),
-      plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
+      "chat entity locks: " <> viewJSON chatEntityLocks,
+      "agent locks: " <> viewJSON agentLocks
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
@@ -371,12 +373,12 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ("active subscriptions:" : map sShow activeSubscriptions)
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
       <> ("removed subscriptions: " : map sShow removedSubscriptions)
-  CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> plain (LB.unpack $ J.encode agentWorkersSummary)]
+  CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> viewJSON agentWorkersSummary]
   CRAgentWorkersDetails {agentWorkersDetails} ->
     [ "agent workers details:",
-      plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
+      viewJSON agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
-  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", plain . LB.unpack $ J.encode msgCounts]
+  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", viewJSON msgCounts]
   CRContactDisabled u c -> ttyUser u ["[" <> ttyContact' c <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRConnectionInactive entity inactive -> viewConnectionEntityInactive entity inactive
@@ -394,7 +396,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
-  CRAppSettings as -> ["app settings: " <> plain (LB.unpack $ J.encode as)]
+  CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
   CRCustomChatResponse u r -> ttyUser' u $ [plain r]
   where
@@ -1238,10 +1240,10 @@ viewGroupInfo GroupInfo {groupId, uiThemes, customData} s =
     <> viewCustomData customData
 
 viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
-viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> plain (LB.toStrict $ J.encode uiThemes)])
+viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> viewJSON uiThemes])
 
 viewCustomData :: Maybe CustomData -> [StyledString]
-viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> plain (LB.toStrict . J.encode $ J.Object v)])
+viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
 viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink}, activeConn} stats =
@@ -1683,7 +1685,7 @@ receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> AChatIt
 receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
   [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
-    cfArgsStr (Just cfArgs) = [plain (cryptoFileArgsStr testView cfArgs) | status == "completed"]
+    cfArgsStr (Just cfArgs) = [cryptoFileArgsStr testView cfArgs | status == "completed"]
     cfArgsStr _ = []
     getRemoteFileStr = case hu of
       (Just rhId, Just User {userId})
@@ -1704,10 +1706,10 @@ viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
   Just (CryptoFile fPath _) -> sentWithTime_ ts tz [to <> fileTransferStr fileId fPath]
   _ -> const []
 
-cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
+cryptoFileArgsStr :: Bool -> CryptoFileArgs -> StyledString
 cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
-  | testView = LB.toStrict $ J.encode cfArgs
-  | otherwise = "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
+  | testView = viewJSON cfArgs
+  | otherwise = plain $ "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
 
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
@@ -1825,7 +1827,7 @@ viewCallAnswer ct WebRTCSession {rtcSession = answer, rtcIceCandidates = iceCand
   [ ttyContact' ct <> " continued the WebRTC call",
     "To connect, please paste the data below in your browser window you opened earlier and click Connect button",
     "",
-    plain . LB.toStrict . J.encode $ WCCallAnswer {answer, iceCandidates}
+    viewJSON  WCCallAnswer {answer, iceCandidates}
   ]
 
 callMediaStr :: CallType -> StyledString
@@ -2082,6 +2084,9 @@ viewConnectionEntityInactive :: ConnectionEntity -> Bool -> [StyledString]
 viewConnectionEntityInactive entity inactive
   | inactive = ["[" <> connEntityLabel entity <> "] connection is marked as inactive"]
   | otherwise = ["[" <> connEntityLabel entity <> "] inactive connection is marked as active"]
+
+viewJSON :: J.ToJSON a => a -> StyledString
+viewJSON = plain . LB.toStrict . J.encode
 
 connEntityLabel :: ConnectionEntity -> StyledString
 connEntityLabel = \case
