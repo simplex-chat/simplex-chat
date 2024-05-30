@@ -432,7 +432,8 @@ smpServerCfg =
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
       allowSMPProxy = False,
-      serverClientConcurrency = 16
+      serverClientConcurrency = 16,
+      information = Nothing
     }
 
 withSmpServer :: IO () -> IO ()

@@ -379,6 +379,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       viewJSON agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
   CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", viewJSON msgCounts]
+  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", plain . LB.unpack $ J.encode msgCounts]
+  CRAgentQueuesInfo {agentQueuesInfo} ->
+    [ "agent queues info:",
+      plain . LB.unpack $ J.encode agentQueuesInfo
+    ]
   CRContactDisabled u c -> ttyUser u ["[" <> ttyContact' c <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRConnectionInactive entity inactive -> viewConnectionEntityInactive entity inactive
