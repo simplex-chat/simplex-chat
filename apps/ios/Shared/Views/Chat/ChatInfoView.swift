@@ -230,8 +230,17 @@ struct ChatInfoView: View {
                             Task {
                                 do {
                                     let (rcvMsgInfo, qInfo) = try await apiContactQueueInfo(chat.chatInfo.apiId)
-                                    let msgInfo = if let info = rcvMsgInfo { encodeJSON(info) } else { "none" }
-                                    alert = .queueInfo(info: "last received msg: \(msgInfo)\nserver queue info: \(encodeJSON(qInfo))")
+                                    var msgInfo: String
+                                    if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
+                                    await MainActor.run {
+                                        alert = .queueInfo(info: "last received msg: \(msgInfo)\nserver queue info: \(encodeJSON(qInfo))")
+                                    }
+                                } catch let e {
+                                    logger.error("deleteContactAlert apiDeleteChat error: \(responseError(e))")
+                                    let a = getErrorAlert(e, "Error deleting contact")
+                                    await MainActor.run {
+                                        alert = .error(title: a.title, error: a.message)
+                                    }
                                 }
                             }
                         }
@@ -254,7 +263,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
-            case let .queueInfo(info): return mkAlert(title: "Message queue info", message: info)
+            case let .queueInfo(info): return Alert(title: Text("Message queue info"), message: Text(info))
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }

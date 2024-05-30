@@ -567,8 +567,8 @@ func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, Queue
     throw r
 }
 
-func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (RcvMsgInfo?, QueueInfo) {
-    let r = chatSendCmdSync(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
+func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = await chatSendCmd(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
     throw r
 }
