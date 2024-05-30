@@ -75,6 +75,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -85,7 +86,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, p
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, XFTPServerWithAuth, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
-import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Transport.Client (SocksProxy, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
@@ -350,6 +351,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
@@ -952,6 +954,15 @@ data AppFilePathsConfig = AppFilePathsConfig
     appTempFolder :: FilePath,
     appAssetsFolder :: FilePath,
     appRemoteHostsFolder :: Maybe FilePath
+  }
+  deriving (Show)
+
+data SimpleNetCfg = SimpleNetCfg
+  { socksProxy :: Maybe SocksProxy,
+    smpProxyMode_ :: Maybe SMPProxyMode,
+    smpProxyFallback_ :: Maybe SMPProxyFallback,
+    tcpTimeout_ :: Maybe Int,
+    logTLSErrors :: Bool
   }
   deriving (Show)
 

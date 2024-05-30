@@ -13,18 +13,24 @@ module Simplex.Chat.Options
     coreChatOptsP,
     getChatOpts,
     protocolServersP,
+    textJsonDecode,
     fullNetworkConfig,
   )
 where
 
 import Control.Logger.Simple (LogLevel (..))
+import Data.Aeson (FromJSON)
+import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray (ScrubbedBytes)
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
@@ -55,7 +61,7 @@ data CoreChatOpts = CoreChatOpts
     dbKey :: ScrubbedBytes,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
-    networkConfig :: NetworkConfig,
+    simpleNetCfg :: SimpleNetCfg,
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
     logServerHosts :: Bool,
@@ -123,18 +129,36 @@ coreChatOptsP appDir defaultDbFileName = do
   socksProxy <-
     flag' (Just defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
       <|> option
-        parseSocksProxy
+        strParse
         ( long "socks-proxy"
             <> metavar "SOCKS5"
             <> help "Use SOCKS5 proxy at `ipv4:port` or `:port`"
             <> value Nothing
+        )
+  smpProxyMode_ <-
+    optional $
+      option
+        textJsonParse
+        ( short 'y'
+            <> metavar "SMP_PROXY_MODE"
+            <> long "smp-proxy"
+            <> help "Use private message routing: always, unknown, unprotected, never (default)"
+        ) 
+  smpProxyFallback_ <-
+    optional $
+      option
+        textJsonParse
+        ( short 'b'
+            <> metavar "SMP_PROXY_FALLBACK_MODE"
+            <> long "smp-proxy-fallback"
+            <> help "Allow downgrade and connect directly: allow (default), allowProtected, prohibit"
         )
   t <-
     option
       auto
       ( long "tcp-timeout"
           <> metavar "TIMEOUT"
-          <> help "TCP timeout, seconds (default: 5/10 without/with SOCKS5 proxy)"
+          <> help "TCP timeout, seconds (default: 7/15 without/with SOCKS5 proxy)"
           <> value 0
       )
   logLevel <-
@@ -149,7 +173,7 @@ coreChatOptsP appDir defaultDbFileName = do
   logTLSErrors <-
     switch
       ( long "log-tls-errors"
-          <> help "Log TLS errors (also enabled with `-l debug`)"
+          <> help "Log TLS errors"
       )
   logConnections <-
     switch
@@ -194,7 +218,7 @@ coreChatOptsP appDir defaultDbFileName = do
         dbKey,
         smpServers,
         xftpServers,
-        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
+        simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_ = Just $ useTcpTimeout socksProxy t, logTLSErrors},
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
@@ -204,7 +228,7 @@ coreChatOptsP appDir defaultDbFileName = do
         highlyAvailable
       }
   where
-    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
+    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
     defaultDbFilePath = combine appDir defaultDbFileName
 
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
@@ -329,8 +353,14 @@ fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
 parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
-parseSocksProxy :: ReadM (Maybe SocksProxy)
-parseSocksProxy = eitherReader $ parseAll strP . B.pack
+textJsonDecode :: FromJSON a => ByteString -> Either String a
+textJsonDecode = J.eitherDecodeStrict . (\s -> "\"" <> s <> "\"")
+
+textJsonParse :: FromJSON a => ReadM a
+textJsonParse = eitherReader $ textJsonDecode . encodeUtf8 . T.pack
+
+strParse :: StrEncoding a => ReadM (Maybe a)
+strParse = eitherReader $ parseAll strP . encodeUtf8 . T.pack
 
 parseServerPort :: ReadM (Maybe String)
 parseServerPort = eitherReader $ parseAll serverPortP . B.pack
