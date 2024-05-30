@@ -29,7 +29,7 @@ metadata:
                 {# <pubDate>{{ blog.data.date | dateToRfc822 }}</pubDate> #}
                 <pubDate>{{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}</pubDate>
                 <dc:creator>{{ metadata.author.name }}</dc:creator>
-                <guid>{{ absolutePostUrl }}</guid>
+                <guid isPermaLink="false">{{ absolutePostUrl }}</guid>
             </item>
         {%- endif %}
         {%- endfor %}
