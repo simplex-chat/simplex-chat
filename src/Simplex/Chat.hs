@@ -3368,8 +3368,8 @@ subscribeUserConnections vr onlyNeeded user = do
         pcConns <- getPendingContactConns
         let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
         pure (conns, ctConns, ucs, gs, mConns, sfts, rfts, pcConns)
+  -- detach subscription and result processing
   void . lift . forkIO . runSubscriber $ do
-    -- detach subscription and result processing
     rs <- withAgent (`Agent.subscribeConnections` conns) -- subscribe using batched commands
     let (errs, _oks) = M.mapEither id rs
     ce <- asks $ subscriptionEvents . config
@@ -3392,13 +3392,7 @@ subscribeUserConnections vr onlyNeeded user = do
       RcvFileConnection c rft -> let rfts' = M.insert (aConnId c) rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
       UserContactConnection c uc -> let ucs' = (aConnId c, isNothing $ userContactGroupId uc) : ucs in (cts, ucs', ms, sfts, rfts, pcs)
     getContactConns :: CM [ConnId]
-    getContactConns = do
-      ctConns <- withStore_ getUserContactConnIds
-      ctConns' <- mapMaybe contactConnId . filter contactActive <$> withStore_ (`getUserContacts` vr)
-      unless (S.fromList ctConns == S.fromList ctConns') $ do
-        logError $ "getContactConns differ: " <> tshow (ctConns, ctConns')
-        fail "abandon ship!"
-      pure ctConns -- (map fst cts', M.fromList cts')
+    getContactConns = withStore_ getUserContactConnIds
     getUserContactLinkConns :: CM ([ConnId], [(ConnId, Bool)])
     getUserContactLinkConns = do
       ucs <- withStore_ getUserContactLinks
@@ -3406,13 +3400,6 @@ subscribeUserConnections vr onlyNeeded user = do
     getGroupMemberConns :: CM ([(GroupInfo, [ConnId])], [ConnId])
     getGroupMemberConns = do
       gs <- withStore_ (`getUserGroupMemberConnIds` vr)
-      let mConns = S.fromList (concatMap snd gs)
-      gs' <- withStore_ (`getUserGroups` vr)
-      let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs'
-      let mConns' = S.fromList (map fst mPairs)
-      unless (mConns == mConns') $ do
-        logError $ "getGroupMemberConns differ: " <> tshow (mConns, mConns')
-        fail "abandon ship!"
       pure (gs, concatMap snd gs)
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
