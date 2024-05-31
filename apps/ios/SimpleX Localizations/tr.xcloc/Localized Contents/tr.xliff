@@ -443,9 +443,9 @@
         <target>0 saniye</target>
         <note>time to disappear</note>
       </trans-unit>
-      <trans-unit id="0s" xml:space="preserve">
+      <trans-unit id="0s" xml:space="preserve" approved="no">
         <source>0s</source>
-        <target>0 saniye</target>
+        <target state="translated">0sn</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -693,9 +693,9 @@
         <target>Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target>Tüm kişileriniz, sohbetleriniz ve dosyalarınız güvenli bir şekilde şifrelenecek ve parçalar halinde yapılandırılmış XFTP rölelerine yüklenecektir.</target>
+        <target state="translated">Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP yönlendiricilerine parçalar halinde yüklenir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -713,8 +713,9 @@
         <target>Eğer kişide izin verirse kaybolan mesajlara izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow downgrade" xml:space="preserve">
+      <trans-unit id="Allow downgrade" xml:space="preserve" approved="no">
         <source>Allow downgrade</source>
+        <target state="translated">Sürüm düşürmeye izin ver</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -812,8 +813,9 @@
         <target>Zaten gruba bağlanılıyor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use private routing." xml:space="preserve">
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
         <source>Always use private routing.</source>
+        <target state="translated">Her zaman gizli yönlendirme kullan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -1096,8 +1098,9 @@
         <target>Dosya alınamıyor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
+      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve" approved="no">
         <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
+        <target state="translated">Kapasite aşıldı - alıcı önceden gönderilen mesajları almadı.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Cellular" xml:space="preserve">
@@ -1296,8 +1299,9 @@
         <target>Veritabanı geliştirmelerini onayla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm files from unknown servers." xml:space="preserve">
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
         <source>Confirm files from unknown servers.</source>
+        <target state="translated">Bilinmeyen sunuculardan gelen dosyaları onayla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm network settings" xml:space="preserve">
@@ -1964,8 +1968,9 @@ Bu geri alınamaz!</target>
         <target>Bilgisayar cihazları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server error: %@" xml:space="preserve">
+      <trans-unit id="Destination server error: %@" xml:space="preserve" approved="no">
         <source>Destination server error: %@</source>
+        <target state="translated">Hedef sunucu hatası: %@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -2073,8 +2078,9 @@ Bu geri alınamaz!</target>
         <target>Yerel ağ aracılığıyla keşfet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Do NOT send messages directly, even if your or destination server does not support private routing.</source>
+        <target state="translated">Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2082,8 +2088,9 @@ Bu geri alınamaz!</target>
         <target>Acil aramalar için SimpleX'i KULLANMAYIN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use private routing." xml:space="preserve">
+      <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
         <source>Do NOT use private routing.</source>
+        <target state="translated">Gizli yönlendirmeyi KULLANMA.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -2741,8 +2748,9 @@ Bu geri alınamaz!</target>
         <target>Dosya: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files" xml:space="preserve">
+      <trans-unit id="Files" xml:space="preserve" approved="no">
         <source>Files</source>
+        <target state="translated">Dosyalar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files &amp; media" xml:space="preserve">
@@ -2850,14 +2858,18 @@ Bu geri alınamaz!</target>
         <target>Şuradan iletildi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve">
+      <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Destination server error: %2$@</source>
+        <target state="translated">Yönlendirme sunucusu: %1$@
+Hedef sunucu hatası: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve">
+      <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Error: %2$@</source>
+        <target state="translated">Yönlendirme sunucusu: %1$@
+Hata: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
@@ -3675,8 +3687,9 @@ Bu senin grup için bağlantın %@!</target>
         <target>Mesaj alındı bilgisi!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message delivery warning" xml:space="preserve">
+      <trans-unit id="Message delivery warning" xml:space="preserve" approved="no">
         <source>Message delivery warning</source>
+        <target state="translated">Mesaj iletimi uyarısı</target>
         <note>item status text</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -3699,12 +3712,14 @@ Bu senin grup için bağlantın %@!</target>
         <target>Mesaj tepkileri bu grupta yasaklandı.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message routing fallback" xml:space="preserve">
+      <trans-unit id="Message routing fallback" xml:space="preserve" approved="no">
         <source>Message routing fallback</source>
+        <target state="translated">Mesaj yönlendirme yedeklemesi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message routing mode" xml:space="preserve">
+      <trans-unit id="Message routing mode" xml:space="preserve" approved="no">
         <source>Message routing mode</source>
+        <target state="translated">Mesaj yönlendirme modu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -3867,8 +3882,9 @@ Bu senin grup için bağlantın %@!</target>
         <target>Ağ bağlantısı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve">
+      <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve" approved="no">
         <source>Network issues - message expired after many attempts to send it.</source>
+        <target state="translated">Ağ sorunları - birçok gönderme denemesinden sonra mesajın süresi doldu.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Network management" xml:space="preserve">
@@ -4412,12 +4428,14 @@ Hata: %@</target>
         <target>Gizli dosya adları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing" xml:space="preserve">
+      <trans-unit id="Private message routing" xml:space="preserve" approved="no">
         <source>Private message routing</source>
+        <target state="translated">Gizli mesaj yönlendirme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing 🚀" xml:space="preserve">
+      <trans-unit id="Private message routing 🚀" xml:space="preserve" approved="no">
         <source>Private message routing 🚀</source>
+        <target state="translated">Gizli mesaj yönlendirme 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private notes" xml:space="preserve">
@@ -4425,8 +4443,9 @@ Hata: %@</target>
         <target>Gizli notlar</target>
         <note>name of notes to self</note>
       </trans-unit>
-      <trans-unit id="Private routing" xml:space="preserve">
+      <trans-unit id="Private routing" xml:space="preserve" approved="no">
         <source>Private routing</source>
+        <target state="translated">Gizli yönlendirme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -4509,8 +4528,9 @@ Hata: %@</target>
         <target>Sesli mesajların gönderimini yasakla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect IP address" xml:space="preserve">
+      <trans-unit id="Protect IP address" xml:space="preserve" approved="no">
         <source>Protect IP address</source>
+        <target state="translated">IP adresini koru</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -4518,9 +4538,11 @@ Hata: %@</target>
         <target>Uygulama ekranını koru</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
+        <target state="translated">IP adresinizi kişileriniz tarafından seçilen mesajlaşma yönlendiricilerinden koruyun.
+*Ağ ve sunucular* ayarlarında etkinleştirin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
@@ -4693,14 +4715,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Bağlanma isteğini reddet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
+      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve" approved="no">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
-        <target>Aktarma sunucusu yalnızca gerekli olduğunda kullanılır. Başka bir taraf IP adresinizi gözlemleyebilir.</target>
+        <target state="translated">Yönlendirici sunucusu yalnızca gerekli olduğunda kullanılır. Başka bir taraf IP adresinizi gözlemleyebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
+      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve" approved="no">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
-        <target>Aktarıcı sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.</target>
+        <target state="translated">Yönlendirici sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -4863,8 +4885,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SMP sunucuları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Safely receive files" xml:space="preserve">
+      <trans-unit id="Safely receive files" xml:space="preserve" approved="no">
         <source>Safely receive files</source>
+        <target state="translated">Dosyaları güvenle alın</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safer groups" xml:space="preserve">
@@ -5092,12 +5115,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Canlı mesaj gönder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Send messages directly when IP address is protected and your or destination server does not support private routing.</source>
+        <target state="translated">IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Send messages directly when your or destination server does not support private routing.</source>
+        <target state="translated">Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send notifications" xml:space="preserve">
@@ -5205,8 +5230,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Gönderilen mesajlar ayarlanan süreden sonra silinecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve">
+      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve" approved="no">
         <source>Server address is incompatible with network settings.</source>
+        <target state="translated">Sunucu adresi ağ ayarlarıyla uyumlu değil.</target>
         <note>srv error text.</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
@@ -5224,8 +5250,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Sunucu testinde hata oluştu!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve" approved="no">
         <source>Server version is incompatible with network settings.</source>
+        <target state="translated">Sunucu sürümü ağ ayarlarıyla uyumlu değil.</target>
         <note>srv error text</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
@@ -5348,8 +5375,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Son mesajları göster</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show message status" xml:space="preserve">
+      <trans-unit id="Show message status" xml:space="preserve" approved="no">
         <source>Show message status</source>
+        <target state="translated">Mesaj durumunu göster</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -5357,8 +5385,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Ön gösterimi göser</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">
+      <trans-unit id="Show → on messages sent via private routing." xml:space="preserve" approved="no">
         <source>Show → on messages sent via private routing.</source>
+        <target state="translated">Gizli yönlendirme yoluyla gönderilen mesajlarda → işaretini göster.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
@@ -5683,8 +5712,9 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
         <target>Uygulama, mesaj veya iletişim isteği aldığınızda sizi bilgilendirebilir - etkinleştirmek için lütfen ayarları açın.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve">
+      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve" approved="no">
         <source>The app will ask to confirm downloads from unknown file servers (except .onion).</source>
+        <target state="translated">Uygulama bilinmeyen dosya sunucularından indirmeleri onaylamanızı isteyecektir (.onion hariç).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
@@ -5872,8 +5902,9 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
         <target>Zaman bölgesini korumak için,fotoğraf/ses dosyaları UTC kullanır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve">
+      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve" approved="no">
         <source>To protect your IP address, private routing uses your SMP servers to deliver messages.</source>
+        <target state="translated">IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
@@ -6013,8 +6044,9 @@ Bu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenec
         <target>Bilinmeyen hata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unknown servers!" xml:space="preserve">
+      <trans-unit id="Unknown servers!" xml:space="preserve" approved="no">
         <source>Unknown servers!</source>
+        <target state="translated">Bilinmeyen sunucular!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
@@ -6164,12 +6196,14 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target>Sadece yerel bildirimler kullanılsın mı?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
+        <target state="translated">IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers.</source>
+        <target state="translated">Bilinmeyen sunucularla gizli yönlendirme kullan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -6407,12 +6441,14 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target>Azaltılmış pil kullanımı ile birlikte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to file servers.</source>
+        <target state="translated">Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
+        <target state="translated">Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -6420,8 +6456,9 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target>Yanlış veritabanı parolası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve">
+      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve" approved="no">
         <source>Wrong key or unknown connection - most likely this connection is deleted.</source>
+        <target state="translated">Yanlış anahtar veya bilinmeyen bağlantı - büyük olasılıkla bu bağlantı silinmiştir.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
@@ -7579,8 +7616,9 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>bilinmeyen</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown relays" xml:space="preserve">
+      <trans-unit id="unknown relays" xml:space="preserve" approved="no">
         <source>unknown relays</source>
+        <target state="translated">bilinmeyen yönlendiriciler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">
@@ -7588,8 +7626,9 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>bilinmeyen durum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="unprotected" xml:space="preserve">
+      <trans-unit id="unprotected" xml:space="preserve" approved="no">
         <source>unprotected</source>
+        <target state="translated">korumasız</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
@@ -7657,8 +7696,9 @@ SimpleX sunucuları profilinizi göremez.</target>
         <target>haftalar</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="when IP hidden" xml:space="preserve">
+      <trans-unit id="when IP hidden" xml:space="preserve" approved="no">
         <source>when IP hidden</source>
+        <target state="translated">IP gizliyken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="yes" xml:space="preserve">
