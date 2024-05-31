@@ -445,7 +445,7 @@
       </trans-unit>
       <trans-unit id="0s" xml:space="preserve" approved="no">
         <source>0s</source>
-        <target state="translated">0s</target>
+        <target state="translated">0sn</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -733,9 +733,9 @@
         <target>Mesaj tepkilerine izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
         <source>Allow sending direct messages to members.</source>
-        <target>Üyelere direkt mesaj göndermeye izin ver.</target>
+        <target state="translated">Üyelere doğrudan mesaj göndermeye izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -4508,9 +4508,9 @@ Hata: %@</target>
         <target>SimpleX bağlantısı gönderimini yasakla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve" approved="no">
         <source>Prohibit sending direct messages to members.</source>
-        <target>Geri dönülmez mesaj silme işlemini yasakla.</target>
+        <target state="translated">Üyelere doğrudan mesaj göndermeyi yasakla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
