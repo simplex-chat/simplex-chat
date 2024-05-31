@@ -1390,6 +1390,11 @@ processChatCommand' vr = \case
         forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- mapM (withAgent . flip getConnectionServers) (contactConnId ct)
     pure $ CRContactInfo user ct connectionStats (fmap fromLocalProfile incognitoProfile)
+  APIContactQueueInfo contactId -> withUser $ \user -> do
+    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
+    case activeConn of
+      Just conn -> getConnQueueInfo user conn
+      Nothing -> throwChatError $ CEContactNotActive ct
   APIGroupInfo gId -> withUser $ \user -> do
     (g, s) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> liftIO (getGroupSummary db user gId)
     pure $ CRGroupInfo user g s
@@ -1397,6 +1402,11 @@ processChatCommand' vr = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo user g m connectionStats
+  APIGroupMemberQueueInfo gId gMemberId -> withUser $ \user -> do
+    GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user gId gMemberId
+    case activeConn of
+      Just conn -> getConnQueueInfo user conn
+      Nothing -> throwChatError CEGroupMemberNotActive
   APISwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db vr user contactId
     case contactConnId ct of
@@ -1508,6 +1518,8 @@ processChatCommand' vr = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGroupInfo groupId
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
+  ContactQueueInfo cName -> withContactName cName APIContactQueueInfo
+  GroupMemberQueueInfo gName mName -> withMemberName gName mName APIGroupMemberQueueInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   AbortSwitchContact cName -> withContactName cName APIAbortSwitchContact
@@ -2806,6 +2818,9 @@ processChatCommand' vr = \case
           pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
       let ci = mkChatItem cd ciId content ciFile_ Nothing Nothing itemForwarded Nothing False createdAt Nothing createdAt
       pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
+    getConnQueueInfo user Connection {connId, agentConnId = AgentConnId acId} = do
+      msgInfo <- withStore' (`getLastRcvMsgInfo` connId)
+      CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
 contactCITimed :: Contact -> CM (Maybe CITimed)
 contactCITimed ct = sndContactCITimed False ct Nothing
@@ -7372,6 +7387,10 @@ chatCommandP =
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayName),
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
+      "/_queue info #" *> (APIGroupMemberQueueInfo <$> A.decimal <* A.space <*> A.decimal),
+      "/_queue info @" *> (APIContactQueueInfo <$> A.decimal),
+      ("/queue info #" <|> "/qi #") *> (GroupMemberQueueInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
+      ("/queue info " <|> "/qi ") *> char_ '@' *> (ContactQueueInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
