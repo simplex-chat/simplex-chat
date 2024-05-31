@@ -1,6 +1,5 @@
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,12 +12,15 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.SelectableCard
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(), content: (@Composable ColumnScope.() -> Unit)) {
@@ -74,6 +76,22 @@ fun <T> SectionViewSelectable(
     }
   }
   SectionTextFooter(values.first { it.value == currentValue.value }.description)
+}
+
+@Composable
+fun <T> SectionViewSelectableCards(
+  title: String?,
+  currentValue: State<T>,
+  values: List<ValueTitleDesc<T>>,
+  onSelected: (T) -> Unit,
+) {
+  SectionView(title) {
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      values.forEach { item ->
+        SelectableCard(currentValue, item.value, item.title, item.description, onSelected)
+      }
+    }
+  }
 }
 
 @Composable
