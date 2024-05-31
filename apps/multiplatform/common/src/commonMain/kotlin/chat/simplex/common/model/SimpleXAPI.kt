@@ -931,6 +931,20 @@ object ChatController {
     return null
   }
 
+  suspend fun apiContactQueueInfo(rh: Long?, contactId: Long): Pair<RcvMsgInfo?, QueueInfo>? {
+    val r = sendCmd(rh, CC.APIContactQueueInfo(contactId))
+    if (r is CR.QueueInfoR) return Pair(r.rcvMsgInfo, r.queueInfo)
+    apiErrorAlert("apiContactQueueInfo", generalGetString(MR.strings.error), r)
+    return null
+  }
+
+  suspend fun apiGroupMemberQueueInfo(rh: Long?, groupId: Long, groupMemberId: Long): Pair<RcvMsgInfo?, QueueInfo>? {
+    val r = sendCmd(rh, CC.APIGroupMemberQueueInfo(groupId, groupMemberId))
+    if (r is CR.QueueInfoR) return Pair(r.rcvMsgInfo, r.queueInfo)
+    apiErrorAlert("apiGroupMemberQueueInfo", generalGetString(MR.strings.error), r)
+    return null
+  }
+
   suspend fun apiSwitchContact(rh: Long?, contactId: Long): ConnectionStats? {
     val r = sendCmd(rh, CC.APISwitchContact(contactId))
     if (r is CR.ContactSwitchStarted) return r.connectionStats
@@ -2507,6 +2521,8 @@ sealed class CC {
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
+  class APIContactQueueInfo(val contactId: Long): CC()
+  class APIGroupMemberQueueInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APISwitchContact(val contactId: Long): CC()
   class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
   class APIAbortSwitchContact(val contactId: Long): CC()
@@ -2652,6 +2668,8 @@ sealed class CC {
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
+    is APIContactQueueInfo -> "/_queue info @$contactId"
+    is APIGroupMemberQueueInfo -> "/_queue info #$groupId $groupMemberId"
     is APISwitchContact -> "/_switch @$contactId"
     is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
     is APIAbortSwitchContact -> "/_abort switch @$contactId"
@@ -2790,6 +2808,8 @@ sealed class CC {
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
+    is APIContactQueueInfo -> "apiContactQueueInfo"
+    is APIGroupMemberQueueInfo -> "apiGroupMemberQueueInfo"
     is APISwitchContact -> "apiSwitchContact"
     is APISwitchGroupMember -> "apiSwitchGroupMember"
     is APIAbortSwitchContact -> "apiAbortSwitchContact"
@@ -4197,6 +4217,7 @@ sealed class CR {
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
+  @Serializable @SerialName("queueInfo") class QueueInfoR(val user: UserRef, val rcvMsgInfo: RcvMsgInfo?, val queueInfo: QueueInfo): CR()
   @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
@@ -4368,6 +4389,7 @@ sealed class CR {
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
     is GroupMemberInfo -> "groupMemberInfo"
+    is QueueInfoR -> "queueInfo"
     is ContactSwitchStarted -> "contactSwitchStarted"
     is GroupMemberSwitchStarted -> "groupMemberSwitchStarted"
     is ContactSwitchAborted -> "contactSwitchAborted"
@@ -4529,6 +4551,7 @@ sealed class CR {
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
     is GroupMemberInfo -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
+    is QueueInfoR -> withUser(user, "rcvMsgInfo: ${json.encodeToString(rcvMsgInfo)}\nqueueInfo: ${json.encodeToString(queueInfo)}\n")
     is ContactSwitchStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberSwitchStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is ContactSwitchAborted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
@@ -5785,4 +5808,53 @@ enum class UserNetworkType {
       ETHERNET -> generalGetString(MR.strings.network_type_ethernet)
       OTHER -> generalGetString(MR.strings.network_type_other)
     }
+}
+
+@Serializable
+data class RcvMsgInfo (
+  val msgId: Long,
+  val msgDeliveryId: Long,
+  val msgDeliveryStatus: String,
+  val agentMsgId: Long,
+  val agentMsgMeta: String
+)
+
+@Serializable
+data class QueueInfo (
+  val qiSnd: Boolean,
+  val qiNtf: Boolean,
+  val qiSub: QSub? = null,
+  val qiSize: Int,
+  val qiMsg: MsgInfo? = null
+)
+
+@Serializable
+data class QSub (
+  val qSubThread: QSubThread,
+  val qDelivered: String? = null
+)
+
+enum class QSubThread {
+  @SerialName("noSub")
+  NO_SUB,
+  @SerialName("subPending")
+  SUB_PENDING,
+  @SerialName("subThread")
+  SUB_THREAD,
+  @SerialName("prohibitSub")
+  PROHIBIT_SUB
+}
+
+@Serializable
+data class MsgInfo (
+  val msgId: String,
+  val msgTs: Instant,
+  val msgType: MsgType,
+)
+
+enum class MsgType {
+  @SerialName("message")
+  MESSAGE,
+  @SerialName("quota")
+  QUOTA
 }
