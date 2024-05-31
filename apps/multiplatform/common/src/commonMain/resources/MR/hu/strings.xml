@@ -813,7 +813,7 @@
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
     <string name="invalid_QR_code">Érvénytelen QR-kód</string>
-    <string name="mark_read">Olvasottként jelölés</string>
+    <string name="mark_read">Olvasottnak jelölés</string>
     <string name="live">ÉLŐ</string>
     <string name="mark_unread">Olvasatlannak jelölés</string>
     <string name="icon_descr_more_button">Több</string>
@@ -1708,7 +1708,7 @@
     <string name="auth_open_migration_to_another_device">Átköltöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
     <string name="e2ee_info_no_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</string>
-    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, valamint visszautasítással védi.</string>
+    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</string>
     <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
     <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>
@@ -1834,7 +1834,7 @@
     <string name="color_primary_variant2">További kiemelés 2</string>
     <string name="theme_destination_app_theme">Alkalmazás téma</string>
     <string name="v5_8_persian_ui">Perzsa kezelőfelület</string>
-    <string name="v5_8_private_routing_descr">Védje IP-címét az ismerősei által kiválasztott üzenetküldő relékkel szemben.
+    <string name="v5_8_private_routing_descr">Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.
 \nEngedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</string>
     <string name="v5_8_safe_files_descr">Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</string>
     <string name="v5_8_message_delivery">Javított üzenetkézbesítés</string>
