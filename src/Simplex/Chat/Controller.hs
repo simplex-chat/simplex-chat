@@ -966,6 +966,9 @@ data SimpleNetCfg = SimpleNetCfg
   }
   deriving (Show)
 
+defaultSimpleNetCfg :: SimpleNetCfg
+defaultSimpleNetCfg = SimpleNetCfg Nothing Nothing Nothing Nothing False
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError

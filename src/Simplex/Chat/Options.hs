@@ -14,7 +14,6 @@ module Simplex.Chat.Options
     getChatOpts,
     protocolServersP,
     textJsonDecode,
-    fullNetworkConfig,
   )
 where
 
@@ -32,11 +31,10 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
-import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
-import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
@@ -342,11 +340,6 @@ chatOptsP appDir defaultDbFileName = do
         markRead,
         maintenance
       }
-
-fullNetworkConfig :: Maybe SocksProxy -> Int -> Bool -> NetworkConfig
-fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
-  let tcpConnectTimeout = (tcpTimeout * 3) `div` 2
-   in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout, logTLSErrors}
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
 parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
