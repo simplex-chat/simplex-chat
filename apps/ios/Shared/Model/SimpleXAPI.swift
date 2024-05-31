@@ -1847,7 +1847,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .sndFileCompleteXFTP(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .sndFileError(user, aChatItem, _):
+    case let .sndFileError(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
