@@ -1277,7 +1277,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
-        .filter{ c in c.ready && c.active && !memberContactIds.contains(c.apiId) }
+        .filter{ c in c.sendMsgEnabled && !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
