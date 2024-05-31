@@ -349,10 +349,12 @@ struct ChatListNavLink: View {
             .tint(.accentColor)
         }
         .frame(height: rowHeights[dynamicTypeSize])
-        .sheet(isPresented: $showContactConnectionInfo) {
-            if case let .contactConnection(contactConnection) = chat.chatInfo {
-                ContactConnectionInfo(contactConnection: contactConnection)
-                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+        .appSheet(isPresented: $showContactConnectionInfo) {
+            Group {
+                if case let .contactConnection(contactConnection) = chat.chatInfo {
+                    ContactConnectionInfo(contactConnection: contactConnection)
+                        .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+                }
             }
         }
         .onTapGesture {
@@ -467,7 +469,7 @@ struct ChatListNavLink: View {
             .padding(4)
             .frame(height: rowHeights[dynamicTypeSize])
             .onTapGesture { showInvalidJSON = true }
-            .sheet(isPresented: $showInvalidJSON) {
+            .appSheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)
                     .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
