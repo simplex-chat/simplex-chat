@@ -7,6 +7,7 @@ import SectionItemView
 import SectionItemWithValue
 import SectionView
 import SectionViewSelectable
+import SectionViewSelectableCards
 import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -555,7 +556,7 @@ private fun SMPProxyModePicker(
           Modifier.fillMaxWidth(),
         ) {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
-          SectionViewSelectable(null, smpProxyMode, values, updateSMPProxyMode)
+          SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
         }
       }
     }
@@ -592,7 +593,7 @@ private fun SMPProxyFallbackPicker(
           Modifier.fillMaxWidth(),
         ) {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
-          SectionViewSelectable(null, smpProxyFallback, values, updateSMPProxyFallback)
+          SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
         }
       }
     }
