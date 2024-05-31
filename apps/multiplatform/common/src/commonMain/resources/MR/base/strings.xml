@@ -1401,6 +1401,7 @@
   <string name="section_title_for_console">FOR CONSOLE</string>
   <string name="info_row_local_name">Local name</string>
   <string name="info_row_database_id">Database ID</string>
+  <string name="info_row_debug_delivery">Debug delivery</string>
   <string name="info_row_updated_at">Record updated at</string>
   <string name="info_row_sent_at">Sent at</string>
   <string name="info_row_created_at">Created at</string>
@@ -1462,6 +1463,9 @@
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
+  <string name="message_queue_info">Message queue info</string>
+  <string name="message_queue_info_none">none</string>
+  <string name="message_queue_info_server_info">server queue info: %1$s\n\nlast received msg: %2$s</string>
 
   <!-- GroupWelcomeView.kt -->
   <string name="group_welcome_title">Welcome message</string>
