@@ -131,8 +131,7 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
-      xftpNotifyErrsOnRetry = False
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
     }
 
 testCfg :: ChatConfig
@@ -473,7 +472,8 @@ xftpServerConfig =
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig
+      transportConfig = defaultTransportServerConfig,
+      responseDelay = 0
     }
 
 withXFTPServer :: IO () -> IO ()

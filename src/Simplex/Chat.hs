@@ -92,9 +92,9 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
-import qualified Simplex.FileTransfer.Transport as XFTP
+import Simplex.FileTransfer.Types (RcvFileId, SndFileId, FileErrorType (..))
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, ipAddressProtected, temporaryAgentError, withLockMap)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, temporaryAgentError, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -1342,7 +1342,7 @@ processChatCommand' vr = \case
     processChatCommand $ APIGetChatItemTTL userId
   APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
-    lift $ CRNetworkConfig <$> withAgent' getNetworkConfig
+    lift $ CRNetworkConfig <$> withAgent' getNetworkConfig'
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
@@ -3194,7 +3194,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
-      netCfg <- lift $ withAgent' getNetworkConfig
+      netCfg <- lift $ withAgent' getNetworkConfig'
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
@@ -3803,6 +3803,9 @@ processAgentMsgSndFile _corrId aFileId msg = do
                             pure (sndMsg, msgDeliveryId)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
+        SFWARN e ->
+          -- TODO
+          pure ()
         SFERR e
           | temporaryAgentError e ->
               throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
@@ -3886,10 +3889,13 @@ processAgentMsgRcvFile _corrId aFileId msg = do
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ maybe (CRRcvStandaloneFileComplete user fsTargetPath ft) (CRRcvFileComplete user) ci_
+        RFWARN e ->
+          -- TODO
+          pure ()
         RFERR e
           | temporaryAgentError e ->
               throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
-          | e == XFTP "" XFTP.NOT_APPROVED -> do
+          | e == FILE NOT_APPROVED -> do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
               agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
@@ -4811,7 +4817,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unless (connInactive conn) $ do
             quotaErrCounter' <- withStore' $ \db -> incQuotaErrCounter db user conn
             when (quotaErrCounter' >= quotaErrInactiveCount) $
-              toView $ CRConnectionInactive connEntity True
+              toView $
+                CRConnectionInactive connEntity True
         _ -> pure ()
 
     continueSending :: ConnectionEntity -> Connection -> CM Bool
