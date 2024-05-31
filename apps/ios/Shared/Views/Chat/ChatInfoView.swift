@@ -257,7 +257,7 @@ struct ChatInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
-            case let .queueInfo(info): return Alert(title: Text("Message queue info"), message: Text(info))
+            case let .queueInfo(info): return queueInfoAlert(info)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -597,6 +597,15 @@ func queueInfoText(_ info: (RcvMsgInfo?, QueueInfo)) -> String {
     var msgInfo: String
     if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
     return String.localizedStringWithFormat(NSLocalizedString("server queue info: %@\n\nlast received msg: %@", comment: "queue info"), encodeJSON(qInfo), msgInfo)
+}
+
+func queueInfoAlert(_ info: String) -> Alert {
+    Alert(
+        title: Text("Message queue info"),
+        message: Text(info),
+        primaryButton: .default(Text("Ok")),
+        secondaryButton: .default(Text("Copy")) { UIPasteboard.general.string = info }
+    )
 }
 
 struct ChatInfoView_Previews: PreviewProvider {

@@ -237,7 +237,7 @@ struct GroupMemberInfoView: View {
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
                 case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
-                case let .queueInfo(info): return Alert(title: Text("Message queue info"), message: Text(info))
+                case let .queueInfo(info): return queueInfoAlert(info)
                 case let .error(title, error): return Alert(title: Text(title), message: Text(error))
                 }
             }
