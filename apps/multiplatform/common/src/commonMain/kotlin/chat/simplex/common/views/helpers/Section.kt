@@ -87,6 +87,10 @@ fun <T> SectionViewSelectableCards(
 ) {
   SectionView(title) {
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      if (title != null) {
+        Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Spacer(Modifier.height(DEFAULT_PADDING * 2f))
+      }
       values.forEach { item ->
         SelectableCard(currentValue, item.value, item.title, item.description, onSelected)
       }
