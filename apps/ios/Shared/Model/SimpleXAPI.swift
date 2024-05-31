@@ -561,6 +561,18 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (Gro
     throw r
 }
 
+func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = await chatSendCmd(.apiContactQueueInfo(contactId: contactId))
+    if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
+    throw r
+}
+
+func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = await chatSendCmd(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
+    throw r
+}
+
 func apiSwitchContact(contactId: Int64) throws -> ConnectionStats {
     let r = chatSendCmdSync(.apiSwitchContact(contactId: contactId))
     if case let .contactSwitchStarted(_, _, connectionStats) = r { return connectionStats }
@@ -1265,7 +1277,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
-        .filter{ c in c.ready && c.active && !memberContactIds.contains(c.apiId) }
+        .filter{ c in c.sendMsgEnabled && !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
@@ -1835,7 +1847,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .sndFileCompleteXFTP(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .sndFileError(user, aChatItem, _):
+    case let .sndFileError(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
