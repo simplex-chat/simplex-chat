@@ -1847,4 +1847,9 @@
     <string name="error_initializing_web_view">Hiba a WebView inicializálásában. Frissítse rendszerét az új verzióra. Kérjük, lépjen kapcsolatba a fejlesztőkkel.
 \nHiba: %s</string>
     <string name="chat_theme_reset_to_user_theme">Felhasználó által létrehozott téma visszaállítása</string>
+    <string name="message_queue_info">Üzenet várakoztatási információ</string>
+    <string name="message_queue_info_none">nincs</string>
+    <string name="info_row_debug_delivery">Hibakeresés kézbesítés</string>
+    <string name="message_queue_info_server_info">Kiszolgáló várakoztatási infó: %1$s
+\nUtoljára kézbesített üzenet: %2$s</string>
 </resources>
