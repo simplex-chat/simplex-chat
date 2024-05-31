@@ -693,18 +693,21 @@ aciFileStatusJSON = \case
 
 data FileError
   = FileErrAuth
-  | FileErrRelay {srvError :: SrvError} -- BROKER errors (other than TIMEOUT/NETWORK)
-  | FileErrOther {fileError :: Text} -- other errors
+  | FileErrNoFile
+  | FileErrRelay {srvError :: SrvError}
+  | FileErrOther {fileError :: Text}
   deriving (Eq, Show)
 
 instance StrEncoding FileError where
   strEncode = \case
     FileErrAuth -> "auth"
+    FileErrNoFile -> "no_file"
     FileErrRelay srvErr -> "relay " <> strEncode srvErr
     FileErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "auth" -> pure FileErrAuth
+      "no_file" -> pure FileErrNoFile
       "relay" -> FileErrRelay <$> (A.space *> strP)
       "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       s -> FileErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString

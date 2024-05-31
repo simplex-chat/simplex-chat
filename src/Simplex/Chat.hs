@@ -3842,6 +3842,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
 agentFileError :: AgentErrorType -> FileError
 agentFileError = \case
   XFTP _ XFTP.AUTH -> FileErrAuth
+  FILE NO_FILE -> FileErrNoFile
   BROKER _ e -> brokerError FileErrRelay e
   e -> FileErrOther . safeDecodeUtf8 $ strEncode e
   where
