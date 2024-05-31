@@ -13,7 +13,6 @@ module Simplex.Chat.Options
     coreChatOptsP,
     getChatOpts,
     protocolServersP,
-    fullNetworkConfig,
   )
 where
 
@@ -22,15 +21,17 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
-import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
-import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
@@ -55,7 +56,7 @@ data CoreChatOpts = CoreChatOpts
     dbKey :: ScrubbedBytes,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
-    networkConfig :: NetworkConfig,
+    simpleNetCfg :: SimpleNetCfg,
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
     logServerHosts :: Bool,
@@ -123,18 +124,34 @@ coreChatOptsP appDir defaultDbFileName = do
   socksProxy <-
     flag' (Just defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
       <|> option
-        parseSocksProxy
+        strParse
         ( long "socks-proxy"
             <> metavar "SOCKS5"
             <> help "Use SOCKS5 proxy at `ipv4:port` or `:port`"
             <> value Nothing
+        )
+  smpProxyMode_ <-
+    optional $
+      option
+        strParse
+        ( long "smp-proxy"
+            <> metavar "SMP_PROXY_MODE"
+            <> help "Use private message routing: always, unknown, unprotected, never (default)"
+        ) 
+  smpProxyFallback_ <-
+    optional $
+      option
+        strParse
+        ( long "smp-proxy-fallback"
+            <> metavar "SMP_PROXY_FALLBACK_MODE"
+            <> help "Allow downgrade and connect directly: no, [when IP address is] protected, yes (default)"
         )
   t <-
     option
       auto
       ( long "tcp-timeout"
           <> metavar "TIMEOUT"
-          <> help "TCP timeout, seconds (default: 5/10 without/with SOCKS5 proxy)"
+          <> help "TCP timeout, seconds (default: 7/15 without/with SOCKS5 proxy)"
           <> value 0
       )
   logLevel <-
@@ -149,7 +166,7 @@ coreChatOptsP appDir defaultDbFileName = do
   logTLSErrors <-
     switch
       ( long "log-tls-errors"
-          <> help "Log TLS errors (also enabled with `-l debug`)"
+          <> help "Log TLS errors"
       )
   logConnections <-
     switch
@@ -194,7 +211,7 @@ coreChatOptsP appDir defaultDbFileName = do
         dbKey,
         smpServers,
         xftpServers,
-        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
+        simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_ = Just $ useTcpTimeout socksProxy t, logTLSErrors},
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
@@ -204,7 +221,7 @@ coreChatOptsP appDir defaultDbFileName = do
         highlyAvailable
       }
   where
-    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
+    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
     defaultDbFilePath = combine appDir defaultDbFileName
 
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
@@ -321,16 +338,11 @@ chatOptsP appDir defaultDbFileName = do
         maintenance
       }
 
-fullNetworkConfig :: Maybe SocksProxy -> Int -> Bool -> NetworkConfig
-fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
-  let tcpConnectTimeout = (tcpTimeout * 3) `div` 2
-   in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout, logTLSErrors}
-
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
 parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
-parseSocksProxy :: ReadM (Maybe SocksProxy)
-parseSocksProxy = eitherReader $ parseAll strP . B.pack
+strParse :: StrEncoding a => ReadM a
+strParse = eitherReader $ parseAll strP . encodeUtf8 . T.pack
 
 parseServerPort :: ReadM (Maybe String)
 parseServerPort = eitherReader $ parseAll serverPortP . B.pack
