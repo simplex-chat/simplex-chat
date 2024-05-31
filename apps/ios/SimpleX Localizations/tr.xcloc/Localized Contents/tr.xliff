@@ -445,7 +445,7 @@
       </trans-unit>
       <trans-unit id="0s" xml:space="preserve" approved="no">
         <source>0s</source>
-        <target state="translated">0sn</target>
+        <target state="translated">0s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
