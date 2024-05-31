@@ -1352,7 +1352,8 @@ processChatCommand' vr = \case
     lift $ CRNetworkConfig <$> withAgent' getNetworkConfig
   SetNetworkConfig netCfg -> do
     cfg <- lift $ withAgent' getNetworkConfig
-    processChatCommand $ APISetNetworkConfig $ updateNetworkConfig cfg netCfg
+    void . processChatCommand $ APISetNetworkConfig $ updateNetworkConfig cfg netCfg
+    pure $ CRNetworkConfig cfg
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
@@ -7669,8 +7670,8 @@ chatCommandP =
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
-      smpProxyMode_ <- optional $ " smp-proxy=" *> (textJsonDecode <$?> A.takeTill (== ' '))
-      smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> (textJsonDecode <$?> A.takeTill (== ' '))
+      smpProxyMode_ <- optional $ " smp-proxy=" *> strP
+      smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_

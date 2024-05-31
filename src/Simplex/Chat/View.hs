@@ -56,6 +56,7 @@ import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestSte
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
@@ -65,7 +66,7 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtoServerWithAuth, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (bshow, tshow)
+import Simplex.Messaging.Util (bshow, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Console.ANSI.Types
@@ -1210,11 +1211,16 @@ viewChatItemTTL = \case
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
-viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
+viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout, smpProxyMode, smpProxyFallback} =
   [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
-    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]" <> " to change settings"
+    plain $ smpProxyModeStr smpProxyMode smpProxyFallback,
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes]" <> " to change settings"
   ]
+
+smpProxyModeStr :: SMPProxyMode -> SMPProxyFallback -> String
+smpProxyModeStr SPMNever _ = "private message routing disabled."
+smpProxyModeStr mode fallback = T.unpack $ safeDecodeUtf8 $ "private message routing mode: " <> strEncode mode <> ", fallback: " <> strEncode fallback
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData} stats incognitoProfile =

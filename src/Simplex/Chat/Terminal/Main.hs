@@ -6,9 +6,7 @@ module Simplex.Chat.Terminal.Main where
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
 import Control.Monad
-import qualified Data.Aeson as J
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.Text as T
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Network.Socket
@@ -16,8 +14,8 @@ import Simplex.Chat.Controller (ChatConfig, ChatController (..), ChatResponse (.
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
-import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Chat.View (serializeChatResponse, smpProxyModeStr)
+import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 import System.Terminal (withTerminal)
@@ -54,7 +52,7 @@ simplexChatCLI cfg server_ = do
           putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
 welcome :: ChatOpts -> IO ()
-welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg}} =
+welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_}}} =
   mapM_
     putStrLn
     [ versionString versionNumber,
@@ -62,13 +60,9 @@ welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg}} =
       maybe
         "direct network connection - use `/network` command or `-x` CLI option to connect via SOCKS5 at :9050"
         (("using SOCKS5 proxy " <>) . show)
-        (socksProxy simpleNetCfg),
-      maybe
-        "Private message routing disabled!"
-        (\m -> "Private message routing mode: " <> strJsonEncode m <> ", fallback: " <> maybe "allow" strJsonEncode (smpProxyFallback_ simpleNetCfg))
-        (smpProxyMode_ simpleNetCfg),
+        socksProxy,
+      smpProxyModeStr
+        (fromMaybe (smpProxyMode defaultNetworkConfig) smpProxyMode_)
+        (fromMaybe (smpProxyFallback defaultNetworkConfig) smpProxyFallback_),
       "type \"/help\" or \"/h\" for usage info"
     ]
-
-strJsonEncode :: J.ToJSON a => a -> String
-strJsonEncode = T.unpack . T.drop 1 . T.dropEnd 1 . safeDecodeUtf8 . LB.toStrict . J.encode

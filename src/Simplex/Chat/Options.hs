@@ -13,16 +13,12 @@ module Simplex.Chat.Options
     coreChatOptsP,
     getChatOpts,
     protocolServersP,
-    textJsonDecode,
   )
 where
 
 import Control.Logger.Simple (LogLevel (..))
-import Data.Aeson (FromJSON)
-import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray (ScrubbedBytes)
-import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -31,6 +27,7 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
+import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
@@ -136,7 +133,7 @@ coreChatOptsP appDir defaultDbFileName = do
   smpProxyMode_ <-
     optional $
       option
-        textJsonParse
+        strParse
         ( long "smp-proxy"
             <> metavar "SMP_PROXY_MODE"
             <> help "Use private message routing: always, unknown, unprotected, never (default)"
@@ -144,10 +141,10 @@ coreChatOptsP appDir defaultDbFileName = do
   smpProxyFallback_ <-
     optional $
       option
-        textJsonParse
+        strParse
         ( long "smp-proxy-fallback"
             <> metavar "SMP_PROXY_FALLBACK_MODE"
-            <> help "Allow downgrade and connect directly: allow (default), allowProtected, prohibit"
+            <> help "Allow downgrade and connect directly: no, [when IP address is] protected, yes (default)"
         )
   t <-
     option
@@ -344,13 +341,7 @@ chatOptsP appDir defaultDbFileName = do
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
 parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
-textJsonDecode :: FromJSON a => ByteString -> Either String a
-textJsonDecode = J.eitherDecodeStrict . (\s -> "\"" <> s <> "\"")
-
-textJsonParse :: FromJSON a => ReadM a
-textJsonParse = eitherReader $ textJsonDecode . encodeUtf8 . T.pack
-
-strParse :: StrEncoding a => ReadM (Maybe a)
+strParse :: StrEncoding a => ReadM a
 strParse = eitherReader $ parseAll strP . encodeUtf8 . T.pack
 
 parseServerPort :: ReadM (Maybe String)
