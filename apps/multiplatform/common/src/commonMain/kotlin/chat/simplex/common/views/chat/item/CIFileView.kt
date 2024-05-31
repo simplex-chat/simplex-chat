@@ -154,13 +154,7 @@ fun CIFileView(
               FileProtocol.SMP -> progressIndicator()
               FileProtocol.LOCAL -> {}
             }
-          is CIFileStatus.SndComplete -> {
-            if ((file.forwardingAllowed() || (chatModel.connectedToRemote() && CIFile.cachedRemoteFileRequests[file.fileSource] == true))) {
-              fileIcon()
-            } else {
-              fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
-            }
-          }
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvInvitation ->
