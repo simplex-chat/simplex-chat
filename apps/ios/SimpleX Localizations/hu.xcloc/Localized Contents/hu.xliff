@@ -347,9 +347,9 @@
         <target>**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target>**Legprivátabb**: ne használja a SimpleX Chat értesítési szervert, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
+        <target state="translated">**Legprivátabb**: ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
@@ -362,9 +362,9 @@
         <target>**Figyelem**: NEM tudja visszaállítani vagy megváltoztatni jelmondatát, ha elveszíti azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
+      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
-        <target>**Javasolt**: az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési szerverre, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.</target>
+        <target state="translated">**Javasolt**: az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -3617,9 +3617,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Tegye priváttá a profilját!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
+      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
         <source>Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target>Győződjön meg arról, hogy a %@ szervercímek megfelelő formátumúak, sorszeparáltak és nem duplikáltak (%@).</target>
+        <target state="translated">Győződjön meg arról, hogy a %@ kiszolgálócímek megfelelő formátumúak, sorszeparáltak és nem duplikáltak (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -3637,9 +3637,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Jelölje meg mindenki számára töröltként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mark read" xml:space="preserve">
+      <trans-unit id="Mark read" xml:space="preserve" approved="no">
         <source>Mark read</source>
-        <target>Olvasottként jelölés</target>
+        <target state="translated">Olvasottnak jelölés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve">
@@ -3752,14 +3752,14 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>A(z) %@ által írt üzenetek megjelennek!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Az üzeneteket, fájlokat és hívásokat **végpontok közötti titkosítással** és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</target>
+        <target state="translated">Az üzeneteket, fájlokat és hívásokat **végpontok közötti titkosítással**, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Az üzeneteket, fájlokat és hívásokat **végpontok közötti kvantumrezisztens titkosítással** és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.</target>
+        <target state="translated">Az üzeneteket, fájlokat és hívásokat **végpontok közötti kvantumrezisztens titkosítással**, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
@@ -4541,7 +4541,7 @@ Hiba: %@</target>
       <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target state="translated">Védje IP-címét az ismerősei által kiválasztott üzenetküldő relékkel szemben.
+        <target state="translated">Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.
 Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6121,9 +6121,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Kapcsolat izolációs mód frissítése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
+      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve" approved="no">
         <source>Updating settings will re-connect the client to all servers.</source>
-        <target>A beállítások frissítése a szerverekhez újra kapcsolódással jár.</target>
+        <target state="translated">A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating this setting will re-connect the client to all servers." xml:space="preserve">
@@ -6633,9 +6633,9 @@ Csatlakozási kérés megismétlése?</target>
         <target>Nem lehet üzeneteket küldeni!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
+      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve" approved="no">
         <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
-        <target>Ön szabályozhatja, hogy mely kiszogál(ók)ón keresztül **kapja** az üzeneteket, az ismerősöket - az üzenetküldéshez használt szervereken.</target>
+        <target state="translated">Ön szabályozhatja, hogy mely kiszogál(ók)ón keresztül **kapja** az üzeneteket, az ismerősöket - az üzenetküldéshez használt kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
