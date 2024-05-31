@@ -463,7 +463,8 @@ xftpServerConfig =
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig
+      transportConfig = defaultTransportServerConfig,
+      responseDelay = 0
     }
 
 withXFTPServer :: IO () -> IO ()
