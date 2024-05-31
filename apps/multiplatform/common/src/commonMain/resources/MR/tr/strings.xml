@@ -149,7 +149,7 @@
     <string name="role_in_group">Yetki</string>
     <string name="allow_voice_messages_question">Sesli mesajlara izin verilsin mi?</string>
     <string name="users_add">Profil ekle</string>
-    <string name="allow_direct_messages">Üyelere direkt mesaj gönderilmesine izin ver.</string>
+    <string name="allow_direct_messages">Üyelere doğrudan mesaj gönderilmesine izin ver.</string>
     <string name="allow_to_send_disappearing">Kendiliğinden yok olan mesajlar göndermeye izin ver.</string>
     <string name="allow_to_delete_messages">Gönderilen mesajların kalıcı olarak silinmesine izin ver. (24 saat içinde)</string>
     <string name="allow_to_send_files">Dosya ve medya göndermeye izin ver.</string>
@@ -505,7 +505,7 @@
     <string name="info_row_disappears_at">Kendiliğinden şu sürede yok olacak</string>
     <string name="share_text_disappears_at">Kendiliğinden şu sürede yok olacak: %s</string>
     <string name="feature_enabled">etkin</string>
-    <string name="direct_messages">Direkt mesaj</string>
+    <string name="direct_messages">Doğrudan mesajlar</string>
     <string name="no_call_on_lock_screen">Devre dışı bırak</string>
     <string name="display_name_cannot_contain_whitespace">Görünen ad, boşluk gibi aralıklama türleri içeremez.</string>
     <string name="display_name">İsmini gir:</string>
@@ -529,7 +529,7 @@
     <string name="snd_conn_event_ratchet_sync_agreed">%s üyesi için şifreleme kabul edildi</string>
     <string name="conn_level_desc_direct">doğrudan</string>
     <string name="dont_show_again">Yeniden gösterme</string>
-    <string name="direct_messages_are_prohibited_in_chat">Bu grupta üyeler arası direkt mesajlar yasaklıdır.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Bu grupta üyeler arası doğrudan mesajlaşma yasaklıdır.</string>
     <string name="feature_enabled_for_contact">konuşulan kişi için etkinleşti</string>
     <string name="feature_enabled_for_you">senin için etkinleştirildi</string>
     <string name="ttl_sec">%d sn</string>
@@ -652,7 +652,7 @@
     <string name="group_display_name_field">Grup adını gir:</string>
     <string name="group_full_name_field">Grup tam adı:</string>
     <string name="files_and_media">Dosya ve medya</string>
-    <string name="group_members_can_send_dms">Grup üyeleri direkt mesaj gönderebilir.</string>
+    <string name="group_members_can_send_dms">Grup üyeleri doğrudan mesaj gönderebilir.</string>
     <string name="group_members_can_delete">Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)</string>
     <string name="group_members_can_send_voice">Grup üyeleri sesli mesaj gönderebilirler.</string>
     <string name="files_are_prohibited_in_group">Bu toplu konuşmada, dosya ve medya yasaklanmıştır.</string>
@@ -1006,7 +1006,7 @@
     <string name="prohibit_message_reactions">Mesaj tepkilerini yasakla.</string>
     <string name="prohibit_sending_voice_messages">Sesli mesaj göndermeyi yasakla.</string>
     <string name="prohibit_message_deletion">Geri alınamaz mesaj silme işlemini yasakla.</string>
-    <string name="prohibit_direct_messages">Üyelere direkt mesaj göndermeyi yasakla.</string>
+    <string name="prohibit_direct_messages">Üyelere doğrudan mesaj göndermeyi yasakla.</string>
     <string name="prohibit_sending_files">Dosya ve medya göndermeyi yasakla.</string>
     <string name="v4_4_live_messages">Canlı mesajlar</string>
     <string name="v5_0_polish_interface">Arayüz geliştirildi</string>
@@ -1215,7 +1215,7 @@
     <string name="alert_text_msg_bad_hash">Önceki mesajın hash\'i farklı.</string>
     <string name="lock_not_enabled">SimpleX Kilit aktif değil!</string>
     <string name="chat_lock">SimpleX Kilit</string>
-    <string name="connect_via_member_address_alert_title">Direkt bağlanılsın mı?</string>
+    <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
     <string name="receipts_section_description">Bu ayarlar mevcut profiliniz içindir</string>
     <string name="smp_servers_test_failed">Sunucu testi başarısız!</string>
     <string name="verify_connection">Bağlantıyı onayla</string>
@@ -1230,7 +1230,7 @@
     <string name="v4_6_audio_video_calls_descr">Bluetooth desteği ve diğer iyileştirmeler.</string>
     <string name="icon_descr_settings">Ayarlar</string>
     <string name="settings_section_title_settings">AYARLAR</string>
-    <string name="compose_send_direct_message_to_connect">Bağlanmak için direkt mesaj gönderin</string>
+    <string name="compose_send_direct_message_to_connect">Bağlanmak için doğrudan mesaj gönderin</string>
     <string name="security_code">Güvenlik kodu</string>
     <string name="v5_4_better_groups_descr">Daha hızlı gruplara katılma ve daha güvenilir mesajlar.</string>
     <string name="group_main_profile_sent">Sohbet profiliniz grup üyelerine gönderilecek</string>
