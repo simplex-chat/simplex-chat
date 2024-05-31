@@ -4530,7 +4530,7 @@ Erreur : %@</target>
       </trans-unit>
       <trans-unit id="Protect IP address" xml:space="preserve" approved="no">
         <source>Protect IP address</source>
-        <target state="translated">Protection de l'adresse IP</target>
+        <target state="translated">Protéger l'adresse IP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
