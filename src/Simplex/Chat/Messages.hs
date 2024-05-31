@@ -536,14 +536,16 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSSndTransfer :: {sndProgress :: Int64, sndTotal :: Int64} -> CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSSndComplete :: CIFileStatus 'MDSnd
-  CIFSSndError :: CIFileStatus 'MDSnd
+  CIFSSndError :: {sndFileError :: FileError} -> CIFileStatus 'MDSnd
+  CIFSSndWarning :: {sndFileError :: FileError} -> CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
   CIFSRcvAborted :: CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
-  CIFSRcvError :: CIFileStatus 'MDRcv
+  CIFSRcvError :: {rcvFileError :: FileError} -> CIFileStatus 'MDRcv
+  CIFSRcvWarning :: {rcvFileError :: FileError} -> CIFileStatus 'MDRcv
   CIFSInvalid :: {text :: Text} -> CIFileStatus 'MDSnd
 
 deriving instance Eq (CIFileStatus d)
@@ -556,14 +558,16 @@ ciFileEnded = \case
   CIFSSndTransfer {} -> False
   CIFSSndCancelled -> True
   CIFSSndComplete -> True
-  CIFSSndError -> True
+  CIFSSndError {} -> True
+  CIFSSndWarning {} -> False
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
   CIFSRcvAborted -> True
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
-  CIFSRcvError -> True
+  CIFSRcvError {} -> True
+  CIFSRcvWarning {} -> False
   CIFSInvalid {} -> True
 
 ciFileLoaded :: CIFileStatus d -> Bool
@@ -572,14 +576,16 @@ ciFileLoaded = \case
   CIFSSndTransfer {} -> True
   CIFSSndComplete -> True
   CIFSSndCancelled -> True
-  CIFSSndError -> True
+  CIFSSndError {} -> True
+  CIFSSndWarning {} -> True
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
   CIFSRcvAborted -> False
   CIFSRcvCancelled -> False
   CIFSRcvComplete -> True
-  CIFSRcvError -> False
+  CIFSRcvError {} -> False
+  CIFSRcvWarning {} -> False
   CIFSInvalid {} -> False
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
@@ -592,14 +598,16 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSSndTransfer sent total -> strEncode (Str "snd_transfer", sent, total)
     CIFSSndCancelled -> "snd_cancelled"
     CIFSSndComplete -> "snd_complete"
-    CIFSSndError -> "snd_error"
+    CIFSSndError sndFileErr -> "snd_error" <> strEncode sndFileErr
+    CIFSSndWarning sndFileErr -> "snd_warning" <> strEncode sndFileErr
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
     CIFSRcvAborted -> "rcv_aborted"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
-    CIFSRcvError -> "rcv_error"
+    CIFSRcvError rcvFileErr -> "rcv_error" <> strEncode rcvFileErr
+    CIFSRcvWarning rcvFileErr -> "rcv_warning" <> strEncode rcvFileErr
     CIFSInvalid {} -> "invalid"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
@@ -615,14 +623,16 @@ instance StrEncoding ACIFileStatus where
           "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
           "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
           "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
-          "snd_error" -> pure $ AFS SMDSnd CIFSSndError
+          "snd_error" -> AFS SMDSnd . CIFSSndError <$> ((A.space *> strP) <|> pure (FileErrOther "")) -- alternative for backwards compatibility
+          "snd_warning" -> AFS SMDSnd . CIFSSndWarning <$> (A.space *> strP)
           "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
           "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
           "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
           "rcv_aborted" -> pure $ AFS SMDRcv CIFSRcvAborted
           "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
           "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
-          "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
+          "rcv_error" -> AFS SMDRcv . CIFSRcvError <$> ((A.space *> strP) <|> pure (FileErrOther "")) -- alternative for backwards compatibility
+          "rcv_warning" -> AFS SMDRcv . CIFSRcvWarning <$> (A.space *> strP)
           _ -> fail "bad file status"
       progress :: (Int64 -> Int64 -> a) -> A.Parser a
       progress f = f <$> num <*> num <|> pure (f 0 1)
@@ -633,14 +643,16 @@ data JSONCIFileStatus
   | JCIFSSndTransfer {sndProgress :: Int64, sndTotal :: Int64}
   | JCIFSSndCancelled
   | JCIFSSndComplete
-  | JCIFSSndError
+  | JCIFSSndError {sndFileError :: FileError}
+  | JCIFSSndWarning {sndFileError :: FileError}
   | JCIFSRcvInvitation
   | JCIFSRcvAccepted
   | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
   | JCIFSRcvAborted
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
-  | JCIFSRcvError
+  | JCIFSRcvError {rcvFileError :: FileError}
+  | JCIFSRcvWarning {rcvFileError :: FileError}
   | JCIFSInvalid {text :: Text}
 
 jsonCIFileStatus :: CIFileStatus d -> JSONCIFileStatus
@@ -649,14 +661,16 @@ jsonCIFileStatus = \case
   CIFSSndTransfer sent total -> JCIFSSndTransfer sent total
   CIFSSndCancelled -> JCIFSSndCancelled
   CIFSSndComplete -> JCIFSSndComplete
-  CIFSSndError -> JCIFSSndError
+  CIFSSndError sndFileErr -> JCIFSSndError sndFileErr
+  CIFSSndWarning sndFileErr -> JCIFSSndWarning sndFileErr
   CIFSRcvInvitation -> JCIFSRcvInvitation
   CIFSRcvAccepted -> JCIFSRcvAccepted
   CIFSRcvTransfer rcvd total -> JCIFSRcvTransfer rcvd total
   CIFSRcvAborted -> JCIFSRcvAborted
   CIFSRcvComplete -> JCIFSRcvComplete
   CIFSRcvCancelled -> JCIFSRcvCancelled
-  CIFSRcvError -> JCIFSRcvError
+  CIFSRcvError rcvFileErr -> JCIFSRcvError rcvFileErr
+  CIFSRcvWarning rcvFileErr -> JCIFSRcvWarning rcvFileErr
   CIFSInvalid text -> JCIFSInvalid text
 
 aciFileStatusJSON :: JSONCIFileStatus -> ACIFileStatus
@@ -665,15 +679,35 @@ aciFileStatusJSON = \case
   JCIFSSndTransfer sent total -> AFS SMDSnd $ CIFSSndTransfer sent total
   JCIFSSndCancelled -> AFS SMDSnd CIFSSndCancelled
   JCIFSSndComplete -> AFS SMDSnd CIFSSndComplete
-  JCIFSSndError -> AFS SMDSnd CIFSSndError
+  JCIFSSndError sndFileErr -> AFS SMDSnd (CIFSSndError sndFileErr)
+  JCIFSSndWarning sndFileErr -> AFS SMDSnd (CIFSSndWarning sndFileErr)
   JCIFSRcvInvitation -> AFS SMDRcv CIFSRcvInvitation
   JCIFSRcvAccepted -> AFS SMDRcv CIFSRcvAccepted
   JCIFSRcvTransfer rcvd total -> AFS SMDRcv $ CIFSRcvTransfer rcvd total
   JCIFSRcvAborted -> AFS SMDRcv CIFSRcvAborted
   JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
   JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
-  JCIFSRcvError -> AFS SMDRcv CIFSRcvError
+  JCIFSRcvError rcvFileErr -> AFS SMDRcv (CIFSRcvError rcvFileErr)
+  JCIFSRcvWarning rcvFileErr -> AFS SMDRcv (CIFSRcvWarning rcvFileErr)
   JCIFSInvalid text -> AFS SMDSnd $ CIFSInvalid text
+
+data FileError
+  = FileErrAuth
+  | FileErrRelay {srvError :: SrvError} -- BROKER errors (other than TIMEOUT/NETWORK)
+  | FileErrOther {fileError :: Text} -- other errors
+  deriving (Eq, Show)
+
+instance StrEncoding FileError where
+  strEncode = \case
+    FileErrAuth -> "auth"
+    FileErrRelay srvErr -> "relay " <> strEncode srvErr
+    FileErrOther e -> "other " <> encodeUtf8 e
+  strP =
+    A.takeWhile1 (/= ' ') >>= \case
+      "auth" -> pure FileErrAuth
+      "relay" -> FileErrRelay <$> (A.space *> strP)
+      "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      s -> FileErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
 
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
@@ -1207,6 +1241,8 @@ instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
 instance ChatTypeI c => ToJSON (CIMeta c d) where
   toJSON = $(JQ.mkToJSON defaultJSON ''CIMeta)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''CIMeta)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FileErr") ''FileError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCIFS") ''JSONCIFileStatus)
 

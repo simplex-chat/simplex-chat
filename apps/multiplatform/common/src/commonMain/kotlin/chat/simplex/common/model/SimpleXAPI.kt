@@ -4959,8 +4959,6 @@ sealed class ChatErrorType {
       is FileImageSize -> "fileImageSize"
       is FileNotReceived -> "fileNotReceived"
       is FileNotApproved -> "fileNotApproved"
-      // is XFTPRcvFile -> "xftpRcvFile"
-      // is XFTPSndFile -> "xftpSndFile"
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
@@ -5038,8 +5036,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileImageSize") class FileImageSize(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileNotReceived") class FileNotReceived(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("fileNotApproved") class FileNotApproved(val fileId: Long, val unknownServers: List<String>): ChatErrorType()
-  // @Serializable @SerialName("xFTPRcvFile") object XFTPRcvFile: ChatErrorType()
-  // @Serializable @SerialName("xFTPSndFile") object XFTPSndFile: ChatErrorType()
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
