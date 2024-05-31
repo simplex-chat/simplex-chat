@@ -1224,9 +1224,9 @@
         <target>Kínai és spanyol kezelőfelület</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve">
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
         <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
-        <target>Válassza az _Átköltöztetés egy másik eszközről_ opciót az új eszközön és szkennelje be a QR-kódot.</target>
+        <target state="translated">Válassza az _Átköltöztetés egy másik eszközről_ opciót az új eszközön és olvassa be a QR-kódot.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -5929,9 +5929,9 @@ A funkció engedélyezése előtt a rendszer felszólítja a hitelesítés befej
         <target>Az azonnali push értesítések támogatásához a csevegési adatbázis migrálása szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>A végpontok közötti titkosítás ellenőrzéséhez ismerősével hasonlítsa össze (vagy szkennelje be) az eszközén lévő kódot.</target>
+        <target state="translated">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
