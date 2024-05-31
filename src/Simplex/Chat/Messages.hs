@@ -598,16 +598,16 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSSndTransfer sent total -> strEncode (Str "snd_transfer", sent, total)
     CIFSSndCancelled -> "snd_cancelled"
     CIFSSndComplete -> "snd_complete"
-    CIFSSndError sndFileErr -> "snd_error" <> strEncode sndFileErr
-    CIFSSndWarning sndFileErr -> "snd_warning" <> strEncode sndFileErr
+    CIFSSndError sndFileErr -> "snd_error " <> strEncode sndFileErr
+    CIFSSndWarning sndFileErr -> "snd_warning " <> strEncode sndFileErr
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
     CIFSRcvAborted -> "rcv_aborted"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
-    CIFSRcvError rcvFileErr -> "rcv_error" <> strEncode rcvFileErr
-    CIFSRcvWarning rcvFileErr -> "rcv_warning" <> strEncode rcvFileErr
+    CIFSRcvError rcvFileErr -> "rcv_error " <> strEncode rcvFileErr
+    CIFSRcvWarning rcvFileErr -> "rcv_warning " <> strEncode rcvFileErr
     CIFSInvalid {} -> "invalid"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
