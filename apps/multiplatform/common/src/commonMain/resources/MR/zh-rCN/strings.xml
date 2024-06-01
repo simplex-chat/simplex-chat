@@ -1852,4 +1852,10 @@
     <string name="theme_destination_app_theme">主题</string>
     <string name="chat_theme_reset_to_app_theme">重置为应用主题</string>
     <string name="chat_theme_reset_to_user_theme">重置为用户主题</string>
+    <string name="info_row_debug_delivery">发送调试</string>
+    <string name="message_queue_info">消息队列信息</string>
+    <string name="message_queue_info_server_info">消息队列信息：%1$s
+\n
+\n上一则收到的信息：%2$s</string>
+    <string name="message_queue_info_none">无</string>
 </resources>
