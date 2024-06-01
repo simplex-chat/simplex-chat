@@ -1803,4 +1803,54 @@
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون تور یا VPN، نشانی IP شما برای سرورهای پرونده قابل رویت خواهد بود.</string>
     <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود:
 \n%1$s.</string>
+    <string name="message_queue_info_none">هیچ</string>
+    <string name="v5_8_message_delivery">تحویل پیام بهبود یافته</string>
+    <string name="v5_8_persian_ui">رابط کاربری فارسی</string>
+    <string name="v5_8_message_delivery_descr">با استفاده باتری کاهش یافته.</string>
+    <string name="info_row_debug_delivery">اشکال‌زدایی تحویل</string>
+    <string name="message_queue_info">اطلاعات صف پیام</string>
+    <string name="theme_destination_app_theme">تم برنامه</string>
+    <string name="v5_8_safe_files_descr">تایید پرونده‌ها از سرورهای ناشناخته.</string>
+    <string name="message_queue_info_server_info">اطلاعات صف سرور: %1$s
+\n
+\nآخرین پیام دریافتی: %2$s</string>
+    <string name="chat_list_always_visible">نمایش فهرست گپ در پنجره جدید</string>
+    <string name="chat_theme_apply_to_dark_mode">حالت تاریک</string>
+    <string name="theme_black">سیاه</string>
+    <string name="color_mode">حالت رنگ</string>
+    <string name="color_mode_dark">تاریک</string>
+    <string name="dark_mode_colors">رنگ‌های حالت تاریک</string>
+    <string name="color_mode_light">روشن</string>
+    <string name="reset_single_color">بازنشاندن رنگ</string>
+    <string name="color_mode_system">سیستم</string>
+    <string name="error_initializing_web_view">خطا در مقداردهی اولیه WebView. سیستم خود را به نسخه جدید به روز کنید. لطفا با توسعه‌دهنگان تماس بگیرید.
+\nخطا: 9%s</string>
+    <string name="settings_section_title_chat_colors">رنگ‌های گپ</string>
+    <string name="settings_section_title_chat_theme">تم گپ</string>
+    <string name="settings_section_title_user_theme">تم نمایه</string>
+    <string name="color_wallpaper_background">پس‌زمینه کاغذدیواری</string>
+    <string name="color_primary_variant2">ابتدایی اضافی ۲</string>
+    <string name="wallpaper_advanced_settings">تنظیمات پیشرفته</string>
+    <string name="wallpaper_scale_fill">پر کردن</string>
+    <string name="wallpaper_scale_fit">گنجاندن</string>
+    <string name="wallpaper_preview_hello_alice">عصر به خیر!</string>
+    <string name="wallpaper_preview_hello_bob">صبح به خیر!</string>
+    <string name="color_received_quote">پاسخ دریافتی</string>
+    <string name="theme_remove_image">حذف تصویر</string>
+    <string name="wallpaper_scale_repeat">تکرار</string>
+    <string name="wallpaper_scale">مقیاس</string>
+    <string name="color_sent_quote">پاسخ ارسالی</string>
+    <string name="color_wallpaper_tint">ابتدایی کاغذدیواری</string>
+    <string name="chat_theme_set_default_theme">تعیین تم پیش‌فرض</string>
+    <string name="chat_theme_reset_to_app_theme">بازنشاندن به تم برنامه</string>
+    <string name="chat_theme_reset_to_user_theme">بازنشاندن به تم کاربر</string>
+    <string name="chat_theme_apply_to_all_modes">تمام حالت‌های رنگ</string>
+    <string name="chat_theme_apply_to_mode">اعمال بر</string>
+    <string name="chat_theme_apply_to_light_mode">حالت روشن</string>
+    <string name="v5_8_private_routing">مسیریابی پیام خصوصی 🚀</string>
+    <string name="v5_8_chat_themes_descr">ظاهر گپ‌های خود را متمایز کنید!</string>
+    <string name="v5_8_chat_themes">تم‌های جدید گپ</string>
+    <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید.
+\nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
+    <string name="v5_8_safe_files">دریافت امن پرونده‌ها</string>
 </resources>
