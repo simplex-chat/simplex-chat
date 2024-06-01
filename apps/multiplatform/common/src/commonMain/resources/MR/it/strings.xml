@@ -1852,4 +1852,10 @@
     <string name="v5_8_persian_ui">Interfaccia in persiano</string>
     <string name="v5_8_safe_files">Ricevi i file in sicurezza</string>
     <string name="v5_8_message_delivery_descr">Con consumo di batteria ridotto.</string>
+    <string name="message_queue_info">Info coda messaggi</string>
+    <string name="message_queue_info_none">nessuna</string>
+    <string name="message_queue_info_server_info">info coda server: %1$s
+\n
+\nultimo msg ricevuto: %2$s</string>
+    <string name="info_row_debug_delivery">Debug della consegna</string>
 </resources>
