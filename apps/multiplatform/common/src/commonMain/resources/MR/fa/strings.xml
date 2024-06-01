@@ -613,7 +613,7 @@
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i>استفاده از میزبان‌های onion.</i> را روی «خیر» تنظیم کنید اگر پروکسی SOCKS از آنها پشتیبانی نمی‌کند.]]></string>
     <string name="customize_theme_title">سفارشی کردن تم</string>
     <string name="app_version_title">نسخه برنامه</string>
-    <string name="theme_colors_section_title">رنگ‌های تم</string>
+    <string name="theme_colors_section_title">رنگ‌های رابط کاربری</string>
     <string name="core_version">نسخه هسته: v%s</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="shutdown_alert_desc">اعلان‌ها از کار خواهند افتاد تا زمانی که برنامه را دوباره راه‌اندازی کنید</string>
