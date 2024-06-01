@@ -348,9 +348,9 @@
     <string name="delete_message__question">Üzenet törlése?</string>
     <string name="delete_pending_connection__question">Függő kapcsolatfelvételi kérések törlése?</string>
     <string name="database_encrypted">Adatbázis titkosítva!</string>
-    <string name="clear_chat_question">Üzenetek törlése?</string>
+    <string name="clear_chat_question">Üzenetek kiürítése?</string>
     <string name="database_downgrade">Visszatérés a korábbi adatbázis verzióra</string>
-    <string name="clear_chat_button">Üzenetek törlése</string>
+    <string name="clear_chat_button">Üzenetek kiürítése</string>
     <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat frissítve lesz.</string>
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
     <string name="database_error">Adatbázis hiba</string>
@@ -1597,7 +1597,7 @@
     <string name="note_folder_local_display_name">Privát jegyzetek</string>
     <string name="error_deleting_note_folder">Hiba a privát jegyzetek törlésekor</string>
     <string name="error_creating_message">Hiba az üzenet létrehozásakor</string>
-    <string name="clear_note_folder_question">Privát jegyzetek törlése?</string>
+    <string name="clear_note_folder_question">Privát jegyzetek kiürítése?</string>
     <string name="info_row_created_at">Létrehozva ekkor:</string>
     <string name="saved_message_title">Mentett üzenet</string>
     <string name="share_text_created_at">Megosztva ekkor: %s</string>
