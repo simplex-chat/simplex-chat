@@ -2083,9 +2083,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target state="translated">Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve" approved="no">
         <source>Do NOT use SimpleX for emergency calls.</source>
-        <target>Nutzen Sie SimpleX nicht für Notrufe.</target>
+        <target state="translated">SimpleX NICHT für Notrufe nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
@@ -2861,14 +2861,14 @@ Das kann nicht rückgängig gemacht werden!</target>
       <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Destination server error: %2$@</source>
-        <target state="translated">Forwarding-Server: %1$@
+        <target state="translated">Weiterleitungs-Server: %1$@
 Zielserver Fehler: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Error: %2$@</source>
-        <target state="translated">Forwarding-Server: %1$@
+        <target state="translated">Weiterleitungs-Server: %1$@
 Fehler: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
@@ -6166,9 +6166,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Verwenden Sie Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use current profile" xml:space="preserve">
+      <trans-unit id="Use current profile" xml:space="preserve" approved="no">
         <source>Use current profile</source>
-        <target>Das aktuelle Profil nutzen</target>
+        <target state="translated">Aktuelles Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
@@ -6186,9 +6186,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>iOS Anrufschnittstelle nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use new incognito profile" xml:space="preserve">
+      <trans-unit id="Use new incognito profile" xml:space="preserve" approved="no">
         <source>Use new incognito profile</source>
-        <target>Ein neues Inkognito-Profil nutzen</target>
+        <target state="translated">Neues Inkognito-Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
@@ -7835,9 +7835,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>SimpleX NSE</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve" approved="no">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <target>Copyright © 2022 SimpleX Chat. All rights reserved.</target>
+        <target state="translated">Copyright © 2024 SimpleX Chat. All rights reserved.</target>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>
