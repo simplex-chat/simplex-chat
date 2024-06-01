@@ -1098,8 +1098,9 @@
         <target>Kan bestand niet ontvangen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
+      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve" approved="no">
         <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
+        <target state="translated">Capaciteit overschreden - ontvanger heeft eerder verzonden berichten niet ontvangen.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Cellular" xml:space="preserve">
@@ -1298,8 +1299,9 @@
         <target>Bevestig database upgrades</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm files from unknown servers." xml:space="preserve">
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
         <source>Confirm files from unknown servers.</source>
+        <target state="translated">Bevestig bestanden van onbekende servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm network settings" xml:space="preserve">
