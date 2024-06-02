@@ -1837,4 +1837,25 @@
     <string name="wallpaper_preview_hello_alice">Buon pomeriggio!</string>
     <string name="wallpaper_preview_hello_bob">Buongiorno!</string>
     <string name="color_wallpaper_background">Retro dello sfondo</string>
+    <string name="v5_8_private_routing">Instradamento privato dei messaggi 🚀</string>
+    <string name="v5_8_private_routing_descr">Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti.
+\nAttivalo nelle impostazioni *Rete e server*.</string>
+    <string name="error_initializing_web_view">Errore di inizializzazione di WebView. Aggiorna il sistema ad una nuova versione. Contatta gli sviluppatori.
+\nErrore: %s</string>
+    <string name="theme_destination_app_theme">Tema dell\'app</string>
+    <string name="chat_theme_reset_to_app_theme">Ripristina al tema dell\'app</string>
+    <string name="chat_theme_reset_to_user_theme">Ripristina al tema dell\'utente</string>
+    <string name="v5_8_safe_files_descr">Conferma i file da server sconosciuti.</string>
+    <string name="v5_8_message_delivery">Consegna dei messaggi migliorata</string>
+    <string name="v5_8_chat_themes_descr">Cambia l\'aspetto delle tue chat!</string>
+    <string name="v5_8_chat_themes">Nuovi temi delle chat</string>
+    <string name="v5_8_persian_ui">Interfaccia in persiano</string>
+    <string name="v5_8_safe_files">Ricevi i file in sicurezza</string>
+    <string name="v5_8_message_delivery_descr">Con consumo di batteria ridotto.</string>
+    <string name="message_queue_info">Info coda messaggi</string>
+    <string name="message_queue_info_none">nessuna</string>
+    <string name="message_queue_info_server_info">info coda server: %1$s
+\n
+\nultimo msg ricevuto: %2$s</string>
+    <string name="info_row_debug_delivery">Debug della consegna</string>
 </resources>

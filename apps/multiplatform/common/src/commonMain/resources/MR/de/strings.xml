@@ -825,7 +825,7 @@
     <string name="network_option_protocol_timeout">Protokollzeitüberschreitung</string>
     <string name="network_option_ping_interval">PING-Intervall</string>
     <string name="network_option_enable_tcp_keep_alive">TCP-Keep-Alive aktivieren</string>
-    <string name="network_options_revert">Zurückkehren</string>
+    <string name="network_options_revert">Zurücksetzen</string>
     <string name="network_options_save">Speichern</string>
     <string name="update_network_settings_question">Netzwerkeinstellungen aktualisieren?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.</string>
@@ -1385,7 +1385,7 @@
     <string name="v5_2_favourites_filter_descr">Nach ungelesenen und favorisierten Chats filtern.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
     <string name="receipts_contacts_override_disabled">Das Senden von Bestätigungen an %d Kontakte ist deaktiviert</string>
-    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Profil</string>
+    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Chat-Profil</string>
     <string name="receipts_section_description_1">Sie können in den Kontakt- und Gruppeneinstellungen überschrieben werden.</string>
     <string name="receipts_section_contacts">Kontakte</string>
     <string name="receipts_contacts_title_disable">Bestätigungen deaktivieren\?</string>
@@ -1429,8 +1429,8 @@
     <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
     <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
     <string name="connect_via_link_incognito">Inkognito verbinden</string>
-    <string name="connect_use_current_profile">Das aktuelle Profil nutzen</string>
-    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil nutzen</string>
+    <string name="connect_use_current_profile">Aktuelles Chat-Profil nutzen</string>
+    <string name="connect_use_new_incognito_profile">Neues Inkognito-Profil nutzen</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.]]></string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
     <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
@@ -1866,22 +1866,22 @@
     <string name="network_smp_proxy_mode_never">Nie</string>
     <string name="network_smp_proxy_mode_unknown">Unbekannte Relais</string>
     <string name="network_smp_proxy_mode_unprotected">Ungeschützt</string>
-    <string name="network_smp_proxy_mode_unknown_description">Privates Routing mit unbekannten Servern nutzen.</string>
-    <string name="network_smp_proxy_mode_never_description">Nutzen Sie kein privates Routing.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Sie nutzen privates Routing mit unbekannten Servern.</string>
+    <string name="network_smp_proxy_mode_never_description">Sie nutzen KEIN privates Routing.</string>
     <string name="update_network_smp_proxy_mode_question">Modus für das Nachrichten-Routing</string>
     <string name="network_smp_proxy_fallback_allow">Ja</string>
     <string name="network_smp_proxy_fallback_prohibit">Nein</string>
     <string name="network_smp_proxy_fallback_allow_protected">Wenn die IP-Adresse versteckt ist</string>
     <string name="update_network_smp_proxy_fallback_question">Fallback für das Nachrichten-Routing</string>
     <string name="private_routing_show_message_status">Nachrichtenstatus anzeigen</string>
-    <string name="network_smp_proxy_fallback_allow_downgrade">Herunterstufung erlauben</string>
-    <string name="network_smp_proxy_mode_always_description">Immer privates Routing nutzen.</string>
-    <string name="network_smp_proxy_fallback_prohibit_description">Senden Sie keine direkten Nachrichten, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Herabstufung erlauben</string>
+    <string name="network_smp_proxy_mode_always_description">Sie nutzen immer privates Routing.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
     <string name="settings_section_title_private_message_routing">PRIVATES NACHRICHTEN-ROUTING</string>
-    <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten direkt versenden, wenn die IP-Adresse geschützt ist und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
-    <string name="network_smp_proxy_fallback_allow_description">Nachrichten direkt versenden, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
-    <string name="private_routing_explanation">Für die Auslieferung Ihrer Nachrichten wird privates Routing Ihrer SMP-Server genutzt, um Ihre IP-Adresse zu schützen.</string>
-    <string name="network_smp_proxy_mode_unprotected_description">Privates Routing mit unbekannten Servern nutzen, wenn die IP-Adresse nicht geschützt ist.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</string>
     <string name="protect_ip_address">IP-Adresse schützen</string>
     <string name="settings_section_title_files">DATEIEN</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Die App wird bei unbekannten Datei-Servern nach einer Download-Bestätigung fragen (außer bei .onion oder wenn ein SOCKS-Proxy aktiviert ist).</string>
@@ -1918,4 +1918,25 @@
     <string name="wallpaper_preview_hello_alice">Guten Nachmittag!</string>
     <string name="wallpaper_preview_hello_bob">Guten Morgen!</string>
     <string name="dark_mode_colors">Farben für die dunkle Variante</string>
+    <string name="theme_destination_app_theme">App-Design</string>
+    <string name="v5_8_persian_ui">Persische Bedienoberfläche</string>
+    <string name="chat_theme_reset_to_user_theme">Auf das Benutzer-spezifische Design zurücksetzen</string>
+    <string name="error_initializing_web_view">Fehler bei der Initialisierung von Webview. Aktualisieren Sie Ihr System auf die neue Version. Bitte kontaktieren Sie die Entwickler.
+\nFehler: %s</string>
+    <string name="chat_theme_reset_to_app_theme">Auf das App-Design zurücksetzen</string>
+    <string name="v5_8_safe_files_descr">Dateien von unbekannten Servern bestätigen.</string>
+    <string name="v5_8_message_delivery">Verbesserte Zustellung von Nachrichten</string>
+    <string name="v5_8_chat_themes_descr">Gestalten Sie Ihre Chats unterschiedlich!</string>
+    <string name="v5_8_chat_themes">Neue Chat-Designs</string>
+    <string name="v5_8_private_routing">Privates Nachrichten-Routing 🚀</string>
+    <string name="v5_8_private_routing_descr">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihr Kontakt ausgewählt hat.
+\nAktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</string>
+    <string name="v5_8_safe_files">Dateien sicher empfangen</string>
+    <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
+    <string name="message_queue_info_none">Keine Information</string>
+    <string name="info_row_debug_delivery">Debugging-Zustellung</string>
+    <string name="message_queue_info">Nachrichten-Warteschlangen-Information</string>
+    <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
+\n
+\nZuletzt empfangene Nachricht: %2$s</string>
 </resources>
