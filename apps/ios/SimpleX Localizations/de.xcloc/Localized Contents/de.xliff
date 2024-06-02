@@ -5387,7 +5387,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Show → on messages sent via private routing." xml:space="preserve" approved="no">
         <source>Show → on messages sent via private routing.</source>
-        <target state="translated">Anzeigen → bei Nachrichten, die über privates Routing versendet wurden.</target>
+        <target state="translated">Bei Nachrichten, die über privates Routing versendet wurden, → anzeigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
