@@ -240,7 +240,7 @@
     "f-droid-org-repo": "F-Droid.org repo",
     "signing-key-fingerprint": "Signing key fingerprint (SHA-256)",
     "stable-versions-built-by-f-droid-org": "Stabiele versies gebouwd door F-Droid.org",
-    "releases-to-this-repo-are-done-1-2-days-later": "De releases voor deze repository vinden 1-2 dagen later plaats",
+    "releases-to-this-repo-are-done-1-2-days-later": "De releases voor deze repository vinden enkele dagen later plaats",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- en F-Droid.org-repository's ondertekenen builds met de verschillende sleutels. Om over te stappen, alstublieft <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporteer</a> de chatdatabase en installeer de app opnieuw.",
     "docs-dropdown-8": "SimpleX Directory Service",
     "comparison-section-list-point-4a": "SimpleX relais kunnen de e2e-versleuteling niet in gevaar brengen. Controleer de beveiligingscode om aanvallen op out-of-band kanalen te beperken",
