@@ -240,7 +240,7 @@
     "signing-key-fingerprint": "توقيع مفتاح البصمة (SHA-256)",
     "f-droid-org-repo": "مستودع F-Droid.org",
     "stable-versions-built-by-f-droid-org": "الإصدارات الثابتة التي تم إنشاؤها بواسطة F-Droid.org",
-    "releases-to-this-repo-are-done-1-2-days-later": "يتم إصدار الإصدارات إلى هذا المستودع بعد يوم أو يومين",
+    "releases-to-this-repo-are-done-1-2-days-later": "تتم الإصدارات إلى هذا المستودع بعد عِدة أيام",
     "f-droid-page-simplex-chat-repo-section-text": "لإضافته إلى عميل F-Droid، <span class='hide-on-mobile'>امسح رمز QR أو</span> استخدم عنوان URL هذا:",
     "f-droid-page-f-droid-org-repo-section-text": "مستودعات SimpleX Chat و F-Droid.org مبنية على مفاتيح مختلفة. للتبديل، يُرجى <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>تصدير</a> قاعدة بيانات الدردشة وإعادة تثبيت التطبيق.",
     "comparison-section-list-point-4a": "مُرحلات SimpleX لا يمكنها أن تتنازل عن تعمية بين الطرفين. تحقق من رمز الأمان للتخفيف من الهجوم على القناة خارج النطاق",
