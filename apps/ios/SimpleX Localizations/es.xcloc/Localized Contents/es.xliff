@@ -1721,8 +1721,9 @@ This is your own one-time link!</source>
         <target>La base de datos migrará cuando se reinicie la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Debug delivery" xml:space="preserve">
+      <trans-unit id="Debug delivery" xml:space="preserve" approved="no">
         <source>Debug delivery</source>
+        <target state="translated">Entrega de corrección de fallos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3701,8 +3702,9 @@ This is your link for group %@!</source>
         <target>Borrador de mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message queue info" xml:space="preserve">
+      <trans-unit id="Message queue info" xml:space="preserve" approved="no">
         <source>Message queue info</source>
+        <target state="translated">Información de la cola de mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -7585,10 +7587,13 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>Enviar mensaje directo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve" approved="no">
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
+        <target state="translated">información de la cola del servidor: %1$@
+
+último mensaje recibido: %2$@</target>
         <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">
