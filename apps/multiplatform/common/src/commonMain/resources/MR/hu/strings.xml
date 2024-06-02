@@ -1679,7 +1679,7 @@
     <string name="migrate_from_device_start_chat">Csevegés indítása</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Nem szabad</b> ugyanazt az adatbázist használni egyszerre két eszközön.]]></string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Erősítse meg, hogy emlékszik az adatbázis jelmondatára az átköltöztetéshez.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Válassza az <i>Átköltöztetés egy másik eszközről</i> opciót az új eszközön és olvassa be a QR-kódot.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Válassza az <i>Átköltöztetés egy másik eszközről</i> opciót az új eszközön és olvassa be a QR-kódot.]]></string>
     <string name="migrate_from_device_finalize_migration">Átköltöztetés véglegesítése</string>
     <string name="migrate_to_device_finalize_migration">Átköltöztetés véglegesítése egy másik eszközön.</string>
     <string name="migrate_to_device_database_init">Letöltés előkészítése</string>
@@ -1707,8 +1707,8 @@
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">Átköltöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
-    <string name="e2ee_info_no_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</string>
-    <string name="e2ee_info_pq">Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.]]></string>
     <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
     <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>

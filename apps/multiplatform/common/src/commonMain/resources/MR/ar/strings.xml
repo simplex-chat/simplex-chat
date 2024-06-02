@@ -1852,7 +1852,8 @@
     <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات الاتصال الخاصة بك.
 \nفعّل في إعدادات *الشبكة والخوادم*.</string>
     <string name="v5_8_chat_themes">سمات دردشة جديدة</string>
-    <string name="error_initializing_web_view">حدث خطأ أثناء تهيئة WebView. حدّث نظامك إلى الإصدار الجديد. يُرجى التواصل بالمطورين.</string>
+    <string name="error_initializing_web_view">حدث خطأ أثناء تهيئة WebView. حدّث نظامك إلى الإصدار الجديد. يُرجى التواصل بالمطورين.
+\nError: %s</string>
     <string name="v5_8_message_delivery">تحسين تسليم الرسائل</string>
     <string name="v5_8_message_delivery_descr">مع انخفاض استخدام البطارية.</string>
 </resources>
