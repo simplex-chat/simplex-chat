@@ -1880,7 +1880,7 @@
     <string name="settings_section_title_private_message_routing">PRIVATES NACHRICHTEN-ROUTING</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
     <string name="network_smp_proxy_fallback_allow_description">Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
-    <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre SMP-Server genutzt.</string>
+    <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</string>
     <string name="protect_ip_address">IP-Adresse schützen</string>
     <string name="settings_section_title_files">DATEIEN</string>
