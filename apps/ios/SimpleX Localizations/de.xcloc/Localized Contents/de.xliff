@@ -2861,14 +2861,14 @@ Das kann nicht rückgängig gemacht werden!</target>
       <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Destination server error: %2$@</source>
-        <target state="translated">Weiterleitungs-Server: %1$@
+        <target state="translated">Weiterleitungsserver: %1$@
 Zielserver Fehler: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve" approved="no">
         <source>Forwarding server: %1$@
 Error: %2$@</source>
-        <target state="translated">Weiterleitungs-Server: %1$@
+        <target state="translated">Weiterleitungsserver: %1$@
 Fehler: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
@@ -5904,7 +5904,7 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve" approved="no">
         <source>To protect your IP address, private routing uses your SMP servers to deliver messages.</source>
-        <target state="translated">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre SMP-Server genutzt.</target>
+        <target state="translated">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
