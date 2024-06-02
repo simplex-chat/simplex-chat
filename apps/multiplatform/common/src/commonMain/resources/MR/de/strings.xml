@@ -1385,7 +1385,7 @@
     <string name="v5_2_favourites_filter_descr">Nach ungelesenen und favorisierten Chats filtern.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
     <string name="receipts_contacts_override_disabled">Das Senden von Bestätigungen an %d Kontakte ist deaktiviert</string>
-    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Profil</string>
+    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Chat-Profil</string>
     <string name="receipts_section_description_1">Sie können in den Kontakt- und Gruppeneinstellungen überschrieben werden.</string>
     <string name="receipts_section_contacts">Kontakte</string>
     <string name="receipts_contacts_title_disable">Bestätigungen deaktivieren\?</string>
@@ -1429,8 +1429,8 @@
     <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
     <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
     <string name="connect_via_link_incognito">Inkognito verbinden</string>
-    <string name="connect_use_current_profile">Das aktuelle Profil nutzen</string>
-    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil nutzen</string>
+    <string name="connect_use_current_profile">Aktuelles Chat-Profil nutzen</string>
+    <string name="connect_use_new_incognito_profile">Neues Inkognito-Profil nutzen</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.]]></string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
     <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
@@ -1880,7 +1880,7 @@
     <string name="settings_section_title_private_message_routing">PRIVATES NACHRICHTEN-ROUTING</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
     <string name="network_smp_proxy_fallback_allow_description">Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
-    <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre SMP-Server genutzt.</string>
+    <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</string>
     <string name="protect_ip_address">IP-Adresse schützen</string>
     <string name="settings_section_title_files">DATEIEN</string>
@@ -1933,4 +1933,10 @@
 \nAktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</string>
     <string name="v5_8_safe_files">Dateien sicher empfangen</string>
     <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
+    <string name="message_queue_info_none">Keine Information</string>
+    <string name="info_row_debug_delivery">Debugging-Zustellung</string>
+    <string name="message_queue_info">Nachrichten-Warteschlangen-Information</string>
+    <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
+\n
+\nZuletzt empfangene Nachricht: %2$s</string>
 </resources>

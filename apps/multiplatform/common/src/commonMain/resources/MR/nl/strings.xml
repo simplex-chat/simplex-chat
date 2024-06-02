@@ -1850,4 +1850,10 @@
     <string name="color_wallpaper_background">Wallpaper achtergrond</string>
     <string name="chat_theme_set_default_theme">Stel het standaard thema in</string>
     <string name="chat_list_always_visible">Toon chatlijst in nieuw venster</string>
+    <string name="message_queue_info_none">geen</string>
+    <string name="info_row_debug_delivery">Foutopsporing bezorging</string>
+    <string name="message_queue_info">Informatie over berichtenwachtrij</string>
+    <string name="message_queue_info_server_info">informatie over serverwachtrij: %1$s
+\n
+\nlaatst ontvangen bericht: %2$s</string>
 </resources>

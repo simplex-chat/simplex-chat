@@ -1835,4 +1835,24 @@
     <string name="chat_theme_apply_to_mode">طبّق لِ</string>
     <string name="wallpaper_scale_fill">ملء</string>
     <string name="wallpaper_scale">المقياس</string>
+    <string name="message_queue_info_none">لا شيء</string>
+    <string name="v5_8_private_routing">توجيه الرسائل الخاصة 🚀</string>
+    <string name="v5_8_chat_themes_descr">اجعل محادثاتك تبدو مختلفة!</string>
+    <string name="v5_8_safe_files">تلقي الملفات بأمان</string>
+    <string name="v5_8_persian_ui">واجهة المستخدم الفارسية</string>
+    <string name="chat_theme_reset_to_app_theme">إعادة التعيين إلى سمة التطبيق</string>
+    <string name="theme_destination_app_theme">سمة التطبيق</string>
+    <string name="v5_8_safe_files_descr">تأكيد الملفات من خوادم غير معروفة.</string>
+    <string name="chat_theme_reset_to_user_theme">إعادة التعيين إلى سمة المستخدم</string>
+    <string name="message_queue_info_server_info">معلومات قائمة انتظار الخادم: %1$s
+\n
+\nآخر رسالة تم استلامها: %2$s</string>
+    <string name="info_row_debug_delivery">تسليم التصحيح</string>
+    <string name="message_queue_info">معلومات قائمة انتظار الرسائل</string>
+    <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات الاتصال الخاصة بك.
+\nفعّل في إعدادات *الشبكة والخوادم*.</string>
+    <string name="v5_8_chat_themes">سمات دردشة جديدة</string>
+    <string name="error_initializing_web_view">حدث خطأ أثناء تهيئة WebView. حدّث نظامك إلى الإصدار الجديد. يُرجى التواصل بالمطورين.</string>
+    <string name="v5_8_message_delivery">تحسين تسليم الرسائل</string>
+    <string name="v5_8_message_delivery_descr">مع انخفاض استخدام البطارية.</string>
 </resources>
