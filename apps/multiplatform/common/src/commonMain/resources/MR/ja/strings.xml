@@ -1778,4 +1778,22 @@
     <string name="network_smp_proxy_mode_always_description">常時プライベートルーティングを使用</string>
     <string name="settings_section_title_private_message_routing">プライベートメッセージルーティング</string>
     <string name="private_routing_show_message_status">メッセージステータスを表示</string>
+    <string name="color_mode_system">システム</string>
+    <string name="theme_black">ブラック</string>
+    <string name="color_mode">色設定</string>
+    <string name="color_mode_dark">ダーク</string>
+    <string name="dark_mode_colors">ダークモードカラー</string>
+    <string name="color_mode_light">ライト</string>
+    <string name="theme_destination_app_theme">アプリのテーマ</string>
+    <string name="chat_theme_apply_to_dark_mode">ダークモード</string>
+    <string name="chat_theme_apply_to_light_mode">ライトモード</string>
+    <string name="chat_theme_apply_to_mode">適用先</string>
+    <string name="color_primary_variant2">追加のアクセント2</string>
+    <string name="wallpaper_advanced_settings">高度な設定</string>
+    <string name="wallpaper_preview_hello_alice">こんにちは！</string>
+    <string name="wallpaper_preview_hello_bob">おはよう！</string>
+    <string name="color_wallpaper_tint">壁紙のアクセント</string>
+    <string name="color_wallpaper_background">壁紙の背景</string>
+    <string name="settings_section_title_chat_colors">チャットカラー</string>
+    <string name="settings_section_title_chat_theme">チャットテーマ</string>
 </resources>
