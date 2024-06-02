@@ -962,6 +962,15 @@ data RcvMsgDelivery = RcvMsgDelivery
   }
   deriving (Show)
 
+data RcvMsgInfo = RcvMsgInfo
+  { msgId :: Int64,
+    msgDeliveryId :: Int64,
+    msgDeliveryStatus :: Text,
+    agentMsgId :: AgentMsgId,
+    agentMsgMeta :: Text
+  }
+  deriving (Show)
+
 data MsgMetaJSON = MsgMetaJSON
   { integrity :: Text,
     rcvId :: Int64,
@@ -1332,3 +1341,5 @@ $(JQ.deriveJSON defaultJSON ''MsgMetaJSON)
 
 msgMetaJson :: MsgMeta -> Text
 msgMetaJson = decodeLatin1 . LB.toStrict . J.encode . msgMetaToJson
+
+$(JQ.deriveJSON defaultJSON ''RcvMsgInfo)

@@ -24,7 +24,7 @@ struct CIInvalidJSONView: View {
         .cornerRadius(18)
         .textSelection(.disabled)
         .onTapGesture { showJSON = true }
-        .sheet(isPresented: $showJSON) {
+        .appSheet(isPresented: $showJSON) {
             invalidJSONView(json)
         }
     }

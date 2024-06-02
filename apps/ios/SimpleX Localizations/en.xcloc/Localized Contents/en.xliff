@@ -1721,6 +1721,11 @@ This is your own one-time link!</target>
         <target>Database will be migrated when the app restarts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Debug delivery" xml:space="preserve">
+        <source>Debug delivery</source>
+        <target>Debug delivery</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
         <source>Decentralized</source>
         <target>Decentralized</target>
@@ -3695,6 +3700,11 @@ This is your link for group %@!</target>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
         <target>Message draft</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message queue info" xml:space="preserve">
+        <source>Message queue info</source>
+        <target>Message queue info</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -7575,6 +7585,15 @@ SimpleX servers cannot see your profile.</target>
         <source>send direct message</source>
         <target>send direct message</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+        <source>server queue info: %1$@
+
+last received msg: %2$@</source>
+        <target>server queue info: %1$@
+
+last received msg: %2$@</target>
+        <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">
         <source>set new contact address</source>

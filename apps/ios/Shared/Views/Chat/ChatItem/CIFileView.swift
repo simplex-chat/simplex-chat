@@ -54,7 +54,7 @@ struct CIFileView: View {
             switch (file.fileStatus) {
             case .sndStored: return file.fileProtocol == .local
             case .sndTransfer: return false
-            case .sndComplete: return false
+            case .sndComplete: return true
             case .sndCancelled: return false
             case .sndError: return false
             case .rcvInvitation: return true
@@ -111,6 +111,11 @@ struct CIFileView: View {
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
+                    saveCryptoFile(fileSource)
+                }
+            case .sndComplete:
+                logger.debug("CIFileView fileAction - in .sndComplete")
+                if let fileSource = getLoadedFileSource(file) {
                     saveCryptoFile(fileSource)
                 }
             default: break

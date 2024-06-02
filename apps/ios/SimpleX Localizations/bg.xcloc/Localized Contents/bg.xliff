@@ -1717,6 +1717,10 @@ This is your own one-time link!</source>
         <target>Базата данни ще бъде мигрирана, когато приложението се рестартира</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Debug delivery" xml:space="preserve">
+        <source>Debug delivery</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
         <source>Decentralized</source>
         <target>Децентрализиран</target>
@@ -3682,6 +3686,10 @@ This is your link for group %@!</source>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
         <target>Чернова на съобщение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message queue info" xml:space="preserve">
+        <source>Message queue info</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -7538,6 +7546,12 @@ SimpleX сървърите не могат да видят вашия профи
         <source>send direct message</source>
         <target>изпрати лично съобщение</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+        <source>server queue info: %1$@
+
+last received msg: %2$@</source>
+        <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">
         <source>set new contact address</source>

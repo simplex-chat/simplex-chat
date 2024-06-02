@@ -450,6 +450,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Se permiten los mensajes temporales pero sólo si tu contacto también los permite para tí.";
 
 /* No comment provided by engineer. */
+"Allow downgrade" = "Permitir versión anterior";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también la permite para tí. (24 horas)";
 
 /* No comment provided by engineer. */
@@ -508,6 +511,9 @@
 
 /* pref value */
 "always" = "siempre";
+
+/* No comment provided by engineer. */
+"Always use private routing." = "Usar siempre enrutamiento privado.";
 
 /* No comment provided by engineer. */
 "Always use relay" = "Usar siempre retransmisor";
@@ -716,6 +722,9 @@
 /* No comment provided by engineer. */
 "Cannot receive file" = "No se puede recibir el archivo";
 
+/* snd error text */
+"Capacity exceeded - recipient did not receive previously sent messages." = "Capacidad excedida - el destinatario no ha recibido los mensajes previos.";
+
 /* No comment provided by engineer. */
 "Cellular" = "Móvil";
 
@@ -851,6 +860,9 @@
 
 /* No comment provided by engineer. */
 "Confirm database upgrades" = "Confirmar actualizaciones de la bases de datos";
+
+/* No comment provided by engineer. */
+"Confirm files from unknown servers." = "Confirma archivos de servidores desconocidos.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Confirmar configuración de red";
@@ -1320,6 +1332,9 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Ordenadores";
 
+/* snd error text */
+"Destination server error: %@" = "Error del servidor de destino: %@";
+
 /* No comment provided by engineer. */
 "Develop" = "Desarrollo";
 
@@ -1397,6 +1412,12 @@
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "No enviar historial a miembros nuevos.";
+
+/* No comment provided by engineer. */
+"Do NOT send messages directly, even if your or destination server does not support private routing." = "NO enviar mensajes directamente incluso si tu servidor o el de destino no soportan enrutamiento privado.";
+
+/* No comment provided by engineer. */
+"Do NOT use private routing." = "NO usar enrutamiento privado.";
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "NO uses SimpleX para llamadas de emergencia.";
@@ -1840,6 +1861,9 @@
 "File: %@" = "Archivo: %@";
 
 /* No comment provided by engineer. */
+"Files" = "Archivos";
+
+/* No comment provided by engineer. */
 "Files & media" = "Archivos y multimedia";
 
 /* chat feature */
@@ -1904,6 +1928,12 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Reenviado por";
+
+/* snd error text */
+"Forwarding server: %@\nDestination server error: %@" = "Servidor de reenvío: %1$@\nError del servidor de destino: %2$@";
+
+/* snd error text */
+"Forwarding server: %@\nError: %@" = "Servidor de reenvío: %1$@\nError: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Ordenador encontrado";
@@ -2460,6 +2490,9 @@
 /* No comment provided by engineer. */
 "Message delivery receipts!" = "¡Confirmación de entrega de mensajes!";
 
+/* item status text */
+"Message delivery warning" = "Aviso de entrega de mensaje";
+
 /* No comment provided by engineer. */
 "Message draft" = "Borrador de mensaje";
 
@@ -2474,6 +2507,12 @@
 
 /* notification */
 "message received" = "mensaje recibido";
+
+/* No comment provided by engineer. */
+"Message routing fallback" = "Enrutamiento de mensajes alternativo";
+
+/* No comment provided by engineer. */
+"Message routing mode" = "Modo de enrutamiento de mensajes";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "El autor del mensaje se mantiene privado.";
@@ -2585,6 +2624,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Conexión de red";
+
+/* snd error text */
+"Network issues - message expired after many attempts to send it." = "Problema en la red - el mensaje ha expirado tras muchos intentos de envío.";
 
 /* No comment provided by engineer. */
 "Network management" = "Gestión de la red";
@@ -2948,8 +2990,17 @@
 /* No comment provided by engineer. */
 "Private filenames" = "Nombres de archivos privados";
 
+/* No comment provided by engineer. */
+"Private message routing" = "Enrutamiento privado de mensajes";
+
+/* No comment provided by engineer. */
+"Private message routing 🚀" = "Enrutamiento privado de mensajes 🚀";
+
 /* name of notes to self */
 "Private notes" = "Notas privadas";
+
+/* No comment provided by engineer. */
+"Private routing" = "Enrutamiento privado";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Datos del perfil y conexiones";
@@ -3003,7 +3054,13 @@
 "Protect app screen" = "Proteger la pantalla de la aplicación";
 
 /* No comment provided by engineer. */
+"Protect IP address" = "Proteger dirección IP";
+
+/* No comment provided by engineer. */
 "Protect your chat profiles with a password!" = "¡Protege tus perfiles con contraseña!";
+
+/* No comment provided by engineer. */
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Protege tu dirección IP de los servidores de retransmisión elegidos por tus contactos.\nActívalo en ajustes de *Servidores y Redes*.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Tiempo de espera del protocolo";
@@ -3117,7 +3174,7 @@
 "rejected call" = "llamada rechazada";
 
 /* No comment provided by engineer. */
-"Relay server is only used if necessary. Another party can observe your IP address." = "El retransmisor sólo se usa en caso de necesidad. Un tercero podría ver tu IP.";
+"Relay server is only used if necessary. Another party can observe your IP address." = "El servidor de retransmisión sólo se usa en caso de necesidad. Un tercero podría ver tu IP.";
 
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "El servidor de retransmisión protege tu IP pero puede ver la duración de la llamada.";
@@ -3229,6 +3286,9 @@
 
 /* No comment provided by engineer. */
 "Run chat" = "Ejecutar chat";
+
+/* No comment provided by engineer. */
+"Safely receive files" = "Recibe archivos de forma segura";
 
 /* No comment provided by engineer. */
 "Safer groups" = "Grupos más seguros";
@@ -3375,7 +3435,7 @@
 "Send direct message" = "Enviar mensaje directo";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Enviar mensaje directo para conectar";
+"Send direct message to connect" = "Envia un mensaje para conectar";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Enviar mensaje temporal";
@@ -3385,6 +3445,12 @@
 
 /* No comment provided by engineer. */
 "Send live message" = "Mensaje en vivo";
+
+/* No comment provided by engineer. */
+"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Enviar mensajes directamente cuando tu dirección IP está protegida y tu servidor o el de destino no admitan enrutamiento privado.";
+
+/* No comment provided by engineer. */
+"Send messages directly when your or destination server does not support private routing." = "Enviar mensajes directamente cuando tu servidor o el de destino no admitan enrutamiento privado.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Enviar notificaciones";
@@ -3449,6 +3515,9 @@
 /* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Los mensajes enviados se eliminarán una vez transcurrido el tiempo establecido.";
 
+/* srv error text. */
+"Server address is incompatible with network settings." = "La dirección del servidor es incompatible con la configuración de la red.";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "El servidor requiere autorización para crear colas, comprueba la contraseña";
 
@@ -3457,6 +3526,9 @@
 
 /* No comment provided by engineer. */
 "Server test failed!" = "¡Error en prueba del servidor!";
+
+/* srv error text */
+"Server version is incompatible with network settings." = "La versión del servidor es incompatible con la configuración de red.";
 
 /* No comment provided by engineer. */
 "Servers" = "Servidores";
@@ -3525,6 +3597,9 @@
 "Share with contacts" = "Compartir con contactos";
 
 /* No comment provided by engineer. */
+"Show → on messages sent via private routing." = "Mostrar → en mensajes con enrutamiento privado.";
+
+/* No comment provided by engineer. */
 "Show calls in phone history" = "Mostrar llamadas en el historial del teléfono";
 
 /* No comment provided by engineer. */
@@ -3532,6 +3607,9 @@
 
 /* No comment provided by engineer. */
 "Show last messages" = "Mostrar último mensaje";
+
+/* No comment provided by engineer. */
+"Show message status" = "Estado del mensaje";
 
 /* No comment provided by engineer. */
 "Show preview" = "Mostrar vista previa";
@@ -3741,6 +3819,9 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "La aplicación puede notificarte cuando recibas mensajes o solicitudes de contacto: por favor, abre la configuración para activarlo.";
 
 /* No comment provided by engineer. */
+"The app will ask to confirm downloads from unknown file servers (except .onion)." = "La aplicación pedirá que confirmes las descargas desde servidores de archivos desconocidos (excepto .onion).";
+
+/* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "El intento de cambiar la contraseña de la base de datos no se ha completado.";
 
 /* No comment provided by engineer. */
@@ -3861,6 +3942,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Para proteger tu información, activa el Bloqueo SimpleX.\nSe te pedirá que completes la autenticación antes de activar esta función.";
 
 /* No comment provided by engineer. */
+"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Para proteger tu dirección IP, el enrutamiento privado usa tus servidores SMP para enviar mensajes.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Para grabar el mensaje de voz concede permiso para usar el micrófono.";
 
 /* No comment provided by engineer. */
@@ -3945,6 +4029,12 @@
 "Unknown error" = "Error desconocido";
 
 /* No comment provided by engineer. */
+"unknown relays" = "servidor de retransmisión desconocido";
+
+/* No comment provided by engineer. */
+"Unknown servers!" = "¡Servidores desconocidos!";
+
+/* No comment provided by engineer. */
 "unknown status" = "estado desconocido";
 
 /* No comment provided by engineer. */
@@ -3967,6 +4057,9 @@
 
 /* No comment provided by engineer. */
 "Unmute" = "Activar audio";
+
+/* No comment provided by engineer. */
+"unprotected" = "desprotegido";
 
 /* No comment provided by engineer. */
 "Unread" = "No leído";
@@ -4036,6 +4129,12 @@
 
 /* No comment provided by engineer. */
 "Use only local notifications?" = "¿Usar sólo notificaciones locales?";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers when IP address is not protected." = "Usar enrutamiento privado con servidores desconocidos cuando la dirección IP no está protegida.";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers." = "Usar enrutamiento privado con servidores desconocidos.";
 
 /* No comment provided by engineer. */
 "Use server" = "Usar servidor";
@@ -4191,6 +4290,9 @@
 "When connecting audio and video calls." = "Al iniciar llamadas de audio y vídeo.";
 
 /* No comment provided by engineer. */
+"when IP hidden" = "con IP oculta";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Cuando alguien solicite conectarse podrás aceptar o rechazar la solicitud.";
 
 /* No comment provided by engineer. */
@@ -4215,7 +4317,16 @@
 "With reduced battery usage." = "Con uso reducido de batería.";
 
 /* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to file servers." = "Sin Tor o VPN, tu dirección IP será visible para los servidores de archivos.";
+
+/* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Sin Tor o VPN, tu dirección IP será visible para estos servidores XFTP: %@.";
+
+/* No comment provided by engineer. */
 "Wrong database passphrase" = "Contraseña de base de datos incorrecta";
+
+/* snd error text */
+"Wrong key or unknown connection - most likely this connection is deleted." = "Clave incorrecta o conexión desconocida - probablemente esta conexión fue eliminada.";
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "¡Contraseña incorrecta!";
